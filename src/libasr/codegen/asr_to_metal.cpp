@@ -68,6 +68,17 @@ public:
     // to dereference the pointer when assigning to these params.
     std::set<std::string> alloc_pointer_params;
 
+    // Tracks local Allocatable(Array) variables in the current kernel
+    // that have been declared as fixed-size arrays. Used to:
+    // - skip '&' prefix in SubroutineCall (array decays to pointer)
+    // - emit element-by-element copy in assignments
+    std::set<std::string> local_alloc_arrays;
+
+    // Maps local allocatable variable names to their computed total
+    // element count, determined by pre-scanning Allocate statements
+    // in the kernel's inline functions.
+    std::map<std::string, int64_t> alloc_array_sizes;
+
     // True when emitting an inline function body (not a kernel body).
     // Used to suppress array buffer indexing logic that only applies
     // to kernel-level device buffer parameters.
@@ -122,10 +133,13 @@ public:
     // Emit a local variable declaration, including array dimensions.
     // For scalars: `float x;`
     // For arrays:  `float x[3];` or `float x[n];` (VLA)
+    // For allocatable arrays: `float x[N];` (fixed-size from Allocate)
     void emit_local_var_decl(ASR::Variable_t *var) {
         ASR::ttype_t *type = var->m_type;
-        if (ASR::is_a<ASR::Array_t>(*type)) {
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable(type);
+        bool is_alloc = ASRUtils::is_allocatable(type);
+        if (ASR::is_a<ASR::Array_t>(*base_type)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(base_type);
             std::string elem_type;
             if (is_struct_type(arr->m_type)) {
                 elem_type = get_struct_name(var);
@@ -134,15 +148,24 @@ public:
             }
             src << get_indent() << elem_type << " "
                 << var->m_name;
-            for (size_t d = 0; d < arr->n_dims; d++) {
-                src << "[";
-                if (arr->m_dims[d].m_length) {
-                    visit_expr(arr->m_dims[d].m_length);
+            if (is_alloc) {
+                // Allocatable array: use pre-scanned size or fallback
+                std::string vname(var->m_name);
+                auto it = alloc_array_sizes.find(vname);
+                int64_t sz = (it != alloc_array_sizes.end()) ? it->second : 1;
+                src << "[" << sz << "]";
+                local_alloc_arrays.insert(vname);
+            } else {
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    src << "[";
+                    if (arr->m_dims[d].m_length) {
+                        visit_expr(arr->m_dims[d].m_length);
+                    }
+                    src << "]";
                 }
-                src << "]";
             }
             src << ";\n";
-        } else if (is_struct_type(type)) {
+        } else if (is_struct_type(base_type)) {
             src << get_indent() << get_struct_name(var) << " "
                 << var->m_name << ";\n";
         } else {
@@ -164,6 +187,174 @@ public:
             }
         }
         return total;
+    }
+
+    // Compute the total allocation size from an Allocate statement's
+    // alloc_arg dimensions. Returns -1 if any dimension is non-constant.
+    int64_t compute_alloc_size(ASR::alloc_arg_t &arg) {
+        int64_t total = 1;
+        for (size_t d = 0; d < arg.n_dims; d++) {
+            ASR::dimension_t &dim = arg.m_dims[d];
+            if (!dim.m_length) return -1;
+            if (!ASR::is_a<ASR::IntegerConstant_t>(*dim.m_length))
+                return -1;
+            total *= ASR::down_cast<ASR::IntegerConstant_t>(
+                dim.m_length)->m_n;
+        }
+        return total;
+    }
+
+    // Pre-scan functions defined in the kernel scope to collect
+    // allocation sizes. For each function, records which parameter
+    // index is allocated and its compile-time size. Then scans
+    // kernel body SubroutineCalls to map caller local variables
+    // to those sizes, and propagates through assignments.
+    void prescan_alloc_sizes(const ASR::GpuKernelFunction_t &kf) {
+        alloc_array_sizes.clear();
+        // Step 1: For each function in kernel scope, find Allocate
+        // stmts and record param_index → size
+        std::map<std::string, std::map<size_t, int64_t>> func_allocs;
+        for (auto &item : kf.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+                item.second);
+            std::string fn_name(fn->m_name);
+            for (size_t si = 0; si < fn->n_body; si++) {
+                if (fn->m_body[si]->type != ASR::stmtType::Allocate)
+                    continue;
+                ASR::Allocate_t *alloc = ASR::down_cast<ASR::Allocate_t>(
+                    fn->m_body[si]);
+                for (size_t ai = 0; ai < alloc->n_args; ai++) {
+                    if (!alloc->m_args[ai].m_a) continue;
+                    if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
+                        continue;
+                    std::string alloc_var = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            alloc->m_args[ai].m_a)->m_v);
+                    int64_t sz = compute_alloc_size(alloc->m_args[ai]);
+                    if (sz <= 0) continue;
+                    for (size_t pi = 0; pi < fn->n_args; pi++) {
+                        ASR::Variable_t *pv =
+                            ASR::down_cast<ASR::Variable_t>(
+                                ASR::down_cast<ASR::Var_t>(
+                                    fn->m_args[pi])->m_v);
+                        if (std::string(pv->m_name) == alloc_var) {
+                            func_allocs[fn_name][pi] = sz;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Step 2: Scan kernel body for SubroutineCalls and map
+        // actual arguments to allocation sizes
+        for (size_t bi = 0; bi < kf.n_body; bi++) {
+            scan_stmt_for_alloc_sizes(kf.m_body[bi], func_allocs);
+        }
+        // Step 3: Scan blocks in kernel body for the same
+        for (size_t bi = 0; bi < kf.n_body; bi++) {
+            if (kf.m_body[bi]->type == ASR::stmtType::BlockCall) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASR::down_cast<ASR::BlockCall_t>(
+                        kf.m_body[bi])->m_m);
+                for (size_t si = 0; si < block->n_body; si++) {
+                    scan_stmt_for_alloc_sizes(
+                        block->m_body[si], func_allocs);
+                }
+            } else if (kf.m_body[bi]->type ==
+                    ASR::stmtType::AssociateBlockCall) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            kf.m_body[bi])->m_m);
+                for (size_t si = 0; si < ab->n_body; si++) {
+                    scan_stmt_for_alloc_sizes(
+                        ab->m_body[si], func_allocs);
+                }
+            }
+        }
+        // Step 4: Propagate sizes through assignments
+        // (if a = b and b has known size, a gets same size)
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (size_t bi = 0; bi < kf.n_body; bi++) {
+                changed |= propagate_alloc_size_from_stmt(kf.m_body[bi]);
+            }
+            for (size_t bi = 0; bi < kf.n_body; bi++) {
+                if (kf.m_body[bi]->type == ASR::stmtType::BlockCall) {
+                    ASR::Block_t *block =
+                        ASR::down_cast<ASR::Block_t>(
+                            ASR::down_cast<ASR::BlockCall_t>(
+                                kf.m_body[bi])->m_m);
+                    for (size_t si = 0; si < block->n_body; si++) {
+                        changed |= propagate_alloc_size_from_stmt(
+                            block->m_body[si]);
+                    }
+                } else if (kf.m_body[bi]->type ==
+                        ASR::stmtType::AssociateBlockCall) {
+                    ASR::AssociateBlock_t *ab =
+                        ASR::down_cast<ASR::AssociateBlock_t>(
+                            ASR::down_cast<ASR::AssociateBlockCall_t>(
+                                kf.m_body[bi])->m_m);
+                    for (size_t si = 0; si < ab->n_body; si++) {
+                        changed |= propagate_alloc_size_from_stmt(
+                            ab->m_body[si]);
+                    }
+                }
+            }
+        }
+    }
+
+    void scan_stmt_for_alloc_sizes(ASR::stmt_t *stmt,
+            const std::map<std::string,
+                std::map<size_t, int64_t>> &func_allocs) {
+        if (stmt->type == ASR::stmtType::SubroutineCall) {
+            ASR::SubroutineCall_t *sc =
+                ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+            std::string fn_name(ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(sc->m_name)));
+            auto it = func_allocs.find(fn_name);
+            if (it == func_allocs.end()) return;
+            for (auto &[param_idx, sz] : it->second) {
+                if (param_idx >= sc->n_args) continue;
+                ASR::expr_t *actual = sc->m_args[param_idx].m_value;
+                if (!actual || !ASR::is_a<ASR::Var_t>(*actual)) continue;
+                std::string actual_name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(actual)->m_v);
+                alloc_array_sizes[actual_name] = sz;
+            }
+        } else if (stmt->type == ASR::stmtType::Allocate) {
+            ASR::Allocate_t *alloc =
+                ASR::down_cast<ASR::Allocate_t>(stmt);
+            for (size_t ai = 0; ai < alloc->n_args; ai++) {
+                if (!alloc->m_args[ai].m_a) continue;
+                if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
+                    continue;
+                std::string vname = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(
+                        alloc->m_args[ai].m_a)->m_v);
+                int64_t sz = compute_alloc_size(alloc->m_args[ai]);
+                if (sz > 0) {
+                    alloc_array_sizes[vname] = sz;
+                }
+            }
+        }
+    }
+
+    bool propagate_alloc_size_from_stmt(ASR::stmt_t *stmt) {
+        if (stmt->type != ASR::stmtType::Assignment) return false;
+        ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(stmt);
+        if (!ASR::is_a<ASR::Var_t>(*a->m_target)) return false;
+        if (!ASR::is_a<ASR::Var_t>(*a->m_value)) return false;
+        std::string tgt = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+        std::string val = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(a->m_value)->m_v);
+        if (alloc_array_sizes.count(tgt)) return false;
+        if (!alloc_array_sizes.count(val)) return false;
+        alloc_array_sizes[tgt] = alloc_array_sizes[val];
+        return true;
     }
 
     // Emit the total size of an array expression (product of dimensions).
@@ -716,6 +907,11 @@ public:
 
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
         std::string name(x.m_name);
+        local_alloc_arrays.clear();
+
+        // Pre-scan Allocate statements to determine sizes
+        // for local allocatable array variables.
+        prescan_alloc_sizes(x);
 
         // Emit inline function definitions for type-bound procedures
         // referenced in this kernel
@@ -1237,11 +1433,15 @@ public:
                 // ArrayItem accesses (r[i] = val) are handled separately and
                 // already work with pointers.
                 bool deref_target = false;
+                bool target_is_local_alloc = false;
                 if (ASR::is_a<ASR::Var_t>(*a->m_target)) {
                     std::string tname = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
                     if (alloc_pointer_params.count(tname)) {
                         deref_target = true;
+                    }
+                    if (local_alloc_arrays.count(tname)) {
+                        target_is_local_alloc = true;
                     }
                 }
                 // When assigning a whole allocatable/array value to an
@@ -1262,7 +1462,35 @@ public:
                     && ASR::is_a<ASR::Var_t>(*a->m_target)
                     && is_array_type(tgt_type)
                     && !ASRUtils::is_allocatable(tgt_type);
-                if (deref_target && rhs_is_array_or_alloc) {
+                // Check if RHS is a local alloc array Var (not subscripted)
+                bool rhs_is_local_alloc = false;
+                if (ASR::is_a<ASR::Var_t>(*a->m_value)) {
+                    std::string rname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_value)->m_v);
+                    rhs_is_local_alloc = local_alloc_arrays.count(rname) > 0;
+                }
+                if (target_is_local_alloc && rhs_is_array_or_alloc) {
+                    // Copy between local allocatable arrays
+                    std::string tname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+                    auto sit = alloc_array_sizes.find(tname);
+                    int64_t sz = (sit != alloc_array_sizes.end())
+                        ? sit->second : 1;
+                    for (int64_t ei = 0; ei < sz; ei++) {
+                        visit_expr(a->m_target);
+                        src << "[" << ei << "] = ";
+                        visit_expr(a->m_value);
+                        src << "[" << ei << "];\n";
+                        if (ei + 1 < sz) src << get_indent();
+                    }
+                } else if (!target_is_local_alloc && rhs_is_local_alloc) {
+                    // RHS is a local alloc array but target is a scalar
+                    // (e.g., a(i) = alloc_var): index with [0]
+                    visit_expr(a->m_target);
+                    src << " = ";
+                    visit_expr(a->m_value);
+                    src << "[0];\n";
+                } else if (deref_target && rhs_is_array_or_alloc) {
                     src << "*";
                     visit_expr(a->m_target);
                     src << " = ";
@@ -1440,8 +1668,22 @@ public:
                             sc->m_args[i].m_value);
                         // Allocatable args correspond to pointer params
                         // in the target function; pass address of local var.
+                        // But if the local var is already a fixed-size array
+                        // (local_alloc_arrays), it decays to a pointer
+                        // automatically, so skip the '&'.
                         if (ASRUtils::is_allocatable(arg_type)) {
-                            src << "&";
+                            bool is_local_arr = false;
+                            if (ASR::is_a<ASR::Var_t>(
+                                    *sc->m_args[i].m_value)) {
+                                std::string aname = ASRUtils::symbol_name(
+                                    ASR::down_cast<ASR::Var_t>(
+                                        sc->m_args[i].m_value)->m_v);
+                                is_local_arr =
+                                    local_alloc_arrays.count(aname) > 0;
+                            }
+                            if (!is_local_arr) {
+                                src << "&";
+                            }
                         }
                         visit_expr(sc->m_args[i].m_value);
                         if (is_array_type(arg_type)
@@ -1461,6 +1703,16 @@ public:
             }
             case ASR::stmtType::ExplicitDeallocate: {
                 // Skip deallocation on Metal GPU (memory managed by host)
+                break;
+            }
+            case ASR::stmtType::Allocate: {
+                // Skip allocation on Metal GPU — local allocatable arrays
+                // are declared as fixed-size arrays based on pre-scanned
+                // Allocate dimensions.
+                break;
+            }
+            case ASR::stmtType::ImplicitDeallocate: {
+                // Skip implicit deallocation on Metal GPU
                 break;
             }
             default:
