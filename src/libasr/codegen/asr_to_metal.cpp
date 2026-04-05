@@ -474,8 +474,15 @@ public:
                             std::string data_name =
                                 "__data_" + std::string(arg->m_name)
                                 + "_" + st->m_members[m];
+                            std::string elem_type_str;
+                            if (is_struct_type(mem_arr->m_type)) {
+                                elem_type_str = get_struct_name(mv);
+                            } else {
+                                elem_type_str =
+                                    metal_type(mem_arr->m_type);
+                            }
                             src << ", device "
-                                << metal_type(mem_arr->m_type)
+                                << elem_type_str
                                 << "* " << data_name;
                             func_array_data_params[key] = data_name;
                             std::string size_name =
