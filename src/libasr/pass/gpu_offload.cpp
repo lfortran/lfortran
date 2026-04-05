@@ -1633,6 +1633,7 @@ public:
             std::vector<ASR::expr_t*> loop_steps;
             Vec<ASR::array_index_t> idx_args;
             ASR::expr_t *base_arr = nullptr;
+            ASR::expr_t *arr_elem = nullptr;
 
             if (ASR::is_a<ASR::ArraySection_t>(*arr_arg)) {
                 // ArraySection (e.g., x(:,i)): loop over range dimensions,
@@ -1672,50 +1673,71 @@ public:
                     idx_args.push_back(al, ai);
                 }
             } else {
-                // Whole array: loop over all dimensions
-                ASR::ttype_t *arr_type = ASRUtils::expr_type(arr_arg);
-                ASR::dimension_t *dims = nullptr;
-                int rank = ASRUtils::extract_dimensions_from_ttype(
-                    arr_type, dims);
-                if (rank < 1) {
-                    new_body.push_back(al, stmt);
-                    continue;
-                }
-                base_arr = arr_arg;
-                for (int d = 0; d < rank; d++) {
-                    loop_vars.push_back(make_var("__gpu_sum_k", int_type));
-                    if (dims[d].m_start && dims[d].m_length) {
-                        loop_starts.push_back(dims[d].m_start);
-                        loop_ends.push_back(dims[d].m_length);
-                    } else {
-                        ASR::expr_t *dim_expr = ASRUtils::EXPR(
-                            ASR::make_IntegerConstant_t(al, loc,
-                                d + 1, int_type,
-                                ASR::integerbozType::Decimal));
-                        loop_starts.push_back(ASRUtils::EXPR(
-                            ASR::make_ArrayBound_t(al, loc, arr_arg,
-                                dim_expr, int_type,
-                                ASR::arrayboundType::LBound, nullptr)));
-                        loop_ends.push_back(ASRUtils::EXPR(
-                            ASR::make_ArrayBound_t(al, loc, arr_arg,
-                                dim_expr, int_type,
-                                ASR::arrayboundType::UBound, nullptr)));
-                    }
+                // Check if arr_arg is an expression containing
+                // ArraySection nodes (e.g., a(1:n) + b(1:n))
+                ASR::expr_t *sec_start = nullptr, *sec_end = nullptr;
+                find_array_section_bounds(arr_arg, sec_start, sec_end);
+                if (sec_start && sec_end) {
+                    loop_vars.push_back(
+                        make_var("__gpu_sum_k", int_type));
+                    loop_starts.push_back(sec_start);
+                    loop_ends.push_back(sec_end);
                     loop_steps.push_back(nullptr);
-                }
-                idx_args.reserve(al, rank);
-                for (int d = 0; d < rank; d++) {
-                    ASR::array_index_t ai;
-                    ai.loc = loc;
-                    ai.m_left = nullptr;
-                    ai.m_right = loop_vars[d];
-                    ai.m_step = nullptr;
-                    idx_args.push_back(al, ai);
+                    arr_elem = elementize_mask(arr_arg, loop_vars[0],
+                        elem_type, loc);
+                } else {
+                    // Whole array: loop over all dimensions
+                    ASR::ttype_t *arr_type =
+                        ASRUtils::expr_type(arr_arg);
+                    ASR::dimension_t *dims = nullptr;
+                    int rank =
+                        ASRUtils::extract_dimensions_from_ttype(
+                            arr_type, dims);
+                    if (rank < 1) {
+                        new_body.push_back(al, stmt);
+                        continue;
+                    }
+                    base_arr = arr_arg;
+                    for (int d = 0; d < rank; d++) {
+                        loop_vars.push_back(
+                            make_var("__gpu_sum_k", int_type));
+                        if (dims[d].m_start && dims[d].m_length) {
+                            loop_starts.push_back(dims[d].m_start);
+                            loop_ends.push_back(dims[d].m_length);
+                        } else {
+                            ASR::expr_t *dim_expr = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, loc,
+                                    d + 1, int_type,
+                                    ASR::integerbozType::Decimal));
+                            loop_starts.push_back(ASRUtils::EXPR(
+                                ASR::make_ArrayBound_t(al, loc,
+                                    arr_arg, dim_expr, int_type,
+                                    ASR::arrayboundType::LBound,
+                                    nullptr)));
+                            loop_ends.push_back(ASRUtils::EXPR(
+                                ASR::make_ArrayBound_t(al, loc,
+                                    arr_arg, dim_expr, int_type,
+                                    ASR::arrayboundType::UBound,
+                                    nullptr)));
+                        }
+                        loop_steps.push_back(nullptr);
+                    }
+                    idx_args.reserve(al, rank);
+                    for (int d = 0; d < rank; d++) {
+                        ASR::array_index_t ai;
+                        ai.loc = loc;
+                        ai.m_left = nullptr;
+                        ai.m_right = loop_vars[d];
+                        ai.m_step = nullptr;
+                        idx_args.push_back(al, ai);
+                    }
                 }
             }
 
-            ASR::expr_t *arr_elem = index_array_expr(base_arr,
-                    idx_args.p, idx_args.n, elem_type, loc);
+            if (!arr_elem) {
+                arr_elem = index_array_expr(base_arr,
+                        idx_args.p, idx_args.n, elem_type, loc);
+            }
 
             // res = res + a(k1, k2, ...) or a(k1, i, ...)
             ASR::expr_t *add_expr;
