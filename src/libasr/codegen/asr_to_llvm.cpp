@@ -16776,6 +16776,7 @@ public:
                                     llvm::Value *iostat, llvm::Value *read_size,
                                     llvm::Value *advance, llvm::Value *advance_len,
                                     llvm::Value *fmt_data, llvm::Value *fmt_len,
+                                    llvm::Value *pad_data, llvm::Value *pad_len,
                                     bool is_string, const ASR::FileRead_t &x) {
         ASR::ttype_t *expr_type_full = ASRUtils::expr_type(val_expr);
         ASR::ttype_t *val_type = ASRUtils::type_get_past_array(
@@ -16812,6 +16813,8 @@ public:
             int64_t array_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
             int64_t single_arg_count = array_size * get_formatted_read_arg_count(val_type);
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, single_arg_count)));
+            single_args.push_back(pad_data);
+            single_args.push_back(pad_len);
             
             ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
@@ -16841,13 +16844,16 @@ public:
             }
         } else if (ASRUtils::is_array(expr_type_full)) {
             // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
-            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            single_args.push_back(pad_data);
+            single_args.push_back(pad_len);
             arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
                     val_type, var_ptr, module.get(), single_args);
         } else {
             // Scalar: one arg with is_descriptor_array=0 (pushed inside add_formatted_read_arg)
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
                 get_formatted_read_arg_count(val_type))));
+            single_args.push_back(pad_data);
+            single_args.push_back(pad_len);
             add_formatted_read_arg(single_args, val_type, var_ptr);
         }
 
@@ -16869,6 +16875,8 @@ public:
             param_types.push_back(character_type);
             param_types.push_back(llvm::Type::getInt64Ty(context));
             param_types.push_back(llvm::Type::getInt32Ty(context));
+            param_types.push_back(character_type);
+            param_types.push_back(llvm::Type::getInt64Ty(context));
 
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), param_types, true);
@@ -16880,7 +16888,8 @@ public:
 
     void emit_formatted_read_with_idl(const ASR::FileRead_t &x, llvm::Value *unit_val,
             llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
-            llvm::Value *advance_length, bool is_string, ASR::expr_t* fmt_expr) {
+            llvm::Value *advance_length, llvm::Value *pad_data, llvm::Value *pad_len,
+            bool is_string, ASR::expr_t* fmt_expr) {
         (void)iostat;
         (void)advance;
         (void)advance_length;
@@ -17015,7 +17024,8 @@ public:
 
                     emit_single_formatted_read(idl_val, unit_val, loop_iostat, read_size,
                                                no_advance_str, no_advance_len,
-                                               fmt_data, fmt_len, is_string, x);
+                                               fmt_data, fmt_len, pad_data, pad_len,
+                                               is_string, x);
 
                     if (prev_symtab_val) {
                         llvm_symtab[var_hash] = prev_symtab_val;
@@ -17033,7 +17043,8 @@ public:
             } else {
                 emit_single_formatted_read(val_expr, unit_val, loop_iostat, read_size,
                                            no_advance_str, no_advance_len,
-                                           fmt_data, fmt_len, is_string, x);
+                                           fmt_data, fmt_len, pad_data, pad_len,
+                                           is_string, x);
             }
         }
     }
@@ -17044,6 +17055,12 @@ public:
         ASR::expr_t* fmt_expr = x.m_fmt;
         ASR::expr_t** values = x.m_values;
         size_t n_values = x.n_values;
+
+        llvm::Value* pad_data = llvm::Constant::getNullValue(character_type);
+        llvm::Value* pad_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        if (x.m_pad) {
+            std::tie(pad_data, pad_len) = get_string_data_and_length(x.m_pad);
+        }
 
         if (ASR::is_a<ASR::IntegerConstant_t>(*fmt_expr) &&
                 n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*values[0])) {
@@ -17065,7 +17082,7 @@ public:
             ASR::FileRead_t x2 = x;
             x2.m_values = values;
             x2.n_values = n_values;
-            emit_formatted_read_with_idl(x2, unit_val, iostat, read_size, advance, advance_length, is_string, fmt_expr);
+            emit_formatted_read_with_idl(x2, unit_val, iostat, read_size, advance, advance_length, pad_data, pad_len, is_string, fmt_expr);
             return;
         }
 
@@ -17105,6 +17122,8 @@ public:
         args.push_back(fmt_len);
 
         args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, total_scalar_values)));
+        args.push_back(pad_data);
+        args.push_back(pad_len);
 
         for (size_t i = 0; i < n_values; i++) {
             ASR::expr_t* val_expr = values[i];
@@ -17170,14 +17189,16 @@ public:
                         llvm::Type::getVoidTy(context), {
                             character_type,                                  // src_data
                             llvm::Type::getInt64Ty(context),                 // src_len
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
-                            llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
-                            character_type,                                  // advance
-                            llvm::Type::getInt64Ty(context),                 // advance_length
-                            character_type,                                  // fmt
-                            llvm::Type::getInt64Ty(context),                 // fmt_len
-                            llvm::Type::getInt32Ty(context)                  // no_of_args
-                        }, true);
+                llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                character_type,                                  // advance
+                llvm::Type::getInt64Ty(context),                 // advance_length
+                character_type,                                  // fmt
+                llvm::Type::getInt64Ty(context),                 // fmt_len
+                llvm::Type::getInt32Ty(context),                 // no_of_args
+                character_type,                                  // pad_data
+                llvm::Type::getInt64Ty(context)                  // pad_len
+                }, true);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name, module.get());
             }
@@ -17195,7 +17216,9 @@ public:
                             llvm::Type::getInt64Ty(context),                 // advance_length
                             character_type,                                  // fmt
                             llvm::Type::getInt64Ty(context),                 // fmt_len
-                            llvm::Type::getInt32Ty(context)                  // no_of_args
+                            llvm::Type::getInt32Ty(context),                 // no_of_args
+                            character_type,                                  // pad_data
+                            llvm::Type::getInt64Ty(context)                  // pad_len
                         }, true);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17222,6 +17245,7 @@ public:
         llvm::Value *sign_data{}, *sign_len{};
         llvm::Value *decimal_data{}, *decimal_len{};
         llvm::Value *round_data{}, *round_len{};
+        llvm::Value *pad_data{}, *pad_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -17324,6 +17348,12 @@ public:
             round_data = llvm::Constant::getNullValue(character_type);
             round_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
+        if (x.m_pad) {
+            std::tie(pad_data, pad_len) = get_string_data_and_length(x.m_pad);
+        } else {
+            pad_data = llvm::Constant::getNullValue(character_type);
+            pad_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
 
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
@@ -17347,7 +17377,8 @@ public:
                         llvm::Type::getInt32Ty(context)->getPointerTo(), // recl
                         character_type, i64,  // sign_data, sign_len
                         character_type, i64,  // decimal_data, decimal_len
-                        character_type, i64   // round_data, round_len
+                        character_type, i64,   // round_data, round_len
+                        character_type, i64    // pad_data, pad_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17367,7 +17398,8 @@ public:
             recl,
             sign_data, sign_len,
             decimal_data, decimal_len,
-            round_data, round_len
+            round_data, round_len,
+            pad_data, pad_len
         });
     }
 
@@ -17394,6 +17426,7 @@ public:
         llvm::Value *stream_val{}, *stream_len{};
         llvm::Value *iomsg_val{}, *iomsg_len{};
         llvm::Value *round_val{}, *round_len{};
+        llvm::Value *pad_val{}, *pad_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -17772,6 +17805,16 @@ public:
             round_val = llvm::Constant::getNullValue(character_type);
             round_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        if (x.m_pad) {
+            this->visit_expr_load_wrapper(x.m_pad, 0);
+            std::tie(pad_val, pad_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_pad),
+                    tmp);
+        } else {
+            pad_val = llvm::Constant::getNullValue(character_type);
+            pad_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
 
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -17805,7 +17848,8 @@ public:
                         character_type, llvm::Type::getInt64Ty(context),   // encoding_data, encoding_len
                         character_type, llvm::Type::getInt64Ty(context),   // stream_data, stream_len
                         character_type, llvm::Type::getInt64Ty(context),    // iomsg_data, iomsg_len
-                        character_type, llvm::Type::getInt64Ty(context)    // round_data, round_len
+                        character_type, llvm::Type::getInt64Ty(context),    // round_data, round_len
+                        character_type, llvm::Type::getInt64Ty(context)    // pad_data, pad_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17832,7 +17876,8 @@ public:
             encoding_val, encoding_len,
             stream_val, stream_len,
             iomsg_val, iomsg_len,
-            round_val, round_len});
+            round_val, round_len,
+            pad_val, pad_len});
         if (exist_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
                 llvm::Type::getInt1Ty(context), exist_val);
