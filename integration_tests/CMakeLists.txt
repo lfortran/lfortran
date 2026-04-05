@@ -2804,7 +2804,7 @@ RUN(NAME class_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME class_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME class_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
