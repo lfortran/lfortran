@@ -1973,12 +1973,25 @@ public:
     // This avoids complex lowered code (descriptor temps, ArrayBound)
     // that the Metal backend cannot handle inside GPU kernels.
     void inline_array_section_assignment(ASR::DoConcurrentLoop_t &x) {
-        Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body * 2);
         bool changed = false;
+        inline_array_section_in_body(x.m_body, x.n_body, changed);
+    }
 
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+    void inline_array_section_in_body(ASR::stmt_t** &body, size_t &n_body,
+            bool &changed) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_body * 2);
+
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            // Recurse into DoLoop bodies
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                inline_array_section_in_body(dl->m_body, dl->n_body,
+                    changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -2276,8 +2289,8 @@ public:
         }
 
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            body = new_body.p;
+            n_body = new_body.n;
         }
     }
 
@@ -2290,12 +2303,25 @@ public:
     //     b(__gpu_elem_i) = abs(a(__gpu_elem_i, l))
     //   end do
     void inline_elemental_array_var_assignment(ASR::DoConcurrentLoop_t &x) {
-        Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body * 2);
         bool changed = false;
+        inline_elemental_array_var_in_body(x.m_body, x.n_body, changed);
+    }
 
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+    void inline_elemental_array_var_in_body(ASR::stmt_t** &body,
+            size_t &n_body, bool &changed) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_body * 2);
+
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            // Recurse into DoLoop bodies
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                inline_elemental_array_var_in_body(dl->m_body, dl->n_body,
+                    changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -2628,8 +2654,8 @@ public:
         }
 
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            body = new_body.p;
+            n_body = new_body.n;
         }
     }
 
