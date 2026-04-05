@@ -19046,6 +19046,23 @@ public:
                 } else if (arr->m_type->type == ASR::ttypeType::Integer) {
                     int kind = ASR::down_cast<ASR::Integer_t>(arr->m_type)->m_kind;
                     elem_size = kind;
+                } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arr->m_type))
+                        && ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                    ASR::Variable_t *sv = ASR::down_cast<ASR::Variable_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(arg_expr)->m_v));
+                    if (sv->m_type_declaration) {
+                        ASR::symbol_t *ss = ASRUtils::symbol_get_past_external(
+                            sv->m_type_declaration);
+                        if (ASR::is_a<ASR::Struct_t>(*ss)) {
+                            llvm::Type *elem_llvm_type =
+                                llvm_utils->getStructType(
+                                    ASR::down_cast<ASR::Struct_t>(ss),
+                                    module.get());
+                            elem_size = module->getDataLayout().getTypeAllocSize(
+                                elem_llvm_type);
+                        }
+                    }
                 }
                 // Get the total number of elements from the array dimension
                 int64_t total_elements = 1;
@@ -19105,6 +19122,230 @@ public:
                 } else {
                     llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
                     builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
+
+                    // For struct arrays with allocatable members, pass
+                    // flattened data and offsets as additional Metal buffers
+                    if (all_constant &&
+                            ASR::is_a<ASR::StructType_t>(
+                                *ASRUtils::extract_type(arr->m_type)) &&
+                            ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                        ASR::Variable_t *arr_var =
+                            ASR::down_cast<ASR::Variable_t>(
+                                ASRUtils::symbol_get_past_external(
+                                    ASR::down_cast<ASR::Var_t>(
+                                        arg_expr)->m_v));
+                        ASR::Struct_t *st = nullptr;
+                        if (arr_var->m_type_declaration) {
+                            ASR::symbol_t *s =
+                                ASRUtils::symbol_get_past_external(
+                                    arr_var->m_type_declaration);
+                            if (ASR::is_a<ASR::Struct_t>(*s)) {
+                                st = ASR::down_cast<ASR::Struct_t>(s);
+                            }
+                        }
+                        if (st) {
+                            llvm::Type *struct_llvm =
+                                llvm_utils->getStructType(
+                                    st, module.get());
+                            llvm::Type *arr_llvm =
+                                llvm::ArrayType::get(struct_llvm,
+                                    total_elements);
+                            llvm::Value *i32_0 =
+                                llvm::ConstantInt::get(i32, 0);
+                            int field_idx = 0;
+                            for (size_t m = 0; m < st->n_members;
+                                    m++) {
+                                ASR::symbol_t *mem =
+                                    st->m_symtab->get_symbol(
+                                        st->m_members[m]);
+                                if (!mem ||
+                                        !ASR::is_a<ASR::Variable_t>(
+                                            *mem)) {
+                                    field_idx++;
+                                    continue;
+                                }
+                                ASR::Variable_t *mv =
+                                    ASR::down_cast<ASR::Variable_t>(
+                                        mem);
+                                if (!ASRUtils::is_allocatable(
+                                        mv->m_type)) {
+                                    field_idx++;
+                                    continue;
+                                }
+                                ASR::ttype_t *inner =
+                                    ASRUtils::type_get_past_allocatable(
+                                        mv->m_type);
+                                if (!ASR::is_a<ASR::Array_t>(*inner)) {
+                                    field_idx++;
+                                    continue;
+                                }
+                                ASR::Array_t *mem_arr =
+                                    ASR::down_cast<ASR::Array_t>(inner);
+                                // Get LLVM descriptor type for the
+                                // allocatable member's array
+                                llvm::Type *mem_el_llvm = nullptr;
+                                if (ASR::is_a<ASR::StructType_t>(
+                                        *ASRUtils::extract_type(
+                                            mem_arr->m_type)) &&
+                                        mv->m_type_declaration) {
+                                    ASR::symbol_t *es =
+                                        ASRUtils::symbol_get_past_external(
+                                            mv->m_type_declaration);
+                                    if (ASR::is_a<ASR::Struct_t>(*es)) {
+                                        mem_el_llvm =
+                                            llvm_utils->getStructType(
+                                                ASR::down_cast<ASR::Struct_t>(es),
+                                                module.get());
+                                    }
+                                }
+                                if (!mem_el_llvm) {
+                                    mem_el_llvm = llvm_utils->get_el_type(
+                                        nullptr, mem_arr->m_type,
+                                        module.get());
+                                }
+                                llvm::Type *desc_type =
+                                    arr_descr->get_array_type(
+                                        nullptr, inner,
+                                        mem_el_llvm, false);
+                                int me_size = 4;
+                                if (mem_arr->m_type->type ==
+                                        ASR::ttypeType::Real) {
+                                    me_size =
+                                        ASR::down_cast<ASR::Real_t>(
+                                            mem_arr->m_type)->m_kind;
+                                } else if (mem_arr->m_type->type ==
+                                        ASR::ttypeType::Integer) {
+                                    me_size =
+                                        ASR::down_cast<ASR::Integer_t>(
+                                            mem_arr->m_type)->m_kind;
+                                }
+                                // Collect data ptrs and sizes
+                                std::vector<llvm::Value*> dps, szs;
+                                llvm::Value *tot =
+                                    llvm::ConstantInt::get(i64, 0);
+                                for (int64_t k = 0;
+                                        k < total_elements; k++) {
+                                    llvm::Value *ep =
+                                        builder->CreateGEP(arr_llvm,
+                                            arg_val,
+                                            {i32_0,
+                                             llvm::ConstantInt::get(
+                                                 i32, k)});
+                                    llvm::Value *fp =
+                                        builder->CreateGEP(
+                                            struct_llvm, ep,
+                                            {i32_0,
+                                             llvm::ConstantInt::get(
+                                                 i32, field_idx)});
+                                    llvm::Value *dp =
+                                        llvm_utils->CreateLoad2(
+                                            desc_type->getPointerTo(),
+                                            fp);
+                                    llvm::Value *dpp =
+                                        arr_descr->get_pointer_to_data(
+                                            desc_type, dp);
+                                    llvm::Value *raw =
+                                        llvm_utils->CreateLoad2(
+                                            llvm::PointerType::getUnqual(
+                                                llvm::Type::getInt8Ty(
+                                                    context)),
+                                            dpp);
+                                    raw = builder->CreatePointerCast(
+                                        raw, i8_ptr);
+                                    dps.push_back(raw);
+                                    llvm::Value *ne =
+                                        arr_descr->get_array_size(
+                                            desc_type, dp, nullptr, 4);
+                                    llvm::Value *ne64 =
+                                        builder->CreateSExtOrTrunc(
+                                            ne, i64);
+                                    szs.push_back(ne64);
+                                    tot = builder->CreateAdd(
+                                        tot, ne64);
+                                }
+                                // Allocate flat data buffer
+                                llvm::Value *tot_bytes =
+                                    builder->CreateMul(tot,
+                                        llvm::ConstantInt::get(
+                                            i64, me_size));
+                                llvm::FunctionType *mft =
+                                    llvm::FunctionType::get(
+                                        i8_ptr, {i64}, false);
+                                llvm::Function *mfn =
+                                    get_gpu_runtime_func(
+                                        "malloc", mft);
+                                llvm::Value *flat =
+                                    builder->CreateCall(
+                                        mfn, {tot_bytes});
+                                // Allocate offsets buffer
+                                llvm::Value *off_sz =
+                                    llvm::ConstantInt::get(
+                                        i64, total_elements * 4);
+                                llvm::Value *off_buf =
+                                    builder->CreateCall(
+                                        mfn, {off_sz});
+                                llvm::Value *off_ptr =
+                                    builder->CreatePointerCast(
+                                        off_buf,
+                                        llvm::Type::getInt32Ty(
+                                            context)->getPointerTo());
+                                // Copy data and store offsets
+                                llvm::Value *run =
+                                    llvm::ConstantInt::get(i64, 0);
+                                for (int64_t k = 0;
+                                        k < total_elements; k++) {
+                                    llvm::Value *off32 =
+                                        builder->CreateTrunc(
+                                            run,
+                                            llvm::Type::getInt32Ty(
+                                                context));
+                                    builder->CreateStore(off32,
+                                        builder->CreateGEP(
+                                            llvm::Type::getInt32Ty(
+                                                context),
+                                            off_ptr,
+                                            llvm::ConstantInt::get(
+                                                i32, k)));
+                                    llvm::Value *boff =
+                                        builder->CreateMul(run,
+                                            llvm::ConstantInt::get(
+                                                i64, me_size));
+                                    llvm::Value *dst =
+                                        builder->CreateGEP(
+                                            llvm::Type::getInt8Ty(
+                                                context),
+                                            flat, boff);
+                                    llvm::Value *sb =
+                                        builder->CreateMul(szs[k],
+                                            llvm::ConstantInt::get(
+                                                i64, me_size));
+                                    builder->CreateMemCpy(
+                                        dst,
+                                        llvm::MaybeAlign(1),
+                                        dps[k],
+                                        llvm::MaybeAlign(1),
+                                        sb);
+                                    run = builder->CreateAdd(
+                                        run, szs[k]);
+                                }
+                                // Set data buffer
+                                llvm::Value *di =
+                                    llvm::ConstantInt::get(
+                                        i32, buffer_idx++);
+                                builder->CreateCall(set_buffer_fn,
+                                    {gpu_kernel, di,
+                                     flat, tot_bytes});
+                                // Set offsets buffer
+                                llvm::Value *oi =
+                                    llvm::ConstantInt::get(
+                                        i32, buffer_idx++);
+                                builder->CreateCall(set_buffer_fn,
+                                    {gpu_kernel, oi,
+                                     off_buf, off_sz});
+                                field_idx++;
+                            }
+                        }
+                    }
                 }
             } else if (ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(arg_type))) {
