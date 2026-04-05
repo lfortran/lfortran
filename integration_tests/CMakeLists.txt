@@ -978,7 +978,7 @@ RUN(NAME arrays_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 RUN(NAME arrays_08_func LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_08_func_pass_arr_dims LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_09 LABELS gfortran llvm fortran)
-RUN(NAME arrays_10 LABELS gfortran llvm fortran NO_DETECT_LEAK)
+RUN(NAME arrays_10 LABELS gfortran llvm fortran NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME arrays_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray cpp fortran)
 RUN(NAME arrays_12 LABELS gfortran fortran) # constant arrays
 RUN(NAME arrays_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran) # constant arrays
@@ -1871,7 +1871,7 @@ RUN(NAME select_type_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME select_type_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME select_type_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
 RUN(NAME select_type_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
 RUN(NAME select_type_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2465,6 +2465,7 @@ RUN(NAME associate_41 LABELS gfortran llvm)
 RUN(NAME associate_42 LABELS gfortran llvm)
 RUN(NAME associate_43 LABELS gfortran llvm)
 RUN(NAME associate_44 LABELS gfortran llvm)
+RUN(NAME associate_45 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
