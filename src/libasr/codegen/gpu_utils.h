@@ -25,9 +25,82 @@ struct GpuVlaWorkspace {
     std::vector<GpuVlaDim> dims;
 };
 
+// Classify kernel arguments into buffer (array/struct) and scalar categories.
+// Returns the count of buffer args and scalar args respectively.
+inline std::pair<int, int> classify_gpu_kernel_args(
+        const ASR::GpuKernelFunction_t &kernel) {
+    int n_buffer = 0, n_scalar = 0;
+    for (size_t i = 0; i < kernel.n_args; i++) {
+        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(v->m_v));
+        ASR::ttype_t *type = var->m_type;
+        if (ASRUtils::is_array(type) ||
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(type))) {
+            n_buffer++;
+        } else {
+            n_scalar++;
+        }
+    }
+    return {n_buffer, n_scalar};
+}
+
+// Count VLA workspaces in a kernel without assigning buffer indices.
+inline int count_gpu_vla_workspaces(const ASR::GpuKernelFunction_t &kernel) {
+    int count = 0;
+    for (size_t i = 0; i < kernel.n_body; i++) {
+        if (!ASR::is_a<ASR::BlockCall_t>(*kernel.m_body[i])) continue;
+        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
+            kernel.m_body[i]);
+        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_length &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(
+                            *arr->m_dims[d].m_length)) {
+                    count++;
+                    break;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+static const int MAX_METAL_BUFFERS = 31;
+static const int PACKED_BUFFER_ALIGN = 16;
+
+// Determine whether a kernel needs buffer packing because its total
+// buffer count exceeds Metal's 31-slot limit.
+inline bool gpu_kernel_needs_buffer_packing(
+        const ASR::GpuKernelFunction_t &kernel) {
+    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
+    int n_vla = count_gpu_vla_workspaces(kernel);
+    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
+    return total > MAX_METAL_BUFFERS;
+}
+
+// Compute the Metal buffer index where VLA workspace buffers start.
+// Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
+// Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
+inline int gpu_vla_buffer_start(const ASR::GpuKernelFunction_t &kernel) {
+    if (gpu_kernel_needs_buffer_packing(kernel)) {
+        return 2;
+    }
+    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
+    return n_buffer + (n_scalar > 0 ? 1 : 0);
+}
+
 // Analyze a GPU kernel function for variable-length arrays in blocks.
 // Returns workspace metadata for each VLA found, with buffer indices
-// assigned sequentially starting after the kernel's regular arguments.
+// assigned sequentially starting after the kernel's packed arguments.
 inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
         const ASR::GpuKernelFunction_t &kernel) {
     // Build the kernel argument name list for mapping dim vars to arg indices
@@ -39,8 +112,8 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
         arg_names.push_back(std::string(var->m_name));
     }
 
-    // Buffer index starts after all regular kernel arguments
-    int buffer_idx = static_cast<int>(kernel.n_args);
+    // Buffer index starts after buffer args + optional scalar struct
+    int buffer_idx = gpu_vla_buffer_start(kernel);
 
     std::vector<GpuVlaWorkspace> result;
 

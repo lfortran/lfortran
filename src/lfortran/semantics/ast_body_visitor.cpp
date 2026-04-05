@@ -3848,13 +3848,12 @@ public:
         auto make_typed_selector_view_type = [&](const Location& loc,
                 ASR::ttype_t* selector_type, ASR::ttype_t* guard_type) -> ASR::ttype_t* {
             bool is_ptr = ASR::is_a<ASR::Pointer_t>(*selector_type);
-            bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*selector_type);
             ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(selector_type));
 
             ASR::ttype_t* result = guard_type;
             if (ASR::is_a<ASR::Array_t>(*base_type)) {
-                if (!is_allocatable) is_ptr = true;
+                is_ptr = true; // TODO :: All selector view variables should be pointers.
 
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(base_type);
                 bool is_assumed_rank = arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
@@ -3883,7 +3882,6 @@ public:
                 }
             }
             if (is_ptr) result = ASRUtils::make_Pointer_t_util(al, loc, result);
-            if (is_allocatable) result = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, result));
             return result;
         };
 

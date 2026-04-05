@@ -1143,6 +1143,13 @@ class ASRToLLVMVisitor;
                 case ASR::Array:
                     llvm_utils_->lfortran_free_nocheck(ptr);
                 break;
+                case ASR::StructType:
+                    if(ASRUtils::is_class_type(t_past)){
+                        check_if_allocated_then_finalize(ptr, t, struct_sym, [this, ptr](){
+                            llvm_utils_->lfortran_free_nocheck(ptr);
+                        });
+                    }
+                break;
                 default:
                     throw LCompilersException("Unhandled Case.");
             }
@@ -1930,7 +1937,7 @@ class ASRToLLVMVisitor;
             }
         }
 
-        // Check if a pointer type is finalizable
+        // Check if a pointer type is finalizable (TRUE for cases where the compiler allocated some descriptor; User must free data himself)
         bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct){
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(&t->base);
             switch(t_past->type){
@@ -1938,12 +1945,13 @@ class ASRToLLVMVisitor;
                     return in_struct 
                         && (   ASRUtils::extract_physical_type(t_past) == ASR::DescriptorArray
                             || ASRUtils::extract_physical_type(t_past) == ASR::AssumedRankArray);
+                case ASR::StructType:
+                    return ASRUtils::is_class_type(t_past);
                 case ASR::Integer:
                 case ASR::Real:
                 case ASR::Complex:
                 case ASR::UnsignedInteger:
                 case ASR::Logical:
-                case ASR::StructType:
                 case ASR::List:
                 case ASR::Dict:
                 case ASR::Tuple:
@@ -2088,21 +2096,6 @@ class ASRToLLVMVisitor;
             (void)in_struct;  // May be used in future for dimension descriptor handling
         }
 
-        /// Collect symbols that are targets of Associate statements in a block body.
-        /// These are aliases and must not be finalized (they don't own the data).
-        static std::set<ASR::symbol_t*> collect_associate_targets(
-                ASR::stmt_t** body, size_t n_body) {
-            std::set<ASR::symbol_t*> targets;
-            for (size_t i = 0; i < n_body; i++) {
-                if (ASR::is_a<ASR::Associate_t>(*body[i])) {
-                    auto& assoc = *ASR::down_cast<ASR::Associate_t>(body[i]);
-                    if (ASR::is_a<ASR::Var_t>(*assoc.m_target)) {
-                        targets.insert(ASR::down_cast<ASR::Var_t>(assoc.m_target)->m_v);
-                    }
-                }
-            }
-            return targets;
-        }
 
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
@@ -2110,22 +2103,11 @@ class ASRToLLVMVisitor;
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
             insert_BB_for_readability(finalize_str.c_str());
 
-            // Collect associate targets from block body — these are aliases
-            // (e.g. typed views in select type) and must not be finalized.
-            std::set<ASR::symbol_t*> assoc_targets;
-            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(symtab->asr_owner);
-            if (ASR::is_a<ASR::Block_t>(*owner_sym)) {
-                auto& block = *ASR::down_cast<ASR::Block_t>(owner_sym);
-                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
-            } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner_sym)) {
-                auto& block = *ASR::down_cast<ASR::AssociateBlock_t>(owner_sym);
-                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
-            }
 
             auto MAP = symtab->get_scope();
             for(auto &str_sym_pair : MAP){
                 ASR::symbol_t* const sym = str_sym_pair.second;
-                if (is_variable(sym) && assoc_targets.find(sym) == assoc_targets.end()){
+                if (is_variable(sym)){
                     finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
                 }
             }
