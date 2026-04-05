@@ -1050,13 +1050,19 @@ public:
     // With nested DoLoops that compute the matrix multiplication directly.
     // This avoids generating a call to _lcompilers_matmul which is not
     // available inside Metal GPU kernels.
-    void inline_intrinsic_matmul(ASR::DoConcurrentLoop_t &x) {
+    void inline_matmul_stmts(ASR::stmt_t** &body, size_t &n_body) {
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body * 4);
+        new_body.reserve(al, n_body * 4);
         bool changed = false;
 
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t &dl = *ASR::down_cast<ASR::DoLoop_t>(stmt);
+                inline_matmul_stmts(dl.m_body, dl.n_body);
+                new_body.push_back(al, stmt);
+                continue;
+            }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -1433,9 +1439,13 @@ public:
         }
 
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            body = new_body.p;
+            n_body = new_body.n;
         }
+    }
+
+    void inline_intrinsic_matmul(ASR::DoConcurrentLoop_t &x) {
+        inline_matmul_stmts(x.m_body, x.n_body);
     }
 
     // Inline IntrinsicArrayFunction Sum inside a DoConcurrentLoop body.
