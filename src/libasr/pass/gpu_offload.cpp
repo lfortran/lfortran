@@ -2212,16 +2212,6 @@ public:
                 } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
                     ASR::FunctionCall_t *fc =
                         ASR::down_cast<ASR::FunctionCall_t>(e);
-                    Vec<ASR::call_arg_t> new_fargs;
-                    new_fargs.reserve(al, fc->n_args);
-                    for (size_t i = 0; i < fc->n_args; i++) {
-                        ASR::call_arg_t arg;
-                        arg.loc = fc->m_args[i].loc;
-                        arg.m_value = fc->m_args[i].m_value
-                            ? elementize_rhs(fc->m_args[i].m_value)
-                            : nullptr;
-                        new_fargs.push_back(al, arg);
-                    }
                     // Check if the function natively returns an array
                     // (not an elemental function with array args).
                     // In that case, keep the original return type and
@@ -2235,6 +2225,31 @@ public:
                     bool fn_returns_array = fn_ret &&
                         ASR::is_a<ASR::Array_t>(
                             *ASRUtils::type_get_past_allocatable(fn_ret));
+                    ASR::FunctionType_t *fn_type = fn
+                        ? ASRUtils::get_FunctionType(fn) : nullptr;
+                    Vec<ASR::call_arg_t> new_fargs;
+                    new_fargs.reserve(al, fc->n_args);
+                    for (size_t i = 0; i < fc->n_args; i++) {
+                        ASR::call_arg_t arg;
+                        arg.loc = fc->m_args[i].loc;
+                        if (!fc->m_args[i].m_value) {
+                            arg.m_value = nullptr;
+                        } else if (fn_returns_array && fn_type
+                                && i < fn_type->n_arg_types
+                                && ASR::is_a<ASR::Array_t>(
+                                    *ASRUtils::type_get_past_allocatable(
+                                        fn_type->m_arg_types[i]))) {
+                            // Keep array arguments as-is for functions
+                            // that return arrays; elementizing would
+                            // turn ArraySection into scalar ArrayItem,
+                            // breaking the function's array contract.
+                            arg.m_value = fc->m_args[i].m_value;
+                        } else {
+                            arg.m_value = elementize_rhs(
+                                fc->m_args[i].m_value);
+                        }
+                        new_fargs.push_back(al, arg);
+                    }
                     if (fn_returns_array && ASR::is_a<ASR::Array_t>(*fc_type)) {
                         ASR::expr_t *new_fc = ASRUtils::EXPR(
                             ASR::make_FunctionCall_t(al, loc,

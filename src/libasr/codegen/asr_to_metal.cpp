@@ -84,6 +84,11 @@ public:
     // in the kernel's inline functions.
     std::map<std::string, int64_t> alloc_array_sizes;
 
+    // Maps pointer-to-section variable names to the Metal C expression
+    // string for the section size, set when processing Associate stmts
+    // that point into array sections.
+    std::map<std::string, std::string> ptr_section_sizes;
+
     // True when emitting an inline function body (not a kernel body).
     // Used to suppress array buffer indexing logic that only applies
     // to kernel-level device buffer parameters.
@@ -132,7 +137,12 @@ public:
     }
 
     bool is_array_type(ASR::ttype_t *type) {
-        return type->type == ASR::ttypeType::Array;
+        if (type->type == ASR::ttypeType::Array) return true;
+        if (type->type == ASR::ttypeType::Pointer) {
+            ASR::ttype_t *inner = ASR::down_cast<ASR::Pointer_t>(type)->m_type;
+            return inner->type == ASR::ttypeType::Array;
+        }
+        return false;
     }
 
     // Emit a local variable declaration, including array dimensions.
@@ -143,6 +153,17 @@ public:
         ASR::ttype_t *type = var->m_type;
         ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable(type);
         bool is_alloc = ASRUtils::is_allocatable(type);
+        // Pointer to array: emit as a thread-space pointer declaration
+        if (ASR::is_a<ASR::Pointer_t>(*base_type)) {
+            ASR::ttype_t *ptr_inner = ASR::down_cast<ASR::Pointer_t>(
+                base_type)->m_type;
+            if (ASR::is_a<ASR::Array_t>(*ptr_inner)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(ptr_inner);
+                src << get_indent() << "device " << metal_type(arr->m_type)
+                    << "* " << var->m_name << ";\n";
+                return;
+            }
+        }
         if (ASR::is_a<ASR::Array_t>(*base_type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(base_type);
             std::string elem_type;
@@ -365,6 +386,108 @@ public:
         return true;
     }
 
+    // Emit a pointer expression for an ArraySection. The result is a
+    // device pointer to the first element of the section, suitable for
+    // passing to a function that expects `device float*`.
+    // For ArraySection(z, [1:2:1, i]) on a 2D (n1×n2) column-major
+    // array, emits: z + linearized_index_of_section_start
+    // Also records the section size in last_section_size for later use.
+    void emit_array_section_pointer(ASR::expr_t *expr) {
+        if (!ASR::is_a<ASR::ArraySection_t>(*expr)) {
+            visit_expr(expr);
+            return;
+        }
+        ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(expr);
+        std::string arr_name;
+        if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
+            arr_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+        }
+        ASR::ttype_t *arr_type = ASRUtils::expr_type(as->m_v);
+        ASR::Array_t *arr = nullptr;
+        if (ASR::is_a<ASR::Array_t>(*arr_type)) {
+            arr = ASR::down_cast<ASR::Array_t>(arr_type);
+        }
+        // Compute linearized offset of the section's first element
+        // and the section size using column-major layout.
+        // For range dims, use the lower bound as the index.
+        // Section size is the product of range extents.
+        std::stringstream size_ss;
+        bool first_size = true;
+        src << arr_name << " + ";
+        bool first_dim = true;
+        std::string stride = "1";
+        for (size_t d = 0; d < as->n_args; d++) {
+            bool is_range = as->m_args[d].m_left && as->m_args[d].m_right
+                && as->m_args[d].m_step;
+            ASR::expr_t *idx_expr = is_range
+                ? as->m_args[d].m_left
+                : (as->m_args[d].m_right
+                    ? as->m_args[d].m_right : as->m_args[d].m_left);
+            if (idx_expr) {
+                if (!first_dim) src << " + ";
+                first_dim = false;
+                if (stride == "1") {
+                    src << "((int)(";
+                    visit_expr(idx_expr);
+                    src << ") - 1)";
+                } else {
+                    src << "(" << stride << " * ((int)(";
+                    visit_expr(idx_expr);
+                    src << ") - 1))";
+                }
+            }
+            // Compute section extent for range dims
+            if (is_range) {
+                std::stringstream save;
+                save << src.str();
+                src.str("");
+                src << "((";
+                visit_expr(as->m_args[d].m_right);
+                src << ") - (";
+                visit_expr(as->m_args[d].m_left);
+                src << ") + 1)";
+                std::string dim_size = src.str();
+                src.str("");
+                src << save.str();
+                if (!first_size) size_ss << " * ";
+                first_size = false;
+                size_ss << dim_size;
+            }
+            // Update stride for next dimension
+            if (arr && d < arr->n_dims) {
+                ASR::expr_t *dim_len = arr->m_dims[d].m_length;
+                std::string len_str = "0";
+                if (dim_len) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*dim_len)) {
+                        len_str = std::to_string(
+                            ASR::down_cast<ASR::IntegerConstant_t>(
+                                dim_len)->m_n);
+                    } else {
+                        std::stringstream save;
+                        save << src.str();
+                        src.str("");
+                        visit_expr(dim_len);
+                        len_str = src.str();
+                        src.str("");
+                        src << save.str();
+                    }
+                }
+                if (stride == "1") {
+                    stride = len_str;
+                } else {
+                    stride = "(" + stride + " * " + len_str + ")";
+                }
+            }
+        }
+        if (first_dim) src << "0";
+        if (!size_ss.str().empty()) {
+            last_section_size = size_ss.str();
+        }
+    }
+
+    std::string last_section_size;
+
     // Emit the total size of an array expression (product of dimensions).
     // Used at function call sites to pass array sizes for DescriptorArray
     // parameters that are represented as device pointers in Metal.
@@ -373,6 +496,28 @@ public:
             expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
         }
         ASR::ttype_t *type = ASRUtils::expr_type(expr);
+        // Pointer(Array) — lookup the associated section size
+        if (ASR::is_a<ASR::Pointer_t>(*type)) {
+            ASR::ttype_t *inner = ASR::down_cast<ASR::Pointer_t>(type)->m_type;
+            if (ASR::is_a<ASR::Array_t>(*inner)) {
+                if (ASR::is_a<ASR::Var_t>(*expr)) {
+                    std::string name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(expr)->m_v);
+                    auto it = ptr_section_sizes.find(name);
+                    if (it != ptr_section_sizes.end()) {
+                        src << it->second;
+                        return;
+                    }
+                    auto it2 = func_array_size_params.find(name);
+                    if (it2 != func_array_size_params.end()) {
+                        src << it2->second;
+                        return;
+                    }
+                }
+                src << "/* unknown pointer-array size */";
+                return;
+            }
+        }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
             bool first_d = true;
@@ -837,11 +982,16 @@ public:
             first = false;
             if (is_array_type(arg->m_type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arg->m_type);
-                // FixedSizeArray out params (from subroutine_from_function)
-                // receive local thread-space temporaries; DescriptorArray
-                // params receive device buffer pointers from the kernel.
+                // FixedSizeArray and PointerArray out params (from
+                // subroutine_from_function) receive local thread-space
+                // temporaries; DescriptorArray params receive device
+                // buffer pointers from the kernel.
                 bool use_thread = (arr->m_physical_type
-                    == ASR::array_physical_typeType::FixedSizeArray);
+                    == ASR::array_physical_typeType::FixedSizeArray)
+                    || (arr->m_physical_type
+                    == ASR::array_physical_typeType::PointerArray
+                    && (arg->m_intent == ASR::intentType::Out
+                        || arg->m_intent == ASR::intentType::InOut));
                 src << (use_thread ? "thread " : "device ")
                     << metal_type(arr->m_type) << "* " << arg->m_name;
                 std::string size_name = std::string("__size_") + arg->m_name;
@@ -1827,6 +1977,22 @@ public:
                 // Skip implicit deallocation on Metal GPU
                 break;
             }
+            case ASR::stmtType::Associate: {
+                ASR::Associate_t *assoc = ASR::down_cast<ASR::Associate_t>(stmt);
+                last_section_size.clear();
+                src << get_indent();
+                visit_expr(assoc->m_target);
+                src << " = ";
+                emit_array_section_pointer(assoc->m_value);
+                src << ";\n";
+                if (!last_section_size.empty()
+                        && ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
+                    std::string tgt_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
+                    ptr_section_sizes[tgt_name] = last_section_size;
+                }
+                break;
+            }
             default:
                 break;
         }
@@ -1834,6 +2000,21 @@ public:
 
     void visit_expr(ASR::expr_t *expr) {
         switch (expr->type) {
+            case ASR::exprType::IfExp: {
+                ASR::IfExp_t *ie = ASR::down_cast<ASR::IfExp_t>(expr);
+                if (ie->m_value) {
+                    visit_expr(ie->m_value);
+                } else {
+                    src << "((";
+                    visit_expr(ie->m_test);
+                    src << ") ? (";
+                    visit_expr(ie->m_body);
+                    src << ") : (";
+                    visit_expr(ie->m_orelse);
+                    src << "))";
+                }
+                break;
+            }
             case ASR::exprType::Var: {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(expr);
                 src << ASRUtils::symbol_name(v->m_v);
