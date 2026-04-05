@@ -2579,7 +2579,7 @@ RUN(NAME string_84 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_85 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_86 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_87 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME string_88 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays NO_DETECT_LEAK) #remove gfortran label, as functionality gave incorrect results
+RUN(NAME string_88 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays NO_DETECT_LEAK) # USER_LEAK; remove gfortran label, as functionality gave incorrect results
 RUN(NAME string_89 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME string_90 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
