@@ -201,6 +201,57 @@ public:
         }
     }
 
+    // Emit the array size for a StructInstanceMember expression whose
+    // allocatable member has dynamic size. For array-of-struct elements
+    // like t(i)%v, reads from __sizes_arr_member[idx]. For single
+    // struct variables like s%v, reads from func_array_size_params.
+    void emit_struct_member_array_size(ASR::expr_t *sim_expr) {
+        ASR::StructInstanceMember_t *sm =
+            ASR::down_cast<ASR::StructInstanceMember_t>(sim_expr);
+        std::string mem_name = ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(sm->m_m));
+        if (ASR::is_a<ASR::ArrayItem_t>(*sm->m_v)) {
+            ASR::ArrayItem_t *arr_ai =
+                ASR::down_cast<ASR::ArrayItem_t>(sm->m_v);
+            if (ASR::is_a<ASR::Var_t>(*arr_ai->m_v)) {
+                std::string arr_name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(arr_ai->m_v)->m_v);
+                std::string key = arr_name + "." + mem_name;
+                auto sit = struct_array_sizes_params.find(key);
+                if (sit != struct_array_sizes_params.end()) {
+                    src << sit->second << "[";
+                    if (arr_ai->n_args == 1) {
+                        ASR::expr_t *idx =
+                            arr_ai->m_args[0].m_right
+                            ? arr_ai->m_args[0].m_right
+                            : arr_ai->m_args[0].m_left;
+                        if (idx) {
+                            src << "((int)(";
+                            visit_expr(idx);
+                            src << ") - 1)";
+                        } else {
+                            src << "0";
+                        }
+                    } else {
+                        src << "0";
+                    }
+                    src << "]";
+                    return;
+                }
+            }
+        } else if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
+            std::string struct_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
+            std::string key = struct_name + "." + mem_name;
+            auto sit = func_array_size_params.find(key);
+            if (sit != func_array_size_params.end()) {
+                src << sit->second;
+                return;
+            }
+        }
+        src << "/* unknown struct member size */";
+    }
+
     // Emit extra size arguments for allocatable array members of a
     // struct-typed function call argument. The sizes are looked up
     // from the kernel's __size_<struct>_<member> scalar parameters,
@@ -1564,6 +1615,8 @@ public:
                                     src << " + ";
                                     visit_expr(arr->m_dims[dim_idx].m_length);
                                     src << " - 1)";
+                                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ab->m_v)) {
+                                    emit_struct_member_array_size(ab->m_v);
                                 } else {
                                     src << "/* unknown ubound */";
                                 }
@@ -1893,29 +1946,7 @@ public:
                         }
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
-                    ASR::StructInstanceMember_t *sm =
-                        ASR::down_cast<ASR::StructInstanceMember_t>(
-                            as->m_v);
-                    if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
-                        std::string struct_name =
-                            ASRUtils::symbol_name(
-                                ASR::down_cast<ASR::Var_t>(
-                                    sm->m_v)->m_v);
-                        std::string mem_name =
-                            ASRUtils::symbol_name(
-                                ASRUtils::symbol_get_past_external(
-                                    sm->m_m));
-                        std::string key =
-                            struct_name + "." + mem_name;
-                        auto sit = func_array_size_params.find(key);
-                        if (sit != func_array_size_params.end()) {
-                            src << sit->second;
-                        } else {
-                            src << "/* unknown struct member array size */";
-                        }
-                    } else {
-                        src << "/* unsupported ArraySize */";
-                    }
+                    emit_struct_member_array_size(as->m_v);
                 } else {
                     src << "/* unsupported ArraySize */";
                 }
@@ -1932,6 +1963,10 @@ public:
                 } else {
                     src << "/* unsupported IntrinsicImpureFunction */";
                 }
+                break;
+            }
+            case ASR::exprType::ArrayIsContiguous: {
+                src << "1";
                 break;
             }
             default:

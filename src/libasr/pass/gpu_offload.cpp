@@ -1576,15 +1576,30 @@ public:
                 ASR::dimension_t *dims = nullptr;
                 int rank = ASRUtils::extract_dimensions_from_ttype(
                     arr_type, dims);
-                if (rank < 1 || !dims[0].m_start || !dims[0].m_length) {
+                if (rank < 1) {
                     new_body.push_back(al, stmt);
                     continue;
                 }
                 base_arr = arr_arg;
                 for (int d = 0; d < rank; d++) {
                     loop_vars.push_back(make_var("__gpu_sum_k", int_type));
-                    loop_starts.push_back(dims[d].m_start);
-                    loop_ends.push_back(dims[d].m_length);
+                    if (dims[d].m_start && dims[d].m_length) {
+                        loop_starts.push_back(dims[d].m_start);
+                        loop_ends.push_back(dims[d].m_length);
+                    } else {
+                        ASR::expr_t *dim_expr = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, loc,
+                                d + 1, int_type,
+                                ASR::integerbozType::Decimal));
+                        loop_starts.push_back(ASRUtils::EXPR(
+                            ASR::make_ArrayBound_t(al, loc, arr_arg,
+                                dim_expr, int_type,
+                                ASR::arrayboundType::LBound, nullptr)));
+                        loop_ends.push_back(ASRUtils::EXPR(
+                            ASR::make_ArrayBound_t(al, loc, arr_arg,
+                                dim_expr, int_type,
+                                ASR::arrayboundType::UBound, nullptr)));
+                    }
                     loop_steps.push_back(nullptr);
                 }
                 idx_args.reserve(al, rank);
