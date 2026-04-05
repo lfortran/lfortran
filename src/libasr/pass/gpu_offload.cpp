@@ -1631,7 +1631,7 @@ public:
             std::vector<ASR::expr_t*> loop_starts;
             std::vector<ASR::expr_t*> loop_ends;
             std::vector<ASR::expr_t*> loop_steps;
-            Vec<ASR::array_index_t> idx_args;
+            Vec<ASR::array_index_t> idx_args = {};
             ASR::expr_t *base_arr = nullptr;
             ASR::expr_t *arr_elem = nullptr;
 
