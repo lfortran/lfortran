@@ -2308,6 +2308,18 @@ public:
                     if (fc->n_args > 1 && fc->m_args[1].m_value)
                         visit_expr(fc->m_args[1].m_value);
                     src << ")";
+                } else if (fn_name.find("_lcompilers_merge_") == 0) {
+                    // merge(tsource, fsource, mask) -> (mask ? tsource : fsource)
+                    src << "(";
+                    if (fc->n_args > 2 && fc->m_args[2].m_value)
+                        visit_expr(fc->m_args[2].m_value);
+                    src << " ? ";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << " : ";
+                    if (fc->n_args > 1 && fc->m_args[1].m_value)
+                        visit_expr(fc->m_args[1].m_value);
+                    src << ")";
                 } else {
                     // User-defined function call — emit as fn(args)
                     // Resolve to actual function name
