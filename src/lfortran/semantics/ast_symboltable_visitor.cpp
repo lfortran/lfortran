@@ -2671,11 +2671,9 @@ public:
         // variables declared with deferred struct declarations. For an example, see
         // `integration_tests/modules_37.f90` for declaration of `ptr` inside struct
         // `build_target_ptr`.
-        auto &deferred_struct_declarations =
-            get_vars_with_deferred_struct_declaration();
-        if (deferred_struct_declarations.find(to_lower(x.m_name))
-            != deferred_struct_declarations.end()) {
-            for (ASR::Variable_t* var : deferred_struct_declarations[to_lower(x.m_name)]) {
+        if (vars_with_deferred_struct_declaration.find(to_lower(x.m_name))
+            != vars_with_deferred_struct_declaration.end()) {
+            for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
                 ASR::ttype_t* var_type = var->m_type;
                 std::function<ASR::ttype_t*(ASR::ttype_t*)> replace_deferred_struct_type =
                     [&](ASR::ttype_t* t) -> ASR::ttype_t* {
@@ -2714,7 +2712,7 @@ public:
                 // If this variable is a struct member, refresh the owning struct
                 // signature so it stays in sync with the updated member type.
             }
-            deferred_struct_declarations.erase(to_lower(x.m_name));
+            vars_with_deferred_struct_declaration.erase(to_lower(x.m_name));
         }
 
 

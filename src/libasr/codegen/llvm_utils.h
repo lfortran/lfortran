@@ -1568,9 +1568,9 @@ class ASRToLLVMVisitor;
                 auto const consecutive_field_ptr = llvm_utils_->CreateGEP2(class_type_llvm, data_ptr, 1);
                 auto const consecutive_field_type = class_type_llvm->getStructElementType(1);
                 auto const allocated_cosecutive_structs = builder_->CreateLoad(consecutive_field_type, consecutive_field_ptr);
-                llvm_utils_->lfortran_free(allocated_cosecutive_structs);
-                // deallocate class wrapper 
-                llvm_utils_->lfortran_free(data_ptr);
+                llvm_utils_->lfortran_free_nocheck(allocated_cosecutive_structs);
+                // deallocate class wrapper
+                llvm_utils_->lfortran_free_nocheck(data_ptr);
             }
         }
             

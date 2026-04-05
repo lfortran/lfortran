@@ -153,40 +153,40 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     // LLVM -> Machine code -> Execution
-    LLVMEvaluator &llvm_evaluator = get_llvm_evaluator();
-    llvm_evaluator.add_module(std::move(m));
+    LLVMEvaluator &e = get_llvm_evaluator();
+    e.add_module(std::move(m));
     if (return_type == "integer4") {
-        int32_t r = llvm_evaluator.execfn<int32_t>(run_fn);
+        int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = llvm_evaluator.execfn<int64_t>(run_fn);
+        int64_t r = e.execfn<int64_t>(run_fn);
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = llvm_evaluator.execfn<float>(run_fn);
+        float r = e.execfn<float>(run_fn);
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = llvm_evaluator.execfn<double>(run_fn);
+        double r = e.execfn<double>(run_fn);
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
-        std::complex<float> r = llvm_evaluator.execfn<std::complex<float>>(run_fn);
+        std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
     } else if (return_type == "complex8") {
-        std::complex<double> r = llvm_evaluator.execfn<std::complex<double>>(run_fn);
+        std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        int32_t r = llvm_evaluator.execfn<int32_t>(run_fn);
+        int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
         result.b = (r != 0);
     } else if (return_type == "void") {
-        llvm_evaluator.execfn<void>(run_fn);
+        e.execfn<void>(run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = EvalResult::none;
