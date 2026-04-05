@@ -17065,7 +17065,7 @@ public:
                 total_scalar_values += ASRUtils::get_fixed_size_of_array(expr_type) * arg_count;
             } else {
                 // scalars and descriptor arrays each count as one read target
-                total_scalar_values += arg_count;
+                total_scalar_values += ASRUtils::is_array(expr_type) ? 1 : arg_count;
             }
         }
 
