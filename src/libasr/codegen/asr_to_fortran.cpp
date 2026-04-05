@@ -357,7 +357,8 @@ public:
 
         tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
@@ -424,7 +425,8 @@ public:
 
         bool prepend_contains_keyword = true;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
                 if (prepend_contains_keyword) {
                     prepend_contains_keyword = false;
                     r += "\n";
@@ -517,6 +519,9 @@ public:
                 } else {
                     func_name.push_back(item.first);
                 }
+            }
+            if (is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+                func_name.push_back(item.first);
             }
         }
         for (size_t i = 0; i < interface_func_name.size(); i++) {
@@ -720,6 +725,40 @@ public:
         r.append(x.m_name);
         r += "\n";
         current_pass_self_args.clear();
+        src = r;
+    }
+
+    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
+        std::string r = indent;
+        r += "subroutine";
+        r += " ";
+        r.append(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            r += src;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        inc_indent();
+        std::vector<std::string> var_order
+            = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += src;
+            }
+        }
+        visit_body(x, r);
+        dec_indent();
+        r += indent;
+        r += "end subroutine";
+        r += " ";
+        r.append(x.m_name);
+        r += "\n";
         src = r;
     }
 
@@ -1738,6 +1777,36 @@ public:
         }
 
         r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+        std::string r = indent;
+        r += "call ";
+        r += ASRUtils::symbol_name(x.m_kernel);
+        r += "<<<";
+        visit_expr(*x.m_grid_size);
+        r += src;
+        r += ", ";
+        visit_expr(*x.m_block_size);
+        r += src;
+        r += ">>>(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += src;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuSync(const ASR::GpuSync_t &/*x*/) {
+        std::string r = indent;
+        r += "gpu sync";
         handle_line_truncation(r, 2);
         r += "\n";
         src = r;
@@ -2982,6 +3051,18 @@ public:
     void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         visit_expr(*x.m_arg);
         src = "sqrt(" + src + ")";
+    }
+
+    void visit_GpuThreadIndex(const ASR::GpuThreadIndex_t &x) {
+        src = "gpu_thread_index(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuBlockIndex(const ASR::GpuBlockIndex_t &x) {
+        src = "gpu_block_index(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuBlockSize(const ASR::GpuBlockSize_t &x) {
+        src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
     }
 
     /******************************* Case Stmt ********************************/
