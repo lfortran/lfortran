@@ -283,6 +283,7 @@ public:
     llvm::Value* current_sret_arg;
     llvm::Value* current_decimal_mode = nullptr;
     llvm::Value* current_sign_mode = nullptr;
+    llvm::Value* current_round_mode = nullptr;
 
     SymbolTable* current_scope;
     std::unique_ptr<LLVMUtils> llvm_utils;
@@ -17220,6 +17221,7 @@ public:
         llvm::Value *encoding_data{}, *encoding_len{};
         llvm::Value *sign_data{}, *sign_len{};
         llvm::Value *decimal_data{}, *decimal_len{};
+        llvm::Value *round_data{}, *round_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -17316,6 +17318,12 @@ public:
             decimal_data = llvm::Constant::getNullValue(character_type);
             decimal_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
+        if (x.m_round) {
+            std::tie(round_data, round_len) = get_string_data_and_length(x.m_round);
+        } else {
+            round_data = llvm::Constant::getNullValue(character_type);
+            round_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
 
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
@@ -17338,7 +17346,8 @@ public:
                         character_type, i64, //encoding_data, encoding_len
                         llvm::Type::getInt32Ty(context)->getPointerTo(), // recl
                         character_type, i64,  // sign_data, sign_len
-                        character_type, i64   // decimal_data, decimal_len
+                        character_type, i64,  // decimal_data, decimal_len
+                        character_type, i64   // round_data, round_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17357,7 +17366,8 @@ public:
             encoding_data, encoding_len,
             recl,
             sign_data, sign_len,
-            decimal_data, decimal_len
+            decimal_data, decimal_len,
+            round_data, round_len
         });
     }
 
@@ -17383,6 +17393,7 @@ public:
         llvm::Value *encoding_val{}, *encoding_len{};
         llvm::Value *stream_val{}, *stream_len{};
         llvm::Value *iomsg_val{}, *iomsg_len{};
+        llvm::Value *round_val{}, *round_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -17751,6 +17762,17 @@ public:
             iomsg_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        if (x.m_round) {
+            this->visit_expr_load_wrapper(x.m_round, 0);
+            std::tie(round_val, round_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_round),
+                    tmp);
+        } else {
+            round_val = llvm::Constant::getNullValue(character_type);
+            round_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -17782,7 +17804,8 @@ public:
                         character_type, llvm::Type::getInt64Ty(context),   // sign_data, sign_len
                         character_type, llvm::Type::getInt64Ty(context),   // encoding_data, encoding_len
                         character_type, llvm::Type::getInt64Ty(context),   // stream_data, stream_len
-                        character_type, llvm::Type::getInt64Ty(context)    // iomsg_data, iomsg_len
+                        character_type, llvm::Type::getInt64Ty(context),    // iomsg_data, iomsg_len
+                        character_type, llvm::Type::getInt64Ty(context)    // round_data, round_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17808,7 +17831,8 @@ public:
             sign_val, sign_len,
             encoding_val, encoding_len,
             stream_val, stream_len,
-            iomsg_val, iomsg_len});
+            iomsg_val, iomsg_len,
+            round_val, round_len});
         if (exist_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
                 llvm::Type::getInt1Ty(context), exist_val);
@@ -18161,6 +18185,18 @@ public:
                         llvm::Function::ExternalLinkage, sign_func_name, module.get());
             }
             this->current_sign_mode = builder->CreateCall(sign_fn, {unit});
+
+            std::string round_func_name = "_lfortran_get_round_mode";
+            llvm::Function *round_fn = module->getFunction(round_func_name);
+            if (!round_fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt32Ty(context), {
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                round_fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, round_func_name, module.get());
+            }
+            this->current_round_mode = builder->CreateCall(round_fn, {unit});
         }
         
         if (x.m_rec && !is_string) {
@@ -18446,6 +18482,7 @@ public:
 
         this->current_decimal_mode = nullptr;
         this->current_sign_mode = nullptr;
+        this->current_round_mode = nullptr;
     }
 
     std::string serialize_structType_symbols(ASR::symbol_t* sym){
@@ -23517,7 +23554,7 @@ public:
                 args.push_back(tmp);
                 ptr_loads = ptr_load_copy;
             }
-            tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode);
+            tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode, this->current_round_mode);
             // Free contiguous copies that were heap-allocated
             for (llvm::Value* copy_ptr : contiguous_copies_to_free) {
                 llvm_utils->lfortran_free(copy_ptr);
