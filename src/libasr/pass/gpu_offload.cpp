@@ -1218,6 +1218,42 @@ public:
                     head, body.p, body.n, nullptr, 0));
             };
 
+            // When an argument or target is an ArraySection (e.g. v(:,i)),
+            // expand it into an ArrayItem on the base array by replacing
+            // each range dimension with the corresponding loop variable
+            // and keeping fixed dimensions as-is.
+            auto make_section_item = [&](ASR::expr_t *arr_expr,
+                    std::vector<ASR::expr_t*> loop_vars) -> ASR::expr_t* {
+                if (ASR::is_a<ASR::ArraySection_t>(*arr_expr)) {
+                    ASR::ArraySection_t *sec =
+                        ASR::down_cast<ASR::ArraySection_t>(arr_expr);
+                    Vec<ASR::array_index_t> args;
+                    args.reserve(al, sec->n_args);
+                    size_t lv_idx = 0;
+                    for (size_t d = 0; d < sec->n_args; d++) {
+                        ASR::array_index_t ai;
+                        ai.loc = loc;
+                        if (sec->m_args[d].m_left != nullptr) {
+                            ai.m_left = nullptr;
+                            ai.m_right = loop_vars[lv_idx++];
+                            ai.m_step = nullptr;
+                        } else {
+                            ai.m_left = nullptr;
+                            ai.m_right = sec->m_args[d].m_right;
+                            ai.m_step = nullptr;
+                        }
+                        args.push_back(al, ai);
+                    }
+                    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                        sec->m_v, args.p, args.n, elem_type,
+                        ASR::arraystorageType::ColMajor, nullptr));
+                }
+                if (loop_vars.size() == 1)
+                    return make_array_item_1d(arr_expr, loop_vars[0]);
+                return make_array_item_2d(arr_expr, loop_vars[0],
+                    loop_vars[1]);
+            };
+
             ASR::expr_t *zero;
             if (ASR::is_a<ASR::Real_t>(*elem_type)) {
                 zero = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
@@ -1234,9 +1270,9 @@ public:
                 ASR::expr_t *var_i = make_loop_var("__gpu_mm_i");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
-                ASR::expr_t *c_i = make_array_item_1d(asgn->m_target, var_i);
-                ASR::expr_t *a_ik = make_array_item_2d(arg_a, var_i, var_k);
-                ASR::expr_t *b_k = make_array_item_1d(arg_b, var_k);
+                ASR::expr_t *c_i = make_section_item(asgn->m_target, {var_i});
+                ASR::expr_t *a_ik = make_section_item(arg_a, {var_i, var_k});
+                ASR::expr_t *b_k = make_section_item(arg_b, {var_k});
 
                 // k-loop body: c(i) = c(i) + a(i,k) * b(k)
                 Vec<ASR::stmt_t*> k_body;
@@ -1266,8 +1302,8 @@ public:
                     if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
                         other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                             other_op)->m_arg;
-                    ASR::expr_t *other_i = make_array_item_1d(
-                        other_op, var_i);
+                    ASR::expr_t *other_i = make_section_item(
+                        other_op, {var_i});
                     ASR::expr_t *lhs = matmul_is_left ? c_i : other_i;
                     ASR::expr_t *rhs = matmul_is_left ? other_i : c_i;
                     ASR::expr_t *combined = ASRUtils::EXPR(
@@ -1286,9 +1322,9 @@ public:
                 ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
-                ASR::expr_t *c_j = make_array_item_1d(asgn->m_target, var_j);
-                ASR::expr_t *a_k = make_array_item_1d(arg_a, var_k);
-                ASR::expr_t *b_kj = make_array_item_2d(arg_b, var_k, var_j);
+                ASR::expr_t *c_j = make_section_item(asgn->m_target, {var_j});
+                ASR::expr_t *a_k = make_section_item(arg_a, {var_k});
+                ASR::expr_t *b_kj = make_section_item(arg_b, {var_k, var_j});
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
@@ -1316,8 +1352,8 @@ public:
                     if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
                         other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                             other_op)->m_arg;
-                    ASR::expr_t *other_j = make_array_item_1d(
-                        other_op, var_j);
+                    ASR::expr_t *other_j = make_section_item(
+                        other_op, {var_j});
                     ASR::expr_t *lhs = matmul_is_left ? c_j : other_j;
                     ASR::expr_t *rhs = matmul_is_left ? other_j : c_j;
                     ASR::expr_t *combined = ASRUtils::EXPR(
@@ -1337,10 +1373,10 @@ public:
                 ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
-                ASR::expr_t *c_ij = make_array_item_2d(asgn->m_target,
-                    var_i, var_j);
-                ASR::expr_t *a_ik = make_array_item_2d(arg_a, var_i, var_k);
-                ASR::expr_t *b_kj = make_array_item_2d(arg_b, var_k, var_j);
+                ASR::expr_t *c_ij = make_section_item(asgn->m_target,
+                    {var_i, var_j});
+                ASR::expr_t *a_ik = make_section_item(arg_a, {var_i, var_k});
+                ASR::expr_t *b_kj = make_section_item(arg_b, {var_k, var_j});
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
@@ -1368,8 +1404,8 @@ public:
                     if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
                         other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                             other_op)->m_arg;
-                    ASR::expr_t *other_ij = make_array_item_2d(
-                        other_op, var_i, var_j);
+                    ASR::expr_t *other_ij = make_section_item(
+                        other_op, {var_i, var_j});
                     ASR::expr_t *lhs = matmul_is_left ? c_ij : other_ij;
                     ASR::expr_t *rhs = matmul_is_left ? other_ij : c_ij;
                     ASR::expr_t *combined = ASRUtils::EXPR(
