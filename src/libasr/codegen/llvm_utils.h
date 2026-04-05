@@ -1122,7 +1122,44 @@ class ASRToLLVMVisitor;
                     auto const checkPoint_BB = 
                     START_CACHE(cache_key, ptr);
                     check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
-                        finalize(ptr, t_past, struct_sym, in_struct);
+                        if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
+                                && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                            // Keep unlimited polymorphic cleanup scoped to the
+                            // allocatable deallocation flow to avoid finalizing
+                            // aliased/non-owning class(*) values.
+                            llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
+                            auto const vptr = llvm_utils_->CreateLoad2(
+                                llvm_utils_->vptr_type,
+                                llvm_utils_->create_gep2(derived_llvm_type, ptr, 0));
+                            auto const data_ptr = llvm_utils_->CreateLoad2(
+                                llvm_utils_->i8_ptr,
+                                llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
+                            auto const data_not_null = builder_->CreateICmpNE(
+                                data_ptr,
+                                llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+                            llvm_utils_->create_if_else(data_not_null, [this, vptr, data_ptr]() {
+                                auto const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
+                                auto const is_string = builder_->CreateICmpEQ(
+                                    type_tag,
+                                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
+                                llvm_utils_->create_if_else(is_string, [this, data_ptr]() {
+                                    auto const str_desc = builder_->CreateBitCast(
+                                        data_ptr, llvm_utils_->string_descriptor->getPointerTo());
+                                    auto const char_ptr = llvm_utils_->CreateLoad2(
+                                        llvm_utils_->character_type,
+                                        llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
+                                    auto const char_not_null = builder_->CreateICmpNE(
+                                        char_ptr,
+                                        llvm::ConstantPointerNull::get(llvm_utils_->character_type));
+                                    llvm_utils_->create_if_else(char_not_null,
+                                        [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
+                                        [](){});
+                                }, [](){});
+                                llvm_utils_->lfortran_free_nocheck(data_ptr);
+                            }, [](){});
+                        } else {
+                            finalize(ptr, t_past, struct_sym, in_struct);
+                        }
                         free_allocatable_ptr(ptr, t, struct_sym, in_struct);
                         
                     });
@@ -1163,36 +1200,9 @@ class ASRToLLVMVisitor;
                 case(ASR::StructType) :  {
                     if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
                             && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-                        llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
-                        auto const vptr = llvm_utils_->CreateLoad2(
-                            llvm_utils_->vptr_type,
-                            llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 0));
-                        auto const data_ptr = llvm_utils_->CreateLoad2(
-                            llvm_utils_->i8_ptr,
-                            llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
-                        auto const data_not_null = builder_->CreateICmpNE(
-                            data_ptr,
-                            llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
-                        llvm_utils_->create_if_else(data_not_null, [this, vptr, data_ptr]() {
-                            auto const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
-                            auto const is_string = builder_->CreateICmpEQ(
-                                type_tag,
-                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
-                            llvm_utils_->create_if_else(is_string, [this, data_ptr]() {
-                                auto const str_desc = builder_->CreateBitCast(
-                                    data_ptr, llvm_utils_->string_descriptor->getPointerTo());
-                                auto const char_ptr = llvm_utils_->CreateLoad2(
-                                    llvm_utils_->character_type,
-                                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
-                                auto const char_not_null = builder_->CreateICmpNE(
-                                    char_ptr,
-                                    llvm::ConstantPointerNull::get(llvm_utils_->character_type));
-                                llvm_utils_->create_if_else(char_not_null,
-                                    [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
-                                    [](){});
-                            }, [](){});
-                            llvm_utils_->lfortran_free_nocheck(data_ptr);
-                        }, [](){});
+                        // Unlimited polymorphic class payload is already finalized
+                        // (and freed) in finalize_struct(). Keep only wrapper free
+                        // below to avoid double-free.
                     } else if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
                             && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                         // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
@@ -1933,7 +1943,7 @@ class ASRToLLVMVisitor;
                 case ASR::Logical:
                     return false;
                 case ASR::StructType:{
-                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Can't finalize for now*/ }
+                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Handled in allocatable cleanup flow*/ }
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
