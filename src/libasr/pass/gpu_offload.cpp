@@ -1260,6 +1260,29 @@ public:
                     loop_vars[1]);
             };
 
+            // When an argument is an ArraySection, extract loop bounds
+            // from the section's range specs rather than from the type
+            // dimensions (which may be null for section result types).
+            auto get_loop_bounds = [&](ASR::expr_t *arg,
+                    ASR::dimension_t *dims,
+                    int dim_idx) -> std::pair<ASR::expr_t*, ASR::expr_t*> {
+                if (ASR::is_a<ASR::ArraySection_t>(*arg)) {
+                    ASR::ArraySection_t *sec =
+                        ASR::down_cast<ASR::ArraySection_t>(arg);
+                    int range_idx = 0;
+                    for (size_t d = 0; d < sec->n_args; d++) {
+                        if (sec->m_args[d].m_left != nullptr) {
+                            if (range_idx == dim_idx) {
+                                return {sec->m_args[d].m_left,
+                                        sec->m_args[d].m_right};
+                            }
+                            range_idx++;
+                        }
+                    }
+                }
+                return {dims[dim_idx].m_start, dims[dim_idx].m_length};
+            };
+
             ASR::expr_t *zero;
             if (ASR::is_a<ASR::Real_t>(*elem_type)) {
                 zero = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
@@ -1279,6 +1302,9 @@ public:
                 ASR::expr_t *c_i = make_section_item(asgn->m_target, {var_i});
                 ASR::expr_t *a_ik = make_section_item(arg_a, {var_i, var_k});
                 ASR::expr_t *b_k = make_section_item(arg_b, {var_k});
+
+                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, 1);
+                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, 0);
 
                 // k-loop body: c(i) = c(i) + a(i,k) * b(k)
                 Vec<ASR::stmt_t*> k_body;
@@ -1300,8 +1326,7 @@ public:
                     ASR::make_Assignment_t(al, loc, c_i, zero,
                         nullptr, false, false)));
                 i_body.push_back(al,
-                    make_do_loop(var_k, dims_a[1].m_start,
-                        dims_a[1].m_length, k_body));
+                    make_do_loop(var_k, k_start, k_end, k_body));
 
                 if (binop_other) {
                     ASR::expr_t *other_op = binop_other;
@@ -1321,8 +1346,7 @@ public:
                 }
 
                 new_body.push_back(al,
-                    make_do_loop(var_i, dims_a[0].m_start,
-                        dims_a[0].m_length, i_body));
+                    make_do_loop(var_i, i_start, i_end, i_body));
             } else if (overload_id == 1 && rank_a == 1 && rank_b == 2) {
                 // c(j) = sum_k a(k) * b(k, j)
                 ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
@@ -1331,6 +1355,9 @@ public:
                 ASR::expr_t *c_j = make_section_item(asgn->m_target, {var_j});
                 ASR::expr_t *a_k = make_section_item(arg_a, {var_k});
                 ASR::expr_t *b_kj = make_section_item(arg_b, {var_k, var_j});
+
+                auto [k_start, k_end] = get_loop_bounds(arg_b, dims_b, 0);
+                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, 1);
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
@@ -1350,8 +1377,7 @@ public:
                     ASR::make_Assignment_t(al, loc, c_j, zero,
                         nullptr, false, false)));
                 j_body.push_back(al,
-                    make_do_loop(var_k, dims_b[0].m_start,
-                        dims_b[0].m_length, k_body));
+                    make_do_loop(var_k, k_start, k_end, k_body));
 
                 if (binop_other) {
                     ASR::expr_t *other_op = binop_other;
@@ -1371,8 +1397,7 @@ public:
                 }
 
                 new_body.push_back(al,
-                    make_do_loop(var_j, dims_b[1].m_start,
-                        dims_b[1].m_length, j_body));
+                    make_do_loop(var_j, j_start, j_end, j_body));
             } else if (overload_id == 3 && rank_a == 2 && rank_b == 2) {
                 // c(i,j) = sum_k a(i,k) * b(k,j)
                 ASR::expr_t *var_i = make_loop_var("__gpu_mm_i");
@@ -1383,6 +1408,10 @@ public:
                     {var_i, var_j});
                 ASR::expr_t *a_ik = make_section_item(arg_a, {var_i, var_k});
                 ASR::expr_t *b_kj = make_section_item(arg_b, {var_k, var_j});
+
+                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, 1);
+                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, 1);
+                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, 0);
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
@@ -1402,8 +1431,7 @@ public:
                     ASR::make_Assignment_t(al, loc, c_ij, zero,
                         nullptr, false, false)));
                 j_body.push_back(al,
-                    make_do_loop(var_k, dims_a[1].m_start,
-                        dims_a[1].m_length, k_body));
+                    make_do_loop(var_k, k_start, k_end, k_body));
 
                 if (binop_other) {
                     ASR::expr_t *other_op = binop_other;
@@ -1425,12 +1453,10 @@ public:
                 Vec<ASR::stmt_t*> i_body;
                 i_body.reserve(al, 1);
                 i_body.push_back(al,
-                    make_do_loop(var_j, dims_b[1].m_start,
-                        dims_b[1].m_length, j_body));
+                    make_do_loop(var_j, j_start, j_end, j_body));
 
                 new_body.push_back(al,
-                    make_do_loop(var_i, dims_a[0].m_start,
-                        dims_a[0].m_length, i_body));
+                    make_do_loop(var_i, i_start, i_end, i_body));
             } else {
                 new_body.push_back(al, stmt);
                 continue;
