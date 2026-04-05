@@ -1474,6 +1474,64 @@ public:
         inline_matmul_stmts(x.m_body, x.n_body);
     }
 
+    // Distribute ArrayItem indexing through an array expression tree
+    // to produce a scalar expression. For example:
+    //   sum(a + b) with index k  -->  a(k) + b(k)
+    // instead of the incorrect (a + b)[k] which would be pointer arithmetic.
+    ASR::expr_t* index_array_expr(ASR::expr_t *expr,
+            ASR::array_index_t *idx_p, size_t idx_n,
+            ASR::ttype_t *elem_type, const Location &loc) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+        }
+        if (!ASRUtils::is_array(ASRUtils::expr_type(expr))) {
+            return expr;
+        }
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, expr,
+                idx_p, idx_n, elem_type,
+                ASR::arraystorageType::ColMajor, nullptr));
+        }
+        if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
+            ASR::RealBinOp_t *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
+            ASR::expr_t *left = index_array_expr(op->m_left,
+                idx_p, idx_n, elem_type, loc);
+            ASR::expr_t *right = index_array_expr(op->m_right,
+                idx_p, idx_n, elem_type, loc);
+            return ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
+                left, op->m_op, right, elem_type, nullptr));
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
+            ASR::IntegerBinOp_t *op =
+                ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            ASR::expr_t *left = index_array_expr(op->m_left,
+                idx_p, idx_n, elem_type, loc);
+            ASR::expr_t *right = index_array_expr(op->m_right,
+                idx_p, idx_n, elem_type, loc);
+            return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                left, op->m_op, right, elem_type, nullptr));
+        }
+        if (ASR::is_a<ASR::RealUnaryMinus_t>(*expr)) {
+            ASR::RealUnaryMinus_t *u =
+                ASR::down_cast<ASR::RealUnaryMinus_t>(expr);
+            ASR::expr_t *arg = index_array_expr(u->m_arg,
+                idx_p, idx_n, elem_type, loc);
+            return ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc,
+                arg, elem_type, nullptr));
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr)) {
+            ASR::IntegerUnaryMinus_t *u =
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr);
+            ASR::expr_t *arg = index_array_expr(u->m_arg,
+                idx_p, idx_n, elem_type, loc);
+            return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
+                arg, elem_type, nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, expr,
+            idx_p, idx_n, elem_type,
+            ASR::arraystorageType::ColMajor, nullptr));
+    }
+
     // Inline IntrinsicArrayFunction Sum inside a DoConcurrentLoop body.
     // Replaces:
     //   results(i) = sum(a)
@@ -1649,10 +1707,8 @@ public:
                 }
             }
 
-            ASR::expr_t *arr_elem = ASRUtils::EXPR(
-                ASR::make_ArrayItem_t(al, loc, base_arr,
-                    idx_args.p, idx_args.n, elem_type,
-                    ASR::arraystorageType::ColMajor, nullptr));
+            ASR::expr_t *arr_elem = index_array_expr(base_arr,
+                    idx_args.p, idx_args.n, elem_type, loc);
 
             // res = res + a(k1, k2, ...) or a(k1, i, ...)
             ASR::expr_t *add_expr;
