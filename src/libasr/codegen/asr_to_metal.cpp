@@ -1140,10 +1140,11 @@ public:
         for (size_t i = 0; i < fn->n_args; i++) {
             ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
-            // Struct-typed argument
+            // Scalar struct-typed argument (not array-of-struct)
             if (ftype->m_arg_types[i] &&
                 ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(ftype->m_arg_types[i]))) {
+                    *ASRUtils::extract_type(ftype->m_arg_types[i]))
+                && !is_array_type(arg->m_type)) {
                 if (!first) src << ", ";
                 first = false;
                 // Out/InOut struct args are passed by reference
@@ -1225,8 +1226,14 @@ public:
                         || arg->m_intent == ASR::intentType::InOut));
                 std::string addr_space = use_thread ? out_addr_space
                     : "device";
+                std::string elem_type;
+                if (is_struct_type(arr->m_type)) {
+                    elem_type = get_struct_name(arg);
+                } else {
+                    elem_type = metal_type(arr->m_type);
+                }
                 src << addr_space << " "
-                    << metal_type(arr->m_type) << "* " << arg->m_name;
+                    << elem_type << "* " << arg->m_name;
                 std::string size_name = std::string("__size_") + arg->m_name;
                 src << ", int " << size_name;
                 func_array_size_params[std::string(arg->m_name)] = size_name;

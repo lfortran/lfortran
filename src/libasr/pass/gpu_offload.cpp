@@ -2644,6 +2644,20 @@ public:
                     continue;
                 }
 
+                // Skip decomposition for non-elemental FunctionCalls
+                // that return arrays (e.g., a = f() where f returns
+                // a whole array). Only elemental operations can be
+                // safely decomposed into element-wise loops.
+                if (ASR::is_a<ASR::FunctionCall_t>(*asgn->m_value)) {
+                    ASR::FunctionCall_t *fc =
+                        ASR::down_cast<ASR::FunctionCall_t>(
+                            asgn->m_value);
+                    if (!ASRUtils::is_elemental(fc->m_name)) {
+                        new_body.push_back(al, stmt);
+                        continue;
+                    }
+                }
+
                 ASR::Array_t *target_arr =
                     ASR::down_cast<ASR::Array_t>(target_type);
 
