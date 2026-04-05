@@ -331,6 +331,8 @@ public:
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
     };
     std::vector<variable_inital_value> variable_inital_value_vec; /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
+    std::vector<ASR::Variable_t*> save_variables_to_finalize_at_program_exit;
+    std::set<uint64_t> save_variables_to_finalize_at_program_exit_seen;
 
     // Pool of allocas for call arguments, keyed by LLVM type.
     // This avoids creating a new alloca for every expression argument at every
@@ -1604,6 +1606,8 @@ public:
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
+        save_variables_to_finalize_at_program_exit.clear();
+        save_variables_to_finalize_at_program_exit_seen.clear();
         // Set host target DataLayout so that getTypeAllocSize() returns
         // correct sizes (respecting alignment) during IR generation.
         {
@@ -5574,6 +5578,7 @@ public:
             ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                     sym);
             if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                maybe_collect_save_variable_for_program_exit_finalization(v);
                 visit_Variable(*v);
             }
         }
@@ -5748,6 +5753,9 @@ public:
                         ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
                 }
             }
+        }
+        for (ASR::Variable_t* v: save_variables_to_finalize_at_program_exit) {
+            llvm_symtab_finalizer.finalize_variable_at_program_exit(v);
         }
         free_heap_fixed_size_arrays();
         {
@@ -6436,6 +6444,23 @@ public:
         }
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
+    void maybe_collect_save_variable_for_program_exit_finalization(ASR::Variable_t* v) {
+        if (v->m_storage != ASR::storage_typeType::Save) {
+            return;
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner);
+        ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+        bool program_scope_save_struct =
+            ASR::is_a<ASR::Program_t>(*owner) && ASR::is_a<ASR::StructType_t>(*t);
+        if (program_scope_save_struct) {
+            return;
+        }
+        uint64_t save_h = get_hash((ASR::asr_t*)v);
+        if (save_variables_to_finalize_at_program_exit_seen.insert(save_h).second) {
+            save_variables_to_finalize_at_program_exit.push_back(v);
+        }
+    }
+
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         if (v->m_value != nullptr) {
             this->visit_expr_wrapper(v->m_value, true, v->m_is_volatile);
@@ -6554,6 +6579,7 @@ public:
     void process_Variable(ASR::symbol_t* var_sym, T& x, uint32_t &debug_arg_count) {
         llvm::Value *target_var = nullptr;
         ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
+        maybe_collect_save_variable_for_program_exit_finalization(v);
         uint32_t h = get_hash((ASR::asr_t*)v);
         llvm::Type *type;
         int n_dims = 0, a_kind = 4;
