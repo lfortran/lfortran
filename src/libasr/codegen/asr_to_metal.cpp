@@ -1093,12 +1093,68 @@ public:
                 }
 
                 packed_arrays.push_back({
-                    args[i].name, elem_type, args[i].is_struct,
+                    args[i].name, elem_type,
+                    args[i].is_struct && !args[i].is_array,
                     args[i].struct_name, byte_size, current_offset
                 });
 
                 if (byte_size > 0) {
                     current_offset += byte_size;
+                }
+
+                // For array-of-struct args with allocatable members,
+                // also pack the member data/offsets/sizes buffers
+                if (args[i].is_array && !args[i].struct_name.empty()) {
+                    ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(
+                        x.m_args[i]);
+                    ASR::Variable_t *var =
+                        ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(
+                                v->m_v));
+                    ASR::Struct_t *st = get_struct_decl(var);
+                    if (st) {
+                        for (size_t m = 0; m < st->n_members; m++) {
+                            ASR::symbol_t *mem =
+                                st->m_symtab->get_symbol(
+                                    st->m_members[m]);
+                            if (!mem ||
+                                !ASR::is_a<ASR::Variable_t>(*mem))
+                                continue;
+                            ASR::Variable_t *mv =
+                                ASR::down_cast<ASR::Variable_t>(
+                                    mem);
+                            if (!ASRUtils::is_allocatable(mv->m_type))
+                                continue;
+                            ASR::ttype_t *inner =
+                                ASRUtils::type_get_past_allocatable(
+                                    mv->m_type);
+                            if (!ASR::is_a<ASR::Array_t>(*inner))
+                                continue;
+                            ASR::Array_t *mem_arr =
+                                ASR::down_cast<ASR::Array_t>(inner);
+                            std::string et;
+                            if (is_struct_type(mem_arr->m_type)) {
+                                et = get_struct_name(mv);
+                            } else {
+                                et = metal_type(mem_arr->m_type);
+                            }
+                            std::string data_name =
+                                "__data_" + args[i].name + "_"
+                                + st->m_members[m];
+                            packed_arrays.push_back({
+                                data_name, et, false, "", 0, 0});
+                            std::string off_name =
+                                "__offsets_" + args[i].name + "_"
+                                + st->m_members[m];
+                            packed_arrays.push_back({
+                                off_name, "int", false, "", 0, 0});
+                            std::string sizes_name =
+                                "__sizes_" + args[i].name + "_"
+                                + st->m_members[m];
+                            packed_arrays.push_back({
+                                sizes_name, "int", false, "", 0, 0});
+                        }
+                    }
                 }
             }
         }

@@ -19004,14 +19004,31 @@ public:
             bool is_struct_member_alloc = is_allocatable_array
                 && ASR::is_a<ASR::StructInstanceMember_t>(*arg_expr);
 
-            // For allocatable arrays, we need the descriptor pointer
-            // (ptr_loads=1 loads the descriptor ptr from the alloca).
+            // Check for assumed-shape (descriptor) arrays with null dims
+            bool is_descriptor_array = false;
+            if (ASRUtils::is_array(arg_type) && !is_allocatable_array) {
+                ASR::ttype_t *past_alloc =
+                    ASRUtils::type_get_past_allocatable(arg_type);
+                if (ASR::is_a<ASR::Array_t>(*past_alloc)) {
+                    ASR::Array_t *arr_early =
+                        ASR::down_cast<ASR::Array_t>(past_alloc);
+                    for (size_t d = 0; d < arr_early->n_dims; d++) {
+                        if (!arr_early->m_dims[d].m_length) {
+                            is_descriptor_array = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // For allocatable arrays and assumed-shape descriptor arrays,
+            // we need the descriptor pointer (ptr_loads=1).
             // For StructInstanceMember of an allocatable array,
             // visit_StructInstanceMember returns a pointer to the
             // allocatable member field (T**); we load once afterward
             // to get T* (the descriptor pointer).
             int64_t ptr_loads_copy = ptr_loads;
-            if (is_allocatable_array) {
+            if (is_allocatable_array || is_descriptor_array) {
                 ptr_loads = 1;
             }
             this->visit_expr(*arg_expr);
@@ -19033,9 +19050,10 @@ public:
             }
 
             if (ASRUtils::is_array(arg_type)) {
-                // For allocatable arrays, extract data pointer from descriptor
+                // For allocatable/descriptor arrays, extract data pointer
+                // from the descriptor
                 llvm::Value *data_ptr;
-                if (is_allocatable_array) {
+                if (is_allocatable_array || is_descriptor_array) {
                     ASR::ttype_t *desc_asr_type =
                         ASRUtils::type_get_past_allocatable(arg_type);
                     llvm::Type *desc_type =
@@ -19096,8 +19114,10 @@ public:
                 llvm::Value *byte_size;
                 if (all_constant) {
                     byte_size = llvm::ConstantInt::get(i64, total_elements * elem_size);
-                } else if (has_null_dim && is_allocatable_array) {
-                    // Allocatable arrays: get size from the descriptor
+                } else if (has_null_dim &&
+                        (is_allocatable_array || is_descriptor_array)) {
+                    // Allocatable/descriptor arrays: get size from the
+                    // descriptor
                     ASR::ttype_t *desc_asr_type =
                         ASRUtils::type_get_past_allocatable(arg_type);
                     llvm::Type *desc_type =
@@ -19135,10 +19155,24 @@ public:
                 } else {
                     llvm::Value *idx = llvm::ConstantInt::get(i32, buffer_idx++);
                     builder->CreateCall(set_buffer_fn, {gpu_kernel, idx, data_ptr, byte_size});
+                }
 
-                    // For struct arrays with allocatable members, pass
-                    // flattened data and offsets as additional Metal buffers
-                    if (all_constant &&
+                // For struct arrays with allocatable members, pass
+                // flattened data and offsets as additional buffers.
+                // In packed mode these go into buffer_arg_infos;
+                // otherwise they become individual Metal buffers.
+                auto emit_gpu_buffer = [&](llvm::Value *ptr,
+                        llvm::Value *sz) {
+                    if (packed_mode) {
+                        buffer_arg_infos.push_back({ptr, sz});
+                    } else {
+                        llvm::Value *bi = llvm::ConstantInt::get(
+                            i32, buffer_idx++);
+                        builder->CreateCall(set_buffer_fn,
+                            {gpu_kernel, bi, ptr, sz});
+                    }
+                };
+                if (all_constant &&
                             ASR::is_a<ASR::StructType_t>(
                                 *ASRUtils::extract_type(arr->m_type)) &&
                             ASR::is_a<ASR::Var_t>(*arg_expr)) {
@@ -19342,19 +19376,9 @@ public:
                                         run, szs[k]);
                                 }
                                 // Set data buffer
-                                llvm::Value *di =
-                                    llvm::ConstantInt::get(
-                                        i32, buffer_idx++);
-                                builder->CreateCall(set_buffer_fn,
-                                    {gpu_kernel, di,
-                                     flat, tot_bytes});
+                                emit_gpu_buffer(flat, tot_bytes);
                                 // Set offsets buffer
-                                llvm::Value *oi =
-                                    llvm::ConstantInt::get(
-                                        i32, buffer_idx++);
-                                builder->CreateCall(set_buffer_fn,
-                                    {gpu_kernel, oi,
-                                     off_buf, off_sz});
+                                emit_gpu_buffer(off_buf, off_sz);
                                 // Set sizes buffer (per-element sizes)
                                 llvm::Value *sz_buf =
                                     builder->CreateCall(
@@ -19379,12 +19403,7 @@ public:
                                             llvm::ConstantInt::get(
                                                 i32, k)));
                                 }
-                                llvm::Value *si =
-                                    llvm::ConstantInt::get(
-                                        i32, buffer_idx++);
-                                builder->CreateCall(set_buffer_fn,
-                                    {gpu_kernel, si,
-                                     sz_buf, off_sz});
+                                emit_gpu_buffer(sz_buf, off_sz);
                                 field_idx++;
                             }
                         }
@@ -19393,7 +19412,11 @@ public:
                     // members, build auxiliary data/offsets/sizes buffers
                     // at runtime using LLVM IR loops (element count is
                     // not known at compile time).
-                    if (!all_constant && is_allocatable_array &&
+                    // For struct arrays with allocatable members and
+                    // non-constant dimensions, build auxiliary
+                    // data/offsets/sizes buffers at runtime using LLVM
+                    // IR loops.
+                    if (!all_constant &&
                             ASR::is_a<ASR::StructType_t>(
                                 *ASRUtils::extract_type(arr->m_type)) &&
                             ASR::is_a<ASR::Var_t>(*arg_expr)) {
@@ -19415,21 +19438,36 @@ public:
                             llvm::Type *struct_llvm =
                                 llvm_utils->getStructType(
                                     st, module.get());
-                            // Get total element count at runtime
-                            ASR::ttype_t *alloc_desc_asr =
-                                ASRUtils::type_get_past_allocatable(
-                                    arg_type);
-                            llvm::Type *alloc_desc_llvm =
-                                llvm_utils->get_type_from_ttype_t_util(
-                                    arg_expr, alloc_desc_asr,
-                                    module.get());
-                            llvm::Value *n_elems_rt =
-                                arr_descr->get_array_size(
-                                    alloc_desc_llvm, arg_val,
-                                    nullptr, 4);
-                            llvm::Value *n_elems_64 =
-                                builder->CreateSExtOrTrunc(
-                                    n_elems_rt, i64);
+                            // Get total element count at runtime.
+                            // For allocatable/descriptor arrays, use
+                            // the descriptor; otherwise, derive from
+                            // byte_size / elem_size.
+                            llvm::Value *n_elems_64;
+                            if (is_allocatable_array ||
+                                    is_descriptor_array) {
+                                ASR::ttype_t *alloc_desc_asr =
+                                    ASRUtils::type_get_past_allocatable(
+                                        arg_type);
+                                llvm::Type *alloc_desc_llvm =
+                                    llvm_utils->get_type_from_ttype_t_util(
+                                        arg_expr, alloc_desc_asr,
+                                        module.get());
+                                llvm::Value *n_elems_rt =
+                                    arr_descr->get_array_size(
+                                        alloc_desc_llvm, arg_val,
+                                        nullptr, 4);
+                                n_elems_64 =
+                                    builder->CreateSExtOrTrunc(
+                                        n_elems_rt, i64);
+                            } else {
+                                uint64_t struct_sz =
+                                    module->getDataLayout()
+                                        .getTypeAllocSize(struct_llvm);
+                                n_elems_64 = builder->CreateUDiv(
+                                    byte_size,
+                                    llvm::ConstantInt::get(
+                                        i64, struct_sz));
+                            }
                             // Typed pointer to the struct array data
                             llvm::Value *typed_data =
                                 builder->CreatePointerCast(
@@ -19747,31 +19785,15 @@ public:
                                 }
                                 builder->SetInsertPoint(l2e);
                                 // Set data buffer
-                                llvm::Value *di =
-                                    llvm::ConstantInt::get(
-                                        i32, buffer_idx++);
-                                builder->CreateCall(set_buffer_fn,
-                                    {gpu_kernel, di,
-                                     flat, tot_bytes});
+                                emit_gpu_buffer(flat, tot_bytes);
                                 // Set offsets buffer
-                                llvm::Value *oi =
-                                    llvm::ConstantInt::get(
-                                        i32, buffer_idx++);
-                                builder->CreateCall(set_buffer_fn,
-                                    {gpu_kernel, oi,
-                                     off_buf, buf_bytes});
+                                emit_gpu_buffer(off_buf, buf_bytes);
                                 // Set sizes buffer
-                                llvm::Value *si =
-                                    llvm::ConstantInt::get(
-                                        i32, buffer_idx++);
-                                builder->CreateCall(set_buffer_fn,
-                                    {gpu_kernel, si,
-                                     sz_buf, buf_bytes});
+                                emit_gpu_buffer(sz_buf, buf_bytes);
                                 field_idx++;
                             }
                         }
                     }
-                }
             } else if (ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(arg_type))) {
                 // Struct: pass as a buffer so the kernel can write to it
