@@ -1633,13 +1633,29 @@ public:
     //   results(i) = __gpu_sum_res
     // This avoids generating a call to _lcompilers_Sum which is not
     // available inside Metal GPU kernels.
-    void inline_intrinsic_sum(ASR::DoConcurrentLoop_t &x) {
+    void inline_sum_in_stmts(ASR::stmt_t** &stmts, size_t &n_stmts,
+                             SymbolTable *scope) {
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body * 4);
+        new_body.reserve(al, n_stmts * 4);
         bool changed = false;
 
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < n_stmts; si++) {
+            ASR::stmt_t *stmt = stmts[si];
+
+            // Recurse into Block bodies
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::BlockCall_t *bc =
+                    ASR::down_cast<ASR::BlockCall_t>(stmt);
+                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                    ASR::Block_t *block =
+                        ASR::down_cast<ASR::Block_t>(bc->m_m);
+                    inline_sum_in_stmts(block->m_body, block->n_body,
+                        block->m_symtab);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -1670,7 +1686,7 @@ public:
 
             ASR::ttype_t *elem_type = iaf->m_type;
 
-            SymbolTable *var_scope = current_scope;
+            SymbolTable *var_scope = scope;
             while (var_scope && var_scope->asr_owner &&
                    var_scope->asr_owner->type == ASR::asrType::symbol &&
                    ASR::is_a<ASR::AssociateBlock_t>(
@@ -1875,9 +1891,13 @@ public:
         }
 
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            stmts = new_body.p;
+            n_stmts = new_body.n;
         }
+    }
+
+    void inline_intrinsic_sum(ASR::DoConcurrentLoop_t &x) {
+        inline_sum_in_stmts(x.m_body, x.n_body, current_scope);
     }
 
     // Inline IntrinsicArrayFunction Transpose inside a DoConcurrentLoop body.
