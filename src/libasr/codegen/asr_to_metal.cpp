@@ -1359,10 +1359,20 @@ public:
         // for local allocatable array variables.
         prescan_alloc_sizes(x);
 
+        // Collect function names actually called in the kernel body
+        // so we only emit ExternalSymbol functions that are needed,
+        // skipping struct method declarations that are merely referenced
+        // by the struct type but never called.
+        GpuFuncCallCollector kernel_call_collector;
+        for (size_t i = 0; i < x.n_body; i++) {
+            kernel_call_collector.visit_stmt(*x.m_body[i]);
+        }
+
         // Emit inline function definitions for type-bound procedures
-        // referenced in this kernel
+        // actually called in this kernel
         for (auto &item : x.m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+            if (!kernel_call_collector.called.count(item.first)) continue;
             ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
                 item.second);
             ASR::Function_t *fn = resolve_function(resolved);
