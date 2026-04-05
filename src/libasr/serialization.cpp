@@ -133,7 +133,8 @@ public:
                 "Deserialization failed: symbol '" + symbol_name
                 + "' references symbol table with ID "
                 + std::to_string(symtab_id)
-                + " which has not been deserialized yet.");
+                + " which has not been deserialized yet. "
+                + "This likely indicates a missing ExternalSymbol in the ASR.");
         }
         SymbolTable *symtab = id_symtab_map[symtab_id];
         if (symtab->get_symbol(symbol_name) == nullptr) {
