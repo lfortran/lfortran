@@ -46,6 +46,10 @@ public:
     // by visit_expr when emitting ArraySize.
     std::map<std::string, std::string> func_array_size_params;
 
+    // Maps "struct_var.member" to the device-pointer parameter name
+    // for allocatable array members passed alongside the struct.
+    std::map<std::string, std::string> func_array_data_params;
+
     // Tracks allocatable out parameters emitted as thread pointers
     // in the current inline function. Used by the Assignment handler
     // to dereference the pointer when assigning to these params.
@@ -238,6 +242,58 @@ public:
         }
     }
 
+    void emit_struct_member_data_ptrs(ASR::expr_t *expr) {
+        ASR::Variable_t *var = nullptr;
+        std::string var_name;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            sym = ASRUtils::symbol_get_past_external(sym);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                var = ASR::down_cast<ASR::Variable_t>(sym);
+                var_name = var->m_name;
+            }
+        }
+        if (!var || !var->m_type_declaration) return;
+        ASR::symbol_t *st_sym =
+            ASRUtils::symbol_get_past_external(var->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*st_sym)) return;
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(st_sym);
+        for (size_t m = 0; m < st->n_members; m++) {
+            ASR::symbol_t *mem =
+                st->m_symtab->get_symbol(st->m_members[m]);
+            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
+            ASR::Variable_t *mv =
+                ASR::down_cast<ASR::Variable_t>(mem);
+            if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+            ASR::ttype_t *inner =
+                ASRUtils::type_get_past_allocatable(mv->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+            std::string key = var_name + "." + st->m_members[m];
+            auto it = func_array_data_params.find(key);
+            if (it != func_array_data_params.end()) {
+                src << ", " << it->second;
+            } else {
+                std::string suffix = std::string(".")
+                    + st->m_members[m];
+                bool found = false;
+                for (auto &entry : func_array_data_params) {
+                    if (entry.first.size() >= suffix.size() &&
+                            entry.first.compare(
+                                entry.first.size() - suffix.size(),
+                                suffix.size(), suffix) == 0) {
+                        src << ", " << entry.second;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    src << ", __data_" << var_name << "_"
+                        << st->m_members[m];
+                }
+            }
+        }
+    }
+
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         src << "#include <metal_stdlib>\n";
@@ -358,6 +414,7 @@ public:
     // Emit a Fortran function as a Metal inline function
     void emit_function_def(ASR::Function_t *fn, const std::string &metal_name) {
         func_array_size_params.clear();
+        func_array_data_params.clear();
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -385,7 +442,7 @@ public:
                 } else {
                     src << get_struct_name(arg) << " " << arg->m_name;
                 }
-                // Add size parameters for allocatable array members
+                // Add data pointer and size parameters for allocatable array members
                 if (arg->m_type_declaration) {
                     ASR::symbol_t *st_sym =
                         ASRUtils::symbol_get_past_external(
@@ -409,13 +466,22 @@ public:
                                     mv->m_type);
                             if (!ASR::is_a<ASR::Array_t>(*inner))
                                 continue;
+                            std::string key =
+                                std::string(arg->m_name) + "."
+                                + st->m_members[m];
+                            ASR::Array_t *mem_arr =
+                                ASR::down_cast<ASR::Array_t>(inner);
+                            std::string data_name =
+                                "__data_" + std::string(arg->m_name)
+                                + "_" + st->m_members[m];
+                            src << ", device "
+                                << metal_type(mem_arr->m_type)
+                                << "* " << data_name;
+                            func_array_data_params[key] = data_name;
                             std::string size_name =
                                 "__size_" + std::string(arg->m_name)
                                 + "_" + st->m_members[m];
                             src << ", int " << size_name;
-                            std::string key =
-                                std::string(arg->m_name) + "."
-                                + st->m_members[m];
                             func_array_size_params[key] = size_name;
                         }
                     }
@@ -497,6 +563,7 @@ public:
         indent_level--;
         src << "}\n\n";
         func_array_size_params.clear();
+        func_array_data_params.clear();
         alloc_pointer_params.clear();
     }
 
@@ -695,9 +762,11 @@ public:
                 << sa.name << " = __scalar_args." << sa.name << ";\n";
         }
 
-        // Populate func_array_size_params for struct-typed kernel args
-        // so that emit_struct_member_sizes can find the right size vars
+        // Populate func_array_size_params and func_array_data_params
+        // for struct-typed kernel args so that emit_struct_member_sizes
+        // and emit_struct_member_data_ptrs can find the right vars
         func_array_size_params.clear();
+        func_array_data_params.clear();
         for (size_t i = 0; i < args.size(); i++) {
             if (args[i].is_struct) {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
@@ -726,12 +795,16 @@ public:
                                     mv->m_type);
                             if (!ASR::is_a<ASR::Array_t>(*inner))
                                 continue;
+                            std::string key = args[i].name + "."
+                                + st->m_members[m];
                             std::string size_name =
                                 "__size_" + args[i].name + "_"
                                 + st->m_members[m];
-                            std::string key = args[i].name + "."
-                                + st->m_members[m];
                             func_array_size_params[key] = size_name;
+                            std::string data_name =
+                                "__data_" + args[i].name + "_"
+                                + st->m_members[m];
+                            func_array_data_params[key] = data_name;
                         }
                     }
                 }
@@ -1242,6 +1315,8 @@ public:
                                 src << ", ";
                                 emit_array_size_expr(fc->m_args[i].m_value);
                             } else if (is_struct_type(arg_type)) {
+                                emit_struct_member_data_ptrs(
+                                    fc->m_args[i].m_value);
                                 emit_struct_member_sizes(
                                     fc->m_args[i].m_value);
                             }
@@ -1253,7 +1328,29 @@ public:
             }
             case ASR::exprType::ArrayItem: {
                 ASR::ArrayItem_t *ai = ASR::down_cast<ASR::ArrayItem_t>(expr);
-                visit_expr(ai->m_v);
+                // For allocatable struct member access like s%a(i),
+                // use the separate data pointer parameter instead of
+                // the struct member (which is not a valid array in Metal).
+                bool used_data_param = false;
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*ai->m_v)) {
+                    ASR::StructInstanceMember_t *sm =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(ai->m_v);
+                    if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
+                        std::string struct_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
+                        std::string mem_name = ASRUtils::symbol_name(
+                            ASRUtils::symbol_get_past_external(sm->m_m));
+                        std::string key = struct_name + "." + mem_name;
+                        auto it = func_array_data_params.find(key);
+                        if (it != func_array_data_params.end()) {
+                            src << it->second;
+                            used_data_param = true;
+                        }
+                    }
+                }
+                if (!used_data_param) {
+                    visit_expr(ai->m_v);
+                }
                 src << "[";
                 // Compute linearized 0-based index for multi-dim arrays
                 // Fortran: column-major, 1-based
