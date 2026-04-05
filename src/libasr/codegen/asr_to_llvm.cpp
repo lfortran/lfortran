@@ -19355,6 +19355,36 @@ public:
                                 builder->CreateCall(set_buffer_fn,
                                     {gpu_kernel, oi,
                                      off_buf, off_sz});
+                                // Set sizes buffer (per-element sizes)
+                                llvm::Value *sz_buf =
+                                    builder->CreateCall(
+                                        mfn, {off_sz});
+                                llvm::Value *sz_ptr =
+                                    builder->CreatePointerCast(
+                                        sz_buf,
+                                        llvm::Type::getInt32Ty(
+                                            context)->getPointerTo());
+                                for (int64_t k = 0;
+                                        k < total_elements; k++) {
+                                    llvm::Value *sz32 =
+                                        builder->CreateTrunc(
+                                            szs[k],
+                                            llvm::Type::getInt32Ty(
+                                                context));
+                                    builder->CreateStore(sz32,
+                                        builder->CreateGEP(
+                                            llvm::Type::getInt32Ty(
+                                                context),
+                                            sz_ptr,
+                                            llvm::ConstantInt::get(
+                                                i32, k)));
+                                }
+                                llvm::Value *si =
+                                    llvm::ConstantInt::get(
+                                        i32, buffer_idx++);
+                                builder->CreateCall(set_buffer_fn,
+                                    {gpu_kernel, si,
+                                     sz_buf, off_sz});
                                 field_idx++;
                             }
                         }

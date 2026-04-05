@@ -54,6 +54,15 @@ public:
     // for allocatable array members of array-of-struct kernel arguments.
     std::map<std::string, std::string> struct_array_offset_params;
 
+    // Maps "struct_arr.member" to the sizes-buffer parameter name
+    // for allocatable array members of array-of-struct kernel arguments.
+    std::map<std::string, std::string> struct_array_sizes_params;
+
+    // Tracks local struct variables that were assigned from an element
+    // of an array-of-struct. Maps local_var_name -> (array_name, index_expr_string).
+    // Used by emit_struct_member_data_ptrs/sizes to offset into flat buffers.
+    std::map<std::string, std::pair<std::string, std::string>> struct_from_array_elem;
+
     // Tracks allocatable out parameters emitted as thread pointers
     // in the current inline function. Used by the Assignment handler
     // to dereference the pointer when assigning to these params.
@@ -189,7 +198,8 @@ public:
 
     // Emit extra size arguments for allocatable array members of a
     // struct-typed function call argument. The sizes are looked up
-    // from the kernel's __size_<struct>_<member> scalar parameters.
+    // from the kernel's __size_<struct>_<member> scalar parameters,
+    // or from __sizes_<arr>_<member>[idx] for array-of-struct elements.
     void emit_struct_member_sizes(ASR::expr_t *expr) {
         ASR::Variable_t *var = nullptr;
         std::string var_name;
@@ -206,6 +216,10 @@ public:
             ASRUtils::symbol_get_past_external(var->m_type_declaration);
         if (!ASR::is_a<ASR::Struct_t>(*st_sym)) return;
         ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(st_sym);
+
+        // Check if this local struct came from an array-of-struct element
+        auto arr_it = struct_from_array_elem.find(var_name);
+
         for (size_t m = 0; m < st->n_members; m++) {
             ASR::symbol_t *mem =
                 st->m_symtab->get_symbol(st->m_members[m]);
@@ -216,6 +230,20 @@ public:
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable(mv->m_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+
+            // If this struct came from an array-of-struct element,
+            // use the per-element sizes buffer
+            if (arr_it != struct_from_array_elem.end()) {
+                std::string arr_name = arr_it->second.first;
+                std::string idx_str = arr_it->second.second;
+                std::string key = arr_name + "." + st->m_members[m];
+                auto sit = struct_array_sizes_params.find(key);
+                if (sit != struct_array_sizes_params.end()) {
+                    src << ", " << sit->second << "[" << idx_str << "]";
+                    continue;
+                }
+            }
+
             // Try direct lookup first (var_name.member)
             std::string key = var_name + "." + st->m_members[m];
             auto it = func_array_size_params.find(key);
@@ -262,6 +290,10 @@ public:
             ASRUtils::symbol_get_past_external(var->m_type_declaration);
         if (!ASR::is_a<ASR::Struct_t>(*st_sym)) return;
         ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(st_sym);
+
+        // Check if this local struct came from an array-of-struct element
+        auto arr_it = struct_from_array_elem.find(var_name);
+
         for (size_t m = 0; m < st->n_members; m++) {
             ASR::symbol_t *mem =
                 st->m_symtab->get_symbol(st->m_members[m]);
@@ -272,6 +304,23 @@ public:
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable(mv->m_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+
+            // If this struct came from an array-of-struct element,
+            // offset the data pointer using the offsets buffer
+            if (arr_it != struct_from_array_elem.end()) {
+                std::string arr_name = arr_it->second.first;
+                std::string idx_str = arr_it->second.second;
+                std::string key = arr_name + "." + st->m_members[m];
+                auto dit = func_array_data_params.find(key);
+                auto oit = struct_array_offset_params.find(key);
+                if (dit != func_array_data_params.end() &&
+                        oit != struct_array_offset_params.end()) {
+                    src << ", " << dit->second << " + "
+                        << oit->second << "[" << idx_str << "]";
+                    continue;
+                }
+            }
+
             std::string key = var_name + "." + st->m_members[m];
             auto it = func_array_data_params.find(key);
             if (it != func_array_data_params.end()) {
@@ -872,6 +921,12 @@ public:
                                 src << ",\n    device int* "
                                     << off_name << " [[buffer("
                                     << buffer_idx++ << ")]]";
+                                std::string sizes_name =
+                                    "__sizes_" + args[i].name + "_"
+                                    + st->m_members[m];
+                                src << ",\n    device int* "
+                                    << sizes_name << " [[buffer("
+                                    << buffer_idx++ << ")]]";
                             }
                         }
                     }
@@ -961,8 +1016,10 @@ public:
         func_array_size_params.clear();
         func_array_data_params.clear();
         struct_array_offset_params.clear();
+        struct_array_sizes_params.clear();
+        struct_from_array_elem.clear();
         for (size_t i = 0; i < args.size(); i++) {
-            if (args[i].is_struct) {
+            if (args[i].is_struct && !args[i].is_array) {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
                     ASRUtils::symbol_get_past_external(v->m_v));
@@ -1036,6 +1093,10 @@ public:
                             "__offsets_" + args[i].name + "_"
                             + st->m_members[m];
                         struct_array_offset_params[key] = off_name;
+                        std::string sizes_name =
+                            "__sizes_" + args[i].name + "_"
+                            + st->m_members[m];
+                        struct_array_sizes_params[key] = sizes_name;
                     }
                 }
             }
@@ -1070,6 +1131,48 @@ public:
         switch (stmt->type) {
             case ASR::stmtType::Assignment: {
                 ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(stmt);
+
+                // Track struct-from-array-element assignments for
+                // correct data pointer offsetting in function calls.
+                // Pattern: local_struct = arr(i) where arr is array-of-struct
+                if (ASR::is_a<ASR::Var_t>(*a->m_target) &&
+                        ASR::is_a<ASR::ArrayItem_t>(*a->m_value)) {
+                    ASR::ArrayItem_t *ai =
+                        ASR::down_cast<ASR::ArrayItem_t>(a->m_value);
+                    if (ASR::is_a<ASR::Var_t>(*ai->m_v)) {
+                        std::string arr_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
+                        std::string tgt_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                a->m_target)->m_v);
+                        ASR::ttype_t *arr_type =
+                            ASRUtils::expr_type(ai->m_v);
+                        if (is_struct_type(arr_type) &&
+                                is_array_type(arr_type) &&
+                                ai->n_args == 1) {
+                            // Capture the 0-based index expression
+                            std::stringstream idx_ss;
+                            ASR::expr_t *idx_expr =
+                                ai->m_args[0].m_right
+                                ? ai->m_args[0].m_right
+                                : ai->m_args[0].m_left;
+                            if (idx_expr) {
+                                // Temporarily emit into a separate stream
+                                std::stringstream saved;
+                                saved.swap(src);
+                                visit_expr(idx_expr);
+                                idx_ss << "((int)(" << src.str()
+                                       << ") - 1)";
+                                saved.swap(src);
+                            } else {
+                                idx_ss << "0";
+                            }
+                            struct_from_array_elem[tgt_name] =
+                                {arr_name, idx_ss.str()};
+                        }
+                    }
+                }
+
                 src << get_indent();
                 // When assigning to an allocatable pointer param (e.g., r = val
                 // where r is thread T*), dereference it: *r = val.
