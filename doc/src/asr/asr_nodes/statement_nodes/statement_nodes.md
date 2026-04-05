@@ -30,6 +30,7 @@ ompregion.md
 print.md
 return.md
 select.md
+selectrank.md
 stop.md
 subroutinecall.md
 where.md
