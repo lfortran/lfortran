@@ -2125,6 +2125,26 @@ public:
                             loc, f->m_intrinsic_id, new_fargs.p,
                             new_fargs.n, f->m_overload_id, et,
                             f->m_value));
+                } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+                    ASR::FunctionCall_t *fc =
+                        ASR::down_cast<ASR::FunctionCall_t>(e);
+                    Vec<ASR::call_arg_t> new_fargs;
+                    new_fargs.reserve(al, fc->n_args);
+                    for (size_t i = 0; i < fc->n_args; i++) {
+                        ASR::call_arg_t arg;
+                        arg.loc = fc->m_args[i].loc;
+                        arg.m_value = fc->m_args[i].m_value
+                            ? elementize_rhs(fc->m_args[i].m_value)
+                            : nullptr;
+                        new_fargs.push_back(al, arg);
+                    }
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(
+                        ASR::make_FunctionCall_t(al, loc,
+                            fc->m_name, fc->m_original_name,
+                            new_fargs.p, new_fargs.n, et,
+                            fc->m_value, fc->m_dt));
                 } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
                     return elementize_rhs(
                         ASR::down_cast<ASR::ArrayPhysicalCast_t>(
@@ -2247,6 +2267,13 @@ public:
                         ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
                     for (size_t i = 0; i < f->n_args; i++) {
                         if (f->m_args[i]) find_array_section(f->m_args[i]);
+                    }
+                } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+                    ASR::FunctionCall_t *fc =
+                        ASR::down_cast<ASR::FunctionCall_t>(e);
+                    for (size_t i = 0; i < fc->n_args; i++) {
+                        if (fc->m_args[i].m_value)
+                            find_array_section(fc->m_args[i].m_value);
                     }
                 } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
                     ASR::RealBinOp_t *rb = ASR::down_cast<ASR::RealBinOp_t>(e);
@@ -2474,6 +2501,26 @@ public:
                     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                         elementize(ib->m_left), ib->m_op,
                         elementize(ib->m_right), elem_type, nullptr));
+                } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+                    ASR::FunctionCall_t *fc =
+                        ASR::down_cast<ASR::FunctionCall_t>(e);
+                    Vec<ASR::call_arg_t> new_args;
+                    new_args.reserve(al, fc->n_args);
+                    for (size_t i = 0; i < fc->n_args; i++) {
+                        ASR::call_arg_t arg;
+                        arg.loc = fc->m_args[i].loc;
+                        arg.m_value = fc->m_args[i].m_value
+                            ? elementize(fc->m_args[i].m_value)
+                            : nullptr;
+                        new_args.push_back(al, arg);
+                    }
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(
+                        ASR::make_FunctionCall_t(al, loc,
+                            fc->m_name, fc->m_original_name,
+                            new_args.p, new_args.n, elem_type,
+                            fc->m_value, fc->m_dt));
                 } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
                     return ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array;
                 } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
