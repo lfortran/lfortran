@@ -2781,7 +2781,7 @@ RUN(NAME class_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME class_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME class_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME class_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
