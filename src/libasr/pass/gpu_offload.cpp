@@ -2160,6 +2160,42 @@ public:
                             : nullptr;
                         new_fargs.push_back(al, arg);
                     }
+                    // Check if the function natively returns an array
+                    // (not an elemental function with array args).
+                    // In that case, keep the original return type and
+                    // wrap with ArrayItem below.
+                    ASR::ttype_t *fc_type = ASRUtils::type_get_past_allocatable(
+                        fc->m_type);
+                    ASR::Function_t *fn = ASRUtils::get_function(fc->m_name);
+                    ASR::ttype_t *fn_ret = fn
+                        ? ASRUtils::get_FunctionType(fn)->m_return_var_type
+                        : nullptr;
+                    bool fn_returns_array = fn_ret &&
+                        ASR::is_a<ASR::Array_t>(
+                            *ASRUtils::type_get_past_allocatable(fn_ret));
+                    if (fn_returns_array && ASR::is_a<ASR::Array_t>(*fc_type)) {
+                        ASR::expr_t *new_fc = ASRUtils::EXPR(
+                            ASR::make_FunctionCall_t(al, loc,
+                                fc->m_name, fc->m_original_name,
+                                new_fargs.p, new_fargs.n, fc->m_type,
+                                fc->m_value, fc->m_dt));
+                        Vec<ASR::array_index_t> rhs_args;
+                        rhs_args.reserve(al, range_dims.size());
+                        for (size_t ri = 0; ri < range_dims.size(); ri++) {
+                            ASR::array_index_t idx;
+                            idx.loc = loc;
+                            idx.m_left = nullptr;
+                            idx.m_right = loop_vars[ri];
+                            idx.m_step = nullptr;
+                            rhs_args.push_back(al, idx);
+                        }
+                        ASR::ttype_t *rhs_elem = ASRUtils::extract_type(
+                            fc->m_type);
+                        return ASRUtils::EXPR(
+                            ASR::make_ArrayItem_t(al, loc, new_fc,
+                                rhs_args.p, rhs_args.n, rhs_elem,
+                                ASR::arraystorageType::ColMajor, nullptr));
+                    }
                     ASR::ttype_t *et = ASRUtils::extract_type(
                         ASRUtils::expr_type(e));
                     return ASRUtils::EXPR(
