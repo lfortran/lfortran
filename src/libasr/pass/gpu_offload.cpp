@@ -1697,6 +1697,29 @@ public:
                     new_args.p, new_args.n, elem_type,
                     ASR::arraystorageType::ColMajor, nullptr));
 
+            // If the RHS is an array expression (e.g., a(i)%v returning
+            // a FixedSizeArray), index into it with the loop variables
+            // for element-wise access.
+            ASR::ttype_t *rhs_type = ASRUtils::expr_type(scalar_value);
+            if (ASR::is_a<ASR::Array_t>(*rhs_type)) {
+                Vec<ASR::array_index_t> rhs_args;
+                rhs_args.reserve(al, range_dims.size());
+                for (size_t ri = 0; ri < range_dims.size(); ri++) {
+                    ASR::array_index_t idx;
+                    idx.loc = loc;
+                    idx.m_left = nullptr;
+                    idx.m_right = loop_vars[ri];
+                    idx.m_step = nullptr;
+                    rhs_args.push_back(al, idx);
+                }
+                ASR::ttype_t *rhs_elem_type = ASRUtils::extract_type(
+                    rhs_type);
+                scalar_value = ASRUtils::EXPR(
+                    ASR::make_ArrayItem_t(al, loc, scalar_value,
+                        rhs_args.p, rhs_args.n, rhs_elem_type,
+                        ASR::arraystorageType::ColMajor, nullptr));
+            }
+
             // Build innermost loop body: array_item = scalar_value
             Vec<ASR::stmt_t*> inner_body;
             inner_body.reserve(al, 1);
