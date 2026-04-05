@@ -244,24 +244,23 @@ if (WITH_LIRIC)
         endif()
     endif()
     message(STATUS "Using liric: ${LIRIC_LIB}")
-    message(STATUS "Liric includes: ${LIRIC_DIR}/include/liric")
-    add_library(p::llvm INTERFACE IMPORTED)
-    set_property(TARGET p::llvm PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+    add_library(p::liric INTERFACE IMPORTED)
+    set_property(TARGET p::liric PROPERTY INTERFACE_INCLUDE_DIRECTORIES
         "${LIRIC_DIR}/include/liric" "${LIRIC_DIR}/include")
-    set_property(TARGET p::llvm PROPERTY INTERFACE_COMPILE_OPTIONS
+    set_property(TARGET p::liric PROPERTY INTERFACE_COMPILE_OPTIONS
         $<$<COMPILE_LANGUAGE:CXX>:${LFORTRAN_CXX_NO_RTTI_FLAG}>
         $<$<COMPILE_LANGUAGE:CXX>:-include>
         $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/libasr/codegen/liric_llvm_alias.h>)
-    set_property(TARGET p::llvm PROPERTY INTERFACE_LINK_LIBRARIES
+    set_property(TARGET p::liric PROPERTY INTERFACE_LINK_LIBRARIES
         "${LIRIC_LIB}" stdc++)
     if (UNIX AND NOT APPLE)
         add_link_options(
             $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-no-pie>
             -Wl,--allow-multiple-definition)
     endif()
-    set(HAVE_LFORTRAN_LLVM yes)
-    set(WITH_LLVM yes)
-elseif (WITH_LLVM)
+endif()
+
+if (WITH_LLVM)
     set(WITH_ZSTD yes CACHE BOOL "Detect (and require) libzstd for LLVM")
     set(USE_DYNAMIC_ZSTD no CACHE BOOL "Use dynamic ZSTD library (default: static)")
     if(WITH_ZSTD)
