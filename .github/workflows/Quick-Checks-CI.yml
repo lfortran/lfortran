@@ -431,6 +431,11 @@ jobs:
         shell: bash -e -l {0}
         run: |
           set -ex
+          bash ci/version.sh
+          python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
+          python src/libasr/asdl_cpp.py src/libasr/ASR.asdl src/libasr/asr.h
+          python src/libasr/wasm_instructions_visitor.py
+          python src/libasr/intrinsic_func_registry_util_gen.py
           cmake -S . -B build \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
