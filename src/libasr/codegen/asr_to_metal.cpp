@@ -50,6 +50,10 @@ public:
     // for allocatable array members passed alongside the struct.
     std::map<std::string, std::string> func_array_data_params;
 
+    // Maps "struct_arr.member" to the offsets-buffer parameter name
+    // for allocatable array members of array-of-struct kernel arguments.
+    std::map<std::string, std::string> struct_array_offset_params;
+
     // Tracks allocatable out parameters emitted as thread pointers
     // in the current inline function. Used by the Assignment handler
     // to dereference the pointer when assigning to these params.
@@ -345,6 +349,30 @@ public:
             *ASRUtils::extract_type(type));
     }
 
+    // Get the Struct_t for a variable that is either a struct or array-of-struct
+    ASR::Struct_t* get_struct_decl(ASR::Variable_t *var) {
+        if (!var->m_type_declaration) return nullptr;
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+            var->m_type_declaration);
+        if (ASR::is_a<ASR::Struct_t>(*s)) {
+            return ASR::down_cast<ASR::Struct_t>(s);
+        }
+        return nullptr;
+    }
+
+    // Check if a Struct_t has any allocatable array members
+    bool struct_has_allocatable_members(ASR::Struct_t *st) {
+        for (size_t m = 0; m < st->n_members; m++) {
+            ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[m]);
+            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
+            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
+            if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+            ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(mv->m_type);
+            if (ASR::is_a<ASR::Array_t>(*inner)) return true;
+        }
+        return false;
+    }
+
     // Emit a Metal struct definition for a Struct symbol
     void emit_struct_def(ASR::Struct_t *st) {
         src << "struct " << st->m_name << " {\n";
@@ -352,7 +380,12 @@ public:
             ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
             if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
                 ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
-                if (is_struct_type(mv->m_type)) {
+                if (ASRUtils::is_allocatable(mv->m_type)) {
+                    // Allocatable members are passed as separate device
+                    // buffers. Emit a long placeholder matching the host
+                    // pointer size to keep the struct layout aligned.
+                    src << "    long " << mv->m_name << ";\n";
+                } else if (is_struct_type(mv->m_type)) {
                     src << "    " << get_struct_name(mv) << " "
                         << mv->m_name << ";\n";
                 } else if (is_array_type(mv->m_type)) {
@@ -474,8 +507,15 @@ public:
                             std::string data_name =
                                 "__data_" + std::string(arg->m_name)
                                 + "_" + st->m_members[m];
+                            std::string elem_type_str;
+                            if (is_struct_type(mem_arr->m_type)) {
+                                elem_type_str = get_struct_name(mv);
+                            } else {
+                                elem_type_str =
+                                    metal_type(mem_arr->m_type);
+                            }
                             src << ", device "
-                                << metal_type(mem_arr->m_type)
+                                << elem_type_str
                                 << "* " << data_name;
                             func_array_data_params[key] = data_name;
                             std::string size_name =
@@ -663,6 +703,8 @@ public:
         // non-constant dimensions) using the shared GPU utility.
         current_vla_infos = analyze_gpu_vla_workspaces(x);
 
+        bool packed_mode = gpu_kernel_needs_buffer_packing(x);
+
         // Collect scalar args for packing into a single struct buffer
         struct ScalarArg {
             std::string name;
@@ -676,13 +718,87 @@ public:
             }
         }
 
+        // In packed mode, collect info about arrays/structs that will
+        // be packed into a single combined buffer
+        struct PackedArrayInfo {
+            std::string name;
+            std::string elem_type;
+            bool is_struct_ref;
+            std::string struct_name;
+            int64_t byte_size;
+            int64_t offset;
+        };
+        std::vector<PackedArrayInfo> packed_arrays;
+
+        if (packed_mode) {
+            int64_t current_offset = 0;
+            for (size_t i = 0; i < args.size(); i++) {
+                if (!args[i].is_array && !args[i].is_struct) continue;
+
+                std::string elem_type;
+                int64_t byte_size = 0;
+                if (args[i].is_array) {
+                    elem_type = !args[i].struct_name.empty()
+                        ? args[i].struct_name
+                        : metal_type(args[i].type);
+                    ASR::ttype_t *base_type =
+                        ASRUtils::type_get_past_allocatable(args[i].type);
+                    if (ASR::is_a<ASR::Array_t>(*base_type)) {
+                        ASR::Array_t *arr =
+                            ASR::down_cast<ASR::Array_t>(base_type);
+                        int elem_size = 4;
+                        if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
+                            elem_size = ASR::down_cast<ASR::Real_t>(
+                                arr->m_type)->m_kind;
+                        } else if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
+                            elem_size = ASR::down_cast<ASR::Integer_t>(
+                                arr->m_type)->m_kind;
+                        }
+                        int64_t total_elements = 1;
+                        for (size_t d = 0; d < arr->n_dims; d++) {
+                            if (arr->m_dims[d].m_length &&
+                                ASR::is_a<ASR::IntegerConstant_t>(
+                                    *arr->m_dims[d].m_length)) {
+                                total_elements *=
+                                    ASR::down_cast<ASR::IntegerConstant_t>(
+                                        arr->m_dims[d].m_length)->m_n;
+                            }
+                        }
+                        byte_size = total_elements * elem_size;
+                    }
+                }
+
+                int align = PACKED_BUFFER_ALIGN;
+                if (current_offset % align != 0) {
+                    current_offset += align - (current_offset % align);
+                }
+
+                packed_arrays.push_back({
+                    args[i].name, elem_type, args[i].is_struct,
+                    args[i].struct_name, byte_size, current_offset
+                });
+
+                if (byte_size > 0) {
+                    current_offset += byte_size;
+                }
+            }
+        }
+
         // Emit scalar args struct definition (before kernel) if needed
         std::string scalar_struct_name = "__ScalarArgs_" + name;
-        if (!scalar_args.empty()) {
+        bool has_scalar_struct = !scalar_args.empty() ||
+            (packed_mode && !packed_arrays.empty());
+
+        if (has_scalar_struct) {
             src << "struct " << scalar_struct_name << " {\n";
             for (auto &sa : scalar_args) {
                 src << "    " << sa.metal_type_str << " "
                     << sa.name << ";\n";
+            }
+            if (packed_mode) {
+                for (auto &pa : packed_arrays) {
+                    src << "    uint __offset_" << pa.name << ";\n";
+                }
             }
             src << "};\n\n";
         }
@@ -692,27 +808,85 @@ public:
 
         int buffer_idx = 0;
         bool has_prev = false;
-        for (size_t i = 0; i < args.size(); i++) {
-            if (args[i].is_array) {
-                if (has_prev) src << ",\n";
-                src << "    ";
-                std::string elem_type = !args[i].struct_name.empty()
-                    ? args[i].struct_name
-                    : metal_type(args[i].type);
-                src << "device " << elem_type << "* "
-                    << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
-                has_prev = true;
-            } else if (args[i].is_struct) {
-                if (has_prev) src << ",\n";
-                src << "    ";
-                src << "device " << args[i].struct_name << "& "
-                    << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
-                has_prev = true;
+
+        if (packed_mode) {
+            src << "    device char* __packed_arrays [[buffer("
+                << buffer_idx++ << ")]]";
+            has_prev = true;
+        } else {
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i].is_array) {
+                    if (has_prev) src << ",\n";
+                    src << "    ";
+                    std::string elem_type = !args[i].struct_name.empty()
+                        ? args[i].struct_name
+                        : metal_type(args[i].type);
+                    src << "device " << elem_type << "* "
+                        << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                    has_prev = true;
+                    // For array-of-struct args, emit additional buffers
+                    // for allocatable array members' data and offsets
+                    if (!args[i].struct_name.empty()) {
+                        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(
+                            x.m_args[i]);
+                        ASR::Variable_t *var =
+                            ASR::down_cast<ASR::Variable_t>(
+                                ASRUtils::symbol_get_past_external(
+                                    v->m_v));
+                        ASR::Struct_t *st = get_struct_decl(var);
+                        if (st) {
+                            for (size_t m = 0; m < st->n_members; m++) {
+                                ASR::symbol_t *mem =
+                                    st->m_symtab->get_symbol(
+                                        st->m_members[m]);
+                                if (!mem ||
+                                    !ASR::is_a<ASR::Variable_t>(*mem))
+                                    continue;
+                                ASR::Variable_t *mv =
+                                    ASR::down_cast<ASR::Variable_t>(
+                                        mem);
+                                if (!ASRUtils::is_allocatable(mv->m_type))
+                                    continue;
+                                ASR::ttype_t *inner =
+                                    ASRUtils::type_get_past_allocatable(
+                                        mv->m_type);
+                                if (!ASR::is_a<ASR::Array_t>(*inner))
+                                    continue;
+                                ASR::Array_t *mem_arr =
+                                    ASR::down_cast<ASR::Array_t>(inner);
+                                std::string et;
+                                if (is_struct_type(mem_arr->m_type)) {
+                                    et = get_struct_name(mv);
+                                } else {
+                                    et = metal_type(mem_arr->m_type);
+                                }
+                                std::string data_name =
+                                    "__data_" + args[i].name + "_"
+                                    + st->m_members[m];
+                                src << ",\n    device " << et << "* "
+                                    << data_name << " [[buffer("
+                                    << buffer_idx++ << ")]]";
+                                std::string off_name =
+                                    "__offsets_" + args[i].name + "_"
+                                    + st->m_members[m];
+                                src << ",\n    device int* "
+                                    << off_name << " [[buffer("
+                                    << buffer_idx++ << ")]]";
+                            }
+                        }
+                    }
+                } else if (args[i].is_struct) {
+                    if (has_prev) src << ",\n";
+                    src << "    ";
+                    src << "device " << args[i].struct_name << "& "
+                        << args[i].name << " [[buffer(" << buffer_idx++ << ")]]";
+                    has_prev = true;
+                }
             }
         }
 
         // Emit packed scalar struct as a single buffer
-        if (!scalar_args.empty()) {
+        if (has_scalar_struct) {
             if (has_prev) src << ",\n";
             src << "    constant " << scalar_struct_name
                 << "& __scalar_args [[buffer(" << buffer_idx++ << ")]]";
@@ -762,11 +936,31 @@ public:
                 << sa.name << " = __scalar_args." << sa.name << ";\n";
         }
 
+        // In packed mode, unpack array pointers from the combined buffer
+        if (packed_mode) {
+            for (auto &pa : packed_arrays) {
+                if (pa.is_struct_ref) {
+                    src << get_indent() << "device " << pa.struct_name
+                        << "& " << pa.name
+                        << " = *(device " << pa.struct_name
+                        << "*)(__packed_arrays + __scalar_args.__offset_"
+                        << pa.name << ");\n";
+                } else {
+                    src << get_indent() << "device " << pa.elem_type
+                        << "* " << pa.name
+                        << " = (device " << pa.elem_type
+                        << "*)(__packed_arrays + __scalar_args.__offset_"
+                        << pa.name << ");\n";
+                }
+            }
+        }
+
         // Populate func_array_size_params and func_array_data_params
         // for struct-typed kernel args so that emit_struct_member_sizes
         // and emit_struct_member_data_ptrs can find the right vars
         func_array_size_params.clear();
         func_array_data_params.clear();
+        struct_array_offset_params.clear();
         for (size_t i = 0; i < args.size(); i++) {
             if (args[i].is_struct) {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
@@ -806,6 +1000,42 @@ public:
                                 + st->m_members[m];
                             func_array_data_params[key] = data_name;
                         }
+                    }
+                }
+            }
+            // For array-of-struct args, register data and offset params
+            // for allocatable members accessed via array indexing
+            if (args[i].is_array && !args[i].struct_name.empty()) {
+                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(v->m_v));
+                ASR::Struct_t *st = get_struct_decl(var);
+                if (st) {
+                    for (size_t m = 0; m < st->n_members; m++) {
+                        ASR::symbol_t *mem =
+                            st->m_symtab->get_symbol(st->m_members[m]);
+                        if (!mem ||
+                            !ASR::is_a<ASR::Variable_t>(*mem))
+                            continue;
+                        ASR::Variable_t *mv =
+                            ASR::down_cast<ASR::Variable_t>(mem);
+                        if (!ASRUtils::is_allocatable(mv->m_type))
+                            continue;
+                        ASR::ttype_t *inner =
+                            ASRUtils::type_get_past_allocatable(
+                                mv->m_type);
+                        if (!ASR::is_a<ASR::Array_t>(*inner))
+                            continue;
+                        std::string key = args[i].name + "."
+                            + st->m_members[m];
+                        std::string data_name =
+                            "__data_" + args[i].name + "_"
+                            + st->m_members[m];
+                        func_array_data_params[key] = data_name;
+                        std::string off_name =
+                            "__offsets_" + args[i].name + "_"
+                            + st->m_members[m];
+                        struct_array_offset_params[key] = off_name;
                     }
                 }
             }
@@ -1335,16 +1565,73 @@ public:
                 if (ASR::is_a<ASR::StructInstanceMember_t>(*ai->m_v)) {
                     ASR::StructInstanceMember_t *sm =
                         ASR::down_cast<ASR::StructInstanceMember_t>(ai->m_v);
+                    std::string mem_name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(sm->m_m));
                     if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
+                        // Single struct: s%member(j)
                         std::string struct_name = ASRUtils::symbol_name(
                             ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
-                        std::string mem_name = ASRUtils::symbol_name(
-                            ASRUtils::symbol_get_past_external(sm->m_m));
                         std::string key = struct_name + "." + mem_name;
                         auto it = func_array_data_params.find(key);
                         if (it != func_array_data_params.end()) {
                             src << it->second;
                             used_data_param = true;
+                        }
+                    } else if (ASR::is_a<ASR::ArrayItem_t>(*sm->m_v)) {
+                        // Array-of-struct: arr(i)%member(j)
+                        // Use separate data+offsets buffers:
+                        // __data_arr_member[__offsets_arr_member[i-1] + (j-1)]
+                        ASR::ArrayItem_t *arr_ai =
+                            ASR::down_cast<ASR::ArrayItem_t>(sm->m_v);
+                        if (ASR::is_a<ASR::Var_t>(*arr_ai->m_v)) {
+                            std::string arr_name = ASRUtils::symbol_name(
+                                ASR::down_cast<ASR::Var_t>(
+                                    arr_ai->m_v)->m_v);
+                            std::string key = arr_name + "." + mem_name;
+                            auto dit = func_array_data_params.find(key);
+                            auto oit = struct_array_offset_params.find(key);
+                            if (dit != func_array_data_params.end() &&
+                                    oit != struct_array_offset_params.end()) {
+                                // Emit: data[offsets[arr_idx] + member_idx]
+                                src << dit->second << "[" << oit->second
+                                    << "[";
+                                // Emit the struct array index (0-based)
+                                if (arr_ai->n_args == 1) {
+                                    ASR::expr_t *arr_idx =
+                                        arr_ai->m_args[0].m_right
+                                        ? arr_ai->m_args[0].m_right
+                                        : arr_ai->m_args[0].m_left;
+                                    if (arr_idx) {
+                                        src << "((int)(";
+                                        visit_expr(arr_idx);
+                                        src << ") - 1)";
+                                    } else {
+                                        src << "0";
+                                    }
+                                } else {
+                                    src << "0";
+                                }
+                                src << "] + ";
+                                // Emit the member array index (0-based)
+                                if (ai->n_args == 1) {
+                                    ASR::expr_t *mem_idx =
+                                        ai->m_args[0].m_right
+                                        ? ai->m_args[0].m_right
+                                        : ai->m_args[0].m_left;
+                                    if (mem_idx) {
+                                        src << "((int)(";
+                                        visit_expr(mem_idx);
+                                        src << ") - 1)";
+                                    } else {
+                                        src << "0";
+                                    }
+                                } else {
+                                    src << "0";
+                                }
+                                src << "]";
+                                // Skip the normal indexing path below
+                                break;
+                            }
                         }
                     }
                 }
