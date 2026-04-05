@@ -4954,6 +4954,11 @@ public:
             // dimension to point to kernel-scope symbols. The
             // host_expr duplicate must capture the original
             // (caller-scope) references for the host-side call args.
+            // Track old→new expression replacements so that DoLoop
+            // bounds created by the ArrayBroadcast lowering (which
+            // copied the old dimension pointers) can be updated too.
+            std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>>
+                dim_replacements;
             {
                 ASRUtils::ExprStmtDuplicator dim_dup(al);
                 dim_dup.success = true;
@@ -4975,6 +4980,7 @@ public:
                             if (!expr_has_function_call(
                                     *dim_ptrs[e]))
                                 continue;
+                            ASR::expr_t *old_dim_expr = *dim_ptrs[e];
                             ASR::expr_t *host_expr =
                                 dim_dup.duplicate_expr(
                                     *dim_ptrs[e]);
@@ -5007,11 +5013,43 @@ public:
                             carg.loc = loc;
                             carg.m_value = host_expr;
                             call_args.push_back(al, carg);
-                            *dim_ptrs[e] = ASRUtils::EXPR(
+                            ASR::expr_t *new_dim_expr = ASRUtils::EXPR(
                                 ASR::make_Var_t(al, loc, psym));
+                            *dim_ptrs[e] = new_dim_expr;
+                            dim_replacements.push_back(
+                                {old_dim_expr, new_dim_expr});
                         }
                     }
                 }
+            }
+            // The ArrayBroadcast lowering (inline_elemental_array_var_
+            // in_body) may have created DoLoop statements whose bounds
+            // copied the old VLA dimension expression pointers before
+            // the pre-computation above replaced them. Walk the block
+            // body and patch any DoLoop bounds that still reference the
+            // old expressions.
+            if (!dim_replacements.empty()) {
+                std::function<void(ASR::stmt_t**, size_t)>
+                    patch_do_loop_bounds = [&](ASR::stmt_t **stmts,
+                                               size_t n_stmts) {
+                    for (size_t si = 0; si < n_stmts; si++) {
+                        if (ASR::is_a<ASR::DoLoop_t>(*stmts[si])) {
+                            ASR::DoLoop_t *dl =
+                                ASR::down_cast<ASR::DoLoop_t>(
+                                    stmts[si]);
+                            for (auto &[old_e, new_e] :
+                                    dim_replacements) {
+                                if (dl->m_head.m_start == old_e)
+                                    dl->m_head.m_start = new_e;
+                                if (dl->m_head.m_end == old_e)
+                                    dl->m_head.m_end = new_e;
+                            }
+                            patch_do_loop_bounds(dl->m_body,
+                                dl->n_body);
+                        }
+                    }
+                };
+                patch_do_loop_bounds(block->m_body, block->n_body);
             }
             // Remap Var references inside the block body
             GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
