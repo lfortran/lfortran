@@ -1062,13 +1062,61 @@ public:
                 continue;
             }
             ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
-            if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
-                new_body.push_back(al, stmt);
-                continue;
+
+            // Detect MatMul: either directly as the RHS, or inside a
+            // RealBinOp (e.g., z = matmul(w, a) + b).
+            ASR::IntrinsicArrayFunction_t *iaf = nullptr;
+            ASR::expr_t *binop_other = nullptr;
+            ASR::binopType binop_op = ASR::binopType::Add;
+            bool matmul_is_left = true;
+
+            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
+                iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
+                    asgn->m_value);
+            } else if (ASR::is_a<ASR::RealBinOp_t>(*asgn->m_value)) {
+                ASR::RealBinOp_t *rbop =
+                    ASR::down_cast<ASR::RealBinOp_t>(asgn->m_value);
+                ASR::expr_t *left = rbop->m_left;
+                ASR::expr_t *right = rbop->m_right;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*left))
+                    left = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                        left)->m_arg;
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*right))
+                    right = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                        right)->m_arg;
+                if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*left)) {
+                    auto *f =
+                        ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
+                            left);
+                    if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                            f->m_arr_intrinsic_id)
+                                == ASRUtils::IntrinsicArrayFunctions::
+                                    MatMul) {
+                        iaf = f;
+                        binop_other = rbop->m_right;
+                        binop_op = rbop->m_op;
+                        matmul_is_left = true;
+                    }
+                }
+                if (!iaf &&
+                        ASR::is_a<ASR::IntrinsicArrayFunction_t>(
+                            *right)) {
+                    auto *f =
+                        ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
+                            right);
+                    if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                            f->m_arr_intrinsic_id)
+                                == ASRUtils::IntrinsicArrayFunctions::
+                                    MatMul) {
+                        iaf = f;
+                        binop_other = rbop->m_left;
+                        binop_op = rbop->m_op;
+                        matmul_is_left = false;
+                    }
+                }
             }
-            ASR::IntrinsicArrayFunction_t *iaf =
-                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(asgn->m_value);
-            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+
+            if (!iaf || static_cast<ASRUtils::IntrinsicArrayFunctions>(
                     iaf->m_arr_intrinsic_id)
                         != ASRUtils::IntrinsicArrayFunctions::MatMul) {
                 new_body.push_back(al, stmt);
@@ -1203,15 +1251,32 @@ public:
                     ASR::make_Assignment_t(al, loc, c_i, sum,
                         nullptr, false, false)));
 
-                // i-loop body: c(i) = 0; do k ...
+                // i-loop body: c(i) = 0; do k ...; [c(i) = c(i) OP other(i)]
                 Vec<ASR::stmt_t*> i_body;
-                i_body.reserve(al, 2);
+                i_body.reserve(al, binop_other ? 3 : 2);
                 i_body.push_back(al, ASRUtils::STMT(
                     ASR::make_Assignment_t(al, loc, c_i, zero,
                         nullptr, false, false)));
                 i_body.push_back(al,
                     make_do_loop(var_k, dims_a[1].m_start,
                         dims_a[1].m_length, k_body));
+
+                if (binop_other) {
+                    ASR::expr_t *other_op = binop_other;
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
+                        other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                            other_op)->m_arg;
+                    ASR::expr_t *other_i = make_array_item_1d(
+                        other_op, var_i);
+                    ASR::expr_t *lhs = matmul_is_left ? c_i : other_i;
+                    ASR::expr_t *rhs = matmul_is_left ? other_i : c_i;
+                    ASR::expr_t *combined = ASRUtils::EXPR(
+                        ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
+                            rhs, elem_type, nullptr));
+                    i_body.push_back(al, ASRUtils::STMT(
+                        ASR::make_Assignment_t(al, loc, c_i, combined,
+                            nullptr, false, false)));
+                }
 
                 new_body.push_back(al,
                     make_do_loop(var_i, dims_a[0].m_start,
@@ -1238,13 +1303,30 @@ public:
                         nullptr, false, false)));
 
                 Vec<ASR::stmt_t*> j_body;
-                j_body.reserve(al, 2);
+                j_body.reserve(al, binop_other ? 3 : 2);
                 j_body.push_back(al, ASRUtils::STMT(
                     ASR::make_Assignment_t(al, loc, c_j, zero,
                         nullptr, false, false)));
                 j_body.push_back(al,
                     make_do_loop(var_k, dims_b[0].m_start,
                         dims_b[0].m_length, k_body));
+
+                if (binop_other) {
+                    ASR::expr_t *other_op = binop_other;
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
+                        other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                            other_op)->m_arg;
+                    ASR::expr_t *other_j = make_array_item_1d(
+                        other_op, var_j);
+                    ASR::expr_t *lhs = matmul_is_left ? c_j : other_j;
+                    ASR::expr_t *rhs = matmul_is_left ? other_j : c_j;
+                    ASR::expr_t *combined = ASRUtils::EXPR(
+                        ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
+                            rhs, elem_type, nullptr));
+                    j_body.push_back(al, ASRUtils::STMT(
+                        ASR::make_Assignment_t(al, loc, c_j, combined,
+                            nullptr, false, false)));
+                }
 
                 new_body.push_back(al,
                     make_do_loop(var_j, dims_b[1].m_start,
@@ -1273,13 +1355,30 @@ public:
                         nullptr, false, false)));
 
                 Vec<ASR::stmt_t*> j_body;
-                j_body.reserve(al, 2);
+                j_body.reserve(al, binop_other ? 3 : 2);
                 j_body.push_back(al, ASRUtils::STMT(
                     ASR::make_Assignment_t(al, loc, c_ij, zero,
                         nullptr, false, false)));
                 j_body.push_back(al,
                     make_do_loop(var_k, dims_a[1].m_start,
                         dims_a[1].m_length, k_body));
+
+                if (binop_other) {
+                    ASR::expr_t *other_op = binop_other;
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
+                        other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                            other_op)->m_arg;
+                    ASR::expr_t *other_ij = make_array_item_2d(
+                        other_op, var_i, var_j);
+                    ASR::expr_t *lhs = matmul_is_left ? c_ij : other_ij;
+                    ASR::expr_t *rhs = matmul_is_left ? other_ij : c_ij;
+                    ASR::expr_t *combined = ASRUtils::EXPR(
+                        ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
+                            rhs, elem_type, nullptr));
+                    j_body.push_back(al, ASRUtils::STMT(
+                        ASR::make_Assignment_t(al, loc, c_ij, combined,
+                            nullptr, false, false)));
+                }
 
                 Vec<ASR::stmt_t*> i_body;
                 i_body.reserve(al, 1);
