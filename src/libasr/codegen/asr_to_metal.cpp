@@ -1298,6 +1298,27 @@ public:
                 emit_local_var_decl(var);
             }
         }
+        // Pre-scan the inline function body for Allocate statements
+        // so we know sizes of function-internal allocatable arrays
+        // (needed for scalar-to-array broadcast assignments).
+        for (size_t i = 0; i < fn->n_body; i++) {
+            if (fn->m_body[i]->type == ASR::stmtType::Allocate) {
+                ASR::Allocate_t *alloc =
+                    ASR::down_cast<ASR::Allocate_t>(fn->m_body[i]);
+                for (size_t ai = 0; ai < alloc->n_args; ai++) {
+                    if (!alloc->m_args[ai].m_a) continue;
+                    if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
+                        continue;
+                    std::string vname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            alloc->m_args[ai].m_a)->m_v);
+                    int64_t sz = compute_alloc_size(alloc->m_args[ai]);
+                    if (sz > 0) {
+                        alloc_array_sizes[vname] = sz;
+                    }
+                }
+            }
+        }
         in_inline_function = true;
         for (size_t i = 0; i < fn->n_body; i++) {
             visit_stmt(fn->m_body[i]);
@@ -2070,6 +2091,27 @@ public:
                     src << "[0] = ";
                     visit_expr(a->m_value);
                     src << ";\n";
+                } else if (deref_target && !rhs_is_array_or_alloc) {
+                    // Scalar broadcast to allocatable array parameter:
+                    // v = 1.0 where v is thread T* with known size
+                    std::string tname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+                    auto sit = alloc_array_sizes.find(tname);
+                    if (sit != alloc_array_sizes.end() && sit->second > 1) {
+                        for (int64_t ei = 0; ei < sit->second; ei++) {
+                            visit_expr(a->m_target);
+                            src << "[" << ei << "] = ";
+                            visit_expr(a->m_value);
+                            src << ";\n";
+                            if (ei + 1 < sit->second) src << get_indent();
+                        }
+                    } else {
+                        src << "*";
+                        visit_expr(a->m_target);
+                        src << " = ";
+                        visit_expr(a->m_value);
+                        src << ";\n";
+                    }
                 } else {
                     if (deref_target) {
                         src << "*";

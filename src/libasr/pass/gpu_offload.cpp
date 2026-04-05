@@ -1803,6 +1803,109 @@ public:
                         if (dims[d].m_start && dims[d].m_length) {
                             loop_starts.push_back(dims[d].m_start);
                             loop_ends.push_back(dims[d].m_length);
+                        } else if (ASR::is_a<ASR::FunctionCall_t>(
+                                *arr_arg)) {
+                            // FunctionCall returns allocatable with
+                            // unknown dims. Extract allocation bounds
+                            // from the function body to avoid emitting
+                            // ArrayBound on a FunctionCall (unsupported
+                            // by Metal codegen).
+                            ASR::FunctionCall_t *fc =
+                                ASR::down_cast<ASR::FunctionCall_t>(
+                                    arr_arg);
+                            ASR::symbol_t *fn_sym =
+                                ASRUtils::symbol_get_past_external(
+                                    fc->m_name);
+                            bool found = false;
+                            if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
+                                ASR::Function_t *fn =
+                                    ASR::down_cast<ASR::Function_t>(
+                                        fn_sym);
+                                std::string ret_name;
+                                if (fn->m_return_var &&
+                                        ASR::is_a<ASR::Var_t>(
+                                            *fn->m_return_var)) {
+                                    ret_name =
+                                        ASRUtils::symbol_name(
+                                            ASR::down_cast<
+                                                ASR::Var_t>(
+                                                fn->m_return_var)
+                                                ->m_v);
+                                }
+                                for (size_t bi = 0;
+                                        bi < fn->n_body &&
+                                        !ret_name.empty() && !found;
+                                        bi++) {
+                                    if (!ASR::is_a<ASR::Allocate_t>(
+                                            *fn->m_body[bi]))
+                                        continue;
+                                    ASR::Allocate_t *al_stmt =
+                                        ASR::down_cast<
+                                            ASR::Allocate_t>(
+                                                fn->m_body[bi]);
+                                    for (size_t ai2 = 0;
+                                            ai2 < al_stmt->n_args;
+                                            ai2++) {
+                                        if (!al_stmt->m_args[ai2].m_a
+                                            || !ASR::is_a<ASR::Var_t>(
+                                                *al_stmt->m_args[ai2]
+                                                    .m_a))
+                                            continue;
+                                        std::string aname =
+                                            ASRUtils::symbol_name(
+                                                ASR::down_cast<
+                                                    ASR::Var_t>(
+                                                    al_stmt->m_args
+                                                        [ai2].m_a)
+                                                    ->m_v);
+                                        if (aname != ret_name)
+                                            continue;
+                                        if ((size_t)d <
+                                                al_stmt->m_args[ai2]
+                                                    .n_dims) {
+                                            ASR::dimension_t &adim =
+                                                al_stmt->m_args[ai2]
+                                                    .m_dims[d];
+                                            if (adim.m_start) {
+                                                loop_starts.push_back(
+                                                    adim.m_start);
+                                            } else {
+                                                loop_starts.push_back(
+                                                    ASRUtils::EXPR(
+                                                        ASR::make_IntegerConstant_t(
+                                                            al, loc,
+                                                            1,
+                                                            int_type,
+                                                            ASR::integerbozType::Decimal)));
+                                            }
+                                            if (adim.m_length) {
+                                                loop_ends.push_back(
+                                                    adim.m_length);
+                                            }
+                                            found = true;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!found) {
+                                ASR::expr_t *dim_expr =
+                                    ASRUtils::EXPR(
+                                        ASR::make_IntegerConstant_t(
+                                            al, loc, d + 1,
+                                            int_type,
+                                            ASR::integerbozType::Decimal));
+                                loop_starts.push_back(ASRUtils::EXPR(
+                                    ASR::make_ArrayBound_t(al, loc,
+                                        arr_arg, dim_expr, int_type,
+                                        ASR::arrayboundType::LBound,
+                                        nullptr)));
+                                loop_ends.push_back(ASRUtils::EXPR(
+                                    ASR::make_ArrayBound_t(al, loc,
+                                        arr_arg, dim_expr, int_type,
+                                        ASR::arrayboundType::UBound,
+                                        nullptr)));
+                            }
                         } else {
                             ASR::expr_t *dim_expr = ASRUtils::EXPR(
                                 ASR::make_IntegerConstant_t(al, loc,
