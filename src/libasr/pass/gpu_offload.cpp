@@ -1265,7 +1265,13 @@ public:
             // expand it into an ArrayItem on the base array by replacing
             // each range dimension with the corresponding loop variable
             // and keeping fixed dimensions as-is.
-            auto make_section_item = [&](ASR::expr_t *arr_expr,
+            // When the expression is an elemental FunctionCall with array
+            // arguments (e.g. f(z(1:n))), elementize by converting each
+            // array argument to a scalar indexed by the loop variable,
+            // producing f(z(i)) instead of f(z(1:n))[i].
+            std::function<ASR::expr_t*(ASR::expr_t*,
+                std::vector<ASR::expr_t*>)> make_section_item;
+            make_section_item = [&](ASR::expr_t *arr_expr,
                     std::vector<ASR::expr_t*> loop_vars) -> ASR::expr_t* {
                 if (ASR::is_a<ASR::ArraySection_t>(*arr_expr)) {
                     ASR::ArraySection_t *sec =
@@ -1290,6 +1296,34 @@ public:
                     return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                         sec->m_v, args.p, args.n, elem_type,
                         ASR::arraystorageType::ColMajor, nullptr));
+                }
+                if (ASR::is_a<ASR::FunctionCall_t>(*arr_expr)) {
+                    ASR::FunctionCall_t *fc =
+                        ASR::down_cast<ASR::FunctionCall_t>(arr_expr);
+                    if (ASRUtils::is_elemental(fc->m_name)) {
+                        Vec<ASR::call_arg_t> new_args;
+                        new_args.reserve(al, fc->n_args);
+                        for (size_t i = 0; i < fc->n_args; i++) {
+                            ASR::call_arg_t arg;
+                            arg.loc = fc->m_args[i].loc;
+                            if (fc->m_args[i].m_value &&
+                                    ASRUtils::is_array(
+                                        ASRUtils::expr_type(
+                                            fc->m_args[i].m_value))) {
+                                arg.m_value = make_section_item(
+                                    fc->m_args[i].m_value, loop_vars);
+                            } else {
+                                arg.m_value = fc->m_args[i].m_value;
+                            }
+                            new_args.push_back(al, arg);
+                        }
+                        ASR::ttype_t *ret_type = elem_type;
+                        return ASRUtils::EXPR(
+                            ASR::make_FunctionCall_t(al, fc->base.base.loc,
+                                fc->m_name, fc->m_original_name,
+                                new_args.p, new_args.n, ret_type,
+                                nullptr, fc->m_dt));
+                    }
                 }
                 if (loop_vars.size() == 1)
                     return make_array_item_1d(arr_expr, loop_vars[0]);
