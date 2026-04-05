@@ -1150,6 +1150,36 @@ public:
                 arg_b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_b)->m_arg;
             }
 
+            // Detect and unwrap Transpose on matmul arguments so the
+            // inlined loops index into the original array with swapped
+            // indices instead of calling _lcompilers_transpose (which
+            // is unavailable inside Metal GPU kernels).
+            bool transpose_a = false, transpose_b = false;
+            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg_a)) {
+                auto *iaf_a = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(arg_a);
+                if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                        iaf_a->m_arr_intrinsic_id)
+                            == ASRUtils::IntrinsicArrayFunctions::Transpose) {
+                    arg_a = iaf_a->m_args[0];
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_a)) {
+                        arg_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_a)->m_arg;
+                    }
+                    transpose_a = true;
+                }
+            }
+            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg_b)) {
+                auto *iaf_b = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(arg_b);
+                if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                        iaf_b->m_arr_intrinsic_id)
+                            == ASRUtils::IntrinsicArrayFunctions::Transpose) {
+                    arg_b = iaf_b->m_args[0];
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_b)) {
+                        arg_b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_b)->m_arg;
+                    }
+                    transpose_b = true;
+                }
+            }
+
             ASR::ttype_t *type_a = ASRUtils::expr_type(arg_a);
             ASR::ttype_t *type_b = ASRUtils::expr_type(arg_b);
             ASR::dimension_t *dims_a = nullptr, *dims_b = nullptr;
@@ -1303,15 +1333,20 @@ public:
 
             if (overload_id == 2 && rank_a == 2 && rank_b == 1) {
                 // c(i) = sum_k a(i,k) * b(k)
+                // With transpose_a: c(i) = sum_k a(k,i) * b(k)
                 ASR::expr_t *var_i = make_loop_var("__gpu_mm_i");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
                 ASR::expr_t *c_i = make_section_item(asgn->m_target, {var_i});
-                ASR::expr_t *a_ik = make_section_item(arg_a, {var_i, var_k});
+                ASR::expr_t *a_ik = transpose_a
+                    ? make_section_item(arg_a, {var_k, var_i})
+                    : make_section_item(arg_a, {var_i, var_k});
                 ASR::expr_t *b_k = make_section_item(arg_b, {var_k});
 
-                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, 1);
-                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, 0);
+                int i_dim = transpose_a ? 1 : 0;
+                int k_dim = transpose_a ? 0 : 1;
+                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, k_dim);
+                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, i_dim);
 
                 // k-loop body: c(i) = c(i) + a(i,k) * b(k)
                 Vec<ASR::stmt_t*> k_body;
@@ -1356,15 +1391,20 @@ public:
                     make_do_loop(var_i, i_start, i_end, i_body));
             } else if (overload_id == 1 && rank_a == 1 && rank_b == 2) {
                 // c(j) = sum_k a(k) * b(k, j)
+                // With transpose_b: c(j) = sum_k a(k) * b(j, k)
                 ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
                 ASR::expr_t *c_j = make_section_item(asgn->m_target, {var_j});
                 ASR::expr_t *a_k = make_section_item(arg_a, {var_k});
-                ASR::expr_t *b_kj = make_section_item(arg_b, {var_k, var_j});
+                ASR::expr_t *b_kj = transpose_b
+                    ? make_section_item(arg_b, {var_j, var_k})
+                    : make_section_item(arg_b, {var_k, var_j});
 
-                auto [k_start, k_end] = get_loop_bounds(arg_b, dims_b, 0);
-                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, 1);
+                int k_dim = transpose_b ? 1 : 0;
+                int j_dim = transpose_b ? 0 : 1;
+                auto [k_start, k_end] = get_loop_bounds(arg_b, dims_b, k_dim);
+                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, j_dim);
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
@@ -1407,18 +1447,27 @@ public:
                     make_do_loop(var_j, j_start, j_end, j_body));
             } else if (overload_id == 3 && rank_a == 2 && rank_b == 2) {
                 // c(i,j) = sum_k a(i,k) * b(k,j)
+                // With transpose_a: a(i,k) becomes a(k,i)
+                // With transpose_b: b(k,j) becomes b(j,k)
                 ASR::expr_t *var_i = make_loop_var("__gpu_mm_i");
                 ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
                 ASR::expr_t *c_ij = make_section_item(asgn->m_target,
                     {var_i, var_j});
-                ASR::expr_t *a_ik = make_section_item(arg_a, {var_i, var_k});
-                ASR::expr_t *b_kj = make_section_item(arg_b, {var_k, var_j});
+                ASR::expr_t *a_ik = transpose_a
+                    ? make_section_item(arg_a, {var_k, var_i})
+                    : make_section_item(arg_a, {var_i, var_k});
+                ASR::expr_t *b_kj = transpose_b
+                    ? make_section_item(arg_b, {var_j, var_k})
+                    : make_section_item(arg_b, {var_k, var_j});
 
-                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, 1);
-                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, 1);
-                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, 0);
+                int a_k_dim = transpose_a ? 0 : 1;
+                int a_i_dim = transpose_a ? 1 : 0;
+                int b_j_dim = transpose_b ? 0 : 1;
+                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, a_k_dim);
+                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, b_j_dim);
+                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, a_i_dim);
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
