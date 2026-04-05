@@ -5823,6 +5823,117 @@ public:
         return false;
     }
 
+    ASR::Variable_t* get_saved_allocatable_array_variable(ASR::expr_t* expr) {
+        if( expr == nullptr || !ASR::is_a<ASR::Var_t>(*expr) ) {
+            return nullptr;
+        }
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        if( sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym) ) {
+            return nullptr;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        if( v->m_storage != ASR::storage_typeType::Save ||
+                !ASRUtils::is_allocatable(v->m_type) ||
+                !ASRUtils::is_array(v->m_type) ) {
+            return nullptr;
+        }
+        return v;
+    }
+
+    llvm::Constant* get_saved_allocatable_array_descriptor_init(
+            llvm::Type* descriptor_type, llvm::Constant* data_init) {
+        constexpr int descriptor_base_addr_field = 0;
+        constexpr int descriptor_rank_field = 3;
+        constexpr int descriptor_dims_field = 8;
+        constexpr int dim_lower_bound_field = 0;
+        constexpr int dim_extent_field = 1;
+        constexpr int dim_stride_field = 2;
+
+        llvm::StructType* descriptor_struct =
+            llvm::dyn_cast<llvm::StructType>(descriptor_type);
+        LCOMPILERS_ASSERT(descriptor_struct != nullptr);
+
+        std::vector<llvm::Constant*> descriptor_fields;
+        descriptor_fields.reserve(descriptor_struct->getNumElements());
+        for( llvm::Type* field_type: descriptor_struct->elements() ) {
+            descriptor_fields.push_back(llvm::Constant::getNullValue(field_type));
+        }
+        descriptor_fields[descriptor_base_addr_field] = data_init;
+
+        llvm::ArrayType* dims_array_type = llvm::dyn_cast<llvm::ArrayType>(
+            descriptor_struct->getElementType(descriptor_dims_field));
+        LCOMPILERS_ASSERT(dims_array_type != nullptr);
+        llvm::StructType* dim_descriptor_type = llvm::dyn_cast<llvm::StructType>(
+            dims_array_type->getElementType());
+        LCOMPILERS_ASSERT(dim_descriptor_type != nullptr);
+
+        std::vector<llvm::Constant*> dim_fields;
+        dim_fields.reserve(dim_descriptor_type->getNumElements());
+        for( llvm::Type* field_type: dim_descriptor_type->elements() ) {
+            dim_fields.push_back(llvm::Constant::getNullValue(field_type));
+        }
+        dim_fields[dim_lower_bound_field] = llvm::ConstantInt::get(
+            dim_descriptor_type->getElementType(dim_lower_bound_field), 1);
+        dim_fields[dim_extent_field] = llvm::ConstantInt::get(
+            dim_descriptor_type->getElementType(dim_extent_field), 1);
+        dim_fields[dim_stride_field] = llvm::ConstantInt::get(
+            dim_descriptor_type->getElementType(dim_stride_field), 0);
+
+        llvm::Constant* dim_init = llvm::ConstantStruct::get(
+            dim_descriptor_type, dim_fields);
+        std::vector<llvm::Constant*> dims_inits(
+            dims_array_type->getNumElements(), dim_init);
+        descriptor_fields[descriptor_rank_field] = llvm::ConstantInt::get(
+            descriptor_struct->getElementType(descriptor_rank_field),
+            dims_array_type->getNumElements());
+        descriptor_fields[descriptor_dims_field] = llvm::ConstantArray::get(
+            dims_array_type, dims_inits);
+
+        return llvm::ConstantStruct::get(descriptor_struct, descriptor_fields);
+    }
+
+    void attach_saved_allocatable_array_descriptor_storage(llvm::Value* save_ptr,
+            llvm::Type* descriptor_type, ASR::ttype_t* array_type) {
+        constexpr int descriptor_base_addr_field = 0;
+
+        llvm::GlobalVariable* save_slot = llvm::dyn_cast<llvm::GlobalVariable>(save_ptr);
+        LCOMPILERS_ASSERT(save_slot != nullptr);
+
+        std::string descriptor_storage_name = std::string(save_slot->getName())
+            + ".__descriptor_storage";
+        module->getOrInsertGlobal(descriptor_storage_name, descriptor_type);
+        llvm::GlobalVariable* descriptor_storage =
+            module->getNamedGlobal(descriptor_storage_name);
+        descriptor_storage->setLinkage(llvm::GlobalValue::InternalLinkage);
+
+        llvm::StructType* descriptor_struct =
+            llvm::dyn_cast<llvm::StructType>(descriptor_type);
+        LCOMPILERS_ASSERT(descriptor_struct != nullptr);
+        llvm::Type* data_field_type =
+            descriptor_struct->getElementType(descriptor_base_addr_field);
+        llvm::Constant* data_init = llvm::Constant::getNullValue(data_field_type);
+
+        if( ASRUtils::is_character(*array_type) ) {
+            std::string string_descriptor_name = descriptor_storage_name
+                + ".__string_descriptor";
+            module->getOrInsertGlobal(string_descriptor_name,
+                llvm_utils->string_descriptor);
+            llvm::GlobalVariable* string_descriptor_storage =
+                module->getNamedGlobal(string_descriptor_name);
+            string_descriptor_storage->setLinkage(
+                llvm::GlobalValue::InternalLinkage);
+            string_descriptor_storage->setInitializer(
+                llvm::Constant::getNullValue(llvm_utils->string_descriptor));
+            data_init = string_descriptor_storage;
+        }
+
+        descriptor_storage->setInitializer(
+            get_saved_allocatable_array_descriptor_init(
+                descriptor_type, data_init));
+        save_slot->setInitializer(descriptor_storage);
+    }
+
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
         bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false) {
@@ -5841,20 +5952,26 @@ public:
         // Use the array element *storage* type (e.g. logical arrays are i8-backed).
         llvm::Type* llvm_data_type = llvm_utils->get_el_type(expr, asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
+        ASR::Variable_t* saved_allocatable_array_var =
+            get_saved_allocatable_array_variable(expr);
         if( is_malloc_array_type && !is_list && !is_data_only ) {
-            ptr_ = arr_descr->create_descriptor_alloca(type_, "arr_desc");
-            if(ASRUtils::is_character(*m_type)){
-                llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
-                builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
-            } else if (ASRUtils::non_unlimited_polymorphic_class(m_type)){ 
-                // For polymorphic allocatable arrays, set data pointer to NULL initially.
-                // The wrapper will be allocated when `allocate` is called.
-                auto const struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(expr));
-                llvm::Type* const llvm_class_type = llvm_utils->getClassType(struct_sym);
-                llvm::Value* const array_data = arr_descr->get_pointer_to_data(type_, ptr_);  
-                builder->CreateStore(llvm::ConstantPointerNull::get(llvm_class_type->getPointerTo()), array_data);
+            if( saved_allocatable_array_var != nullptr ) {
+                attach_saved_allocatable_array_descriptor_storage(ptr, type_, m_type);
+            } else {
+                ptr_ = arr_descr->create_descriptor_alloca(type_, "arr_desc");
+                if(ASRUtils::is_character(*m_type)){
+                    llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
+                    builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
+                } else if (ASRUtils::non_unlimited_polymorphic_class(m_type)){ 
+                    // For polymorphic allocatable arrays, set data pointer to NULL initially.
+                    // The wrapper will be allocated when `allocate` is called.
+                    auto const struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(expr));
+                    llvm::Type* const llvm_class_type = llvm_utils->getClassType(struct_sym);
+                    llvm::Value* const array_data = arr_descr->get_pointer_to_data(type_, ptr_);  
+                    builder->CreateStore(llvm::ConstantPointerNull::get(llvm_class_type->getPointerTo()), array_data);
+                }
+                arr_descr->fill_dimension_descriptor(type_, ptr_, n_dims);
             }
-            arr_descr->fill_dimension_descriptor(type_, ptr_, n_dims);
         }
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
@@ -5896,9 +6013,9 @@ public:
         }
         const bool special_array_type = ASRUtils::is_character(*m_type) || ASRUtils::non_unlimited_polymorphic_class(m_type); // already Nullified
         if( is_array_type && is_malloc_array_type &&
-            !is_list && !is_data_only && !special_array_type) {
+            !is_list && !is_data_only && !special_array_type &&
+            ptr_ != nullptr) {
             // Set allocatable arrays as unallocated
-            LCOMPILERS_ASSERT(ptr_ != nullptr);
             arr_descr->reset_is_allocated_flag(type_, ptr_, llvm_data_type);
         }
         if( ptr_ ) {
