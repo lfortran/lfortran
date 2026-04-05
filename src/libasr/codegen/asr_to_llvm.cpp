@@ -9226,8 +9226,7 @@ public:
                                 llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);
                                 size_t n_dims = (size_t)ASRUtils::extract_n_dims_from_ttype(value_type);
                                 LCOMPILERS_ASSERT(n_dims > 0);
-                                llvm::Value* llvm_target_ = arr_descr->create_descriptor_alloca(
-                                    llvm_target_type);
+                                llvm::Value* llvm_target_ = llvm_utils->CreateLoad2(llvm_target_type->getPointerTo(), llvm_target);
                                 // Allocate and fill the target array descriptor dimensions
                                 if (ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray) {
                                     arr_descr->fill_dimension_descriptor(llvm_target_type, llvm_target_, (int)n_dims);
@@ -9240,18 +9239,23 @@ public:
                                     fill_array_details(llvm_target_type, llvm_target_, wrapper_llvm_type, m_dims, (int)n_dims, false, false);
                                 }
 
-                                // Allocate the polymorphic wrapper for the associated target
+                                // Reuse the existing upoly wrapper of target if exists, otherwise allocate one and use it.
                                 ASR::ttype_t* wrapper_asr_type = ASRUtils::extract_type(target_type_);
                                 llvm::Type* wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                                     x.m_target, wrapper_asr_type, module.get());
-                                llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, wrapper_asr_type,
-                                    llvm_utils->getIntType(4),
-                                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
-                                llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                    context, *module, *builder, wrapper_size);
-                                builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                    wrapper_size, llvm::MaybeAlign());
-                                wrapper_ptr = builder->CreateBitCast(wrapper_ptr, wrapper_llvm_type->getPointerTo());
+                                llvm::Value* target_data_ptr = arr_descr->get_pointer_to_data(
+                                    llvm_target_type, llvm_target_);
+                                llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(
+                                    wrapper_llvm_type->getPointerTo(), target_data_ptr);
+                                llvm_utils->create_if_else(builder->CreateIsNull(wrapper_ptr),
+                                    [&]() {
+                                        llvm::Value* target_wrapper =
+                                            llvm_utils->alloc_zeroed_type(wrapper_llvm_type);
+                                        builder->CreateStore(target_wrapper, target_data_ptr);
+                                    },
+                                    []() {});
+                                wrapper_ptr = llvm_utils->CreateLoad2(
+                                    wrapper_llvm_type->getPointerTo(), target_data_ptr);
 
                                 // Get pointer to the first element of the concrete RHS array
                                 llvm::Value* value_data_ptr = nullptr;
@@ -9293,10 +9297,6 @@ public:
                                     llvm::Value* void_data_ptr = builder->CreateBitCast(value_data_ptr, llvm_utils->i8_ptr);
                                     builder->CreateStore(void_data_ptr, llvm_utils->create_gep2(wrapper_llvm_type, wrapper_ptr, 1));
                                 }
-
-                                // Store wrapper pointer into the class(*) array descriptor data field
-                                llvm::Value* target_data_ptr = arr_descr->get_pointer_to_data(llvm_target_type, llvm_target_);
-                                builder->CreateStore(wrapper_ptr, target_data_ptr);
 
                                 // If the RHS has a descriptor, copy its dims + offset over to our new descriptor
                                 if (ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray) {
@@ -9399,11 +9399,28 @@ public:
                                             llvm::Value* base_data_ptr = llvm_utils->CreateLoad2(wrapper_data_type, wrapper_data_field);
                                             loaded_data_ptr = builder->CreateBitCast(base_data_ptr, target_el_type->getPointerTo());
                                         }
+                                        builder->CreateStore(loaded_data_ptr, target_data_ptr);
+                                    } else if (source_is_class && target_is_class) { // Check wrapper (allocate if needed) + memCpy wrapper
+                                        llvm_utils->create_if_else(
+                                            builder->CreateIsNull(llvm_utils->CreateLoad2(target_el_type->getPointerTo(), target_data_ptr)), 
+                                                [&]() {
+                                                llvm::Value* new_wrapper =
+                                                    llvm_utils->alloc_zeroed_type(target_el_type);
+                                                builder->CreateStore(new_wrapper, target_data_ptr);
+                                            }, []() {});
+                                        llvm::Value* target_wrapper = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), target_data_ptr);
+                                        llvm::DataLayout data_layout(module->getDataLayout());
+                                        uint64_t wrapper_size = data_layout.getTypeAllocSize(target_el_type);
+                                        builder->CreateMemCpy(
+                                            target_wrapper, llvm::MaybeAlign(),
+                                            loaded_data_ptr, llvm::MaybeAlign(),
+                                            llvm::ConstantInt::get(
+                                                llvm::Type::getInt64Ty(context), wrapper_size));
                                     } else {
                                         // Simple bitcast if element types differ
                                         loaded_data_ptr = builder->CreateBitCast(loaded_data_ptr, target_el_type->getPointerTo());
+                                        builder->CreateStore(loaded_data_ptr, target_data_ptr);
                                     }
-                                    builder->CreateStore(loaded_data_ptr, target_data_ptr);
                                     
                                     // Deep Copy dimension descriptors (inline)
                                     llvm::Value* value_dim_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(value_array_desc_type, llvm_value);
