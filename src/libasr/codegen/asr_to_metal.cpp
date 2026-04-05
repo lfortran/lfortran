@@ -84,10 +84,19 @@ public:
     // in the kernel's inline functions.
     std::map<std::string, int64_t> alloc_array_sizes;
 
+    // Maps local allocatable variable names to Metal C expression strings
+    // for runtime-dependent allocation sizes that cannot be resolved to
+    // compile-time constants.
+    std::map<std::string, std::string> alloc_array_size_exprs;
+
     // Maps pointer-to-section variable names to the Metal C expression
     // string for the section size, set when processing Associate stmts
     // that point into array sections.
     std::map<std::string, std::string> ptr_section_sizes;
+
+    // Tracks pointer variables that are associated with local allocatable
+    // arrays (thread-space memory) rather than device buffer arrays.
+    std::set<std::string> ptr_to_local_alloc;
 
     // True when emitting an inline function body (not a kernel body).
     // Used to suppress array buffer indexing logic that only applies
@@ -153,7 +162,7 @@ public:
         ASR::ttype_t *type = var->m_type;
         ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable(type);
         bool is_alloc = ASRUtils::is_allocatable(type);
-        // Pointer to array: emit as a thread-space pointer declaration
+        // Pointer to array: emit as a device-space pointer declaration
         if (ASR::is_a<ASR::Pointer_t>(*base_type)) {
             ASR::ttype_t *ptr_inner = ASR::down_cast<ASR::Pointer_t>(
                 base_type)->m_type;
@@ -172,14 +181,45 @@ public:
             } else {
                 elem_type = metal_type(arr->m_type);
             }
+            if (is_alloc) {
+                // Allocatable array: check if a VLA workspace buffer
+                // was allocated for this variable
+                std::string vname(var->m_name);
+                auto vla_it = std::find_if(
+                    current_vla_infos.begin(), current_vla_infos.end(),
+                    [&](const GpuVlaWorkspace &ws) {
+                        return ws.var_name == vname;
+                    });
+                if (vla_it != current_vla_infos.end()) {
+                    src << get_indent() << "device " << elem_type
+                        << "* " << vname << " = __vla_" << vname
+                        << " + __thread_id * (";
+                    for (size_t d = 0; d < vla_it->dims.size(); d++) {
+                        if (d > 0) src << " * ";
+                        visit_expr(vla_it->dims[d].dim_expr);
+                    }
+                    src << ");\n";
+                    local_alloc_arrays.insert(vname);
+                    return;
+                }
+            }
             src << get_indent() << elem_type << " "
                 << var->m_name;
             if (is_alloc) {
-                // Allocatable array: use pre-scanned size or fallback
+                // Use pre-scanned compile-time size, runtime
+                // expression, or fallback
                 std::string vname(var->m_name);
                 auto it = alloc_array_sizes.find(vname);
-                int64_t sz = (it != alloc_array_sizes.end()) ? it->second : 1;
-                src << "[" << sz << "]";
+                if (it != alloc_array_sizes.end()) {
+                    src << "[" << it->second << "]";
+                } else {
+                    auto eit = alloc_array_size_exprs.find(vname);
+                    if (eit != alloc_array_size_exprs.end()) {
+                        src << "[" << eit->second << "]";
+                    } else {
+                        src << "[1]";
+                    }
+                }
                 local_alloc_arrays.insert(vname);
             } else if (arr->n_dims > 1) {
                 // Multi-dimensional arrays are flattened to 1D because
@@ -233,6 +273,102 @@ public:
         return total;
     }
 
+    // Compute the allocation size as a Metal C expression string.
+    // Used when compile-time constant evaluation fails.
+    std::string compute_alloc_size_expr(ASR::alloc_arg_t &arg) {
+        std::stringstream save;
+        save << src.str();
+        std::string result;
+        bool first = true;
+        for (size_t d = 0; d < arg.n_dims; d++) {
+            ASR::dimension_t &dim = arg.m_dims[d];
+            if (!dim.m_length) return "";
+            src.str("");
+            visit_expr(dim.m_length);
+            std::string dim_expr = src.str();
+            if (dim_expr.empty()) return "";
+            if (!first) result += " * ";
+            first = false;
+            result += "(" + dim_expr + ")";
+        }
+        src.str("");
+        src << save.str();
+        return result;
+    }
+
+    // Recursively scan a statement list for Allocate and Associate
+    // statements, recursing into nested control flow.
+    void scan_stmts_recursive(ASR::stmt_t **stmts, size_t n,
+            const std::map<std::string,
+                std::map<size_t, int64_t>> &func_allocs) {
+        for (size_t i = 0; i < n; i++) {
+            scan_stmt_for_alloc_sizes(stmts[i], func_allocs);
+            // Recurse into nested control flow
+            switch (stmts[i]->type) {
+                case ASR::stmtType::WhileLoop: {
+                    ASR::WhileLoop_t *wl =
+                        ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
+                    scan_stmts_recursive(wl->m_body, wl->n_body,
+                        func_allocs);
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    ASR::DoLoop_t *dl =
+                        ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+                    scan_stmts_recursive(dl->m_body, dl->n_body,
+                        func_allocs);
+                    break;
+                }
+                case ASR::stmtType::If: {
+                    ASR::If_t *if_s =
+                        ASR::down_cast<ASR::If_t>(stmts[i]);
+                    scan_stmts_recursive(if_s->m_body, if_s->n_body,
+                        func_allocs);
+                    scan_stmts_recursive(if_s->m_orelse, if_s->n_orelse,
+                        func_allocs);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }
+
+    // Recursively scan statements for assignment-based size propagation.
+    void propagate_stmts_recursive(ASR::stmt_t **stmts, size_t n,
+            bool &changed) {
+        for (size_t i = 0; i < n; i++) {
+            changed |= propagate_alloc_size_from_stmt(stmts[i]);
+            switch (stmts[i]->type) {
+                case ASR::stmtType::WhileLoop: {
+                    ASR::WhileLoop_t *wl =
+                        ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
+                    propagate_stmts_recursive(wl->m_body, wl->n_body,
+                        changed);
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    ASR::DoLoop_t *dl =
+                        ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+                    propagate_stmts_recursive(dl->m_body, dl->n_body,
+                        changed);
+                    break;
+                }
+                case ASR::stmtType::If: {
+                    ASR::If_t *if_s =
+                        ASR::down_cast<ASR::If_t>(stmts[i]);
+                    propagate_stmts_recursive(if_s->m_body, if_s->n_body,
+                        changed);
+                    propagate_stmts_recursive(if_s->m_orelse,
+                        if_s->n_orelse, changed);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }
+
     // Pre-scan functions defined in the kernel scope to collect
     // allocation sizes. For each function, records which parameter
     // index is allocated and its compile-time size. Then scans
@@ -240,6 +376,8 @@ public:
     // to those sizes, and propagates through assignments.
     void prescan_alloc_sizes(const ASR::GpuKernelFunction_t &kf) {
         alloc_array_sizes.clear();
+        alloc_array_size_exprs.clear();
+        ptr_to_local_alloc.clear();
         // Step 1: For each function in kernel scope, find Allocate
         // stmts and record param_index → size
         std::map<std::string, std::map<size_t, int64_t>> func_allocs;
@@ -275,31 +413,25 @@ public:
                 }
             }
         }
-        // Step 2: Scan kernel body for SubroutineCalls and map
-        // actual arguments to allocation sizes
-        for (size_t bi = 0; bi < kf.n_body; bi++) {
-            scan_stmt_for_alloc_sizes(kf.m_body[bi], func_allocs);
-        }
+        // Step 2: Recursively scan all kernel body statements
+        // (including inside WhileLoops, DoLoops, If blocks)
+        scan_stmts_recursive(kf.m_body, kf.n_body, func_allocs);
         // Step 3: Scan blocks in kernel body for the same
         for (size_t bi = 0; bi < kf.n_body; bi++) {
             if (kf.m_body[bi]->type == ASR::stmtType::BlockCall) {
                 ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
                     ASR::down_cast<ASR::BlockCall_t>(
                         kf.m_body[bi])->m_m);
-                for (size_t si = 0; si < block->n_body; si++) {
-                    scan_stmt_for_alloc_sizes(
-                        block->m_body[si], func_allocs);
-                }
+                scan_stmts_recursive(block->m_body, block->n_body,
+                    func_allocs);
             } else if (kf.m_body[bi]->type ==
                     ASR::stmtType::AssociateBlockCall) {
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast<ASR::AssociateBlock_t>(
                         ASR::down_cast<ASR::AssociateBlockCall_t>(
                             kf.m_body[bi])->m_m);
-                for (size_t si = 0; si < ab->n_body; si++) {
-                    scan_stmt_for_alloc_sizes(
-                        ab->m_body[si], func_allocs);
-                }
+                scan_stmts_recursive(ab->m_body, ab->n_body,
+                    func_allocs);
             }
         }
         // Step 4: Propagate sizes through assignments
@@ -307,29 +439,23 @@ public:
         bool changed = true;
         while (changed) {
             changed = false;
-            for (size_t bi = 0; bi < kf.n_body; bi++) {
-                changed |= propagate_alloc_size_from_stmt(kf.m_body[bi]);
-            }
+            propagate_stmts_recursive(kf.m_body, kf.n_body, changed);
             for (size_t bi = 0; bi < kf.n_body; bi++) {
                 if (kf.m_body[bi]->type == ASR::stmtType::BlockCall) {
                     ASR::Block_t *block =
                         ASR::down_cast<ASR::Block_t>(
                             ASR::down_cast<ASR::BlockCall_t>(
                                 kf.m_body[bi])->m_m);
-                    for (size_t si = 0; si < block->n_body; si++) {
-                        changed |= propagate_alloc_size_from_stmt(
-                            block->m_body[si]);
-                    }
+                    propagate_stmts_recursive(block->m_body,
+                        block->n_body, changed);
                 } else if (kf.m_body[bi]->type ==
                         ASR::stmtType::AssociateBlockCall) {
                     ASR::AssociateBlock_t *ab =
                         ASR::down_cast<ASR::AssociateBlock_t>(
                             ASR::down_cast<ASR::AssociateBlockCall_t>(
                                 kf.m_body[bi])->m_m);
-                    for (size_t si = 0; si < ab->n_body; si++) {
-                        changed |= propagate_alloc_size_from_stmt(
-                            ab->m_body[si]);
-                    }
+                    propagate_stmts_recursive(ab->m_body,
+                        ab->n_body, changed);
                 }
             }
         }
@@ -366,6 +492,37 @@ public:
                 int64_t sz = compute_alloc_size(alloc->m_args[ai]);
                 if (sz > 0) {
                     alloc_array_sizes[vname] = sz;
+                } else {
+                    std::string expr =
+                        compute_alloc_size_expr(alloc->m_args[ai]);
+                    if (!expr.empty()) {
+                        alloc_array_size_exprs[vname] = expr;
+                    }
+                }
+            }
+        } else if (stmt->type == ASR::stmtType::Associate) {
+            ASR::Associate_t *assoc =
+                ASR::down_cast<ASR::Associate_t>(stmt);
+            if (ASR::is_a<ASR::Var_t>(*assoc->m_target)
+                    && ASR::is_a<ASR::Var_t>(*assoc->m_value)) {
+                std::string tgt = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
+                std::string val = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(assoc->m_value)->m_v);
+                if (local_alloc_arrays.count(val) ||
+                        alloc_array_sizes.count(val) ||
+                        alloc_array_size_exprs.count(val)) {
+                    ptr_to_local_alloc.insert(tgt);
+                    auto sit = alloc_array_sizes.find(val);
+                    if (sit != alloc_array_sizes.end()) {
+                        alloc_array_size_exprs[tgt] =
+                            std::to_string(sit->second);
+                    } else {
+                        auto eit = alloc_array_size_exprs.find(val);
+                        if (eit != alloc_array_size_exprs.end()) {
+                            alloc_array_size_exprs[tgt] = eit->second;
+                        }
+                    }
                 }
             }
         }
@@ -380,10 +537,18 @@ public:
             ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
         std::string val = ASRUtils::symbol_name(
             ASR::down_cast<ASR::Var_t>(a->m_value)->m_v);
-        if (alloc_array_sizes.count(tgt)) return false;
-        if (!alloc_array_sizes.count(val)) return false;
-        alloc_array_sizes[tgt] = alloc_array_sizes[val];
-        return true;
+        // Propagate compile-time sizes
+        if (!alloc_array_sizes.count(tgt) && alloc_array_sizes.count(val)) {
+            alloc_array_sizes[tgt] = alloc_array_sizes[val];
+            return true;
+        }
+        // Propagate runtime size expressions
+        if (!alloc_array_size_exprs.count(tgt)
+                && alloc_array_size_exprs.count(val)) {
+            alloc_array_size_exprs[tgt] = alloc_array_size_exprs[val];
+            return true;
+        }
+        return false;
     }
 
     // Emit a pointer expression for an ArraySection. The result is a
@@ -511,6 +676,11 @@ public:
                     auto it2 = func_array_size_params.find(name);
                     if (it2 != func_array_size_params.end()) {
                         src << it2->second;
+                        return;
+                    }
+                    auto it3 = alloc_array_size_exprs.find(name);
+                    if (it3 != alloc_array_size_exprs.end()) {
+                        src << it3->second;
                         return;
                     }
                 }
@@ -935,8 +1105,12 @@ public:
         return nullptr;
     }
 
-    // Emit a Fortran function as a Metal inline function
-    void emit_function_def(ASR::Function_t *fn, const std::string &metal_name) {
+    // Emit a Fortran function as a Metal inline function.
+    // When out_addr_space is "thread", PointerArray Out params use thread.
+    // When "device", they use device address space.
+    void emit_function_def_impl(ASR::Function_t *fn,
+            const std::string &metal_name,
+            const std::string &out_addr_space) {
         func_array_size_params.clear();
         func_array_data_params.clear();
         func_array_params.clear();
@@ -1034,7 +1208,9 @@ public:
                     == ASR::array_physical_typeType::PointerArray
                     && (arg->m_intent == ASR::intentType::Out
                         || arg->m_intent == ASR::intentType::InOut));
-                src << (use_thread ? "thread " : "device ")
+                std::string addr_space = use_thread ? out_addr_space
+                    : "device";
+                src << addr_space << " "
                     << metal_type(arr->m_type) << "* " << arg->m_name;
                 std::string size_name = std::string("__size_") + arg->m_name;
                 src << ", int " << size_name;
@@ -1044,9 +1220,11 @@ public:
                 }
             } else if (ASRUtils::is_allocatable(arg->m_type)) {
                 // Allocatable out parameter (from subroutine_from_function):
-                // pass as thread-space pointer on Metal so both whole-array
-                // assignment (*r = val) and element access (r[i] = val) work.
-                src << "thread " << metal_type(arg->m_type) << "* "
+                // may be backed by thread-local stack (constant size) or
+                // device VLA workspace (runtime size). Use out_addr_space
+                // to generate both overloads.
+                src << out_addr_space << " "
+                    << metal_type(arg->m_type) << "* "
                     << arg->m_name;
                 alloc_pointer_params.insert(std::string(arg->m_name));
             } else {
@@ -1116,9 +1294,44 @@ public:
         func_array_params.clear();
     }
 
+    // Check if a function has any PointerArray Out/InOut parameter
+    // that needs an address space overload (both thread and device).
+    bool func_needs_device_overload(ASR::Function_t *fn) {
+        for (size_t i = 0; i < fn->n_args; i++) {
+            ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (is_array_type(arg->m_type)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                    arg->m_type);
+                if ((arr->m_physical_type
+                        == ASR::array_physical_typeType::FixedSizeArray)
+                    || (arr->m_physical_type
+                        == ASR::array_physical_typeType::PointerArray
+                        && (arg->m_intent == ASR::intentType::Out
+                            || arg->m_intent == ASR::intentType::InOut))) {
+                    return true;
+                }
+            } else if (ASRUtils::is_allocatable(arg->m_type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Emit a function with both thread and device overloads for
+    // array out parameters when needed.
+    void emit_function_def(ASR::Function_t *fn,
+            const std::string &metal_name) {
+        emit_function_def_impl(fn, metal_name, "thread");
+        if (func_needs_device_overload(fn)) {
+            emit_function_def_impl(fn, metal_name, "device");
+        }
+    }
+
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
         std::string name(x.m_name);
         local_alloc_arrays.clear();
+        ptr_section_sizes.clear();
 
         // Pre-scan Allocate statements to determine sizes
         // for local allocatable array variables.
@@ -1473,7 +1686,7 @@ public:
         for (size_t v = 0; v < current_vla_infos.size(); v++) {
             LCOMPILERS_ASSERT(current_vla_infos[v].buffer_index == buffer_idx);
             ASR::Variable_t *vla_var = nullptr;
-            // Look up the variable to get its Metal type string
+            // Look up the variable in block scopes
             for (size_t bi = 0; bi < x.n_body; bi++) {
                 if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[bi])) continue;
                 ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
@@ -1487,10 +1700,22 @@ public:
                     break;
                 }
             }
+            // Also look up in kernel scope (for allocatable VLAs)
+            if (!vla_var) {
+                ASR::symbol_t *sym = x.m_symtab->resolve_symbol(
+                    current_vla_infos[v].var_name);
+                if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+                    vla_var = ASR::down_cast<ASR::Variable_t>(sym);
+                }
+            }
             std::string elem_type_str = "float";
-            if (vla_var && ASR::is_a<ASR::Array_t>(*vla_var->m_type)) {
-                elem_type_str = metal_type(
-                    ASR::down_cast<ASR::Array_t>(vla_var->m_type)->m_type);
+            if (vla_var) {
+                ASR::ttype_t *vla_type = ASRUtils::type_get_past_allocatable(
+                    vla_var->m_type);
+                if (ASR::is_a<ASR::Array_t>(*vla_type)) {
+                    elem_type_str = metal_type(
+                        ASR::down_cast<ASR::Array_t>(vla_type)->m_type);
+                }
             }
 
             if (has_prev) src << ",\n";
@@ -1818,23 +2043,52 @@ public:
             }
             case ASR::stmtType::If: {
                 ASR::If_t *if_stmt = ASR::down_cast<ASR::If_t>(stmt);
-                src << get_indent() << "if (";
-                visit_expr(if_stmt->m_test);
-                src << ") {\n";
-                indent_level++;
-                for (size_t i = 0; i < if_stmt->n_body; i++) {
-                    visit_stmt(if_stmt->m_body[i]);
+                // On Metal, ArrayIsContiguous is always true.
+                // If the condition is LogicalNot(ArrayIsContiguous),
+                // skip the then-branch (dead code) and only emit
+                // the else-branch to avoid generating invalid Metal
+                // code from the non-contiguous copy path.
+                bool cond_always_false = false;
+                if (ASR::is_a<ASR::LogicalNot_t>(*if_stmt->m_test)) {
+                    ASR::LogicalNot_t *ln =
+                        ASR::down_cast<ASR::LogicalNot_t>(
+                            if_stmt->m_test);
+                    if (ASR::is_a<ASR::ArrayIsContiguous_t>(*ln->m_arg)) {
+                        cond_always_false = true;
+                    }
                 }
-                indent_level--;
-                if (if_stmt->n_orelse > 0) {
-                    src << get_indent() << "} else {\n";
-                    indent_level++;
+                bool cond_always_true = false;
+                if (ASR::is_a<ASR::ArrayIsContiguous_t>(
+                        *if_stmt->m_test)) {
+                    cond_always_true = true;
+                }
+                if (cond_always_false) {
                     for (size_t i = 0; i < if_stmt->n_orelse; i++) {
                         visit_stmt(if_stmt->m_orelse[i]);
                     }
+                } else if (cond_always_true) {
+                    for (size_t i = 0; i < if_stmt->n_body; i++) {
+                        visit_stmt(if_stmt->m_body[i]);
+                    }
+                } else {
+                    src << get_indent() << "if (";
+                    visit_expr(if_stmt->m_test);
+                    src << ") {\n";
+                    indent_level++;
+                    for (size_t i = 0; i < if_stmt->n_body; i++) {
+                        visit_stmt(if_stmt->m_body[i]);
+                    }
                     indent_level--;
+                    if (if_stmt->n_orelse > 0) {
+                        src << get_indent() << "} else {\n";
+                        indent_level++;
+                        for (size_t i = 0; i < if_stmt->n_orelse; i++) {
+                            visit_stmt(if_stmt->m_orelse[i]);
+                        }
+                        indent_level--;
+                    }
+                    src << get_indent() << "}\n";
                 }
-                src << get_indent() << "}\n";
                 break;
             }
             case ASR::stmtType::Return: {
@@ -2025,11 +2279,31 @@ public:
                 src << " = ";
                 emit_array_section_pointer(assoc->m_value);
                 src << ";\n";
-                if (!last_section_size.empty()
-                        && ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
+                if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
                     std::string tgt_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
-                    ptr_section_sizes[tgt_name] = last_section_size;
+                    if (!last_section_size.empty()) {
+                        ptr_section_sizes[tgt_name] = last_section_size;
+                    }
+                    // For pointer-to-local-alloc associations, record
+                    // the allocatable's size for later use
+                    if (ASR::is_a<ASR::Var_t>(*assoc->m_value)) {
+                        std::string val_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                assoc->m_value)->m_v);
+                        auto sit = alloc_array_sizes.find(val_name);
+                        if (sit != alloc_array_sizes.end()) {
+                            ptr_section_sizes[tgt_name] =
+                                std::to_string(sit->second);
+                        } else {
+                            auto eit =
+                                alloc_array_size_exprs.find(val_name);
+                            if (eit != alloc_array_size_exprs.end()) {
+                                ptr_section_sizes[tgt_name] =
+                                    eit->second;
+                            }
+                        }
+                    }
                 }
                 break;
             }
@@ -2202,6 +2476,20 @@ public:
                                     src << " - 1)";
                                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ab->m_v)) {
                                     emit_struct_member_array_size(ab->m_v);
+                                } else if (ASR::is_a<ASR::Var_t>(*ab->m_v)) {
+                                    std::string vname = ASRUtils::symbol_name(
+                                        ASR::down_cast<ASR::Var_t>(ab->m_v)->m_v);
+                                    auto pit = ptr_section_sizes.find(vname);
+                                    if (pit != ptr_section_sizes.end()) {
+                                        src << pit->second;
+                                    } else {
+                                        auto eit = alloc_array_size_exprs.find(vname);
+                                        if (eit != alloc_array_size_exprs.end()) {
+                                            src << eit->second;
+                                        } else {
+                                            src << "/* unknown ubound */";
+                                        }
+                                    }
                                 } else {
                                     src << "/* unknown ubound */";
                                 }
