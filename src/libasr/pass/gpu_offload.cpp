@@ -1303,6 +1303,185 @@ public:
         }
     }
 
+    // Inline IntrinsicArrayFunction Sum inside a DoConcurrentLoop body.
+    // Replaces:
+    //   results(i) = sum(a)
+    // With:
+    //   __gpu_sum_res = 0.0
+    //   do __gpu_sum_k = 1, n
+    //     __gpu_sum_res = __gpu_sum_res + a(__gpu_sum_k)
+    //   end do
+    //   results(i) = __gpu_sum_res
+    // This avoids generating a call to _lcompilers_Sum which is not
+    // available inside Metal GPU kernels.
+    void inline_intrinsic_sum(ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, x.n_body * 4);
+        bool changed = false;
+
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::IntrinsicArrayFunction_t *iaf =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(asgn->m_value);
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                    iaf->m_arr_intrinsic_id)
+                        != ASRUtils::IntrinsicArrayFunctions::Sum) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+
+            ASR::expr_t *arr_arg = iaf->m_args[0];
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arr_arg)) {
+                arr_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                    arr_arg)->m_arg;
+            }
+
+            ASR::ttype_t *arr_type = ASRUtils::expr_type(arr_arg);
+            ASR::dimension_t *dims = nullptr;
+            int rank = ASRUtils::extract_dimensions_from_ttype(arr_type, dims);
+            if (rank < 1 || !dims[0].m_start || !dims[0].m_length) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            ASR::ttype_t *elem_type = iaf->m_type;
+
+            SymbolTable *var_scope = current_scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+
+            auto make_var = [&](const std::string &prefix,
+                    ASR::ttype_t *type) -> ASR::expr_t* {
+                std::string name = var_scope->get_unique_name(prefix);
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                        s2c(al, name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, type),
+                        nullptr, ASR::abiType::Source,
+                        ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                var_scope->add_symbol(name, sym);
+                return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+            };
+
+            ASR::expr_t *res_var = make_var("__gpu_sum_res", elem_type);
+            ASR::expr_t *zero;
+            if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+                zero = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
+                    0.0, elem_type));
+            } else {
+                zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                    0, elem_type, ASR::integerbozType::Decimal));
+            }
+
+            // __gpu_sum_res = 0
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, res_var, zero,
+                    nullptr, false, false)));
+
+            // For each dimension, create a nested loop
+            // For 1D: do k = lb, ub; res = res + a(k); end do
+            // For nD: nested loops over all dimensions
+            std::vector<ASR::expr_t*> loop_vars;
+            for (int d = 0; d < rank; d++) {
+                loop_vars.push_back(make_var("__gpu_sum_k", int_type));
+            }
+
+            // Build array element access: a(k1, k2, ...)
+            Vec<ASR::array_index_t> idx_args;
+            idx_args.reserve(al, rank);
+            for (int d = 0; d < rank; d++) {
+                ASR::array_index_t ai;
+                ai.loc = loc;
+                ai.m_left = nullptr;
+                ai.m_right = loop_vars[d];
+                ai.m_step = nullptr;
+                idx_args.push_back(al, ai);
+            }
+            ASR::expr_t *arr_elem = ASRUtils::EXPR(
+                ASR::make_ArrayItem_t(al, loc, arr_arg,
+                    idx_args.p, idx_args.n, elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+
+            // res = res + a(k1, k2, ...)
+            ASR::expr_t *add_expr;
+            if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+                add_expr = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
+                    res_var, ASR::binopType::Add, arr_elem,
+                    elem_type, nullptr));
+            } else {
+                add_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    res_var, ASR::binopType::Add, arr_elem,
+                    elem_type, nullptr));
+            }
+            ASR::stmt_t *accum_stmt = ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, res_var, add_expr,
+                    nullptr, false, false));
+
+            // Build nested loops from innermost to outermost
+            Vec<ASR::stmt_t*> innermost_body;
+            innermost_body.reserve(al, 1);
+            innermost_body.push_back(al, accum_stmt);
+
+            ASR::stmt_t *loop_nest = nullptr;
+            for (int d = rank - 1; d >= 0; d--) {
+                ASR::do_loop_head_t head;
+                head.loc = loc;
+                head.m_v = loop_vars[d];
+                head.m_start = dims[d].m_start;
+                head.m_end = dims[d].m_length;
+                head.m_increment = nullptr;
+                Vec<ASR::stmt_t*> &body = (d == rank - 1)
+                    ? innermost_body : *reinterpret_cast<Vec<ASR::stmt_t*>*>(0);
+                if (d == rank - 1) {
+                    loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                        nullptr, head, innermost_body.p, innermost_body.n,
+                        nullptr, 0));
+                } else {
+                    Vec<ASR::stmt_t*> outer_body;
+                    outer_body.reserve(al, 1);
+                    outer_body.push_back(al, loop_nest);
+                    loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                        nullptr, head, outer_body.p, outer_body.n,
+                        nullptr, 0));
+                }
+            }
+            new_body.push_back(al, loop_nest);
+
+            // target = __gpu_sum_res
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, asgn->m_target, res_var,
+                    nullptr, false, false)));
+
+            changed = true;
+        }
+
+        if (changed) {
+            x.m_body = new_body.p;
+            x.n_body = new_body.n;
+        }
+    }
+
     // Inline ArraySection assignments inside a DoConcurrentLoop body.
     // Replaces:
     //   b(1:n(l), l) = 1.0   (ArraySection = ArrayBroadcast)
@@ -1994,6 +2173,9 @@ public:
 
         // Inline IntrinsicArrayFunction MatMul before kernel extraction
         inline_intrinsic_matmul(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Inline IntrinsicArrayFunction Sum before kernel extraction
+        inline_intrinsic_sum(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline ArraySection assignments before kernel extraction
         inline_array_section_assignment(
