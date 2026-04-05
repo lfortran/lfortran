@@ -674,7 +674,11 @@ public:
         }
     }
 
-    void emit_struct_member_data_ptrs(ASR::expr_t *expr) {
+    // Emit interleaved data pointer and size arguments for each
+    // allocatable array member of a struct-typed function/subroutine
+    // call argument, matching the parameter order in emit_function_def:
+    // (data_member1, size_member1, data_member2, size_member2, ...)
+    void emit_struct_member_args_interleaved(ASR::expr_t *expr) {
         ASR::Variable_t *var = nullptr;
         std::string var_name;
         if (ASR::is_a<ASR::Var_t>(*expr)) {
@@ -691,7 +695,6 @@ public:
         if (!ASR::is_a<ASR::Struct_t>(*st_sym)) return;
         ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(st_sym);
 
-        // Check if this local struct came from an array-of-struct element
         auto arr_it = struct_from_array_elem.find(var_name);
 
         for (size_t m = 0; m < st->n_members; m++) {
@@ -705,8 +708,7 @@ public:
                 ASRUtils::type_get_past_allocatable(mv->m_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
 
-            // If this struct came from an array-of-struct element,
-            // offset the data pointer using the offsets buffer
+            // Emit data pointer for this member
             if (arr_it != struct_from_array_elem.end()) {
                 std::string arr_name = arr_it->second.first;
                 std::string idx_str = arr_it->second.second;
@@ -717,31 +719,71 @@ public:
                         oit != struct_array_offset_params.end()) {
                     src << ", " << dit->second << " + "
                         << oit->second << "[" << idx_str << "]";
-                    continue;
+                } else {
+                    src << ", __data_" << var_name << "_"
+                        << st->m_members[m];
+                }
+            } else {
+                std::string key = var_name + "." + st->m_members[m];
+                auto it = func_array_data_params.find(key);
+                if (it != func_array_data_params.end()) {
+                    src << ", " << it->second;
+                } else {
+                    std::string suffix = std::string(".")
+                        + st->m_members[m];
+                    bool found = false;
+                    for (auto &entry : func_array_data_params) {
+                        if (entry.first.size() >= suffix.size() &&
+                                entry.first.compare(
+                                    entry.first.size() - suffix.size(),
+                                    suffix.size(), suffix) == 0) {
+                            src << ", " << entry.second;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        src << ", __data_" << var_name << "_"
+                            << st->m_members[m];
+                    }
                 }
             }
 
-            std::string key = var_name + "." + st->m_members[m];
-            auto it = func_array_data_params.find(key);
-            if (it != func_array_data_params.end()) {
-                src << ", " << it->second;
-            } else {
-                std::string suffix = std::string(".")
-                    + st->m_members[m];
-                bool found = false;
-                for (auto &entry : func_array_data_params) {
-                    if (entry.first.size() >= suffix.size() &&
-                            entry.first.compare(
-                                entry.first.size() - suffix.size(),
-                                suffix.size(), suffix) == 0) {
-                        src << ", " << entry.second;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    src << ", __data_" << var_name << "_"
+            // Emit size for this member
+            if (arr_it != struct_from_array_elem.end()) {
+                std::string arr_name = arr_it->second.first;
+                std::string idx_str = arr_it->second.second;
+                std::string key = arr_name + "." + st->m_members[m];
+                auto sit = struct_array_sizes_params.find(key);
+                if (sit != struct_array_sizes_params.end()) {
+                    src << ", " << sit->second << "[" << idx_str << "]";
+                } else {
+                    src << ", __size_" << var_name << "_"
                         << st->m_members[m];
+                }
+            } else {
+                std::string key = var_name + "." + st->m_members[m];
+                auto it = func_array_size_params.find(key);
+                if (it != func_array_size_params.end()) {
+                    src << ", " << it->second;
+                } else {
+                    std::string suffix = std::string(".")
+                        + st->m_members[m];
+                    bool found = false;
+                    for (auto &entry : func_array_size_params) {
+                        if (entry.first.size() >= suffix.size() &&
+                                entry.first.compare(
+                                    entry.first.size() - suffix.size(),
+                                    suffix.size(), suffix) == 0) {
+                            src << ", " << entry.second;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        src << ", __size_" << var_name << "_"
+                            << st->m_members[m];
+                    }
                 }
             }
         }
@@ -1953,9 +1995,7 @@ public:
                             src << ", ";
                             emit_array_size_expr(sc->m_args[i].m_value);
                         } else if (is_struct_type(arg_type)) {
-                            emit_struct_member_data_ptrs(
-                                sc->m_args[i].m_value);
-                            emit_struct_member_sizes(
+                            emit_struct_member_args_interleaved(
                                 sc->m_args[i].m_value);
                         }
                     }
@@ -2286,9 +2326,7 @@ public:
                                 src << ", ";
                                 emit_array_size_expr(fc->m_args[i].m_value);
                             } else if (is_struct_type(arg_type)) {
-                                emit_struct_member_data_ptrs(
-                                    fc->m_args[i].m_value);
-                                emit_struct_member_sizes(
+                                emit_struct_member_args_interleaved(
                                     fc->m_args[i].m_value);
                             }
                         }
