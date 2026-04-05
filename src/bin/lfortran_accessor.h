@@ -55,6 +55,14 @@ namespace LCompilers::LLanguageServer {
             int parent_index
         ) -> void {
             for (auto &a : x->m_symtab->get_scope()) {
+                // ExternalSymbol entries are compiler artifacts (mirror of
+                // `use`-imported symbols and member-access lookups). They do
+                // not correspond to user-written declarations and would
+                // otherwise pollute the outline (see
+                // lfortran/lfortran-vscode-client#39).
+                if ( LCompilers::ASR::is_a<LCompilers::ASR::ExternalSymbol_t>(*a.second) ) {
+                    continue;
+                }
                 std::size_t index = symbol_lists.size();
                 LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                 loc.parent_index = parent_index;
@@ -81,6 +89,15 @@ namespace LCompilers::LLanguageServer {
                 } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Program_t>(*a.second) ) {
                     LCompilers::ASR::Program_t *p = LCompilers::ASR::down_cast<LCompilers::ASR::Program_t>(a.second);
                     populateSymbolLists(p, lm, symbol_lists, index);
+                } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Struct_t>(*a.second) ) {
+                    LCompilers::ASR::Struct_t *s = LCompilers::ASR::down_cast<LCompilers::ASR::Struct_t>(a.second);
+                    populateSymbolLists(s, lm, symbol_lists, index);
+                } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Enum_t>(*a.second) ) {
+                    LCompilers::ASR::Enum_t *e = LCompilers::ASR::down_cast<LCompilers::ASR::Enum_t>(a.second);
+                    populateSymbolLists(e, lm, symbol_lists, index);
+                } else if ( LCompilers::ASR::is_a<LCompilers::ASR::Union_t>(*a.second) ) {
+                    LCompilers::ASR::Union_t *u = LCompilers::ASR::down_cast<LCompilers::ASR::Union_t>(a.second);
+                    populateSymbolLists(u, lm, symbol_lists, index);
                 }
             }
         }
