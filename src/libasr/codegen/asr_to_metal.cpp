@@ -160,14 +160,17 @@ public:
                 int64_t sz = (it != alloc_array_sizes.end()) ? it->second : 1;
                 src << "[" << sz << "]";
                 local_alloc_arrays.insert(vname);
+            } else if (arr->n_dims > 1) {
+                // Multi-dimensional arrays are flattened to 1D because
+                // ArrayItem uses linearized column-major indexing
+                int64_t total = get_total_elements(base_type);
+                src << "[" << total << "]";
             } else {
-                for (size_t d = 0; d < arr->n_dims; d++) {
-                    src << "[";
-                    if (arr->m_dims[d].m_length) {
-                        visit_expr(arr->m_dims[d].m_length);
-                    }
-                    src << "]";
+                src << "[";
+                if (arr->m_dims[0].m_length) {
+                    visit_expr(arr->m_dims[0].m_length);
                 }
+                src << "]";
             }
             src << ";\n";
         } else if (is_struct_type(base_type)) {
