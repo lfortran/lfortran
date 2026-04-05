@@ -2416,6 +2416,12 @@ public:
                     ASR::IntegerBinOp_t *ib = ASR::down_cast<ASR::IntegerBinOp_t>(e);
                     find_array_section(ib->m_left);
                     find_array_section(ib->m_right);
+                } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                    find_array_section(
+                        ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
+                } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                    find_array_section(
+                        ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
                 } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
                     ASR::ArrayBroadcast_t *ab = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
                     find_array_section(ab->m_array);
@@ -2682,6 +2688,26 @@ public:
                                 elementize(ib->m_left), ib->m_op,
                                 elementize(ib->m_right), ret_type,
                                 nullptr));
+                    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                        ASR::RealUnaryMinus_t *u =
+                            ASR::down_cast<ASR::RealUnaryMinus_t>(e);
+                        ASR::ttype_t *ret_type =
+                            ASRUtils::extract_type(
+                                ASRUtils::expr_type(e));
+                        return ASRUtils::EXPR(
+                            ASR::make_RealUnaryMinus_t(al, loc,
+                                elementize(u->m_arg), ret_type,
+                                nullptr));
+                    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                        ASR::IntegerUnaryMinus_t *u =
+                            ASR::down_cast<ASR::IntegerUnaryMinus_t>(e);
+                        ASR::ttype_t *ret_type =
+                            ASRUtils::extract_type(
+                                ASRUtils::expr_type(e));
+                        return ASRUtils::EXPR(
+                            ASR::make_IntegerUnaryMinus_t(al, loc,
+                                elementize(u->m_arg), ret_type,
+                                nullptr));
                     } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
                         return ASR::down_cast<ASR::ArrayBroadcast_t>(
                             e)->m_array;
@@ -2854,6 +2880,20 @@ public:
                     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                         elementize(ib->m_left), ib->m_op,
                         elementize(ib->m_right), elem_type, nullptr));
+                } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                    ASR::RealUnaryMinus_t *u =
+                        ASR::down_cast<ASR::RealUnaryMinus_t>(e);
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc,
+                        elementize(u->m_arg), elem_type, nullptr));
+                } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                    ASR::IntegerUnaryMinus_t *u =
+                        ASR::down_cast<ASR::IntegerUnaryMinus_t>(e);
+                    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
+                        elementize(u->m_arg), elem_type, nullptr));
                 } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
                     ASR::FunctionCall_t *fc =
                         ASR::down_cast<ASR::FunctionCall_t>(e);
