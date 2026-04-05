@@ -55,14 +55,6 @@ namespace LCompilers::LLanguageServer {
             int parent_index
         ) -> void {
             for (auto &a : x->m_symtab->get_scope()) {
-                // ExternalSymbol entries are compiler artifacts (mirror of
-                // `use`-imported symbols and member-access lookups). They do
-                // not correspond to user-written declarations and would
-                // otherwise pollute the outline (see
-                // lfortran/lfortran-vscode-client#39).
-                if ( LCompilers::ASR::is_a<LCompilers::ASR::ExternalSymbol_t>(*a.second) ) {
-                    continue;
-                }
                 std::size_t index = symbol_lists.size();
                 LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                 loc.parent_index = parent_index;

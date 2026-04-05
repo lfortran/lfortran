@@ -736,6 +736,14 @@ namespace LCompilers::LanguageServerProtocol {
             std::vector<const lc::document_symbols *> roots;
             roots.reserve(symbols.size());
             for (const auto &symbol : symbols) {
+                // ExternalSymbol entries are compiler artifacts (mirror of
+                // `use`-imported symbols and synthetic member-access lookups).
+                // They should not appear in the document outline (see
+                // lfortran/lfortran-vscode-client#39). They remain in the
+                // underlying symbol list so completion can still reach them.
+                if (symbol.symbol_type == ASR::symbolType::ExternalSymbol) {
+                    continue;
+                }
                 // Filter on the current document
                 if (document->path() == resolve(symbol.filename, *compilerOptions)) {
                     if (symbol.parent_index >= 0) {
@@ -780,6 +788,11 @@ namespace LCompilers::LanguageServerProtocol {
             std::unique_ptr<std::vector<SymbolInformation>> infos =
                 std::make_unique<std::vector<SymbolInformation>>();
             for (const auto &symbol : symbols) {
+                // Skip ExternalSymbol compiler artifacts in the outline; see
+                // the note in the hierarchical branch above.
+                if (symbol.symbol_type == ASR::symbolType::ExternalSymbol) {
+                    continue;
+                }
                 SymbolInformation &info = infos->emplace_back();
                 Location &location = info.location;
                 location.uri = "file://" + resolve(
