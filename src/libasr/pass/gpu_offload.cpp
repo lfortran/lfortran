@@ -898,6 +898,24 @@ public:
                 loop_start = as->m_args[0].m_left;
                 loop_end = as->m_args[0].m_right;
             }
+        } else if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(e));
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, e->base.loc, 4));
+                ASR::expr_t *dim1 = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, e->base.loc, 1,
+                        int_type, ASR::integerbozType::Decimal));
+                loop_start = ASRUtils::EXPR(
+                    ASR::make_ArrayBound_t(al, e->base.loc,
+                        e, dim1, int_type,
+                        ASR::arrayboundType::LBound, nullptr));
+                loop_end = ASRUtils::EXPR(
+                    ASR::make_ArrayBound_t(al, e->base.loc,
+                        e, dim1, int_type,
+                        ASR::arrayboundType::UBound, nullptr));
+            }
         } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
             ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
             find_array_section_bounds(rc->m_left, loop_start, loop_end);
@@ -929,8 +947,8 @@ public:
         }
     }
 
-    // Build an element-wise expression by replacing ArraySection nodes
-    // with ArrayItem nodes indexed by loop_var.
+    // Build an element-wise expression by replacing ArraySection and
+    // whole-array Var nodes with ArrayItem nodes indexed by loop_var.
     ASR::expr_t* elementize_mask(ASR::expr_t *e, ASR::expr_t *loop_var,
             ASR::ttype_t *logical_type, const Location &loc) {
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
@@ -956,6 +974,24 @@ public:
             return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                 as->m_v, new_args.p, new_args.n,
                 elem_type, ASR::arraystorageType::ColMajor, nullptr));
+        } else if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(e));
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                Vec<ASR::array_index_t> new_args;
+                new_args.reserve(al, 1);
+                ASR::array_index_t idx;
+                idx.loc = loc;
+                idx.m_left = nullptr;
+                idx.m_right = loop_var;
+                idx.m_step = nullptr;
+                new_args.push_back(al, idx);
+                ASR::ttype_t *elem_type = ASRUtils::extract_type(type);
+                return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                    e, new_args.p, new_args.n,
+                    elem_type, ASR::arraystorageType::ColMajor, nullptr));
+            }
+            return e;
         } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
             ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
             return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc,
@@ -2014,6 +2050,18 @@ public:
                     inline_sum_in_stmts(block->m_body, block->n_body,
                         block->m_symtab);
                 }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            // Recurse into AssociateBlock bodies
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                inline_sum_in_stmts(ab->m_body, ab->n_body,
+                    ab->m_symtab);
                 new_body.push_back(al, stmt);
                 continue;
             }
