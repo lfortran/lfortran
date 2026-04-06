@@ -3268,6 +3268,34 @@ public:
                         return elementize(
                             ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                                 e)->m_arg);
+                    } else if (ASR::is_a<
+                            ASR::StructInstanceMember_t>(*e)) {
+                        ASR::ttype_t *mtype =
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::expr_type(e));
+                        if (ASR::is_a<ASR::Array_t>(*mtype)) {
+                            ASR::ttype_t *melem =
+                                ASRUtils::extract_type(mtype);
+                            ASR::Array_t *ma =
+                                ASR::down_cast<ASR::Array_t>(mtype);
+                            Vec<ASR::array_index_t> idx_args;
+                            idx_args.reserve(al, ma->n_dims);
+                            for (size_t d = 0; d < ma->n_dims; d++) {
+                                ASR::array_index_t idx;
+                                idx.loc = loc;
+                                idx.m_left = nullptr;
+                                idx.m_right = loop_vars[
+                                    d < loop_vars.size() ? d : 0];
+                                idx.m_step = nullptr;
+                                idx_args.push_back(al, idx);
+                            }
+                            return ASRUtils::EXPR(
+                                ASR::make_ArrayItem_t(al, loc, e,
+                                    idx_args.p, idx_args.n, melem,
+                                    ASR::arraystorageType::ColMajor,
+                                    nullptr));
+                        }
+                        return e;
                     }
                     return e;
                 };
