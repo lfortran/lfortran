@@ -24,6 +24,42 @@ namespace LCompilers {
             return builder.CreateStore(x, y);
         }
 
+#if LLVM_VERSION_MAJOR < 15
+        void fix_pointer_type_mismatches(llvm::Module &module) {
+            for (auto &F : module) {
+                for (auto &BB : F) {
+                    for (auto &I : BB) {
+                        if (auto *SI = llvm::dyn_cast<llvm::StoreInst>(&I)) {
+                            llvm::Value *val = SI->getValueOperand();
+                            llvm::Value *ptr = SI->getPointerOperand();
+                            llvm::Type *pointee = ptr->getType()->getPointerElementType();
+                            if (val->getType()->isPointerTy() && pointee->isPointerTy()
+                                    && val->getType() != pointee) {
+                                llvm::IRBuilder<> B(SI);
+                                llvm::Value *cast = B.CreateBitCast(val, pointee);
+                                SI->setOperand(0, cast);
+                            }
+                        } else if (auto *CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
+                            llvm::Function *callee = CI->getCalledFunction();
+                            if (!callee) continue;
+                            llvm::FunctionType *ft = callee->getFunctionType();
+                            for (unsigned i = 0; i < CI->arg_size() && i < ft->getNumParams(); i++) {
+                                llvm::Value *arg = CI->getArgOperand(i);
+                                llvm::Type *param_ty = ft->getParamType(i);
+                                if (arg->getType()->isPointerTy() && param_ty->isPointerTy()
+                                        && arg->getType() != param_ty) {
+                                    llvm::IRBuilder<> B(CI);
+                                    llvm::Value *cast = B.CreateBitCast(arg, param_ty);
+                                    CI->setArgOperand(i, cast);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+#endif
+
         const char* get_allocator_function_name() {
             return use_memory_debug()
                 ? "_lfortran_get_compiler_mem_dbg_allocator"
