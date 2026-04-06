@@ -115,6 +115,11 @@ namespace LCompilers {
         test_output.SetArray();
 
         for (auto symbol : symbol_lists) {
+            // Only include symbols belonging to the current document
+            // (see lfortran/lfortran-vscode-client#60).
+            if (symbol.filename != infile) {
+                continue;
+            }
             uint32_t start_character = symbol.first_column;
             uint32_t start_line = symbol.first_line;
             uint32_t end_character = symbol.last_column;

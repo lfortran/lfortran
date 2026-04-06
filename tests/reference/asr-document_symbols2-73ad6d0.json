@@ -1,0 +1,13 @@
+{
+    "basename": "asr-document_symbols2-73ad6d0",
+    "cmd": "lfortran --show-document-symbols --no-color {infile}",
+    "infile": "tests/document_symbols2.f90",
+    "infile_hash": "ea6f83ead4bceaca11fae1520cb5601540b116bf276c9b704e7ba1a3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-document_symbols2-73ad6d0.stdout",
+    "stdout_hash": "1101214b21f5284a589ab0f23575efda49a3e0665b2ab3581f21c3d0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
