@@ -1633,8 +1633,177 @@ public:
     //   results(i) = __gpu_sum_res
     // This avoids generating a call to _lcompilers_Sum which is not
     // available inside Metal GPU kernels.
+    // Search an expression tree for an IntrinsicArrayFunction Sum node.
+    ASR::IntrinsicArrayFunction_t* find_sum_in_expr(ASR::expr_t *expr) {
+        if (!expr) return nullptr;
+        if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr)) {
+            auto *iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr);
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                    iaf->m_arr_intrinsic_id)
+                        == ASRUtils::IntrinsicArrayFunctions::Sum) {
+                return iaf;
+            }
+        }
+        if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
+            auto *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
+            auto *found = find_sum_in_expr(op->m_left);
+            if (found) return found;
+            return find_sum_in_expr(op->m_right);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
+            auto *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            auto *found = find_sum_in_expr(op->m_left);
+            if (found) return found;
+            return find_sum_in_expr(op->m_right);
+        }
+        if (ASR::is_a<ASR::RealUnaryMinus_t>(*expr)) {
+            return find_sum_in_expr(
+                ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_value);
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr)) {
+            return find_sum_in_expr(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_value);
+        }
+        if (ASR::is_a<ASR::Cast_t>(*expr)) {
+            return find_sum_in_expr(
+                ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            return find_sum_in_expr(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+        }
+        return nullptr;
+    }
+
+    // Replace a specific Sum node in an expression tree with a replacement.
+    bool replace_sum_in_expr(ASR::expr_t* &expr,
+            ASR::IntrinsicArrayFunction_t *target,
+            ASR::expr_t *replacement) {
+        if (!expr) return false;
+        if (expr == (ASR::expr_t*)target) {
+            expr = replacement;
+            return true;
+        }
+        if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
+            auto *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
+            if (replace_sum_in_expr(op->m_left, target, replacement))
+                return true;
+            return replace_sum_in_expr(op->m_right, target, replacement);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
+            auto *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+            if (replace_sum_in_expr(op->m_left, target, replacement))
+                return true;
+            return replace_sum_in_expr(op->m_right, target, replacement);
+        }
+        if (ASR::is_a<ASR::RealUnaryMinus_t>(*expr)) {
+            return replace_sum_in_expr(
+                ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_value,
+                target, replacement);
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr)) {
+            return replace_sum_in_expr(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_value,
+                target, replacement);
+        }
+        if (ASR::is_a<ASR::Cast_t>(*expr)) {
+            return replace_sum_in_expr(
+                ASR::down_cast<ASR::Cast_t>(expr)->m_arg,
+                target, replacement);
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            return replace_sum_in_expr(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg,
+                target, replacement);
+        }
+        return false;
+    }
+
+    // Extract nested Sum calls from assignment values into separate
+    // temporary assignments so the main Sum inlining logic can handle them.
+    // E.g., "cost = cost + sum(a)" becomes:
+    //   "__gpu_sum_tmp = sum(a)"
+    //   "cost = cost + __gpu_sum_tmp"
+    void extract_nested_sums(ASR::stmt_t** &stmts, size_t &n_stmts,
+                             SymbolTable *scope) {
+        Vec<ASR::stmt_t*> expanded;
+        expanded.reserve(al, n_stmts * 2);
+        bool changed = false;
+
+        for (size_t i = 0; i < n_stmts; i++) {
+            ASR::stmt_t *stmt = stmts[i];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                expanded.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn =
+                ASR::down_cast<ASR::Assignment_t>(stmt);
+
+            // Skip if value is already a direct Sum
+            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
+                expanded.push_back(al, stmt);
+                continue;
+            }
+
+            ASR::IntrinsicArrayFunction_t *sum_node =
+                find_sum_in_expr(asgn->m_value);
+            if (!sum_node) {
+                expanded.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            ASR::ttype_t *sum_type = sum_node->m_type;
+
+            SymbolTable *var_scope = scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+
+            std::string tmp_name =
+                var_scope->get_unique_name("__gpu_sum_tmp");
+            ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                    s2c(al, tmp_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, sum_type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            var_scope->add_symbol(tmp_name, tmp_sym);
+            ASR::expr_t *tmp_var = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, tmp_sym));
+
+            // Create: __gpu_sum_tmp = sum(a)
+            ASR::expr_t *sum_expr = (ASR::expr_t*)sum_node;
+            expanded.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, tmp_var, sum_expr,
+                    nullptr, false, false)));
+
+            // Replace sum node in original expression with tmp_var
+            replace_sum_in_expr(asgn->m_value, sum_node, tmp_var);
+
+            // Add modified original assignment
+            expanded.push_back(al, stmt);
+            changed = true;
+        }
+
+        if (changed) {
+            stmts = expanded.p;
+            n_stmts = expanded.n;
+        }
+    }
+
     void inline_sum_in_stmts(ASR::stmt_t** &stmts, size_t &n_stmts,
                              SymbolTable *scope) {
+        // Pre-pass: extract nested Sum calls into separate assignments
+        extract_nested_sums(stmts, n_stmts, scope);
+
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, n_stmts * 4);
         bool changed = false;
