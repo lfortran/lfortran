@@ -94,9 +94,14 @@ public:
     // that point into array sections.
     std::map<std::string, std::string> ptr_section_sizes;
 
-    // Tracks pointer variables that are associated with local allocatable
-    // arrays (thread-space memory) rather than device buffer arrays.
+    // Tracks pointer variables that are associated with local
+    // (thread-space) arrays rather than device buffer arrays.
     std::set<std::string> ptr_to_local_alloc;
+
+    // Kernel argument names (device buffer parameters). Used to
+    // distinguish device-space arrays from thread-local arrays when
+    // determining pointer address spaces.
+    std::set<std::string> kernel_arg_names;
 
     // Tracks function names already emitted across all kernels in the
     // current translation unit, preventing duplicate definitions when
@@ -172,14 +177,21 @@ public:
         ASR::ttype_t *type = var->m_type;
         ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable(type);
         bool is_alloc = ASRUtils::is_allocatable(type);
-        // Pointer to array: emit as a device-space pointer declaration
+        // Pointer to array: emit as device or thread pointer depending
+        // on whether it points to a device buffer or local array.
         if (ASR::is_a<ASR::Pointer_t>(*base_type)) {
             ASR::ttype_t *ptr_inner = ASR::down_cast<ASR::Pointer_t>(
                 base_type)->m_type;
             if (ASR::is_a<ASR::Array_t>(*ptr_inner)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(ptr_inner);
-                src << get_indent() << "device " << metal_type(arr->m_type)
-                    << "* " << var->m_name << ";\n";
+                std::string vname(var->m_name);
+                if (ptr_to_local_alloc.count(vname)) {
+                    src << get_indent() << "thread " << metal_type(arr->m_type)
+                        << "* " << vname << ";\n";
+                } else {
+                    src << get_indent() << "device " << metal_type(arr->m_type)
+                        << "* " << vname << ";\n";
+                }
                 return;
             }
         }
@@ -395,6 +407,12 @@ public:
         alloc_array_sizes.clear();
         alloc_array_size_exprs.clear();
         ptr_to_local_alloc.clear();
+        kernel_arg_names.clear();
+        // Collect kernel argument names (device buffer parameters)
+        for (size_t i = 0; i < kf.n_args; i++) {
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kf.m_args[i]);
+            kernel_arg_names.insert(ASRUtils::symbol_name(v->m_v));
+        }
         // Step 1: For each function in kernel scope, find Allocate
         // stmts and record param_index → size. Also detect assignments
         // of FixedSizeArray locals to output parameters (the passes may
@@ -679,24 +697,74 @@ public:
         } else if (stmt->type == ASR::stmtType::Associate) {
             ASR::Associate_t *assoc =
                 ASR::down_cast<ASR::Associate_t>(stmt);
-            if (ASR::is_a<ASR::Var_t>(*assoc->m_target)
-                    && ASR::is_a<ASR::Var_t>(*assoc->m_value)) {
+            if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
                 std::string tgt = ASRUtils::symbol_name(
                     ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
-                std::string val = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(assoc->m_value)->m_v);
-                if (local_alloc_arrays.count(val) ||
-                        alloc_array_sizes.count(val) ||
-                        alloc_array_size_exprs.count(val)) {
-                    ptr_to_local_alloc.insert(tgt);
-                    auto sit = alloc_array_sizes.find(val);
-                    if (sit != alloc_array_sizes.end()) {
-                        alloc_array_size_exprs[tgt] =
-                            std::to_string(sit->second);
-                    } else {
-                        auto eit = alloc_array_size_exprs.find(val);
-                        if (eit != alloc_array_size_exprs.end()) {
-                            alloc_array_size_exprs[tgt] = eit->second;
+                // Case 1: Associate target = Var (direct variable)
+                if (ASR::is_a<ASR::Var_t>(*assoc->m_value)) {
+                    std::string val = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            assoc->m_value)->m_v);
+                    // Propagate alloc size info to the pointer target
+                    if (local_alloc_arrays.count(val) ||
+                            alloc_array_sizes.count(val) ||
+                            alloc_array_size_exprs.count(val)) {
+                        auto sit = alloc_array_sizes.find(val);
+                        if (sit != alloc_array_sizes.end()) {
+                            alloc_array_size_exprs[tgt] =
+                                std::to_string(sit->second);
+                        } else {
+                            auto eit =
+                                alloc_array_size_exprs.find(val);
+                            if (eit != alloc_array_size_exprs.end()) {
+                                alloc_array_size_exprs[tgt] =
+                                    eit->second;
+                            }
+                        }
+                    }
+                    // A non-allocatable, non-kernel-arg local array
+                    // is in thread space (FixedSizeArray temporaries).
+                    // Allocatable locals may be VLA workspaces backed
+                    // by device buffers, so leave those as device.
+                    if (!kernel_arg_names.count(val)) {
+                        ASR::symbol_t *val_sym =
+                            ASR::down_cast<ASR::Var_t>(
+                                assoc->m_value)->m_v;
+                        if (ASR::is_a<ASR::Variable_t>(*val_sym)) {
+                            ASR::ttype_t *vt =
+                                ASR::down_cast<ASR::Variable_t>(
+                                    val_sym)->m_type;
+                            if (!ASRUtils::is_allocatable(vt)) {
+                                ptr_to_local_alloc.insert(tgt);
+                            }
+                        }
+                    }
+                }
+                // Case 2: Associate target = ArraySection (pointer to
+                // section of an array). If the base array is a
+                // non-allocatable local (not a kernel arg), the
+                // pointer is thread-space.
+                if (ASR::is_a<ASR::ArraySection_t>(*assoc->m_value)) {
+                    ASR::ArraySection_t *as =
+                        ASR::down_cast<ASR::ArraySection_t>(
+                            assoc->m_value);
+                    if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
+                        std::string base = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                as->m_v)->m_v);
+                        if (!kernel_arg_names.count(base)) {
+                            ASR::symbol_t *base_sym =
+                                ASR::down_cast<ASR::Var_t>(
+                                    as->m_v)->m_v;
+                            if (ASR::is_a<ASR::Variable_t>(
+                                    *base_sym)) {
+                                ASR::ttype_t *bt =
+                                    ASR::down_cast<ASR::Variable_t>(
+                                        base_sym)->m_type;
+                                if (!ASRUtils::is_allocatable(bt)) {
+                                    ptr_to_local_alloc.insert(tgt);
+                                }
+                            }
                         }
                     }
                 }
@@ -2356,6 +2424,9 @@ public:
                     visit_expr(a->m_target);
                     src << "[0] = ";
                     visit_expr(a->m_value);
+                    if (rhs_is_array_or_alloc) {
+                        src << "[0]";
+                    }
                     src << ";\n";
                 } else if (deref_target && !rhs_is_array_or_alloc) {
                     // Scalar broadcast to allocatable array parameter:
