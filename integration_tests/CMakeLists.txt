@@ -1815,7 +1815,7 @@ RUN(NAME bindc6 LABELS gfortran llvm EXTRAFILES bindc6_sum.c)
 RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME bindc_02 LABELS gfortran llvm EXTRAFILES bindc_02b.f90 bindc_02c.c)
 RUN(NAME bindc_03 LABELS gfortran llvm EXTRAFILES bindc_03c.c)
-RUN(NAME bindc_04 LABELS gfortran llvm EXTRAFILES bindc_04c.c NO_DETECT_LEAK)
+RUN(NAME bindc_04 LABELS gfortran llvm EXTRAFILES bindc_04c.c NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME bindc_05 LABELS gfortran llvm EXTRAFILES bindc_05c.c)
 RUN(NAME bindc_06 LABELS gfortran llvm EXTRAFILES bindc_06b.c)
 RUN(NAME bindc_07 LABELS gfortran llvm EXTRAFILES bindc_07.c)
