@@ -20001,6 +20001,7 @@ public:
                     } else {
                         llvm::Value *dim_val =
                             call_arg_values[dim.call_arg_index];
+                        LCOMPILERS_ASSERT(dim_val != nullptr);
                         per_thread_elems = builder->CreateMul(
                             per_thread_elems,
                             builder->CreateIntCast(dim_val, i64, true));
