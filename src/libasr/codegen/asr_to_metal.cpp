@@ -29,6 +29,34 @@ public:
     }
 };
 
+class GpuMathHelperScanner : public ASR::BaseWalkVisitor<GpuMathHelperScanner> {
+public:
+    bool needs_erf = false;
+    bool needs_erfc = false;
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        std::string fn_name(ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(x.m_name)));
+        if (fn_name.find("_lcompilers_erf_") == 0) {
+            needs_erf = true;
+        } else if (fn_name.find("_lcompilers_erfc_") == 0 &&
+                   fn_name.find("_lcompilers_erfc_scaled_") != 0) {
+            needs_erfc = true;
+        }
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_FunctionCall(x);
+    }
+    void visit_IntrinsicElementalFunction(
+            const ASR::IntrinsicElementalFunction_t &x) {
+        using IEF = ASRUtils::IntrinsicElementalFunctions;
+        if (x.m_intrinsic_id == static_cast<int64_t>(IEF::Erf)) {
+            needs_erf = true;
+        } else if (x.m_intrinsic_id == static_cast<int64_t>(IEF::Erfc)) {
+            needs_erfc = true;
+        }
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::
+            visit_IntrinsicElementalFunction(x);
+    }
+};
+
 class ASRToMetalVisitor
 {
 public:
@@ -1204,9 +1232,50 @@ public:
     }
 
 
+    bool needs_erf_helper = false;
+    bool needs_erfc_helper = false;
+
+    void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
+        GpuMathHelperScanner scanner;
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+                scanner.visit_symbol(*item.second);
+            }
+        }
+        needs_erf_helper = scanner.needs_erf;
+        needs_erfc_helper = scanner.needs_erfc;
+    }
+
+    void emit_math_helpers() {
+        if (needs_erf_helper) {
+            src << "// Abramowitz & Stegun approximation (7.1.26), max error ~1.5e-7\n";
+            src << "inline float _lf_erf(float x) {\n";
+            src << "    float ax = abs(x);\n";
+            src << "    float t = 1.0f / (1.0f + 0.3275911f * ax);\n";
+            src << "    float y = 1.0f - (((((1.061405429f * t + (-1.453152027f)) * t) + 1.421413741f) * t + (-0.284496736f)) * t + 0.254829592f) * t * exp(-(ax * ax));\n";
+            src << "    return x < 0.0f ? -y : y;\n";
+            src << "}\n\n";
+        }
+        if (needs_erfc_helper) {
+            if (!needs_erf_helper) {
+                src << "inline float _lf_erf(float x) {\n";
+                src << "    float ax = abs(x);\n";
+                src << "    float t = 1.0f / (1.0f + 0.3275911f * ax);\n";
+                src << "    float y = 1.0f - (((((1.061405429f * t + (-1.453152027f)) * t) + 1.421413741f) * t + (-0.284496736f)) * t + 0.254829592f) * t * exp(-(ax * ax));\n";
+                src << "    return x < 0.0f ? -y : y;\n";
+                src << "}\n\n";
+            }
+            src << "inline float _lf_erfc(float x) {\n";
+            src << "    return 1.0f - _lf_erf(x);\n";
+            src << "}\n\n";
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         src << "#include <metal_stdlib>\n";
         src << "using namespace metal;\n\n";
+
+        scan_for_math_helpers(tu);
 
         // Collect and emit struct definitions from all kernels once,
         // before any kernel code, to avoid redefinition errors when
@@ -1228,6 +1297,8 @@ public:
         for (ASR::Struct_t *st : ordered_structs) {
             emit_struct_def(st);
         }
+
+        emit_math_helpers();
 
         emitted_funcs.clear();
         for (auto &item : tu.m_symtab->get_scope()) {
@@ -3000,6 +3071,17 @@ public:
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
+                } else if (fn_name.find("_lcompilers_erf_") == 0) {
+                    src << "_lf_erf(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_erfc_") == 0 &&
+                           fn_name.find("_lcompilers_erfc_scaled_") != 0) {
+                    src << "_lf_erfc(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
                 } else if (fn_name.find("_lcompilers_mod_") == 0 ||
                            fn_name.find("_lcompilers_optimization_mod_") == 0) {
                     ASR::ttype_t *type = fc->m_type;
@@ -3407,6 +3489,16 @@ public:
             src << "((float)(";
             visit_expr(f->m_args[0]);
             src << "))";
+        } else if (id == static_cast<int64_t>(IEF::Erf)) {
+            needs_erf_helper = true;
+            src << "_lf_erf(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Erfc)) {
+            needs_erfc_helper = true;
+            src << "_lf_erfc(";
+            visit_expr(f->m_args[0]);
+            src << ")";
         } else {
             src << "/* unsupported intrinsic " << id << " */(";
             if (f->n_args > 0) visit_expr(f->m_args[0]);
