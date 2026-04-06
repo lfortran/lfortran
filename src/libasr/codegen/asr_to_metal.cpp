@@ -314,32 +314,35 @@ public:
     // statements, recursing into nested control flow.
     void scan_stmts_recursive(ASR::stmt_t **stmts, size_t n,
             const std::map<std::string,
-                std::map<size_t, int64_t>> &func_allocs) {
+                std::map<size_t, int64_t>> &func_allocs,
+            const std::map<std::string,
+                std::map<size_t, size_t>> &func_param_copies) {
         for (size_t i = 0; i < n; i++) {
-            scan_stmt_for_alloc_sizes(stmts[i], func_allocs);
+            scan_stmt_for_alloc_sizes(stmts[i], func_allocs,
+                func_param_copies);
             // Recurse into nested control flow
             switch (stmts[i]->type) {
                 case ASR::stmtType::WhileLoop: {
                     ASR::WhileLoop_t *wl =
                         ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
                     scan_stmts_recursive(wl->m_body, wl->n_body,
-                        func_allocs);
+                        func_allocs, func_param_copies);
                     break;
                 }
                 case ASR::stmtType::DoLoop: {
                     ASR::DoLoop_t *dl =
                         ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
                     scan_stmts_recursive(dl->m_body, dl->n_body,
-                        func_allocs);
+                        func_allocs, func_param_copies);
                     break;
                 }
                 case ASR::stmtType::If: {
                     ASR::If_t *if_s =
                         ASR::down_cast<ASR::If_t>(stmts[i]);
                     scan_stmts_recursive(if_s->m_body, if_s->n_body,
-                        func_allocs);
+                        func_allocs, func_param_copies);
                     scan_stmts_recursive(if_s->m_orelse, if_s->n_orelse,
-                        func_allocs);
+                        func_allocs, func_param_copies);
                     break;
                 }
                 default:
@@ -397,7 +400,10 @@ public:
         // of FixedSizeArray locals to output parameters (the passes may
         // lower allocatable array constants into a local FixedSizeArray
         // assigned to the out parameter, removing the Allocate).
+        // Also detect out_param = in_param assignments (the out param
+        // inherits the same size as the in param at the call site).
         std::map<std::string, std::map<size_t, int64_t>> func_allocs;
+        std::map<std::string, std::map<size_t, size_t>> func_param_copies;
         for (auto &item : kf.m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
             ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
@@ -482,18 +488,34 @@ public:
                             asgn->m_value)->m_v);
                     if (!param_names.count(tgt_name)) continue;
                     auto fit = local_fixed_sizes.find(val_name);
-                    if (fit == local_fixed_sizes.end()) continue;
-                    for (size_t pi = 0; pi < fn->n_args; pi++) {
-                        ASR::Variable_t *pv =
-                            ASR::down_cast<ASR::Variable_t>(
-                                ASR::down_cast<ASR::Var_t>(
-                                    fn->m_args[pi])->m_v);
-                        if (std::string(pv->m_name) == tgt_name) {
-                            if (!func_allocs[fn_name].count(pi)) {
-                                func_allocs[fn_name][pi] =
-                                    fit->second;
+                    if (fit != local_fixed_sizes.end()) {
+                        for (size_t pi = 0; pi < fn->n_args; pi++) {
+                            ASR::Variable_t *pv =
+                                ASR::down_cast<ASR::Variable_t>(
+                                    ASR::down_cast<ASR::Var_t>(
+                                        fn->m_args[pi])->m_v);
+                            if (std::string(pv->m_name) == tgt_name) {
+                                if (!func_allocs[fn_name].count(pi)) {
+                                    func_allocs[fn_name][pi] =
+                                        fit->second;
+                                }
+                                break;
                             }
-                            break;
+                        }
+                    } else if (param_names.count(val_name)) {
+                        // out_param = in_param: the out param inherits
+                        // the size of the in param at the call site.
+                        size_t tgt_idx = SIZE_MAX, val_idx = SIZE_MAX;
+                        for (size_t pi = 0; pi < fn->n_args; pi++) {
+                            std::string pname(ASRUtils::symbol_name(
+                                ASR::down_cast<ASR::Var_t>(
+                                    fn->m_args[pi])->m_v));
+                            if (pname == tgt_name) tgt_idx = pi;
+                            if (pname == val_name) val_idx = pi;
+                        }
+                        if (tgt_idx != SIZE_MAX && val_idx != SIZE_MAX) {
+                            func_param_copies[fn_name][tgt_idx] =
+                                val_idx;
                         }
                     }
                 }
@@ -501,7 +523,8 @@ public:
         }
         // Step 2: Recursively scan all kernel body statements
         // (including inside WhileLoops, DoLoops, If blocks)
-        scan_stmts_recursive(kf.m_body, kf.n_body, func_allocs);
+        scan_stmts_recursive(kf.m_body, kf.n_body, func_allocs,
+            func_param_copies);
         // Step 3: Scan blocks in kernel body for the same
         for (size_t bi = 0; bi < kf.n_body; bi++) {
             if (kf.m_body[bi]->type == ASR::stmtType::BlockCall) {
@@ -509,7 +532,7 @@ public:
                     ASR::down_cast<ASR::BlockCall_t>(
                         kf.m_body[bi])->m_m);
                 scan_stmts_recursive(block->m_body, block->n_body,
-                    func_allocs);
+                    func_allocs, func_param_copies);
             } else if (kf.m_body[bi]->type ==
                     ASR::stmtType::AssociateBlockCall) {
                 ASR::AssociateBlock_t *ab =
@@ -517,7 +540,7 @@ public:
                         ASR::down_cast<ASR::AssociateBlockCall_t>(
                             kf.m_body[bi])->m_m);
                 scan_stmts_recursive(ab->m_body, ab->n_body,
-                    func_allocs);
+                    func_allocs, func_param_copies);
             }
         }
         // Step 4: Propagate sizes through assignments
@@ -549,21 +572,88 @@ public:
 
     void scan_stmt_for_alloc_sizes(ASR::stmt_t *stmt,
             const std::map<std::string,
-                std::map<size_t, int64_t>> &func_allocs) {
+                std::map<size_t, int64_t>> &func_allocs,
+            const std::map<std::string,
+                std::map<size_t, size_t>> &func_param_copies) {
         if (stmt->type == ASR::stmtType::SubroutineCall) {
             ASR::SubroutineCall_t *sc =
                 ASR::down_cast<ASR::SubroutineCall_t>(stmt);
             std::string fn_name(ASRUtils::symbol_name(
                 ASRUtils::symbol_get_past_external(sc->m_name)));
             auto it = func_allocs.find(fn_name);
-            if (it == func_allocs.end()) return;
-            for (auto &[param_idx, sz] : it->second) {
-                if (param_idx >= sc->n_args) continue;
-                ASR::expr_t *actual = sc->m_args[param_idx].m_value;
-                if (!actual || !ASR::is_a<ASR::Var_t>(*actual)) continue;
-                std::string actual_name = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(actual)->m_v);
-                alloc_array_sizes[actual_name] = sz;
+            if (it != func_allocs.end()) {
+                for (auto &[param_idx, sz] : it->second) {
+                    if (param_idx >= sc->n_args) continue;
+                    ASR::expr_t *actual = sc->m_args[param_idx].m_value;
+                    if (!actual || !ASR::is_a<ASR::Var_t>(*actual)) continue;
+                    std::string actual_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(actual)->m_v);
+                    alloc_array_sizes[actual_name] = sz;
+                }
+            }
+            // out_param = in_param: propagate size from actual in arg
+            // to actual out arg.
+            auto cit = func_param_copies.find(fn_name);
+            if (cit != func_param_copies.end()) {
+                for (auto &[out_idx, in_idx] : cit->second) {
+                    if (out_idx >= sc->n_args || in_idx >= sc->n_args)
+                        continue;
+                    ASR::expr_t *out_actual =
+                        sc->m_args[out_idx].m_value;
+                    ASR::expr_t *in_actual =
+                        sc->m_args[in_idx].m_value;
+                    if (!out_actual || !in_actual) continue;
+                    if (!ASR::is_a<ASR::Var_t>(*out_actual)) continue;
+                    std::string out_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(out_actual)->m_v);
+                    if (alloc_array_sizes.count(out_name)) continue;
+                    // Try to get size from the in actual arg's type
+                    ASR::ttype_t *in_type =
+                        ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(in_actual));
+                    if (ASR::is_a<ASR::Array_t>(*in_type)) {
+                        ASR::Array_t *arr =
+                            ASR::down_cast<ASR::Array_t>(in_type);
+                        int64_t total = 1;
+                        bool all_const = true;
+                        for (size_t d = 0; d < arr->n_dims; d++) {
+                            if (arr->m_dims[d].m_length &&
+                                    ASR::is_a<ASR::IntegerConstant_t>(
+                                        *arr->m_dims[d].m_length)) {
+                                total *=
+                                    ASR::down_cast<
+                                        ASR::IntegerConstant_t>(
+                                            arr->m_dims[d].m_length)
+                                        ->m_n;
+                            } else {
+                                all_const = false;
+                                break;
+                            }
+                        }
+                        if (all_const && total > 0) {
+                            alloc_array_sizes[out_name] = total;
+                        }
+                    }
+                    // Also propagate from in actual's alloc size
+                    if (!alloc_array_sizes.count(out_name)
+                            && ASR::is_a<ASR::Var_t>(*in_actual)) {
+                        std::string in_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                in_actual)->m_v);
+                        auto sit = alloc_array_sizes.find(in_name);
+                        if (sit != alloc_array_sizes.end()) {
+                            alloc_array_sizes[out_name] = sit->second;
+                        } else {
+                            auto eit =
+                                alloc_array_size_exprs.find(in_name);
+                            if (eit !=
+                                    alloc_array_size_exprs.end()) {
+                                alloc_array_size_exprs[out_name] =
+                                    eit->second;
+                            }
+                        }
+                    }
+                }
             }
         } else if (stmt->type == ASR::stmtType::Allocate) {
             ASR::Allocate_t *alloc =
@@ -2204,6 +2294,42 @@ public:
                             src << "[" << ei << "];\n";
                             if (ei + 1 < sit->second) src << get_indent();
                         }
+                    } else if (ASR::is_a<ASR::Var_t>(*a->m_value)) {
+                        // Target size unknown: try using the RHS
+                        // array's size (e.g., r = a where a has a
+                        // known func_array_size_params entry).
+                        std::string rname = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(a->m_value)->m_v);
+                        auto rpit = func_array_size_params.find(rname);
+                        if (rpit != func_array_size_params.end()) {
+                            src << "for (int __copy_i = 0; __copy_i < "
+                                << rpit->second
+                                << "; __copy_i++) ";
+                            visit_expr(a->m_target);
+                            src << "[__copy_i] = ";
+                            visit_expr(a->m_value);
+                            src << "[__copy_i];\n";
+                        } else {
+                            auto rsit = alloc_array_sizes.find(rname);
+                            if (rsit != alloc_array_sizes.end() &&
+                                    rsit->second > 1) {
+                                for (int64_t ei = 0;
+                                        ei < rsit->second; ei++) {
+                                    visit_expr(a->m_target);
+                                    src << "[" << ei << "] = ";
+                                    visit_expr(a->m_value);
+                                    src << "[" << ei << "];\n";
+                                    if (ei + 1 < rsit->second)
+                                        src << get_indent();
+                                }
+                            } else {
+                                src << "*";
+                                visit_expr(a->m_target);
+                                src << " = ";
+                                visit_expr(a->m_value);
+                                src << "[0];\n";
+                            }
+                        }
                     } else {
                         src << "*";
                         visit_expr(a->m_target);
@@ -2720,15 +2846,20 @@ public:
                                     if (pit != ptr_section_sizes.end()) {
                                         src << pit->second;
                                     } else {
-                                        auto eit = alloc_array_size_exprs.find(vname);
-                                        if (eit != alloc_array_size_exprs.end()) {
-                                            src << eit->second;
+                                        auto fpit = func_array_size_params.find(vname);
+                                        if (fpit != func_array_size_params.end()) {
+                                            src << fpit->second;
                                         } else {
-                                            auto sit = alloc_array_sizes.find(vname);
-                                            if (sit != alloc_array_sizes.end()) {
-                                                src << sit->second;
+                                            auto eit = alloc_array_size_exprs.find(vname);
+                                            if (eit != alloc_array_size_exprs.end()) {
+                                                src << eit->second;
                                             } else {
-                                                src << "/* unknown ubound */";
+                                                auto sit = alloc_array_sizes.find(vname);
+                                                if (sit != alloc_array_sizes.end()) {
+                                                    src << sit->second;
+                                                } else {
+                                                    src << "/* unknown ubound for '" << vname << "' */";
+                                                }
                                             }
                                         }
                                     }

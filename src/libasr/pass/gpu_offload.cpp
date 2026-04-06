@@ -2066,6 +2066,49 @@ public:
                                 }
                             }
                             if (!found) {
+                                // No Allocate found in the function
+                                // body.  Fall back to the actual call
+                                // arguments: use the first array
+                                // actual argument's bounds (the
+                                // return shape typically matches the
+                                // input shape for element-wise
+                                // functions like r = a).
+                                for (size_t ai3 = 0;
+                                        ai3 < fc->n_args && !found;
+                                        ai3++) {
+                                    if (!fc->m_args[ai3].m_value)
+                                        continue;
+                                    ASR::expr_t *actual =
+                                        fc->m_args[ai3].m_value;
+                                    if (ASR::is_a<
+                                            ASR::ArrayPhysicalCast_t>(
+                                                *actual)) {
+                                        actual = ASR::down_cast<
+                                            ASR::ArrayPhysicalCast_t>(
+                                                actual)->m_arg;
+                                    }
+                                    ASR::ttype_t *atype =
+                                        ASRUtils::type_get_past_allocatable_pointer(
+                                            ASRUtils::expr_type(
+                                                actual));
+                                    ASR::dimension_t *adims = nullptr;
+                                    int arank =
+                                        ASRUtils::extract_dimensions_from_ttype(
+                                            atype, adims);
+                                    if (arank < 1 ||
+                                            (size_t)d >= (size_t)arank)
+                                        continue;
+                                    if (adims[d].m_start &&
+                                            adims[d].m_length) {
+                                        loop_starts.push_back(
+                                            adims[d].m_start);
+                                        loop_ends.push_back(
+                                            adims[d].m_length);
+                                        found = true;
+                                    }
+                                }
+                            }
+                            if (!found) {
                                 ASR::expr_t *dim_expr =
                                     ASRUtils::EXPR(
                                         ASR::make_IntegerConstant_t(
