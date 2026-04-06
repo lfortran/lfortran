@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
+#include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
@@ -4600,6 +4601,9 @@ public:
                                             al, content, false,
                                             *tu.m_symtab, lm_tmp);
                                         if (!res.ok) continue;
+                                        fix_external_symbols(
+                                            *res.result,
+                                            *tu.m_symtab);
                                         ASR::Module_t *submod =
                                             ASRUtils::extract_module(
                                                 *res.result);
@@ -4670,9 +4674,11 @@ public:
                                         ASR::down_cast<
                                             ASR::ExternalSymbol_t>(
                                                 item.second);
+                                    if (!es->m_external) continue;
                                     ASR::symbol_t *target =
                                         ASRUtils::symbol_get_past_external(
                                             es->m_external);
+                                    if (!target) continue;
                                     SymbolTable *target_parent =
                                         ASRUtils::symbol_parent_symtab(
                                             target);
@@ -4713,18 +4719,17 @@ public:
                                     ASR::Variable_t *var =
                                         ASR::down_cast<ASR::Variable_t>(
                                             item.second);
-                                    if (var->m_type_declaration &&
+                                    ASR::symbol_t *type_decl_resolved =
+                                        var->m_type_declaration
+                                            ? ASRUtils::symbol_get_past_external(
+                                                  var->m_type_declaration)
+                                            : nullptr;
+                                    if (type_decl_resolved &&
                                             ASR::is_a<ASR::Struct_t>(
-                                                *ASRUtils::
-                                                    symbol_get_past_external(
-                                                        var->m_type_declaration
-                                                    ))) {
+                                                *type_decl_resolved)) {
                                         std::string sname =
                                             ASRUtils::symbol_name(
-                                                ASRUtils::
-                                                    symbol_get_past_external(
-                                                        var->m_type_declaration
-                                                    ));
+                                                type_decl_resolved);
                                         ASR::symbol_t *ks =
                                             kernel_scope->get_symbol(
                                                 sname);
@@ -4948,9 +4953,11 @@ public:
                         ASR::ExternalSymbol_t *es =
                             ASR::down_cast<ASR::ExternalSymbol_t>(
                                 ditem.second);
+                        if (!es->m_external) continue;
                         ASR::symbol_t *target =
                             ASRUtils::symbol_get_past_external(
                                 es->m_external);
+                        if (!target) continue;
                         SymbolTable *tp =
                             ASRUtils::symbol_parent_symtab(target);
                         if (tp->asr_owner &&
@@ -4977,13 +4984,16 @@ public:
                         ASR::Variable_t *var =
                             ASR::down_cast<ASR::Variable_t>(
                                 ditem.second);
-                        if (var->m_type_declaration &&
+                        ASR::symbol_t *tdecl_resolved =
+                            var->m_type_declaration
+                                ? ASRUtils::symbol_get_past_external(
+                                      var->m_type_declaration)
+                                : nullptr;
+                        if (tdecl_resolved &&
                                 is_a<ASR::Struct_t>(
-                                    *ASRUtils::symbol_get_past_external(
-                                        var->m_type_declaration))) {
+                                    *tdecl_resolved)) {
                             std::string sn = ASRUtils::symbol_name(
-                                ASRUtils::symbol_get_past_external(
-                                    var->m_type_declaration));
+                                tdecl_resolved);
                             ASR::symbol_t *ks =
                                 kernel_scope->get_symbol(sn);
                             if (ks) var->m_type_declaration = ks;
