@@ -3783,7 +3783,74 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 break;
             }
             case ASR::ttypeType::StructType: {
-                if (ASRUtils::is_unlimited_polymorphic_type(
+                if (ASRUtils::is_array(asr_src_type) &&
+                    ASRUtils::is_unlimited_polymorphic_type(asr_src_type)) {
+                    ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(asr_src_type);
+                    llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
+                        asr_src_type, module);
+                    llvm::Type* llvm_data_type = get_type_from_ttype_t_util(
+                        src_expr, ASRUtils::extract_type(asr_src_type), module);
+                    switch (physical_type) {
+                        case ASR::array_physical_typeType::DescriptorArray: {
+                            if (ASRUtils::is_allocatable(ASRUtils::expr_type(src_expr))) {
+                                llvm::Type* index_type = arr_api->get_index_type();
+                                unsigned index_bit_width = index_type->getIntegerBitWidth();
+                                int index_kind = index_bit_width / 8;
+                                llvm::DataLayout data_layout(module->getDataLayout());
+                                uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
+                                llvm::Value* num_elements = arr_api->get_array_size(
+                                    llvm_array_type, src, nullptr, index_kind);
+                                llvm::Value* total_memory = builder->CreateMul(num_elements,
+                                    llvm::ConstantInt::get(context,
+                                        llvm::APInt(index_bit_width, data_type_size)));
+                                llvm::Value* ptr_to_data = arr_api->get_pointer_to_data(
+                                    llvm_array_type, dest);
+                                llvm::Value* dest_data = CreateLoad2(
+                                    llvm_data_type->getPointerTo(), ptr_to_data);
+                                llvm::Value* reallocated_arr = LLVMArrUtils::lfortran_realloc(
+                                    context, *module, *builder, dest_data, total_memory);
+                                builder->CreateStore(builder->CreateBitCast(
+                                    reallocated_arr, llvm_data_type->getPointerTo()),
+                                    ptr_to_data);
+                                llvm::Value* offset_val = arr_api->get_offset(
+                                    llvm_array_type, dest, false);
+                                builder->CreateStore(
+                                    llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
+                                    offset_val);
+                            }
+                            llvm::Value* is_allocated = arr_api->get_is_allocated_flag(
+                                src, src_expr);
+                            create_if_else(is_allocated, [=]() {
+                                arr_api->copy_array(llvm_array_type, src,
+                                    llvm_array_type, dest, module, src_expr,
+                                    asr_src_type, false);
+                            }, [=]() {});
+                            break;
+                        }
+                        case ASR::array_physical_typeType::FixedSizeArray: {
+                            llvm::DataLayout data_layout(module->getDataLayout());
+                            llvm::Value* src_data = create_gep2(llvm_array_type, src, 0);
+                            llvm::Value* dest_data = create_gep2(llvm_array_type, dest, 0);
+                            ASR::dimension_t* asr_dims = nullptr;
+                            size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                asr_src_type, asr_dims);
+                            int64_t size = ASRUtils::get_fixed_size_of_array(
+                                asr_dims, asr_n_dims);
+                            uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
+                            llvm::Value* llvm_size = llvm::ConstantInt::get(
+                                context, llvm::APInt(32, size));
+                            llvm_size = builder->CreateMul(llvm_size,
+                                llvm::ConstantInt::get(context,
+                                    llvm::APInt(32, data_size)));
+                            builder->CreateMemCpy(dest_data, llvm::MaybeAlign(),
+                                src_data, llvm::MaybeAlign(), llvm_size);
+                            break;
+                        }
+                        default: {
+                            LCOMPILERS_ASSERT(false);
+                        }
+                    }
+                } else if (ASRUtils::is_unlimited_polymorphic_type(
                     ASRUtils::get_struct_sym_from_struct_expr(src_expr)) && !ASRUtils::is_array(asr_src_type) &&
                     !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_dest_type))) {
                     llvm::Type* value_llvm_type = get_type_from_ttype_t_util(

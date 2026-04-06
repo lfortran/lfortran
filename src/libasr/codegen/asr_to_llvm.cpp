@@ -10797,7 +10797,50 @@ public:
                 asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), true);
             return ;
         } else if ((is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)) {
-            if (ASRUtils::is_allocatable(asr_target_type)) {
+            if (is_value_unlimited_polymorphic && is_target_unlimited_polymorphic &&
+                ASRUtils::is_array(asr_target_type) && ASRUtils::is_array(asr_value_type)) {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_value);
+                llvm::Value* src_alloca = tmp;
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                this->visit_expr(*x.m_target);
+                is_assignment_target = is_assignment_target_copy;
+                llvm::Value* dest_alloca = tmp;
+                ptr_loads = ptr_loads_copy;
+                ASR::ttype_t* target_inner = ASRUtils::type_get_past_allocatable(asr_target_type);
+                ASR::ttype_t* value_inner = ASRUtils::type_get_past_allocatable(asr_value_type);
+                llvm::Type* el_type = llvm_utils->get_el_type(
+                    x.m_target, ASRUtils::extract_type(asr_target_type), module.get());
+                llvm::Type* desc_type = llvm_utils->arr_api->get_array_type(
+                    x.m_target, target_inner, el_type, false);
+                llvm::Value* src_desc = src_alloca;
+                if (ASRUtils::is_allocatable(asr_value_type)) {
+                    src_desc = llvm_utils->CreateLoad2(desc_type->getPointerTo(), src_alloca);
+                }
+                llvm::Value* dest_desc = dest_alloca;
+                if (ASRUtils::is_allocatable(asr_target_type)) {
+                    llvm::Value* dest_desc_raw = llvm_utils->CreateLoad2(
+                        desc_type->getPointerTo(), dest_alloca);
+                    llvm::Value* is_null = builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(dest_desc_raw,
+                            llvm::Type::getInt64Ty(context)),
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                            llvm::APInt(64, 0)));
+                    llvm_utils->create_if_else(is_null, [&]() {
+                        llvm::Value* new_desc = arr_descr->allocate_descriptor_on_heap(desc_type);
+                        arr_descr->reset_is_allocated_flag(desc_type, new_desc, el_type);
+                        LLVM::CreateStore(*builder, new_desc, dest_alloca);
+                    }, []() {});
+                    dest_desc = llvm_utils->CreateLoad2(
+                        desc_type->getPointerTo(), dest_alloca);
+                }
+                llvm_utils->deepcopy(x.m_value, src_desc, dest_desc,
+                    value_inner, target_inner, module.get());
+                return;
+            }
+            if (ASRUtils::is_allocatable(asr_target_type) && !ASRUtils::is_array(asr_target_type)) {
                 check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
             }
             int64_t ptr_loads_copy = ptr_loads;
@@ -16364,8 +16407,46 @@ public:
         builder->CreateCall(fn, {str_data, str_len, null_fmt, arr_ptr});
     }
 
+    llvm::Function* get_string_read_scalar_function(ASR::ttype_t* type) {
+        ASR::ttype_t* base = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(type));
+        std::string func_name;
+        llvm::Type* val_type = nullptr;
+        if (ASR::is_a<ASR::Integer_t>(*base)) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(base);
+            if (kind == 1) { func_name = "_lfortran_string_read_i8"; val_type = llvm::Type::getInt8Ty(context); }
+            else if (kind == 2) { func_name = "_lfortran_string_read_i16"; val_type = llvm::Type::getInt16Ty(context); }
+            else if (kind == 4) { func_name = "_lfortran_string_read_i32"; val_type = llvm::Type::getInt32Ty(context); }
+            else if (kind == 8) { func_name = "_lfortran_string_read_i64"; val_type = llvm::Type::getInt64Ty(context); }
+        } else if (ASR::is_a<ASR::Real_t>(*base)) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(base);
+            if (kind == 4) { func_name = "_lfortran_string_read_f32"; val_type = llvm::Type::getFloatTy(context); }
+            else if (kind == 8) { func_name = "_lfortran_string_read_f64"; val_type = llvm::Type::getDoubleTy(context); }
+        }
+        if (func_name.empty()) {
+            throw CodeGenError("String read not supported for this element type in implied DO loop");
+        }
+        llvm::Function* fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType* ft = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context),
+                {character_type, llvm::Type::getInt64Ty(context),
+                 character_type, val_type->getPointerTo(),
+                 llvm::Type::getInt32Ty(context)->getPointerTo(),
+                 llvm::Type::getInt64Ty(context)->getPointerTo()},
+                false);
+            fn = llvm::Function::Create(ft,
+                llvm::Function::ExternalLinkage, func_name, module.get());
+        }
+        return fn;
+    }
+
     void generate_read_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
-            llvm::Value* unit_val, llvm::Value* iostat) {
+            llvm::Value* unit_val, llvm::Value* iostat,
+            bool is_string_read = false,
+            llvm::Value* str_data = nullptr,
+            llvm::Value* str_len = nullptr,
+            llvm::Value* str_offset = nullptr) {
         ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
             ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
 
@@ -16407,7 +16488,8 @@ public:
 
         if (idl->n_values == 1 && ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])) {
             ASR::ImpliedDoLoop_t* inner_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[0]);
-            generate_read_implied_do_loop(inner_idl, unit_val, iostat);
+            generate_read_implied_do_loop(inner_idl, unit_val, iostat,
+                is_string_read, str_data, str_len, str_offset);
         } else {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -16416,20 +16498,27 @@ public:
             ptr_loads = ptr_loads_copy;
 
             ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
-            llvm::Function* read_fn = get_read_function(elem_type);
-            llvm::Value* read_elem_ptr = elem_ptr;
-            if (ASRUtils::is_logical(*elem_type)) {
-                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
-                    llvm::Type::getInt1Ty(context));
-                builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
-                int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-                llvm::Value* loaded = llvm_utils->CreateLoad2(
-                    llvm::Type::getInt1Ty(context), tmp_bool);
-                llvm::Value* widened = builder->CreateZExt(loaded,
-                    llvm_utils->getIntType(kind));
-                builder->CreateStore(widened, elem_ptr);
+            if (is_string_read) {
+                llvm::Function* str_fn = get_string_read_scalar_function(elem_type);
+                llvm::Value* null_fmt = llvm::ConstantPointerNull::get(
+                    llvm::Type::getInt8Ty(context)->getPointerTo());
+                builder->CreateCall(str_fn, {str_data, str_len, null_fmt,
+                    elem_ptr, iostat, str_offset});
             } else {
-                builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
+                llvm::Function* read_fn = get_read_function(elem_type);
+                if (ASRUtils::is_logical(*elem_type)) {
+                    llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                        llvm::Type::getInt1Ty(context));
+                    builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                    int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                    llvm::Value* loaded = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt1Ty(context), tmp_bool);
+                    llvm::Value* widened = builder->CreateZExt(loaded,
+                        llvm_utils->getIntType(kind));
+                    builder->CreateStore(widened, elem_ptr);
+                } else {
+                    builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
+                }
             }
         }
 
@@ -16897,12 +16986,11 @@ public:
                     }
                     // General case: generate a loop to read elements one by one
                     // This handles multi-dimensional arrays like (a(i,j), j=1,n)
+                    // and struct members like (items(i)%val, i=1,n)
                     {
-                        bool can_handle = (idl->n_values == 1 &&
-                            (ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0]) ||
-                             ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])));
-                        if (can_handle) {
-                            generate_read_implied_do_loop(idl, unit_val, iostat);
+                        if (idl->n_values == 1) {
+                            generate_read_implied_do_loop(idl, unit_val, iostat,
+                                is_string, str_src_data, str_src_len, str_offset);
                             continue;
                         }
                     }

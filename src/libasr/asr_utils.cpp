@@ -4143,6 +4143,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
         if (ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
             return get_expr_size_expr(sim->m_v);
         }
+    } else if (ASR::is_a<ASR::ArraySection_t>(*x)) {
+        return get_expr_size_expr(ASR::down_cast<ASR::ArraySection_t>(x)->m_v);
     }
 
     if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
