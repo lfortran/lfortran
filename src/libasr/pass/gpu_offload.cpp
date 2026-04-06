@@ -512,6 +512,62 @@ public:
                       ASR::TranslationUnit_t &tu_)
         : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {}
 
+    // Load any module dependencies of a loaded submodule TU into
+    // the main TU's symbol table so that fix_external_symbols can
+    // resolve them (e.g., a submodule that `use`s another module).
+    void load_submodule_deps(ASR::TranslationUnit_t &sub_tu) {
+        bool rerun = true;
+        while (rerun) {
+            rerun = false;
+            std::vector<std::string> deps =
+                ASRUtils::determine_module_dependencies(sub_tu);
+            for (auto &dep_name : deps) {
+                if (tu.m_symtab->get_symbol(dep_name) != nullptr)
+                    continue;
+                if (sub_tu.m_symtab->get_symbol(dep_name) != nullptr)
+                    continue;
+                bool is_intrinsic =
+                    startswith(dep_name, "lfortran_intrinsic");
+                LocationManager lm_dep;
+                auto dep_res = ASRUtils::find_and_load_module(
+                    al, dep_name, *tu.m_symtab, is_intrinsic,
+                    pass_options, lm_dep);
+                if (!dep_res.ok && !is_intrinsic) {
+                    if (dep_name == "iso_c_binding" ||
+                            dep_name == "iso_fortran_env") {
+                        LocationManager lm_dep2;
+                        auto dep_res2 =
+                            ASRUtils::find_and_load_module(
+                                al,
+                                "lfortran_intrinsic_" + dep_name,
+                                *tu.m_symtab, true, pass_options,
+                                lm_dep2);
+                        if (dep_res2.ok) {
+                            ASR::Module_t *dep_mod =
+                                ASRUtils::extract_module(
+                                    *dep_res2.result);
+                            tu.m_symtab->add_symbol(dep_name,
+                                (ASR::symbol_t*)dep_mod);
+                            dep_mod->m_symtab->parent =
+                                tu.m_symtab;
+                            dep_mod->m_loaded_from_mod = true;
+                            rerun = true;
+                        }
+                        continue;
+                    }
+                }
+                if (!dep_res.ok) continue;
+                ASR::Module_t *dep_mod =
+                    ASRUtils::extract_module(*dep_res.result);
+                tu.m_symtab->add_symbol(dep_name,
+                    (ASR::symbol_t*)dep_mod);
+                dep_mod->m_symtab->parent = tu.m_symtab;
+                dep_mod->m_loaded_from_mod = true;
+                rerun = true;
+            }
+        }
+    }
+
     // Duplicate an expression, remapping all Var references to point to the
     // given scope. Used to create kernel-scope copies of head expressions.
     ASR::expr_t* dup_expr_to_scope(ASR::expr_t *expr, SymbolTable *scope) {
@@ -4617,6 +4673,8 @@ public:
                                             al, content, false,
                                             *tu.m_symtab, lm_tmp);
                                         if (!res.ok) continue;
+                                        load_submodule_deps(
+                                            *res.result);
                                         fix_external_symbols(
                                             *res.result,
                                             *tu.m_symtab);
@@ -5010,6 +5068,8 @@ public:
                                                         *tu.m_symtab,
                                                         lm_tmp);
                                                 if (!res.ok) continue;
+                                                load_submodule_deps(
+                                                    *res.result);
                                                 fix_external_symbols(
                                                     *res.result,
                                                     *tu.m_symtab);
