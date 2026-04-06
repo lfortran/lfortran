@@ -5198,9 +5198,11 @@ public:
 
                 std::set<std::string> fixed_names;
                 for (auto &[name, orig_sym] : dvc.dangling) {
-                    if (!ASR::is_a<ASR::Variable_t>(*orig_sym)) continue;
+                    ASR::symbol_t *resolved_sym =
+                        ASRUtils::symbol_get_past_external(orig_sym);
+                    if (!ASR::is_a<ASR::Variable_t>(*resolved_sym)) continue;
                     ASR::Variable_t *orig_var =
-                        ASR::down_cast<ASR::Variable_t>(orig_sym);
+                        ASR::down_cast<ASR::Variable_t>(resolved_sym);
                     if (orig_var->m_storage ==
                             ASR::storage_typeType::Parameter) {
                         ASR::symbol_t *new_var =
