@@ -639,6 +639,75 @@ public:
         return copy;
     }
 
+    // Recursively remap ExternalSymbol targets and Variable
+    // m_type_declarations inside `scope` (and all nested child scopes)
+    // so they reference the kernel-scope struct copies instead of the
+    // original module definitions.
+    void fixup_struct_refs_in_scope(SymbolTable *scope,
+            SymbolTable *kernel_scope) {
+        for (auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t *es =
+                    ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (!es->m_external) continue;
+                ASR::symbol_t *target =
+                    ASRUtils::symbol_get_past_external(es->m_external);
+                if (!target) continue;
+                SymbolTable *tp =
+                    ASRUtils::symbol_parent_symtab(target);
+                if (tp->asr_owner &&
+                        tp->asr_owner->type == ASR::asrType::symbol) {
+                    ASR::symbol_t *os =
+                        ASR::down_cast<ASR::symbol_t>(tp->asr_owner);
+                    if (ASR::is_a<ASR::Struct_t>(*os)) {
+                        std::string sn =
+                            ASR::down_cast<ASR::Struct_t>(os)->m_name;
+                        ASR::symbol_t *ks =
+                            kernel_scope->get_symbol(sn);
+                        if (ks && ASR::is_a<ASR::Struct_t>(*ks)) {
+                            ASR::symbol_t *nt =
+                                ASR::down_cast<ASR::Struct_t>(ks)
+                                    ->m_symtab->get_symbol(
+                                        es->m_original_name);
+                            if (nt) es->m_external = nt;
+                        }
+                    }
+                }
+            } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::symbol_t *tdecl_resolved =
+                    var->m_type_declaration
+                        ? ASRUtils::symbol_get_past_external(
+                              var->m_type_declaration)
+                        : nullptr;
+                if (tdecl_resolved &&
+                        ASR::is_a<ASR::Struct_t>(*tdecl_resolved)) {
+                    std::string sn = ASRUtils::symbol_name(
+                        tdecl_resolved);
+                    ASR::symbol_t *ks =
+                        kernel_scope->get_symbol(sn);
+                    if (ks) var->m_type_declaration = ks;
+                }
+            }
+            // Recurse into nested scopes
+            SymbolTable *nested = nullptr;
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                nested = ASR::down_cast<ASR::Function_t>(
+                    item.second)->m_symtab;
+            } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                nested = ASR::down_cast<ASR::Block_t>(
+                    item.second)->m_symtab;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                nested = ASR::down_cast<ASR::AssociateBlock_t>(
+                    item.second)->m_symtab;
+            }
+            if (nested) {
+                fixup_struct_refs_in_scope(nested, kernel_scope);
+            }
+        }
+    }
+
     // Find a Struct in kernel_scope by name, with PDT fallback.
     // If the exact name is not found (e.g., "network_t"), look for a
     // PDT instantiation (e.g., "network_t_4") that has a member named
@@ -5011,81 +5080,10 @@ public:
                             // ExternalSymbol targets and Variable
                             // m_type_declarations to point to the
                             // kernel's struct copies instead.
-                            ASR::Function_t *dup_func =
-                                ASR::down_cast<ASR::Function_t>(dup);
-                            for (auto &item :
-                                    dup_func->m_symtab->get_scope()) {
-                                if (ASR::is_a<ASR::ExternalSymbol_t>(
-                                        *item.second)) {
-                                    ASR::ExternalSymbol_t *es =
-                                        ASR::down_cast<
-                                            ASR::ExternalSymbol_t>(
-                                                item.second);
-                                    if (!es->m_external) continue;
-                                    ASR::symbol_t *target =
-                                        ASRUtils::symbol_get_past_external(
-                                            es->m_external);
-                                    if (!target) continue;
-                                    SymbolTable *target_parent =
-                                        ASRUtils::symbol_parent_symtab(
-                                            target);
-                                    if (target_parent->asr_owner &&
-                                            target_parent->asr_owner->type
-                                                == ASR::asrType::symbol) {
-                                        ASR::symbol_t *owner_sym =
-                                            ASR::down_cast<ASR::symbol_t>(
-                                                target_parent->asr_owner);
-                                        if (ASR::is_a<ASR::Struct_t>(
-                                                *owner_sym)) {
-                                            std::string sname =
-                                                ASR::down_cast<
-                                                    ASR::Struct_t>(
-                                                        owner_sym)
-                                                    ->m_name;
-                                            ASR::symbol_t *ks =
-                                                kernel_scope->get_symbol(
-                                                    sname);
-                                            if (ks && ASR::is_a<
-                                                    ASR::Struct_t>(*ks)) {
-                                                ASR::Struct_t *kstruct =
-                                                    ASR::down_cast<
-                                                        ASR::Struct_t>(ks);
-                                                ASR::symbol_t *new_target =
-                                                    kstruct->m_symtab
-                                                        ->get_symbol(
-                                                            es->m_original_name);
-                                                if (new_target) {
-                                                    es->m_external =
-                                                        new_target;
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else if (ASR::is_a<ASR::Variable_t>(
-                                        *item.second)) {
-                                    ASR::Variable_t *var =
-                                        ASR::down_cast<ASR::Variable_t>(
-                                            item.second);
-                                    ASR::symbol_t *type_decl_resolved =
-                                        var->m_type_declaration
-                                            ? ASRUtils::symbol_get_past_external(
-                                                  var->m_type_declaration)
-                                            : nullptr;
-                                    if (type_decl_resolved &&
-                                            ASR::is_a<ASR::Struct_t>(
-                                                *type_decl_resolved)) {
-                                        std::string sname =
-                                            ASRUtils::symbol_name(
-                                                type_decl_resolved);
-                                        ASR::symbol_t *ks =
-                                            kernel_scope->get_symbol(
-                                                sname);
-                                        if (ks) {
-                                            var->m_type_declaration = ks;
-                                        }
-                                    }
-                                }
-                            }
+                            fixup_struct_refs_in_scope(
+                                ASR::down_cast<ASR::Function_t>(dup)
+                                    ->m_symtab,
+                                kernel_scope);
                         }
                     }
                 } else if (ASR::is_a<ASR::ExternalSymbol_t>(*func_sym) &&
@@ -5442,63 +5440,14 @@ public:
         // After duplication, ExternalSymbol targets and Variable
         // m_type_declarations may still reference the original module's
         // struct definitions. Remap them to the kernel's copies.
+        // This recurses into nested scopes (Block, AssociateBlock, etc.).
         {
             for (auto &item : kernel_scope->get_scope()) {
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
                 ASR::Function_t *dfunc = ASR::down_cast<ASR::Function_t>(
                     item.second);
-                for (auto &ditem : dfunc->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ditem.second)) {
-                        ASR::ExternalSymbol_t *es =
-                            ASR::down_cast<ASR::ExternalSymbol_t>(
-                                ditem.second);
-                        if (!es->m_external) continue;
-                        ASR::symbol_t *target =
-                            ASRUtils::symbol_get_past_external(
-                                es->m_external);
-                        if (!target) continue;
-                        SymbolTable *tp =
-                            ASRUtils::symbol_parent_symtab(target);
-                        if (tp->asr_owner &&
-                                tp->asr_owner->type ==
-                                    ASR::asrType::symbol) {
-                            ASR::symbol_t *os =
-                                down_cast<ASR::symbol_t>(tp->asr_owner);
-                            if (is_a<ASR::Struct_t>(*os)) {
-                                std::string sn =
-                                    down_cast<ASR::Struct_t>(os)->m_name;
-                                ASR::symbol_t *ks =
-                                    kernel_scope->get_symbol(sn);
-                                if (ks && is_a<ASR::Struct_t>(*ks)) {
-                                    ASR::symbol_t *nt =
-                                        down_cast<ASR::Struct_t>(ks)
-                                            ->m_symtab->get_symbol(
-                                                es->m_original_name);
-                                    if (nt) es->m_external = nt;
-                                }
-                            }
-                        }
-                    } else if (ASR::is_a<ASR::Variable_t>(
-                                   *ditem.second)) {
-                        ASR::Variable_t *var =
-                            ASR::down_cast<ASR::Variable_t>(
-                                ditem.second);
-                        ASR::symbol_t *tdecl_resolved =
-                            var->m_type_declaration
-                                ? ASRUtils::symbol_get_past_external(
-                                      var->m_type_declaration)
-                                : nullptr;
-                        if (tdecl_resolved &&
-                                is_a<ASR::Struct_t>(
-                                    *tdecl_resolved)) {
-                            std::string sn = ASRUtils::symbol_name(
-                                tdecl_resolved);
-                            ASR::symbol_t *ks =
-                                kernel_scope->get_symbol(sn);
-                            if (ks) var->m_type_declaration = ks;
-                        }
-                    }
-                }
+                fixup_struct_refs_in_scope(dfunc->m_symtab,
+                    kernel_scope);
             }
         }
 
