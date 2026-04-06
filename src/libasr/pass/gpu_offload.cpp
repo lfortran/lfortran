@@ -3,12 +3,14 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/modfile.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/string_utils.h>
 
+#include <filesystem>
 #include <map>
 #include <set>
 #include <string>
@@ -4505,6 +4507,130 @@ public:
                     // (ExternalSymbol). Duplicate the underlying function
                     // body into the kernel scope so its types reference
                     // the kernel's struct copies (not the module's).
+                    ASR::Function_t *resolved_func =
+                        ASR::down_cast<ASR::Function_t>(resolved);
+                    ASR::FunctionType_t *resolved_ftype =
+                        ASR::down_cast<ASR::FunctionType_t>(
+                            resolved_func->m_function_signature);
+                    if (resolved_ftype->m_deftype ==
+                            ASR::deftypeType::Interface) {
+                        // Submodule interface: find the Implementation
+                        // in a submodule already in the TU, or load it
+                        // from disk (needed for --separate-compilation).
+                        std::string pname =
+                            ASRUtils::symbol_name(resolved);
+                        bool found = false;
+                        for (auto &tu_item :
+                                tu.m_symtab->get_scope()) {
+                            if (!ASR::is_a<ASR::Module_t>(
+                                    *tu_item.second)) continue;
+                            ASR::Module_t *mod =
+                                ASR::down_cast<ASR::Module_t>(
+                                    tu_item.second);
+                            ASR::symbol_t *impl_sym =
+                                mod->m_symtab->get_symbol(pname);
+                            if (!impl_sym ||
+                                !ASR::is_a<ASR::Function_t>(
+                                    *impl_sym)) continue;
+                            ASR::Function_t *impl_func =
+                                ASR::down_cast<ASR::Function_t>(
+                                    impl_sym);
+                            ASR::FunctionType_t *impl_ft =
+                                ASR::down_cast<ASR::FunctionType_t>(
+                                    impl_func
+                                        ->m_function_signature);
+                            if (impl_ft->m_deftype !=
+                                    ASR::deftypeType::Implementation)
+                                continue;
+                            resolved = impl_sym;
+                            found = true;
+                            break;
+                        }
+                        if (!found) {
+                            // Load submodule from smod file on disk.
+                            SymbolTable *parent_st =
+                                ASRUtils::symbol_parent_symtab(
+                                    resolved);
+                            if (parent_st->asr_owner &&
+                                    parent_st->asr_owner->type ==
+                                        ASR::asrType::symbol &&
+                                    ASR::is_a<ASR::Module_t>(
+                                        *ASR::down_cast<ASR::symbol_t>(
+                                            parent_st->asr_owner))) {
+                                std::string parent_mod =
+                                    ASR::down_cast<ASR::Module_t>(
+                                        ASR::down_cast<ASR::symbol_t>(
+                                            parent_st->asr_owner))
+                                        ->m_name;
+                                std::string smod_prefix =
+                                    parent_mod + "@";
+                                std::vector<std::filesystem::path>
+                                    mod_dirs;
+                                mod_dirs.push_back(
+                                    pass_options.runtime_library_dir);
+                                mod_dirs.push_back(
+                                    pass_options.mod_files_dir);
+                                mod_dirs.insert(mod_dirs.end(),
+                                    pass_options.include_dirs.begin(),
+                                    pass_options.include_dirs.end());
+                                for (auto &dir : mod_dirs) {
+                                    if (dir.empty())
+                                        dir = ".";
+                                    if (!std::filesystem::is_directory(
+                                            dir)) continue;
+                                    for (auto &file :
+                                            std::filesystem::
+                                                directory_iterator(
+                                                    dir)) {
+                                        std::string fname =
+                                            file.path().filename()
+                                                .string();
+                                        if (!startswith(fname,
+                                                smod_prefix) ||
+                                            !endswith(fname, ".smod"))
+                                            continue;
+                                        std::string content;
+                                        if (!read_file(
+                                                file.path().string(),
+                                                content) ||
+                                            content.empty())
+                                            continue;
+                                        LocationManager lm_tmp;
+                                        auto res = load_modfile(
+                                            al, content, false,
+                                            *tu.m_symtab, lm_tmp);
+                                        if (!res.ok) continue;
+                                        ASR::Module_t *submod =
+                                            ASRUtils::extract_module(
+                                                *res.result);
+                                        ASR::symbol_t *impl_sym =
+                                            submod->m_symtab
+                                                ->get_symbol(pname);
+                                        if (!impl_sym ||
+                                            !ASR::is_a<ASR::Function_t>(
+                                                *impl_sym)) continue;
+                                        ASR::Function_t *impl_func =
+                                            ASR::down_cast<
+                                                ASR::Function_t>(
+                                                    impl_sym);
+                                        ASR::FunctionType_t *impl_ft =
+                                            ASR::down_cast<
+                                                ASR::FunctionType_t>(
+                                                    impl_func
+                                                    ->m_function_signature);
+                                        if (impl_ft->m_deftype !=
+                                                ASR::deftypeType::
+                                                    Implementation)
+                                            continue;
+                                        resolved = impl_sym;
+                                        found = true;
+                                        break;
+                                    }
+                                    if (found) break;
+                                }
+                            }
+                        }
+                    }
                     std::string real_name =
                         ASRUtils::symbol_name(resolved);
                     // When two modules define functions with the same
