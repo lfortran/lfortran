@@ -2803,7 +2803,8 @@ public:
                 new_body.push_back(al, stmt);
                 continue;
             }
-            ASR::ttype_t *target_type = ASRUtils::expr_type(asgn->m_target);
+            ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::expr_type(asgn->m_target));
             if (!ASR::is_a<ASR::Array_t>(*target_type)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -2964,7 +2965,8 @@ public:
                 // Convert to:
                 //   do i = 1, size(a); a(i) = obj%eval(z(i)); end do
                 ASR::ttype_t *rhs_type =
-                    ASRUtils::expr_type(asgn->m_value);
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::expr_type(asgn->m_value));
                 if (!ASR::is_a<ASR::Array_t>(*rhs_type)) {
                     new_body.push_back(al, stmt);
                     continue;
@@ -3034,7 +3036,9 @@ public:
                 std::function<ASR::expr_t*(ASR::expr_t*)> elementize =
                     [&](ASR::expr_t *e) -> ASR::expr_t* {
                     if (ASR::is_a<ASR::Var_t>(*e)) {
-                        ASR::ttype_t *vtype = ASRUtils::expr_type(e);
+                        ASR::ttype_t *vtype =
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::expr_type(e));
                         if (ASR::is_a<ASR::Array_t>(*vtype)) {
                             ASR::ttype_t *velem =
                                 ASRUtils::extract_type(vtype);
