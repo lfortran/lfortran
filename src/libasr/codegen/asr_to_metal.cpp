@@ -2595,13 +2595,47 @@ public:
                     visit_expr(a->m_value);
                     src << "[__copy_i];\n";
                 } else if (target_is_array_buffer) {
-                    visit_expr(a->m_target);
-                    src << "[0] = ";
-                    visit_expr(a->m_value);
-                    if (rhs_is_array_or_alloc) {
-                        src << "[0]";
+                    // Compute the fixed size of the target array
+                    int64_t fixed_sz = 1;
+                    ASR::ttype_t *tgt_inner =
+                        ASRUtils::type_get_past_allocatable_pointer(tgt_type);
+                    if (ASR::is_a<ASR::Array_t>(*tgt_inner)) {
+                        ASR::Array_t *tarr =
+                            ASR::down_cast<ASR::Array_t>(tgt_inner);
+                        int64_t total = 1;
+                        bool all_const = true;
+                        for (size_t d = 0; d < tarr->n_dims; d++) {
+                            if (tarr->m_dims[d].m_length &&
+                                    ASR::is_a<ASR::IntegerConstant_t>(
+                                        *tarr->m_dims[d].m_length)) {
+                                total *=
+                                    ASR::down_cast<ASR::IntegerConstant_t>(
+                                        tarr->m_dims[d].m_length)->m_n;
+                            } else {
+                                all_const = false;
+                                break;
+                            }
+                        }
+                        if (all_const && total > 0) fixed_sz = total;
                     }
-                    src << ";\n";
+                    bool rhs_is_simple_var =
+                        ASR::is_a<ASR::Var_t>(*a->m_value);
+                    for (int64_t ei = 0; ei < fixed_sz; ei++) {
+                        visit_expr(a->m_target);
+                        src << "[" << ei << "] = ";
+                        if (rhs_is_array_or_alloc && !rhs_is_simple_var) {
+                            array_elem_index = ei;
+                            visit_expr(a->m_value);
+                            array_elem_index = -1;
+                        } else {
+                            visit_expr(a->m_value);
+                            if (rhs_is_array_or_alloc) {
+                                src << "[" << ei << "]";
+                            }
+                        }
+                        src << ";\n";
+                        if (ei + 1 < fixed_sz) src << get_indent();
+                    }
                 } else if (deref_target && !rhs_is_array_or_alloc) {
                     // Scalar broadcast to allocatable array parameter:
                     // v = 1.0 where v is thread T* with known size
