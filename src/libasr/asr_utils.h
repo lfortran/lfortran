@@ -4551,7 +4551,18 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 if (a_struct_sym != nullptr && b_struct_sym != nullptr) {
                     ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(a_struct_sym);
                     ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(b_struct_sym);
-                    return is_derived_type_similar(x_struct, y_struct);
+                    if (is_derived_type_similar(x_struct, y_struct)) {
+                        return true;
+                    }
+                    // The GPU offload pass may duplicate Struct definitions
+                    // into kernel scope, producing distinct Struct_t pointers
+                    // for what is logically the same type.  Accept as equal
+                    // when both structs share the same name.
+                    if (std::string(x_struct->m_name) ==
+                        std::string(y_struct->m_name)) {
+                        return true;
+                    }
+                    return false;
                 }
                 // Structural comparison when struct symbols unavailable
                 ASR::StructType_t* a2 = ASR::down_cast<ASR::StructType_t>(a);

@@ -1415,6 +1415,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 if ( ASR::is_a<ASR::Module_t>(*item.second) ||
                     ASR::is_a<ASR::Program_t>(*item.second) ||
                     ASR::is_a<ASR::Function_t>(*item.second) ||
+                    ASR::is_a<ASR::GpuKernelFunction_t>(*item.second) ||
                     ASR::is_a<ASR::Struct_t>(*item.second) ||
                     ASR::is_a<ASR::Block_t>(*item.second) ||
                     ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -1514,6 +1515,10 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         }
 
         void visit_AssociateBlock(const ASR::AssociateBlock_t& x) {
+            visit_Unit(x);
+        }
+
+        void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t& x) {
             visit_Unit(x);
         }
 
