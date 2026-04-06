@@ -4635,6 +4635,27 @@ public:
                             }
                         }
                     }
+                    if (ASR::is_a<ASR::Function_t>(*resolved)) {
+                        ASR::Function_t *rf =
+                            ASR::down_cast<ASR::Function_t>(resolved);
+                        ASR::FunctionType_t *rft =
+                            ASR::down_cast<ASR::FunctionType_t>(
+                                rf->m_function_signature);
+                        if (rft->m_deftype ==
+                                ASR::deftypeType::Interface) {
+                            // Still an interface after searching TU and
+                            // .smod files — the submodule body is
+                            // unavailable (e.g., parallel build race).
+                            // Error out instead of generating an empty
+                            // function in the Metal shader.
+                            throw LCompilersException(
+                                "GPU Metal offload: cannot find "
+                                "submodule implementation for '" +
+                                std::string(rf->m_name) + "'; "
+                                "ensure the submodule is compiled "
+                                "before the file that uses it");
+                        }
+                    }
                     std::string real_name =
                         ASRUtils::symbol_name(resolved);
                     // When two modules define functions with the same
