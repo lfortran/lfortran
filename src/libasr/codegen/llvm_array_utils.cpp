@@ -330,6 +330,14 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool /*load*/) {
+            if (arr->getType()->isPointerTy() &&
+                arr->getType()->getPointerElementType() != type) {
+                if (arr->getType()->getPointerElementType() == type->getPointerTo()) {
+                    arr = llvm_utils->CreateLoad2(type->getPointerTo(), arr);
+                } else {
+                    arr = builder->CreateBitCast(arr, type->getPointerTo());
+                }
+            }
             // Dims are always inlined at FIELD_DIMS. Return pointer to first element.
             llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
             LCOMPILERS_ASSERT(arr_ty != nullptr);
@@ -340,6 +348,14 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_rank(llvm::Type* type, llvm::Value* arr, bool get_pointer) {
+            if (arr->getType()->isPointerTy() &&
+                arr->getType()->getPointerElementType() != type) {
+                if (arr->getType()->getPointerElementType() == type->getPointerTo()) {
+                    arr = llvm_utils->CreateLoad2(type->getPointerTo(), arr);
+                } else {
+                    arr = builder->CreateBitCast(arr, type->getPointerTo());
+                }
+            }
             llvm::Value* rank_ptr = llvm_utils->create_gep2(type, arr, FIELD_RANK);
             if( get_pointer ) {
                 return rank_ptr;
@@ -350,6 +366,14 @@ namespace LCompilers {
 
         void SimpleCMODescriptor::
         set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank) {
+            if (arr->getType()->isPointerTy() &&
+                arr->getType()->getPointerElementType() != type) {
+                if (arr->getType()->getPointerElementType() == type->getPointerTo()) {
+                    arr = llvm_utils->CreateLoad2(type->getPointerTo(), arr);
+                } else {
+                    arr = builder->CreateBitCast(arr, type->getPointerTo());
+                }
+            }
             llvm::Value* rank_ptr = llvm_utils->create_gep2(type, arr, FIELD_RANK);
             llvm::Value* trunc = builder->CreateIntCast(rank, llvm::Type::getInt8Ty(context), false);
             LLVM::CreateStore(*builder, trunc, rank_ptr);
@@ -834,17 +858,41 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* type, llvm::Value* arr) {
+            if (arr->getType()->isPointerTy() &&
+                arr->getType()->getPointerElementType() != type) {
+                if (arr->getType()->getPointerElementType() == type->getPointerTo()) {
+                    arr = llvm_utils->CreateLoad2(type->getPointerTo(), arr);
+                } else {
+                    arr = builder->CreateBitCast(arr, type->getPointerTo());
+                }
+            }
             return llvm_utils->create_gep2(type, arr, FIELD_BASE_ADDR);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* actual_type = llvm_utils->get_type_from_ttype_t_util(arr_expr,
                 ASRUtils::type_get_past_allocatable_pointer(arr_type), module);
+            if (arr->getType()->isPointerTy() &&
+                arr->getType()->getPointerElementType() != actual_type) {
+                if (arr->getType()->getPointerElementType() == actual_type->getPointerTo()) {
+                    arr = llvm_utils->CreateLoad2(actual_type->getPointerTo(), arr);
+                } else {
+                    arr = builder->CreateBitCast(arr, actual_type->getPointerTo());
+                }
+            }
             return llvm_utils->create_gep2(actual_type, arr, FIELD_BASE_ADDR);
         }
 
 
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Type* type, llvm::Value* arr, bool load) {
+            if (arr->getType()->isPointerTy() &&
+                arr->getType()->getPointerElementType() != type) {
+                if (arr->getType()->getPointerElementType() == type->getPointerTo()) {
+                    arr = llvm_utils->CreateLoad2(type->getPointerTo(), arr);
+                } else {
+                    arr = builder->CreateBitCast(arr, type->getPointerTo());
+                }
+            }
             llvm::Value* offset = llvm_utils->create_gep2(type, arr, FIELD_OFFSET);
             if( !load ) {
                 return offset;
@@ -1508,6 +1556,16 @@ namespace LCompilers {
         // Shallow copies source array descriptor to destination descriptor
         void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory) {
+            // In select rank blocks, assumed-rank descriptors use max 15 dims
+            // but the ASR type may specify a smaller rank. Bitcast to reconcile.
+            if (src->getType()->isPointerTy() &&
+                src->getType()->getPointerElementType() != src_ty) {
+                src = builder->CreateBitCast(src, src_ty->getPointerTo());
+            }
+            if (dest->getType()->isPointerTy() &&
+                dest->getType()->getPointerElementType() != dest_ty) {
+                dest = builder->CreateBitCast(dest, dest_ty->getPointerTo());
+            }
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
@@ -1566,6 +1624,14 @@ namespace LCompilers {
         // And set the src's data pointer to null to prevent double deallocation
         void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
+            if (src->getType()->isPointerTy() &&
+                src->getType()->getPointerElementType() != src_ty) {
+                src = builder->CreateBitCast(src, src_ty->getPointerTo());
+            }
+            if (dest->getType()->isPointerTy() &&
+                dest->getType()->getPointerElementType() != dest_ty) {
+                dest = builder->CreateBitCast(dest, dest_ty->getPointerTo());
+            }
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
             llvm::Value* src_data_ptr = this->get_pointer_to_data(src_ty, src);

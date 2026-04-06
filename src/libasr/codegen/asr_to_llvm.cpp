@@ -9331,12 +9331,14 @@ public:
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (!is_target_class && is_value_class) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                if (!llvm_value->getType()->isPointerTy()) {
+                    llvm::Value* tmp_alloca = llvm_utils->CreateAlloca(*builder, llvm_value->getType());
+                    builder->CreateStore(llvm_value, tmp_alloca);
+                    llvm_value = tmp_alloca;
+                }
                 llvm::Value* val_data_ptr = llvm_utils->create_gep2(llvm_value_type, llvm_value, 1);
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))));
-                [[maybe_unused]] ASR::Struct_t* class_type_t = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value))));
-                LCOMPILERS_ASSERT(ASRUtils::is_derived_type_similar(struct_type_t, class_type_t));
                 llvm::Type* struct_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                 llvm::Value* casted_val_ptr = builder->CreateBitCast(val_data_ptr, struct_type->getPointerTo());
                 llvm::Value* struct_value = builder->CreateLoad(struct_type, casted_val_ptr);
@@ -12578,30 +12580,22 @@ public:
     }
 
     void visit_SelectType(const ASR::SelectType_t& x) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*x.m_selector) || ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector));
+        ASR::expr_t* actual_selector = x.m_selector;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual_selector)) {
+            actual_selector = ASR::down_cast<ASR::ArrayPhysicalCast_t>(actual_selector)->m_arg;
+        }
         // Process TypeStmtName first, then ClassStmt
         std::vector<ASR::type_stmt_t*> select_type_stmts;
         fill_type_stmt(x, select_type_stmts, ASR::type_stmtType::TypeStmtName);
         fill_type_stmt(x, select_type_stmts, ASR::type_stmtType::TypeStmtType);
         fill_type_stmt(x, select_type_stmts, ASR::type_stmtType::ClassStmt);
         LCOMPILERS_ASSERT(x.n_body == select_type_stmts.size());
-        ASR::Var_t* selector_var = nullptr;
-        ASR::StructInstanceMember_t* selector_struct = nullptr;
-        if (ASR::is_a<ASR::Var_t>(*x.m_selector)) {
-            selector_var = ASR::down_cast<ASR::Var_t>(x.m_selector);
-        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_selector)) {
-            selector_struct = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_selector);
-        }
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
-        if (selector_var) {
-            visit_Var(*selector_var);
-        } else if (selector_struct) {
-            visit_StructInstanceMember(*selector_struct);
-        }
+        this->visit_expr(*actual_selector);
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_selector = tmp;
-        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, ASRUtils::expr_type(x.m_selector), module.get());
+        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(actual_selector, ASRUtils::expr_type(actual_selector), module.get());
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         for( size_t i = 0; i < select_type_stmts.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -12620,20 +12614,20 @@ public:
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*type_sym));
                     llvm::Value* static_ptr = llvm_selector;
                     llvm::Type* static_ptr_type = llvm_selector_type_;
-                    ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
+                    ASR::ttype_t* selector_var_type = ASRUtils::expr_type(actual_selector);
                     // If selector is a pointer type, load it first
                     if (LLVM::is_llvm_pointer(*selector_var_type)) {
                         static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         selector_var_type = ASRUtils::type_get_past_pointer(selector_var_type);
-                        static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
+                        static_ptr_type = llvm_utils->get_type_from_ttype_t_util(actual_selector, selector_var_type, module.get());
                     }
                     if (ASRUtils::is_array(selector_var_type) && 
                             ASRUtils::extract_physical_type(selector_var_type) == ASR::array_physical_typeType::DescriptorArray) {
                         static_ptr_type = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_selector, ASRUtils::type_get_past_allocatable_pointer(selector_var_type), module.get());
+                            actual_selector, ASRUtils::type_get_past_allocatable_pointer(selector_var_type), module.get());
                         static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
                         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_selector, ASRUtils::extract_type(selector_var_type), module.get());
+                            actual_selector, ASRUtils::extract_type(selector_var_type), module.get());
                         static_ptr = llvm_utils->CreateLoad2(
                             el_type->getPointerTo(),
                             static_ptr);
@@ -12643,17 +12637,14 @@ public:
                         struct_api->create_new_vtable_for_struct_type(type_sym, module.get());
                     }
 
-                    // Use `lfortran_dynamic_cast()` to compare runtime type-info of a class
-                    // variable passed as selector variable. We need to compare the exact type
-                    // instead of inheritance here.
-                    if (ASRUtils::is_unlimited_polymorphic_type(x.m_selector)) {
+                    if (ASRUtils::is_unlimited_polymorphic_type(actual_selector)) {
                         llvm::Value* val = lfortran_dynamic_cast(
                                 static_ptr, struct_api->newclass2typeinfo.at(type_sym), true);
                         builder->CreateStore(builder->CreateICmpNE(
                             val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
                     } else {
                         ASR::symbol_t* selector_sym = ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_sym_from_struct_expr(x.m_selector));
+                            ASRUtils::get_struct_sym_from_struct_expr(actual_selector));
                         llvm::Value* is_selector_null = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(static_ptr, llvm::Type::getInt64Ty(context)),
                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
@@ -12681,15 +12672,15 @@ public:
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(class_stmt->m_sym);
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*class_sym));
                     llvm::Value* static_ptr = llvm_selector;
-                    if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
+                    if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(actual_selector))) {
                         static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                     }
-                    if (ASRUtils::is_array(ASRUtils::expr_type(x.m_selector))) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(actual_selector))) {
                         static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
                         static_ptr = llvm_utils->CreateLoad2(
                             llvm_utils->get_el_type(
-                                x.m_selector,
-                                ASRUtils::extract_type(ASRUtils::expr_type(x.m_selector)),
+                                actual_selector,
+                                ASRUtils::extract_type(ASRUtils::expr_type(actual_selector)),
                                 module.get())->getPointerTo(),
                             static_ptr);
                     }
@@ -12698,14 +12689,14 @@ public:
                         struct_api->create_new_vtable_for_struct_type(class_sym, module.get());
                     }
 
-                    if (ASRUtils::is_unlimited_polymorphic_type(x.m_selector)) {
+                    if (ASRUtils::is_unlimited_polymorphic_type(actual_selector)) {
                         llvm::Value* val = lfortran_dynamic_cast(
                                 static_ptr, struct_api->newclass2typeinfo.at(class_sym), false);
                         builder->CreateStore(builder->CreateICmpNE(
                             val, llvm::ConstantPointerNull::get(llvm_utils->i8_ptr)), cond);
                     } else {
                         ASR::symbol_t* selector_sym = ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_sym_from_struct_expr(x.m_selector));
+                            ASRUtils::get_struct_sym_from_struct_expr(actual_selector));
                         llvm::Value* is_selector_null = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(static_ptr, llvm::Type::getInt64Ty(context)),
                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
@@ -12729,7 +12720,7 @@ public:
                     break ;
                 }
                 case ASR::type_stmtType::TypeStmtType: {
-                    ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
+                    ASR::ttype_t* selector_var_type = ASRUtils::expr_type(actual_selector);
                     ASR::TypeStmtType_t* type_stmt_type_t = ASR::down_cast<ASR::TypeStmtType_t>(select_type_stmts[i]);
                     ASR::ttype_t* type_stmt_type = type_stmt_type_t->m_type;
                     int kind = ASRUtils::extract_kind_from_ttype_t(type_stmt_type);
@@ -12745,13 +12736,13 @@ public:
                     if (LLVM::is_llvm_pointer(*selector_var_type)) {
                         static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                         selector_var_type = ASRUtils::type_get_past_allocatable_pointer(selector_var_type);
-                        static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
+                        static_ptr_type = llvm_utils->get_type_from_ttype_t_util(actual_selector, selector_var_type, module.get());
                     }
                     if (ASRUtils::is_array(selector_var_type)) {
                         static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
                         static_ptr = llvm_utils->CreateLoad2(
                             llvm_utils->get_el_type(
-                                x.m_selector,
+                                actual_selector,
                                 ASRUtils::type_get_past_array(selector_var_type),
                                 module.get())->getPointerTo(),
                             static_ptr);
