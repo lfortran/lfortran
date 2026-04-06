@@ -8136,6 +8136,10 @@ public:
             llvm::Type* array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
                 ASRUtils::extract_type(p_type), module.get());
             ptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), ptr);
+            if (ASRUtils::is_unlimited_polymorphic_type(x.m_ptr)) { // {VTable*, i8*} -- Check equality on data field
+                ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->create_gep2(array_inner_type, ptr, 1));
+            }
         }
         ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_ptr)) &&
@@ -8210,6 +8214,8 @@ public:
                             nptr = arr_descr->get_pointer_to_data(x.m_tgt,
                                 ASRUtils::type_get_past_allocatable_pointer(tgt_type), nptr, module.get());
                             nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), nptr);
+                            nptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                                llvm_utils->create_gep2(array_inner_type, nptr, 1)); // {VTable*, i8*} -- Check equality on data field
                         } else {
                             llvm::Type* array_type_desc = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
                                 ASRUtils::expr_type(x.m_tgt), module.get());
@@ -8220,10 +8226,6 @@ public:
                         }
                     }
                 }
-                // For scalar polymorphic (class) types, compare the data
-                // pointers (field 1) instead of struct wrapper addresses.
-                // For array class pointers, the descriptor data pointers
-                // already identify the target and can be compared directly.
                 if (!ASRUtils::is_array(p_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
                     llvm::Type* p_class_type = llvm_utils->get_type_from_ttype_t_util(
