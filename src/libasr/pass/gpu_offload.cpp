@@ -2066,6 +2066,17 @@ public:
                 continue;
             }
 
+            // Recurse into If bodies
+            if (ASR::is_a<ASR::If_t>(*stmt)) {
+                ASR::If_t *if_stmt = ASR::down_cast<ASR::If_t>(stmt);
+                inline_sum_in_stmts(if_stmt->m_body, if_stmt->n_body,
+                    scope);
+                inline_sum_in_stmts(if_stmt->m_orelse, if_stmt->n_orelse,
+                    scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
