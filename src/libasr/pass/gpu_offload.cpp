@@ -6018,6 +6018,37 @@ public:
                 for (size_t j = 0; j < block->n_body; j++) {
                     block_decomp.visit_stmt(*block->m_body[j]);
                 }
+                // Also decompose StructInstanceMember references in
+                // block-local variable type expressions (e.g., VLA
+                // dimensions like size(self%x) after associate
+                // resolution). Without this, a fully-decomposed struct
+                // removed from involved_syms leaves dangling Var refs.
+                GpuDecomposeStructReplacer block_type_decomp(al,
+                    kernel_scope, decomp_map);
+                for (auto &item : block->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second))
+                        continue;
+                    ASR::Variable_t *bvar =
+                        ASR::down_cast<ASR::Variable_t>(item.second);
+                    if (!ASR::is_a<ASR::Array_t>(*bvar->m_type))
+                        continue;
+                    ASR::Array_t *arr =
+                        ASR::down_cast<ASR::Array_t>(bvar->m_type);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_start) {
+                            block_type_decomp.current_expr =
+                                &(arr->m_dims[d].m_start);
+                            block_type_decomp.replace_expr(
+                                arr->m_dims[d].m_start);
+                        }
+                        if (arr->m_dims[d].m_length) {
+                            block_type_decomp.current_expr =
+                                &(arr->m_dims[d].m_length);
+                            block_type_decomp.replace_expr(
+                                arr->m_dims[d].m_length);
+                        }
+                    }
+                }
             }
             // Recursively process nested BlockCall statements
             for (size_t j = 0; j < block->n_body; j++) {
