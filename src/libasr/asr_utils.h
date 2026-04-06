@@ -5599,6 +5599,65 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
             m_v, m_m, m_type, m_value);
     }
 
+    ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::symbol_t* m_name = x->m_name;
+        ASR::symbol_t* m_original_name = x->m_original_name;
+        std::string name = ASRUtils::symbol_name(m_name);
+        ASR::symbol_t* resolved = use_resolve_symbol
+            ? current_scope->resolve_symbol(name)
+            : current_scope->get_symbol(name);
+        if (resolved) m_name = resolved;
+        if (m_original_name) {
+            std::string orig_name = ASRUtils::symbol_name(m_original_name);
+            ASR::symbol_t* resolved_orig = use_resolve_symbol
+                ? current_scope->resolve_symbol(orig_name)
+                : current_scope->get_symbol(orig_name);
+            if (resolved_orig) m_original_name = resolved_orig;
+        }
+        Vec<ASR::call_arg_t> m_args;
+        m_args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::call_arg_t call_arg_copy;
+            call_arg_copy.loc = x->m_args[i].loc;
+            call_arg_copy.m_value = duplicate_expr(x->m_args[i].m_value);
+            m_args.push_back(al, call_arg_copy);
+        }
+        ASR::ttype_t* m_type = duplicate_ttype(x->m_type);
+        ASR::expr_t* m_value = duplicate_expr(x->m_value);
+        ASR::expr_t* m_dt = duplicate_expr(x->m_dt);
+        return ASR::make_FunctionCall_t(al, x->base.base.loc, m_name,
+            m_original_name, m_args.p, x->n_args, m_type, m_value, m_dt);
+    }
+
+    ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
+        ASR::symbol_t* m_name = x->m_name;
+        ASR::symbol_t* m_original_name = x->m_original_name;
+        std::string name = ASRUtils::symbol_name(m_name);
+        ASR::symbol_t* resolved = use_resolve_symbol
+            ? current_scope->resolve_symbol(name)
+            : current_scope->get_symbol(name);
+        if (resolved) m_name = resolved;
+        if (m_original_name) {
+            std::string orig_name = ASRUtils::symbol_name(m_original_name);
+            ASR::symbol_t* resolved_orig = use_resolve_symbol
+                ? current_scope->resolve_symbol(orig_name)
+                : current_scope->get_symbol(orig_name);
+            if (resolved_orig) m_original_name = resolved_orig;
+        }
+        Vec<ASR::call_arg_t> m_args;
+        m_args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::call_arg_t call_arg_copy;
+            call_arg_copy.loc = x->m_args[i].loc;
+            call_arg_copy.m_value = duplicate_expr(x->m_args[i].m_value);
+            m_args.push_back(al, call_arg_copy);
+        }
+        ASR::expr_t* m_dt = duplicate_expr(x->m_dt);
+        return ASR::make_SubroutineCall_t(al, x->base.base.loc, m_name,
+            m_original_name, m_args.p, x->n_args, m_dt,
+            x->m_strict_bounds_checking);
+    }
+
 };
 
 
