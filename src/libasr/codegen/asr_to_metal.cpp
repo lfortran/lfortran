@@ -909,6 +909,9 @@ public:
                         src.str("");
                         src << save.str();
                     }
+                } else if (!arr_name.empty()) {
+                    len_str = "__size_" + arr_name + "_dim"
+                        + std::to_string(d + 1);
                 }
                 if (stride == "1") {
                     stride = len_str;
@@ -3475,6 +3478,12 @@ public:
         if (ASR::is_a<ASR::Array_t>(*inner)) {
             arr = ASR::down_cast<ASR::Array_t>(inner);
         }
+        // Extract array variable name for assumed-shape __size_ parameters
+        std::string arr_var_name;
+        if (ASR::is_a<ASR::Var_t>(*ai->m_v)) {
+            arr_var_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
+        }
         bool first = true;
         std::string stride = "1";
         for (size_t d = 0; d < ai->n_args; d++) {
@@ -3504,6 +3513,9 @@ public:
                         len_str = ASRUtils::symbol_name(
                             ASR::down_cast<ASR::Var_t>(dim_len)->m_v);
                     }
+                } else if (!arr_var_name.empty()) {
+                    len_str = "__size_" + arr_var_name + "_dim"
+                        + std::to_string(d + 1);
                 }
                 if (stride == "1") {
                     stride = len_str;

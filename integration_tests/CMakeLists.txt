@@ -4306,3 +4306,4 @@ RUN(NAME gpu_metal_151 LABELS gfortran llvm metal EXTRAFILES gpu_metal_151_dep.f
 RUN(NAME gpu_metal_152 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_153 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_154 LABELS gfortran llvm metal)
+RUN(NAME gpu_metal_155 LABELS gfortran llvm metal)
