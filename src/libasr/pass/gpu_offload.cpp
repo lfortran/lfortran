@@ -3033,6 +3033,17 @@ public:
                 new_body.push_back(al, stmt);
                 continue;
             }
+            // Recurse into AssociateBlockCall bodies
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                inline_elemental_array_var_in_body(ab->m_body,
+                    ab->n_body, changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
