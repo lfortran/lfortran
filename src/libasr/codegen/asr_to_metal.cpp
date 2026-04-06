@@ -1849,6 +1849,34 @@ public:
             }
         }
 
+        // Add per-dimension size scalars for DescriptorArray (assumed-shape)
+        // kernel arguments so the kernel body can resolve ArrayBound UBound.
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!args[i].is_array) continue;
+            // Skip synthetic kernel args (__data_*, __size_*, etc.)
+            if (args[i].name.substr(0, 2) == "__") continue;
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(v->m_v));
+            ASR::ttype_t *past_alloc =
+                ASRUtils::type_get_past_allocatable(var->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*past_alloc)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(past_alloc);
+            bool has_null_dim = false;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (!arr->m_dims[d].m_length) {
+                    has_null_dim = true;
+                    break;
+                }
+            }
+            if (!has_null_dim) continue;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                std::string dim_size_name = "__size_" + args[i].name
+                    + "_dim" + std::to_string(d + 1);
+                scalar_args.push_back({dim_size_name, "int"});
+            }
+        }
+
         // In packed mode, collect info about arrays/structs that will
         // be packed into a single combined buffer
         struct PackedArrayInfo {
@@ -2250,6 +2278,46 @@ public:
                     }
                 }
             }
+        }
+
+        // Register per-dimension size params for DescriptorArray
+        // (assumed-shape) kernel arguments so ArrayBound UBound can
+        // resolve them.
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!args[i].is_array) continue;
+            if (args[i].name.substr(0, 2) == "__") continue;
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(v->m_v));
+            ASR::ttype_t *past_alloc =
+                ASRUtils::type_get_past_allocatable(var->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*past_alloc)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(past_alloc);
+            bool has_null_dim = false;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (!arr->m_dims[d].m_length) {
+                    has_null_dim = true;
+                    break;
+                }
+            }
+            if (!has_null_dim) continue;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                std::string dim_key = args[i].name + "__dim"
+                    + std::to_string(d + 1);
+                std::string dim_var = "__size_" + args[i].name
+                    + "_dim" + std::to_string(d + 1);
+                func_array_size_params[dim_key] = dim_var;
+            }
+            // Also register the total flat size as the product of
+            // per-dimension sizes so existing ArraySize lookups work.
+            std::string total_expr = "__size_" + args[i].name
+                + "_dim1";
+            for (size_t d = 1; d < arr->n_dims; d++) {
+                total_expr += " * __size_" + args[i].name
+                    + "_dim" + std::to_string(d + 1);
+            }
+            func_array_size_params[args[i].name] = "("
+                + total_expr + ")";
         }
 
         // Declare local variables (non-argument variables in kernel scope)
@@ -2987,6 +3055,19 @@ public:
                                     if (pit != ptr_section_sizes.end()) {
                                         src << pit->second;
                                     } else {
+                                        // Try per-dimension key first
+                                        // (for assumed-shape kernel args)
+                                        std::string dim_key = vname
+                                            + "__dim"
+                                            + std::to_string(dim_idx + 1);
+                                        auto dpit =
+                                            func_array_size_params.find(
+                                                dim_key);
+                                        if (dpit !=
+                                                func_array_size_params
+                                                    .end()) {
+                                            src << dpit->second;
+                                        } else {
                                         auto fpit = func_array_size_params.find(vname);
                                         if (fpit != func_array_size_params.end()) {
                                             src << fpit->second;
@@ -3002,6 +3083,7 @@ public:
                                                     src << "/* unknown ubound for '" << vname << "' */";
                                                 }
                                             }
+                                        }
                                         }
                                     }
                                 } else {
