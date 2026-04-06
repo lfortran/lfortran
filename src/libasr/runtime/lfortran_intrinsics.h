@@ -277,7 +277,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     int32_t *recl,
     char* sign, int64_t sign_len,
     char* decimal, int64_t decimal_len,
-    char* round, int64_t round_len);
+    char* round, int64_t round_len,
+    char* pad, int64_t pad_len
+);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_sleep(int32_t seconds);
@@ -307,10 +309,13 @@ LFORTRAN_API void _lfortran_inquire(
     char *encoding, int64_t encoding_len,
     char *stream, int64_t stream_len,
     char *iomsg, int64_t iomsg_len,
-    char *round, int64_t round_len
+    char *round, int64_t round_len,
+    char *pad, int64_t pad_len
 );
 LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat);
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
+// Formatted READ: pad/pad_len specify PAD for this statement.
+// If pad is NULL/len==0, the unit's PAD mode is used.
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, char* pad, int64_t pad_len, ...);
 LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);

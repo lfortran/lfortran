@@ -359,7 +359,7 @@ public:
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
             *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr, *a_sign = nullptr,
-            *a_decimal = nullptr, *a_round = nullptr;
+            *a_decimal = nullptr, *a_round = nullptr, *a_pad = nullptr;
         int64_t err_label = -1;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -853,9 +853,29 @@ public:
                     throw SemanticAbort();
                 }
 
+            } else if (m_arg_str == std::string("pad")) {
+                if (a_pad != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `pad` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_pad = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *a_pad_type = ASRUtils::expr_type(a_pad);
+                if (!ASRUtils::is_character(*a_pad_type)) {
+                    diag.add(Diagnostic(
+                        "`pad` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
             else {
-                const std::unordered_set<std::string> unsupported_args {"fileopt", "pad"};
+                const std::unordered_set<std::string> unsupported_args {"fileopt"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -904,7 +924,7 @@ public:
             a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, iostat_sym));
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad);
         tmp_vec.push_back(tmp);
         if (err_label != -1) {
             emit_err_label_jump(err_label, a_iostat, x.base.base.loc, tmp_vec);
@@ -1405,8 +1425,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos, *a_rec;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = a_rec = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos, *a_rec, *a_pad;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = a_rec = a_pad = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         ASR::symbol_t *a_nml = nullptr;
         std::string read_write = "";
@@ -1973,6 +1993,36 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == "pad") {
+                // Pad specifier only allowed in Read statement, not write
+                if (_type != AST::stmtType::Read) {
+                    diag.add(Diagnostic(
+                        "`pad` specifier is only allowed in Read statements",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (a_pad != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `pad` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_pad = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_pad_type = ASRUtils::expr_type(a_pad);
+                // Pad specifier must be a character type variable
+                if (!ASRUtils::is_character(*a_pad_type)) {
+                    diag.add(Diagnostic(
+                        "`pad` must be of type Character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         if (a_rec && a_unit && ASRUtils::is_character(*ASRUtils::expr_type(a_unit))) {
@@ -2267,7 +2317,7 @@ public:
                 } else if (_type == AST::stmtType::Read) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                         a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(),
-                        nullptr, formatted, a_nml, a_rec);
+                        nullptr, formatted, a_nml, a_rec, a_pad);
                     print_statements[tmp] = std::make_pair(&r->base, label);
                 }
                 if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
@@ -2326,7 +2376,7 @@ public:
                 a_values_vec.push_back(al, string_format);
             }
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
-               a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec);
+               a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad);
         }
 
         tmp_vec.push_back(tmp);
@@ -2345,7 +2395,7 @@ public:
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id, a_pos,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec)));
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eof_test,
                         body.p, body.size(), nullptr, 0));
                 }
@@ -2355,7 +2405,7 @@ public:
                     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(ASR::make_FileRead_t(al, loc, m_label,
                         a_unit, a_fmt, a_iomsg, nullptr, a_advance, a_size, a_id, a_pos,
-                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec)));
+                        a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad)));
                     tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
                         body.p, body.size(), nullptr, 0));
                 }
