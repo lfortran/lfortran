@@ -120,10 +120,14 @@ static bool expr_has_function_call(ASR::expr_t *expr) {
 class GpuReplaceSymbols : public ASR::BaseExprReplacer<GpuReplaceSymbols> {
 public:
     SymbolTable &kernel_scope;
+    std::set<SymbolTable*> skip_scopes;
     GpuReplaceSymbols(SymbolTable &scope) : kernel_scope(scope) {}
 
     void replace_Var(ASR::Var_t *x) {
         std::string name = ASRUtils::symbol_name(x->m_v);
+        for (auto *ss : skip_scopes) {
+            if (ss->get_symbol(name)) return;
+        }
         ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
         if (new_sym) {
             x->m_v = new_sym;
@@ -377,13 +381,34 @@ class DanglingVarCollector : public ASR::BaseWalkVisitor<DanglingVarCollector> {
 public:
     SymbolTable *func_scope;
     std::map<std::string, ASR::symbol_t*> dangling;
+    std::set<SymbolTable*> inner_scopes;
     DanglingVarCollector(SymbolTable *fs) : func_scope(fs) {}
     void visit_Var(const ASR::Var_t &x) {
         std::string name = ASRUtils::symbol_name(x.m_v);
+        for (auto *scope : inner_scopes) {
+            if (scope->get_symbol(name)) return;
+        }
         if (!func_scope->resolve_symbol(name) &&
                 dangling.find(name) == dangling.end()) {
             dangling[name] = x.m_v;
         }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        inner_scopes.insert(ab->m_symtab);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+        inner_scopes.erase(ab->m_symtab);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        inner_scopes.insert(block->m_symtab);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+        inner_scopes.erase(block->m_symtab);
     }
 };
 
@@ -402,6 +427,19 @@ public:
             if (new_sym) {
                 const_cast<ASR::Var_t&>(x).m_v = new_sym;
             }
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
         }
     }
 };
@@ -512,6 +550,81 @@ public:
                       ASR::TranslationUnit_t &tu_)
         : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {}
 
+    // Load any module dependencies of a loaded submodule TU into
+    // the main TU's symbol table so that fix_external_symbols can
+    // resolve them.  This handles transitive dependencies: if the
+    // submodule uses module A which in turn uses module B, both A
+    // and B are loaded.  After loading, fix_external_symbols is
+    // called on the main TU to resolve any null m_external pointers
+    // in the newly loaded modules.
+    void load_submodule_deps(ASR::TranslationUnit_t &sub_tu) {
+        std::vector<std::string> pending =
+            ASRUtils::determine_module_dependencies(sub_tu);
+        std::set<std::string> seen;
+        bool loaded_any = false;
+
+        while (!pending.empty()) {
+            std::string dep_name = pending.back();
+            pending.pop_back();
+            if (seen.count(dep_name)) continue;
+            seen.insert(dep_name);
+            if (tu.m_symtab->get_symbol(dep_name) != nullptr)
+                continue;
+            if (sub_tu.m_symtab->get_symbol(dep_name) != nullptr)
+                continue;
+            bool is_intrinsic =
+                startswith(dep_name, "lfortran_intrinsic");
+            LocationManager lm_dep;
+            auto dep_res = ASRUtils::find_and_load_module(
+                al, dep_name, *tu.m_symtab, is_intrinsic,
+                pass_options, lm_dep);
+            if (!dep_res.ok && !is_intrinsic) {
+                if (dep_name == "iso_c_binding" ||
+                        dep_name == "iso_fortran_env") {
+                    LocationManager lm_dep2;
+                    auto dep_res2 =
+                        ASRUtils::find_and_load_module(
+                            al,
+                            "lfortran_intrinsic_" + dep_name,
+                            *tu.m_symtab, true, pass_options,
+                            lm_dep2);
+                    if (dep_res2.ok) {
+                        ASR::Module_t *dep_mod =
+                            ASRUtils::extract_module(
+                                *dep_res2.result);
+                        tu.m_symtab->add_symbol(dep_name,
+                            (ASR::symbol_t*)dep_mod);
+                        dep_mod->m_symtab->parent =
+                            tu.m_symtab;
+                        dep_mod->m_loaded_from_mod = true;
+                        loaded_any = true;
+                        for (size_t i = 0;
+                                i < dep_mod->n_dependencies; i++) {
+                            pending.push_back(
+                                dep_mod->m_dependencies[i]);
+                        }
+                    }
+                    continue;
+                }
+            }
+            if (!dep_res.ok) continue;
+            ASR::Module_t *dep_mod =
+                ASRUtils::extract_module(*dep_res.result);
+            tu.m_symtab->add_symbol(dep_name,
+                (ASR::symbol_t*)dep_mod);
+            dep_mod->m_symtab->parent = tu.m_symtab;
+            dep_mod->m_loaded_from_mod = true;
+            loaded_any = true;
+            for (size_t i = 0; i < dep_mod->n_dependencies; i++) {
+                pending.push_back(dep_mod->m_dependencies[i]);
+            }
+        }
+
+        if (loaded_any) {
+            fix_external_symbols(tu, *tu.m_symtab);
+        }
+    }
+
     // Duplicate an expression, remapping all Var references to point to the
     // given scope. Used to create kernel-scope copies of head expressions.
     ASR::expr_t* dup_expr_to_scope(ASR::expr_t *expr, SymbolTable *scope) {
@@ -524,6 +637,75 @@ public:
         replacer.current_expr = &copy;
         replacer.replace_expr(copy);
         return copy;
+    }
+
+    // Recursively remap ExternalSymbol targets and Variable
+    // m_type_declarations inside `scope` (and all nested child scopes)
+    // so they reference the kernel-scope struct copies instead of the
+    // original module definitions.
+    void fixup_struct_refs_in_scope(SymbolTable *scope,
+            SymbolTable *kernel_scope) {
+        for (auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t *es =
+                    ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                if (!es->m_external) continue;
+                ASR::symbol_t *target =
+                    ASRUtils::symbol_get_past_external(es->m_external);
+                if (!target) continue;
+                SymbolTable *tp =
+                    ASRUtils::symbol_parent_symtab(target);
+                if (tp->asr_owner &&
+                        tp->asr_owner->type == ASR::asrType::symbol) {
+                    ASR::symbol_t *os =
+                        ASR::down_cast<ASR::symbol_t>(tp->asr_owner);
+                    if (ASR::is_a<ASR::Struct_t>(*os)) {
+                        std::string sn =
+                            ASR::down_cast<ASR::Struct_t>(os)->m_name;
+                        ASR::symbol_t *ks =
+                            kernel_scope->get_symbol(sn);
+                        if (ks && ASR::is_a<ASR::Struct_t>(*ks)) {
+                            ASR::symbol_t *nt =
+                                ASR::down_cast<ASR::Struct_t>(ks)
+                                    ->m_symtab->get_symbol(
+                                        es->m_original_name);
+                            if (nt) es->m_external = nt;
+                        }
+                    }
+                }
+            } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::symbol_t *tdecl_resolved =
+                    var->m_type_declaration
+                        ? ASRUtils::symbol_get_past_external(
+                              var->m_type_declaration)
+                        : nullptr;
+                if (tdecl_resolved &&
+                        ASR::is_a<ASR::Struct_t>(*tdecl_resolved)) {
+                    std::string sn = ASRUtils::symbol_name(
+                        tdecl_resolved);
+                    ASR::symbol_t *ks =
+                        kernel_scope->get_symbol(sn);
+                    if (ks) var->m_type_declaration = ks;
+                }
+            }
+            // Recurse into nested scopes
+            SymbolTable *nested = nullptr;
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                nested = ASR::down_cast<ASR::Function_t>(
+                    item.second)->m_symtab;
+            } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                nested = ASR::down_cast<ASR::Block_t>(
+                    item.second)->m_symtab;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                nested = ASR::down_cast<ASR::AssociateBlock_t>(
+                    item.second)->m_symtab;
+            }
+            if (nested) {
+                fixup_struct_refs_in_scope(nested, kernel_scope);
+            }
+        }
     }
 
     // Find a Struct in kernel_scope by name, with PDT fallback.
@@ -2803,7 +2985,8 @@ public:
                 new_body.push_back(al, stmt);
                 continue;
             }
-            ASR::ttype_t *target_type = ASRUtils::expr_type(asgn->m_target);
+            ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::expr_type(asgn->m_target));
             if (!ASR::is_a<ASR::Array_t>(*target_type)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -2964,7 +3147,8 @@ public:
                 // Convert to:
                 //   do i = 1, size(a); a(i) = obj%eval(z(i)); end do
                 ASR::ttype_t *rhs_type =
-                    ASRUtils::expr_type(asgn->m_value);
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::expr_type(asgn->m_value));
                 if (!ASR::is_a<ASR::Array_t>(*rhs_type)) {
                     new_body.push_back(al, stmt);
                     continue;
@@ -3034,7 +3218,9 @@ public:
                 std::function<ASR::expr_t*(ASR::expr_t*)> elementize =
                     [&](ASR::expr_t *e) -> ASR::expr_t* {
                     if (ASR::is_a<ASR::Var_t>(*e)) {
-                        ASR::ttype_t *vtype = ASRUtils::expr_type(e);
+                        ASR::ttype_t *vtype =
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::expr_type(e));
                         if (ASR::is_a<ASR::Array_t>(*vtype)) {
                             ASR::ttype_t *velem =
                                 ASRUtils::extract_type(vtype);
@@ -3151,6 +3337,34 @@ public:
                         return elementize(
                             ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                                 e)->m_arg);
+                    } else if (ASR::is_a<
+                            ASR::StructInstanceMember_t>(*e)) {
+                        ASR::ttype_t *mtype =
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::expr_type(e));
+                        if (ASR::is_a<ASR::Array_t>(*mtype)) {
+                            ASR::ttype_t *melem =
+                                ASRUtils::extract_type(mtype);
+                            ASR::Array_t *ma =
+                                ASR::down_cast<ASR::Array_t>(mtype);
+                            Vec<ASR::array_index_t> idx_args;
+                            idx_args.reserve(al, ma->n_dims);
+                            for (size_t d = 0; d < ma->n_dims; d++) {
+                                ASR::array_index_t idx;
+                                idx.loc = loc;
+                                idx.m_left = nullptr;
+                                idx.m_right = loop_vars[
+                                    d < loop_vars.size() ? d : 0];
+                                idx.m_step = nullptr;
+                                idx_args.push_back(al, idx);
+                            }
+                            return ASRUtils::EXPR(
+                                ASR::make_ArrayItem_t(al, loc, e,
+                                    idx_args.p, idx_args.n, melem,
+                                    ASR::arraystorageType::ColMajor,
+                                    nullptr));
+                        }
+                        return e;
                     }
                     return e;
                 };
@@ -3628,6 +3842,94 @@ public:
         inline_elemental_array_var_assignment(
             const_cast<ASR::DoConcurrentLoop_t&>(x));
 
+        // Recursive helper to inline an AssociateBlock's body.
+        // Collects Associate mappings into assoc_map and non-Associate
+        // statements into resolved_stmts. Handles nested
+        // AssociateBlockCalls by recursing into inner blocks.
+        std::function<void(ASR::AssociateBlock_t*,
+                           std::map<ASR::symbol_t*, ASR::expr_t*>&,
+                           Vec<ASR::stmt_t*>&)>
+            inline_assoc_body = [&](ASR::AssociateBlock_t *ab,
+                                    std::map<ASR::symbol_t*, ASR::expr_t*> &assoc_map,
+                                    Vec<ASR::stmt_t*> &resolved_stmts) {
+            for (size_t ai = 0; ai < ab->n_body; ai++) {
+                if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
+                    ASR::Associate_t *assoc =
+                        ASR::down_cast<ASR::Associate_t>(
+                            ab->m_body[ai]);
+                    if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
+                        ASR::symbol_t *sym =
+                            ASR::down_cast<ASR::Var_t>(
+                                assoc->m_target)->m_v;
+                        ASRUtils::ExprStmtDuplicator dup(al);
+                        dup.success = true;
+                        ASR::expr_t *value =
+                            dup.duplicate_expr(assoc->m_value);
+                        if (!assoc_map.empty()) {
+                            AssociateVarResolver resolver(al, assoc_map);
+                            resolver.current_expr = &value;
+                            resolver.replace_expr(value);
+                        }
+                        assoc_map[sym] = value;
+                    }
+                } else if (ASR::is_a<ASR::AssociateBlockCall_t>(
+                               *ab->m_body[ai])) {
+                    ASR::AssociateBlockCall_t *inner_abc =
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            ab->m_body[ai]);
+                    if (ASR::is_a<ASR::AssociateBlock_t>(
+                            *inner_abc->m_m)) {
+                        ASR::AssociateBlock_t *inner_ab =
+                            ASR::down_cast<ASR::AssociateBlock_t>(
+                                inner_abc->m_m);
+                        inline_assoc_body(inner_ab, assoc_map,
+                            resolved_stmts);
+                        for (auto &es_item :
+                                 inner_ab->m_symtab->get_scope()) {
+                            if (!ASR::is_a<ASR::ExternalSymbol_t>(
+                                    *es_item.second)) continue;
+                            if (!current_scope->get_symbol(
+                                    es_item.first)) {
+                                ASR::down_cast<ASR::ExternalSymbol_t>(
+                                    es_item.second)->m_parent_symtab =
+                                        current_scope;
+                                current_scope->add_symbol(
+                                    es_item.first, es_item.second);
+                            }
+                        }
+                        std::string inner_name = inner_ab->m_name;
+                        ab->m_symtab->erase_symbol(inner_name);
+                    } else {
+                        resolved_stmts.push_back(al,
+                            ab->m_body[ai]);
+                    }
+                } else if (ASR::is_a<ASR::Assignment_t>(
+                               *ab->m_body[ai])) {
+                    ASR::Assignment_t *asgn =
+                        ASR::down_cast<ASR::Assignment_t>(
+                            ab->m_body[ai]);
+                    if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
+                        ASR::symbol_t *sym =
+                            ASR::down_cast<ASR::Var_t>(
+                                asgn->m_target)->m_v;
+                        if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                            ASR::down_cast<ASR::Variable_t>(sym)
+                                ->m_parent_symtab == ab->m_symtab &&
+                            assoc_map.find(sym) == assoc_map.end()) {
+                            assoc_map[sym] = asgn->m_value;
+                        } else {
+                            resolved_stmts.push_back(al,
+                                ab->m_body[ai]);
+                        }
+                    } else {
+                        resolved_stmts.push_back(al, ab->m_body[ai]);
+                    }
+                } else {
+                    resolved_stmts.push_back(al, ab->m_body[ai]);
+                }
+            }
+        };
+
         // Resolve AssociateBlocks inside the do concurrent body (e.g.,
         // block { associate(nh => n) ... } within the loop). GPU kernels
         // cannot use Pointer-based associate aliases, so we inline the
@@ -3661,42 +3963,7 @@ public:
                     enclosing_assoc_map);
                 Vec<ASR::stmt_t*> resolved_stmts;
                 resolved_stmts.reserve(al, ab->n_body);
-                for (size_t ai = 0; ai < ab->n_body; ai++) {
-                    if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
-                        ASR::Associate_t *assoc =
-                            ASR::down_cast<ASR::Associate_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    assoc->m_target)->m_v;
-                            assoc_map[sym] = assoc->m_value;
-                        }
-                    } else if (ASR::is_a<ASR::Assignment_t>(
-                                   *ab->m_body[ai])) {
-                        ASR::Assignment_t *asgn =
-                            ASR::down_cast<ASR::Assignment_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    asgn->m_target)->m_v;
-                            if (ASR::is_a<ASR::Variable_t>(*sym) &&
-                                ASR::down_cast<ASR::Variable_t>(sym)
-                                    ->m_parent_symtab == ab->m_symtab &&
-                                assoc_map.find(sym) == assoc_map.end()) {
-                                assoc_map[sym] = asgn->m_value;
-                            } else {
-                                resolved_stmts.push_back(al,
-                                    ab->m_body[ai]);
-                            }
-                        } else {
-                            resolved_stmts.push_back(al, ab->m_body[ai]);
-                        }
-                    } else {
-                        resolved_stmts.push_back(al, ab->m_body[ai]);
-                    }
-                }
+                inline_assoc_body(ab, assoc_map, resolved_stmts);
                 if (!assoc_map.empty()) {
                     AssociateVarResolverVisitor resolver(al, assoc_map);
                     for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
@@ -3765,42 +4032,7 @@ public:
                     enclosing_assoc_map);
                 Vec<ASR::stmt_t*> resolved_stmts;
                 resolved_stmts.reserve(al, ab->n_body);
-                for (size_t ai = 0; ai < ab->n_body; ai++) {
-                    if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
-                        ASR::Associate_t *assoc =
-                            ASR::down_cast<ASR::Associate_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    assoc->m_target)->m_v;
-                            assoc_map[sym] = assoc->m_value;
-                        }
-                    } else if (ASR::is_a<ASR::Assignment_t>(
-                                   *ab->m_body[ai])) {
-                        ASR::Assignment_t *asgn =
-                            ASR::down_cast<ASR::Assignment_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    asgn->m_target)->m_v;
-                            if (ASR::is_a<ASR::Variable_t>(*sym) &&
-                                ASR::down_cast<ASR::Variable_t>(sym)
-                                    ->m_parent_symtab == ab->m_symtab &&
-                                assoc_map.find(sym) == assoc_map.end()) {
-                                assoc_map[sym] = asgn->m_value;
-                            } else {
-                                resolved_stmts.push_back(al,
-                                    ab->m_body[ai]);
-                            }
-                        } else {
-                            resolved_stmts.push_back(al, ab->m_body[ai]);
-                        }
-                    } else {
-                        resolved_stmts.push_back(al, ab->m_body[ai]);
-                    }
-                }
+                inline_assoc_body(ab, assoc_map, resolved_stmts);
                 if (!assoc_map.empty()) {
                     AssociateVarResolverVisitor resolver(al, assoc_map);
                     for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
@@ -4476,11 +4708,172 @@ public:
                     for (auto &[fn_name, fn_sym] : func_collector.functions) {
                         ASR::symbol_t *fn_resolved =
                             ASRUtils::symbol_get_past_external(fn_sym);
+                        ASR::Function_t *fn = nullptr;
                         if (ASR::is_a<ASR::Function_t>(*fn_resolved)) {
-                            ASR::Function_t *fn =
-                                ASR::down_cast<ASR::Function_t>(fn_resolved);
-                            for (size_t i = 0; i < fn->n_body; i++) {
-                                transitive_collector.visit_stmt(*fn->m_body[i]);
+                            fn = ASR::down_cast<ASR::Function_t>(fn_resolved);
+                        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                                *fn_resolved)) {
+                            ASR::StructMethodDeclaration_t *smd =
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                                    fn_resolved);
+                            ASR::symbol_t *proc =
+                                ASRUtils::symbol_get_past_external(smd->m_proc);
+                            if (ASR::is_a<ASR::Function_t>(*proc)) {
+                                fn = ASR::down_cast<ASR::Function_t>(proc);
+                            }
+                        }
+                        if (fn) {
+                            ASR::Function_t *fn_impl = fn;
+                            ASR::FunctionType_t *fn_ft =
+                                ASR::down_cast<ASR::FunctionType_t>(
+                                    fn->m_function_signature);
+                            if (fn_ft->m_deftype ==
+                                    ASR::deftypeType::Interface) {
+                                std::string pname = fn->m_name;
+                                bool found_impl = false;
+                                for (auto &tu_item :
+                                        tu.m_symtab->get_scope()) {
+                                    if (!ASR::is_a<ASR::Module_t>(
+                                            *tu_item.second)) continue;
+                                    ASR::Module_t *mod =
+                                        ASR::down_cast<ASR::Module_t>(
+                                            tu_item.second);
+                                    ASR::symbol_t *impl_sym =
+                                        mod->m_symtab->get_symbol(pname);
+                                    if (!impl_sym ||
+                                        !ASR::is_a<ASR::Function_t>(
+                                            *impl_sym)) continue;
+                                    ASR::Function_t *impl_func =
+                                        ASR::down_cast<ASR::Function_t>(
+                                            impl_sym);
+                                    ASR::FunctionType_t *impl_ft =
+                                        ASR::down_cast<ASR::FunctionType_t>(
+                                            impl_func
+                                                ->m_function_signature);
+                                    if (impl_ft->m_deftype ==
+                                            ASR::deftypeType::Implementation) {
+                                        fn_impl = impl_func;
+                                        found_impl = true;
+                                        break;
+                                    }
+                                }
+                                if (!found_impl) {
+                                    // Load submodule from .smod file
+                                    // on disk (--separate-compilation).
+                                    SymbolTable *parent_st =
+                                        fn->m_symtab->parent;
+                                    if (parent_st->asr_owner &&
+                                            parent_st->asr_owner->type ==
+                                                ASR::asrType::symbol &&
+                                            ASR::is_a<ASR::Module_t>(
+                                                *ASR::down_cast<
+                                                    ASR::symbol_t>(
+                                                    parent_st
+                                                        ->asr_owner))) {
+                                        std::string parent_mod =
+                                            ASR::down_cast<ASR::Module_t>(
+                                                ASR::down_cast<
+                                                    ASR::symbol_t>(
+                                                    parent_st
+                                                        ->asr_owner))
+                                                ->m_name;
+                                        std::string smod_prefix =
+                                            parent_mod + "@";
+                                        std::vector<
+                                            std::filesystem::path>
+                                                mod_dirs;
+                                        mod_dirs.push_back(
+                                            pass_options
+                                                .runtime_library_dir);
+                                        mod_dirs.push_back(
+                                            pass_options.mod_files_dir);
+                                        mod_dirs.insert(mod_dirs.end(),
+                                            pass_options.include_dirs
+                                                .begin(),
+                                            pass_options.include_dirs
+                                                .end());
+                                        for (auto &dir : mod_dirs) {
+                                            if (dir.empty())
+                                                dir = ".";
+                                            if (!std::filesystem::
+                                                    is_directory(dir))
+                                                continue;
+                                            for (auto &file :
+                                                    std::filesystem::
+                                                        directory_iterator(
+                                                            dir)) {
+                                                std::string fname =
+                                                    file.path()
+                                                        .filename()
+                                                        .string();
+                                                if (!startswith(fname,
+                                                        smod_prefix) ||
+                                                    !endswith(fname,
+                                                        ".smod"))
+                                                    continue;
+                                                std::string content;
+                                                if (!read_file(
+                                                        file.path()
+                                                            .string(),
+                                                        content) ||
+                                                    content.empty())
+                                                    continue;
+                                                LocationManager
+                                                    lm_tmp;
+                                                auto res =
+                                                    load_modfile(
+                                                        al, content,
+                                                        false,
+                                                        *tu.m_symtab,
+                                                        lm_tmp);
+                                                if (!res.ok) continue;
+                                                load_submodule_deps(
+                                                    *res.result);
+                                                fix_external_symbols(
+                                                    *res.result,
+                                                    *tu.m_symtab);
+                                                ASR::Module_t *submod =
+                                                    ASRUtils::
+                                                        extract_module(
+                                                            *res.result);
+                                                ASR::symbol_t
+                                                    *impl_sym =
+                                                    submod->m_symtab
+                                                        ->get_symbol(
+                                                            pname);
+                                                if (!impl_sym ||
+                                                    !ASR::is_a<
+                                                        ASR::Function_t
+                                                            >(*impl_sym))
+                                                    continue;
+                                                ASR::Function_t
+                                                    *impl_func =
+                                                    ASR::down_cast<
+                                                        ASR::Function_t>(
+                                                            impl_sym);
+                                                ASR::FunctionType_t
+                                                    *impl_ft =
+                                                    ASR::down_cast<
+                                                        ASR::FunctionType_t>(
+                                                        impl_func
+                                                        ->m_function_signature);
+                                                if (impl_ft->m_deftype
+                                                        != ASR::
+                                                        deftypeType::
+                                                        Implementation)
+                                                    continue;
+                                                fn_impl = impl_func;
+                                                found_impl = true;
+                                                break;
+                                            }
+                                            if (found_impl) break;
+                                        }
+                                    }
+                                }
+                            }
+                            for (size_t i = 0; i < fn_impl->n_body; i++) {
+                                transitive_collector.visit_stmt(
+                                    *fn_impl->m_body[i]);
                             }
                         }
                     }
@@ -4601,6 +4994,8 @@ public:
                                             al, content, false,
                                             *tu.m_symtab, lm_tmp);
                                         if (!res.ok) continue;
+                                        load_submodule_deps(
+                                            *res.result);
                                         fix_external_symbols(
                                             *res.result,
                                             *tu.m_symtab);
@@ -4685,81 +5080,10 @@ public:
                             // ExternalSymbol targets and Variable
                             // m_type_declarations to point to the
                             // kernel's struct copies instead.
-                            ASR::Function_t *dup_func =
-                                ASR::down_cast<ASR::Function_t>(dup);
-                            for (auto &item :
-                                    dup_func->m_symtab->get_scope()) {
-                                if (ASR::is_a<ASR::ExternalSymbol_t>(
-                                        *item.second)) {
-                                    ASR::ExternalSymbol_t *es =
-                                        ASR::down_cast<
-                                            ASR::ExternalSymbol_t>(
-                                                item.second);
-                                    if (!es->m_external) continue;
-                                    ASR::symbol_t *target =
-                                        ASRUtils::symbol_get_past_external(
-                                            es->m_external);
-                                    if (!target) continue;
-                                    SymbolTable *target_parent =
-                                        ASRUtils::symbol_parent_symtab(
-                                            target);
-                                    if (target_parent->asr_owner &&
-                                            target_parent->asr_owner->type
-                                                == ASR::asrType::symbol) {
-                                        ASR::symbol_t *owner_sym =
-                                            ASR::down_cast<ASR::symbol_t>(
-                                                target_parent->asr_owner);
-                                        if (ASR::is_a<ASR::Struct_t>(
-                                                *owner_sym)) {
-                                            std::string sname =
-                                                ASR::down_cast<
-                                                    ASR::Struct_t>(
-                                                        owner_sym)
-                                                    ->m_name;
-                                            ASR::symbol_t *ks =
-                                                kernel_scope->get_symbol(
-                                                    sname);
-                                            if (ks && ASR::is_a<
-                                                    ASR::Struct_t>(*ks)) {
-                                                ASR::Struct_t *kstruct =
-                                                    ASR::down_cast<
-                                                        ASR::Struct_t>(ks);
-                                                ASR::symbol_t *new_target =
-                                                    kstruct->m_symtab
-                                                        ->get_symbol(
-                                                            es->m_original_name);
-                                                if (new_target) {
-                                                    es->m_external =
-                                                        new_target;
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else if (ASR::is_a<ASR::Variable_t>(
-                                        *item.second)) {
-                                    ASR::Variable_t *var =
-                                        ASR::down_cast<ASR::Variable_t>(
-                                            item.second);
-                                    ASR::symbol_t *type_decl_resolved =
-                                        var->m_type_declaration
-                                            ? ASRUtils::symbol_get_past_external(
-                                                  var->m_type_declaration)
-                                            : nullptr;
-                                    if (type_decl_resolved &&
-                                            ASR::is_a<ASR::Struct_t>(
-                                                *type_decl_resolved)) {
-                                        std::string sname =
-                                            ASRUtils::symbol_name(
-                                                type_decl_resolved);
-                                        ASR::symbol_t *ks =
-                                            kernel_scope->get_symbol(
-                                                sname);
-                                        if (ks) {
-                                            var->m_type_declaration = ks;
-                                        }
-                                    }
-                                }
-                            }
+                            fixup_struct_refs_in_scope(
+                                ASR::down_cast<ASR::Function_t>(dup)
+                                    ->m_symtab,
+                                kernel_scope);
                         }
                     }
                 } else if (ASR::is_a<ASR::ExternalSymbol_t>(*func_sym) &&
@@ -4863,14 +5187,35 @@ public:
                             ASR::down_cast<ASR::Function_t>(proc_sym);
                         std::string pname =
                             ASRUtils::symbol_name(proc_sym);
-                        if (!kernel_scope->get_symbol(pname)) {
+                        ASR::symbol_t *existing =
+                            kernel_scope->get_symbol(pname);
+                        bool already_has_body = false;
+                        if (existing &&
+                                ASR::is_a<ASR::Function_t>(*existing)) {
+                            ASR::FunctionType_t *eft =
+                                ASR::down_cast<ASR::FunctionType_t>(
+                                    ASR::down_cast<ASR::Function_t>(
+                                        existing)
+                                        ->m_function_signature);
+                            if (eft->m_deftype ==
+                                    ASR::deftypeType::Implementation) {
+                                already_has_body = true;
+                            }
+                        }
+                        if (!already_has_body) {
+                            if (existing) {
+                                kernel_scope->erase_symbol(pname);
+                            }
                             ASR::FunctionType_t *ftype =
                                 ASR::down_cast<ASR::FunctionType_t>(
                                     proc_func->m_function_signature);
                             if (ftype->m_deftype ==
                                     ASR::deftypeType::Interface) {
                                 // Submodule interface: find the
-                                // Implementation in a submodule.
+                                // Implementation in a submodule
+                                // already in the TU, or load it from
+                                // disk (--separate-compilation).
+                                bool found = false;
                                 for (auto &tu_item :
                                         tu.m_symtab->get_scope()) {
                                     if (!ASR::is_a<ASR::Module_t>(
@@ -4900,7 +5245,138 @@ public:
                                         kernel_scope->add_symbol(
                                             pname, dup);
                                     }
+                                    found = true;
                                     break;
+                                }
+                                if (!found) {
+                                    // Load submodule from smod file.
+                                    SymbolTable *parent_st =
+                                        ASRUtils::symbol_parent_symtab(
+                                            proc_sym);
+                                    if (parent_st->asr_owner &&
+                                            parent_st->asr_owner->type ==
+                                                ASR::asrType::symbol &&
+                                            ASR::is_a<ASR::Module_t>(
+                                                *ASR::down_cast<
+                                                    ASR::symbol_t>(
+                                                    parent_st
+                                                        ->asr_owner))) {
+                                        std::string parent_mod =
+                                            ASR::down_cast<ASR::Module_t>(
+                                                ASR::down_cast<
+                                                    ASR::symbol_t>(
+                                                    parent_st
+                                                        ->asr_owner))
+                                                ->m_name;
+                                        std::string smod_prefix =
+                                            parent_mod + "@";
+                                        std::vector<
+                                            std::filesystem::path>
+                                                mod_dirs;
+                                        mod_dirs.push_back(
+                                            pass_options
+                                                .runtime_library_dir);
+                                        mod_dirs.push_back(
+                                            pass_options.mod_files_dir);
+                                        mod_dirs.insert(mod_dirs.end(),
+                                            pass_options.include_dirs
+                                                .begin(),
+                                            pass_options.include_dirs
+                                                .end());
+                                        for (auto &dir : mod_dirs) {
+                                            if (dir.empty())
+                                                dir = ".";
+                                            if (!std::filesystem::
+                                                    is_directory(dir))
+                                                continue;
+                                            for (auto &file :
+                                                    std::filesystem::
+                                                        directory_iterator(
+                                                            dir)) {
+                                                std::string fname =
+                                                    file.path()
+                                                        .filename()
+                                                        .string();
+                                                if (!startswith(fname,
+                                                        smod_prefix) ||
+                                                    !endswith(fname,
+                                                        ".smod"))
+                                                    continue;
+                                                std::string content;
+                                                if (!read_file(
+                                                        file.path()
+                                                            .string(),
+                                                        content) ||
+                                                    content.empty())
+                                                    continue;
+                                                LocationManager
+                                                    lm_tmp;
+                                                auto res =
+                                                    load_modfile(
+                                                        al, content,
+                                                        false,
+                                                        *tu.m_symtab,
+                                                        lm_tmp);
+                                                if (!res.ok) continue;
+                                                load_submodule_deps(
+                                                    *res.result);
+                                                fix_external_symbols(
+                                                    *res.result,
+                                                    *tu.m_symtab);
+                                                ASR::Module_t *submod =
+                                                    ASRUtils::
+                                                        extract_module(
+                                                            *res.result);
+                                                ASR::symbol_t
+                                                    *impl_sym =
+                                                    submod->m_symtab
+                                                        ->get_symbol(
+                                                            pname);
+                                                if (!impl_sym ||
+                                                    !ASR::is_a<
+                                                        ASR::Function_t
+                                                            >(*impl_sym))
+                                                    continue;
+                                                ASR::Function_t
+                                                    *impl_func =
+                                                    ASR::down_cast<
+                                                        ASR::Function_t>(
+                                                            impl_sym);
+                                                ASR::FunctionType_t
+                                                    *impl_ft =
+                                                    ASR::down_cast<
+                                                        ASR::FunctionType_t>(
+                                                        impl_func
+                                                        ->m_function_signature);
+                                                if (impl_ft->m_deftype
+                                                        != ASR::
+                                                        deftypeType::
+                                                        Implementation)
+                                                    continue;
+                                                ASR::symbol_t *dup =
+                                                    sym_dup
+                                                        .duplicate_Function(
+                                                        impl_func,
+                                                        kernel_scope);
+                                                if (dup) {
+                                                    kernel_scope
+                                                        ->add_symbol(
+                                                            pname, dup);
+                                                }
+                                                found = true;
+                                                break;
+                                            }
+                                            if (found) break;
+                                        }
+                                    }
+                                }
+                                if (!found) {
+                                    throw LCompilersException(
+                                        "GPU Metal offload: cannot find "
+                                        "submodule implementation for '"
+                                        + pname + "'; ensure the "
+                                        "submodule is compiled before "
+                                        "the file that uses it");
                                 }
                             } else {
                                 // Non-submodule: function has a body.
@@ -4964,63 +5440,14 @@ public:
         // After duplication, ExternalSymbol targets and Variable
         // m_type_declarations may still reference the original module's
         // struct definitions. Remap them to the kernel's copies.
+        // This recurses into nested scopes (Block, AssociateBlock, etc.).
         {
             for (auto &item : kernel_scope->get_scope()) {
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
                 ASR::Function_t *dfunc = ASR::down_cast<ASR::Function_t>(
                     item.second);
-                for (auto &ditem : dfunc->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*ditem.second)) {
-                        ASR::ExternalSymbol_t *es =
-                            ASR::down_cast<ASR::ExternalSymbol_t>(
-                                ditem.second);
-                        if (!es->m_external) continue;
-                        ASR::symbol_t *target =
-                            ASRUtils::symbol_get_past_external(
-                                es->m_external);
-                        if (!target) continue;
-                        SymbolTable *tp =
-                            ASRUtils::symbol_parent_symtab(target);
-                        if (tp->asr_owner &&
-                                tp->asr_owner->type ==
-                                    ASR::asrType::symbol) {
-                            ASR::symbol_t *os =
-                                down_cast<ASR::symbol_t>(tp->asr_owner);
-                            if (is_a<ASR::Struct_t>(*os)) {
-                                std::string sn =
-                                    down_cast<ASR::Struct_t>(os)->m_name;
-                                ASR::symbol_t *ks =
-                                    kernel_scope->get_symbol(sn);
-                                if (ks && is_a<ASR::Struct_t>(*ks)) {
-                                    ASR::symbol_t *nt =
-                                        down_cast<ASR::Struct_t>(ks)
-                                            ->m_symtab->get_symbol(
-                                                es->m_original_name);
-                                    if (nt) es->m_external = nt;
-                                }
-                            }
-                        }
-                    } else if (ASR::is_a<ASR::Variable_t>(
-                                   *ditem.second)) {
-                        ASR::Variable_t *var =
-                            ASR::down_cast<ASR::Variable_t>(
-                                ditem.second);
-                        ASR::symbol_t *tdecl_resolved =
-                            var->m_type_declaration
-                                ? ASRUtils::symbol_get_past_external(
-                                      var->m_type_declaration)
-                                : nullptr;
-                        if (tdecl_resolved &&
-                                is_a<ASR::Struct_t>(
-                                    *tdecl_resolved)) {
-                            std::string sn = ASRUtils::symbol_name(
-                                tdecl_resolved);
-                            ASR::symbol_t *ks =
-                                kernel_scope->get_symbol(sn);
-                            if (ks) var->m_type_declaration = ks;
-                        }
-                    }
-                }
+                fixup_struct_refs_in_scope(dfunc->m_symtab,
+                    kernel_scope);
             }
         }
 
@@ -5044,9 +5471,11 @@ public:
 
                 std::set<std::string> fixed_names;
                 for (auto &[name, orig_sym] : dvc.dangling) {
-                    if (!ASR::is_a<ASR::Variable_t>(*orig_sym)) continue;
+                    ASR::symbol_t *resolved_sym =
+                        ASRUtils::symbol_get_past_external(orig_sym);
+                    if (!ASR::is_a<ASR::Variable_t>(*resolved_sym)) continue;
                     ASR::Variable_t *orig_var =
-                        ASR::down_cast<ASR::Variable_t>(orig_sym);
+                        ASR::down_cast<ASR::Variable_t>(resolved_sym);
                     if (orig_var->m_storage ==
                             ASR::storage_typeType::Parameter) {
                         ASR::symbol_t *new_var =
@@ -5130,6 +5559,7 @@ public:
                 ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
                     item.second);
                 GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
+                fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
                     fn_replacer.visit_stmt(*func->m_body[bi]);
                 }
@@ -5694,8 +6124,129 @@ public:
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
 
+        // Pre-allocate host-side allocatable arrays that are assigned
+        // from a FunctionCall inside the do concurrent body. The GPU
+        // kernel receives the buffer pointer at launch time, so the
+        // array must already be allocated on the host before dispatch.
+        Vec<ASR::stmt_t*> pre_launch_stmts;
+        pre_launch_stmts.reserve(al, 4);
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            // Unwrap BlockCall to inspect block body statements
+            ASR::stmt_t **stmts_to_scan = &stmt;
+            size_t n_stmts_to_scan = 1;
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::BlockCall_t *bc =
+                    ASR::down_cast<ASR::BlockCall_t>(stmt);
+                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                    ASR::Block_t *blk =
+                        ASR::down_cast<ASR::Block_t>(bc->m_m);
+                    stmts_to_scan = blk->m_body;
+                    n_stmts_to_scan = blk->n_body;
+                }
+            }
+            for (size_t sj = 0; sj < n_stmts_to_scan; sj++) {
+                if (!ASR::is_a<ASR::Assignment_t>(*stmts_to_scan[sj]))
+                    continue;
+                ASR::Assignment_t *asgn =
+                    ASR::down_cast<ASR::Assignment_t>(stmts_to_scan[sj]);
+                if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
+                if (!ASR::is_a<ASR::FunctionCall_t>(*asgn->m_value))
+                    continue;
+
+                ASR::Var_t *target_var =
+                    ASR::down_cast<ASR::Var_t>(asgn->m_target);
+                ASR::symbol_t *orig_sym =
+                    ASRUtils::symbol_get_past_external(target_var->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*orig_sym)) continue;
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(orig_sym);
+                if (!ASRUtils::is_allocatable(var->m_type)) continue;
+
+                ASR::FunctionCall_t *fc =
+                    ASR::down_cast<ASR::FunctionCall_t>(asgn->m_value);
+                ASR::symbol_t *fn_sym =
+                    ASRUtils::symbol_get_past_external(fc->m_name);
+                if (!ASR::is_a<ASR::Function_t>(*fn_sym)) continue;
+
+                ASR::Function_t *fn =
+                    ASR::down_cast<ASR::Function_t>(fn_sym);
+                std::string ret_name;
+                if (fn->m_return_var &&
+                        ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+                    ret_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            fn->m_return_var)->m_v);
+                }
+                if (ret_name.empty()) continue;
+
+                // Find the Allocate statement for the return variable
+                // in the function body and use its dimensions.
+                bool alloc_found = false;
+                for (size_t bi = 0;
+                        bi < fn->n_body && !alloc_found; bi++) {
+                    if (!ASR::is_a<ASR::Allocate_t>(*fn->m_body[bi]))
+                        continue;
+                    ASR::Allocate_t *fn_alloc =
+                        ASR::down_cast<ASR::Allocate_t>(fn->m_body[bi]);
+                    for (size_t ai = 0; ai < fn_alloc->n_args; ai++) {
+                        if (!fn_alloc->m_args[ai].m_a ||
+                                !ASR::is_a<ASR::Var_t>(
+                                    *fn_alloc->m_args[ai].m_a))
+                            continue;
+                        std::string aname = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                fn_alloc->m_args[ai].m_a)->m_v);
+                        if (aname != ret_name) continue;
+
+                        ASRUtils::ExprStmtDuplicator dup(al);
+                        dup.success = true;
+                        ASR::alloc_arg_t host_arg;
+                        host_arg.loc = loc;
+                        host_arg.m_a = asgn->m_target;
+                        host_arg.n_dims =
+                            fn_alloc->m_args[ai].n_dims;
+                        host_arg.m_dims =
+                            al.allocate<ASR::dimension_t>(
+                                host_arg.n_dims);
+                        for (size_t d = 0; d < host_arg.n_dims; d++) {
+                            host_arg.m_dims[d].loc = loc;
+                            host_arg.m_dims[d].m_start =
+                                fn_alloc->m_args[ai].m_dims[d].m_start
+                                ? dup.duplicate_expr(
+                                    fn_alloc->m_args[ai]
+                                        .m_dims[d].m_start)
+                                : nullptr;
+                            host_arg.m_dims[d].m_length =
+                                fn_alloc->m_args[ai].m_dims[d].m_length
+                                ? dup.duplicate_expr(
+                                    fn_alloc->m_args[ai]
+                                        .m_dims[d].m_length)
+                                : nullptr;
+                        }
+                        host_arg.m_len_expr = nullptr;
+                        host_arg.m_sym_subclass = nullptr;
+                        host_arg.m_type = nullptr;
+
+                        Vec<ASR::alloc_arg_t> alloc_vec;
+                        alloc_vec.reserve(al, 1);
+                        alloc_vec.push_back(al, host_arg);
+                        pre_launch_stmts.push_back(al,
+                            ASRUtils::STMT(ASR::make_Allocate_t(
+                                al, loc, alloc_vec.p, alloc_vec.n,
+                                nullptr, nullptr, nullptr)));
+                        alloc_found = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         // 7. Replace DoConcurrentLoop with GpuKernelLaunch + GpuSync
-        pass_result.reserve(al, 2);
+        pass_result.reserve(al, pre_launch_stmts.n + 2);
+        for (size_t pi = 0; pi < pre_launch_stmts.n; pi++) {
+            pass_result.push_back(al, pre_launch_stmts.p[pi]);
+        }
 
         ASR::expr_t *block_size_const = ASRUtils::EXPR(
             ASR::make_IntegerConstant_t(al, loc, 256, int_type,
