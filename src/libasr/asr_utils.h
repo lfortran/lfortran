@@ -5879,27 +5879,30 @@ class SymbolDuplicator {
                         associate_block->m_name, new_body.p, new_body.size()));
     }
 
-    ASR::symbol_t* duplicate_Function(ASR::Function_t* function,
-        SymbolTable* destination_symtab) {
-        SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
-        duplicate_SymbolTable(function->m_symtab, function_symtab);
-
-        // Re-duplicate AssociateBlock bodies with scope awareness.
-        // duplicate_AssociateBlock uses a non-scoped duplicator, so Var
-        // references in the body still point to original symbols. Now
-        // that all symbols exist in function_symtab, re-duplicate from
-        // the original bodies using a scoped duplicator that resolves
-        // symbols through the new scope chain.
-        for (auto &item : function_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second)) continue;
+    // Recursively re-duplicate AssociateBlock bodies with scope
+    // awareness. duplicate_AssociateBlock uses a non-scoped duplicator,
+    // so Var references in the body still point to original symbols.
+    // This walks through all AssociateBlocks (including nested ones)
+    // and re-duplicates from the original bodies using a scoped
+    // duplicator that resolves symbols through the new scope chain.
+    void fixup_associate_block_bodies(SymbolTable *new_scope,
+            SymbolTable *orig_scope) {
+        for (auto &item : new_scope->get_scope()) {
+            if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
+                continue;
             ASR::AssociateBlock_t *new_ab =
                 ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-            ASR::symbol_t *orig_sym = function->m_symtab->get_symbol(
+            ASR::symbol_t *orig_sym = orig_scope->get_symbol(
                 item.first);
             if (!orig_sym ||
-                    !ASR::is_a<ASR::AssociateBlock_t>(*orig_sym)) continue;
+                    !ASR::is_a<ASR::AssociateBlock_t>(*orig_sym))
+                continue;
             ASR::AssociateBlock_t *orig_ab =
                 ASR::down_cast<ASR::AssociateBlock_t>(orig_sym);
+            // Recurse into nested AssociateBlocks first so their
+            // bodies are fixed before we re-duplicate this level.
+            fixup_associate_block_bodies(new_ab->m_symtab,
+                orig_ab->m_symtab);
             Vec<ASR::stmt_t*> ab_body;
             ab_body.reserve(al, orig_ab->n_body);
             ASRUtils::ExprStmtWithScopeDuplicator ab_dup(
@@ -5920,6 +5923,14 @@ class SymbolDuplicator {
                 new_ab->n_body = ab_body.n;
             }
         }
+    }
+
+    ASR::symbol_t* duplicate_Function(ASR::Function_t* function,
+        SymbolTable* destination_symtab) {
+        SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(function->m_symtab, function_symtab);
+
+        fixup_associate_block_bodies(function_symtab, function->m_symtab);
 
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, function->n_body);
