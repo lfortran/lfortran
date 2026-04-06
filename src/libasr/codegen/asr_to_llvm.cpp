@@ -9197,7 +9197,8 @@ public:
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::PointerArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::UnboundedPointerArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ||
-                      ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray));
+                      ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray ||
+                      ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::AssumedRankArray));
                 if( LLVM::is_llvm_pointer(*value_type) ) {
                     llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                     llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
@@ -9211,7 +9212,8 @@ public:
                 if( is_value_data_only_array ) { // This needs a refactor to handle
                     ASR::ttype_t* target_type_ = ASRUtils::type_get_past_pointer(target_type);
                     switch( ASRUtils::extract_physical_type(target_type_) ) {
-                        case ASR::array_physical_typeType::DescriptorArray: {
+                        case ASR::array_physical_typeType::DescriptorArray :
+                        case ASR::array_physical_typeType::AssumedRankArray: {
                             // class(*) array pointer association (new classes):
                             //   class(*), pointer :: generic(:)
                             //   <concrete>, target :: x(:)
@@ -9324,7 +9326,8 @@ public:
                                 llvm_value = llvm_target_;
                                 break;
                             }
-                            if(ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray){
+                            if(ASRUtils::extract_physical_type(value_type) == ASR::AssumedRankArray) {n_dims = 15;}
+                            if(ASRUtils::is_array_physically_descriptor(value_type)){
                                     // Declare llvm type for (Array descriptor, Dimension Descriptor)
                                     llvm::Type* const value_array_desc_type = llvm_utils->arr_api->
                                         get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
@@ -9335,6 +9338,8 @@ public:
                                     LCOMPILERS_ASSERT(value_array_desc_type->isStructTy());
                                     LCOMPILERS_ASSERT(target_array_desc_type->isStructTy());
                                     llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);
+                                    llvm::Value* const value_rank = arr_descr->get_rank(
+                                        value_array_desc_type, llvm_value);
                                     // If the target descriptor pointer is NULL, allocate one, then re-load.
                                     llvm::Value* target_desc_check = llvm_utils->CreateLoad2(
                                         target_array_desc_type->getPointerTo(), llvm_target);
@@ -9344,9 +9349,8 @@ public:
                                             llvm::ConstantPointerNull::get(target_array_desc_type->getPointerTo())),
                                         [&]() {
                                             llvm::Value* new_desc = arr_descr->create_descriptor_alloca(target_array_desc_type);
-                                            llvm::Value* n_dims_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), n_dims);
                                             arr_descr->fill_dimension_descriptor(target_array_desc_type, new_desc, (int)n_dims);
-                                            arr_descr->set_rank(target_array_desc_type, new_desc, n_dims_val);
+                                            arr_descr->set_rank(target_array_desc_type, new_desc, value_rank);
                                             builder->CreateStore(new_desc, llvm_target);
                                         },
                                         []() {});
@@ -9430,6 +9434,7 @@ public:
                                     llvm::DataLayout data_layout(module->getDataLayout());
                                     int dim_desc_size = (int)data_layout.getTypeAllocSize(dim_desc_type);
                                     builder->CreateMemCpy(target_dim_ptr, llvm::MaybeAlign(8), value_dim_ptr, llvm::MaybeAlign(8), dim_desc_size*n_dims);
+                                    arr_descr->set_rank(target_array_desc_type, llvm_target_, value_rank);
                                     // Copy offset
                                     llvm::Value* src_offset = arr_descr->get_offset(value_array_desc_type, llvm_value);
                                     builder->CreateStore(src_offset,
