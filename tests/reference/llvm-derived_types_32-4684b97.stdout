@@ -175,7 +175,7 @@ ifcont:                                           ; preds = %else, %then
   %19 = load i32*, i32** %18, align 8
   %20 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
   %21 = alloca i64, align 8
-  %22 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* %20, i64 4, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %21, i32 0, i32 0, i32 0, i32 0, double* %val)
+  %22 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* %20, i64 4, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %21, i32 0, i32 0, i32 0, i32 0, i32 0, double* %val)
   %23 = load i64, i64* %21, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -265,7 +265,7 @@ declare i8* @_lfortran_get_default_allocator()
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare void @_lfortran_string_write(i8**, i8, i8, i8, i64, i64*, i32*, i8*, i64, ...)
 
@@ -300,7 +300,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = load %string_descriptor, %string_descriptor* %__libasr__created__var__0_return_slot, align 1
   %10 = alloca %string_descriptor, align 8
   store %string_descriptor %9, %string_descriptor* %10, align 1
-  %11 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @serialization_info.3, i32 0, i32 0), i64* %6, i32 0, i32 1, i32 0, i32 0, i64 %8, %string_descriptor* %10)
+  %11 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @serialization_info.3, i32 0, i32 0), i64* %6, i32 0, i32 1, i32 0, i32 0, i32 0, i64 %8, %string_descriptor* %10)
   %12 = load i64, i64* %6, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0

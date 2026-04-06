@@ -74,7 +74,7 @@ else:                                             ; preds = %loop.end
 
 ifcont:                                           ; preds = %else, %then
   %17 = alloca i64, align 8
-  %18 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %17, i32 0, i32 0, i32 0, i32 0, i32* %j)
+  %18 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %17, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %j)
   %19 = load i64, i64* %17, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %20 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -151,7 +151,7 @@ else8:                                            ; preds = %loop.end6
 
 ifcont9:                                          ; preds = %else8, %then7
   %47 = alloca i64, align 8
-  %48 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %47, i32 0, i32 0, i32 0, i32 0, i32* %a)
+  %48 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %47, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %a)
   %49 = load i64, i64* %47, align 8
   %stringFormat_desc10 = alloca %string_descriptor, align 8
   %50 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc10, i32 0, i32 0
@@ -227,7 +227,7 @@ else20:                                           ; preds = %loop.end18
 
 ifcont21:                                         ; preds = %else20, %then19
   %75 = alloca i64, align 8
-  %76 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %75, i32 0, i32 0, i32 0, i32 0, i32* %a)
+  %76 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %75, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %a)
   %77 = load i64, i64* %75, align 8
   %stringFormat_desc22 = alloca %string_descriptor, align 8
   %78 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc22, i32 0, i32 0
@@ -266,7 +266,7 @@ declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 

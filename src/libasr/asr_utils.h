@@ -5116,8 +5116,10 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
 
         SymbolTable* struct_t_import_scope = scope;
         while (struct_t_import_scope->asr_owner == nullptr
-               || !ASR::is_a<ASR::Module_t>(
-                   *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner))) {
+               || !(ASR::is_a<ASR::Module_t>(
+                       *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)) ||
+                    ASR::is_a<ASR::GpuKernelFunction_t>(
+                       *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)))) {
             struct_t_import_scope = struct_t_import_scope->parent;
             if (struct_t_import_scope->asr_owner != nullptr
                 && !ASR::is_a<ASR::symbol_t>(*struct_t_import_scope->asr_owner)) {
@@ -5567,7 +5569,6 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
             ? current_scope->resolve_symbol(name)
             : current_scope->get_symbol(name);
         if (m_v == nullptr) {
-            // we are dealing with an external/statement function, duplicate node with same symbol
             return ASR::make_Var_t(al, x->base.base.loc, x->m_v);
         }
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
@@ -6094,6 +6095,21 @@ class CheckSymbolReplacer: public ASR::BaseExprReplacer<CheckSymbolReplacer> {
         if (x->m_original_name) {
             x->m_original_name = handle_symbol(x->m_original_name);
             ADD_ASR_DEPENDENCIES(current_scope, x->m_original_name, current_function_dependencies);
+        }
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::BaseExprReplacer<CheckSymbolReplacer>::replace_StructInstanceMember(x);
+        if (!result) return;
+        ASR::symbol_t* m_m = x->m_m;
+        SymbolTable* m_m_scope = ASRUtils::symbol_parent_symtab(m_m);
+        if (m_m_scope->get_counter() != current_scope->get_counter()) {
+            ASR::symbol_t* imported = import_struct_instance_member(al, m_m, current_scope);
+            if (imported) {
+                x->m_m = imported;
+            } else {
+                result = false;
+            }
         }
     }
 
@@ -8219,7 +8235,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
 }
 
 inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
-    if( ASRUtils::is_array(type) ) {
+    if( ASRUtils::is_array(type) && !ASRUtils::is_assumed_rank_array(type) ) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
         if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {

@@ -276,12 +276,16 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* encoding, int64_t encoding_len,
     int32_t *recl,
     char* sign, int64_t sign_len,
-    char* decimal, int64_t decimal_len);
+    char* decimal, int64_t decimal_len,
+    char* round, int64_t round_len,
+    char* pad, int64_t pad_len
+);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_sleep(int32_t seconds);
 LFORTRAN_API int32_t _lfortran_get_decimal_mode(int32_t unit_num);
 LFORTRAN_API int32_t _lfortran_get_sign_mode(int32_t unit_num);
+LFORTRAN_API int32_t _lfortran_get_round_mode(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(
     const fchar* f_name_data, int64_t f_name_len,
     bool *exists, int32_t unit_num,
@@ -305,11 +309,15 @@ LFORTRAN_API void _lfortran_inquire(
     char *encoding, int64_t encoding_len,
     char *stream, int64_t stream_len,
     char *iomsg, int64_t iomsg_len,
+    char *round, int64_t round_len,
+    char *pad, int64_t pad_len,
     bool *pending,
     char *asynchronous, int64_t asynchronous_len
 );
 LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat);
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, ...);
+// Formatted READ: pad/pad_len specify PAD for this statement.
+// If pad is NULL/len==0, the unit's PAD mode is used.
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, char* pad, int64_t pad_len, ...);
 LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);
@@ -458,7 +466,7 @@ LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *lab
 #define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
 #define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int32_t decimal_mode, int32_t sign_mode, ...);
+LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int32_t decimal_mode, int32_t sign_mode, int32_t round_mode, ...);
 LFORTRAN_API char* _lfortran_alloc_copy_free(lfortran_allocator_t* al, char* malloc_buf, int64_t size);
 void lfortran_error(const char *message);
 

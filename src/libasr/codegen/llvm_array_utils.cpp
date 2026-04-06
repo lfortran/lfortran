@@ -1989,6 +1989,8 @@ namespace LCompilers {
                 type_code_val = (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind <= 4) ? 2 : 3;
             } else if (ASR::is_a<ASR::Real_t>(*val_type)){
                 type_code_val = (ASR::down_cast<ASR::Real_t>(val_type)->m_kind == 4) ? 4 : 5;
+            } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
+                type_code_val = (ASR::down_cast<ASR::Complex_t>(val_type)->m_kind == 4) ? 6 : 7;
             } else {
                 throw CodeGenError("Not implemented: read into allocatable targets for dtype "
                     + ASRUtils::type_to_str_python_expr(val_type, val_expr));
