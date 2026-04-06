@@ -131,6 +131,11 @@ public:
     // determining pointer address spaces.
     std::set<std::string> kernel_arg_names;
 
+    // Names of allocatable array variables in Block scopes that have
+    // non-constant dimensions (VLA workspaces). These are backed by
+    // device buffers and must keep device address space.
+    std::set<std::string> vla_workspace_names;
+
     // Tracks function names already emitted across all kernels in the
     // current translation unit, preventing duplicate definitions when
     // multiple kernels call the same module function.
@@ -436,10 +441,36 @@ public:
         alloc_array_size_exprs.clear();
         ptr_to_local_alloc.clear();
         kernel_arg_names.clear();
+        vla_workspace_names.clear();
         // Collect kernel argument names (device buffer parameters)
         for (size_t i = 0; i < kf.n_args; i++) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kf.m_args[i]);
             kernel_arg_names.insert(ASRUtils::symbol_name(v->m_v));
+        }
+        // Collect VLA workspace variable names (allocatable arrays
+        // with non-constant dimensions in Block scopes). These are
+        // backed by device buffers and must keep device address space.
+        for (size_t bi = 0; bi < kf.n_body; bi++) {
+            if (kf.m_body[bi]->type != ASR::stmtType::BlockCall) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                ASR::down_cast<ASR::BlockCall_t>(kf.m_body[bi])->m_m);
+            for (auto &item : block->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                ASR::ttype_t *vtype = var->m_type;
+                if (!ASR::is_a<ASR::Array_t>(*vtype)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(vtype);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_length &&
+                            !ASR::is_a<ASR::IntegerConstant_t>(
+                                *arr->m_dims[d].m_length)) {
+                        vla_workspace_names.insert(
+                            std::string(var->m_name));
+                        break;
+                    }
+                }
+            }
         }
         // Step 1: For each function in kernel scope, find Allocate
         // stmts and record param_index → size. Also detect assignments
@@ -769,8 +800,8 @@ public:
                     }
                 }
                 // Case 2: Associate target = ArraySection (pointer to
-                // section of an array). If the base array is a
-                // non-allocatable local (not a kernel arg), the
+                // section of an array). If the base array is a local
+                // (not a kernel arg) and not a VLA workspace, the
                 // pointer is thread-space.
                 if (ASR::is_a<ASR::ArraySection_t>(*assoc->m_value)) {
                     ASR::ArraySection_t *as =
@@ -789,7 +820,9 @@ public:
                                 ASR::ttype_t *bt =
                                     ASR::down_cast<ASR::Variable_t>(
                                         base_sym)->m_type;
-                                if (!ASRUtils::is_allocatable(bt)) {
+                                if (!ASRUtils::is_allocatable(bt) ||
+                                        !vla_workspace_names.count(
+                                            base)) {
                                     ptr_to_local_alloc.insert(tgt);
                                 }
                             }
