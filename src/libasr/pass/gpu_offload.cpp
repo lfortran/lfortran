@@ -3692,6 +3692,94 @@ public:
         inline_elemental_array_var_assignment(
             const_cast<ASR::DoConcurrentLoop_t&>(x));
 
+        // Recursive helper to inline an AssociateBlock's body.
+        // Collects Associate mappings into assoc_map and non-Associate
+        // statements into resolved_stmts. Handles nested
+        // AssociateBlockCalls by recursing into inner blocks.
+        std::function<void(ASR::AssociateBlock_t*,
+                           std::map<ASR::symbol_t*, ASR::expr_t*>&,
+                           Vec<ASR::stmt_t*>&)>
+            inline_assoc_body = [&](ASR::AssociateBlock_t *ab,
+                                    std::map<ASR::symbol_t*, ASR::expr_t*> &assoc_map,
+                                    Vec<ASR::stmt_t*> &resolved_stmts) {
+            for (size_t ai = 0; ai < ab->n_body; ai++) {
+                if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
+                    ASR::Associate_t *assoc =
+                        ASR::down_cast<ASR::Associate_t>(
+                            ab->m_body[ai]);
+                    if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
+                        ASR::symbol_t *sym =
+                            ASR::down_cast<ASR::Var_t>(
+                                assoc->m_target)->m_v;
+                        ASRUtils::ExprStmtDuplicator dup(al);
+                        dup.success = true;
+                        ASR::expr_t *value =
+                            dup.duplicate_expr(assoc->m_value);
+                        if (!assoc_map.empty()) {
+                            AssociateVarResolver resolver(al, assoc_map);
+                            resolver.current_expr = &value;
+                            resolver.replace_expr(value);
+                        }
+                        assoc_map[sym] = value;
+                    }
+                } else if (ASR::is_a<ASR::AssociateBlockCall_t>(
+                               *ab->m_body[ai])) {
+                    ASR::AssociateBlockCall_t *inner_abc =
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            ab->m_body[ai]);
+                    if (ASR::is_a<ASR::AssociateBlock_t>(
+                            *inner_abc->m_m)) {
+                        ASR::AssociateBlock_t *inner_ab =
+                            ASR::down_cast<ASR::AssociateBlock_t>(
+                                inner_abc->m_m);
+                        inline_assoc_body(inner_ab, assoc_map,
+                            resolved_stmts);
+                        for (auto &es_item :
+                                 inner_ab->m_symtab->get_scope()) {
+                            if (!ASR::is_a<ASR::ExternalSymbol_t>(
+                                    *es_item.second)) continue;
+                            if (!current_scope->get_symbol(
+                                    es_item.first)) {
+                                ASR::down_cast<ASR::ExternalSymbol_t>(
+                                    es_item.second)->m_parent_symtab =
+                                        current_scope;
+                                current_scope->add_symbol(
+                                    es_item.first, es_item.second);
+                            }
+                        }
+                        std::string inner_name = inner_ab->m_name;
+                        ab->m_symtab->erase_symbol(inner_name);
+                    } else {
+                        resolved_stmts.push_back(al,
+                            ab->m_body[ai]);
+                    }
+                } else if (ASR::is_a<ASR::Assignment_t>(
+                               *ab->m_body[ai])) {
+                    ASR::Assignment_t *asgn =
+                        ASR::down_cast<ASR::Assignment_t>(
+                            ab->m_body[ai]);
+                    if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
+                        ASR::symbol_t *sym =
+                            ASR::down_cast<ASR::Var_t>(
+                                asgn->m_target)->m_v;
+                        if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                            ASR::down_cast<ASR::Variable_t>(sym)
+                                ->m_parent_symtab == ab->m_symtab &&
+                            assoc_map.find(sym) == assoc_map.end()) {
+                            assoc_map[sym] = asgn->m_value;
+                        } else {
+                            resolved_stmts.push_back(al,
+                                ab->m_body[ai]);
+                        }
+                    } else {
+                        resolved_stmts.push_back(al, ab->m_body[ai]);
+                    }
+                } else {
+                    resolved_stmts.push_back(al, ab->m_body[ai]);
+                }
+            }
+        };
+
         // Resolve AssociateBlocks inside the do concurrent body (e.g.,
         // block { associate(nh => n) ... } within the loop). GPU kernels
         // cannot use Pointer-based associate aliases, so we inline the
@@ -3725,42 +3813,7 @@ public:
                     enclosing_assoc_map);
                 Vec<ASR::stmt_t*> resolved_stmts;
                 resolved_stmts.reserve(al, ab->n_body);
-                for (size_t ai = 0; ai < ab->n_body; ai++) {
-                    if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
-                        ASR::Associate_t *assoc =
-                            ASR::down_cast<ASR::Associate_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    assoc->m_target)->m_v;
-                            assoc_map[sym] = assoc->m_value;
-                        }
-                    } else if (ASR::is_a<ASR::Assignment_t>(
-                                   *ab->m_body[ai])) {
-                        ASR::Assignment_t *asgn =
-                            ASR::down_cast<ASR::Assignment_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    asgn->m_target)->m_v;
-                            if (ASR::is_a<ASR::Variable_t>(*sym) &&
-                                ASR::down_cast<ASR::Variable_t>(sym)
-                                    ->m_parent_symtab == ab->m_symtab &&
-                                assoc_map.find(sym) == assoc_map.end()) {
-                                assoc_map[sym] = asgn->m_value;
-                            } else {
-                                resolved_stmts.push_back(al,
-                                    ab->m_body[ai]);
-                            }
-                        } else {
-                            resolved_stmts.push_back(al, ab->m_body[ai]);
-                        }
-                    } else {
-                        resolved_stmts.push_back(al, ab->m_body[ai]);
-                    }
-                }
+                inline_assoc_body(ab, assoc_map, resolved_stmts);
                 if (!assoc_map.empty()) {
                     AssociateVarResolverVisitor resolver(al, assoc_map);
                     for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
@@ -3829,42 +3882,7 @@ public:
                     enclosing_assoc_map);
                 Vec<ASR::stmt_t*> resolved_stmts;
                 resolved_stmts.reserve(al, ab->n_body);
-                for (size_t ai = 0; ai < ab->n_body; ai++) {
-                    if (ASR::is_a<ASR::Associate_t>(*ab->m_body[ai])) {
-                        ASR::Associate_t *assoc =
-                            ASR::down_cast<ASR::Associate_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    assoc->m_target)->m_v;
-                            assoc_map[sym] = assoc->m_value;
-                        }
-                    } else if (ASR::is_a<ASR::Assignment_t>(
-                                   *ab->m_body[ai])) {
-                        ASR::Assignment_t *asgn =
-                            ASR::down_cast<ASR::Assignment_t>(
-                                ab->m_body[ai]);
-                        if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
-                            ASR::symbol_t *sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    asgn->m_target)->m_v;
-                            if (ASR::is_a<ASR::Variable_t>(*sym) &&
-                                ASR::down_cast<ASR::Variable_t>(sym)
-                                    ->m_parent_symtab == ab->m_symtab &&
-                                assoc_map.find(sym) == assoc_map.end()) {
-                                assoc_map[sym] = asgn->m_value;
-                            } else {
-                                resolved_stmts.push_back(al,
-                                    ab->m_body[ai]);
-                            }
-                        } else {
-                            resolved_stmts.push_back(al, ab->m_body[ai]);
-                        }
-                    } else {
-                        resolved_stmts.push_back(al, ab->m_body[ai]);
-                    }
-                }
+                inline_assoc_body(ab, assoc_map, resolved_stmts);
                 if (!assoc_map.empty()) {
                     AssociateVarResolverVisitor resolver(al, assoc_map);
                     for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
