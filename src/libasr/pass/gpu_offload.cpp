@@ -4867,14 +4867,35 @@ public:
                             ASR::down_cast<ASR::Function_t>(proc_sym);
                         std::string pname =
                             ASRUtils::symbol_name(proc_sym);
-                        if (!kernel_scope->get_symbol(pname)) {
+                        ASR::symbol_t *existing =
+                            kernel_scope->get_symbol(pname);
+                        bool already_has_body = false;
+                        if (existing &&
+                                ASR::is_a<ASR::Function_t>(*existing)) {
+                            ASR::FunctionType_t *eft =
+                                ASR::down_cast<ASR::FunctionType_t>(
+                                    ASR::down_cast<ASR::Function_t>(
+                                        existing)
+                                        ->m_function_signature);
+                            if (eft->m_deftype ==
+                                    ASR::deftypeType::Implementation) {
+                                already_has_body = true;
+                            }
+                        }
+                        if (!already_has_body) {
+                            if (existing) {
+                                kernel_scope->erase_symbol(pname);
+                            }
                             ASR::FunctionType_t *ftype =
                                 ASR::down_cast<ASR::FunctionType_t>(
                                     proc_func->m_function_signature);
                             if (ftype->m_deftype ==
                                     ASR::deftypeType::Interface) {
                                 // Submodule interface: find the
-                                // Implementation in a submodule.
+                                // Implementation in a submodule
+                                // already in the TU, or load it from
+                                // disk (--separate-compilation).
+                                bool found = false;
                                 for (auto &tu_item :
                                         tu.m_symtab->get_scope()) {
                                     if (!ASR::is_a<ASR::Module_t>(
@@ -4904,7 +4925,136 @@ public:
                                         kernel_scope->add_symbol(
                                             pname, dup);
                                     }
+                                    found = true;
                                     break;
+                                }
+                                if (!found) {
+                                    // Load submodule from smod file.
+                                    SymbolTable *parent_st =
+                                        ASRUtils::symbol_parent_symtab(
+                                            proc_sym);
+                                    if (parent_st->asr_owner &&
+                                            parent_st->asr_owner->type ==
+                                                ASR::asrType::symbol &&
+                                            ASR::is_a<ASR::Module_t>(
+                                                *ASR::down_cast<
+                                                    ASR::symbol_t>(
+                                                    parent_st
+                                                        ->asr_owner))) {
+                                        std::string parent_mod =
+                                            ASR::down_cast<ASR::Module_t>(
+                                                ASR::down_cast<
+                                                    ASR::symbol_t>(
+                                                    parent_st
+                                                        ->asr_owner))
+                                                ->m_name;
+                                        std::string smod_prefix =
+                                            parent_mod + "@";
+                                        std::vector<
+                                            std::filesystem::path>
+                                                mod_dirs;
+                                        mod_dirs.push_back(
+                                            pass_options
+                                                .runtime_library_dir);
+                                        mod_dirs.push_back(
+                                            pass_options.mod_files_dir);
+                                        mod_dirs.insert(mod_dirs.end(),
+                                            pass_options.include_dirs
+                                                .begin(),
+                                            pass_options.include_dirs
+                                                .end());
+                                        for (auto &dir : mod_dirs) {
+                                            if (dir.empty())
+                                                dir = ".";
+                                            if (!std::filesystem::
+                                                    is_directory(dir))
+                                                continue;
+                                            for (auto &file :
+                                                    std::filesystem::
+                                                        directory_iterator(
+                                                            dir)) {
+                                                std::string fname =
+                                                    file.path()
+                                                        .filename()
+                                                        .string();
+                                                if (!startswith(fname,
+                                                        smod_prefix) ||
+                                                    !endswith(fname,
+                                                        ".smod"))
+                                                    continue;
+                                                std::string content;
+                                                if (!read_file(
+                                                        file.path()
+                                                            .string(),
+                                                        content) ||
+                                                    content.empty())
+                                                    continue;
+                                                LocationManager
+                                                    lm_tmp;
+                                                auto res =
+                                                    load_modfile(
+                                                        al, content,
+                                                        false,
+                                                        *tu.m_symtab,
+                                                        lm_tmp);
+                                                if (!res.ok) continue;
+                                                fix_external_symbols(
+                                                    *res.result,
+                                                    *tu.m_symtab);
+                                                ASR::Module_t *submod =
+                                                    ASRUtils::
+                                                        extract_module(
+                                                            *res.result);
+                                                ASR::symbol_t
+                                                    *impl_sym =
+                                                    submod->m_symtab
+                                                        ->get_symbol(
+                                                            pname);
+                                                if (!impl_sym ||
+                                                    !ASR::is_a<
+                                                        ASR::Function_t
+                                                            >(*impl_sym))
+                                                    continue;
+                                                ASR::Function_t
+                                                    *impl_func =
+                                                    ASR::down_cast<
+                                                        ASR::Function_t>(
+                                                            impl_sym);
+                                                ASR::FunctionType_t
+                                                    *impl_ft =
+                                                    ASR::down_cast<
+                                                        ASR::FunctionType_t>(
+                                                        impl_func
+                                                        ->m_function_signature);
+                                                if (impl_ft->m_deftype
+                                                        != ASR::
+                                                        deftypeType::
+                                                        Implementation)
+                                                    continue;
+                                                ASR::symbol_t *dup =
+                                                    sym_dup
+                                                        .duplicate_Function(
+                                                        impl_func,
+                                                        kernel_scope);
+                                                if (dup) {
+                                                    kernel_scope
+                                                        ->add_symbol(
+                                                            pname, dup);
+                                                }
+                                                found = true;
+                                                break;
+                                            }
+                                            if (found) break;
+                                        }
+                                    }
+                                }
+                                if (!found) {
+                                    throw LCompilersException(
+                                        "GPU Metal offload: cannot find "
+                                        "submodule implementation for '"
+                                        + pname + "'; ensure the "
+                                        "submodule is compiled before "
+                                        "the file that uses it");
                                 }
                             } else {
                                 // Non-submodule: function has a body.

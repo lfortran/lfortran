@@ -4291,3 +4291,4 @@ RUN(NAME gpu_metal_136 LABELS gfortran llvm metal EXTRAFILES gpu_metal_136_mod.f
 RUN(NAME gpu_metal_137 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_138 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_139 LABELS gfortran llvm metal)
+RUN(NAME gpu_metal_140 LABELS gfortran llvm metal EXTRAFILES gpu_metal_140_mod.f90 EXTRA_ARGS --separate-compilation)
