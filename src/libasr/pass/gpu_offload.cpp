@@ -5694,8 +5694,129 @@ public:
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
 
+        // Pre-allocate host-side allocatable arrays that are assigned
+        // from a FunctionCall inside the do concurrent body. The GPU
+        // kernel receives the buffer pointer at launch time, so the
+        // array must already be allocated on the host before dispatch.
+        Vec<ASR::stmt_t*> pre_launch_stmts;
+        pre_launch_stmts.reserve(al, 4);
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            // Unwrap BlockCall to inspect block body statements
+            ASR::stmt_t **stmts_to_scan = &stmt;
+            size_t n_stmts_to_scan = 1;
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::BlockCall_t *bc =
+                    ASR::down_cast<ASR::BlockCall_t>(stmt);
+                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                    ASR::Block_t *blk =
+                        ASR::down_cast<ASR::Block_t>(bc->m_m);
+                    stmts_to_scan = blk->m_body;
+                    n_stmts_to_scan = blk->n_body;
+                }
+            }
+            for (size_t sj = 0; sj < n_stmts_to_scan; sj++) {
+                if (!ASR::is_a<ASR::Assignment_t>(*stmts_to_scan[sj]))
+                    continue;
+                ASR::Assignment_t *asgn =
+                    ASR::down_cast<ASR::Assignment_t>(stmts_to_scan[sj]);
+                if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
+                if (!ASR::is_a<ASR::FunctionCall_t>(*asgn->m_value))
+                    continue;
+
+                ASR::Var_t *target_var =
+                    ASR::down_cast<ASR::Var_t>(asgn->m_target);
+                ASR::symbol_t *orig_sym =
+                    ASRUtils::symbol_get_past_external(target_var->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*orig_sym)) continue;
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(orig_sym);
+                if (!ASRUtils::is_allocatable(var->m_type)) continue;
+
+                ASR::FunctionCall_t *fc =
+                    ASR::down_cast<ASR::FunctionCall_t>(asgn->m_value);
+                ASR::symbol_t *fn_sym =
+                    ASRUtils::symbol_get_past_external(fc->m_name);
+                if (!ASR::is_a<ASR::Function_t>(*fn_sym)) continue;
+
+                ASR::Function_t *fn =
+                    ASR::down_cast<ASR::Function_t>(fn_sym);
+                std::string ret_name;
+                if (fn->m_return_var &&
+                        ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+                    ret_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            fn->m_return_var)->m_v);
+                }
+                if (ret_name.empty()) continue;
+
+                // Find the Allocate statement for the return variable
+                // in the function body and use its dimensions.
+                bool alloc_found = false;
+                for (size_t bi = 0;
+                        bi < fn->n_body && !alloc_found; bi++) {
+                    if (!ASR::is_a<ASR::Allocate_t>(*fn->m_body[bi]))
+                        continue;
+                    ASR::Allocate_t *fn_alloc =
+                        ASR::down_cast<ASR::Allocate_t>(fn->m_body[bi]);
+                    for (size_t ai = 0; ai < fn_alloc->n_args; ai++) {
+                        if (!fn_alloc->m_args[ai].m_a ||
+                                !ASR::is_a<ASR::Var_t>(
+                                    *fn_alloc->m_args[ai].m_a))
+                            continue;
+                        std::string aname = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(
+                                fn_alloc->m_args[ai].m_a)->m_v);
+                        if (aname != ret_name) continue;
+
+                        ASRUtils::ExprStmtDuplicator dup(al);
+                        dup.success = true;
+                        ASR::alloc_arg_t host_arg;
+                        host_arg.loc = loc;
+                        host_arg.m_a = asgn->m_target;
+                        host_arg.n_dims =
+                            fn_alloc->m_args[ai].n_dims;
+                        host_arg.m_dims =
+                            al.allocate<ASR::dimension_t>(
+                                host_arg.n_dims);
+                        for (size_t d = 0; d < host_arg.n_dims; d++) {
+                            host_arg.m_dims[d].loc = loc;
+                            host_arg.m_dims[d].m_start =
+                                fn_alloc->m_args[ai].m_dims[d].m_start
+                                ? dup.duplicate_expr(
+                                    fn_alloc->m_args[ai]
+                                        .m_dims[d].m_start)
+                                : nullptr;
+                            host_arg.m_dims[d].m_length =
+                                fn_alloc->m_args[ai].m_dims[d].m_length
+                                ? dup.duplicate_expr(
+                                    fn_alloc->m_args[ai]
+                                        .m_dims[d].m_length)
+                                : nullptr;
+                        }
+                        host_arg.m_len_expr = nullptr;
+                        host_arg.m_sym_subclass = nullptr;
+                        host_arg.m_type = nullptr;
+
+                        Vec<ASR::alloc_arg_t> alloc_vec;
+                        alloc_vec.reserve(al, 1);
+                        alloc_vec.push_back(al, host_arg);
+                        pre_launch_stmts.push_back(al,
+                            ASRUtils::STMT(ASR::make_Allocate_t(
+                                al, loc, alloc_vec.p, alloc_vec.n,
+                                nullptr, nullptr, nullptr)));
+                        alloc_found = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         // 7. Replace DoConcurrentLoop with GpuKernelLaunch + GpuSync
-        pass_result.reserve(al, 2);
+        pass_result.reserve(al, pre_launch_stmts.n + 2);
+        for (size_t pi = 0; pi < pre_launch_stmts.n; pi++) {
+            pass_result.push_back(al, pre_launch_stmts.p[pi]);
+        }
 
         ASR::expr_t *block_size_const = ASRUtils::EXPR(
             ASR::make_IntegerConstant_t(al, loc, 256, int_type,
