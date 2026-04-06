@@ -10891,32 +10891,34 @@ public:
 
         llvm::Value *target, *value;
         uint32_t h;
-        if( x.m_target->type == ASR::exprType::ArrayItem ||
-            x.m_target->type == ASR::exprType::StringItem ||
-            x.m_target->type == ASR::exprType::StringSection ||
-            x.m_target->type == ASR::exprType::ArraySection ||
-            x.m_target->type == ASR::exprType::StructInstanceMember ||
-            x.m_target->type == ASR::exprType::ListItem ||
-            x.m_target->type == ASR::exprType::DictItem ||
-            x.m_target->type == ASR::exprType::UnionInstanceMember ||
-            (x.m_target->type == ASR::exprType::FunctionCall &&
-             ASRUtils::is_pointer(ASRUtils::expr_type(x.m_target))) ) {
+        ASR::expr_t* actual_target = x.m_target;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual_target)) {
+            actual_target = ASR::down_cast<ASR::ArrayPhysicalCast_t>(actual_target)->m_arg;
+        }
+        if( actual_target->type == ASR::exprType::ArrayItem ||
+            actual_target->type == ASR::exprType::StringItem ||
+            actual_target->type == ASR::exprType::StringSection ||
+            actual_target->type == ASR::exprType::ArraySection ||
+            actual_target->type == ASR::exprType::StructInstanceMember ||
+            actual_target->type == ASR::exprType::ListItem ||
+            actual_target->type == ASR::exprType::DictItem ||
+            actual_target->type == ASR::exprType::UnionInstanceMember ||
+            (actual_target->type == ASR::exprType::FunctionCall &&
+             ASRUtils::is_pointer(ASRUtils::expr_type(actual_target))) ) {
             is_assignment_target = true;
-            this->visit_expr(*x.m_target);
+            this->visit_expr(*actual_target);
             is_assignment_target = false;
             target = tmp;
-            // For pointer struct members, load the pointer so we store
-            // through it rather than overwriting the pointer field itself.
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*actual_target) &&
                 ASR::is_a<ASR::Pointer_t>(*asr_target_type) &&
                 !ASRUtils::is_array(asr_target_type) &&
                 !ASRUtils::is_character(*asr_target_type)) {
                 llvm::Type* member_ptr_type = llvm_utils->get_type_from_ttype_t_util(
-                    x.m_target, asr_target_type, module.get());
+                    actual_target, asr_target_type, module.get());
                 target = llvm_utils->CreateLoad2(member_ptr_type, target);
             }
-            if( ASR::is_a<ASR::ListItem_t>(*x.m_target) ) {
-                ASR::ListItem_t* asr_target0 = ASR::down_cast<ASR::ListItem_t>(x.m_target);
+            if( ASR::is_a<ASR::ListItem_t>(*actual_target) ) {
+                ASR::ListItem_t* asr_target0 = ASR::down_cast<ASR::ListItem_t>(actual_target);
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 this->visit_expr(*asr_target0->m_a);
@@ -10929,7 +10931,7 @@ public:
                                              module.get(), true);
             }
         } else {
-            if (!ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            if (!ASR::is_a<ASR::Var_t>(*actual_target)) {
                 std::string target_type = "unknown";
                 if (x.m_target->type == ASR::exprType::StringConstant) {
                     target_type = "StringConstant (this is likely a bug in an ASR pass that incorrectly "
@@ -10939,13 +10941,13 @@ public:
                 }
                 throw CodeGenError("Assignment target must be a variable or subscripted expression, got: " + target_type);
             }
-            ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
+            ASR::Variable_t *asr_target = EXPR2VAR(actual_target);
             h = get_hash((ASR::asr_t*)asr_target);
             target = llvm_symtab[h];
             if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
                 !ASRUtils::is_character(*asr_target->m_type) &&
                 !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
-                llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
+                llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(actual_target, asr_target->m_type, module.get());
                 target = llvm_utils->CreateLoad2(target_load_type, target);
             }
             ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
@@ -16612,7 +16614,14 @@ public:
                                         data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), arr_ptr);
                                     }
                                 } else {
-                                    data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr);
+                                    if (ASRUtils::is_allocatable(arr_type) ||
+                                        ASR::is_a<ASR::Pointer_t>(*arr_type)) {
+                                        arr_ptr = llvm_utils->CreateLoad2(
+                                            llvm_arr_type->getPointerTo(), arr_ptr);
+                                    }
+                                    data_ptr = llvm_utils->CreateLoad2(
+                                        llvm_elem_type->getPointerTo(),
+                                        arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr));
                                 }
 
                                 // Compute pointer to start element (1-based indexing)
@@ -16620,9 +16629,8 @@ public:
                                 llvm::Value* start_idx = tmp;
                                 llvm::Value* offset = builder->CreateSub(start_idx,
                                     llvm::ConstantInt::get(start_idx->getType(), 1));
-                                llvm::Value* section_ptr = is_pointer_array ?
-                                    llvm_utils->create_ptr_gep2(llvm_elem_type, data_ptr, offset) :
-                                    llvm_utils->create_gep2(llvm_elem_type, data_ptr, offset);
+                                llvm::Value* section_ptr =
+                                    llvm_utils->create_ptr_gep2(llvm_elem_type, data_ptr, offset);
 
                                 // Compute size: (end - start) / inc + 1
                                 this->visit_expr_wrapper(idl->m_end, true);
