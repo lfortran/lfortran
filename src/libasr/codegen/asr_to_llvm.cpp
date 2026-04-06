@@ -9349,7 +9349,8 @@ public:
                                             llvm::ConstantPointerNull::get(target_array_desc_type->getPointerTo())),
                                         [&]() {
                                             llvm::Value* new_desc = arr_descr->create_descriptor_alloca(target_array_desc_type);
-                                            arr_descr->fill_dimension_descriptor(target_array_desc_type, new_desc, (int)n_dims);
+                                            builder->CreateMemSet(new_desc, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                                 llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(new_desc->getType()), llvm::MaybeAlign());
                                             arr_descr->set_rank(target_array_desc_type, new_desc, value_rank);
                                             builder->CreateStore(new_desc, llvm_target);
                                         },
