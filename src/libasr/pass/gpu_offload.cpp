@@ -120,10 +120,14 @@ static bool expr_has_function_call(ASR::expr_t *expr) {
 class GpuReplaceSymbols : public ASR::BaseExprReplacer<GpuReplaceSymbols> {
 public:
     SymbolTable &kernel_scope;
+    std::set<SymbolTable*> skip_scopes;
     GpuReplaceSymbols(SymbolTable &scope) : kernel_scope(scope) {}
 
     void replace_Var(ASR::Var_t *x) {
         std::string name = ASRUtils::symbol_name(x->m_v);
+        for (auto *ss : skip_scopes) {
+            if (ss->get_symbol(name)) return;
+        }
         ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
         if (new_sym) {
             x->m_v = new_sym;
@@ -4551,8 +4555,42 @@ public:
                             }
                         }
                         if (fn) {
-                            for (size_t i = 0; i < fn->n_body; i++) {
-                                transitive_collector.visit_stmt(*fn->m_body[i]);
+                            ASR::Function_t *fn_impl = fn;
+                            ASR::FunctionType_t *fn_ft =
+                                ASR::down_cast<ASR::FunctionType_t>(
+                                    fn->m_function_signature);
+                            if (fn_ft->m_deftype ==
+                                    ASR::deftypeType::Interface) {
+                                std::string pname = fn->m_name;
+                                for (auto &tu_item :
+                                        tu.m_symtab->get_scope()) {
+                                    if (!ASR::is_a<ASR::Module_t>(
+                                            *tu_item.second)) continue;
+                                    ASR::Module_t *mod =
+                                        ASR::down_cast<ASR::Module_t>(
+                                            tu_item.second);
+                                    ASR::symbol_t *impl_sym =
+                                        mod->m_symtab->get_symbol(pname);
+                                    if (!impl_sym ||
+                                        !ASR::is_a<ASR::Function_t>(
+                                            *impl_sym)) continue;
+                                    ASR::Function_t *impl_func =
+                                        ASR::down_cast<ASR::Function_t>(
+                                            impl_sym);
+                                    ASR::FunctionType_t *impl_ft =
+                                        ASR::down_cast<ASR::FunctionType_t>(
+                                            impl_func
+                                                ->m_function_signature);
+                                    if (impl_ft->m_deftype ==
+                                            ASR::deftypeType::Implementation) {
+                                        fn_impl = impl_func;
+                                        break;
+                                    }
+                                }
+                            }
+                            for (size_t i = 0; i < fn_impl->n_body; i++) {
+                                transitive_collector.visit_stmt(
+                                    *fn_impl->m_body[i]);
                             }
                         }
                     }
@@ -5358,6 +5396,7 @@ public:
                 ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
                     item.second);
                 GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
+                fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
                     fn_replacer.visit_stmt(*func->m_body[bi]);
                 }
