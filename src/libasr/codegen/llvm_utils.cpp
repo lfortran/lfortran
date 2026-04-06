@@ -13,6 +13,14 @@ namespace LCompilers {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
+#if LLVM_VERSION_MAJOR < 15
+            if (x->getType()->isPointerTy()) {
+                llvm::Type* dest_pointee_type = y->getType()->getPointerElementType();
+                if (x->getType() != dest_pointee_type) {
+                    x = builder.CreateBitCast(x, dest_pointee_type);
+                }
+            }
+#endif
             return builder.CreateStore(x, y);
         }
 
