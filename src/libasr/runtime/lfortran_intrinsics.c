@@ -10818,23 +10818,23 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
                  (int)stem_len, exe_path) >= (int)sizeof(filename)) {
         return;
     }
-    int64_t fd = _lpython_open(filename, "r");
-    if (fd < 0) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
         return;
     }
-    uint32_t size = get_file_size(fd);
+    uint32_t size = get_file_size((int64_t)fp);
     if (size == 0) {
-        _lpython_close(fd);
+        fclose(fp);
         return;
     }
     char *file_contents = (char *) internal_calloc(size, sizeof(char));
     if (file_contents == NULL) {
-        _lpython_close(fd);
+        fclose(fp);
         return;
     }
-    int x = fread(file_contents, 1, size, (FILE*)fd);
+    int x = fread(file_contents, 1, size, fp);
     file_contents[x] = '\0';
-    _lpython_close(fd);
+    fclose(fp);
 
     char s[LCOMPILERS_MAX_STACKTRACE_LENGTH];
     bool address = true;

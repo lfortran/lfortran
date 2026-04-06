@@ -3696,6 +3696,15 @@ public:
             src << "_lf_erfc(";
             visit_expr(f->m_args[0]);
             src << ")";
+        } else if (id == static_cast<int64_t>(IEF::FMA)) {
+            // ASR FMA convention: args[0]=addend, args[1]*args[2]+args[0]
+            src << "fma(";
+            visit_expr(f->m_args[1]);
+            src << ", ";
+            visit_expr(f->m_args[2]);
+            src << ", ";
+            visit_expr(f->m_args[0]);
+            src << ")";
         } else {
             src << "/* unsupported intrinsic " << id << " */(";
             if (f->n_args > 0) visit_expr(f->m_args[0]);
