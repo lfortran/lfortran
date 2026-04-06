@@ -5116,8 +5116,10 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
 
         SymbolTable* struct_t_import_scope = scope;
         while (struct_t_import_scope->asr_owner == nullptr
-               || !ASR::is_a<ASR::Module_t>(
-                   *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner))) {
+               || !(ASR::is_a<ASR::Module_t>(
+                       *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)) ||
+                    ASR::is_a<ASR::GpuKernelFunction_t>(
+                       *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)))) {
             struct_t_import_scope = struct_t_import_scope->parent;
             if (struct_t_import_scope->asr_owner != nullptr
                 && !ASR::is_a<ASR::symbol_t>(*struct_t_import_scope->asr_owner)) {
