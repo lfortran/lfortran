@@ -4195,6 +4195,23 @@ public:
         for (size_t i = 0; i < x.n_body; i++) {
             alloc_collector.visit_stmt(*x.m_body[i]);
         }
+        // Also scan array dimension expressions of involved symbols for
+        // StructInstanceMember accesses. VLA arrays sized by struct
+        // members (e.g., `integer :: n(x%m)`) constitute a non-allocatable
+        // access that must prevent struct removal from involved_syms.
+        for (auto &[sym_name, sym_info] : involved_syms) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_start)
+                    alloc_collector.visit_expr(*arr->m_dims[d].m_start);
+                if (arr->m_dims[d].m_length)
+                    alloc_collector.visit_expr(*arr->m_dims[d].m_length);
+            }
+        }
         // Maps (struct_name, member_name) -> decomposed parameter name
         std::map<std::pair<std::string, std::string>, std::string>
             decomp_map;
