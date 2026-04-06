@@ -4480,9 +4480,21 @@ public:
                     for (auto &[fn_name, fn_sym] : func_collector.functions) {
                         ASR::symbol_t *fn_resolved =
                             ASRUtils::symbol_get_past_external(fn_sym);
+                        ASR::Function_t *fn = nullptr;
                         if (ASR::is_a<ASR::Function_t>(*fn_resolved)) {
-                            ASR::Function_t *fn =
-                                ASR::down_cast<ASR::Function_t>(fn_resolved);
+                            fn = ASR::down_cast<ASR::Function_t>(fn_resolved);
+                        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                                *fn_resolved)) {
+                            ASR::StructMethodDeclaration_t *smd =
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                                    fn_resolved);
+                            ASR::symbol_t *proc =
+                                ASRUtils::symbol_get_past_external(smd->m_proc);
+                            if (ASR::is_a<ASR::Function_t>(*proc)) {
+                                fn = ASR::down_cast<ASR::Function_t>(proc);
+                            }
+                        }
+                        if (fn) {
                             for (size_t i = 0; i < fn->n_body; i++) {
                                 transitive_collector.visit_stmt(*fn->m_body[i]);
                             }

@@ -1671,32 +1671,31 @@ public:
             kernel_call_collector.visit_stmt(*x.m_body[i]);
         }
 
-        // Emit inline function definitions for type-bound procedures
-        // actually called in this kernel
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
-            if (!kernel_call_collector.called.count(item.first)) continue;
-            ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
-                item.second);
-            ASR::Function_t *fn = resolve_function(resolved);
-            if (!fn) continue;
-            std::string fn_name(fn->m_name);
-            if (emitted_funcs.count(fn_name)) continue;
-            emitted_funcs.insert(fn_name);
-            emit_function_def(fn, fn_name);
-        }
-
-        // Emit inline function definitions for internal functions
-        // duplicated into the kernel scope by the gpu_offload pass.
-        // Topologically sort so callees are emitted before callers.
+        // Collect all kernel functions (both ExternalSymbol-resolved TBPs
+        // and duplicated Function_t entries) into a single map, then
+        // topologically sort so callees are emitted before callers.
         {
             std::map<std::string, ASR::Function_t*> kernel_funcs;
+            // Collect ExternalSymbol functions (type-bound procedures)
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                if (!kernel_call_collector.called.count(item.first)) continue;
+                ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
+                    item.second);
+                ASR::Function_t *fn = resolve_function(resolved);
+                if (!fn) continue;
+                std::string fn_name(fn->m_name);
+                if (emitted_funcs.count(fn_name)) continue;
+                kernel_funcs[fn_name] = fn;
+            }
+            // Collect internal functions duplicated into the kernel scope
             for (auto &item : x.m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
                     item.second);
                 std::string fn_name(fn->m_name);
                 if (emitted_funcs.count(fn_name)) continue;
+                if (kernel_funcs.count(fn_name)) continue;
                 kernel_funcs[fn_name] = fn;
             }
             std::vector<std::string> sorted_funcs;
