@@ -381,13 +381,34 @@ class DanglingVarCollector : public ASR::BaseWalkVisitor<DanglingVarCollector> {
 public:
     SymbolTable *func_scope;
     std::map<std::string, ASR::symbol_t*> dangling;
+    std::set<SymbolTable*> inner_scopes;
     DanglingVarCollector(SymbolTable *fs) : func_scope(fs) {}
     void visit_Var(const ASR::Var_t &x) {
         std::string name = ASRUtils::symbol_name(x.m_v);
+        for (auto *scope : inner_scopes) {
+            if (scope->get_symbol(name)) return;
+        }
         if (!func_scope->resolve_symbol(name) &&
                 dangling.find(name) == dangling.end()) {
             dangling[name] = x.m_v;
         }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        inner_scopes.insert(ab->m_symtab);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+        inner_scopes.erase(ab->m_symtab);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        inner_scopes.insert(block->m_symtab);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+        inner_scopes.erase(block->m_symtab);
     }
 };
 
@@ -406,6 +427,19 @@ public:
             if (new_sym) {
                 const_cast<ASR::Var_t&>(x).m_v = new_sym;
             }
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
         }
     }
 };
