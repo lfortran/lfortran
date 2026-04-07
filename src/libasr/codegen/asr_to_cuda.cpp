@@ -149,13 +149,13 @@ public:
         src << "extern \"C\" __global__ void " << name << "(";
 
         bool has_prev = false;
-        int buffer_idx = 0;
+        //int buffer_idx = 0;
         for (size_t i = 0; i < args.size(); i++) {
             if (args[i].is_array) {
                 if (has_prev) src << ", ";
                 src << cuda_type(args[i].type) << " *" << args[i].name;
                 has_prev = true;
-                buffer_idx++;
+                //buffer_idx++;
             }
         }
         // Scalar args as individual parameters
