@@ -195,7 +195,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "11"
+                                    "1.10000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -226,7 +226,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "12"
+                                    "1.20000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -257,7 +257,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "13"
+                                    "1.30000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -323,7 +323,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "11"
+                                    "1.10000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -354,7 +354,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "12"
+                                    "1.20000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -385,7 +385,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "13"
+                                    "1.30000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -416,7 +416,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "14"
+                                    "1.40000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -461,7 +461,7 @@
                                     IntegerToReal
                                     (Real 8)
                                     (RealConstant
-                                        "10"
+                                        "1.00000000000000000e+01"
                                         (Real 8)
                                     )
                                     ()
@@ -493,7 +493,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "1"
+                                    "1.00000000000000000e+00"
                                     (Real 8)
                                 )
                                 ()
@@ -524,7 +524,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "2"
+                                    "2.00000000000000000e+00"
                                     (Real 8)
                                 )
                                 ()
@@ -555,7 +555,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "3"
+                                    "3.00000000000000000e+00"
                                     (Real 8)
                                 )
                                 ()
@@ -651,7 +651,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "17"
+                                    "1.70000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -705,7 +705,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "11"
+                                    "1.10000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -791,7 +791,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "12"
+                                    "1.20000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -825,7 +825,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "13"
+                                    "1.30000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -859,7 +859,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "13"
+                                    "1.30000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()
@@ -893,7 +893,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    "14"
+                                    "1.40000000000000000e+01"
                                     (Real 8)
                                 )
                                 ()

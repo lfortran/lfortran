@@ -114,7 +114,7 @@
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 (RealConstant
-                                                                    "2"
+                                                                    "2.00000000000000000e+00"
                                                                     (Real 4)
                                                                 )
                                                                 ()
@@ -166,7 +166,7 @@
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 (RealConstant
-                                                                    "2"
+                                                                    "2.00000000000000000e+00"
                                                                     (Real 4)
                                                                 )
                                                                 ()
@@ -282,7 +282,7 @@
                                             )
                                             Mul
                                             (RealConstant
-                                                "4.5999999046325684"
+                                                "4.59999990463256836e+00"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -377,7 +377,7 @@
                                             Mul
                                             (ArrayBroadcast
                                                 (RealConstant
-                                                    "2.5999999046325684"
+                                                    "2.59999990463256836e+00"
                                                     (Real 4)
                                                 )
                                                 (IntrinsicArrayFunction
@@ -557,7 +557,7 @@
                         (Var 2 x)
                         (ArrayBroadcast
                             (RealConstant
-                                "0.41999998688697815"
+                                "4.19999986886978149e-01"
                                 (Real 4)
                             )
                             (ArrayConstant
@@ -597,7 +597,7 @@
                         (Var 2 y)
                         (ArrayBroadcast
                             (RealConstant
-                                "0.34999999403953552"
+                                "3.49999994039535522e-01"
                                 (Real 4)
                             )
                             (ArrayConstant
@@ -637,7 +637,7 @@
                         (Var 2 myreal)
                         (ArrayBroadcast
                             (RealConstant
-                                "9.1000003814697266"
+                                "9.10000038146972656e+00"
                                 (Real 4)
                             )
                             (IntrinsicArrayFunction
@@ -670,7 +670,7 @@
                         (Var 2 theta)
                         (ArrayBroadcast
                             (RealConstant
-                                "1.5"
+                                "1.50000000000000000e+00"
                                 (Real 4)
                             )
                             (ArrayConstant
@@ -710,7 +710,7 @@
                         (Var 2 a)
                         (ArrayBroadcast
                             (RealConstant
-                                "0.40000000596046448"
+                                "4.00000005960464478e-01"
                                 (Real 4)
                             )
                             (ArrayConstant

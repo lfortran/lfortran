@@ -40,7 +40,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                "10"
+                                "1.00000000000000000e+01"
                                 (Real 4)
                             )
                             ()
@@ -247,7 +247,7 @@
                     (Assignment
                         (Var 5 dummy)
                         (RealConstant
-                            "5"
+                            "5.00000000000000000e+00"
                             (Real 4)
                         )
                         ()

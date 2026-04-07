@@ -89,11 +89,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -119,19 +119,19 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         RealToReal
                                         (Real 4)
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -156,11 +156,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -186,19 +186,19 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         RealToReal
                                         (Real 4)
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -268,7 +268,7 @@
                     [(Assignment
                         (Var 2 y)
                         (RealConstant
-                            "1"
+                            "1.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -279,13 +279,13 @@
                         (Var 2 y)
                         (Cast
                             (RealConstant
-                                "1"
+                                "1.00000000000000000e+00"
                                 (Real 8)
                             )
                             RealToReal
                             (Real 4)
                             (RealConstant
-                                "1"
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()
@@ -297,7 +297,7 @@
                     (Assignment
                         (Var 2 y)
                         (RealConstant
-                            "1"
+                            "1.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -308,13 +308,13 @@
                         (Var 2 y)
                         (Cast
                             (RealConstant
-                                "1"
+                                "1.00000000000000000e+00"
                                 (Real 8)
                             )
                             RealToReal
                             (Real 4)
                             (RealConstant
-                                "1"
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()

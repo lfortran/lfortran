@@ -48,7 +48,7 @@
                                     [(Assignment
                                         (Var 3 y)
                                         (RealConstant
-                                            "3"
+                                            "3.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
@@ -72,13 +72,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            "2"
+                                            "2.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        "2"
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Save
@@ -152,7 +152,7 @@
                                     (Var 5 y)
                                     Sub
                                     (RealConstant
-                                        "2"
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -164,7 +164,7 @@
                             )
                             Gt
                             (RealConstant
-                                "9.999999960041972e-13"
+                                "9.99999996004197200e-13"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -202,7 +202,7 @@
                                     (Var 5 y)
                                     Sub
                                     (RealConstant
-                                        "3"
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -214,7 +214,7 @@
                             )
                             Gt
                             (RealConstant
-                                "9.999999960041972e-13"
+                                "9.99999996004197200e-13"
                                 (Real 4)
                             )
                             (Logical 4)

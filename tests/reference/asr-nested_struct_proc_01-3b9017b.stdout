@@ -723,11 +723,11 @@
                                                     []
                                                     Local
                                                     (RealConstant
-                                                        "9.9999999747524271e-07"
+                                                        "9.99999997475242708e-07"
                                                         (Real 4)
                                                     )
                                                     (RealConstant
-                                                        "9.9999999747524271e-07"
+                                                        "9.99999997475242708e-07"
                                                         (Real 4)
                                                     )
                                                     Parameter
@@ -1806,11 +1806,11 @@
                         (Var 12 value)
                         (ComplexConstructor
                             (RealConstant
-                                "2"
+                                "2.00000000000000000e+00"
                                 (Real 4)
                             )
                             (RealConstant
-                                "4"
+                                "4.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Complex 4)

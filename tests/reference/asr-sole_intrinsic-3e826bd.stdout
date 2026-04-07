@@ -38,17 +38,17 @@
                                     Local
                                     (ComplexConstructor
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         (RealUnaryMinus
                                             (RealConstant
-                                                "3"
+                                                "3.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Real 4)
                                             (RealConstant
-                                                "-3"
+                                                "-3.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                         )

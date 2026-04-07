@@ -17,7 +17,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            "0"
+                                            "0.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -70,13 +70,13 @@
                         (IntrinsicElementalFunction
                             Asin
                             [(RealConstant
-                                "0.84147095680236816"
+                                "8.41470956802368164e-01"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                "0.99999994816693005"
+                                "9.99999948166930053e-01"
                                 (Real 4)
                             )
                         )
@@ -100,13 +100,13 @@
                         (IntrinsicElementalFunction
                             Acos
                             [(RealConstant
-                                "0.5403023362159729"
+                                "5.40302336215972900e-01"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                "0.99999996393478319"
+                                "9.99999963934783187e-01"
                                 (Real 4)
                             )
                         )
@@ -130,13 +130,13 @@
                         (IntrinsicElementalFunction
                             Atan
                             [(RealConstant
-                                "1.5574077367782593"
+                                "1.55740773677825928e+00"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                "1.0000000035391301"
+                                "1.00000000353913010e+00"
                                 (Real 4)
                             )
                         )
@@ -161,20 +161,20 @@
                             (IntrinsicElementalFunction
                                 Atan
                                 [(RealConstant
-                                    "1.5574077"
+                                    "1.55740769999999995e+00"
                                     (Real 8)
                                 )]
                                 0
                                 (Real 8)
                                 (RealConstant
-                                    "0.99999999280257856"
+                                    "9.99999992802578563e-01"
                                     (Real 8)
                                 )
                             )
                             RealToReal
                             (Real 4)
                             (RealConstant
-                                "0.99999999280257856"
+                                "9.99999992802578563e-01"
                                 (Real 4)
                             )
                             ()
@@ -199,13 +199,13 @@
                         (IntrinsicElementalFunction
                             Asinh
                             [(RealConstant
-                                "1.1752011775970459"
+                                "1.17520117759704590e+00"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                "0.99999998960083136"
+                                "9.99999989600831363e-01"
                                 (Real 4)
                             )
                         )
@@ -229,13 +229,13 @@
                         (IntrinsicElementalFunction
                             Acosh
                             [(RealConstant
-                                "1.5430805683135986"
+                                "1.54308056831359863e+00"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                "0.9999999434125425"
+                                "9.99999943412542502e-01"
                                 (Real 4)
                             )
                         )
@@ -259,13 +259,13 @@
                         (IntrinsicElementalFunction
                             Atanh
                             [(RealConstant
-                                "0.76159417629241943"
+                                "7.61594176292419434e-01"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                "1.000000048423566"
+                                "1.00000004842356605e+00"
                                 (Real 4)
                             )
                         )

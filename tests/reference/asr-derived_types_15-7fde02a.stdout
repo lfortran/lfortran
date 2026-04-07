@@ -279,7 +279,7 @@
                                                 )
                                                 Pow
                                                 (RealConstant
-                                                    "0.5"
+                                                    "5.00000000000000000e-01"
                                                     (Real 4)
                                                 )
                                                 (Real 4)
@@ -468,7 +468,7 @@
                             ()
                         )
                         (RealConstant
-                            "100"
+                            "1.00000000000000000e+02"
                             (Real 4)
                         )
                         ()
@@ -483,7 +483,7 @@
                                 ()
                                 [((Var 6 type_1))
                                 ((RealConstant
-                                    "5"
+                                    "5.00000000000000000e+00"
                                     (Real 4)
                                 ))]
                                 (Real 4)
@@ -496,7 +496,7 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    "500"
+                                    "5.00000000000000000e+02"
                                     (Real 4)
                                 )
                                 ()
@@ -527,7 +527,7 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    "50"
+                                    "5.00000000000000000e+01"
                                     (Real 4)
                                 )
                                 ()

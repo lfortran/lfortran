@@ -33,7 +33,7 @@ inline std::string double_to_str_precision(double x) {
     }
     if (std::isinf(x)) return x > 0 ? "inf" : "-inf";
     std::ostringstream oss;
-    oss << std::setprecision(17) << x;
+    oss << std::scientific << std::setprecision(17) << x;
     return oss.str();
 }
 

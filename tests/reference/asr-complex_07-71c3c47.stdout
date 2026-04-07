@@ -60,11 +60,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "3.1400001049041748"
+                                        "3.14000010490417480e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "3.1400001049041748"
+                                        "3.14000010490417480e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -154,11 +154,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "3.1400001049041748"
+                                        "3.14000010490417480e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "3.1400001049041748"
+                                        "3.14000010490417480e+00"
                                         (Real 4)
                                     )
                                     Save
@@ -495,7 +495,7 @@
                             )
                             Gt
                             (RealConstant
-                                "9.9999997473787516e-06"
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -533,7 +533,7 @@
                             )
                             Gt
                             (RealConstant
-                                "9.9999997473787516e-06"
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -571,7 +571,7 @@
                             )
                             Gt
                             (RealConstant
-                                "9.9999997473787516e-06"
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -620,13 +620,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 8)
                                 )
                                 ()
@@ -677,13 +677,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 8)
                                 )
                                 ()
@@ -734,13 +734,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 8)
                                 )
                                 ()
@@ -797,11 +797,11 @@
                                     (Cast
                                         (ComplexConstructor
                                             (RealConstant
-                                                "42"
+                                                "4.20000000000000000e+01"
                                                 (Real 4)
                                             )
                                             (RealConstant
-                                                "0"
+                                                "0.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Complex 4)
@@ -830,13 +830,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 8)
                                 )
                                 ()
@@ -893,11 +893,11 @@
                                     (Cast
                                         (ComplexConstructor
                                             (RealConstant
-                                                "3.1400001049041748"
+                                                "3.14000010490417480e+00"
                                                 (Real 4)
                                             )
                                             (RealConstant
-                                                "0"
+                                                "0.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Complex 4)
@@ -926,13 +926,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 8)
                                 )
                                 ()
@@ -952,7 +952,7 @@
                                 Cmplx
                                 [(Var 2 z1)
                                 (RealConstant
-                                    "0"
+                                    "0.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (IntegerConstant 8 (Integer 4) Decimal)]
@@ -977,7 +977,7 @@
                                         Cmplx
                                         [(Var 2 z1)
                                         (RealConstant
-                                            "0"
+                                            "0.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         (IntegerConstant 8 (Integer 4) Decimal)]
@@ -989,11 +989,11 @@
                                     (Cast
                                         (ComplexConstructor
                                             (RealConstant
-                                                "42"
+                                                "4.20000000000000000e+01"
                                                 (Real 4)
                                             )
                                             (RealConstant
-                                                "3.1400001049041748"
+                                                "3.14000010490417480e+00"
                                                 (Real 4)
                                             )
                                             (Complex 4)
@@ -1022,13 +1022,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 8)
                                 )
                                 ()
@@ -1079,11 +1079,11 @@
                                     (Cast
                                         (ComplexConstructor
                                             (RealConstant
-                                                "3.1400001049041748"
+                                                "3.14000010490417480e+00"
                                                 (Real 4)
                                             )
                                             (RealConstant
-                                                "42"
+                                                "4.20000000000000000e+01"
                                                 (Real 4)
                                             )
                                             (Complex 4)
@@ -1112,13 +1112,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999997473787516e-06"
+                                    "9.99999974737875164e-06"
                                     (Real 8)
                                 )
                                 ()

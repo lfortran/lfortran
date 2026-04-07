@@ -42,11 +42,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "3.1400001049041748"
+                                        "3.14000010490417480e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "3.1400001049041748"
+                                        "3.14000010490417480e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -95,19 +95,19 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 8)
                                     )
                                     Save
@@ -133,19 +133,19 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            "2"
+                                            "2.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            "2"
+                                            "2.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        "2"
+                                        "2.00000000000000000e+00"
                                         (Real 8)
                                     )
                                     Save
@@ -170,11 +170,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "4"
+                                        "4.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "4"
+                                        "4.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Save
@@ -200,19 +200,19 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 8)
                                     )
                                     Save
@@ -245,7 +245,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            "4"
+                                            "4.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
@@ -256,14 +256,14 @@
                                 Add
                                 (RealBinOp
                                     (RealConstant
-                                        "0.5"
+                                        "5.00000000000000000e-01"
                                         (Real 4)
                                     )
                                     Mul
                                     (IntrinsicElementalFunction
                                         Sign
                                         [(RealConstant
-                                            "1"
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         (Var 2 x)]
@@ -320,7 +320,7 @@
                                     (Var 2 x)
                                     Sub
                                     (RealConstant
-                                        "3.940000057220459"
+                                        "3.94000005722045898e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -332,7 +332,7 @@
                             )
                             Gt
                             (RealConstant
-                                "9.9999999747524271e-07"
+                                "9.99999997475242708e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -353,13 +353,13 @@
                                     Sub
                                     (Cast
                                         (RealConstant
-                                            "3"
+                                            "3.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            "3"
+                                            "3.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         ()
@@ -374,13 +374,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    "9.9999999747524271e-07"
+                                    "9.99999997475242708e-07"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    "9.9999999747524271e-07"
+                                    "9.99999997475242708e-07"
                                     (Real 8)
                                 )
                                 ()
@@ -437,7 +437,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                "1"
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()
@@ -461,7 +461,7 @@
                             [(IntrinsicElementalFunction
                                 Sign
                                 [(RealConstant
-                                    "1"
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (RealBinOp

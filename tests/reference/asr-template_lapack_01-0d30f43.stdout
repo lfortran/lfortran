@@ -1050,7 +1050,7 @@
                                                             7 cast_to_t
                                                             ()
                                                             [((RealConstant
-                                                                "1"
+                                                                "1.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (TypeParameter
@@ -1097,7 +1097,7 @@
                                                             7 cast_to_t
                                                             ()
                                                             [((RealConstant
-                                                                "0"
+                                                                "0.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (TypeParameter
@@ -1731,7 +1731,7 @@
                                                         Kind
                                                         (Real 8)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 8)
                                                         )
                                                         (Integer 4)
@@ -2175,7 +2175,7 @@
                                             2 my_cast_to_real
                                             ()
                                             [((RealConstant
-                                                "1"
+                                                "1.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (Real 4)
@@ -2216,7 +2216,7 @@
                                             2 my_cast_to_real
                                             ()
                                             [((RealConstant
-                                                "0"
+                                                "0.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (Real 4)
@@ -2408,7 +2408,7 @@
                                                         Kind
                                                         (Real 8)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 8)
                                                         )
                                                         (Integer 4)
@@ -3957,7 +3957,7 @@
                                                             16 cast_to_t
                                                             ()
                                                             [((RealConstant
-                                                                "1"
+                                                                "1.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (TypeParameter
@@ -4004,7 +4004,7 @@
                                                             16 cast_to_t
                                                             ()
                                                             [((RealConstant
-                                                                "0"
+                                                                "0.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (TypeParameter
@@ -4399,7 +4399,7 @@
                                                             2 my_cast_to_real
                                                             ()
                                                             [((RealConstant
-                                                                "1"
+                                                                "1.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 4)
@@ -4440,7 +4440,7 @@
                                                             2 my_cast_to_real
                                                             ()
                                                             [((RealConstant
-                                                                "0"
+                                                                "0.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 4)
@@ -4784,7 +4784,7 @@
                                                             2 my_cast_to_double
                                                             ()
                                                             [((RealConstant
-                                                                "1"
+                                                                "1.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 8)
@@ -4825,7 +4825,7 @@
                                                             2 my_cast_to_double
                                                             ()
                                                             [((RealConstant
-                                                                "0"
+                                                                "0.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 8)
@@ -5056,7 +5056,7 @@
                                                         Kind
                                                         (Real 8)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 8)
                                                         )
                                                         (Integer 4)
@@ -5381,7 +5381,7 @@
                                                             2 my_cast_to_double
                                                             ()
                                                             [((RealConstant
-                                                                "1"
+                                                                "1.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 8)
@@ -5422,7 +5422,7 @@
                                                             2 my_cast_to_double
                                                             ()
                                                             [((RealConstant
-                                                                "0"
+                                                                "0.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 8)
@@ -5766,7 +5766,7 @@
                                                             2 my_cast_to_real
                                                             ()
                                                             [((RealConstant
-                                                                "1"
+                                                                "1.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 4)
@@ -5807,7 +5807,7 @@
                                                             2 my_cast_to_real
                                                             ()
                                                             [((RealConstant
-                                                                "0"
+                                                                "0.00000000000000000e+00"
                                                                 (Real 4)
                                                             ))]
                                                             (Real 4)

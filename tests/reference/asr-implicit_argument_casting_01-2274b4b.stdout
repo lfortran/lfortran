@@ -45,7 +45,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            "0"
+                                            "0.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -123,7 +123,7 @@
                         (Var 2 a)
                         (ArrayBroadcast
                             (RealConstant
-                                "12.5"
+                                "1.25000000000000000e+01"
                                 (Real 8)
                             )
                             (IntrinsicArrayFunction
@@ -171,7 +171,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            "0"
+                                            "0.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -437,7 +437,7 @@
                                                     )
                                                     Sub
                                                     (RealConstant
-                                                        "12.5"
+                                                        "1.25000000000000000e+01"
                                                         (Real 8)
                                                     )
                                                     (Real 8)
@@ -450,13 +450,13 @@
                                             Gt
                                             (Cast
                                                 (RealConstant
-                                                    "9.999999960041972e-13"
+                                                    "9.99999996004197200e-13"
                                                     (Real 4)
                                                 )
                                                 RealToReal
                                                 (Real 8)
                                                 (RealConstant
-                                                    "9.999999960041972e-13"
+                                                    "9.99999996004197200e-13"
                                                     (Real 8)
                                                 )
                                                 ()

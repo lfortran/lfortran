@@ -139,7 +139,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                "3"
+                                "3.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()
@@ -158,7 +158,7 @@
                     (Assignment
                         (Var 2 datap)
                         (RealConstant
-                            "1"
+                            "1.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -168,7 +168,7 @@
                     (Assignment
                         (Var 2 realr)
                         (RealConstant
-                            "1.5"
+                            "1.50000000000000000e+00"
                             (Real 4)
                         )
                         ()

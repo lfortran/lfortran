@@ -14,8 +14,8 @@ float func2(float a, float b);
 float func1(float a, float b)
 {
     float c;
-    static float saved = 2;
-    saved = saved + 1;
+    static float saved = 2.00000000000000000e+00;
+    saved = saved + 1.00000000000000000e+00;
     c = c + a + b + saved;
     return c;
 }
@@ -24,12 +24,12 @@ float func2(float a, float b)
 {
     float c;
     float d;
-    static float saved1 = 2;
+    static float saved1 = 2.00000000000000000e+00;
     static float saved2;
-    saved1 = saved1 + 1;
+    saved1 = saved1 + 1.00000000000000000e+00;
     c = d + c + a + b + saved1 + saved2;
-    saved2 = saved2 + 1;
-    d = d + 3;
+    saved2 = saved2 + 1.00000000000000000e+00;
+    d = d + 3.00000000000000000e+00;
     return c;
 }
 
@@ -39,8 +39,8 @@ int main(int argc, char* argv[])
     float x;
     float y;
     float z;
-    x = 1;
-    y = 2;
+    x = 1.00000000000000000e+00;
+    y = 2.00000000000000000e+00;
     z = func1(x, y);
     printf("%s%s%f\n", "6.0 == ", " ", z);
     z = func1(x, y);

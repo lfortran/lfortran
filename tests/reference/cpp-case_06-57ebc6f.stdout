@@ -29,10 +29,10 @@ void main2() {
     int32_t ap=1;
     static int32_t b=2;
     int32_t bp=2;
-    static float c=1;
-    float cp=1;
-    static float d=2;
-    float dp=2;
+    static float c=1.00000000000000000e+00;
+    float cp=1.00000000000000000e+00;
+    static float d=2.00000000000000000e+00;
+    float dp=2.00000000000000000e+00;
     std::string grade_fixed="B";
     int32_t marks;
     int32_t marks_fixed=94;

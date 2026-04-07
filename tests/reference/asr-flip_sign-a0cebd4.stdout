@@ -14,11 +14,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "9.9999999747524271e-07"
+                                        "9.99999997475242708e-07"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "9.9999999747524271e-07"
+                                        "9.99999997475242708e-07"
                                         (Real 4)
                                     )
                                     Save
@@ -95,7 +95,7 @@
                     (Assignment
                         (Var 2 x)
                         (RealConstant
-                            "5.5"
+                            "5.50000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -141,12 +141,12 @@
                                     Sub
                                     (RealUnaryMinus
                                         (RealConstant
-                                            "5.5"
+                                            "5.50000000000000000e+00"
                                             (Real 4)
                                         )
                                         (Real 4)
                                         (RealConstant
-                                            "-5.5"
+                                            "-5.50000000000000000e+00"
                                             (Real 4)
                                         )
                                     )
@@ -177,7 +177,7 @@
                     (Assignment
                         (Var 2 x)
                         (RealConstant
-                            "5.5"
+                            "5.50000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -222,7 +222,7 @@
                                     (Var 2 x)
                                     Sub
                                     (RealConstant
-                                        "5.5"
+                                        "5.50000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)

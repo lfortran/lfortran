@@ -17,7 +17,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            "0"
+                                            "0.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -46,11 +46,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        "3.1429998874664307"
+                                        "3.14299988746643066e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        "3.1429998874664307"
+                                        "3.14299988746643066e+00"
                                         (Real 4)
                                     )
                                     Save
@@ -76,19 +76,19 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            "2.3299999237060547"
+                                            "2.32999992370605469e+00"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            "2.3299999237060547"
+                                            "2.32999992370605469e+00"
                                             (Real 8)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        "2.3299999237060547"
+                                        "2.32999992370605469e+00"
                                         (Real 8)
                                     )
                                     Save
@@ -118,7 +118,7 @@
                                 (Var 2 x)
                                 (Real 4)
                                 (RealConstant
-                                    "1.1920928955078125e-07"
+                                    "1.19209289550781250e-07"
                                     (Real 4)
                                 )
                             )]
@@ -138,7 +138,7 @@
                                 (Var 2 y)
                                 (Real 8)
                                 (RealConstant
-                                    "2.2204460492503131e-16"
+                                    "2.22044604925031308e-16"
                                     (Real 8)
                                 )
                             )]
@@ -157,32 +157,32 @@
                                     Epsilon
                                     (Real 8)
                                     (RealConstant
-                                        "1"
+                                        "1.00000000000000000e+00"
                                         (Real 8)
                                     )
                                     (Real 8)
                                     (RealConstant
-                                        "2.2204460492503131e-16"
+                                        "2.22044604925031308e-16"
                                         (Real 8)
                                     )
                                 )
                                 Pow
                                 (Cast
                                     (RealConstant
-                                        "0.5"
+                                        "5.00000000000000000e-01"
                                         (Real 4)
                                     )
                                     RealToReal
                                     (Real 8)
                                     (RealConstant
-                                        "0.5"
+                                        "5.00000000000000000e-01"
                                         (Real 8)
                                     )
                                     ()
                                 )
                                 (Real 8)
                                 (RealConstant
-                                    "1.4901161193847656e-08"
+                                    "1.49011611938476562e-08"
                                     (Real 8)
                                 )
                             )]
@@ -205,31 +205,31 @@
                                         (Var 2 x)
                                         (Real 4)
                                         (RealConstant
-                                            "1.1920928955078125e-07"
+                                            "1.19209289550781250e-07"
                                             (Real 4)
                                         )
                                     )
                                     Sub
                                     (RealConstant
-                                        "1.1920928955078125e-07"
+                                        "1.19209289550781250e-07"
                                         (Real 4)
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        "0"
+                                        "0.00000000000000000e+00"
                                         (Real 4)
                                     )
                                 )]
                                 0
                                 (Real 4)
                                 (RealConstant
-                                    "0"
+                                    "0.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
                             Gt
                             (RealConstant
-                                "1.0000000116860974e-07"
+                                "1.00000001168609742e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -255,31 +255,31 @@
                                         (Var 2 y)
                                         (Real 8)
                                         (RealConstant
-                                            "2.2204460492503131e-16"
+                                            "2.22044604925031308e-16"
                                             (Real 8)
                                         )
                                     )
                                     Sub
                                     (RealConstant
-                                        "2.2204460492503131e-16"
+                                        "2.22044604925031308e-16"
                                         (Real 8)
                                     )
                                     (Real 8)
                                     (RealConstant
-                                        "0"
+                                        "0.00000000000000000e+00"
                                         (Real 8)
                                     )
                                 )]
                                 0
                                 (Real 8)
                                 (RealConstant
-                                    "0"
+                                    "0.00000000000000000e+00"
                                     (Real 8)
                                 )
                             )
                             Gt
                             (RealConstant
-                                "1.0000000000000001e-15"
+                                "1.00000000000000008e-15"
                                 (Real 8)
                             )
                             (Logical 4)
@@ -304,47 +304,47 @@
                                             Epsilon
                                             (Real 8)
                                             (RealConstant
-                                                "1"
+                                                "1.00000000000000000e+00"
                                                 (Real 8)
                                             )
                                             (Real 8)
                                             (RealConstant
-                                                "2.2204460492503131e-16"
+                                                "2.22044604925031308e-16"
                                                 (Real 8)
                                             )
                                         )
                                         Pow
                                         (RealConstant
-                                            "0.5"
+                                            "5.00000000000000000e-01"
                                             (Real 8)
                                         )
                                         (Real 8)
                                         (RealConstant
-                                            "1.4901161193847656e-08"
+                                            "1.49011611938476562e-08"
                                             (Real 8)
                                         )
                                     )
                                     Sub
                                     (RealConstant
-                                        "1.4901161193847656e-08"
+                                        "1.49011611938476562e-08"
                                         (Real 8)
                                     )
                                     (Real 8)
                                     (RealConstant
-                                        "0"
+                                        "0.00000000000000000e+00"
                                         (Real 8)
                                     )
                                 )]
                                 0
                                 (Real 8)
                                 (RealConstant
-                                    "0"
+                                    "0.00000000000000000e+00"
                                     (Real 8)
                                 )
                             )
                             Gt
                             (RealConstant
-                                "1.0000000000000001e-15"
+                                "1.00000000000000008e-15"
                                 (Real 8)
                             )
                             (Logical 4)

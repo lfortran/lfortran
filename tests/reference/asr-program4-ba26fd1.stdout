@@ -88,11 +88,11 @@
                                                     []
                                                     Local
                                                     (RealConstant
-                                                        "2"
+                                                        "2.00000000000000000e+00"
                                                         (Real 4)
                                                     )
                                                     (RealConstant
-                                                        "2"
+                                                        "2.00000000000000000e+00"
                                                         (Real 4)
                                                     )
                                                     Save
@@ -136,7 +136,7 @@
                                             (Var 3 saved)
                                             Add
                                             (RealConstant
-                                                "1"
+                                                "1.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -281,11 +281,11 @@
                                                     []
                                                     Local
                                                     (RealConstant
-                                                        "2"
+                                                        "2.00000000000000000e+00"
                                                         (Real 4)
                                                     )
                                                     (RealConstant
-                                                        "2"
+                                                        "2.00000000000000000e+00"
                                                         (Real 4)
                                                     )
                                                     Save
@@ -352,7 +352,7 @@
                                             (Var 4 saved1)
                                             Add
                                             (RealConstant
-                                                "1"
+                                                "1.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -405,7 +405,7 @@
                                             (Var 4 saved2)
                                             Add
                                             (RealConstant
-                                                "1"
+                                                "1.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -421,7 +421,7 @@
                                             (Var 4 d)
                                             Add
                                             (RealConstant
-                                                "3"
+                                                "3.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -512,7 +512,7 @@
                     [(Assignment
                         (Var 2 x)
                         (RealConstant
-                            "1"
+                            "1.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -522,7 +522,7 @@
                     (Assignment
                         (Var 2 y)
                         (RealConstant
-                            "2"
+                            "2.00000000000000000e+00"
                             (Real 4)
                         )
                         ()

@@ -105,7 +105,7 @@
                     [(Assignment
                         (Var 2 zero)
                         (RealConstant
-                            "0"
+                            "0.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -116,13 +116,13 @@
                         (Var 2 u)
                         (Cast
                             (RealConstant
-                                "1.0499999523162842"
+                                "1.04999995231628418e+00"
                                 (Real 4)
                             )
                             RealToReal
                             (Real 8)
                             (RealConstant
-                                "1.0499999523162842"
+                                "1.04999995231628418e+00"
                                 (Real 8)
                             )
                             ()
@@ -134,7 +134,7 @@
                     (Assignment
                         (Var 2 v)
                         (RealConstant
-                            "1.05"
+                            "1.05000000000000004e+00"
                             (Real 8)
                         )
                         ()
@@ -144,7 +144,7 @@
                     (Assignment
                         (Var 2 x)
                         (RealConstant
-                            "1.0499999523162842"
+                            "1.04999995231628418e+00"
                             (Real 4)
                         )
                         ()

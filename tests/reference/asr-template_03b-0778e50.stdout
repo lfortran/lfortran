@@ -746,7 +746,7 @@
                                                         Kind
                                                         (Real 8)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 8)
                                                         )
                                                         (Integer 4)
@@ -778,7 +778,7 @@
                                                         Kind
                                                         (Real 4)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 4)
                                                         )
                                                         (Integer 4)
@@ -1129,7 +1129,7 @@
                                     [(Assignment
                                         (Var 12 a)
                                         (RealConstant
-                                            "0.5"
+                                            "5.00000000000000000e-01"
                                             (Real 4)
                                         )
                                         ()
@@ -1181,7 +1181,7 @@
                                                 IntegerToReal
                                                 (Real 8)
                                                 (RealConstant
-                                                    "2"
+                                                    "2.00000000000000000e+00"
                                                     (Real 8)
                                                 )
                                                 ()
@@ -1317,7 +1317,7 @@
                                                         Kind
                                                         (Real 8)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 8)
                                                         )
                                                         (Integer 4)
@@ -1372,7 +1372,7 @@
                                                         Kind
                                                         (Real 4)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 4)
                                                         )
                                                         (Integer 4)
@@ -1477,7 +1477,7 @@
                                                         Kind
                                                         (Real 8)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 8)
                                                         )
                                                         (Integer 4)
@@ -1509,7 +1509,7 @@
                                                         Kind
                                                         (Real 4)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 4)
                                                         )
                                                         (Integer 4)
@@ -1753,7 +1753,7 @@
                                                         Kind
                                                         (Real 4)
                                                         (RealConstant
-                                                            "1"
+                                                            "1.00000000000000000e+00"
                                                             (Real 4)
                                                         )
                                                         (Integer 4)

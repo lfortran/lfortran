@@ -26,27 +26,27 @@ namespace {
 namespace {
 
 void main2() {
-    static float x=sin(1.5);
+    static float x=sin(1.50000000000000000e+00);
     double y;
-    y = sin(1.5);
+    y = sin(1.50000000000000000e+00);
     std::cout << x << " " << y << std::endl;
-    if (fabs(x - 0.99749499559402466) > 9.9999999747524271e-07) {
+    if (fabs(x - 9.97494995594024658e-01) > 9.99999997475242708e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (fabs(sin(x) - 0.84011489152908325) > 9.9999999747524271e-07) {
+    if (fabs(sin(x) - 8.40114891529083252e-01) > 9.99999997475242708e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (fabs(y - 0.99749499559402466) > 1.0000000116860974e-07) {
+    if (fabs(y - 9.97494995594024658e-01) > 1.00000001168609742e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (fabs(sin(sin(1.5) + (sin(0.5 + sin(0.5)))) - 0.96718841791152954) > 1.0000000116860974e-07) {
+    if (fabs(sin(sin(1.50000000000000000e+00) + (sin(5.00000000000000000e-01 + sin(5.00000000000000000e-01)))) - 9.67188417911529541e-01) > 1.00000001168609742e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (fabs(sin(sin(y) + (sin(x + sin(x)))) - 0.97276186943054199) > 1.0000000116860974e-07) {
+    if (fabs(sin(sin(y) + (sin(x + sin(x)))) - 9.72761869430541992e-01) > 1.00000001168609742e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }

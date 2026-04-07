@@ -141,7 +141,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                "6"
+                                "6.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()
@@ -167,7 +167,7 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    "7"
+                                    "7.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
@@ -343,7 +343,7 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
-                                                    "1"
+                                                    "1.00000000000000000e+00"
                                                     (Real 4)
                                                 )
                                                 ()

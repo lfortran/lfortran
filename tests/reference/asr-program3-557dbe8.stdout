@@ -323,7 +323,7 @@
                     [(Assignment
                         (Var 2 x)
                         (RealConstant
-                            "5"
+                            "5.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -333,7 +333,7 @@
                     (Assignment
                         (Var 2 y)
                         (RealConstant
-                            "2"
+                            "2.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
