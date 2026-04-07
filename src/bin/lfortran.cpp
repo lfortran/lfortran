@@ -2114,28 +2114,6 @@ int link_executable(const std::vector<std::string> &infiles,
                 {
                     std::ofstream cu_out(cuda_kernel_src);
                     cu_out << cuda_source;
-                    // Emit kernel registration function
-                    cu_out << "\n// Auto-generated kernel registration\n";
-                    cu_out << "typedef void (*kernel_func_t)(void);\n";
-                    cu_out << "extern \"C\" void lfortran_gpu_register_kernel("
-                              "const char *name, kernel_func_t func);\n\n";
-                    cu_out << "struct _lfortran_cuda_registrar {\n";
-                    cu_out << "    _lfortran_cuda_registrar() {\n";
-                    // Parse kernel names from the generated source
-                    std::string marker = "extern \"C\" __global__ void ";
-                    size_t pos = 0;
-                    while ((pos = cuda_source.find(marker, pos)) != std::string::npos) {
-                        pos += marker.size();
-                        size_t end = cuda_source.find('(', pos);
-                        if (end != std::string::npos) {
-                            std::string kname = cuda_source.substr(pos, end - pos);
-                            cu_out << "        lfortran_gpu_register_kernel(\""
-                                   << kname << "\", (kernel_func_t)"
-                                   << kname << ");\n";
-                        }
-                    }
-                    cu_out << "    }\n";
-                    cu_out << "} _lfortran_cuda_reg;\n";
                     cu_out.close();
                 }
                 // Compile kernel .cu with nvcc

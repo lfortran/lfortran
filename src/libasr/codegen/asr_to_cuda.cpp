@@ -88,12 +88,31 @@ public:
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         src << "#include <stdint.h>\n\n";
 
+        // Collect kernel names for registration
+        std::vector<std::string> kernel_names;
+
         for (auto &item : tu.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
-                visit_GpuKernelFunction(
-                    *ASR::down_cast<ASR::GpuKernelFunction_t>(item.second));
+                ASR::GpuKernelFunction_t &kf =
+                    *ASR::down_cast<ASR::GpuKernelFunction_t>(item.second);
+                kernel_names.push_back(std::string(kf.m_name));
+                visit_GpuKernelFunction(kf);
             }
         }
+
+        // Emit kernel registration
+        src << "\n// Auto-generated kernel registration\n";
+        src << "typedef void (*kernel_func_t)(void);\n";
+        src << "extern \"C\" void lfortran_gpu_register_kernel("
+               "const char *name, kernel_func_t func);\n\n";
+        src << "struct _lfortran_cuda_registrar {\n";
+        src << "    _lfortran_cuda_registrar() {\n";
+        for (auto &kname : kernel_names) {
+            src << "        lfortran_gpu_register_kernel(\""
+                << kname << "\", (kernel_func_t)" << kname << ");\n";
+        }
+        src << "    }\n";
+        src << "} _lfortran_cuda_reg;\n";
     }
 
     void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
