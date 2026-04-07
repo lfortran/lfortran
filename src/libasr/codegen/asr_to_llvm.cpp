@@ -376,6 +376,12 @@ public:
         llvm::Value* n_elems_i64;
     };
     std::vector<CharConsolidationWriteback> pending_char_writebacks;
+    struct AssociateWriteback {
+        llvm::Value* original_ptr;
+        llvm::Value* local_ptr;
+        llvm::Value* size;
+    };
+    std::vector<AssociateWriteback> pending_associate_writebacks;
     struct to_be_allocated_array{ // struct to hold details for the initializing pointer_to_array_type later inside main function.
         ASR::expr_t* expr;
         llvm::Constant* pointer_to_array_type;
@@ -9227,6 +9233,8 @@ public:
                 llvm::Value* const target_wrapper = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
                 builder->CreateMemCpy(target_wrapper, llvm::MaybeAlign(),
                                       wrapper_ptr, llvm::MaybeAlign(), wrapper_size);
+                pending_associate_writebacks.push_back(
+                    {wrapper_ptr, target_wrapper, wrapper_size});
             } else if ((is_target_class || is_value_class) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(value_type)) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(target_type))) {
@@ -12318,9 +12326,17 @@ public:
 
             if (!ASRUtils::is_array(m_type)) {
                 // rank(0): extract scalar value from the assumed-rank descriptor.
-                llvm::Value* data_ptr = llvm_utils->CreateLoad2(
-                    data_type->getPointerTo(),
-                    arr_descr->get_pointer_to_data(arr_type, arg));
+                // visit_SelectRank may have already remapped the selector to the
+                // data pointer. Detect this by checking whether arg's LLVM type
+                // matches the element pointer type rather than the descriptor type.
+                llvm::Value* data_ptr = nullptr;
+                if (arg->getType() == data_type->getPointerTo()) {
+                    data_ptr = arg;
+                } else {
+                    data_ptr = llvm_utils->CreateLoad2(
+                        data_type->getPointerTo(),
+                        arr_descr->get_pointer_to_data(arr_type, arg));
+                }
                 if (ASRUtils::is_struct(*m_type) || ptr_loads == 0) {
                     tmp = data_ptr;
                 } else {
@@ -12578,6 +12594,7 @@ public:
         // Track allocations separately for cleanup at BLOCK exit
         size_t heap_arrays_before = heap_fixed_size_arrays.n;
         size_t wb_before = pending_char_writebacks.size();
+        size_t assoc_wb_before = pending_associate_writebacks.size();
         in_block_context = true;
         declare_vars(*block);
         in_block_context = false;
@@ -12595,6 +12612,13 @@ public:
                 wb.original_descs_i8, wb.consolidated_desc, wb.n_elems_i64);
         }
         pending_char_writebacks.resize(wb_before);
+
+        for (size_t i = assoc_wb_before; i < pending_associate_writebacks.size(); i++) {
+            auto& wb = pending_associate_writebacks[i];
+            builder->CreateMemCpy(wb.original_ptr, llvm::MaybeAlign(),
+                                  wb.local_ptr, llvm::MaybeAlign(), wb.size);
+        }
+        pending_associate_writebacks.resize(assoc_wb_before);
 
         start_new_block(blockend);
         // Finalize struct members before freeing the backing array memory
@@ -12969,13 +12993,18 @@ public:
                         static_ptr_type = llvm_utils->get_type_from_ttype_t_util(actual_selector, selector_var_type, module.get());
                     }
                     if (ASRUtils::is_array(selector_var_type)) {
-                        static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
-                        static_ptr = llvm_utils->CreateLoad2(
-                            llvm_utils->get_el_type(
-                                actual_selector,
-                                ASRUtils::type_get_past_array(selector_var_type),
-                                module.get())->getPointerTo(),
-                            static_ptr);
+                        llvm::Type* el_type = llvm_utils->get_el_type(
+                            actual_selector,
+                            ASRUtils::type_get_past_array(selector_var_type),
+                            module.get());
+                        if (static_ptr->getType() == el_type->getPointerTo()) {
+                            // Selector was remapped by visit_SelectRank rank(0)
+                            // to the element/wrapper pointer; skip descriptor extraction.
+                        } else {
+                            static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
+                            static_ptr = llvm_utils->CreateLoad2(
+                                el_type->getPointerTo(), static_ptr);
+                        }
                     }
                     llvm::Value* val = lfortran_dynamic_cast(
                         static_ptr,
