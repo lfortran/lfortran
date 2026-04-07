@@ -29,6 +29,34 @@ public:
     }
 };
 
+class GpuMathHelperScanner : public ASR::BaseWalkVisitor<GpuMathHelperScanner> {
+public:
+    bool needs_erf = false;
+    bool needs_erfc = false;
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        std::string fn_name(ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(x.m_name)));
+        if (fn_name.find("_lcompilers_erf_") == 0) {
+            needs_erf = true;
+        } else if (fn_name.find("_lcompilers_erfc_") == 0 &&
+                   fn_name.find("_lcompilers_erfc_scaled_") != 0) {
+            needs_erfc = true;
+        }
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_FunctionCall(x);
+    }
+    void visit_IntrinsicElementalFunction(
+            const ASR::IntrinsicElementalFunction_t &x) {
+        using IEF = ASRUtils::IntrinsicElementalFunctions;
+        if (x.m_intrinsic_id == static_cast<int64_t>(IEF::Erf)) {
+            needs_erf = true;
+        } else if (x.m_intrinsic_id == static_cast<int64_t>(IEF::Erfc)) {
+            needs_erfc = true;
+        }
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::
+            visit_IntrinsicElementalFunction(x);
+    }
+};
+
 class ASRToMetalVisitor
 {
 public:
@@ -102,6 +130,11 @@ public:
     // distinguish device-space arrays from thread-local arrays when
     // determining pointer address spaces.
     std::set<std::string> kernel_arg_names;
+
+    // Names of allocatable array variables in Block scopes that have
+    // non-constant dimensions (VLA workspaces). These are backed by
+    // device buffers and must keep device address space.
+    std::set<std::string> vla_workspace_names;
 
     // Tracks function names already emitted across all kernels in the
     // current translation unit, preventing duplicate definitions when
@@ -408,10 +441,36 @@ public:
         alloc_array_size_exprs.clear();
         ptr_to_local_alloc.clear();
         kernel_arg_names.clear();
+        vla_workspace_names.clear();
         // Collect kernel argument names (device buffer parameters)
         for (size_t i = 0; i < kf.n_args; i++) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kf.m_args[i]);
             kernel_arg_names.insert(ASRUtils::symbol_name(v->m_v));
+        }
+        // Collect VLA workspace variable names (allocatable arrays
+        // with non-constant dimensions in Block scopes). These are
+        // backed by device buffers and must keep device address space.
+        for (size_t bi = 0; bi < kf.n_body; bi++) {
+            if (kf.m_body[bi]->type != ASR::stmtType::BlockCall) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                ASR::down_cast<ASR::BlockCall_t>(kf.m_body[bi])->m_m);
+            for (auto &item : block->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                ASR::ttype_t *vtype = var->m_type;
+                if (!ASR::is_a<ASR::Array_t>(*vtype)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(vtype);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_length &&
+                            !ASR::is_a<ASR::IntegerConstant_t>(
+                                *arr->m_dims[d].m_length)) {
+                        vla_workspace_names.insert(
+                            std::string(var->m_name));
+                        break;
+                    }
+                }
+            }
         }
         // Step 1: For each function in kernel scope, find Allocate
         // stmts and record param_index → size. Also detect assignments
@@ -741,8 +800,8 @@ public:
                     }
                 }
                 // Case 2: Associate target = ArraySection (pointer to
-                // section of an array). If the base array is a
-                // non-allocatable local (not a kernel arg), the
+                // section of an array). If the base array is a local
+                // (not a kernel arg) and not a VLA workspace, the
                 // pointer is thread-space.
                 if (ASR::is_a<ASR::ArraySection_t>(*assoc->m_value)) {
                     ASR::ArraySection_t *as =
@@ -761,7 +820,9 @@ public:
                                 ASR::ttype_t *bt =
                                     ASR::down_cast<ASR::Variable_t>(
                                         base_sym)->m_type;
-                                if (!ASRUtils::is_allocatable(bt)) {
+                                if (!ASRUtils::is_allocatable(bt) ||
+                                        !vla_workspace_names.count(
+                                            base)) {
                                     ptr_to_local_alloc.insert(tgt);
                                 }
                             }
@@ -881,6 +942,9 @@ public:
                         src.str("");
                         src << save.str();
                     }
+                } else if (!arr_name.empty()) {
+                    len_str = "__size_" + arr_name + "_dim"
+                        + std::to_string(d + 1);
                 }
                 if (stride == "1") {
                     stride = len_str;
@@ -1204,9 +1268,50 @@ public:
     }
 
 
+    bool needs_erf_helper = false;
+    bool needs_erfc_helper = false;
+
+    void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
+        GpuMathHelperScanner scanner;
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+                scanner.visit_symbol(*item.second);
+            }
+        }
+        needs_erf_helper = scanner.needs_erf;
+        needs_erfc_helper = scanner.needs_erfc;
+    }
+
+    void emit_math_helpers() {
+        if (needs_erf_helper) {
+            src << "// Abramowitz & Stegun approximation (7.1.26), max error ~1.5e-7\n";
+            src << "inline float _lf_erf(float x) {\n";
+            src << "    float ax = abs(x);\n";
+            src << "    float t = 1.0f / (1.0f + 0.3275911f * ax);\n";
+            src << "    float y = 1.0f - (((((1.061405429f * t + (-1.453152027f)) * t) + 1.421413741f) * t + (-0.284496736f)) * t + 0.254829592f) * t * exp(-(ax * ax));\n";
+            src << "    return x < 0.0f ? -y : y;\n";
+            src << "}\n\n";
+        }
+        if (needs_erfc_helper) {
+            if (!needs_erf_helper) {
+                src << "inline float _lf_erf(float x) {\n";
+                src << "    float ax = abs(x);\n";
+                src << "    float t = 1.0f / (1.0f + 0.3275911f * ax);\n";
+                src << "    float y = 1.0f - (((((1.061405429f * t + (-1.453152027f)) * t) + 1.421413741f) * t + (-0.284496736f)) * t + 0.254829592f) * t * exp(-(ax * ax));\n";
+                src << "    return x < 0.0f ? -y : y;\n";
+                src << "}\n\n";
+            }
+            src << "inline float _lf_erfc(float x) {\n";
+            src << "    return 1.0f - _lf_erf(x);\n";
+            src << "}\n\n";
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         src << "#include <metal_stdlib>\n";
         src << "using namespace metal;\n\n";
+
+        scan_for_math_helpers(tu);
 
         // Collect and emit struct definitions from all kernels once,
         // before any kernel code, to avoid redefinition errors when
@@ -1228,6 +1333,8 @@ public:
         for (ASR::Struct_t *st : ordered_structs) {
             emit_struct_def(st);
         }
+
+        emit_math_helpers();
 
         emitted_funcs.clear();
         for (auto &item : tu.m_symtab->get_scope()) {
@@ -1671,32 +1778,31 @@ public:
             kernel_call_collector.visit_stmt(*x.m_body[i]);
         }
 
-        // Emit inline function definitions for type-bound procedures
-        // actually called in this kernel
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
-            if (!kernel_call_collector.called.count(item.first)) continue;
-            ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
-                item.second);
-            ASR::Function_t *fn = resolve_function(resolved);
-            if (!fn) continue;
-            std::string fn_name(fn->m_name);
-            if (emitted_funcs.count(fn_name)) continue;
-            emitted_funcs.insert(fn_name);
-            emit_function_def(fn, fn_name);
-        }
-
-        // Emit inline function definitions for internal functions
-        // duplicated into the kernel scope by the gpu_offload pass.
-        // Topologically sort so callees are emitted before callers.
+        // Collect all kernel functions (both ExternalSymbol-resolved TBPs
+        // and duplicated Function_t entries) into a single map, then
+        // topologically sort so callees are emitted before callers.
         {
             std::map<std::string, ASR::Function_t*> kernel_funcs;
+            // Collect ExternalSymbol functions (type-bound procedures)
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                if (!kernel_call_collector.called.count(item.first)) continue;
+                ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
+                    item.second);
+                ASR::Function_t *fn = resolve_function(resolved);
+                if (!fn) continue;
+                std::string fn_name(fn->m_name);
+                if (emitted_funcs.count(fn_name)) continue;
+                kernel_funcs[fn_name] = fn;
+            }
+            // Collect internal functions duplicated into the kernel scope
             for (auto &item : x.m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
                     item.second);
                 std::string fn_name(fn->m_name);
                 if (emitted_funcs.count(fn_name)) continue;
+                if (kernel_funcs.count(fn_name)) continue;
                 kernel_funcs[fn_name] = fn;
             }
             std::vector<std::string> sorted_funcs;
@@ -1776,6 +1882,34 @@ public:
             if (!args[i].is_array && !args[i].is_struct) {
                 scalar_args.push_back({args[i].name,
                     metal_type(args[i].type)});
+            }
+        }
+
+        // Add per-dimension size scalars for DescriptorArray (assumed-shape)
+        // kernel arguments so the kernel body can resolve ArrayBound UBound.
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!args[i].is_array) continue;
+            // Skip synthetic kernel args (__data_*, __size_*, etc.)
+            if (args[i].name.substr(0, 2) == "__") continue;
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(v->m_v));
+            ASR::ttype_t *past_alloc =
+                ASRUtils::type_get_past_allocatable(var->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*past_alloc)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(past_alloc);
+            bool has_null_dim = false;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (!arr->m_dims[d].m_length) {
+                    has_null_dim = true;
+                    break;
+                }
+            }
+            if (!has_null_dim) continue;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                std::string dim_size_name = "__size_" + args[i].name
+                    + "_dim" + std::to_string(d + 1);
+                scalar_args.push_back({dim_size_name, "int"});
             }
         }
 
@@ -2182,6 +2316,46 @@ public:
             }
         }
 
+        // Register per-dimension size params for DescriptorArray
+        // (assumed-shape) kernel arguments so ArrayBound UBound can
+        // resolve them.
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!args[i].is_array) continue;
+            if (args[i].name.substr(0, 2) == "__") continue;
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(v->m_v));
+            ASR::ttype_t *past_alloc =
+                ASRUtils::type_get_past_allocatable(var->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*past_alloc)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(past_alloc);
+            bool has_null_dim = false;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (!arr->m_dims[d].m_length) {
+                    has_null_dim = true;
+                    break;
+                }
+            }
+            if (!has_null_dim) continue;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                std::string dim_key = args[i].name + "__dim"
+                    + std::to_string(d + 1);
+                std::string dim_var = "__size_" + args[i].name
+                    + "_dim" + std::to_string(d + 1);
+                func_array_size_params[dim_key] = dim_var;
+            }
+            // Also register the total flat size as the product of
+            // per-dimension sizes so existing ArraySize lookups work.
+            std::string total_expr = "__size_" + args[i].name
+                + "_dim1";
+            for (size_t d = 1; d < arr->n_dims; d++) {
+                total_expr += " * __size_" + args[i].name
+                    + "_dim" + std::to_string(d + 1);
+            }
+            func_array_size_params[args[i].name] = "("
+                + total_expr + ")";
+        }
+
         // Declare local variables (non-argument variables in kernel scope)
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -2421,13 +2595,47 @@ public:
                     visit_expr(a->m_value);
                     src << "[__copy_i];\n";
                 } else if (target_is_array_buffer) {
-                    visit_expr(a->m_target);
-                    src << "[0] = ";
-                    visit_expr(a->m_value);
-                    if (rhs_is_array_or_alloc) {
-                        src << "[0]";
+                    // Compute the fixed size of the target array
+                    int64_t fixed_sz = 1;
+                    ASR::ttype_t *tgt_inner =
+                        ASRUtils::type_get_past_allocatable_pointer(tgt_type);
+                    if (ASR::is_a<ASR::Array_t>(*tgt_inner)) {
+                        ASR::Array_t *tarr =
+                            ASR::down_cast<ASR::Array_t>(tgt_inner);
+                        int64_t total = 1;
+                        bool all_const = true;
+                        for (size_t d = 0; d < tarr->n_dims; d++) {
+                            if (tarr->m_dims[d].m_length &&
+                                    ASR::is_a<ASR::IntegerConstant_t>(
+                                        *tarr->m_dims[d].m_length)) {
+                                total *=
+                                    ASR::down_cast<ASR::IntegerConstant_t>(
+                                        tarr->m_dims[d].m_length)->m_n;
+                            } else {
+                                all_const = false;
+                                break;
+                            }
+                        }
+                        if (all_const && total > 0) fixed_sz = total;
                     }
-                    src << ";\n";
+                    bool rhs_is_simple_var =
+                        ASR::is_a<ASR::Var_t>(*a->m_value);
+                    for (int64_t ei = 0; ei < fixed_sz; ei++) {
+                        visit_expr(a->m_target);
+                        src << "[" << ei << "] = ";
+                        if (rhs_is_array_or_alloc && !rhs_is_simple_var) {
+                            array_elem_index = ei;
+                            visit_expr(a->m_value);
+                            array_elem_index = -1;
+                        } else {
+                            visit_expr(a->m_value);
+                            if (rhs_is_array_or_alloc) {
+                                src << "[" << ei << "]";
+                            }
+                        }
+                        src << ";\n";
+                        if (ei + 1 < fixed_sz) src << get_indent();
+                    }
                 } else if (deref_target && !rhs_is_array_or_alloc) {
                     // Scalar broadcast to allocatable array parameter:
                     // v = 1.0 where v is thread T* with known size
@@ -2917,6 +3125,19 @@ public:
                                     if (pit != ptr_section_sizes.end()) {
                                         src << pit->second;
                                     } else {
+                                        // Try per-dimension key first
+                                        // (for assumed-shape kernel args)
+                                        std::string dim_key = vname
+                                            + "__dim"
+                                            + std::to_string(dim_idx + 1);
+                                        auto dpit =
+                                            func_array_size_params.find(
+                                                dim_key);
+                                        if (dpit !=
+                                                func_array_size_params
+                                                    .end()) {
+                                            src << dpit->second;
+                                        } else {
                                         auto fpit = func_array_size_params.find(vname);
                                         if (fpit != func_array_size_params.end()) {
                                             src << fpit->second;
@@ -2932,6 +3153,7 @@ public:
                                                     src << "/* unknown ubound for '" << vname << "' */";
                                                 }
                                             }
+                                        }
                                         }
                                     }
                                 } else {
@@ -2998,6 +3220,17 @@ public:
                     src << ")";
                 } else if (fn_name.find("_lcompilers_exp_") == 0) {
                     src << "exp(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_erf_") == 0) {
+                    src << "_lf_erf(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_erfc_") == 0 &&
+                           fn_name.find("_lcompilers_erfc_scaled_") != 0) {
+                    src << "_lf_erfc(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
@@ -3312,6 +3545,12 @@ public:
         if (ASR::is_a<ASR::Array_t>(*inner)) {
             arr = ASR::down_cast<ASR::Array_t>(inner);
         }
+        // Extract array variable name for assumed-shape __size_ parameters
+        std::string arr_var_name;
+        if (ASR::is_a<ASR::Var_t>(*ai->m_v)) {
+            arr_var_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
+        }
         bool first = true;
         std::string stride = "1";
         for (size_t d = 0; d < ai->n_args; d++) {
@@ -3341,6 +3580,9 @@ public:
                         len_str = ASRUtils::symbol_name(
                             ASR::down_cast<ASR::Var_t>(dim_len)->m_v);
                     }
+                } else if (!arr_var_name.empty()) {
+                    len_str = "__size_" + arr_var_name + "_dim"
+                        + std::to_string(d + 1);
                 }
                 if (stride == "1") {
                     stride = len_str;
@@ -3408,6 +3650,16 @@ public:
             src << "((float)(";
             visit_expr(f->m_args[0]);
             src << "))";
+        } else if (id == static_cast<int64_t>(IEF::Erf)) {
+            needs_erf_helper = true;
+            src << "_lf_erf(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Erfc)) {
+            needs_erfc_helper = true;
+            src << "_lf_erfc(";
+            visit_expr(f->m_args[0]);
+            src << ")";
         } else {
             src << "/* unsupported intrinsic " << id << " */(";
             if (f->n_args > 0) visit_expr(f->m_args[0]);
