@@ -82,7 +82,8 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             if (ASR::is_a<ASR::String_t>(*inner)) {
                 ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(inner);
                 if (str_t->m_len_kind == ASR::string_length_kindType::ExpressionLength
-                        && str_t->m_len != nullptr) {
+                        && str_t->m_len != nullptr
+                        && !ASRUtils::is_value_constant(str_t->m_len)) {
                     ASR::ttype_t* new_str = ASRUtils::TYPE(ASR::make_String_t(al,
                         str_t->base.base.loc, str_t->m_kind, nullptr,
                         ASR::string_length_kindType::AssumedLength,
@@ -155,7 +156,8 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             if (ASR::is_a<ASR::String_t>(*inner)) {
                 ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(inner);
                 if (str_t->m_len_kind == ASR::string_length_kindType::ExpressionLength
-                        && str_t->m_len != nullptr) {
+                        && str_t->m_len != nullptr
+                        && !ASRUtils::is_value_constant(str_t->m_len)) {
                     ASR::ttype_t* new_str = ASRUtils::TYPE(ASR::make_String_t(al,
                         str_t->base.base.loc, str_t->m_kind, nullptr,
                         ASR::string_length_kindType::AssumedLength,
