@@ -310,7 +310,9 @@ LFORTRAN_API void _lfortran_inquire(
     char *stream, int64_t stream_len,
     char *iomsg, int64_t iomsg_len,
     char *round, int64_t round_len,
-    char *pad, int64_t pad_len
+    char *pad, int64_t pad_len,
+    bool *pending,
+    char *asynchronous, int64_t asynchronous_len
 );
 LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *iostat);
 // Formatted READ: pad/pad_len specify PAD for this statement.

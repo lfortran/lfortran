@@ -17427,6 +17427,8 @@ public:
         llvm::Value *iomsg_val{}, *iomsg_len{};
         llvm::Value *round_val{}, *round_len{};
         llvm::Value *pad_val{}, *pad_len{};
+        llvm::Value *pending_val{};
+        llvm::Value *asynchronous_val{}, *asynchronous_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -17816,6 +17818,28 @@ public:
             pad_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
 
+        llvm::Value *pending_actual = nullptr;
+        if (x.m_pending) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_pending, true);
+            pending_actual = tmp;
+            ptr_loads = ptr_loads_copy;
+        }
+        pending_val = llvm_utils->CreateAlloca(*builder,
+                        llvm::Type::getInt1Ty(context));
+
+        if (x.m_asynchronous) {
+            this->visit_expr_load_wrapper(x.m_asynchronous, 0);
+            std::tie(asynchronous_val, asynchronous_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_asynchronous),
+                    tmp);
+        } else {
+            asynchronous_val = llvm::Constant::getNullValue(character_type);
+            asynchronous_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -17849,7 +17873,9 @@ public:
                         character_type, llvm::Type::getInt64Ty(context),   // stream_data, stream_len
                         character_type, llvm::Type::getInt64Ty(context),    // iomsg_data, iomsg_len
                         character_type, llvm::Type::getInt64Ty(context),    // round_data, round_len
-                        character_type, llvm::Type::getInt64Ty(context)    // pad_data, pad_len
+                        character_type, llvm::Type::getInt64Ty(context),    // pad_data, pad_len
+                        llvm::Type::getInt1Ty(context)->getPointerTo(),    // pending
+                        character_type, llvm::Type::getInt64Ty(context)    // asynchronous_data, asynchronous_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -17877,7 +17903,9 @@ public:
             stream_val, stream_len,
             iomsg_val, iomsg_len,
             round_val, round_len,
-            pad_val, pad_len});
+            pad_val, pad_len,
+            pending_val,
+            asynchronous_val, asynchronous_len});
         if (exist_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
                 llvm::Type::getInt1Ty(context), exist_val);
@@ -17912,6 +17940,13 @@ public:
             llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,
                 llvm_utils->getIntType(pos_kind));
             builder->CreateStore(converted, pos_orig_ptr);
+        }
+        if (pending_actual) {
+            llvm::Value *loaded = llvm_utils->CreateLoad2(
+                llvm::Type::getInt1Ty(context), pending_val);
+            int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_pending));
+            llvm::Value *converted = builder->CreateZExt(loaded, llvm_utils->getIntType(kind));
+            builder->CreateStore(converted, pending_actual);
         }
     }
 
