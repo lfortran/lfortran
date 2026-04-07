@@ -266,12 +266,12 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             if (kind == 4) {
                 float* data = (float*)arr_const->m_data;
                 float val = data[idx0];
-                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, (double)val, el_type));
+                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, s2c(al, double_to_str_precision((double)val)), el_type));
                 return;
             } else if (kind == 8) {
                 double* data = (double*)arr_const->m_data;
                 double val = data[idx0];
-                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, val, el_type));
+                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, s2c(al, double_to_str_precision(val)), el_type));
                 return;
             } else {
                 this->value = nullptr;
@@ -334,13 +334,13 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         double left_val, right_val;
         this->visit_expr(*x.m_left);
         if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            left_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(value)->m_r);
         } else {
             left_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
         this->visit_expr(*x.m_right);
         if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            right_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(value)->m_r);
         } else {
             right_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
@@ -390,11 +390,11 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         this->visit_expr(*x.m_arg);
         double arg_val;
         if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            arg_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            arg_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(value)->m_r);
         } else {
             arg_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
-        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, -arg_val, x.m_type));
+        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, double_to_str_precision(-arg_val)), x.m_type));
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
@@ -475,13 +475,13 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         double left_val, right_val;
         this->visit_expr(*x.m_left);
         if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            left_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(value)->m_r);
         } else {
             left_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
         this->visit_expr(*x.m_right);
         if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            right_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(value)->m_r);
         } else {
             right_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
@@ -507,7 +507,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
         }
-        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, res, x.m_type));
+        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, double_to_str_precision(res)), x.m_type));
     }
 
      inline size_t get_max_args(ASRUtils::IntrinsicElementalFunctions id) {
@@ -580,8 +580,8 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
             !ASR::is_a<ASR::RealConstant_t>(*right_value)) {
             return nullptr;
         }
-        double left_val = ASR::down_cast<ASR::RealConstant_t>(left_value)->m_r;
-        double right_val = ASR::down_cast<ASR::RealConstant_t>(right_value)->m_r;
+        double left_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(left_value)->m_r);
+        double right_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(right_value)->m_r);
         bool result = true;
         switch (asr_op) {
             case (ASR::cmpopType::Eq):  { result = result && (left_val == right_val); break; }
@@ -1260,7 +1260,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
         }
         else if (ASRUtils::is_real(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                double op_value = ASR::down_cast<ASR::RealConstant_t>(
+                char* op_value = ASR::down_cast<ASR::RealConstant_t>(
                                 ASRUtils::expr_value(operand))->m_r;
                 asr = ASR::make_RealConstant_t(al, x.base.base.loc, op_value, operand_type);
             }
@@ -1281,10 +1281,10 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
             return;
         } else if (ASRUtils::is_real(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                double op_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        ASRUtils::expr_value(operand))->m_r;
+                double op_value = std::stod(ASR::down_cast<ASR::RealConstant_t>(
+                                        ASRUtils::expr_value(operand))->m_r);
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
-                    al, x.base.base.loc, -op_value, operand_type));
+                    al, x.base.base.loc, s2c(al, double_to_str_precision(-op_value)), operand_type));
             }
             asr = ASR::make_RealUnaryMinus_t(al, x.base.base.loc, operand,
                                              operand_type, value);
@@ -3149,7 +3149,7 @@ public:
                 case ASR::exprType::RealConstant: {
                     ASR::RealConstant_t* lhs = ASR::down_cast<ASR::RealConstant_t>(expression_value);
                     ASR::RealConstant_t* rhs = ASR::down_cast<ASR::RealConstant_t>(expression_value_);
-                    if (lhs->m_r != rhs->m_r) {
+                    if (std::string(lhs->m_r) != std::string(rhs->m_r)) {
                         return false;
                     }
                     break;
@@ -4908,7 +4908,7 @@ public:
                                                     if (ASRUtils::is_complex(*v->m_type)) {
                                                         ASR::expr_t* complex_value = ASRUtils::EXPR(
                                                             ASR::make_ComplexConstant_t(al, x.base.base.loc,
-                                                                rc->m_r, 0.0, v->m_type));
+                                                                str_to_double(rc->m_r), 0.0, v->m_type));
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
                                                                 rc->m_r, rc->m_type)),
@@ -4929,7 +4929,7 @@ public:
                                                     } else if (ASRUtils::is_real(*v->m_type)) {
                                                         ASR::expr_t* real_value = ASRUtils::EXPR(
                                                             ASR::make_RealConstant_t(al, x.base.base.loc,
-                                                                (double)ic->m_n, v->m_type));
+                                                                s2c(al, double_to_str_precision((double)ic->m_n)), v->m_type));
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                                 ic->m_n, ic->m_type)),
@@ -4951,7 +4951,7 @@ public:
                                                         }
                                                     }
                                                     if (ASRUtils::is_real(*v->m_type)) {
-                                                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, re_val, v->m_type));
+                                                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, double_to_str_precision(re_val)), v->m_type));
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
                                                             ASR::cast_kindType::ComplexToReal, v->m_type, value, nullptr));
                                                     } else if (ASRUtils::is_integer(*v->m_type)) {
@@ -7506,7 +7506,7 @@ public:
                                     // Only warn when the constant value changes after narrowing.
                                     ASR::expr_t *cval = ASRUtils::expr_value(init_expr);
                                     if (cval && ASR::is_a<ASR::RealConstant_t>(*cval)) {
-                                        double v = ASR::down_cast<ASR::RealConstant_t>(cval)->m_r;
+                                        double v = str_to_double(ASR::down_cast<ASR::RealConstant_t>(cval)->m_r);
                                         if ((double)(float)v != v) {
                                             do_warn = true;
                                         }
@@ -7588,7 +7588,7 @@ public:
                                                     ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
                                                     double val = int_const->m_n;
                                                     ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, int_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(cast_type)));
+                                                        s2c(al, double_to_str_precision(val)), ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const);
                                                     is_convertible = true;
                                                 } else {
@@ -7600,7 +7600,7 @@ public:
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
-                                                    int64_t val = real_const->m_r;
+                                                    int64_t val = (int64_t)str_to_double(real_const->m_r);
                                                     ASR::expr_t *int_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, real_const->base.base.loc,
                                                         val, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, int_const);
@@ -7614,9 +7614,8 @@ public:
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                                                     ASR::RealConstant_t *real_const = ASR::down_cast<ASR::RealConstant_t>(e);
-                                                    int64_t val = real_const->m_r;
                                                     ASR::expr_t *real_const2 = ASRUtils::EXPR(ASR::make_RealConstant_t(al, real_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(cast_type)));
+                                                        real_const->m_r, ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const2);
                                                     is_convertible = true;
                                                 } else {
@@ -7657,9 +7656,9 @@ public:
                                                 ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
                                                 if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
                                                     ASR::ComplexConstant_t *complex_const = ASR::down_cast<ASR::ComplexConstant_t>(e);
-                                                    int64_t val = complex_const->m_re;
+                                                    double val = complex_const->m_re;
                                                     ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, complex_const->base.base.loc,
-                                                        val, ASRUtils::type_get_past_array(cast_type)));
+                                                        s2c(al, double_to_str_precision(val)), ASRUtils::type_get_past_array(cast_type)));
                                                     body.push_back(al, real_const);
                                                     is_convertible = true;
                                                 } else {
@@ -11947,7 +11946,7 @@ public:
                     ASR::expr_t *re_value = nullptr;
                     if (complex_value && ASR::is_a<ASR::ComplexConstant_t>(*complex_value)) {
                         ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(complex_value);
-                        re_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, c->m_re, real_type));
+                        re_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, s2c(al, double_to_str_precision(c->m_re)), real_type));
                     }
                     return ASR::make_ComplexRe_t(al, loc, val, real_type, re_value);
                 } else {
@@ -11955,7 +11954,7 @@ public:
                     ASR::expr_t *im_value = nullptr;
                     if (complex_value && ASR::is_a<ASR::ComplexConstant_t>(*complex_value)) {
                         ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(complex_value);
-                        im_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, c->m_im, real_type));
+                        im_value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, s2c(al, double_to_str_precision(c->m_im)), real_type));
                     }
                     return ASR::make_ComplexIm_t(al, loc, val, real_type, im_value);
                 }
@@ -13813,11 +13812,11 @@ public:
                 }
             } else if (ASR::is_a<ASR::RealConstant_t>(*source_value)) {
                 if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(source)) == 4) {
-                    float val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
+                    float val = (float)str_to_double(ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r);
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                 } else {
-                    double val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
+                    double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r);
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                 }
@@ -13873,14 +13872,14 @@ public:
                 } else if (ASRUtils::is_real(*source_type)) {
                     if (kind == 4) {
                         for (size_t i=0; i < n_elements; i++) {
-                            float val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_r;
+                            float val = (float)str_to_double(ASR::down_cast<ASR::RealConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_r);
                             source_bits.insert(source_bits.end(),
                                 reinterpret_cast<uint8_t*>(&val),
                                 reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                         }
                     } else {
                         for (size_t i=0; i < n_elements; i++) {
-                            double val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_r;
+                            double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_r);
                             source_bits.insert(source_bits.end(),
                                 reinterpret_cast<uint8_t*>(&val),
                                 reinterpret_cast<uint8_t*>(&val) + sizeof(val));
@@ -14030,12 +14029,12 @@ public:
                     double new_value = 0.0;
                     std::memcpy(&new_value, result_bits.data(), sizeof(new_value));
                     transfer_value = ASRUtils::EXPR(
-                        ASR::make_RealConstant_t(al, x.base.base.loc, new_value, type));
+                        ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, double_to_str_precision(new_value)), type));
                 } else {
                     float new_value = 0.0;
                     std::memcpy(&new_value, result_bits.data(), sizeof(new_value));
                     transfer_value = ASRUtils::EXPR(
-                        ASR::make_RealConstant_t(al, x.base.base.loc, new_value, type));
+                        ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, double_to_str_precision((double)new_value)), type));
                 }
             } else if (ASR::is_a<ASR::String_t>(*result_elem_type)) {
                 std::string new_value = "";
@@ -14229,7 +14228,7 @@ public:
             if (args[1] == nullptr && !is_complex(*ASRUtils::expr_type(args[0]))) {
                 ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
                 ASR::expr_t* zero = ASRUtils::EXPR(
-                    ASR::make_RealConstant_t(al, loc, 0.0, real_type));
+                    ASR::make_RealConstant_t(al, loc, s2c(al, "0.0"), real_type));
                 args.p[1] = zero;
             }
             if (args[2] == nullptr) {
@@ -14546,7 +14545,7 @@ public:
                         args.p[2] = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 8, int4_type));
                         if (args[1] == nullptr && !is_complex(*ASRUtils::expr_type(args[0]))) {
                             ASR::ttype_t *real8_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                            args.p[1] = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, 0.0, real8_type));
+                            args.p[1] = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, "0.0"), real8_type));
                         }
                     }
                     fill_optional_kind_arg(var_name, args);
@@ -14772,7 +14771,7 @@ public:
         }
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
         if (!arg) {
-            return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+            return ASR::make_RealConstant_t(al, loc, s2c(al, "0.0"), to_type);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -14786,7 +14785,7 @@ public:
                 double dval = ASR::down_cast<ASR::IntegerConstant_t>(
                                         ASRUtils::expr_value(arg))->m_n;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
-                                loc, dval, to_type));
+                                loc, s2c(al, double_to_str_precision(dval)), to_type));
             }
             return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                 al, loc, arg, ASR::cast_kindType::IntegerToReal,
@@ -14836,7 +14835,7 @@ public:
         }
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
         if (!arg) {
-            return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+            return ASR::make_RealConstant_t(al, loc, s2c(al, "0.0"), to_type);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -14850,7 +14849,7 @@ public:
                 double dval = ASR::down_cast<ASR::IntegerConstant_t>(
                                         ASRUtils::expr_value(arg))->m_n;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
-                                loc, dval, to_type));
+                                loc, s2c(al, double_to_str_precision(dval)), to_type));
             }
             return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                 al, loc, arg, ASR::cast_kindType::IntegerToReal,
@@ -14862,7 +14861,7 @@ public:
                 double dval = ASR::down_cast<ASR::LogicalConstant_t>(
                                         ASRUtils::expr_value(arg))->m_value;
                 value =  ASR::down_cast<ASR::expr_t>(make_RealConstant_t(al,
-                                loc, dval, to_type));
+                                loc, s2c(al, double_to_str_precision(dval)), to_type));
             }
             return (ASR::asr_t *)ASR::down_cast<ASR::expr_t>(ASR::make_Cast_t(
                 al, loc, arg, ASR::cast_kindType::LogicalToReal,
@@ -15255,7 +15254,7 @@ public:
         } else if constexpr (std::is_same_v<T,int>) {
             res = ASR::down_cast<ASR::IntegerConstant_t>(visitor.value)->m_n;
         } else if constexpr (std::is_same_v<T,float> || std::is_same_v<T,double>) {
-            res = ASR::down_cast<ASR::RealConstant_t>(visitor.value)->m_r;
+            res = (T)str_to_double(ASR::down_cast<ASR::RealConstant_t>(visitor.value)->m_r);
         } else if constexpr (std::is_same_v<T,char*>) {
             res = ASR::down_cast<ASR::StringConstant_t>(visitor.value)->m_s;
         }
@@ -16279,16 +16278,16 @@ public:
     ASR::expr_t* visit_BinOp_helper(ASR::expr_t* left, ASR::expr_t* right, ASR::binopType op, const Location& loc, ASR::ttype_t* dest_type) {
         LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
         if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
-            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
-            double right_value = ASR::down_cast<ASR::RealConstant_t>(right)->m_r;
+            double left_value = str_to_double(ASR::down_cast<ASR::RealConstant_t>(left)->m_r);
+            double right_value = str_to_double(ASR::down_cast<ASR::RealConstant_t>(right)->m_r);
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
-            perform_binop(left_value, right_value, op), dest_type));
+            s2c(al, double_to_str_precision(perform_binop(left_value, right_value, op))), dest_type));
         } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
             LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
-            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
+            double left_value = str_to_double(ASR::down_cast<ASR::RealConstant_t>(left)->m_r);
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
-                    std::pow(left_value, right_value), dest_type));
+                    s2c(al, double_to_str_precision(std::pow(left_value, right_value))), dest_type));
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
             int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
@@ -17643,7 +17642,7 @@ public:
             // Scale the BOZ value: each bit represents smallest_subnormal
             double boz_double = static_cast<double>(boz_unsigned_int) * min_boz;
             ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-            tmp = ASR::make_RealConstant_t(al, x.base.base.loc, boz_double,
+            tmp = ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, double_to_str_precision(boz_double)),
                     real_type);
         }
 
@@ -17785,7 +17784,7 @@ public:
             throw SemanticAbort();
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
-        tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
+        tmp = ASR::make_RealConstant_t(al, x.base.base.loc, s2c(al, double_to_str_precision(r)), type);
     }
 
     bool is_valid_complex_literal_part(const AST::expr_t &expr) {
@@ -17846,7 +17845,7 @@ public:
         if (re_value && im_value) {
             double re_double;
             if (ASR::is_a<ASR::RealConstant_t>(*re_value)) {
-                re_double = ASR::down_cast<ASR::RealConstant_t>(re_value)->m_r;
+                re_double = str_to_double(ASR::down_cast<ASR::RealConstant_t>(re_value)->m_r);
             } else if (ASR::is_a<ASR::IntegerConstant_t>(*re_value)) {
                 re_double = ASR::down_cast<ASR::IntegerConstant_t>(re_value)->m_n;
             } else {
@@ -17856,7 +17855,7 @@ public:
             }
             double im_double;
             if (ASR::is_a<ASR::RealConstant_t>(*im_value)) {
-                im_double = ASR::down_cast<ASR::RealConstant_t>(im_value)->m_r;
+                im_double = str_to_double(ASR::down_cast<ASR::RealConstant_t>(im_value)->m_r);
             } else if (ASR::is_a<ASR::IntegerConstant_t>(*im_value)) {
                 im_double = ASR::down_cast<ASR::IntegerConstant_t>(im_value)->m_n;
             } else {

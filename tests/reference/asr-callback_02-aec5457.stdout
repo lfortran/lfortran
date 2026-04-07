@@ -401,7 +401,7 @@
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 (RealConstant
-                                                                    2.000000
+                                                                    "2"
                                                                     (Real 4)
                                                                 )
                                                                 ()
@@ -556,13 +556,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            0.000000
+                                            "0"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 4)
                                     )
                                     Save
@@ -589,11 +589,11 @@
                             7 foo
                             ()
                             [((RealConstant
-                                1.500000
+                                "1.5"
                                 (Real 4)
                             ))
                             ((RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             ))
                             ((Var 7 res))]

@@ -398,7 +398,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                3.000000
+                                "3"
                                 (Real 4)
                             )
                             ()
@@ -414,7 +414,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             )
                             ()
@@ -450,7 +450,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                5.000000
+                                "5"
                                 (Real 4)
                             )
                             ()
@@ -466,7 +466,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                6.000000
+                                "6"
                                 (Real 4)
                             )
                             ()
@@ -482,7 +482,7 @@
                             IntegerToReal
                             (Real 8)
                             (RealConstant
-                                7.000000
+                                "7"
                                 (Real 8)
                             )
                             ()
@@ -549,7 +549,7 @@
                             IntegerToReal
                             (Real 8)
                             (RealConstant
-                                11.000000
+                                "11"
                                 (Real 8)
                             )
                             ()
@@ -565,7 +565,7 @@
                             IntegerToReal
                             (Real 8)
                             (RealConstant
-                                12.000000
+                                "12"
                                 (Real 8)
                             )
                             ()

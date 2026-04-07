@@ -2042,7 +2042,7 @@
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
-                                                0.000000
+                                                "0"
                                                 (Real 4)
                                             )
                                             ()

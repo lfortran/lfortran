@@ -37,11 +37,11 @@
                         (Var 2 x)
                         (ComplexConstructor
                             (RealConstant
-                                3.000000
+                                "3"
                                 (Real 4)
                             )
                             (RealConstant
-                                4.000000
+                                "4"
                                 (Real 4)
                             )
                             (Complex 4)
@@ -62,7 +62,7 @@
                             Add
                             (Cast
                                 (RealConstant
-                                    4.000000
+                                    "4"
                                     (Real 4)
                                 )
                                 RealToComplex
@@ -97,7 +97,7 @@
                         (ComplexBinOp
                             (Cast
                                 (RealConstant
-                                    2.000000
+                                    "2"
                                     (Real 4)
                                 )
                                 RealToComplex
@@ -135,7 +135,7 @@
                             (ComplexBinOp
                                 (Cast
                                     (RealConstant
-                                        2.000000
+                                        "2"
                                         (Real 4)
                                     )
                                     RealToComplex
@@ -155,11 +155,11 @@
                             Add
                             (ComplexConstructor
                                 (RealConstant
-                                    0.000000
+                                    "0"
                                     (Real 4)
                                 )
                                 (RealConstant
-                                    3.000000
+                                    "3"
                                     (Real 4)
                                 )
                                 (Complex 4)

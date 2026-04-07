@@ -2470,10 +2470,19 @@ public:
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        std::string val = x.m_r;
+        // Ensure the string has a decimal point for valid Fortran
+        if (val.find('.') == std::string::npos &&
+            val.find('e') == std::string::npos &&
+            val.find('E') == std::string::npos &&
+            val.find('d') == std::string::npos &&
+            val.find('D') == std::string::npos) {
+            val += ".0";
+        }
         if (kind >= 8) {
-            src = ASRUtils::to_string_with_precision(x.m_r, 16) + "_8";
+            src = val + "_8";
         } else {
-            src = ASRUtils::to_string_with_precision(x.m_r, 8);
+            src = val;
         }
         last_expr_precedence = Precedence::Ext;
     }

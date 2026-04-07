@@ -118,19 +118,19 @@
                     (IntrinsicImpureSubroutine
                         DateAndTime
                         [(RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )]
                         0
@@ -139,12 +139,12 @@
                         DateAndTime
                         [(Var 2 date)
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (Var 2 zone)
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )]
                         0
@@ -152,16 +152,16 @@
                     (IntrinsicImpureSubroutine
                         DateAndTime
                         [(RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (Var 2 time)
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )]
                         0
@@ -169,16 +169,16 @@
                     (IntrinsicImpureSubroutine
                         DateAndTime
                         [(RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (Var 2 zone)
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )]
                         0
@@ -194,15 +194,15 @@
                     (IntrinsicImpureSubroutine
                         DateAndTime
                         [(RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         (Var 2 values)]

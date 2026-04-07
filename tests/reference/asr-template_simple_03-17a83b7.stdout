@@ -343,7 +343,7 @@
                                     [(Assignment
                                         (Var 8 res)
                                         (RealConstant
-                                            0.000000
+                                            "0"
                                             (Real 4)
                                         )
                                         ()

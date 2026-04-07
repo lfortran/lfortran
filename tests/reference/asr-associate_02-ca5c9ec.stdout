@@ -112,11 +112,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        2.000000
+                                        "2"
                                         (Real 8)
                                     )
                                     (RealConstant
-                                        2.000000
+                                        "2"
                                         (Real 8)
                                     )
                                     Save
@@ -142,11 +142,11 @@
                                     Local
                                     (ComplexConstructor
                                         (RealConstant
-                                            2.000000
+                                            "2"
                                             (Real 4)
                                         )
                                         (RealConstant
-                                            3.000000
+                                            "3"
                                             (Real 4)
                                         )
                                         (Complex 4)
@@ -202,13 +202,13 @@
                         (Var 2 p2)
                         (Cast
                             (RealConstant
-                                4.000000
+                                "4"
                                 (Real 4)
                             )
                             RealToReal
                             (Real 8)
                             (RealConstant
-                                4.000000
+                                "4"
                                 (Real 8)
                             )
                             ()

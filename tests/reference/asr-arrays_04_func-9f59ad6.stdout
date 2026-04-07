@@ -120,7 +120,7 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
-                                                    0.000000
+                                                    "0"
                                                     (Real 4)
                                                 )
                                                 ()
@@ -291,7 +291,7 @@
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
-                                                0.000000
+                                                "0"
                                                 (Real 4)
                                             )
                                             ()
@@ -358,7 +358,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                3.000000
+                                "3"
                                 (Real 4)
                             )
                             ()
@@ -382,7 +382,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             )
                             ()
@@ -406,7 +406,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             ()
@@ -454,7 +454,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            6.000000
+                                            "6"
                                             (Real 4)
                                         )
                                         ()
@@ -468,7 +468,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.9999997473787516e-06"
                                 (Real 4)
                             )
                             (Logical 4)

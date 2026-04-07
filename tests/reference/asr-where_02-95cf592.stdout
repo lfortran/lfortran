@@ -77,7 +77,7 @@
                             ()
                         )
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         ()
@@ -95,7 +95,7 @@
                             ()
                         )
                         (RealConstant
-                            2.000000
+                            "2"
                             (Real 4)
                         )
                         ()
@@ -113,7 +113,7 @@
                             ()
                         )
                         (RealConstant
-                            0.500000
+                            "0.5"
                             (Real 4)
                         )
                         ()
@@ -131,7 +131,7 @@
                             ()
                         )
                         (RealConstant
-                            3.500000
+                            "3.5"
                             (Real 4)
                         )
                         ()
@@ -155,7 +155,7 @@
                             (Var 2 a)
                             (ArrayBroadcast
                                 (RealConstant
-                                    1.500000
+                                    "1.5"
                                     (Real 4)
                                 )
                                 (ArrayConstant
@@ -221,7 +221,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        1.500000
+                                        "1.5"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -233,7 +233,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -261,7 +261,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        2.000000
+                                        "2"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -273,7 +273,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)

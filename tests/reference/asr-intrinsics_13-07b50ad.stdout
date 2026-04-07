@@ -104,7 +104,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            0.000000
+                                            "0"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -136,7 +136,7 @@
                                         Kind
                                         (Real 4)
                                         (RealConstant
-                                            0.000000
+                                            "0"
                                             (Real 4)
                                         )
                                         (Integer 4)
@@ -168,7 +168,7 @@
                                         Kind
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 4)
                                         )
                                         (Integer 4)
@@ -200,7 +200,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 8)
                                         )
                                         (Integer 4)

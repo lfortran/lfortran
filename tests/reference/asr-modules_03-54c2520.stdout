@@ -74,11 +74,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        1.500000
+                                        "1.5"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        1.500000
+                                        "1.5"
                                         (Real 4)
                                     )
                                     Save
@@ -103,11 +103,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        2.500000
+                                        "2.5"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        2.500000
+                                        "2.5"
                                         (Real 4)
                                     )
                                     Save

@@ -48,13 +48,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        5.000000
+                                        "5"
                                         (Real 4)
                                     )
                                     Save
@@ -206,7 +206,7 @@
                                             (Var 3 u)
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -327,7 +327,7 @@
                                             )
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -458,7 +458,7 @@
                                             )
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)

@@ -3,10 +3,10 @@ function main()
     local ap::Int32 = 1
     local b::Int32 = 2
     local bp::Int32 = 2
-    local c::Float32 =   1.00000000000000000e+00
-    local cp::Float32 =   1.00000000000000000e+00
-    local d::Float32 =   2.00000000000000000e+00
-    local dp::Float32 =   2.00000000000000000e+00
+    local c::Float32 = 1
+    local cp::Float32 = 1
+    local d::Float32 = 2
+    local dp::Float32 = 2
     local grade_fixed::String = "B"
     local marks::Int32
     local marks_fixed::Int32 = 94

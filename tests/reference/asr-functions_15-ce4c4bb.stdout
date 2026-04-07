@@ -168,7 +168,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             )
                             ()
@@ -187,12 +187,12 @@
                             (Logical 4)
                         ))
                         ((RealConstant
-                            12.000000
+                            "12"
                             (Real 4)
                         ))
                         ((IntegerConstant 5 (Integer 4) Decimal))
                         ((RealConstant
-                            6.000000
+                            "6"
                             (Real 4)
                         ))]
                         ()
@@ -210,7 +210,7 @@
                         (())
                         (())
                         ((RealConstant
-                            6.000000
+                            "6"
                             (Real 4)
                         ))]
                         ()
@@ -228,7 +228,7 @@
                         (())
                         ((IntegerConstant 78 (Integer 4) Decimal))
                         ((RealConstant
-                            117.000000
+                            "117"
                             (Real 4)
                         ))]
                         ()
@@ -244,12 +244,12 @@
                             (Logical 4)
                         ))
                         ((RealConstant
-                            58.000000
+                            "58"
                             (Real 4)
                         ))
                         (())
                         ((RealConstant
-                            123.000000
+                            "123"
                             (Real 4)
                         ))]
                         ()
@@ -287,7 +287,7 @@
                             (Var 4 b)
                             NotEq
                             (RealConstant
-                                1477476.000000
+                                "1477476"
                                 (Real 4)
                             )
                             (Logical 4)

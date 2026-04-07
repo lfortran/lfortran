@@ -1176,7 +1176,7 @@
                                     [(Assignment
                                         (Var 10 x)
                                         (RealConstant
-                                            5.100000
+                                            "5.0999999046325684"
                                             (Real 4)
                                         )
                                         ()
@@ -1186,7 +1186,7 @@
                                     (Assignment
                                         (Var 10 y)
                                         (RealConstant
-                                            7.200000
+                                            "7.1999998092651367"
                                             (Real 4)
                                         )
                                         ()

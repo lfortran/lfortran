@@ -17,7 +17,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            0.000000
+                                            "0"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -49,24 +49,24 @@
                                         Acos
                                         [(RealUnaryMinus
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
                                             (RealConstant
-                                                -1.000000
+                                                "-1"
                                                 (Real 4)
                                             )
                                         )]
                                         0
                                         (Real 4)
                                         (RealConstant
-                                            3.141593
+                                            "3.1415926535897931"
                                             (Real 4)
                                         )
                                     )
                                     (RealConstant
-                                        3.141593
+                                        "3.1415926535897931"
                                         (Real 4)
                                     )
                                     Parameter
@@ -94,24 +94,24 @@
                                         Acos
                                         [(RealUnaryMinus
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 8)
                                             )
                                             (Real 8)
                                             (RealConstant
-                                                -1.000000
+                                                "-1"
                                                 (Real 8)
                                             )
                                         )]
                                         0
                                         (Real 8)
                                         (RealConstant
-                                            3.141593
+                                            "3.1415926535897931"
                                             (Real 8)
                                         )
                                     )
                                     (RealConstant
-                                        3.141593
+                                        "3.1415926535897931"
                                         (Real 8)
                                     )
                                     Parameter
@@ -149,31 +149,31 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
-                                                    7.000000
+                                                    "7"
                                                     (Real 4)
                                                 )
                                                 ()
                                             )
                                             Mul
                                             (RealConstant
-                                                7.000000
+                                                "7"
                                                 (Real 4)
                                             )
                                             (Real 4)
                                             (RealConstant
-                                                49.000000
+                                                "49"
                                                 (Real 4)
                                             )
                                         )]
                                         0
                                         (Real 4)
                                         (RealConstant
-                                            0.300593
+                                            "0.30059254374363709"
                                             (Real 4)
                                         )
                                     )
                                     (RealConstant
-                                        0.300593
+                                        "0.30059254374363709"
                                         (Real 4)
                                     )
                                     Parameter
@@ -297,26 +297,26 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            7.000000
+                                            "7"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     Mul
                                     (RealConstant
-                                        7.000000
+                                        "7"
                                         (Real 4)
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        49.000000
+                                        "49"
                                         (Real 4)
                                     )
                                 )]
                                 0
                                 (Real 4)
                                 (RealConstant
-                                    0.300593
+                                    "0.30059254374363709"
                                     (Real 4)
                                 )
                             )]
@@ -348,7 +348,7 @@
                                     )
                                     Mul
                                     (RealConstant
-                                        7.000000
+                                        "7"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -382,26 +382,26 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            7.000000
+                                            "7"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     Mul
                                     (RealConstant
-                                        7.000000
+                                        "7"
                                         (Real 4)
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        49.000000
+                                        "49"
                                         (Real 4)
                                     )
                                 )]
                                 0
                                 (Real 4)
                                 (RealConstant
-                                    0.300593
+                                    "0.30059254374363709"
                                     (Real 4)
                                 )
                             )]
@@ -427,21 +427,21 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
-                                                    1.000000
+                                                    "1"
                                                     (Real 4)
                                                 )
                                                 ()
                                             )
                                             (Real 4)
                                             (RealConstant
-                                                1.300593
+                                                "1.3005925437436372"
                                                 (Real 4)
                                             )
                                         )]
                                         0
                                         (Real 4)
                                         (RealConstant
-                                            0.266928
+                                            "0.26692783132309916"
                                             (Real 4)
                                         )
                                     )
@@ -449,7 +449,7 @@
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     (Real 4)
                                     (RealConstant
-                                        0.071250
+                                        "0.071250467134852877"
                                         (Real 4)
                                     )
                                 )
@@ -465,21 +465,21 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
-                                                    1.000000
+                                                    "1"
                                                     (Real 4)
                                                 )
                                                 ()
                                             )
                                             (Real 4)
                                             (RealConstant
-                                                1.300593
+                                                "1.3005925437436372"
                                                 (Real 4)
                                             )
                                         )]
                                         0
                                         (Real 4)
                                         (RealConstant
-                                            0.963717
+                                            "0.96371652100871819"
                                             (Real 4)
                                         )
                                     )
@@ -487,13 +487,13 @@
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     (Real 4)
                                     (RealConstant
-                                        0.928750
+                                        "0.92874953286514716"
                                         (Real 4)
                                     )
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    1.000000
+                                    "1"
                                     (Real 4)
                                 )
                             )]

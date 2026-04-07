@@ -218,13 +218,13 @@
                         (IntrinsicElementalFunction
                             Real
                             [(RealConstant
-                                0.000000
+                                "1.8216880036222622e-44"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                0.000000
+                                "1.8216880036222622e-44"
                                 (Real 4)
                             )
                         )

@@ -1668,7 +1668,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         // TODO: remove extra spaces from the front of double_to_scientific result
-        src = double_to_scientific(x.m_r);
+        src = x.m_r;
         last_expr_precedence = 2;
     }
 

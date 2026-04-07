@@ -151,7 +151,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        1.200000
+                                        "1.2"
                                         (Real 8)
                                     )
                                     (Real 8)
@@ -164,13 +164,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 8)
                                 )
                                 ()
@@ -456,7 +456,7 @@
                             ()
                         )
                         (RealConstant
-                            10.900000
+                            "10.9"
                             (Real 8)
                         )
                         ()
@@ -474,7 +474,7 @@
                             ()
                         )
                         (RealConstant
-                            10.900000
+                            "10.9"
                             (Real 8)
                         )
                         ()
@@ -498,7 +498,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        10.900000
+                                        "10.9"
                                         (Real 8)
                                     )
                                     (Real 8)
@@ -511,13 +511,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 8)
                                 )
                                 ()
@@ -547,7 +547,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        10.900000
+                                        "10.9"
                                         (Real 8)
                                     )
                                     (Real 8)
@@ -560,13 +560,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 8)
                                 )
                                 ()
@@ -582,7 +582,7 @@
                     (Assignment
                         (Var 4 mvndfn_main__lcompilers)
                         (RealConstant
-                            1.200000
+                            "1.2"
                             (Real 8)
                         )
                         ()
@@ -604,7 +604,7 @@
                             ()
                         )
                         (RealConstant
-                            10.900000
+                            "10.9"
                             (Real 8)
                         )
                         ()
@@ -622,7 +622,7 @@
                             ()
                         )
                         (RealConstant
-                            10.900000
+                            "10.9"
                             (Real 8)
                         )
                         ()
@@ -646,7 +646,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        10.900000
+                                        "10.9"
                                         (Real 8)
                                     )
                                     (Real 8)
@@ -659,13 +659,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 8)
                                 )
                                 ()
@@ -695,7 +695,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        10.900000
+                                        "10.9"
                                         (Real 8)
                                     )
                                     (Real 8)
@@ -708,13 +708,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 8)
                                 )
                                 ()
@@ -730,7 +730,7 @@
                     (Assignment
                         (Var 4 mvndfn_main__lcompilers)
                         (RealConstant
-                            1.200000
+                            "1.2"
                             (Real 8)
                         )
                         ()

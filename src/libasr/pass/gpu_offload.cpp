@@ -1542,7 +1542,7 @@ public:
             ASR::expr_t *zero;
             if (ASR::is_a<ASR::Real_t>(*elem_type)) {
                 zero = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
-                    0.0, elem_type));
+                    s2c(al, "0.0"), elem_type));
             } else {
                 zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
                     0, elem_type, ASR::integerbozType::Decimal));
@@ -2077,7 +2077,7 @@ public:
             ASR::expr_t *zero;
             if (ASR::is_a<ASR::Real_t>(*elem_type)) {
                 zero = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
-                    0.0, elem_type));
+                    s2c(al, "0.0"), elem_type));
             } else {
                 zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
                     0, elem_type, ASR::integerbozType::Decimal));

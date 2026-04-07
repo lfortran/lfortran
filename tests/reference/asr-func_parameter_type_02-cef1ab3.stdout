@@ -261,7 +261,7 @@
                             4 f
                             ()
                             [((RealConstant
-                                3.000000
+                                "3"
                                 (Real 4)
                             ))]
                             (Real 4)

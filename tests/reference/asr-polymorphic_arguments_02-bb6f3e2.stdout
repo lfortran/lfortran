@@ -99,13 +99,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            1.000000
+                                            "1"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        1.000000
+                                        "1"
                                         (Real 4)
                                     )
                                     Save

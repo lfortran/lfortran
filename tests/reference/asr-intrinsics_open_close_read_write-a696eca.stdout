@@ -298,7 +298,7 @@
                                 )
                                 Mul
                                 (RealConstant
-                                    0.100000
+                                    "0.10000000149011612"
                                     (Real 4)
                                 )
                                 (Real 4)
@@ -341,7 +341,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            1.000000
+                                            "1"
                                             (Real 4)
                                         )
                                         ()
@@ -361,7 +361,7 @@
                                             )
                                             Div
                                             (RealConstant
-                                                3.000000
+                                                "3"
                                                 (Real 4)
                                             )
                                             (Real 4)

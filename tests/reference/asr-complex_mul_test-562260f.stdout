@@ -37,11 +37,11 @@
                         (Var 2 x)
                         (ComplexConstructor
                             (RealConstant
-                                3.000000
+                                "3"
                                 (Real 4)
                             )
                             (RealConstant
-                                4.000000
+                                "4"
                                 (Real 4)
                             )
                             (Complex 4)
@@ -62,7 +62,7 @@
                             Mul
                             (Cast
                                 (RealConstant
-                                    4.000000
+                                    "4"
                                     (Real 4)
                                 )
                                 RealToComplex
@@ -133,11 +133,11 @@
                             Mul
                             (ComplexConstructor
                                 (RealConstant
-                                    0.000000
+                                    "0"
                                     (Real 4)
                                 )
                                 (RealConstant
-                                    3.000000
+                                    "3"
                                     (Real 4)
                                 )
                                 (Complex 4)

@@ -216,7 +216,7 @@
                     [(Assignment
                         (Var 2 eps)
                         (RealConstant
-                            0.000000
+                            "1.0000000000000001e-15"
                             (Real 8)
                         )
                         ()
@@ -226,7 +226,7 @@
                     (Assignment
                         (Var 2 pi)
                         (RealConstant
-                            3.141593
+                            "3.1415926535897931"
                             (Real 8)
                         )
                         ()
@@ -242,12 +242,12 @@
                                     (RealBinOp
                                         (RealUnaryMinus
                                             (RealConstant
-                                                0.250000
+                                                "0.25"
                                                 (Real 8)
                                             )
                                             (Real 8)
                                             (RealConstant
-                                                -0.250000
+                                                "-0.25"
                                                 (Real 8)
                                             )
                                         )
@@ -290,13 +290,13 @@
                         (Var 2 va0)
                         (RealBinOp
                             (RealConstant
-                                0.500000
+                                "0.5"
                                 (Real 8)
                             )
                             Mul
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1"
                                     (Real 8)
                                 )
                                 Sub

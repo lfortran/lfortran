@@ -36,7 +36,7 @@
                     [(Assignment
                         (Var 5 dummy)
                         (RealConstant
-                            10.000000
+                            "10"
                             (Real 4)
                         )
                         ()
@@ -53,7 +53,7 @@
                     (Assignment
                         (Var 5 dummy)
                         (RealConstant
-                            5.000000
+                            "5"
                             (Real 4)
                         )
                         ()
@@ -257,7 +257,7 @@
                                     (Var 4 dummy)
                                     Sub
                                     (RealConstant
-                                        10.000000
+                                        "10"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -269,7 +269,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -283,7 +283,7 @@
                     (Assignment
                         (Var 4 dummy)
                         (RealConstant
-                            5.000000
+                            "5"
                             (Real 4)
                         )
                         ()
@@ -314,7 +314,7 @@
                                     (Var 4 dummy)
                                     Sub
                                     (RealConstant
-                                        5.000000
+                                        "5"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -326,7 +326,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -366,7 +366,7 @@
                                     (Var 4 dummy)
                                     Sub
                                     (RealConstant
-                                        5.000000
+                                        "5"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -378,7 +378,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)

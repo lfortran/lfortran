@@ -136,7 +136,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            0.000000
+                                            "0"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -513,7 +513,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            8.000000
+                                            "8"
                                             (Real 4)
                                         )
                                         ()
@@ -527,7 +527,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.9999997473787516e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -552,7 +552,7 @@
                             )
                             Add
                             (RealConstant
-                                12.420000
+                                "12.420000076293945"
                                 (Real 4)
                             )
                             (Real 4)
@@ -571,7 +571,7 @@
                                     (Var 2 sum)
                                     Sub
                                     (RealConstant
-                                        120.419998
+                                        "120.41999816894531"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -583,7 +583,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.9999997473787516e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -615,7 +615,7 @@
                                         IntegerToReal
                                         (Real 8)
                                         (RealConstant
-                                            9.000000
+                                            "9"
                                             (Real 8)
                                         )
                                         ()
@@ -630,13 +630,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.000000013351432e-10"
                                     (Real 8)
                                 )
                                 ()

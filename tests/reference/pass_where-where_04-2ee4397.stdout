@@ -101,7 +101,7 @@
                                     (Assignment
                                         (Var 3 absdiff)
                                         (RealConstant
-                                            0.500000
+                                            "0.5"
                                             (Real 4)
                                         )
                                         ()
@@ -128,7 +128,7 @@
                                             )
                                             NotEq
                                             (RealConstant
-                                                0.000000
+                                                "0"
                                                 (Real 4)
                                             )
                                             (Array
@@ -247,7 +247,7 @@
                                                     )
                                                     Sub
                                                     (RealConstant
-                                                        5.000000
+                                                        "5"
                                                         (Real 4)
                                                     )
                                                     (Real 4)
@@ -259,7 +259,7 @@
                                             )
                                             Gt
                                             (RealConstant
-                                                0.000000
+                                                "1.0000000116860974e-07"
                                                 (Real 4)
                                             )
                                             (Logical 4)
@@ -287,7 +287,7 @@
                                                     )
                                                     Sub
                                                     (RealConstant
-                                                        5.000000
+                                                        "5"
                                                         (Real 4)
                                                     )
                                                     (Real 4)
@@ -299,7 +299,7 @@
                                             )
                                             Gt
                                             (RealConstant
-                                                0.000000
+                                                "1.0000000116860974e-07"
                                                 (Real 4)
                                             )
                                             (Logical 4)

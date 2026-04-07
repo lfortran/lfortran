@@ -142,7 +142,7 @@
                     [(Assignment
                         (Var 2 a)
                         (RealConstant
-                            4.200000
+                            "4.2000000000000002"
                             (Real 8)
                         )
                         ()
@@ -154,13 +154,13 @@
                         (IntrinsicElementalFunction
                             Cos
                             [(RealConstant
-                                9.500000
+                                "9.5"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                -0.997172
+                                "-0.99717215619637845"
                                 (Real 4)
                             )
                         )
@@ -177,7 +177,7 @@
                                     (Var 2 x)
                                     Add
                                     (RealConstant
-                                        0.997172
+                                        "0.99717217683792114"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -189,7 +189,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -216,13 +216,13 @@
                                     Add
                                     (Cast
                                         (RealConstant
-                                            0.490261
+                                            "0.49026080965995789"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            0.490261
+                                            "0.49026080965995789"
                                             (Real 8)
                                         )
                                         ()
@@ -237,13 +237,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000116860974e-07"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000116860974e-07"
                                     (Real 8)
                                 )
                                 ()
@@ -269,20 +269,20 @@
                                                 (IntrinsicElementalFunction
                                                     Cos
                                                     [(RealConstant
-                                                        1.500000
+                                                        "1.5"
                                                         (Real 4)
                                                     )]
                                                     0
                                                     (Real 4)
                                                     (RealConstant
-                                                        0.070737
+                                                        "0.070737201667702906"
                                                         (Real 4)
                                                     )
                                                 )
                                                 RealToReal
                                                 (Real 8)
                                                 (RealConstant
-                                                    0.070737
+                                                    "0.070737201667702906"
                                                     (Real 8)
                                                 )
                                                 ()
@@ -317,13 +317,13 @@
                                     Sub
                                     (Cast
                                         (RealConstant
-                                            0.716404
+                                            "0.7164035439491272"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            0.716404
+                                            "0.7164035439491272"
                                             (Real 8)
                                         )
                                         ()
@@ -338,13 +338,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000116860974e-07"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000116860974e-07"
                                     (Real 8)
                                 )
                                 ()
@@ -374,12 +374,12 @@
                         (Var 2 r2)
                         (RealUnaryMinus
                             (RealConstant
-                                0.490261
+                                "0.49026082134069948"
                                 (Real 8)
                             )
                             (Real 8)
                             (RealConstant
-                                -0.490261
+                                "-0.49026082134069948"
                                 (Real 8)
                             )
                         )
@@ -405,7 +405,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000000
+                                "1.0000000000000001e-15"
                                 (Real 8)
                             )
                             (Logical 4)

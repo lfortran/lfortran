@@ -162,13 +162,13 @@
                                                     Eq
                                                     (Cast
                                                         (RealConstant
-                                                            0.000000
+                                                            "0"
                                                             (Real 4)
                                                         )
                                                         RealToReal
                                                         (Real 8)
                                                         (RealConstant
-                                                            0.000000
+                                                            "0"
                                                             (Real 8)
                                                         )
                                                         ()

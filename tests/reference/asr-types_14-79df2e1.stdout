@@ -76,7 +76,7 @@
                     [(Assignment
                         (Var 2 r)
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 8)
                         )
                         ()

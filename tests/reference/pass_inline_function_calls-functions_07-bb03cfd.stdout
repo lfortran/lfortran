@@ -48,13 +48,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        5.000000
+                                        "5"
                                         (Real 4)
                                     )
                                     Save
@@ -265,7 +265,7 @@
                             (Var 8 u)
                             Add
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             (Real 4)
@@ -281,7 +281,7 @@
                             (Var 8 v)
                             Add
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             (Real 4)
@@ -297,7 +297,7 @@
                             (Var 8 y)
                             Add
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             (Real 4)
@@ -406,7 +406,7 @@
                                             (Var 3 u)
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -573,7 +573,7 @@
                                             (Var 5 u)
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -589,7 +589,7 @@
                                             (Var 5 v)
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -819,7 +819,7 @@
                                             (Var 7 u)
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -835,7 +835,7 @@
                                             (Var 7 v)
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -851,7 +851,7 @@
                                             (Var 7 y)
                                             Add
                                             (RealConstant
-                                                1.000000
+                                                "1"
                                                 (Real 4)
                                             )
                                             (Real 4)

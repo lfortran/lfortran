@@ -3063,7 +3063,7 @@
                                             (Var 60 i)
                                             Add
                                             (RealConstant
-                                                2.300000
+                                                "2.2999999523162842"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -3154,7 +3154,7 @@
                                             (Var 61 i)
                                             Add
                                             (RealConstant
-                                                2.300000
+                                                "2.2999999523162842"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -3245,7 +3245,7 @@
                                             (Var 62 i)
                                             Add
                                             (RealConstant
-                                                2.300000
+                                                "2.2999999999999998"
                                                 (Real 8)
                                             )
                                             (Real 8)
@@ -3336,7 +3336,7 @@
                                             (Var 63 i)
                                             Add
                                             (RealConstant
-                                                2.300000
+                                                "2.2999999999999998"
                                                 (Real 8)
                                             )
                                             (Real 8)

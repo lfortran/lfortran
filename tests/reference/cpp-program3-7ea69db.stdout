@@ -45,8 +45,8 @@ void main2() {
     float x;
     float y;
     float z;
-    x =   5.00000000000000000e+00;
-    y =   2.00000000000000000e+00;
+    x = 5;
+    y = 2;
     z = x*y;
     std::cout << "10.0 ==" << " " << z << std::endl;
     z = func1(x, y);

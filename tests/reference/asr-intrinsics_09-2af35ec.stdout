@@ -14,11 +14,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 4)
                                     )
                                     Save
@@ -48,12 +48,12 @@
                                 Tiny
                                 (Real 4)
                                 (RealConstant
-                                    1.000000
+                                    "1"
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.000000
+                                    "1.1754943508222875e-38"
                                     (Real 4)
                                 )
                             )

@@ -83,11 +83,11 @@
                                     Local
                                     (ComplexConstructor
                                         (RealConstant
-                                            3.000000
+                                            "3"
                                             (Real 4)
                                         )
                                         (RealConstant
-                                            4.000000
+                                            "4"
                                             (Real 4)
                                         )
                                         (Complex 4)
@@ -125,7 +125,7 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            1.000000
+                                            "1"
                                             (Real 4)
                                         )
                                         RealToInteger
@@ -157,7 +157,7 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            2.000000
+                                            "2"
                                             (Real 4)
                                         )
                                         RealToInteger
@@ -223,11 +223,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        4.000000
+                                        "4"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        4.000000
+                                        "4"
                                         (Real 4)
                                     )
                                     Parameter
@@ -255,12 +255,12 @@
                                         (Var 2 r)
                                         (Real 4)
                                         (RealConstant
-                                            -4.000000
+                                            "-4"
                                             (Real 4)
                                         )
                                     )
                                     (RealConstant
-                                        -4.000000
+                                        "-4"
                                         (Real 4)
                                     )
                                     Parameter

@@ -463,7 +463,7 @@ namespace X {                                                                   
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args,                           \
             diag::Diagnostics& /*diag*/) {                                      \
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r); \
         ASRUtils::ASRBuilder b(al, loc);                                        \
         return b.f_t(std::eval_X(rv), t);                                       \
     }                                                                           \
@@ -488,7 +488,7 @@ namespace Erfc {
     static inline ASR::expr_t *eval_Erfc(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
             diag::Diagnostics& diag) {
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         double val = std::erfc(rv);
         int kind = ASRUtils::extract_kind_from_ttype_t(t);
         double tiny = (kind == 4) ? std::numeric_limits<float>::min() : std::numeric_limits<double>::min();
@@ -518,7 +518,7 @@ namespace Isnan{
     static inline ASR::expr_t *eval_Isnan(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
             diag::Diagnostics& /*diag*/) {
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         ASRUtils::ASRBuilder b(al, loc);
         return b.bool_t(std::isnan(rv), t);
     }
@@ -588,14 +588,14 @@ namespace Fix {
     static inline ASR::expr_t *eval_Fix(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(args.size() == 1);
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         double val;
         if (rv > 0.0) {
             val = floor(rv);
         } else {
             val = ceil(rv);
         }
-        return make_ConstantWithType(make_RealConstant_t, val, t, loc);
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(val)), t, loc);
     }
 
     static inline ASR::expr_t* instantiate_Fix (Allocator &al,
@@ -623,7 +623,7 @@ namespace X {                                                                   
         double rv = -1;                                                         \
         if( ASRUtils::extract_value(args[0], rv) ) {                            \
             double val = std::stdeval(rv);                                      \
-            return make_ConstantWithType(make_RealConstant_t, val, t, loc);     \
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(val)), t, loc);     \
         } else {                                                                \
             std::complex<double> crv;                                           \
             if( ASRUtils::extract_value(args[0], crv) ) {                       \
@@ -700,7 +700,7 @@ namespace math_func {                                                           
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
             diag::Diagnostics& /*diag*/) {                                                              \
         LCOMPILERS_ASSERT(args.size() == 1);                                                            \
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                  \
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);                                  \
         double result = stdeval(rv);                                                                    \
         if ( degree == 1 ) {                                                                            \
             double PI = 3.14159265358979323846;                                                         \
@@ -709,7 +709,7 @@ namespace math_func {                                                           
             double PI = 3.14159265358979323846;                                                         \
             result = stdeval( ( rv * PI ) / 180.0 );                                                    \
         }                                                                                               \
-        return make_ConstantWithType(make_RealConstant_t, result, t, loc);                              \
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t, loc);                              \
     }                                                                                                   \
     static inline ASR::expr_t* instantiate_##math_func (Allocator &al,                                  \
             const Location &loc, SymbolTable *scope,                                                    \
@@ -748,7 +748,7 @@ namespace math_func {                                                           
         if( ASRUtils::extract_value(args[0], rv) ) {                                                    \
             double PI = 3.14159265358979323846;                                                         \
             double result = std::stdeval(rv * PI);                                                      \
-            return make_ConstantWithType(make_RealConstant_t, result, t, loc);                          \
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t, loc);                          \
         }                                                                                               \
         return nullptr;                                                                                 \
     }                                                                                                   \
@@ -780,7 +780,7 @@ namespace math_func {                                                           
             dep.push_back(al, s2c(al, c_func_name));                                                    \
             auto PI = declare("_lcompiler_pi", arg_type, Local);                                        \
             body.push_back(al, b.Assignment(PI, make_ConstantWithType(make_RealConstant_t,              \
-                3.14159265358979323846, arg_type, loc)));                                               \
+                s2c(al, "3.14159265358979323846"), arg_type, loc)));                                    \
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);                                      \
             call_args.push_back(al, b.Mul(args[0], PI));                                                 \
             body.push_back(al, b.Assignment(result, b.Call(s, call_args, return_type)));                \
@@ -802,7 +802,7 @@ namespace math_func {                                                           
         if( ASRUtils::extract_value(args[0], rv) ) {                                                    \
             double PI = 3.14159265358979323846;                                                         \
             double result = std::stdeval(rv) / PI;                                                      \
-            return make_ConstantWithType(make_RealConstant_t, result, t, loc);                          \
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t, loc);                          \
         }                                                                                               \
         return nullptr;                                                                                 \
     }                                                                                                   \
@@ -834,7 +834,7 @@ namespace math_func {                                                           
             dep.push_back(al, s2c(al, c_func_name));                                                    \
             auto PI = declare("_lcompiler_pi", arg_type, Local);                                        \
             body.push_back(al, b.Assignment(PI, make_ConstantWithType(make_RealConstant_t,              \
-                3.14159265358979323846, arg_type, loc)));                                               \
+                s2c(al, "3.14159265358979323846"), arg_type, loc)));                                    \
             body.push_back(al, b.Assignment(result, b.Div(b.Call(s, args, return_type), PI)));          \
         }                                                                                               \
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,                  \
@@ -859,7 +859,7 @@ namespace Aimag {
         std::complex<double> crv;
         if( ASRUtils::extract_value(args[0], crv) ) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
-            return make_ConstantWithType(make_RealConstant_t, c->m_im, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(c->m_im)), t, loc);
         } else {
             return nullptr;
         }
@@ -889,7 +889,7 @@ namespace Atan2 {
         double rv = -1, rv2 = -1;
         if( ASRUtils::extract_value(args[0], rv) && ASRUtils::extract_value(args[1], rv2) ) {
             double val = std::atan2(rv,rv2);
-            return make_ConstantWithType(make_RealConstant_t, val, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(val)), t, loc);
         }
         return nullptr;
     }
@@ -951,7 +951,7 @@ namespace Atan2d {
             double val = std::atan2(rv,rv2);
             double PI = 3.14159265358979323846;
             val = val * 180.0/PI;
-            return make_ConstantWithType(make_RealConstant_t, val, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(val)), t, loc);
         }
         return nullptr;
     }
@@ -995,9 +995,9 @@ namespace Atan2d {
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             auto PI = declare("_lcompiler_pi", arg_type, Local);
-            body.push_back(al, b.Assignment(PI, make_ConstantWithType(make_RealConstant_t, 3.14159265358979323846, arg_type, loc)));
+            body.push_back(al, b.Assignment(PI, make_ConstantWithType(make_RealConstant_t, s2c(al, "3.14159265358979323846"), arg_type, loc)));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-            body.push_back(al, b.Assignment(result, b.Mul(result, b.Div(make_ConstantWithType(make_RealConstant_t, 180.0, arg_type, loc), PI))));
+            body.push_back(al, b.Assignment(result, b.Mul(result, b.Div(make_ConstantWithType(make_RealConstant_t, s2c(al, "180.0"), arg_type, loc), PI))));
         }
         
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1017,7 +1017,7 @@ namespace Atan2pi {
             double val = std::atan2(rv,rv2);
             double PI = 3.14159265358979323846;
             val = val / PI;
-            return make_ConstantWithType(make_RealConstant_t, val, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(val)), t, loc);
         }
         return nullptr;
     }
@@ -1061,7 +1061,7 @@ namespace Atan2pi {
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             auto PI = declare("_lcompiler_pi", arg_type, Local);
-            body.push_back(al, b.Assignment(PI, make_ConstantWithType(make_RealConstant_t, 3.14159265358979323846, arg_type, loc)));
+            body.push_back(al, b.Assignment(PI, make_ConstantWithType(make_RealConstant_t, s2c(al, "3.14159265358979323846"), arg_type, loc)));
             body.push_back(al, b.Assignment(result, b.Div(b.Call(s, args, return_type), PI)));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1114,9 +1114,9 @@ namespace Abs {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         ASR::expr_t* arg = args[0];
         if (ASRUtils::is_real(*expr_type(arg))) {
-            double rv = ASR::down_cast<ASR::RealConstant_t>(arg)->m_r;
+            double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(arg)->m_r);
             double val = std::abs(rv);
-            return make_ConstantWithType(make_RealConstant_t, val, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(val)), t, loc);
         } else if (ASRUtils::is_integer(*expr_type(arg))) {
             int64_t rv = ASR::down_cast<ASR::IntegerConstant_t>(arg)->m_n;
             int64_t val = std::abs(rv);
@@ -1126,7 +1126,7 @@ namespace Abs {
             double im = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_im;
             std::complex<double> x(re, im);
             double result = std::abs(x);
-            return make_ConstantWithType(make_RealConstant_t, result, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t, loc);
         } else {
             return nullptr;
         }
@@ -1282,7 +1282,7 @@ namespace StorageSize {
 namespace Scale {
     static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double value_X = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         int64_t value_I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         double result = value_X * std::pow(2, value_I);
         ASRUtils::ASRBuilder b(al, loc);
@@ -1312,8 +1312,8 @@ namespace Scale {
 namespace Dprod {
     static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
             ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-        double value_Y = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        double value_X = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+        double value_Y = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
         LCOMPILERS_ASSERT((ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 4 &&
             ASRUtils::extract_kind_from_ttype_t(expr_type(args[1])) == 4));
         double result = value_X * value_Y;
@@ -1493,7 +1493,7 @@ namespace OutOfRange
                 }
             }
         } else if (is_real(*arg_type_1)) {
-            double value = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double value = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             if (is_integer(*arg_type_2)) {
                 if (value > (double) max_val_int || value < (double) min_val_int) {
                     return b.bool_t(1, return_type);
@@ -1822,10 +1822,10 @@ namespace Sign {
     static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::is_real(*t1)) {
-            double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
-            double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            double rv1 = std::abs(str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r));
+            double rv2 = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
             rv1 = copysign(rv1, rv2);
-            return make_ConstantWithType(make_RealConstant_t, rv1, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(rv1)), t1, loc);
         } else {
             int64_t iv1 = std::abs(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
             int64_t iv2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -2152,7 +2152,7 @@ namespace Dreal {
         }
         if( ASRUtils::extract_value(args[0], crv) ) {
             double result = std::real(crv);
-            return make_ConstantWithType(make_RealConstant_t, result, t, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t, loc);
         } else {
             return nullptr;
         }
@@ -2624,7 +2624,7 @@ namespace Int {
             i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
-            i = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+            i = (int64_t)str_to_double(ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r);
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             i = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
@@ -2960,7 +2960,7 @@ namespace Aint {
 
     static ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         ASRUtils::ASRBuilder b(al, loc);
         return b.f_t(std::trunc(rv), arg_type);
     }
@@ -2988,7 +2988,7 @@ namespace Anint {
 
     static ASR::expr_t *eval_Anint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         ASRUtils::ASRBuilder b(al, loc);
         return b.f_t(std::round(rv), arg_type);
     }
@@ -3027,7 +3027,7 @@ namespace Nint {
     static ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         double near_integer = std::round(rv);
 
         if (kind == 4) {
@@ -3072,7 +3072,7 @@ namespace Idnint {
     static ASR::expr_t *eval_Idnint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 8);
-        double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double rv = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         double near_integer = std::round(rv);
 
         if (near_integer < static_cast<double>(std::numeric_limits<int32_t>::min()) ||
@@ -3132,7 +3132,7 @@ namespace Floor {
 
     static ASR::expr_t *eval_Floor(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        float val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        float val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         int64_t result = int64_t(val);
         if(val<=0.0 && val!=result) {
             result = result-1;
@@ -3174,7 +3174,7 @@ namespace Ceiling {
 
     static ASR::expr_t *eval_Ceiling(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         double difference = val - double(int(val));
         int64_t result;
         if (difference == 0.0) {
@@ -3232,8 +3232,8 @@ namespace Dim {
     static ASR::expr_t *eval_Dim(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (is_real(*t1)) {
-            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            double a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
             double result;
             double zero = 0.0;
             if (a > b) {
@@ -3241,7 +3241,7 @@ namespace Dim {
             } else {
                 result = zero;
             }
-            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t1, loc);
         }
         LCOMPILERS_ASSERT(is_integer(*t1));
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -3299,7 +3299,7 @@ namespace Sqrt {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
         if (is_real(*arg_type)) {
-            double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             if (val < 0.0) {
                 append_error(diag, "Argument of `sqrt` has a negative argument", loc);
                 return nullptr;
@@ -3340,7 +3340,7 @@ namespace Exponent {
         int32_t kind = extract_kind_from_ttype_t(arguement_type);
 
         if (kind == 4) {
-            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             if (x == 0.0) {
                 return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
             }
@@ -3355,7 +3355,7 @@ namespace Exponent {
             return make_ConstantWithType(make_IntegerConstant_t, exponent, arg_type, loc);
         }
         else if (kind == 8) {
-            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             if (x == 0.0) {
                 return make_ConstantWithType(make_IntegerConstant_t, 0, arg_type, loc);
             }
@@ -3427,35 +3427,35 @@ namespace Fraction {
         ASR::ttype_t* arguement_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(arguement_type);
         if (kind == 4) {
-            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             int32_t exponent;
             if (x == 0.0) {
                 exponent = 0;
                 float result =  x * std::pow((2), (-1*(exponent)));
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             }
             else{
                 int32_t ix;
                 std::memcpy(&ix, &x, sizeof(ix));
                 exponent = ((ix >> 23) & 0xff) - 126;
                 float result =  x * std::pow((2), (-1*(exponent)));
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             }
         }
         else if (kind == 8) {
-            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             int64_t exponent;
             if (x == 0.0) {
                 exponent = 0;
                 double result =  x * std::pow((2), (-1*(exponent)));
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             }
             else{
                 int64_t ix;
                 std::memcpy(&ix, &x, sizeof(ix));
                 exponent = ((ix >> 52) & 0x7ff) - 1022;
                 double result =  x * std::pow((2), (-1*(exponent)));
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             }
         }
         return nullptr;
@@ -3485,39 +3485,39 @@ namespace SetExponent {
         ASR::ttype_t* arguement_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(arguement_type);
         if (kind == 4) {
-            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             int32_t I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             int32_t exponent;
             if (x == 0.0) {
                 exponent = 0;
                 float result1 =  x * std::pow((2), (-1*(exponent)));
                 float result = result1 * std::pow((2), I);
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             } else {
                 int32_t ix;
                 std::memcpy(&ix, &x, sizeof(ix));
                 exponent = ((ix >> 23) & 0xff) - 126;
                 float result1 =  x * std::pow((2), (-1*(exponent)));
                 float result = result1 * std::pow((2), I);
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             }
         }
         else if (kind == 8) {
-            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             int64_t I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             int64_t exponent;
             if (x == 0.0) {
                 exponent = 0;
                 double result1 =  x * std::pow((2), (-1*(exponent)));
                 double result = result1 * std::pow((2), I);
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             } else {
                 int64_t ix;
                 std::memcpy(&ix, &x, sizeof(ix));
                 exponent = ((ix >> 52) & 0x7ff) - 1022;
                 double result1 =  x * std::pow((2), (-1*(exponent)));
                 double result = result1 * std::pow((2), I);
-                return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
             }
         }
         return nullptr;
@@ -3548,7 +3548,7 @@ namespace Sngl {
     static ASR::expr_t *eval_Sngl(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
-        double val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r);
         return b.f_t(val, arg_type);
     }
 
@@ -3572,7 +3572,7 @@ namespace Ifix {
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        int val = (int)str_to_double(ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r);
         LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 4);
         return make_ConstantWithType(make_IntegerConstant_t, val, int32, loc);
     }
@@ -3600,7 +3600,7 @@ namespace Idint {
 
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
+        int val = (int)str_to_double(ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r);
         return make_ConstantWithType(make_IntegerConstant_t, val, int32, loc);
     }
 
@@ -3625,10 +3625,10 @@ namespace FMA {
 
     static ASR::expr_t *eval_FMA(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-        double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-        double c = ASR::down_cast<ASR::RealConstant_t>(args[2])->m_r;
-        return make_ConstantWithType(make_RealConstant_t, a + b*c, t1, loc);
+        double a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+        double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
+        double c = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[2])->m_r);
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(a + b*c)), t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_FMA(Allocator &al, const Location &loc,
@@ -3659,10 +3659,10 @@ namespace SignFromValue {
     static ASR::expr_t *eval_SignFromValue(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (is_real(*t1)) {
-            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            double a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
             a = (b < 0 ? -a : a);
-            return make_ConstantWithType(make_RealConstant_t, a, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(a)), t1, loc);
         }
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3711,9 +3711,9 @@ namespace FlipSign {
     static ASR::expr_t *eval_FlipSign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
         if (a % 2 == 1) b = -b;
-        return make_ConstantWithType(make_RealConstant_t, b, t1, loc);
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(b)), t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_FlipSign(Allocator &al, const Location &loc,
@@ -3789,8 +3789,8 @@ namespace FloorDiv {
             }
             return make_ConstantWithType(make_LogicalConstant_t, a / b, t1, loc);
         } else if (is_real1 && is_real2) {
-            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            double a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
             if (b == 0.0) {
                 append_error(diag, "Division by `0` is not allowed", loc);
                 return nullptr;
@@ -3798,9 +3798,9 @@ namespace FloorDiv {
             double r = a / b;
             int64_t result = (int64_t)r;
             if ( r >= 0.0 || (double)result == r) {
-                return make_ConstantWithType(make_RealConstant_t, (double)result, t1, loc);
+                return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision((double)result)), t1, loc);
             }
-            return make_ConstantWithType(make_RealConstant_t, (double)(result - 1), t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision((double)(result - 1))), t1, loc);
         }
         return nullptr;
     }
@@ -3856,9 +3856,9 @@ namespace Mod {
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             return make_ConstantWithType(make_IntegerConstant_t, a % b, t1, loc);
         } else if (is_real1 && is_real2) {
-            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-            return make_ConstantWithType(make_RealConstant_t, std::fmod(a, b), t1, loc);
+            double a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(std::fmod(a, b))), t1, loc);
         }
         return nullptr;
     }
@@ -4418,23 +4418,23 @@ namespace Nearest {
     static ASR::expr_t *eval_Nearest(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-        double s = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+        double s = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
         if (s == 0.0) {
             append_error(diag, "`S` argument of nearest() must be non-zero", loc);
             return nullptr;
         }
         if (kind == 4) {
-            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             float result = 0.0;
             if (s > 0) result = x + std::fabs(std::nextafterf(x, std::numeric_limits<float>::infinity()) - x);
             else result = x - std::fabs(std::nextafterf(x, -std::numeric_limits<float>::infinity()) - x);
-            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t1, loc);
         } else {
-            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             double result = 0.0;
             if (s > 0) result = x + std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
             else result = x - std::fabs(std::nextafter(x, -std::numeric_limits<double>::infinity()) - x);
-            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t1, loc);
         }
     }
 
@@ -4521,13 +4521,13 @@ namespace Spacing {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (kind == 4) {
-            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             float result = std::fabs(std::nextafterf(x, std::numeric_limits<float>::infinity()) - x);
-            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t1, loc);
         } else {
-            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             double result = std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
-            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t1, loc);
         }
     }
 
@@ -4571,13 +4571,13 @@ namespace Modulo {
             }
             return make_ConstantWithType(make_IntegerConstant_t, r, t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
-            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            double a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
             if (b == 0) {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
                 return nullptr;
             }
-            return make_ConstantWithType(make_RealConstant_t, a - b * std::floor(a/b), t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(a - b * std::floor(a/b))), t1, loc);
         }
         return nullptr;
     }
@@ -4627,7 +4627,7 @@ namespace BesselJN {
 
     static ASR::expr_t *eval_BesselJN(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return make_ConstantWithType(make_RealConstant_t, jn(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n, ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r), t1, loc);
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(jn(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n, str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r)))), t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_BesselJN(Allocator &al, const Location &loc,
@@ -4669,7 +4669,7 @@ namespace BesselYN {
 
     static ASR::expr_t *eval_BesselYN(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        return make_ConstantWithType(make_RealConstant_t, yn(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n, ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r), t1, loc);
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(yn(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n, str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r)))), t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_BesselYN(Allocator &al, const Location &loc,
@@ -4748,13 +4748,13 @@ namespace Real {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
             double i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
-            return make_ConstantWithType(make_RealConstant_t, i, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(i)), t1, loc);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
             ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]));
             return make_ConstantWithType(make_RealConstant_t, r->m_r, t1, loc);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
-            return make_ConstantWithType(make_RealConstant_t, c->m_re, t1, loc);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(c->m_re)), t1, loc);
         } else {
             append_error(diag, "Invalid argument to `real` intrinsic", loc);
             return nullptr;
@@ -4805,7 +4805,7 @@ namespace Cmplx {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
             arg1_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
-            arg1_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+            arg1_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r);
         } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[0])) {
             arg1_val = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
@@ -4821,7 +4821,7 @@ namespace Cmplx {
         }
 
         if (ASR::is_a<ASR::RealConstant_t>(*args[1])) {
-            arg2_val = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[1]))->m_r;
+            arg2_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[1]))->m_r);
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
             arg2_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n;
         } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[1])) {
@@ -5166,13 +5166,13 @@ namespace Hypot {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (kind == 4) {
-            float a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            float b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-            return make_ConstantWithType(make_RealConstant_t, std::hypot(a, b), t1, loc);
+            float a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            float b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(std::hypot(a, b))), t1, loc);
         } else {
-            double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-            return make_ConstantWithType(make_RealConstant_t, std::hypot(a, b), t1, loc);
+            double a = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            double b = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r);
+            return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(std::hypot(a, b))), t1, loc);
         }
     }
 
@@ -6340,7 +6340,7 @@ namespace Rrspacing {
         double fraction = 0.0;
         digits = (kind == 4) ? 24.00 : 53.00;
         if (kind == 4) {
-            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             int32_t exponent;
             if (x == 0.0) {
                 exponent = 0;
@@ -6354,7 +6354,7 @@ namespace Rrspacing {
             }
         }
         else if (kind == 8) {
-            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double x = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             int64_t exponent;
             if (x == 0.0) {
                 exponent = 0;
@@ -6370,7 +6370,7 @@ namespace Rrspacing {
         fraction = std::abs(fraction);
         double radix = 2.00;
         double result = fraction * std::pow(radix, digits);
-        return make_ConstantWithType(make_RealConstant_t, result, arg_type, loc);
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), arg_type, loc);
 
     }
 
@@ -6939,7 +6939,7 @@ namespace X {                                                                   
         double rv = -1;                                                                   \
         if( ASRUtils::extract_value(args[0], rv) ) {                                      \
             double val = std::stdeval(rv);                                                \
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, val, t));             \
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, s2c(al, double_to_str_precision(val)), t)); \
         }                                                                                 \
         return nullptr;                                                                   \
     }                                                                                     \
@@ -6956,7 +6956,7 @@ namespace Exp {
         double rv = -1;
         if( ASRUtils::extract_value(args[0], rv) ) {
             double val = std::exp(rv);
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, val, t));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, s2c(al, double_to_str_precision(val)), t));
         } else {
             std::complex<double> crv;
             if( ASRUtils::extract_value(args[0], crv) ) {
@@ -6990,9 +6990,9 @@ namespace ErfcScaled {
     static inline ASR::expr_t* eval_ErfcScaled(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+        double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
         double result = std::exp(std::pow(val, 2)) * std::erfc(val);
-        return make_ConstantWithType(make_RealConstant_t, result, t, loc);
+        return make_ConstantWithType(make_RealConstant_t, s2c(al, double_to_str_precision(result)), t, loc);
     }
 
     static inline ASR::expr_t* instantiate_ErfcScaled(Allocator &al, const Location &loc,
@@ -7398,12 +7398,12 @@ namespace Max {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            double max_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double max_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             for (size_t i = 1; i < args.size(); i++) {
-                double val = ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r;
+                double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r);
                 max_val = std::fmax(max_val, val);
             }
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, max_val, arg_type));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, s2c(al, double_to_str_precision(max_val)), arg_type));
         } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
             int64_t max_val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             for (size_t i = 1; i < args.size(); i++) {
@@ -7572,12 +7572,12 @@ namespace Min {
             ASR::ttype_t *arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            double min_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double min_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             for (size_t i = 1; i < args.size(); i++) {
-                double val = ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r;
+                double val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r);
                 min_val = std::fmin(min_val, val);
             }
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, min_val, arg_type));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, s2c(al, double_to_str_precision(min_val)), arg_type));
         } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
             int64_t min_val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             for (size_t i = 1; i < args.size(); i++) {

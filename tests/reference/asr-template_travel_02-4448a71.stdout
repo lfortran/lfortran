@@ -531,19 +531,19 @@
                                             24 avg_real_s_from_s
                                             ()
                                             [((RealConstant
-                                                1.100000
+                                                "1.1000000238418579"
                                                 (Real 4)
                                             ))
                                             ((RealConstant
-                                                0.500000
+                                                "0.5"
                                                 (Real 4)
                                             ))
                                             ((RealConstant
-                                                2.000000
+                                                "2"
                                                 (Real 4)
                                             ))
                                             ((RealConstant
-                                                0.750000
+                                                "0.75"
                                                 (Real 4)
                                             ))]
                                             (Real 4)

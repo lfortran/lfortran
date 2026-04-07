@@ -381,7 +381,7 @@
                                     [(Assignment
                                         (Var 4 x)
                                         (RealConstant
-                                            1.000000
+                                            "1"
                                             (Real 4)
                                         )
                                         ()
@@ -410,7 +410,7 @@
                                                     (Var 4 x)
                                                     GtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -421,7 +421,7 @@
                                                     (Var 4 y)
                                                     GtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -436,7 +436,7 @@
                                                     (Var 4 x)
                                                     LtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -447,7 +447,7 @@
                                                     (Var 4 y)
                                                     LtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -508,13 +508,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        5.000000
+                                        "5"
                                         (Real 4)
                                     )
                                     Save
@@ -687,7 +687,7 @@
                                                     (Var 5 x)
                                                     GtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -698,7 +698,7 @@
                                                     (Var 5 y)
                                                     GtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -713,7 +713,7 @@
                                                     (Var 5 x)
                                                     LtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -724,7 +724,7 @@
                                                     (Var 5 y)
                                                     LtE
                                                     (RealConstant
-                                                        0.000000
+                                                        "0"
                                                         (Real 4)
                                                     )
                                                     (Logical 4)
@@ -952,7 +952,7 @@
                     (Assignment
                         (Var 2 a)
                         (RealConstant
-                            20.000000
+                            "20"
                             (Real 4)
                         )
                         ()
@@ -963,12 +963,12 @@
                         (Var 2 b)
                         (RealUnaryMinus
                             (RealConstant
-                                30.000000
+                                "30"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                -30.000000
+                                "-30"
                                 (Real 4)
                             )
                         )
@@ -1005,7 +1005,7 @@
                                     (Var 2 x2)
                                     GtE
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 4)
                                     )
                                     (Logical 4)
@@ -1016,7 +1016,7 @@
                                     (Var 2 y1)
                                     GtE
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 4)
                                     )
                                     (Logical 4)
@@ -1031,7 +1031,7 @@
                                     (Var 2 x2)
                                     LtE
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 4)
                                     )
                                     (Logical 4)
@@ -1042,7 +1042,7 @@
                                     (Var 2 y1)
                                     LtE
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 4)
                                     )
                                     (Logical 4)

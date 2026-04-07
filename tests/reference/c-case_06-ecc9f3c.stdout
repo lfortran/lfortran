@@ -17,10 +17,10 @@ int main(int argc, char* argv[])
     const int32_t ap = 1;
     static int32_t b = 2;
     const int32_t bp = 2;
-    static float c =   1.00000000000000000e+00;
-    const float cp =   1.00000000000000000e+00;
-    static float d =   2.00000000000000000e+00;
-    const float dp =   2.00000000000000000e+00;
+    static float c = 1;
+    const float cp = 1;
+    static float d = 2;
+    const float dp = 2;
     const char* grade_fixed = "B";
     int32_t marks;
     const int32_t marks_fixed = 94;

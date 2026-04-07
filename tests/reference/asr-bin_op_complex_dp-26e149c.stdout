@@ -107,7 +107,7 @@
                         (Cast
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1"
                                     (Real 4)
                                 )
                                 Div
@@ -116,14 +116,14 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        7.000000
+                                        "7"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.142857
+                                    "0.14285714285714285"
                                     (Real 4)
                                 )
                             )
@@ -145,7 +145,7 @@
                         (Cast
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1"
                                     (Real 4)
                                 )
                                 Div
@@ -154,14 +154,14 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        7.000000
+                                        "7"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.142857
+                                    "0.14285714285714285"
                                     (Real 4)
                                 )
                             )
@@ -183,7 +183,7 @@
                         (Cast
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1"
                                     (Real 8)
                                 )
                                 Div
@@ -192,14 +192,14 @@
                                     IntegerToReal
                                     (Real 8)
                                     (RealConstant
-                                        7.000000
+                                        "7"
                                         (Real 8)
                                     )
                                     ()
                                 )
                                 (Real 8)
                                 (RealConstant
-                                    0.142857
+                                    "0.14285714285714285"
                                     (Real 8)
                                 )
                             )
@@ -221,7 +221,7 @@
                         (Cast
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1"
                                     (Real 4)
                                 )
                                 Div
@@ -230,14 +230,14 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        7.000000
+                                        "7"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.142857
+                                    "0.14285714285714285"
                                     (Real 4)
                                 )
                             )

@@ -514,7 +514,7 @@
                                         (Var 6 ftol_return_var_name)
                                         (RealBinOp
                                             (RealConstant
-                                                0.500000
+                                                "0.5"
                                                 (Real 8)
                                             )
                                             Mul
@@ -718,12 +718,12 @@
                         (ArrayBroadcast
                             (RealUnaryMinus
                                 (RealConstant
-                                    83.029999
+                                    "83.029998779296875"
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    -83.029999
+                                    "-83.029998779296875"
                                     (Real 4)
                                 )
                             )
@@ -865,12 +865,12 @@
                                         Sub
                                         (RealUnaryMinus
                                             (RealConstant
-                                                83.029999
+                                                "83.029998779296875"
                                                 (Real 4)
                                             )
                                             (Real 4)
                                             (RealConstant
-                                                -83.029999
+                                                "-83.029998779296875"
                                                 (Real 4)
                                             )
                                         )
@@ -883,7 +883,7 @@
                                 )
                                 Gt
                                 (RealConstant
-                                    0.000000
+                                    "9.9999999392252903e-09"
                                     (Real 4)
                                 )
                                 (Logical 4)

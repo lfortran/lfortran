@@ -282,7 +282,7 @@
                                     (Assignment
                                         (Var 3 x)
                                         (RealConstant
-                                            3.000000
+                                            "3"
                                             (Real 4)
                                         )
                                         ()

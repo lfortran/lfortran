@@ -358,7 +358,7 @@
                     [(Assignment
                         (Var 2 real_inp1)
                         (RealConstant
-                            5.000000
+                            "5"
                             (Real 8)
                         )
                         ()
@@ -368,7 +368,7 @@
                     (Assignment
                         (Var 2 real_inp2)
                         (RealConstant
-                            10.000000
+                            "10"
                             (Real 8)
                         )
                         ()
@@ -378,7 +378,7 @@
                     (Assignment
                         (Var 2 real_inp3)
                         (RealConstant
-                            5.000000
+                            "5"
                             (Real 4)
                         )
                         ()
@@ -388,7 +388,7 @@
                     (Assignment
                         (Var 2 real_inp4)
                         (RealConstant
-                            10.000000
+                            "10"
                             (Real 4)
                         )
                         ()
@@ -412,7 +412,7 @@
                     (Assignment
                         (Var 2 real_inp5)
                         (RealConstant
-                            5.200000
+                            "5.2000000000000002"
                             (Real 8)
                         )
                         ()
@@ -422,7 +422,7 @@
                     (Assignment
                         (Var 2 real_inp6)
                         (RealConstant
-                            9.000000
+                            "9"
                             (Real 4)
                         )
                         ()
@@ -467,7 +467,7 @@
                                         IntegerToReal
                                         (Real 8)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 8)
                                         )
                                         ()
@@ -482,13 +482,13 @@
                             GtE
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000036274937e-15"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000036274937e-15"
                                     (Real 8)
                                 )
                                 ()
@@ -636,7 +636,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 4)
                                         )
                                         ()
@@ -650,7 +650,7 @@
                             )
                             GtE
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -796,7 +796,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 4)
                                         )
                                         ()
@@ -810,7 +810,7 @@
                             )
                             GtE
                             (RealConstant
-                                0.000000
+                                "1.0000000116860974e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -885,7 +885,7 @@
                                         IntegerToReal
                                         (Real 8)
                                         (RealConstant
-                                            5.000000
+                                            "5"
                                             (Real 8)
                                         )
                                         ()
@@ -900,13 +900,13 @@
                             GtE
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000036274937e-15"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000036274937e-15"
                                     (Real 8)
                                 )
                                 ()
@@ -985,7 +985,7 @@
                                     (Var 2 output_min_different_kinds)
                                     Sub
                                     (RealConstant
-                                        5.200000
+                                        "5.2000000000000002"
                                         (Real 8)
                                     )
                                     (Real 8)
@@ -998,13 +998,13 @@
                             Gt
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000168623835e-16"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "1.0000000168623835e-16"
                                     (Real 8)
                                 )
                                 ()

@@ -45,7 +45,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            0.000000
+                                            "0"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -260,11 +260,11 @@
                         (Var 2 w8)
                         (ComplexConstructor
                             (RealConstant
-                                7.700000
+                                "7.7000000000000002"
                                 (Real 8)
                             )
                             (RealConstant
-                                5.000000
+                                "5"
                                 (Real 8)
                             )
                             (Complex 8)
@@ -354,11 +354,11 @@
                         (Var 2 w4)
                         (ComplexConstructor
                             (RealConstant
-                                7.700000
+                                "7.6999998092651367"
                                 (Real 4)
                             )
                             (RealConstant
-                                5.000000
+                                "5"
                                 (Real 4)
                             )
                             (Complex 4)

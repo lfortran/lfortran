@@ -14,11 +14,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        100.000000
+                                        "100"
                                         (Real 8)
                                     )
                                     (RealConstant
-                                        100.000000
+                                        "100"
                                         (Real 8)
                                     )
                                     Default
@@ -43,11 +43,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 8)
                                     )
                                     (RealConstant
-                                        0.000000
+                                        "0"
                                         (Real 8)
                                     )
                                     Default
@@ -86,7 +86,7 @@
                     [(Assignment
                         (Var 3 factor)
                         (RealConstant
-                            100.000000
+                            "100"
                             (Real 8)
                         )
                         ()
@@ -96,7 +96,7 @@
                     (Assignment
                         (Var 3 zero)
                         (RealConstant
-                            0.000000
+                            "0"
                             (Real 8)
                         )
                         ()

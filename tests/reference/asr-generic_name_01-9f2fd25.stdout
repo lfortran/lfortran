@@ -843,7 +843,7 @@
                     [(Assignment
                         (Var 6 fpone)
                         (RealConstant
-                            1.000000
+                            "1"
                             (Real 4)
                         )
                         ()
@@ -853,7 +853,7 @@
                     (Assignment
                         (Var 6 fptwo)
                         (RealConstant
-                            2.000000
+                            "2"
                             (Real 4)
                         )
                         ()
@@ -863,7 +863,7 @@
                     (Assignment
                         (Var 6 fpzero)
                         (RealConstant
-                            0.000000
+                            "0"
                             (Real 4)
                         )
                         ()
@@ -888,12 +888,12 @@
                         (Var 6 negfpone)
                         (RealUnaryMinus
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                -1.000000
+                                "-1"
                                 (Real 4)
                             )
                         )
@@ -963,7 +963,7 @@
                             )
                             NotEq
                             (RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -985,7 +985,7 @@
                             )
                             NotEq
                             (RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -1039,7 +1039,7 @@
                             )
                             NotEq
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -1061,7 +1061,7 @@
                             )
                             NotEq
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             (Logical 4)

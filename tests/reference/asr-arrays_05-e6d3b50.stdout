@@ -107,7 +107,7 @@
                                 )
                                 Mul
                                 (RealConstant
-                                    2.000000
+                                    "2"
                                     (Real 4)
                                 )
                                 (Real 4)

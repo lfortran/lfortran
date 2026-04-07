@@ -365,7 +365,7 @@
                                                                 IntegerToReal
                                                                 (Real 4)
                                                                 (RealConstant
-                                                                    2.000000
+                                                                    "2"
                                                                     (Real 4)
                                                                 )
                                                                 ()
@@ -471,11 +471,11 @@
                         7 foo
                         ()
                         [((RealConstant
-                            1.500000
+                            "1.5"
                             (Real 4)
                         ))
                         ((RealConstant
-                            2.000000
+                            "2"
                             (Real 4)
                         ))]
                         ()

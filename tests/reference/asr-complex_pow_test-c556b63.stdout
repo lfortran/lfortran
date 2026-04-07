@@ -83,11 +83,11 @@
                         (Var 2 x)
                         (ComplexConstructor
                             (RealConstant
-                                3.000000
+                                "3"
                                 (Real 4)
                             )
                             (RealConstant
-                                4.000000
+                                "4"
                                 (Real 4)
                             )
                             (Complex 4)
@@ -105,11 +105,11 @@
                         (Var 2 y)
                         (ComplexConstructor
                             (RealConstant
-                                3.000000
+                                "3"
                                 (Real 4)
                             )
                             (RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             )
                             (Complex 4)

@@ -209,7 +209,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                5.000000
+                                "5"
                                 (Real 4)
                             )
                             ()
@@ -225,7 +225,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                8.000000
+                                "8"
                                 (Real 4)
                             )
                             ()
@@ -238,13 +238,13 @@
                         (Var 2 k)
                         (Cast
                             (RealConstant
-                                9.230000
+                                "9.2299995422363281"
                                 (Real 4)
                             )
                             RealToReal
                             (Real 8)
                             (RealConstant
-                                9.230000
+                                "9.2299995422363281"
                                 (Real 8)
                             )
                             ()
@@ -274,11 +274,11 @@
                         (Var 2 z)
                         (ComplexConstructor
                             (RealConstant
-                                1.000000
+                                "1"
                                 (Real 4)
                             )
                             (RealConstant
-                                2.000000
+                                "2"
                                 (Real 4)
                             )
                             (Complex 4)

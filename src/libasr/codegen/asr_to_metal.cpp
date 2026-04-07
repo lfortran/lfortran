@@ -2983,7 +2983,7 @@ public:
             }
             case ASR::exprType::RealConstant: {
                 ASR::RealConstant_t *c = ASR::down_cast<ASR::RealConstant_t>(expr);
-                src << double_to_scientific(c->m_r);
+                src << double_to_scientific(str_to_double(c->m_r));
                 break;
             }
             case ASR::exprType::LogicalConstant: {

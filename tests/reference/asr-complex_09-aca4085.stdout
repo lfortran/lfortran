@@ -37,11 +37,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        3.140000
+                                        "3.1400001049041748"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        3.140000
+                                        "3.1400001049041748"
                                         (Real 4)
                                     )
                                     Save
@@ -131,7 +131,7 @@
                                 Cmplx
                                 [(Var 2 x)
                                 (RealConstant
-                                    0.000000
+                                    "0.0"
                                     (Real 4)
                                 )
                                 (IntegerConstant 8 (Integer 4) Decimal)]
@@ -153,7 +153,7 @@
                                 Cmplx
                                 [(Var 2 z2)
                                 (RealConstant
-                                    0.000000
+                                    "0"
                                     (Real 4)
                                 )
                                 (IntegerConstant 8 (Integer 4) Decimal)]
