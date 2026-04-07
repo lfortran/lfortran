@@ -298,13 +298,13 @@ program continue_compilation_1
     contiguous :: contig_not_declared
     contiguous :: MyClass
     
-    type :: matrix(n)
-        integer, len :: n
-        real :: data(n)
-    end type
-
-
-
+    program test
+        type :: matrix(n)
+            integer, len :: n
+            real :: data(n)
+        end type 
+        type(matrix(5)) :: A
+    end program
 
 
 
