@@ -1,0 +1,13 @@
+{
+    "basename": "run-mre_alloc_comp_lhs-fe5ff70",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/mre_alloc_comp_lhs.f90",
+    "infile_hash": "ce864c601c881c9812346ab7ed2c5f3b156f0be382ed64a615699e1e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-mre_alloc_comp_lhs-fe5ff70.stderr",
+    "stderr_hash": "aa8164eac91b768668ae3dc8fd7f436e9b632a0f77325928b402ce0c",
+    "returncode": 1
+}
