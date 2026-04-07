@@ -229,14 +229,6 @@ public:
             }
             case ASR::stmtType::If: {
                 ASR::If_t *ifstmt = ASR::down_cast<ASR::If_t>(stmt);
-                // GPU guard pattern: if (condition) with empty body
-                // means "return if out of bounds"
-                if (ifstmt->n_body == 0 && ifstmt->n_orelse == 0) {
-                    src << get_indent() << "if (";
-                    visit_expr(ifstmt->m_test);
-                    src << ") return;\n";
-                    break;
-                }
                 src << get_indent() << "if (";
                 visit_expr(ifstmt->m_test);
                 src << ") {\n";
@@ -260,6 +252,10 @@ public:
                 break;
             }
             case ASR::stmtType::ImplicitDeallocate: {
+                break;
+            }
+            case ASR::stmtType::Return: {
+                src << get_indent() << "return;\n";
                 break;
             }
             default:
