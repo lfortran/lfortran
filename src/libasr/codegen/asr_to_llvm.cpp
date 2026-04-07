@@ -25517,9 +25517,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
-#if LLVM_VERSION_MAJOR < 15
     LLVM::fix_pointer_type_mismatches(*v.module);
-#endif
     std::string msg;
     llvm::raw_string_ostream err(msg);
     if (llvm::verifyModule(*v.module, &err)) {

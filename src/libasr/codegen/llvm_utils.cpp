@@ -13,18 +13,15 @@ namespace LCompilers {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
-#if LLVM_VERSION_MAJOR < 15
-            if (x->getType()->isPointerTy()) {
-                llvm::Type* dest_pointee_type = y->getType()->getPointerElementType();
-                if (x->getType() != dest_pointee_type) {
-                    x = builder.CreateBitCast(x, dest_pointee_type);
+            if (x->getType()->isPointerTy() && y->getType()->getNumContainedTypes() > 0) {
+                llvm::Type* dest_pointee = y->getType()->getContainedType(0);
+                if (x->getType() != dest_pointee) {
+                    x = builder.CreateBitCast(x, dest_pointee);
                 }
             }
-#endif
             return builder.CreateStore(x, y);
         }
 
-#if LLVM_VERSION_MAJOR < 15
         void fix_pointer_type_mismatches(llvm::Module &module) {
             for (auto &F : module) {
                 for (auto &BB : F) {
@@ -32,12 +29,14 @@ namespace LCompilers {
                         if (auto *SI = llvm::dyn_cast<llvm::StoreInst>(&I)) {
                             llvm::Value *val = SI->getValueOperand();
                             llvm::Value *ptr = SI->getPointerOperand();
-                            llvm::Type *pointee = ptr->getType()->getPointerElementType();
-                            if (val->getType()->isPointerTy() && pointee->isPointerTy()
-                                    && val->getType() != pointee) {
-                                llvm::IRBuilder<> B(SI);
-                                llvm::Value *cast = B.CreateBitCast(val, pointee);
-                                SI->setOperand(0, cast);
+                            if (ptr->getType()->getNumContainedTypes() > 0) {
+                                llvm::Type *pointee = ptr->getType()->getContainedType(0);
+                                if (val->getType()->isPointerTy() && pointee->isPointerTy()
+                                        && val->getType() != pointee) {
+                                    llvm::IRBuilder<> B(SI);
+                                    llvm::Value *cast = B.CreateBitCast(val, pointee);
+                                    SI->setOperand(0, cast);
+                                }
                             }
                         } else if (auto *CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
                             llvm::Function *callee = CI->getCalledFunction();
@@ -58,7 +57,6 @@ namespace LCompilers {
                 }
             }
         }
-#endif
 
         const char* get_allocator_function_name() {
             return use_memory_debug()
