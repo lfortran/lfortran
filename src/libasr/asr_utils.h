@@ -5599,6 +5599,65 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
             m_v, m_m, m_type, m_value);
     }
 
+    ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::symbol_t* m_name = x->m_name;
+        ASR::symbol_t* m_original_name = x->m_original_name;
+        std::string name = ASRUtils::symbol_name(m_name);
+        ASR::symbol_t* resolved = use_resolve_symbol
+            ? current_scope->resolve_symbol(name)
+            : current_scope->get_symbol(name);
+        if (resolved) m_name = resolved;
+        if (m_original_name) {
+            std::string orig_name = ASRUtils::symbol_name(m_original_name);
+            ASR::symbol_t* resolved_orig = use_resolve_symbol
+                ? current_scope->resolve_symbol(orig_name)
+                : current_scope->get_symbol(orig_name);
+            if (resolved_orig) m_original_name = resolved_orig;
+        }
+        Vec<ASR::call_arg_t> m_args;
+        m_args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::call_arg_t call_arg_copy;
+            call_arg_copy.loc = x->m_args[i].loc;
+            call_arg_copy.m_value = duplicate_expr(x->m_args[i].m_value);
+            m_args.push_back(al, call_arg_copy);
+        }
+        ASR::ttype_t* m_type = duplicate_ttype(x->m_type);
+        ASR::expr_t* m_value = duplicate_expr(x->m_value);
+        ASR::expr_t* m_dt = duplicate_expr(x->m_dt);
+        return ASR::make_FunctionCall_t(al, x->base.base.loc, m_name,
+            m_original_name, m_args.p, x->n_args, m_type, m_value, m_dt);
+    }
+
+    ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
+        ASR::symbol_t* m_name = x->m_name;
+        ASR::symbol_t* m_original_name = x->m_original_name;
+        std::string name = ASRUtils::symbol_name(m_name);
+        ASR::symbol_t* resolved = use_resolve_symbol
+            ? current_scope->resolve_symbol(name)
+            : current_scope->get_symbol(name);
+        if (resolved) m_name = resolved;
+        if (m_original_name) {
+            std::string orig_name = ASRUtils::symbol_name(m_original_name);
+            ASR::symbol_t* resolved_orig = use_resolve_symbol
+                ? current_scope->resolve_symbol(orig_name)
+                : current_scope->get_symbol(orig_name);
+            if (resolved_orig) m_original_name = resolved_orig;
+        }
+        Vec<ASR::call_arg_t> m_args;
+        m_args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::call_arg_t call_arg_copy;
+            call_arg_copy.loc = x->m_args[i].loc;
+            call_arg_copy.m_value = duplicate_expr(x->m_args[i].m_value);
+            m_args.push_back(al, call_arg_copy);
+        }
+        ASR::expr_t* m_dt = duplicate_expr(x->m_dt);
+        return ASR::make_SubroutineCall_t(al, x->base.base.loc, m_name,
+            m_original_name, m_args.p, x->n_args, m_dt,
+            x->m_strict_bounds_checking);
+    }
+
 };
 
 
@@ -5879,27 +5938,30 @@ class SymbolDuplicator {
                         associate_block->m_name, new_body.p, new_body.size()));
     }
 
-    ASR::symbol_t* duplicate_Function(ASR::Function_t* function,
-        SymbolTable* destination_symtab) {
-        SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
-        duplicate_SymbolTable(function->m_symtab, function_symtab);
-
-        // Re-duplicate AssociateBlock bodies with scope awareness.
-        // duplicate_AssociateBlock uses a non-scoped duplicator, so Var
-        // references in the body still point to original symbols. Now
-        // that all symbols exist in function_symtab, re-duplicate from
-        // the original bodies using a scoped duplicator that resolves
-        // symbols through the new scope chain.
-        for (auto &item : function_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second)) continue;
+    // Recursively re-duplicate AssociateBlock bodies with scope
+    // awareness. duplicate_AssociateBlock uses a non-scoped duplicator,
+    // so Var references in the body still point to original symbols.
+    // This walks through all AssociateBlocks (including nested ones)
+    // and re-duplicates from the original bodies using a scoped
+    // duplicator that resolves symbols through the new scope chain.
+    void fixup_associate_block_bodies(SymbolTable *new_scope,
+            SymbolTable *orig_scope) {
+        for (auto &item : new_scope->get_scope()) {
+            if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
+                continue;
             ASR::AssociateBlock_t *new_ab =
                 ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-            ASR::symbol_t *orig_sym = function->m_symtab->get_symbol(
+            ASR::symbol_t *orig_sym = orig_scope->get_symbol(
                 item.first);
             if (!orig_sym ||
-                    !ASR::is_a<ASR::AssociateBlock_t>(*orig_sym)) continue;
+                    !ASR::is_a<ASR::AssociateBlock_t>(*orig_sym))
+                continue;
             ASR::AssociateBlock_t *orig_ab =
                 ASR::down_cast<ASR::AssociateBlock_t>(orig_sym);
+            // Recurse into nested AssociateBlocks first so their
+            // bodies are fixed before we re-duplicate this level.
+            fixup_associate_block_bodies(new_ab->m_symtab,
+                orig_ab->m_symtab);
             Vec<ASR::stmt_t*> ab_body;
             ab_body.reserve(al, orig_ab->n_body);
             ASRUtils::ExprStmtWithScopeDuplicator ab_dup(
@@ -5920,6 +5982,14 @@ class SymbolDuplicator {
                 new_ab->n_body = ab_body.n;
             }
         }
+    }
+
+    ASR::symbol_t* duplicate_Function(ASR::Function_t* function,
+        SymbolTable* destination_symtab) {
+        SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(function->m_symtab, function_symtab);
+
+        fixup_associate_block_bodies(function_symtab, function->m_symtab);
 
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, function->n_body);

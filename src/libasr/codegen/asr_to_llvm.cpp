@@ -19914,6 +19914,102 @@ public:
             }
         }
 
+        // Add per-dimension size scalars for DescriptorArray
+        // (assumed-shape) kernel arguments, matching the Metal codegen's
+        // scalar struct layout. We check the kernel function's parameter
+        // types (not call arg types) since the Metal codegen uses those.
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *arg_expr = x.m_args[i].m_value;
+            if (!arg_expr) continue;
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
+            if (!ASRUtils::is_array(arg_type)) continue;
+            // Check the kernel function's parameter type for null dims
+            ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(
+                    kernel_func->m_args[i])->m_v);
+            // Skip synthetic kernel args (__data_*, etc.)
+            std::string kparam_name(kparam->m_name);
+            if (kparam_name.substr(0, 2) == "__") continue;
+            ASR::ttype_t *kparam_type =
+                ASRUtils::type_get_past_allocatable(kparam->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*kparam_type)) continue;
+            ASR::Array_t *kparam_arr =
+                ASR::down_cast<ASR::Array_t>(kparam_type);
+            bool has_null_dim = false;
+            for (size_t d = 0; d < kparam_arr->n_dims; d++) {
+                if (!kparam_arr->m_dims[d].m_length) {
+                    has_null_dim = true;
+                    break;
+                }
+            }
+            if (!has_null_dim) continue;
+            // Get the descriptor for this call arg to extract dim sizes
+            bool is_allocatable_array2 =
+                ASR::is_a<ASR::Allocatable_t>(*arg_type)
+                && ASRUtils::is_array(arg_type);
+            bool is_descriptor_array2 = false;
+            ASR::ttype_t *past_alloc2 =
+                ASRUtils::type_get_past_allocatable(arg_type);
+            if (ASR::is_a<ASR::Array_t>(*past_alloc2)) {
+                ASR::Array_t *call_arr =
+                    ASR::down_cast<ASR::Array_t>(past_alloc2);
+                for (size_t d = 0; d < call_arr->n_dims; d++) {
+                    if (!call_arr->m_dims[d].m_length) {
+                        is_descriptor_array2 = true;
+                        break;
+                    }
+                }
+            }
+            if (is_allocatable_array2 || is_descriptor_array2) {
+                // Call arg is also a descriptor: extract sizes from it
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 1;
+                this->visit_expr(*arg_expr);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value *desc_val = tmp;
+                llvm::Type *desc_type =
+                    llvm_utils->get_type_from_ttype_t_util(
+                        arg_expr, past_alloc2, module.get());
+                for (size_t d = 0; d < kparam_arr->n_dims; d++) {
+                    llvm::Value *dim_1based = llvm::ConstantInt::get(
+                        i32, d + 1);
+                    llvm::Value *dim_size =
+                        arr_descr->get_array_size(
+                            desc_type, desc_val, dim_1based, 4, 4);
+                    scalar_arg_infos.push_back(
+                        {dim_size, llvm::Type::getInt32Ty(context)});
+                }
+            } else {
+                // Call arg has known dims: compute sizes from ASR
+                ASR::Array_t *call_arr =
+                    ASR::down_cast<ASR::Array_t>(past_alloc2);
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
+                for (size_t d = 0; d < kparam_arr->n_dims; d++) {
+                    llvm::Value *dim_size;
+                    if (d < call_arr->n_dims &&
+                            call_arr->m_dims[d].m_length) {
+                        this->visit_expr(*call_arr->m_dims[d].m_length);
+                        dim_size = tmp;
+                        if (dim_size->getType()->isPointerTy()) {
+                            dim_size = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt32Ty(context),
+                                dim_size);
+                        }
+                        dim_size = builder->CreateSExtOrTrunc(
+                            dim_size,
+                            llvm::Type::getInt32Ty(context));
+                    } else {
+                        dim_size = llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context), 1);
+                    }
+                    scalar_arg_infos.push_back(
+                        {dim_size, llvm::Type::getInt32Ty(context)});
+                }
+                ptr_loads = ptr_loads_copy;
+            }
+        }
+
         // In packed mode: allocate combined buffer, copy data in, and set
         // as a single Metal buffer. Offsets go into the scalar struct.
         llvm::Value *packed_buf_ptr = nullptr;
