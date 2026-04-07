@@ -260,7 +260,7 @@
                         (Var 2 w8)
                         (ComplexConstructor
                             (RealConstant
-                                "7.7000000000000002"
+                                "7.700000000000000177635683940025046"
                                 (Real 8)
                             )
                             (RealConstant
@@ -354,7 +354,7 @@
                         (Var 2 w4)
                         (ComplexConstructor
                             (RealConstant
-                                "7.6999998092651367"
+                                "7.69999980926513671875"
                                 (Real 4)
                             )
                             (RealConstant

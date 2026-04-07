@@ -282,7 +282,7 @@
                                             )
                                             Mul
                                             (RealConstant
-                                                "4.5999999046325684"
+                                                "4.599999904632568359375"
                                                 (Real 4)
                                             )
                                             (Real 4)
@@ -377,7 +377,7 @@
                                             Mul
                                             (ArrayBroadcast
                                                 (RealConstant
-                                                    "2.5999999046325684"
+                                                    "2.599999904632568359375"
                                                     (Real 4)
                                                 )
                                                 (IntrinsicArrayFunction
@@ -557,7 +557,7 @@
                         (Var 2 x)
                         (ArrayBroadcast
                             (RealConstant
-                                "0.41999998688697815"
+                                "0.4199999868869781494140625"
                                 (Real 4)
                             )
                             (ArrayConstant
@@ -597,7 +597,7 @@
                         (Var 2 y)
                         (ArrayBroadcast
                             (RealConstant
-                                "0.34999999403953552"
+                                "0.3499999940395355224609375"
                                 (Real 4)
                             )
                             (ArrayConstant
@@ -637,7 +637,7 @@
                         (Var 2 myreal)
                         (ArrayBroadcast
                             (RealConstant
-                                "9.1000003814697266"
+                                "9.1000003814697265625"
                                 (Real 4)
                             )
                             (IntrinsicArrayFunction
@@ -710,7 +710,7 @@
                         (Var 2 a)
                         (ArrayBroadcast
                             (RealConstant
-                                "0.40000000596046448"
+                                "0.4000000059604644775390625"
                                 (Real 4)
                             )
                             (ArrayConstant

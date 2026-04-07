@@ -58,7 +58,7 @@
                         )
                         (Cast
                             (RealConstant
-                                "2.4000000953674316"
+                                "2.400000095367431640625"
                                 (Real 4)
                             )
                             RealToInteger

@@ -61,11 +61,11 @@
                                     Local
                                     (ComplexConstructor
                                         (RealConstant
-                                            "1.0499999523162842"
+                                            "1.0499999523162841796875"
                                             (Real 4)
                                         )
                                         (RealConstant
-                                            "1.0499999523162842"
+                                            "1.0499999523162841796875"
                                             (Real 4)
                                         )
                                         (Complex 4)
@@ -103,11 +103,11 @@
                                     Local
                                     (ComplexConstructor
                                         (RealConstant
-                                            "1.0499999523162842"
+                                            "1.0499999523162841796875"
                                             (Real 4)
                                         )
                                         (RealConstant
-                                            "1.05"
+                                            "1.050000000000000044408920985006262"
                                             (Real 8)
                                         )
                                         (Complex 8)

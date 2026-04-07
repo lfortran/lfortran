@@ -1,5 +1,5 @@
 function main()
-    local x::Float32 = 3.2999999523162842 + 6
+    local x::Float32 = 3.2999999523162841796875 + 6
     println(x)
 end
 

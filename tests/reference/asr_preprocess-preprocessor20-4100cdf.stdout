@@ -19,7 +19,7 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (RealConstant
-                                "3.1400001049041748"
+                                "3.1400001049041748046875"
                                 (Real 4)
                             )]
                             FormatFortran

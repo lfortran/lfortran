@@ -2,7 +2,7 @@ program implicitrealtointcastexample
 implicit none
 integer(4) :: integervalue
 real(4) :: realnumber
-realnumber = 3.1400001049041748
+realnumber = 3.1400001049041748046875
 integervalue = int(realnumber, kind=4)
 print *, "Real Number:", realnumber
 print *, "Integer Value:", integervalue
