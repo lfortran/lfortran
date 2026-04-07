@@ -18,7 +18,7 @@
 namespace LCompilers {
 
 // Converts a double to string preserving full precision.
-// Uses setprecision(34) which is enough for 128-bit real(16) values.
+// Uses setprecision(17) currently which is enough for 64-bit real(8) values. We can set this to 34 for 128-bit real(16) values in the future.
 // For NaN values, the exact bit pattern is preserved using the
 // format "nan:XXXXXXXXXXXXXXXX" (16 hex digits) so that signaling NaN
 // payloads survive round-tripping through string storage.
@@ -33,7 +33,7 @@ inline std::string double_to_str_precision(double x) {
     }
     if (std::isinf(x)) return x > 0 ? "inf" : "-inf";
     std::ostringstream oss;
-    oss << std::setprecision(34) << x;
+    oss << std::setprecision(17) << x;
     return oss.str();
 }
 
