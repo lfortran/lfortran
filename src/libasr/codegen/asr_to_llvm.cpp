@@ -357,6 +357,7 @@ public:
     Vec<llvm::Value*> strings_to_be_deallocated;
     Vec<llvm::Value*> heap_fixed_size_arrays;  // Heap-allocated large fixed-size arrays for cleanup
     bool in_block_context = false;  // Flag to track if we're inside a BLOCK construct
+    bool in_select_rank_rank0 = false;
     // Tracks allocatable/pointer array args in bind(C) functions that need
     // stride conversion from element-based back to byte-based on exit.
     struct BindCStrideExit {
@@ -4927,14 +4928,7 @@ public:
                 if (ASRUtils::is_struct(*elem_t)){
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
-#if LLVM_VERSION_MAJOR < 15
-                    llvm::Type* pointee = tmp->getType()->getPointerElementType();
-                    if (pointee == array_type) {
-                        tmp = llvm_utils->create_gep2(array_type, tmp, 0);
-                    }
-#else
                     tmp = llvm_utils->create_gep2(array_type, tmp, 0);
-#endif
                     base_t = elem_t;
                 }
             }
@@ -9201,13 +9195,9 @@ public:
                 llvm::Type* value_el_type = llvm_utils->get_el_type(
                     x.m_value, ASRUtils::extract_type(value_type), module.get());
                 llvm::Value* wrapper_ptr = nullptr;
-#if LLVM_VERSION_MAJOR < 15
-                if (llvm_value->getType()->isPointerTy() &&
-                    llvm_value->getType()->getPointerElementType() == value_el_type) {
+                if (in_select_rank_rank0) {
                     wrapper_ptr = llvm_value;
-                } else
-#endif
-                {
+                } else {
                     llvm::Type* const array_desc_type = llvm_utils->arr_api->
                         get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
                             value_el_type, false);
@@ -12325,12 +12315,8 @@ public:
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
 
             if (!ASRUtils::is_array(m_type)) {
-                // rank(0): extract scalar value from the assumed-rank descriptor.
-                // visit_SelectRank may have already remapped the selector to the
-                // data pointer. Detect this by checking whether arg's LLVM type
-                // matches the element pointer type rather than the descriptor type.
                 llvm::Value* data_ptr = nullptr;
-                if (arg->getType() == data_type->getPointerTo()) {
+                if (in_select_rank_rank0) {
                     data_ptr = arg;
                 } else {
                     data_ptr = llvm_utils->CreateLoad2(
@@ -12793,12 +12779,14 @@ public:
                         arr_descr->get_pointer_to_data(llvm_selector_type_, llvm_selector));
                     llvm_symtab[selector_hash] = data_ptr;
                     remapped_selector = true;
+                    in_select_rank_rank0 = true;
                 }
                 if ( n_rank_block == 1 && ASR::is_a<ASR::BlockCall_t>(*rank_block[0])) {
                     visit_BlockCall(*ASR::down_cast<ASR::BlockCall_t>(rank_block[0]));
                 }
                 if (remapped_selector) {
                     llvm_symtab[selector_hash] = original_sym_value;
+                    in_select_rank_rank0 = false;
                 }
             }
             builder->CreateBr(mergeBB);
@@ -12860,23 +12848,16 @@ public:
                         static_ptr_type = llvm_utils->get_type_from_ttype_t_util(actual_selector, selector_var_type, module.get());
                     }
                     if (ASRUtils::is_array(selector_var_type) && 
-                            ASRUtils::extract_physical_type(selector_var_type) == ASR::array_physical_typeType::DescriptorArray) {
+                            ASRUtils::extract_physical_type(selector_var_type) == ASR::array_physical_typeType::DescriptorArray
+                            && !in_select_rank_rank0) {
                         static_ptr_type = llvm_utils->get_type_from_ttype_t_util(
                             actual_selector, ASRUtils::type_get_past_allocatable_pointer(selector_var_type), module.get());
-#if LLVM_VERSION_MAJOR < 15
-                        bool ptr_is_descriptor = static_ptr->getType()->isPointerTy() &&
-                            static_ptr->getType()->getPointerElementType() == static_ptr_type;
-#else
-                        bool ptr_is_descriptor = true;
-#endif
-                        if (ptr_is_descriptor) {
-                            static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
-                            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
-                                actual_selector, ASRUtils::extract_type(selector_var_type), module.get());
-                            static_ptr = llvm_utils->CreateLoad2(
-                                el_type->getPointerTo(),
-                                static_ptr);
-                        }
+                        static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
+                        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+                            actual_selector, ASRUtils::extract_type(selector_var_type), module.get());
+                        static_ptr = llvm_utils->CreateLoad2(
+                            el_type->getPointerTo(),
+                            static_ptr);
                     }
 
                     if (struct_api->newclass2vtab.find(type_sym) == struct_api->newclass2vtab.end()) {
@@ -12921,22 +12902,15 @@ public:
                     if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(actual_selector))) {
                         static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
                     }
-                    if (ASRUtils::is_array(ASRUtils::expr_type(actual_selector))) {
-#if LLVM_VERSION_MAJOR < 15
-                        bool ptr_is_descriptor = static_ptr->getType()->isPointerTy() &&
-                            static_ptr->getType()->getPointerElementType() == llvm_selector_type_;
-#else
-                        bool ptr_is_descriptor = true;
-#endif
-                        if (ptr_is_descriptor) {
-                            static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
-                            static_ptr = llvm_utils->CreateLoad2(
-                                llvm_utils->get_el_type(
-                                    actual_selector,
-                                    ASRUtils::extract_type(ASRUtils::expr_type(actual_selector)),
-                                    module.get())->getPointerTo(),
-                                static_ptr);
-                        }
+                    if (ASRUtils::is_array(ASRUtils::expr_type(actual_selector))
+                            && !in_select_rank_rank0) {
+                        static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
+                        static_ptr = llvm_utils->CreateLoad2(
+                            llvm_utils->get_el_type(
+                                actual_selector,
+                                ASRUtils::extract_type(ASRUtils::expr_type(actual_selector)),
+                                module.get())->getPointerTo(),
+                            static_ptr);
                     }
 
                     if (struct_api->newclass2vtab.find(class_sym) == struct_api->newclass2vtab.end()) {
@@ -12992,19 +12966,15 @@ public:
                         selector_var_type = ASRUtils::type_get_past_allocatable_pointer(selector_var_type);
                         static_ptr_type = llvm_utils->get_type_from_ttype_t_util(actual_selector, selector_var_type, module.get());
                     }
-                    if (ASRUtils::is_array(selector_var_type)) {
-                        llvm::Type* el_type = llvm_utils->get_el_type(
-                            actual_selector,
-                            ASRUtils::type_get_past_array(selector_var_type),
-                            module.get());
-                        if (static_ptr->getType() == el_type->getPointerTo()) {
-                            // Selector was remapped by visit_SelectRank rank(0)
-                            // to the element/wrapper pointer; skip descriptor extraction.
-                        } else {
-                            static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
-                            static_ptr = llvm_utils->CreateLoad2(
-                                el_type->getPointerTo(), static_ptr);
-                        }
+                    if (ASRUtils::is_array(selector_var_type)
+                            && !in_select_rank_rank0) {
+                        static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
+                        static_ptr = llvm_utils->CreateLoad2(
+                            llvm_utils->get_el_type(
+                                actual_selector,
+                                ASRUtils::type_get_past_array(selector_var_type),
+                                module.get())->getPointerTo(),
+                            static_ptr);
                     }
                     llvm::Value* val = lfortran_dynamic_cast(
                         static_ptr,
