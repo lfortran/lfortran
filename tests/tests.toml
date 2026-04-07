@@ -3319,6 +3319,10 @@ filename = "errors/mre_parameter.f90"
 continue_compilation = true
 
 [[test]]
+filename = "errors/mre_alloc_comp_lhs.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
 
