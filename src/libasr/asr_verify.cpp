@@ -866,6 +866,7 @@ public:
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
+            ASR::GpuKernelFunction_t* gkfm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -874,7 +875,8 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
@@ -887,6 +889,9 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
+                } else if( ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym) ) {
+                    gkfm = ASR::down_cast<ASR::GpuKernelFunction_t>(asr_owner_sym);
+                    asr_owner_name = gkfm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -925,6 +930,8 @@ public:
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( gkfm ) {
+                s = gkfm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
