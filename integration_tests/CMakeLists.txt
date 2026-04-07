@@ -4152,6 +4152,9 @@ RUN(NAME pure_side_effects_03 LABELS gfortran llvm)
 RUN(NAME merge_str_01 LABELS gfortran llvm)
 RUN(NAME io_direct_slash LABELS gfortran llvm)
 
+#test for coarray
+RUN(NAME coarray_01 LABELS gfortran llvm GFORTRAN_ARGS -fcoarray=single)
+
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_03 LABELS gfortran llvm metal)

@@ -16133,6 +16133,54 @@ public:
         }
     }
 
+    // Handle CoarrayRef: In single-image mode, x[i] resolves to just x,
+    // and x(i,j)[k] resolves to x(i,j). Cosubscripts are ignored.
+    void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
+        std::string var_name = to_lower(x.m_name);
+        const Location &loc = x.base.base.loc;
+
+        if (x.n_member > 0) {
+            // Struct member coarray access like s%x[i] or s%x(j)[i]
+            // visit_NameUtil for the member chain, then handle array args.
+            visit_NameUtil(x.m_member, x.n_member - 1,
+                x.m_member[x.n_member - 1].m_name, loc, x.n_member);
+            ASR::expr_t *v_expr = ASRUtils::EXPR(tmp);
+            ASR::symbol_t *v = nullptr;
+            SymbolTable *scope = current_scope;
+            v = resolve_deriv_type_proc(loc, var_name,
+                    to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+            ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+            if (x.n_args > 0) {
+                tmp = create_ArrayRef(loc, x.m_args, x.n_args,
+                                      nullptr, 0, v_expr, v, f2);
+            } else {
+                ASR::ttype_t *type = ASRUtils::symbol_type(f2);
+                tmp = ASR::make_StructInstanceMember_t(al, loc, v_expr,
+                    ASRUtils::import_struct_instance_member(al, v, current_scope),
+                    type, nullptr);
+            }
+        } else {
+            // Simple coarray access like x[i] or x(i,j)[k]
+            ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
+            if (!v) {
+                diag.add(Diagnostic(
+                    "Variable '" + var_name + "' not found",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+            if (x.n_args > 0) {
+                // x(i,j)[k] -> resolve as ArrayItem/ArraySection of x(i,j)
+                tmp = create_ArrayRef(loc, x.m_args, x.n_args,
+                                      nullptr, 0, nullptr, v, f2);
+            } else {
+                // x[i] -> resolve as just Var(x)
+                tmp = ASR::make_Var_t(al, loc, v);
+            }
+        }
+    }
+
     void check_global_procedure_and_enable_separate_compilation(SymbolTable *parent_scope) {
         if ( parent_scope->parent != nullptr ) {
             return;
