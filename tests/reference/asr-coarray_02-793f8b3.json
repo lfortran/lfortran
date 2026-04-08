@@ -2,12 +2,12 @@
     "basename": "asr-coarray_02-793f8b3",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/coarray_02.f90",
-    "infile_hash": "2596392da0a0f151ef299d3847fd3f0a52641794ea9c6eea9ba90880",
+    "infile_hash": "44aa57421c584c7303ac985d318b599190ab1a634795e72cc1b3488a",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-coarray_02-793f8b3.stderr",
-    "stderr_hash": "ffa3b2b85245d579c0649a38f23016a0c4614be7a58c29d9ad8cd3e2",
+    "stderr_hash": "08647c98a57c1f78ead31e8f8989aee8b6e65c75d38debbdf4739b7e",
     "returncode": 2
 }

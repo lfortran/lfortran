@@ -1,8 +1,3 @@
 program coarray_02
-    type :: t
-        integer :: x[3,*]
-    end type t
-    type(t) :: s
-    ! Corank = 2, but only 1 coindex provided → ERROR
-    s%x[1] = 5
+    call event_query(1, 1, 1)
 end program coarray_02
