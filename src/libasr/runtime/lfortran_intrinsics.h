@@ -280,7 +280,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* round, int64_t round_len,
     char* pad, int64_t pad_len
 );
-LFORTRAN_API void _lfortran_flush(int32_t unit_num);
+LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_sleep(int32_t seconds);
 LFORTRAN_API int32_t _lfortran_get_decimal_mode(int32_t unit_num);

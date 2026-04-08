@@ -5955,9 +5955,17 @@ _lfortran_open(int32_t unit_num,
     return 0;
 }
 
-LFORTRAN_API void _lfortran_flush(int32_t unit_num)
+LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len) 
 {
     // special case: flush all open units
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+    if (iomsg != NULL && iomsg_len > 0) {
+        // Clear iomsg on entry
+        iomsg[0] = '\0';
+        pad_with_spaces(iomsg, 0, iomsg_len);
+    }
     if (unit_num == -1) {
         for (int i = 0; i <= last_index_used; i++) {
             if (unit_to_file[i].filep != NULL) {
@@ -5981,8 +5989,17 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
                 fflush(stderr);
                 return;
             }
-            printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
-            exit(1);
+            if (iostat != NULL) {
+                *iostat = -5005;
+                if (iomsg != NULL && iomsg_len > 0) {
+                    char *msg = "Specified UNIT is not connected.";
+                    _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg));
+                }
+                return;
+            } else {
+                printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
+                exit(1);
+            }
         }
         fflush(filep);
     }
@@ -11100,7 +11117,7 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = internal_malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
-    _lfortran_flush(-1);
+    _lfortran_flush(-1, NULL, NULL, 0);
 
     int result = system(c_cmd);
     internal_free(c_cmd);
