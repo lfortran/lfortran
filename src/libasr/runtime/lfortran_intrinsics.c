@@ -792,6 +792,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     val = val * pow(10, scale);
 
     int width = 0, decimal_digits = 0;
+    bool is_negative = (val < 0);
     long integer_part = (long)fabs(val);
     double decimal_part = fabs(val) - integer_part;
 
@@ -809,9 +810,11 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     double rounding_factor = pow(10, -decimal_digits);
 
     if (rounding_mode == 'u') {
-        decimal_part = ceil(decimal_part / rounding_factor) * rounding_factor;
+        double scaled = decimal_part / rounding_factor;
+        decimal_part = (is_negative ? floor(scaled) : ceil(scaled)) * rounding_factor;
     } else if (rounding_mode == 'd') {
-        decimal_part = floor(decimal_part / rounding_factor) * rounding_factor;
+        double scaled = decimal_part / rounding_factor;
+        decimal_part = (is_negative ? ceil(scaled) : floor(scaled)) * rounding_factor;
     } else if (rounding_mode == 'z') {
         decimal_part = trunc(decimal_part / rounding_factor) * rounding_factor;
     } else {
@@ -1068,7 +1071,50 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     internal_free(final_result);
 }
 
-void handle_decimal(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
+static bool should_round_up_digits(const char *digits, int round_pos,
+                                   char rounding_mode, bool is_negative) {
+    int len = (int)strlen(digits);
+    if (round_pos < 0 || round_pos >= len) {
+        return false;
+    }
+    bool has_nonzero = false;
+    for (int i = round_pos; i < len; i++) {
+        if (digits[i] != '0') {
+            has_nonzero = true;
+            break;
+        }
+    }
+    if (!has_nonzero) {
+        return false;
+    }
+    if (rounding_mode == 'u') {
+        return !is_negative;
+    }
+    if (rounding_mode == 'd') {
+        return is_negative;
+    }
+    if (rounding_mode == 'z') {
+        return false;
+    }
+    return digits[round_pos] >= '5';
+}
+
+static long long round_scaled_value(long double value, char rounding_mode,
+                                    bool is_negative) {
+    if (rounding_mode == 'u') {
+        return (long long)(is_negative ? floorl(value) : ceill(value));
+    }
+    if (rounding_mode == 'd') {
+        return (long long)(is_negative ? ceill(value) : floorl(value));
+    }
+    if (rounding_mode == 'z') {
+        return (long long)floorl(value);
+    }
+    return (long long)roundl(value);
+}
+
+void handle_decimal(char* format, double val, int scale, char** result, char* c,
+                    bool is_signed_plus, char rounding_mode) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
 
@@ -1115,6 +1161,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int digits = decimal_digits;
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
+    bool is_negative = (val < 0);
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
@@ -1276,13 +1323,14 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         if (digits + scale < strlen(val_str) && val != 0) {
             if (digits + scale - zeros <= 15) {
                 val_str[15] = '\0';
-                long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale)));
+                long double scaled = (long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale));
+                long long t = round_scaled_value(scaled, rounding_mode, is_negative);
                 sprintf(val_str, "%lld", t);
                 int index = zeros;
                 while(index--) strcat(formatted_value, "0");
             } else {
                 int round_pos = digits + scale;
-                if (round_pos < (int)strlen(val_str) && val_str[round_pos] >= '5') {
+                if (should_round_up_digits(val_str, round_pos, rounding_mode, is_negative)) {
                     int carry = 1;
                     for (int k = round_pos - 1; k >= 0 && carry; k--) {
                         int d = (val_str[k] - '0') + carry;
@@ -1306,7 +1354,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             if (digits + scale <= 15) {
                 new_str[15] = '\0';
                 zeros = strspn(new_str, "0");
-                long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits)));
+                long double scaled = (long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits));
+                long long t = round_scaled_value(scaled, rounding_mode, is_negative);
                 sprintf(new_str, "%lld", t);
                 int index = zeros;
                 while(index--) {
@@ -1314,7 +1363,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                     new_str[0] = '0';
                 }
             } else {
-                if (digits < (int)strlen(new_str) && new_str[digits] >= '5') {
+                if (should_round_up_digits(new_str, digits, rounding_mode, is_negative)) {
                     int carry = 1;
                     for (int k = digits - 1; k >= 0 && carry; k--) {
                         int d = (new_str[k] - '0') + carry;
@@ -3267,7 +3316,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    handle_decimal(value, double_val, scale, &temp_buf, "D", is_SP_specifier);
+                    handle_decimal(value, double_val, scale, &temp_buf, "D", is_SP_specifier, rounding_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
                     result_len += temp_len;
@@ -3286,7 +3335,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     if (format_type == 'n') {
                         handle_en(value, double_val, scale, &temp_buf, "E", is_SP_specifier);
                     } else {
-                        handle_decimal(value, double_val, scale, &temp_buf, "E", is_SP_specifier);
+                        handle_decimal(value, double_val, scale, &temp_buf, "E", is_SP_specifier, rounding_mode);
                     }
                     int64_t temp_len = strlen(temp_buf);
                     result = append_to_string_NTI(al, result, result_len, temp_buf, temp_len);
@@ -5638,7 +5687,7 @@ _lfortran_open(int32_t unit_num,
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0, NULL, 0,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -5906,9 +5955,17 @@ _lfortran_open(int32_t unit_num,
     return 0;
 }
 
-LFORTRAN_API void _lfortran_flush(int32_t unit_num)
+LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len) 
 {
     // special case: flush all open units
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+    if (iomsg != NULL && iomsg_len > 0) {
+        // Clear iomsg on entry
+        iomsg[0] = '\0';
+        pad_with_spaces(iomsg, 0, iomsg_len);
+    }
     if (unit_num == -1) {
         for (int i = 0; i <= last_index_used; i++) {
             if (unit_to_file[i].filep != NULL) {
@@ -5932,8 +5989,17 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
                 fflush(stderr);
                 return;
             }
-            printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
-            exit(1);
+            if (iostat != NULL) {
+                *iostat = -5005;
+                if (iomsg != NULL && iomsg_len > 0) {
+                    char *msg = "Specified UNIT is not connected.";
+                    _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg));
+                }
+                return;
+            } else {
+                printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
+                exit(1);
+            }
         }
         fflush(filep);
     }
@@ -6008,7 +6074,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *stream, int64_t stream_len,
                                     char *iomsg, int64_t iomsg_len,
                                     char *round, int64_t round_len,
-                                    char *pad, int64_t pad_len) {
+                                    char *pad, int64_t pad_len,
+                                    bool *pending,
+                                    char *asynchronous, int64_t asynchronous_len) {
     if (f_name_data && unit_num != -1) {
         if (iostat != NULL) {
             *iostat = 1;
@@ -6250,6 +6318,12 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                 }
             }
         }
+        if (pending != NULL) {
+            *pending = false;
+        }
+        if (asynchronous != NULL) {
+            _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
+        }
         if (iostat != NULL) {
             *iostat = 0;
             // iomsg is left unchanged on success per Fortran standard
@@ -6475,6 +6549,12 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                     _lfortran_copy_str_and_pad(round, round_len, "PROCESSOR_DEFINED", 17);
                 }
             }
+        }
+        if (pending != NULL) {
+            *pending = false;
+        }
+        if (asynchronous != NULL) {
+            _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
         }
         if (iostat != NULL) {
             *iostat = 0;
@@ -9791,7 +9871,7 @@ static int _lfortran_skip_comma(char *buf, int *skip, int64_t off, int64_t *offs
             if (iostat) *iostat = 0;
             return 1;
         }
-        (*skip)++;
+        *skip = look;
     }
     return 0;
 }
@@ -11037,7 +11117,7 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = internal_malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
-    _lfortran_flush(-1);
+    _lfortran_flush(-1, NULL, NULL, 0);
 
     int result = system(c_cmd);
     internal_free(c_cmd);

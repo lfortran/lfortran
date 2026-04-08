@@ -483,6 +483,13 @@ namespace LCompilers::CommandLineInterface {
         // set gpu offloading in pass options
         if (compiler_options.gpu_backend == "metal") {
             compiler_options.po.gpu_offload_metal = true;
+        } else if (compiler_options.gpu_backend == "cuda") {
+            compiler_options.po.gpu_offload_cuda = true;
+        } else if (!compiler_options.gpu_backend.empty()) {
+            throw lc::LCompilersException(
+                "The GPU backend `" + compiler_options.gpu_backend
+                + "` is not supported; supported values: metal, cuda"
+            );
         }
 
         for (auto &f_flag : opts.f_flags) {
