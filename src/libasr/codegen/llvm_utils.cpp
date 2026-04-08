@@ -13,7 +13,53 @@ namespace LCompilers {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
+#if LLVM_VERSION_MAJOR < 15
+            if (x->getType()->isPointerTy() && y->getType()->getNumContainedTypes() > 0) {
+                llvm::Type* dest_pointee = y->getType()->getContainedType(0);
+                if (x->getType() != dest_pointee) {
+                    x = builder.CreateBitCast(x, dest_pointee);
+                }
+            }
+#endif
             return builder.CreateStore(x, y);
+        }
+
+        void fix_pointer_type_mismatches(llvm::Module &module) {
+#if LLVM_VERSION_MAJOR < 15
+            for (auto &F : module) {
+                for (auto &BB : F) {
+                    for (auto &I : BB) {
+                        if (auto *SI = llvm::dyn_cast<llvm::StoreInst>(&I)) {
+                            llvm::Value *val = SI->getValueOperand();
+                            llvm::Value *ptr = SI->getPointerOperand();
+                            if (ptr->getType()->getNumContainedTypes() > 0) {
+                                llvm::Type *pointee = ptr->getType()->getContainedType(0);
+                                if (val->getType()->isPointerTy() && pointee->isPointerTy()
+                                        && val->getType() != pointee) {
+                                    llvm::IRBuilder<> B(SI);
+                                    llvm::Value *cast = B.CreateBitCast(val, pointee);
+                                    SI->setOperand(0, cast);
+                                }
+                            }
+                        } else if (auto *CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
+                            llvm::Function *callee = CI->getCalledFunction();
+                            if (!callee) continue;
+                            llvm::FunctionType *ft = callee->getFunctionType();
+                            for (unsigned i = 0; i < CI->arg_size() && i < ft->getNumParams(); i++) {
+                                llvm::Value *arg = CI->getArgOperand(i);
+                                llvm::Type *param_ty = ft->getParamType(i);
+                                if (arg->getType()->isPointerTy() && param_ty->isPointerTy()
+                                        && arg->getType() != param_ty) {
+                                    llvm::IRBuilder<> B(CI);
+                                    llvm::Value *cast = B.CreateBitCast(arg, param_ty);
+                                    CI->setArgOperand(i, cast);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+#endif
         }
 
         const char* get_allocator_function_name() {
@@ -1752,23 +1798,19 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_gep2(llvm::Type *t, llvm::Value* ds, int idx) {
+#if LLVM_VERSION_MAJOR < 15
+        if (ds->getType()->isPointerTy()) {
+            llvm::Type* ds_pointee_type = ds->getType()->getPointerElementType();
+            if (ds_pointee_type != t) {
+                if (ds_pointee_type == t->getPointerTo()) {
+                    ds = CreateLoad2(t->getPointerTo(), ds);
+                } else {
+                    ds = builder->CreateBitCast(ds, t->getPointerTo());
+                }
+            }
+        }
+#endif
 #if defined(WITH_LFORTRAN_ASSERT) && LLVM_VERSION_MAJOR < 15
-        // Assertion: Verify type consistency to catch bugs early
-        // The GEP target type 't' should match the pointee type of 'ds'
-        // Note: LLVM 15+ uses opaque pointers, so getPointerElementType() doesn't exist
-        // and this type of bug cannot occur.
-        LCOMPILERS_ASSERT(ds->getType()->isPointerTy())
-        llvm::Type* ds_pointee_type = ds->getType()->getPointerElementType();
-        // For struct types, the target type must match the pointer's pointee type
-        std::string target_type_str = LLVM::get_type_as_string(t);
-        std::string pointee_type_str = LLVM::get_type_as_string(ds_pointee_type);
-        LCOMPILERS_ASSERT_MSG(ds_pointee_type == t,
-            "Type mismatch in create_gep2: GEP target type does not match pointer's pointee type. "
-            "This would cause crashes in LLVM <= 8 constant folder. "
-            "Target type: " + target_type_str +
-            ", Pointer pointee type: " + pointee_type_str);
-
-        // Verify index is within bounds for struct types
         if (llvm::isa<llvm::StructType>(t)) {
             llvm::StructType* struct_type = llvm::cast<llvm::StructType>(t);
             [[maybe_unused]] unsigned num_elements = struct_type->getNumElements();

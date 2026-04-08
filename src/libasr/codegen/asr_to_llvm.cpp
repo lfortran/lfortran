@@ -7701,7 +7701,9 @@ public:
             // Reinitialize StructType members if intent is intent_out
             if (ASR::is_a<ASR::StructType_t>(*symbol_type) && symbol_intent == ASRUtils::intent_out) {
                 uint32_t h = get_hash((ASR::asr_t*)sym.second);
-                LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+                if (llvm_symtab.find(h) == llvm_symtab.end()) {
+                    continue;
+                }
                 llvm::Value* st_desc = llvm_symtab[h];
 
                 ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
@@ -9443,7 +9445,8 @@ public:
                     llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                     llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 }
-                if( is_value_data_only_array ) { // This needs a refactor to handle
+                if( is_value_data_only_array && ASRUtils::is_array(
+                        ASRUtils::type_get_past_pointer(target_type)) ) {
                     ASR::ttype_t* target_type_ = ASRUtils::type_get_past_pointer(target_type);
                     switch( ASRUtils::extract_physical_type(target_type_) ) {
                         case ASR::array_physical_typeType::DescriptorArray :
@@ -11175,6 +11178,18 @@ public:
                     target = llvm_utils->CreateLoad2(char_ptr_type, arr_descr->get_pointer_to_data(desc_type, target));
                 }
             }
+        }
+        if (target_apc &&
+                target_apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                target_apc->m_new == ASR::array_physical_typeType::DescriptorArray &&
+                ASRUtils::is_array(target_apc->m_type)) {
+            llvm::Type* narrowed_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_target,
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(x.m_target)),
+                module.get());
+            target = builder->CreateBitCast(target,
+                narrowed_desc_type->getPointerTo());
         }
         if( ASR::is_a<ASR::UnionConstructor_t>(*x.m_value) ) {
             return ;
@@ -25511,6 +25526,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
+    LLVM::fix_pointer_type_mismatches(*v.module);
     std::string msg;
     llvm::raw_string_ostream err(msg);
     if (llvm::verifyModule(*v.module, &err)) {

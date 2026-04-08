@@ -222,6 +222,7 @@ class ASRToLLVMVisitor;
     namespace LLVM {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
+        void fix_pointer_type_mismatches(llvm::Module &module);
         void set_memory_debug(bool state);
         bool use_memory_debug();
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
