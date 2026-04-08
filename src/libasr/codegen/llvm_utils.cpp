@@ -24,7 +24,7 @@ namespace LCompilers {
             return builder.CreateStore(x, y);
         }
 
-        void fix_pointer_type_mismatches(llvm::Module &module) {
+        void fix_pointer_type_mismatches([[maybe_unused]] llvm::Module &module) {
 #if LLVM_VERSION_MAJOR < 15
             for (auto &F : module) {
                 for (auto &BB : F) {
