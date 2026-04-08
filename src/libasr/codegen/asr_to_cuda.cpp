@@ -6,6 +6,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 #include <sstream>
 #include <map>
@@ -229,14 +230,6 @@ public:
             }
             case ASR::stmtType::If: {
                 ASR::If_t *ifstmt = ASR::down_cast<ASR::If_t>(stmt);
-                // GPU guard pattern: if (condition) with empty body
-                // means "return if out of bounds"
-                if (ifstmt->n_body == 0 && ifstmt->n_orelse == 0) {
-                    src << get_indent() << "if (";
-                    visit_expr(ifstmt->m_test);
-                    src << ") return;\n";
-                    break;
-                }
                 src << get_indent() << "if (";
                 visit_expr(ifstmt->m_test);
                 src << ") {\n";
@@ -262,8 +255,74 @@ public:
             case ASR::stmtType::ImplicitDeallocate: {
                 break;
             }
+            case ASR::stmtType::Return: {
+                src << get_indent() << "return;\n";
+                break;
+            }
             default:
                 break;
+        }
+    }
+
+    void emit_intrinsic(ASR::IntrinsicElementalFunction_t *f) {
+        using IEF = ASRUtils::IntrinsicElementalFunctions;
+        int64_t id = f->m_intrinsic_id;
+
+        if (id == static_cast<int64_t>(IEF::Sqrt)) {
+            src << "sqrt(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Abs)) {
+            src << "abs(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Sin)) {
+            src << "sin(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Cos)) {
+            src << "cos(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Exp)) {
+            src << "exp(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Mod)) {
+            ASR::ttype_t *type = ASRUtils::expr_type(f->m_args[0]);
+            if (type->type == ASR::ttypeType::Real) {
+                src << "fmod(";
+                visit_expr(f->m_args[0]);
+                src << ", ";
+                visit_expr(f->m_args[1]);
+                src << ")";
+            } else {
+                src << "(";
+                visit_expr(f->m_args[0]);
+                src << " % ";
+                visit_expr(f->m_args[1]);
+                src << ")";
+            }
+        } else if (id == static_cast<int64_t>(IEF::Min)) {
+            src << "min(";
+            visit_expr(f->m_args[0]);
+            src << ", ";
+            visit_expr(f->m_args[1]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Max)) {
+            src << "max(";
+            visit_expr(f->m_args[0]);
+            src << ", ";
+            visit_expr(f->m_args[1]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Real)) {
+            src << "((float)(";
+            visit_expr(f->m_args[0]);
+            src << "))";
+        } else {
+            src << "/* unsupported intrinsic " << id << " */(";
+            if (f->n_args > 0) visit_expr(f->m_args[0]);
+            src << ")";
         }
     }
 
@@ -378,6 +437,122 @@ public:
             }
             case ASR::exprType::GpuBlockSize: {
                 src << "blockDim.x";
+                break;
+            }
+            case ASR::exprType::RealSqrt: {
+                ASR::RealSqrt_t *rs = ASR::down_cast<ASR::RealSqrt_t>(expr);
+                src << "sqrt(";
+                visit_expr(rs->m_arg);
+                src << ")";
+                break;
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t *f =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                emit_intrinsic(f);
+                break;
+            }
+            case ASR::exprType::FunctionCall: {
+                ASR::FunctionCall_t *fc =
+                    ASR::down_cast<ASR::FunctionCall_t>(expr);
+                std::string fn_name(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(fc->m_name)));
+                // Handle lowered intrinsic functions (_lcompilers_* pattern)
+                if (fn_name.find("_lcompilers_real_") == 0 ||
+                    fn_name.find("_lcompilers_dble_") == 0) {
+                    src << "((" << cuda_type(fc->m_type) << ")";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_int_") == 0 ||
+                           fn_name.find("_lcompilers_nint_") == 0) {
+                    src << "((" << cuda_type(fc->m_type) << ")";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_sqrt_") == 0) {
+                    src << "sqrt(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_abs_") == 0) {
+                    src << "abs(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_sin_") == 0) {
+                    src << "sin(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_cos_") == 0) {
+                    src << "cos(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_exp_") == 0) {
+                    src << "exp(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_mod_") == 0 ||
+                           fn_name.find("_lcompilers_optimization_mod_") == 0) {
+                    ASR::ttype_t *type = fc->m_type;
+                    if (type && type->type == ASR::ttypeType::Real) {
+                        src << "fmod(";
+                        if (fc->n_args > 0 && fc->m_args[0].m_value)
+                            visit_expr(fc->m_args[0].m_value);
+                        src << ", ";
+                        if (fc->n_args > 1 && fc->m_args[1].m_value)
+                            visit_expr(fc->m_args[1].m_value);
+                        src << ")";
+                    } else {
+                        src << "((";
+                        if (fc->n_args > 0 && fc->m_args[0].m_value)
+                            visit_expr(fc->m_args[0].m_value);
+                        src << ") % (";
+                        if (fc->n_args > 1 && fc->m_args[1].m_value)
+                            visit_expr(fc->m_args[1].m_value);
+                        src << "))";
+                    }
+                } else if (fn_name.find("_lcompilers_min_") == 0 ||
+                           fn_name.find("_lcompilers_min0_") == 0) {
+                    src << "min(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ", ";
+                    if (fc->n_args > 1 && fc->m_args[1].m_value)
+                        visit_expr(fc->m_args[1].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_max_") == 0 ||
+                           fn_name.find("_lcompilers_max0_") == 0) {
+                    src << "max(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << ", ";
+                    if (fc->n_args > 1 && fc->m_args[1].m_value)
+                        visit_expr(fc->m_args[1].m_value);
+                    src << ")";
+                } else if (fn_name.find("_lcompilers_merge_") == 0) {
+                    src << "(";
+                    if (fc->n_args > 2 && fc->m_args[2].m_value)
+                        visit_expr(fc->m_args[2].m_value);
+                    src << " ? ";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value)
+                        visit_expr(fc->m_args[0].m_value);
+                    src << " : ";
+                    if (fc->n_args > 1 && fc->m_args[1].m_value)
+                        visit_expr(fc->m_args[1].m_value);
+                    src << ")";
+                } else {
+                    src << fn_name << "(";
+                    for (size_t i = 0; i < fc->n_args; i++) {
+                        if (i > 0) src << ", ";
+                        if (fc->m_args[i].m_value)
+                            visit_expr(fc->m_args[i].m_value);
+                    }
+                    src << ")";
+                }
                 break;
             }
             default:
