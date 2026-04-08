@@ -4045,6 +4045,14 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
     }
 }
 
+inline bool is_array_physically_descriptor(ASR::ttype_t* t){
+    LCOMPILERS_ASSERT(t)
+    ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
+    LCOMPILERS_ASSERT(ASRUtils::is_array_t(t_past))
+    return ASRUtils::extract_physical_type(t_past) == ASR::DescriptorArray
+        || ASRUtils::extract_physical_type(t_past) == ASR::AssumedRankArray;
+}
+
 static inline ASR::asr_t* make_Allocatable_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
     if (is_assumed_rank_array(type)) {
         return ASR::make_Allocatable_t(al, loc, type);

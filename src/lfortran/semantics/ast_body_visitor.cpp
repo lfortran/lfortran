@@ -2528,11 +2528,11 @@ public:
             {"pad", 24}, {"flen", 25}, {"blocksize", 26}, {"convert", 27},
             {"carriagecontrol", 28}, {"size", 29}, {"pos", 30}, {"decimal", 31},
             {"iolength", 32}, {"sign", 33}, {"encoding", 34},
-            {"stream", 35}, {"iomsg", 36}, {"round", 37}};
+            {"stream", 35}, {"iomsg", 36}, {"round", 37}, {"pending", 38}, {"asynchronous", 39}};
         std::vector<ASR::expr_t*> args;
         Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
-        fill_args_for_rewind_inquire_flush(x, 37, args, 38, argname2idx, node_name);
+        fill_args_for_rewind_inquire_flush(x, 39, args, 40, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -2543,6 +2543,7 @@ public:
         ASR::expr_t *carriagecontrol = args[28], *size = args[29], *pos = args[30], *decimal = args[31];
         ASR::expr_t *iolength = args[32], *sign=args[33], *encoding=args[34];
         ASR::expr_t *stream = args[35], *iomsg = args[36], *round = args[37];
+        ASR::expr_t *pending = args[38], *asynchronous = args[39];
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
             if( is_iolength_present && i!=32 && args[i] ) {
@@ -2582,7 +2583,8 @@ public:
                                   pad, flen, blocksize, convert,
                                   carriagecontrol, size, pos, iolength,
                                   iolength_args.p, iolength_args.n, decimal,
-                                  sign, encoding, stream, iomsg, round);
+                                  sign, encoding, stream, iomsg, round,
+                                  pending, asynchronous);
     }
 
     void visit_Flush(const AST::Flush_t& x) {

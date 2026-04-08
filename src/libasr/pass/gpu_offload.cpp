@@ -3618,7 +3618,7 @@ public:
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        if (!pass_options.gpu_offload_metal) return;
+        if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
 
         // Skip loops with reduce clause (let do_loops handle as regular loop)
         if (x.n_reduction > 0) return;

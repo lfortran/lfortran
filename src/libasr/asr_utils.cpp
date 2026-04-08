@@ -3724,6 +3724,39 @@ ASR::asr_t* make_ArraySize_t_util(
                 return &(m_dims[dim - 1].m_length->base);
             }
         }
+    } else if( ASR::is_a<ASR::ArrayReshape_t>(*a_v) && for_type ) {
+        ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_v);
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(array_reshape->m_type, m_dims);
+        if( ASRUtils::is_fixed_size_array(array_reshape->m_type) ) {
+            if( a_dim == nullptr ) {
+                return ASR::make_IntegerConstant_t(al, a_loc,
+                    ASRUtils::get_fixed_size_of_array(array_reshape->m_type), a_type);
+            } else if( is_dimension_constant ) {
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        } else {
+            if( a_dim == nullptr ) {
+                if( n_dims == 0 || m_dims[0].m_length == nullptr ) {
+                    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                }
+                ASR::expr_t* result = m_dims[0].m_length;
+                for( size_t i = 1; i < n_dims; i++ ) {
+                    if( m_dims[i].m_length == nullptr ) {
+                        return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                    }
+                    result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
+                        result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
+                }
+                return &(result->base);
+            } else if( is_dimension_constant ) {
+                if( m_dims[dim - 1].m_length == nullptr ) {
+                    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                }
+                LCOMPILERS_ASSERT(m_dims[dim - 1].m_length);
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        }
     } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
         for( size_t i = 0; i < elemental->n_args; i++ ) {
