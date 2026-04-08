@@ -9854,7 +9854,7 @@ static int _lfortran_skip_comma(char *buf, int *skip, int64_t off, int64_t *offs
             if (iostat) *iostat = 0;
             return 1;
         }
-        (*skip)++;
+        *skip = look;
     }
     return 0;
 }
