@@ -6,6 +6,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 #include <sstream>
 #include <map>
@@ -263,6 +264,68 @@ public:
         }
     }
 
+    void emit_intrinsic(ASR::IntrinsicElementalFunction_t *f) {
+        using IEF = ASRUtils::IntrinsicElementalFunctions;
+        int64_t id = f->m_intrinsic_id;
+
+        if (id == static_cast<int64_t>(IEF::Sqrt)) {
+            src << "sqrt(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Abs)) {
+            src << "abs(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Sin)) {
+            src << "sin(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Cos)) {
+            src << "cos(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Exp)) {
+            src << "exp(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Mod)) {
+            ASR::ttype_t *type = ASRUtils::expr_type(f->m_args[0]);
+            if (type->type == ASR::ttypeType::Real) {
+                src << "fmod(";
+                visit_expr(f->m_args[0]);
+                src << ", ";
+                visit_expr(f->m_args[1]);
+                src << ")";
+            } else {
+                src << "(";
+                visit_expr(f->m_args[0]);
+                src << " % ";
+                visit_expr(f->m_args[1]);
+                src << ")";
+            }
+        } else if (id == static_cast<int64_t>(IEF::Min)) {
+            src << "min(";
+            visit_expr(f->m_args[0]);
+            src << ", ";
+            visit_expr(f->m_args[1]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Max)) {
+            src << "max(";
+            visit_expr(f->m_args[0]);
+            src << ", ";
+            visit_expr(f->m_args[1]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Real)) {
+            src << "((float)(";
+            visit_expr(f->m_args[0]);
+            src << "))";
+        } else {
+            src << "/* unsupported intrinsic " << id << " */(";
+            if (f->n_args > 0) visit_expr(f->m_args[0]);
+            src << ")";
+        }
+    }
+
     void visit_expr(ASR::expr_t *expr) {
         switch (expr->type) {
             case ASR::exprType::Var: {
@@ -374,6 +437,32 @@ public:
             }
             case ASR::exprType::GpuBlockSize: {
                 src << "blockDim.x";
+                break;
+            }
+            case ASR::exprType::RealSqrt: {
+                ASR::RealSqrt_t *rs = ASR::down_cast<ASR::RealSqrt_t>(expr);
+                src << "sqrt(";
+                visit_expr(rs->m_arg);
+                src << ")";
+                break;
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t *f =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+                emit_intrinsic(f);
+                break;
+            }
+            case ASR::exprType::FunctionCall: {
+                ASR::FunctionCall_t *fc =
+                    ASR::down_cast<ASR::FunctionCall_t>(expr);
+                src << ASRUtils::symbol_name(fc->m_name) << "(";
+                for (size_t i = 0; i < fc->n_args; i++) {
+                    if (i > 0) src << ", ";
+                    if (fc->m_args[i].m_value) {
+                        visit_expr(fc->m_args[i].m_value);
+                    }
+                }
+                src << ")";
                 break;
             }
             default:
