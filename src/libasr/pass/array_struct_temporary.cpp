@@ -2407,7 +2407,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_OverloadedCompare(ASR::OverloadedCompare_t* x) {
-        replace_current_expr(x, "_overloaded_compare_");
+        replace_OverloadedOperator(x);
     }
 
     template <typename T>

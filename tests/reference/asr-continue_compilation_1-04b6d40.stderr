@@ -1,3 +1,20 @@
+semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
+  --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
+   |
+53 |        subroutine frexp(x,n)
+   |        ^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+57 |        end subroutine frexp
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^ declared as subroutine here
+   |
+45 |        function frexp(x,n) result(r)
+   |        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+   |
+49 |        end function frexp
+   | ...~~~~~~~~~~~~~~~~~~~~~~ previously declared as function here
+
 semantic error: Derived type `another_undefined_type` is not defined
   --> tests/errors/continue_compilation_1.f90:79:9
    |
@@ -386,16 +403,40 @@ semantic error: variable cannot appear in character length expression
 638 |     character(len = char_len_var) :: char_nonconst
     |                     ^^^^^^^^^^^^ 
 
-semantic error: Cannot convert LOGICAL to REAL
-   --> tests/errors/continue_compilation_1.f90:674:24
+semantic error: type mismatch in initialization: `string` cannot be assigned to `integer`
+   --> tests/errors/continue_compilation_1.f90:643:32
     |
-674 |         real :: adwf = .true.
+643 |     integer, parameter :: n2 = "abc"
+    |                                ^^^^^ 
+
+semantic error: Pointer initialization target `ptr_src_no_target` must have the `target` attribute
+   --> tests/errors/continue_compilation_1.f90:645:5
+    |
+645 |     type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+644 |     type(MyClass) :: ptr_src_no_target
+    |                      ~~~~~~~~~~~~~~~~~ declared here
+
+semantic error: Type mismatch in pointer initialization of `ptr_type_mismatch`
+   --> tests/errors/continue_compilation_1.f90:647:5
+    |
+647 |     type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+646 |     type(Base), target :: ptr_tgt_base
+    |                           ~~~~~~~~~~~~ target declared here
+
+semantic error: Cannot convert LOGICAL to REAL
+   --> tests/errors/continue_compilation_1.f90:684:24
+    |
+684 |         real :: adwf = .true.
     |                        ^^^^^^ 
 
 warning: Assuming implicit save attribute for variable declaration
-   --> tests/errors/continue_compilation_1.f90:678:23
+   --> tests/errors/continue_compilation_1.f90:688:23
     |
-678 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
+688 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -1390,14 +1431,26 @@ semantic error: Duplicate value of `decimal` found
 636 |     open(unit=7, decimal="POINT", decimal="comma")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Variable 'k' is not declared
-   --> tests/errors/continue_compilation_1.f90:668:12
+semantic error: Implicit casting from LOGICAL to INTEGER is not allowed by default. Use `--logical-casting` flag to enable it.
+   --> tests/errors/continue_compilation_1.f90:648:5
     |
-668 |         do k = 1, 3
+648 |     a(1) = .true.
+    |     ^^^^^^^^^^^^^ 
+
+semantic error: No matching `operator(-)` found for this operand type
+   --> tests/errors/continue_compilation_1.f90:662:18
+    |
+662 |         print *, -tt
+    |                  ^^^ 
+
+semantic error: Variable 'k' is not declared
+   --> tests/errors/continue_compilation_1.f90:678:12
+    |
+678 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
 semantic error: Expected logical expression in if statement, but recieved logical[:] instead
-   --> tests/errors/continue_compilation_1.f90:679:13
+   --> tests/errors/continue_compilation_1.f90:689:13
     |
-679 |         if (abs(arr1)(1) /= 2471095) error stop
+689 |         if (abs(arr1)(1) /= 2471095) error stop
     |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical

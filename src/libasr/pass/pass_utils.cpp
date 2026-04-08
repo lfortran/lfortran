@@ -200,13 +200,19 @@ namespace LCompilers {
                                             ASRUtils::type_get_past_pointer(
                                                 ASRUtils::type_get_past_allocatable(array_ref_type))),
                                         ASR::arraystorageType::RowMajor, nullptr));
-            // Emplace the resulting array_ref in the correct node.
             if(array_ref_container_node){
-                *array_ref_container_node = array_ref;
-                array_ref = *original_arr_expr;
-                if(ASR::is_a<ASR::StructInstanceMember_t>(*array_ref)){
-                    ASR::StructInstanceMember_t* tmp = ASR::down_cast<ASR::StructInstanceMember_t>(array_ref);
-                    tmp->m_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(tmp->m_type))->m_type; // Using type of the returing array to avoid creating array ref again by array_op pass.
+                if(ASR::is_a<ASR::StructInstanceMember_t>(**original_arr_expr)){
+                    ASR::StructInstanceMember_t* orig_sim = ASR::down_cast<ASR::StructInstanceMember_t>(*original_arr_expr);
+                    ASR::ttype_t* new_type = ASRUtils::type_get_past_allocatable(orig_sim->m_type);
+                    if(ASR::is_a<ASR::Array_t>(*new_type)) {
+                        new_type = ASR::down_cast<ASR::Array_t>(new_type)->m_type;
+                    }
+                    array_ref = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                        orig_sim->base.base.loc, array_ref, orig_sim->m_m,
+                        new_type, orig_sim->m_value));
+                } else {
+                    *array_ref_container_node = array_ref;
+                    array_ref = *original_arr_expr;
                 }
             }
             if( perform_cast ) {

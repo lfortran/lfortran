@@ -29,11 +29,30 @@ target datalayout = "..."
 
 define void @__module_module_call_subroutine_without_type_01_get_i(%module_call_subroutine_without_type_01.mytype_class* %self) {
 .entry:
-  store %module_call_subroutine_without_type_01.mytype_class* %self, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %0 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %1 = icmp eq %module_call_subroutine_without_type_01.mytype_class* %0, null
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %2 = call i8* @_lfortran_get_default_allocator()
+  %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
+  %4 = bitcast i8* %3 to %module_call_subroutine_without_type_01.mytype_class*
+  store %module_call_subroutine_without_type_01.mytype_class* %4, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %5 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %6 = bitcast %module_call_subroutine_without_type_01.mytype_class* %5 to i8*
+  %7 = bitcast %module_call_subroutine_without_type_01.mytype_class* %self to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %6, i8* %7, i32 16, i1 false)
   call void @get_i.__module_module_call_subroutine_without_type_01_get_r()
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_get_i
 
 FINALIZE_SYMTABLE_get_i:                          ; preds = %return
@@ -51,7 +70,7 @@ define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
   %6 = load float, float* %5, align 4
   %7 = alloca float, align 4
   store float %6, float* %7, align 4
-  %8 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %7)
+  %8 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %7)
   %9 = load i64, i64* %1, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %10 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -99,7 +118,7 @@ FINALIZE_SYMTABLE_get_r:                          ; preds = %return
   ret void
 }
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 
@@ -112,6 +131,14 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
+
+declare i8* @_lfortran_malloc_alloc(i8*, i64)
+
+; Function Attrs: argmemonly nounwind willreturn writeonly
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+
+; Function Attrs: argmemonly nounwind willreturn
+declare void @llvm.memcpy.p0i8.p0i8.i32(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i32, i1 immarg) #1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -234,11 +261,6 @@ Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_c
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lfortran_malloc_alloc(i8*, i64)
-
-; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
-
 define linkonce_odr void @_copy_module_call_subroutine_without_type_01_mytype(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype*
@@ -287,18 +309,33 @@ define internal void @finalize_allocatable__StructType_Class__mytype_of_module_c
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = icmp ne %module_call_subroutine_without_type_01.mytype_class* %0, null
-  br i1 %2, label %is_allocated.then, label %is_allocated.else
+  br i1 %2, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
-  %3 = bitcast %module_call_subroutine_without_type_01.mytype_class* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %3)
+  %3 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %0, i32 0, i32 1
+  %4 = load %module_call_subroutine_without_type_01.mytype*, %module_call_subroutine_without_type_01.mytype** %3, align 8
+  %5 = icmp ne %module_call_subroutine_without_type_01.mytype* %4, null
+  br i1 %5, label %is_allocated.then1, label %is_allocated.else
+
+is_allocated.then1:                               ; preds = %is_allocated.then
+  %6 = bitcast %module_call_subroutine_without_type_01.mytype* %4 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
   br label %is_allocated.ifcont
 
-is_allocated.else:                                ; preds = %entry
+is_allocated.else:                                ; preds = %is_allocated.then
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
+  %7 = bitcast %module_call_subroutine_without_type_01.mytype_class* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %7)
+  br label %is_allocated.ifcont3
+
+is_allocated.else2:                               ; preds = %entry
+  br label %is_allocated.ifcont3
+
+is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
   ret void
 }
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }
+attributes #1 = { argmemonly nounwind willreturn }

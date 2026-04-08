@@ -320,6 +320,27 @@ public:
         src = r;
     }
 
+    void append_namelist_declarations(SymbolTable *symtab, std::string &r) {
+        for (auto &item : symtab->get_scope()) {
+            if (is_a<ASR::Namelist_t>(*item.second)) {
+                ASR::Namelist_t *nml = ASR::down_cast<ASR::Namelist_t>(item.second);
+                std::string line = indent;
+                line += "namelist /";
+                line += nml->m_group_name;
+                line += "/ ";
+                for (size_t i = 0; i < nml->n_var_list; i++) {
+                    line += ASRUtils::symbol_name(nml->m_var_list[i]);
+                    if (i + 1 < nml->n_var_list) {
+                        line += ", ";
+                    }
+                }
+                handle_line_truncation(line, 2);
+                line += "\n";
+                r += line;
+            }
+        }
+    }
+
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
@@ -336,7 +357,8 @@ public:
 
         tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
@@ -397,12 +419,14 @@ public:
                 r += src;
             }
         }
+        append_namelist_declarations(x.m_symtab, r);
 
         visit_body(x, r, false);
 
         bool prepend_contains_keyword = true;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
                 if (prepend_contains_keyword) {
                     prepend_contains_keyword = false;
                     r += "\n";
@@ -484,6 +508,7 @@ public:
                 r += src;
             }
         }
+        append_namelist_declarations(x.m_symtab, r);
         std::vector<std::string> func_name;
         std::vector<std::string> interface_func_name;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -494,6 +519,9 @@ public:
                 } else {
                     func_name.push_back(item.first);
                 }
+            }
+            if (is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+                func_name.push_back(item.first);
             }
         }
         for (size_t i = 0; i < interface_func_name.size(); i++) {
@@ -631,6 +659,7 @@ public:
                     variable_declaration += src;
                 }
             }
+            append_namelist_declarations(x.m_symtab, variable_declaration);
             for (size_t i = 0; i < import_struct_type.size(); i ++) {
                 if (i == 0) {
                     r += indent;
@@ -699,6 +728,40 @@ public:
         src = r;
     }
 
+    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
+        std::string r = indent;
+        r += "subroutine";
+        r += " ";
+        r.append(x.m_name);
+        r += "(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            r += src;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        inc_indent();
+        std::vector<std::string> var_order
+            = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += src;
+            }
+        }
+        visit_body(x, r);
+        dec_indent();
+        r += indent;
+        r += "end subroutine";
+        r += " ";
+        r.append(x.m_name);
+        r += "\n";
+        src = r;
+    }
+
     void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
         std::string r = indent;
         r += "interface ";
@@ -746,7 +809,8 @@ public:
             sym && ASR::is_a<ASR::Module_t>(*sym) &&
             ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
             src = indent;
-            src += "use ";
+            src += "use";
+            src += ", intrinsic :: ";
             src += "iso_c_binding";
             src += ", only: ";
             append_import_name(src);
@@ -757,7 +821,8 @@ public:
             sym && ASR::is_a<ASR::Module_t>(*sym) &&
             ASR::down_cast<ASR::Module_t>(sym)->m_intrinsic) {
             src = indent;
-            src += "use ";
+            src += "use";
+            src += ", intrinsic :: ";
             src += "iso_fortran_env";
             src += ", only: ";
             append_import_name(src);
@@ -1416,7 +1481,10 @@ public:
         } else {
             r += "*";
         }
-        if (x.m_fmt) {
+        if (x.m_nml) {
+            r += ", nml=";
+            r += ASRUtils::symbol_name(x.m_nml);
+        } else if (x.m_fmt) {
             r += ", ";
             r += "fmt=";
             visit_expr(*x.m_fmt);
@@ -1442,11 +1510,14 @@ public:
             visit_expr(*x.m_id);
             r += src;
         }
-        r += ") ";
-        for (size_t i = 0; i < x.n_values; i++) {
-            visit_expr(*x.m_values[i]);
-            r += src;
-            if (i < x.n_values - 1) r += ", ";
+        r += ")";
+        if (x.n_values > 0) {
+            r += " ";
+            for (size_t i = 0; i < x.n_values; i++) {
+                visit_expr(*x.m_values[i]);
+                r += src;
+                if (i < x.n_values - 1) r += ", ";
+            }
         }
         handle_line_truncation(r, 2);
         r += "\n";
@@ -1488,6 +1559,10 @@ public:
                 fmt_src = "*";
             }
         }
+        std::string nml_src;
+        if (x.m_nml) {
+            nml_src = ASRUtils::symbol_name(x.m_nml);
+        }
 
         std::string iomsg_src, iostat_src, id_src, end_src;
         if (x.m_iomsg) {
@@ -1512,8 +1587,13 @@ public:
             out += "write";
             out += "(";
             out += unit_src;
-            out += ", ";
-            out += fmt_src;
+            if (!nml_src.empty()) {
+                out += ", nml=";
+                out += nml_src;
+            } else {
+                out += ", ";
+                out += fmt_src;
+            }
             if (!iomsg_src.empty()) {
                 out += ", iomsg=";
                 out += iomsg_src;
@@ -1526,7 +1606,7 @@ public:
                 out += ", id=";
                 out += id_src;
             }
-            if (x.m_end) {
+            if (x.m_end && nml_src.empty()) {
                 out += ", advance='no'";
             }
             out += ") ";
@@ -1534,7 +1614,9 @@ public:
 
         std::string r;
         build_prefix(r);
-        if (sf) {
+        if (!nml_src.empty()) {
+            // NAMELIST write has no explicit I/O list.
+        } else if (sf) {
             for (size_t i = 0; i < sf->n_args; i++) {
                 visit_expr(*sf->m_args[i]);
                 r += src;
@@ -1550,7 +1632,7 @@ public:
         handle_line_truncation(r, 2);
         r += "\n";
 
-        if (x.m_end) {
+        if (x.m_end && nml_src.empty()) {
             std::string end_stmt = indent;
             end_stmt += "write(";
             end_stmt += unit_src;
@@ -1695,6 +1777,36 @@ public:
         }
 
         r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+        std::string r = indent;
+        r += "call ";
+        r += ASRUtils::symbol_name(x.m_kernel);
+        r += "<<<";
+        visit_expr(*x.m_grid_size);
+        r += src;
+        r += ", ";
+        visit_expr(*x.m_block_size);
+        r += src;
+        r += ">>>(";
+        for (size_t i = 0; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i].m_value);
+            r += src;
+            if (i < x.n_args - 1) r += ", ";
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuSync(const ASR::GpuSync_t &/*x*/) {
+        std::string r = indent;
+        r += "gpu sync";
         handle_line_truncation(r, 2);
         r += "\n";
         src = r;
@@ -2939,6 +3051,18 @@ public:
     void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         visit_expr(*x.m_arg);
         src = "sqrt(" + src + ")";
+    }
+
+    void visit_GpuThreadIndex(const ASR::GpuThreadIndex_t &x) {
+        src = "gpu_thread_index(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuBlockIndex(const ASR::GpuBlockIndex_t &x) {
+        src = "gpu_block_index(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuBlockSize(const ASR::GpuBlockSize_t &x) {
+        src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
     }
 
     /******************************* Case Stmt ********************************/

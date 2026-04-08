@@ -1496,6 +1496,32 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
+        // Check for function/subroutine attribute conflict
+        ASR::symbol_t* existing_sym = parent_scope->get_symbol(sym_name);
+        if (existing_sym != nullptr) {
+            ASR::symbol_t* existing_past_ext = ASRUtils::symbol_get_past_external(existing_sym);
+            if (ASR::is_a<ASR::Function_t>(*existing_past_ext)) {
+                ASR::Function_t* existing_func = ASR::down_cast<ASR::Function_t>(existing_past_ext);
+                if (existing_func->m_return_var != nullptr) {
+                    std::string original_name = to_lower(std::string(x.m_name));
+                    diag.add(diag::Diagnostic(
+                        "`function` attribute of '" + original_name +
+                        "' conflicts with `subroutine` attribute",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("declared as subroutine here", {x.base.base.loc}),
+                            diag::Label("previously declared as function here",
+                                        {existing_past_ext->base.loc}, false)
+                        }));
+                    if (!compiler_options.continue_compilation) {
+                        in_Subroutine = false;
+                        throw SemanticAbort();
+                    }
+                    // In continue mode, keep going after recording the diagnostic.
+                    parent_scope->erase_symbol(sym_name);
+                }
+            }
+        }
+
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -3423,8 +3449,6 @@ public:
             if( CheckFunc ) CheckFunc(*expr_holder);
             in_Subroutine = in_subroutine_or_function_copy;
 
-            // Do some assertions
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionCall_t>(**expr_holder))
             LCOMPILERS_ASSERT(
                 ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
                 ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_scope->asr_owner))
@@ -3451,30 +3475,31 @@ public:
                 }
             }
 
-            // Raise warning for user if variable declaration is calling its function scope recursively.
-            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
-            if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
-                diag.add(diag::Diagnostic(
-                    "Variable declaration is calling its function scope recursively",
-                    diag::Level::Warning, diag::Stage::Semantic, {
-                        diag::Label("", {func_call->base.base.loc})}));                
-            }
-
             // Add called function as dependency to Variable node.
             SetChar var_dep;var_dep.reserve(al,0);
             ASRUtils::collect_variable_dependencies(al, var_dep, variable->m_type, nullptr, variable->m_value);
             variable->m_dependencies = var_dep.p;
             variable->n_dependencies = var_dep.n;
 
-            // Add called function as dependency to the owning-function's scope
-            // ExternalSymbol calls are not tracked as function dependencies
-            // (consistent with how the verify pass collects dependencies)
-            if (!ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)) {
-                SetChar func_dep;
-                func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
-                func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
-                func->m_dependencies = func_dep.p;
-                func->n_dependencies = func_dep.n;
+            // expr_holder may resolve to non-FunctionCall nodes (e.g.
+            // StructInstanceMember for type-bound member access in dimension
+            // expressions), so we guard instead of asserting FunctionCall_t.
+            if (ASR::is_a<ASR::FunctionCall_t>(**expr_holder)) {
+                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
+                if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
+                    diag.add(diag::Diagnostic(
+                        "Variable declaration is calling its function scope recursively",
+                        diag::Level::Warning, diag::Stage::Semantic, {
+                            diag::Label("", {func_call->base.base.loc})}));
+                }
+
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)) {
+                    SetChar func_dep;
+                    func_dep.from_pointer_n_copy(al, func->m_dependencies, func->n_dependencies);
+                    func_dep.push_back(al, ASRUtils::symbol_name(func_call->m_name));
+                    func->m_dependencies = func_dep.p;
+                    func->n_dependencies = func_dep.n;
+                }
             }
 
             // Revert current scope
@@ -3868,7 +3893,8 @@ public:
                         throw SemanticAbort();
                     }
                 }
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
+                    proc_sym = ASRUtils::symbol_get_past_external(proc_sym);
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
                 // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
                 //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
                 // if (!is_deferred &&

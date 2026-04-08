@@ -126,8 +126,6 @@ public:
 
     ASR::symbol_t *read_symbol() {
         uint64_t symtab_id = read_int64();
-        // TODO: read the symbol's location information here, after saving
-        // it in write_symbol() above
         uint64_t symbol_type = read_int8();
         std::string symbol_name  = read_string();
         if (id_symtab_map.find(symtab_id) == id_symtab_map.end()) {
@@ -358,9 +356,10 @@ public:
      * lcompilers__nameless_enum) the caller needs the one that actually holds
      * the requested enumerator, so we match on the member name.
      */
-    ASR::symbol_t* enum_in_module(const std::string &ext_sym_enum_name,
+    ASR::symbol_t* enum_in_symtab(SymbolTable *symtab,
+                                  const std::string &ext_sym_enum_name,
                                   const std::string &member_name){
-        for(auto &sym : global_symtab->get_scope()){
+        for(auto &sym : symtab->get_scope()){
             if(ASR::is_a<ASR::Module_t>(*sym.second)){
                 ASR::symbol_t* enum_sym = ASR::down_cast<ASR::Module_t>(sym.second)->m_symtab->get_symbol(ext_sym_enum_name);
                 if(enum_sym && ASR::is_a<ASR::Enum_t>(*enum_sym)) {
@@ -372,6 +371,16 @@ public:
             }
         }
         return nullptr;
+    }
+    ASR::symbol_t* enum_in_module(const std::string &ext_sym_enum_name,
+                                  const std::string &member_name){
+        ASR::symbol_t* result = enum_in_symtab(global_symtab,
+            ext_sym_enum_name, member_name);
+        if (!result && external_symtab != global_symtab) {
+            result = enum_in_symtab(external_symtab,
+                ext_sym_enum_name, member_name);
+        }
+        return result;
     }
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
         if (x.m_external != nullptr) {

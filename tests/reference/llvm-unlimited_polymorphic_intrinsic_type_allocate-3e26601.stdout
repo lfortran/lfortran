@@ -211,14 +211,60 @@ entry:
   br i1 %2, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
-  %3 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %3)
+  %3 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 0
+  %4 = load i32 (...)**, i32 (...)*** %3, align 8
+  %5 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 1
+  %6 = load i8*, i8** %5, align 8
+  %7 = icmp ne i8* %6, null
+  br i1 %7, label %then, label %else5
+
+then:                                             ; preds = %is_allocated.then
+  %8 = bitcast i32 (...)** %4 to i8**
+  %9 = getelementptr inbounds i8*, i8** %8, i64 -1
+  %10 = load i8*, i8** %9, align 8
+  %11 = bitcast i8* %10 to { i8*, i8* }*
+  %12 = getelementptr { i8*, i8* }, { i8*, i8* }* %11, i32 0, i32 0
+  %13 = load i8*, i8** %12, align 8
+  %14 = ptrtoint i8* %13 to i32
+  %15 = icmp eq i32 %14, 5
+  br i1 %15, label %then1, label %else3
+
+then1:                                            ; preds = %then
+  %16 = bitcast i8* %6 to %string_descriptor*
+  %17 = getelementptr %string_descriptor, %string_descriptor* %16, i32 0, i32 0
+  %18 = load i8*, i8** %17, align 8
+  %19 = icmp ne i8* %18, null
+  br i1 %19, label %then2, label %else
+
+then2:                                            ; preds = %then1
+  call void @_lfortran_free_alloc(i8* %1, i8* %18)
+  br label %ifcont
+
+else:                                             ; preds = %then1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then2
+  br label %ifcont4
+
+else3:                                            ; preds = %then
+  br label %ifcont4
+
+ifcont4:                                          ; preds = %else3, %ifcont
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
+  br label %ifcont6
+
+else5:                                            ; preds = %is_allocated.then
+  br label %ifcont6
+
+ifcont6:                                          ; preds = %else5, %ifcont4
+  %20 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %20)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %ifcont6
   ret void
 }
 

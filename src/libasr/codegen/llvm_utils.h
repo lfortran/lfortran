@@ -327,7 +327,7 @@ class ASRToLLVMVisitor;
             // Get or create the cached global allocator pointer
             llvm::Value* get_allocator(llvm::Module* mod);
 
-            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr);
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
@@ -1015,7 +1015,7 @@ class ASRToLLVMVisitor;
             if(ASRUtils::is_allocatable(t)){
                 finalize_allocatable(ptr, t, struct_sym, in_struct);
             } else if(ASRUtils::is_pointer(t)) {
-                finalize_pointer(ptr, t, struct_sym);
+                finalize_pointer(ptr, t, struct_sym, in_struct);
             } else {
                 finalize_type(ptr, t, struct_sym);
             }
@@ -1032,6 +1032,26 @@ class ASRToLLVMVisitor;
             auto* const struct_sym = get_struct_sym(v);
             check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
 
+            // For non-allocatable DescriptorArray of strings, the cached
+            // finalize function only frees the character data but not the
+            // heap-allocated string_descriptor array itself.  We must free
+            // it here.  (Allocatable arrays use a stack-allocated initial
+            // string_descriptor, so this only applies to non-allocatable.)
+            if (!ASRUtils::is_allocatable(v->m_type) && !ASRUtils::is_pointer(v->m_type)) {
+                ASR::ttype_t* t_past = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+                if (ASRUtils::is_array_t(t_past)) {
+                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(t_past);
+                    if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray
+                        && ASRUtils::extract_type(t_past)->type == ASR::ttypeType::String) {
+                        llvm::Type* arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                        llvm::Type* elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                        llvm::Value* data = builder_->CreateLoad(
+                            elem_llvm_t->getPointerTo(),
+                            llvm_utils_->create_gep2(arr_llvm_t, llvm_var, 0));
+                        llvm_utils_->lfortran_free_nocheck(data);
+                    }
+                }
+            }
         }
 
         void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
@@ -1102,7 +1122,44 @@ class ASRToLLVMVisitor;
                     auto const checkPoint_BB = 
                     START_CACHE(cache_key, ptr);
                     check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
-                        finalize(ptr, t_past, struct_sym, in_struct);
+                        if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
+                                && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                            // Keep unlimited polymorphic cleanup scoped to the
+                            // allocatable deallocation flow to avoid finalizing
+                            // aliased/non-owning class(*) values.
+                            llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
+                            auto const vptr = llvm_utils_->CreateLoad2(
+                                llvm_utils_->vptr_type,
+                                llvm_utils_->create_gep2(derived_llvm_type, ptr, 0));
+                            auto const data_ptr = llvm_utils_->CreateLoad2(
+                                llvm_utils_->i8_ptr,
+                                llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
+                            auto const data_not_null = builder_->CreateICmpNE(
+                                data_ptr,
+                                llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+                            llvm_utils_->create_if_else(data_not_null, [this, vptr, data_ptr]() {
+                                auto const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
+                                auto const is_string = builder_->CreateICmpEQ(
+                                    type_tag,
+                                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
+                                llvm_utils_->create_if_else(is_string, [this, data_ptr]() {
+                                    auto const str_desc = builder_->CreateBitCast(
+                                        data_ptr, llvm_utils_->string_descriptor->getPointerTo());
+                                    auto const char_ptr = llvm_utils_->CreateLoad2(
+                                        llvm_utils_->character_type,
+                                        llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
+                                    auto const char_not_null = builder_->CreateICmpNE(
+                                        char_ptr,
+                                        llvm::ConstantPointerNull::get(llvm_utils_->character_type));
+                                    llvm_utils_->create_if_else(char_not_null,
+                                        [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
+                                        [](){});
+                                }, [](){});
+                                llvm_utils_->lfortran_free_nocheck(data_ptr);
+                            }, [](){});
+                        } else {
+                            finalize(ptr, t_past, struct_sym, in_struct);
+                        }
                         free_allocatable_ptr(ptr, t, struct_sym, in_struct);
                         
                     });
@@ -1116,12 +1173,27 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym){
+        void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_pointer(t), "Must be finalizable pointer.")
             auto const t_past = ASRUtils::type_get_past_pointer(t);
             switch (t_past->type) {
-                case ASR::Array:
-                    llvm_utils_->lfortran_free_nocheck(ptr);
+                case ASR::Array: {    
+                    const bool upoly_descr_arr =   ASRUtils::is_unlimited_polymorphic_type(t_past) 
+                    && ASRUtils::is_array_physically_descriptor(t_past);
+                    if(upoly_descr_arr) {
+                        llvm::Value* const wrapper = builder_->CreateLoad(llvm_utils_->getClassType(struct_sym, true), 
+                                        llvm_utils_->create_gep2(get_llvm_type(t_past, struct_sym), ptr, 0));
+                        llvm_utils_->lfortran_free_nocheck(wrapper);
+                    }
+                    if(in_struct) { llvm_utils_->lfortran_free_nocheck(ptr); }
+                }
+                break;
+                case ASR::StructType:
+                    if(ASRUtils::is_class_type(t_past)){
+                        check_if_allocated_then_finalize(ptr, t, struct_sym, [this, ptr](){
+                            llvm_utils_->lfortran_free_nocheck(ptr);
+                        });
+                    }
                 break;
                 default:
                     throw LCompilersException("Unhandled Case.");
@@ -1134,18 +1206,25 @@ class ASRToLLVMVisitor;
             auto const t_past = ASRUtils::type_get_past_allocatable_pointer(t);
             switch (t_past->type) {
                 case(ASR::StructType) :  {
-                    if (struct_sym != nullptr && ASRUtils::is_class_type(t)
+                    if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
+                            && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                        // Unlimited polymorphic class payload is already finalized
+                        // (and freed) in finalize_struct(). Keep only wrapper free
+                        // below to avoid double-free.
+                    } else if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
                             && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                         // LLVM 15+ uses opaque pointers, so wrapper-vs-struct must
                         // be decided from the ASR class flag, not the LLVM pointer type.
-                        llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                        // Use t_past (bare StructType) for GEP since var_ptr already
+                        // points to the class wrapper struct {vtable*, struct*}.
+                        llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
                         auto const struct_ptr = llvm_utils_->CreateLoad2(
                             llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
                             llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
                         check_if_allocated_then_finalize(struct_ptr, struct_sym->m_struct_signature, struct_sym,
                             [this, struct_ptr](){llvm_utils_->lfortran_free_nocheck(struct_ptr);});
-                    } else if(ASRUtils::is_class_type(t)){ // {VTable*, struct*} -- Free struct
-                        llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
+                    } else if(ASRUtils::is_class_type(t_past)){ // {VTable*, struct*} -- Free struct
+                        llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
                         auto const struct_ptr = llvm_utils_->CreateLoad2(
                             llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
                             llvm_utils_->create_gep2(derived_llvm_type, var_ptr, 1));
@@ -1161,6 +1240,28 @@ class ASRToLLVMVisitor;
                     bool const need_free = ( arr_physical_t == ASR::DescriptorArray
                                               || arr_physical_t == ASR::PointerArray) && in_struct;
                     if(need_free) {
+                        // Narrow case: allocatable descriptor-array of deferred-
+                        // length strings can leave its descriptor backing store
+                        // allocated. Free that backing store before wrapper free.
+                        if (arr_physical_t == ASR::DescriptorArray
+                                && ASRUtils::extract_type(t_past)->type == ASR::String) {
+                            auto* const str_t = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(t_past));
+                            if (str_t->m_len == nullptr) {
+                                auto* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
+                                llvm::Type* const arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                                llvm::Type* const elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                                auto* const data_ptr = builder_->CreateLoad(
+                                    elem_llvm_t->getPointerTo(),
+                                    llvm_utils_->create_gep2(arr_llvm_t, var_ptr, 0));
+                                auto* const data_not_null = builder_->CreateICmpNE(
+                                    data_ptr,
+                                    llvm::ConstantPointerNull::get(
+                                        llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
+                                llvm_utils_->create_if_else(data_not_null,
+                                    [this, data_ptr]() { llvm_utils_->lfortran_free_nocheck(data_ptr); },
+                                    [](){});
+                            }
+                        }
                         llvm_utils_->lfortran_free_nocheck(var_ptr);
                     }
                 }
@@ -1712,8 +1813,46 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             /* TODO :: Handle non local + `Value` attribute. */
-            if (v->m_intent != ASR::Local) return true;
-            if (v->m_storage == ASR::Parameter) return true;
+            if (v->m_intent != ASR::Local) {
+                // Most non-local variables are not owned by this scope and must
+                // not be finalized here. One exception appears with ENTRY lowering:
+                // extra return variables are emitted as intent(return_var) locals.
+                // We should finalize those, but still skip the actual function
+                // return variable, which is owned by the caller.
+                if (v->m_intent == ASR::intentType::ReturnVar) {
+                    ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                        v->m_parent_symtab->asr_owner);
+                    if (!ASR::is_a<ASR::Function_t>(*owner)) {
+                        return true;
+                    }
+                    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
+                    if (fn->m_return_var && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+                        ASR::symbol_t* ret_sym = ASR::down_cast<ASR::Var_t>(
+                            fn->m_return_var)->m_v;
+                        if (ret_sym == &v->base) {
+                            return true;
+                        }
+                    }
+                } else {
+                    return true;
+                }
+            }
+            if (v->m_storage == ASR::Parameter) {
+                // Keep most PARAMETER symbols non-finalizable. A narrow
+                // exception is program-scope parameter structs whose runtime
+                // construction can allocate member storage (for example,
+                // fixed-length character members initialized from constructors).
+                // Those need scope-exit finalization to avoid leaks.
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    v->m_parent_symtab->asr_owner);
+                if (ASR::is_a<ASR::Program_t>(*owner)) {
+                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+                    if (ASR::is_a<ASR::StructType_t>(*t)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             if (v->m_storage == ASR::Save) {
                 // Save variables in functions persist across calls and must not
                 // be finalized at function exit.  In the main Program, however,
@@ -1730,6 +1869,21 @@ class ASRToLLVMVisitor;
                     }
                 }
                 return true;
+            }
+            // Module-scope non-allocatable, non-pointer string variables
+            // (including arrays of strings) have their data in static global
+            // buffers.  Attempting to free them crashes the leak detector.
+            {
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    v->m_parent_symtab->asr_owner);
+                if (ASR::is_a<ASR::Module_t>(*owner)
+                        && !ASRUtils::is_allocatable(v->m_type)
+                        && !ASRUtils::is_pointer(v->m_type)) {
+                    ASR::ttype_t* base_t = ASRUtils::type_get_past_array(v->m_type);
+                    if (ASR::is_a<ASR::String_t>(*base_t)) {
+                        return true;
+                    }
+                }
             }
             return false;
         }
@@ -1819,7 +1973,7 @@ class ASRToLLVMVisitor;
                 case ASR::Logical:
                     return false;
                 case ASR::StructType:{
-                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Can't finalize for now*/ }
+                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)) { return false; /*Handled in allocatable cleanup flow*/ }
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
                     bool finalizable_struct = false;
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
@@ -1855,20 +2009,23 @@ class ASRToLLVMVisitor;
             }
         }
 
-        // Check if a pointer type is finalizable
+        // Check if a pointer type is finalizable (TRUE for cases where the compiler allocated some descriptor; User must free data himself)
         bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct){
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(&t->base);
             switch(t_past->type){
-                case ASR::Array:
-                    return in_struct 
-                        && (   ASRUtils::extract_physical_type(t_past) == ASR::DescriptorArray
-                            || ASRUtils::extract_physical_type(t_past) == ASR::AssumedRankArray);
+                case ASR::Array:{
+                    const bool in_struct_descr_arr = in_struct && ASRUtils::is_array_physically_descriptor(t_past);
+                    const bool upoly_descr_array = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::extract_type(t_past)) 
+                    && ASRUtils::is_array_physically_descriptor(t_past);
+                    return in_struct_descr_arr || upoly_descr_array;
+                }
+                case ASR::StructType:
+                    return ASRUtils::is_class_type(t_past);
                 case ASR::Integer:
                 case ASR::Real:
                 case ASR::Complex:
                 case ASR::UnsignedInteger:
                 case ASR::Logical:
-                case ASR::StructType:
                 case ASR::List:
                 case ASR::Dict:
                 case ASR::Tuple:
@@ -2013,21 +2170,6 @@ class ASRToLLVMVisitor;
             (void)in_struct;  // May be used in future for dimension descriptor handling
         }
 
-        /// Collect symbols that are targets of Associate statements in a block body.
-        /// These are aliases and must not be finalized (they don't own the data).
-        static std::set<ASR::symbol_t*> collect_associate_targets(
-                ASR::stmt_t** body, size_t n_body) {
-            std::set<ASR::symbol_t*> targets;
-            for (size_t i = 0; i < n_body; i++) {
-                if (ASR::is_a<ASR::Associate_t>(*body[i])) {
-                    auto& assoc = *ASR::down_cast<ASR::Associate_t>(body[i]);
-                    if (ASR::is_a<ASR::Var_t>(*assoc.m_target)) {
-                        targets.insert(ASR::down_cast<ASR::Var_t>(assoc.m_target)->m_v);
-                    }
-                }
-            }
-            return targets;
-        }
 
         void finalize_symtab(SymbolTable* symtab){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
@@ -2035,22 +2177,11 @@ class ASRToLLVMVisitor;
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
             insert_BB_for_readability(finalize_str.c_str());
 
-            // Collect associate targets from block body — these are aliases
-            // (e.g. typed views in select type) and must not be finalized.
-            std::set<ASR::symbol_t*> assoc_targets;
-            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(symtab->asr_owner);
-            if (ASR::is_a<ASR::Block_t>(*owner_sym)) {
-                auto& block = *ASR::down_cast<ASR::Block_t>(owner_sym);
-                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
-            } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner_sym)) {
-                auto& block = *ASR::down_cast<ASR::AssociateBlock_t>(owner_sym);
-                assoc_targets = collect_associate_targets(block.m_body, block.n_body);
-            }
 
             auto MAP = symtab->get_scope();
             for(auto &str_sym_pair : MAP){
                 ASR::symbol_t* const sym = str_sym_pair.second;
-                if (is_variable(sym) && assoc_targets.find(sym) == assoc_targets.end()){
+                if (is_variable(sym)){
                     finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
                 }
             }

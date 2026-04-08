@@ -333,7 +333,7 @@ ifcont10:                                         ; preds = %ifcont8
   %97 = load float, float* %96, align 4
   %98 = alloca float, align 4
   store float %97, float* %98, align 4
-  %99 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %70, i32 0, i32 0, i32 0, i32 0, float* %98)
+  %99 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %70, i32 0, i32 0, i32 0, i32 0, i32 0, float* %98)
   %100 = load i64, i64* %70, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
   %101 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
@@ -713,7 +713,7 @@ ifcont34:                                         ; preds = %ifcont32
   %288 = load float, float* %287, align 4
   %289 = alloca float, align 4
   store float %288, float* %289, align 4
-  %290 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.9, i32 0, i32 0), i64* %233, i32 0, i32 0, i32 0, i32 0, float* %261, float* %289)
+  %290 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.9, i32 0, i32 0), i64* %233, i32 0, i32 0, i32 0, i32 0, i32 0, float* %261, float* %289)
   %291 = load i64, i64* %233, align 8
   %stringFormat_desc35 = alloca %string_descriptor, align 8
   %292 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc35, i32 0, i32 0
@@ -1045,7 +1045,7 @@ declare void @_lcompilers_runtime_error(i8*, { i1, i8*, { i8*, i32, i32, i32, i3
 
 declare void @exit(i32)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
@@ -1057,17 +1057,31 @@ define internal void @finalize_allocatable__StructType_Class__shape_of_select_ty
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = icmp ne %select_type_13_module.shape_class* %0, null
-  br i1 %2, label %is_allocated.then, label %is_allocated.else
+  br i1 %2, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
-  %3 = bitcast %select_type_13_module.shape_class* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %3)
+  %3 = getelementptr %select_type_13_module.shape_class, %select_type_13_module.shape_class* %0, i32 0, i32 1
+  %4 = load %select_type_13_module.shape*, %select_type_13_module.shape** %3, align 8
+  %5 = icmp ne %select_type_13_module.shape* %4, null
+  br i1 %5, label %is_allocated.then1, label %is_allocated.else
+
+is_allocated.then1:                               ; preds = %is_allocated.then
+  %6 = bitcast %select_type_13_module.shape* %4 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
   br label %is_allocated.ifcont
 
-is_allocated.else:                                ; preds = %entry
+is_allocated.else:                                ; preds = %is_allocated.then
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
+  %7 = bitcast %select_type_13_module.shape_class* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %7)
+  br label %is_allocated.ifcont3
+
+is_allocated.else2:                               ; preds = %entry
+  br label %is_allocated.ifcont3
+
+is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
   ret void
 }
 

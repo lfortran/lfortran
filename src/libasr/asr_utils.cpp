@@ -1697,6 +1697,25 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASR::call_arg_t* call_args1 = a_args.p;
                             size_t n_call_args1 = a_args.n;
                             ASRUtils::insert_self_arg(al, a_name, call_args1, n_call_args1, self_arg);
+                            {
+                                ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
+                                if (ftype->m_return_var_type) {
+                                    return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
+                                    ASR::dimension_t* ret_dims = nullptr;
+                                    size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
+                                    if (n_ret_dims > 0) {
+                                        ReplaceFunctionParamWithArg r(al, call_args1, n_call_args1);
+                                        for (size_t di = 0; di < n_ret_dims; di++) {
+                                            if (ret_dims[di].m_length) {
+                                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                                            }
+                                            if (ret_dims[di].m_start) {
+                                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
                                                             call_args1, n_call_args1,
                                                             return_type,
@@ -1779,7 +1798,27 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             }
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
-            asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, proc,
+            {
+                ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
+                if (ftype->m_return_var_type) {
+                    return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
+                    ASR::dimension_t* ret_dims = nullptr;
+                    size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
+                    if (n_ret_dims > 0) {
+                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n);
+                        for (size_t di = 0; di < n_ret_dims; di++) {
+                            if (ret_dims[di].m_length) {
+                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                            }
+                            if (ret_dims[di].m_start) {
+                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                            }
+                        }
+                    }
+                }
+            }
+            ASR::symbol_t* original_name = a_name;
+            asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, original_name,
                                             a_args.p, 1,
                                             return_type,
                                             nullptr, nullptr
@@ -1793,11 +1832,12 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     Allocator &al, const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies,
     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *operand_type = ASRUtils::expr_type(operand);
+    ASR::ttype_t *operand_type = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(operand));
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~sub");
 
     if (!sym) {
-        if (ASR::is_a<ASR::StructType_t>(*operand_type) && !ASRUtils::is_class_type(operand_type)) {
+        if (ASR::is_a<ASR::StructType_t>(*operand_type)) {
             ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(operand));
             if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
@@ -1833,7 +1873,7 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
     for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-        ASR::symbol_t* proc = gen_proc->m_procs[i];
+        ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
         switch(proc->type) {
             case ASR::symbolType::Function: {
                 process_overloaded_unary_minus_function(proc, operand, operand_type,
@@ -1851,6 +1891,47 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             default: {
                 err("While overloading binary operators only functions can be used",
                                     proc->base.loc);
+            }
+        }
+    }
+    if (!found && ASR::is_a<ASR::StructType_t>(*operand_type) &&
+            !ASRUtils::is_class_type(operand_type)) {
+        ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(operand));
+        if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
+            ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
+            ASR::symbol_t* struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+            while (struct_sub == nullptr && struct_type_t->m_parent != nullptr) {
+                struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
+                struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+            }
+            if (struct_sub != nullptr) {
+                ASR::symbol_t* struct_orig = ASRUtils::symbol_get_past_external(struct_sub);
+                if (ASR::is_a<ASR::CustomOperator_t>(*struct_orig)) {
+                    ASR::CustomOperator_t* struct_gen = ASR::down_cast<ASR::CustomOperator_t>(struct_orig);
+                    for (size_t i = 0; i < struct_gen->n_procs && !found; i++) {
+                        ASR::symbol_t* proc = struct_gen->m_procs[i];
+                        switch(proc->type) {
+                            case ASR::symbolType::Function: {
+                                process_overloaded_unary_minus_function(proc, operand, operand_type,
+                                    found, al, curr_scope, loc, current_function_dependencies,
+                                    current_module_dependencies, asr, err);
+                                break;
+                            }
+                            case ASR::symbolType::StructMethodDeclaration: {
+                                ASR::StructMethodDeclaration_t* class_procedure_t =
+                                    ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                                process_overloaded_unary_minus_function(class_procedure_t->m_proc,
+                                    operand, operand_type, found, al, curr_scope, loc,
+                                    current_function_dependencies, current_module_dependencies, asr, err);
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -2393,8 +2474,6 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 return_type = ASRUtils::duplicate_type(al,
                                                 ASRUtils::get_FunctionType(func)->m_return_var_type,
                                                 &new_dims);
-                            } else {
-                                return_type = ASRUtils::expr_type(func->m_return_var);
                             }
                             if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
                                 ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_func_name));
@@ -2404,6 +2483,59 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASR::call_arg_t* call_args2 = a_args.p;
                             size_t n_call_args2 = a_args.n;
                             ASRUtils::insert_self_arg(al, a_name, call_args2, n_call_args2, self_arg);
+                            if (return_type == nullptr) {
+                                return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                                if (ASR::is_a<ASR::Array_t>(*return_type)) {
+                                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(return_type);
+                                    ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                                    expr_duplicator.allow_procedure_calls = true;
+                                    Vec<ASR::call_arg_t> oa_vec;
+                                    oa_vec.from_pointer_n_copy(al, call_args2, n_call_args2);
+                                    ASRUtils::ReplaceArgVisitor arg_replacer(al, curr_scope, func,
+                                        oa_vec, current_function_dependencies, current_module_dependencies);
+                                    Vec<ASR::dimension_t> new_dims;
+                                    new_dims.reserve(al, arr_t->n_dims);
+                                    for (size_t di = 0; di < arr_t->n_dims; di++) {
+                                        ASR::dimension_t new_dim;
+                                        new_dim.loc = arr_t->m_dims[di].loc;
+                                        new_dim.m_start = nullptr;
+                                        new_dim.m_length = nullptr;
+                                        if (arr_t->m_dims[di].m_start) {
+                                            expr_duplicator.success = true;
+                                            ASR::expr_t* sc = expr_duplicator.duplicate_expr(arr_t->m_dims[di].m_start);
+                                            LCOMPILERS_ASSERT(expr_duplicator.success);
+                                            arg_replacer.current_expr = &sc;
+                                            arg_replacer.replace_expr(sc);
+                                            new_dim.m_start = sc;
+                                        }
+                                        if (arr_t->m_dims[di].m_length) {
+                                            expr_duplicator.success = true;
+                                            ASR::expr_t* lc = expr_duplicator.duplicate_expr(arr_t->m_dims[di].m_length);
+                                            LCOMPILERS_ASSERT(expr_duplicator.success);
+                                            arg_replacer.current_expr = &lc;
+                                            arg_replacer.replace_expr(lc);
+                                            new_dim.m_length = lc;
+                                        }
+                                        new_dims.push_back(al, new_dim);
+                                    }
+                                    bool for_type = true;
+                                    for (size_t k = 0; k < new_dims.size(); k++) {
+                                        if (new_dims[k].m_length && ASR::is_a<ASR::ArraySize_t>(*new_dims[k].m_length)) {
+                                            ASR::ArraySize_t* as_t = ASR::down_cast<ASR::ArraySize_t>(new_dims[k].m_length);
+                                            if ((ASR::is_a<ASR::FunctionCall_t>(*as_t->m_v) && ASRUtils::is_allocatable(as_t->m_v)) ||
+                                                ASR::is_a<ASR::IntrinsicArrayFunction_t>(*as_t->m_v)) {
+                                                for_type = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    return_type = ASRUtils::make_Array_t_util(
+                                        al, loc, arr_t->m_type, new_dims.p, new_dims.size(),
+                                        ASR::abiType::Source, false,
+                                        ASR::array_physical_typeType::DescriptorArray,
+                                        false, false, for_type);
+                                }
+                            }
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
                                                             call_args2, n_call_args2,
                                                             return_type,
@@ -2552,6 +2684,25 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASRUtils::insert_module_dependency(
                                 a_name, al, current_module_dependencies);
                             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
+                            {
+                                ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
+                                if (ftype->m_return_var_type) {
+                                    return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
+                                    ASR::dimension_t* ret_dims = nullptr;
+                                    size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
+                                    if (n_ret_dims > 0) {
+                                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n);
+                                        for (size_t di = 0; di < n_ret_dims; di++) {
+                                            if (ret_dims[di].m_length) {
+                                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                                            }
+                                            if (ret_dims[di].m_start) {
+                                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             asr = ASRUtils::make_FunctionCall_t_util(
                                 al, loc, a_name, sym, a_args.p, 2, return_type, nullptr, nullptr);
                         }
@@ -3472,7 +3623,10 @@ ASR::asr_t* make_ArraySize_t_util(
         ASRUtils::expr_value(a_dim), dim);
     ASR::ttype_t* array_func_type = nullptr;
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) ) {
-        a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+        ASR::expr_t* inner = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
+        if (ASRUtils::is_array(ASRUtils::expr_type(inner))) {
+            a_v = inner;
+        }
     }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
@@ -3564,6 +3718,39 @@ ASR::asr_t* make_ArraySize_t_util(
             } else if( is_dimension_constant ) {
                 if( m_dims[dim - 1].m_length == nullptr ) {
                     // For Deferred-shape allocatable return, calculate size at runtime
+                    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                }
+                LCOMPILERS_ASSERT(m_dims[dim - 1].m_length);
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        }
+    } else if( ASR::is_a<ASR::ArrayReshape_t>(*a_v) && for_type ) {
+        ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(a_v);
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(array_reshape->m_type, m_dims);
+        if( ASRUtils::is_fixed_size_array(array_reshape->m_type) ) {
+            if( a_dim == nullptr ) {
+                return ASR::make_IntegerConstant_t(al, a_loc,
+                    ASRUtils::get_fixed_size_of_array(array_reshape->m_type), a_type);
+            } else if( is_dimension_constant ) {
+                return &(m_dims[dim - 1].m_length->base);
+            }
+        } else {
+            if( a_dim == nullptr ) {
+                if( n_dims == 0 || m_dims[0].m_length == nullptr ) {
+                    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                }
+                ASR::expr_t* result = m_dims[0].m_length;
+                for( size_t i = 1; i < n_dims; i++ ) {
+                    if( m_dims[i].m_length == nullptr ) {
+                        return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                    }
+                    result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
+                        result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
+                }
+                return &(result->base);
+            } else if( is_dimension_constant ) {
+                if( m_dims[dim - 1].m_length == nullptr ) {
                     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
                 }
                 LCOMPILERS_ASSERT(m_dims[dim - 1].m_length);

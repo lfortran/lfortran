@@ -41,28 +41,28 @@ module continue_compilation_1_mod
         integer :: x
     end type Base
 
+    interface frexp
+    function frexp(x,n) result(r)
+        real r
+        real, intent(in), value :: x
+        integer, intent(out) :: n
+    end function frexp
+    end interface frexp
+
+    interface frexp_duplicate
+    subroutine frexp(x,n)
+        real r
+        real, intent(in), value :: x
+        integer, intent(out) :: n
+    end subroutine frexp
+    end interface
+    
     type, extends(Base) :: Derived
         real :: r
     end type Derived
 
     type :: type_t
     end type type_t
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -640,12 +640,12 @@ program continue_compilation_1
         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     end interface
 
-
-
-
-
-
-
+    integer, parameter :: n2 = "abc"
+    type(MyClass) :: ptr_src_no_target
+    type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
+    type(Base), target :: ptr_tgt_base
+    type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
+    a(1) = .true.
 
 
 
@@ -655,6 +655,16 @@ program continue_compilation_1
 
 
     contains
+    subroutine test_uminus_struct()
+        use continue_compilation_1_mod, only: MyClass
+        implicit none
+        type(MyClass) :: tt
+        print *, -tt
+    end subroutine
+
+
+
+
     subroutine sub(f)
         interface
             function f(x)
