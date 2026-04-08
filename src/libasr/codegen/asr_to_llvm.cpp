@@ -63,6 +63,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/codegen/llvm_compat.h>
 #include <libasr/codegen/asr_to_metal.h>
+#include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/gpu_utils.h>
 
 namespace LCompilers {
@@ -19080,19 +19081,22 @@ public:
         llvm::Function *init_fn = get_gpu_runtime_func("lfortran_gpu_init", init_ft);
         llvm::Value *gpu_ctx = builder->CreateCall(init_fn, {});
 
-        // 2. Get the Metal source string and kernel name
+        // 2. Get the GPU source string and kernel name
         ASR::GpuKernelFunction_t *kernel_func =
             ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
         std::string kernel_name(kernel_func->m_name);
 
-        // The Metal source is passed via compiler_options
-        std::string global_name = "__lfortran_gpu_metal_source_" + kernel_name;
-        llvm::Value *metal_src;
+        // The GPU source is passed via compiler_options
+        std::string global_name = "__lfortran_gpu_source_" + kernel_name;
+        llvm::Value *gpu_src;
         if (!compiler_options.gpu_metal_source.empty()) {
-            metal_src = builder->CreateGlobalStringPtr(
+            gpu_src = builder->CreateGlobalStringPtr(
                 compiler_options.gpu_metal_source, global_name);
+        } else if (!compiler_options.gpu_cuda_source.empty()) {
+            // CUDA kernels are pre-compiled; pass empty string
+            gpu_src = builder->CreateGlobalStringPtr("", global_name);
         } else {
-            metal_src = builder->CreateGlobalStringPtr("", global_name);
+            gpu_src = builder->CreateGlobalStringPtr("", global_name);
         }
 
         llvm::Value *entry_name = builder->CreateGlobalStringPtr(kernel_name);
@@ -19102,7 +19106,7 @@ public:
             i8_ptr, {i8_ptr, i8_ptr, i8_ptr}, false);
         llvm::Function *load_fn = get_gpu_runtime_func("lfortran_gpu_load_kernel", load_ft);
         llvm::Value *gpu_kernel = builder->CreateCall(load_fn,
-            {gpu_ctx, metal_src, entry_name});
+            {gpu_ctx, gpu_src, entry_name});
 
         // 4. Set arguments
         llvm::FunctionType *set_buffer_ft = llvm::FunctionType::get(
@@ -24305,6 +24309,15 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Result<std::string> metal_res = asr_to_metal(al, asr, metal_diag, co);
         if (metal_res.ok) {
             co.gpu_metal_source = metal_res.result;
+        }
+    }
+
+    // GPU CUDA: generate CUDA kernel source after passes have created GpuKernelFunction nodes
+    if (co.gpu_backend == "cuda" && co.gpu_cuda_source.empty()) {
+        diag::Diagnostics cuda_diag;
+        Result<std::string> cuda_res = asr_to_cuda(al, asr, cuda_diag, co);
+        if (cuda_res.ok) {
+            co.gpu_cuda_source = cuda_res.result;
         }
     }
 
