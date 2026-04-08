@@ -3156,6 +3156,7 @@ RUN(NAME array_section_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_21 LABELS gfortran llvm)
 RUN(NAME array_section_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME array_section_23 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
