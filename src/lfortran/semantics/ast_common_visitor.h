@@ -16150,14 +16150,9 @@ public:
     void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
         std::string var_name = to_lower(x.m_name);
         const Location &loc = x.base.base.loc;
-
-        // Count the number of actual coindex expressions (non-keyword coargs)
+        
         size_t n_coindices = 0;
-        for (size_t i = 0; i < x.n_coargs; i++) {
-            // Count coargs that are actual cosubscript expressions
-            // (not keyword arguments like team=, stat=, etc.)
-            n_coindices++;
-        }
+        n_coindices = x.n_coargs; // For now we treat all coargs as coindices, since we don't have codimensions implemented yet 
 
         // Visit each coarg expression to convert them to ASR
         // (for now we don't store them, but we do validate them)

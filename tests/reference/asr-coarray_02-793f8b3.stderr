@@ -1,5 +1,5 @@
-semantic error: Coarrays are not supported yet
- --> tests/errors/coarray_02.f90:2:5
+semantic error: Coarray 's' has corank 2 but 1 coindices were provided
+ --> tests/errors/coarray_02.f90:9:5
   |
-2 |     call event_query(1, 1, 1)
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+9 |     s%x[1] = 5
+  |     ^^^^^^ 
