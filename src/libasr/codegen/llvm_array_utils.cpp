@@ -9,22 +9,6 @@ namespace LCompilers {
 
     namespace LLVMArrUtils {
 
-        static llvm::Value* ensure_ptr_target(
-                llvm::IRBuilder<>* builder,
-                LLVMUtils* llvm_utils,
-                llvm::Value* arr, llvm::Type* type) {
-            llvm::Type* expected = type->getPointerTo();
-            if (arr->getType() != expected) {
-                if (arr->getType()->getNumContainedTypes() > 0 &&
-                        arr->getType()->getContainedType(0) == expected) {
-                    arr = llvm_utils->CreateLoad2(expected, arr);
-                } else {
-                    arr = builder->CreateBitCast(arr, expected);
-                }
-            }
-            return arr;
-        }
-
         static llvm::Value* get_allocator(llvm::LLVMContext &context,
                 llvm::Module &module, llvm::IRBuilder<> &builder) {
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
@@ -346,7 +330,6 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool /*load*/) {
-            arr = ensure_ptr_target(builder, llvm_utils, arr, type);
             // Dims are always inlined at FIELD_DIMS. Return pointer to first element.
             llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
             LCOMPILERS_ASSERT(arr_ty != nullptr);
@@ -357,7 +340,6 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_rank(llvm::Type* type, llvm::Value* arr, bool get_pointer) {
-            arr = ensure_ptr_target(builder, llvm_utils, arr, type);
             llvm::Value* rank_ptr = llvm_utils->create_gep2(type, arr, FIELD_RANK);
             if( get_pointer ) {
                 return rank_ptr;
@@ -368,7 +350,6 @@ namespace LCompilers {
 
         void SimpleCMODescriptor::
         set_rank(llvm::Type* type, llvm::Value* arr, llvm::Value* rank) {
-            arr = ensure_ptr_target(builder, llvm_utils, arr, type);
             llvm::Value* rank_ptr = llvm_utils->create_gep2(type, arr, FIELD_RANK);
             llvm::Value* trunc = builder->CreateIntCast(rank, llvm::Type::getInt8Ty(context), false);
             LLVM::CreateStore(*builder, trunc, rank_ptr);
@@ -853,20 +834,17 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* type, llvm::Value* arr) {
-            arr = ensure_ptr_target(builder, llvm_utils, arr, type);
             return llvm_utils->create_gep2(type, arr, FIELD_BASE_ADDR);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* actual_type = llvm_utils->get_type_from_ttype_t_util(arr_expr,
                 ASRUtils::type_get_past_allocatable_pointer(arr_type), module);
-            arr = ensure_ptr_target(builder, llvm_utils, arr, actual_type);
             return llvm_utils->create_gep2(actual_type, arr, FIELD_BASE_ADDR);
         }
 
 
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Type* type, llvm::Value* arr, bool load) {
-            arr = ensure_ptr_target(builder, llvm_utils, arr, type);
             llvm::Value* offset = llvm_utils->create_gep2(type, arr, FIELD_OFFSET);
             if( !load ) {
                 return offset;
@@ -1530,8 +1508,6 @@ namespace LCompilers {
         // Shallow copies source array descriptor to destination descriptor
         void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory) {
-            src = ensure_ptr_target(builder, llvm_utils, src, src_ty);
-            dest = ensure_ptr_target(builder, llvm_utils, dest, dest_ty);
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
@@ -1590,8 +1566,6 @@ namespace LCompilers {
         // And set the src's data pointer to null to prevent double deallocation
         void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
-            src = ensure_ptr_target(builder, llvm_utils, src, src_ty);
-            dest = ensure_ptr_target(builder, llvm_utils, dest, dest_ty);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
             llvm::Value* src_data_ptr = this->get_pointer_to_data(src_ty, src);

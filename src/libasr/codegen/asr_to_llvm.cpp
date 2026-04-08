@@ -9181,7 +9181,6 @@ public:
                         ASR::is_a<ASR::FunctionType_t>(*value_type)) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                 llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
-                llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, llvm_target);
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (is_target_class &&
                        !ASRUtils::is_array(target_type) &&
@@ -9322,7 +9321,6 @@ public:
                             module.get(), true);
                         llvm_value = builder->CreateBitCast(llvm_value, actual_struct_type);
                     }
-                    llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, llvm_target);
                     builder->CreateStore(llvm_value, llvm_target);
                 } else {
                     // Guard against null class wrapper pointer (e.g., a
@@ -9388,7 +9386,6 @@ public:
                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)));
                 llvm_value = builder->CreateBitCast(
                     llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
-                llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, llvm_target);
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (!is_target_class && is_value_class) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
@@ -9428,7 +9425,6 @@ public:
             } else if (ASR::is_a<ASR::Pointer_t>(*value_type) &&
                        ASR::is_a<ASR::Pointer_t>(*target_type) &&
                        ASR::is_a<ASR::FunctionCall_t>(*x.m_value)) {
-                llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, llvm_target);
                 builder->CreateStore(llvm_value, llvm_target);
             } else {
                 bool is_value_data_only_array = (ASRUtils::is_array(value_type) && (
@@ -9726,10 +9722,8 @@ public:
                         x.m_target, ASRUtils::type_get_past_pointer(target_type), module.get());
                     llvm::Value* loaded_target = llvm_utils->CreateLoad2(
                         llvm_target_contents_type->getPointerTo(), llvm_target);
-                    llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, loaded_target);
                     builder->CreateStore(llvm_value, loaded_target);
                 } else {
-                    llvm_value = llvm_utils->CreateBitCastForStore(llvm_value, llvm_target);
                     builder->CreateStore(llvm_value, llvm_target);
                 }
             }
@@ -25517,7 +25511,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
-    LLVM::fix_pointer_type_mismatches(*v.module);
     std::string msg;
     llvm::raw_string_ostream err(msg);
     if (llvm::verifyModule(*v.module, &err)) {

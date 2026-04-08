@@ -13,49 +13,7 @@ namespace LCompilers {
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
-            if (x->getType()->isPointerTy() && y->getType()->getNumContainedTypes() > 0) {
-                llvm::Type* dest_pointee = y->getType()->getContainedType(0);
-                if (x->getType() != dest_pointee) {
-                    x = builder.CreateBitCast(x, dest_pointee);
-                }
-            }
             return builder.CreateStore(x, y);
-        }
-
-        void fix_pointer_type_mismatches(llvm::Module &module) {
-            for (auto &F : module) {
-                for (auto &BB : F) {
-                    for (auto &I : BB) {
-                        if (auto *SI = llvm::dyn_cast<llvm::StoreInst>(&I)) {
-                            llvm::Value *val = SI->getValueOperand();
-                            llvm::Value *ptr = SI->getPointerOperand();
-                            if (ptr->getType()->getNumContainedTypes() > 0) {
-                                llvm::Type *pointee = ptr->getType()->getContainedType(0);
-                                if (val->getType()->isPointerTy() && pointee->isPointerTy()
-                                        && val->getType() != pointee) {
-                                    llvm::IRBuilder<> B(SI);
-                                    llvm::Value *cast = B.CreateBitCast(val, pointee);
-                                    SI->setOperand(0, cast);
-                                }
-                            }
-                        } else if (auto *CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
-                            llvm::Function *callee = CI->getCalledFunction();
-                            if (!callee) continue;
-                            llvm::FunctionType *ft = callee->getFunctionType();
-                            for (unsigned i = 0; i < CI->arg_size() && i < ft->getNumParams(); i++) {
-                                llvm::Value *arg = CI->getArgOperand(i);
-                                llvm::Type *param_ty = ft->getParamType(i);
-                                if (arg->getType()->isPointerTy() && param_ty->isPointerTy()
-                                        && arg->getType() != param_ty) {
-                                    llvm::IRBuilder<> B(CI);
-                                    llvm::Value *cast = B.CreateBitCast(arg, param_ty);
-                                    CI->setArgOperand(i, cast);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         const char* get_allocator_function_name() {
