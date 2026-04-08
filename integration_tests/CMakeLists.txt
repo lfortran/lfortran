@@ -1205,6 +1205,7 @@ RUN(NAME procedure_pointer_18 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_19 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME procedure_pointer_20 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME procedure_pointer_21 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_22 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 

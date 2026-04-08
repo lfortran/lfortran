@@ -22822,6 +22822,34 @@ public:
         }
     }
 
+    // When a procedure pointer is accessed through a polymorphic allocatable
+    // member (class(T), allocatable), visit_expr on the StructInstanceMember
+    // leaves tmp pointing at the class descriptor pointer field.  This helper
+    // navigates: descriptor → data pointer → procedure pointer member.
+    void navigate_class_descriptor_to_proc_ptr(ASR::expr_t* dt,
+                                               ASR::symbol_t* proc_sym) {
+        ASR::ttype_t* dt_type = ASRUtils::expr_type(dt);
+        ASR::ttype_t* dt_type_inner = ASRUtils::type_get_past_allocatable(dt_type);
+        if (ASRUtils::is_allocatable(dt_type) &&
+            ASR::is_a<ASR::StructType_t>(*dt_type_inner) &&
+            ASRUtils::is_class_type(dt_type_inner)) {
+            llvm::Type* class_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                dt, dt_type_inner, module.get());
+            tmp = llvm_utils->CreateLoad2(class_llvm_type->getPointerTo(), tmp);
+            tmp = llvm_utils->create_gep2(class_llvm_type, tmp, 1);
+            ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(dt));
+            std::string type_key = get_type_key(struct_sym);
+            llvm::Type* data_type = name2dertype[type_key];
+            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), tmp);
+            ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(proc_sym));
+            std::string member_name = std::string(proc_var->m_name);
+            int member_idx = name2memidx[type_key][member_name];
+            tmp = llvm_utils->create_gep2(data_type, tmp, member_idx);
+        }
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
@@ -22857,6 +22885,8 @@ public:
             ptr_loads = 1;
             this->visit_expr(*x.m_dt);
             ptr_loads = ptr_loads_copy;
+            navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
+
             llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get())->getPointerTo();
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
@@ -23465,9 +23495,10 @@ public:
             ptr_loads = 1;
             this->visit_expr(*x.m_dt);
             ptr_loads = ptr_loads_copy;
-            llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
-                x.m_dt, ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
-            llvm::Value* callee = llvm_utils->CreateLoad2(val_type, tmp);
+            navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
+
+            llvm::Value* callee = llvm_utils->CreateLoad2(
+                llvm_utils->get_function_type(*func, module.get())->getPointerTo(), tmp);
 
             // Self argument has been inserted into args by the semantic
             // layer (with a value distinct from m_dt — see
