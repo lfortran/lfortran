@@ -354,7 +354,9 @@ bool set_allocation_size(
     size_t target_n_dims, bool& add_allocated_check,
     ASR::expr_t* &len_allocte_expr /*Strings Allocation*/
 ) {
-    if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
+    ASR::ttype_t* value_type =
+        ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
+    if ( !ASRUtils::is_array(value_type) ) {
         return false;
     }
     const Location& loc = value->base.loc;
@@ -362,10 +364,18 @@ bool set_allocation_size(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
     ASR::expr_t* int64_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
         al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))));
-    if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
+    ASR::ttype_t* value_elem_type = ASRUtils::extract_type(value_type);
+    if (ASR::is_a<ASR::String_t>(*value_elem_type)) {
+        ASR::String_t* value_str_type = ASR::down_cast<ASR::String_t>(value_elem_type);
+        if (value_str_type->m_len) {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            len_allocte_expr = duplicator.duplicate_expr(value_str_type->m_len);
+        }
+    }
+    if( ASRUtils::is_fixed_size_array(value_type) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
-            ASRUtils::expr_type(value), m_dims);
+            value_type, m_dims);
         allocate_dims.reserve(al, n_dims);
         for( size_t i = 0; i < n_dims; i++ ) {
             ASR::dimension_t allocate_dim;
@@ -374,24 +384,13 @@ bool set_allocation_size(
             allocate_dim.m_length = m_dims[i].m_length;
             allocate_dims.push_back(al, allocate_dim);
         }
-        // Set len_allocte_expr for deferred-length character arrays
-        if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
-            ASR::String_t* str_type = ASRUtils::get_string_type(
-                ASRUtils::expr_type(value));
-            if( str_type->m_len ) {
-                len_allocte_expr = str_type->m_len;
-            } else {
-                ASRUtils::ASRBuilder b(al, loc);
-                len_allocte_expr = b.StringLen(value);
-            }
-        }
         return true;
     }
     switch( value->type ) {
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(value);
-            ASR::ttype_t* type = function_call->m_type;
-            if( ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ) {
+            ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(function_call->m_type);
+            if( ASRUtils::is_allocatable(function_call->m_type) || ASRUtils::is_pointer(function_call->m_type) ) {
                 return false;
             }
             if (ASRUtils::is_elemental(function_call->m_name)) {

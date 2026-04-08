@@ -2403,9 +2403,15 @@ namespace LCompilers {
 
         switch (str_type->m_len_kind){
             case ASR::ExpressionLength:
-            case ASR::AssumedLength:{ //String length remains the same
+            case ASR::AssumedLength:{ //String length remains the same unless explicitly provided
+                llvm::Value* len_to_alloc = amount_to_allocate ? amount_to_allocate : get_string_length(str_type, str);
                 set_string_memory_on_heap(str_type->m_physical_type,
-                    str, get_string_length(str_type, str));
+                    str, len_to_alloc);
+                if (amount_to_allocate) {
+                    builder->CreateStore(
+                        convert_kind(amount_to_allocate, llvm::Type::getInt64Ty(context)),
+                        get_string_length(str_type, str, true));
+                }
                 break;
             }
             case ASR::DeferredLength:{
@@ -2427,13 +2433,19 @@ namespace LCompilers {
 
         switch (str_type->m_len_kind){
             case ASR::ExpressionLength:
-            case ASR::AssumedLength:{ // Set memory only. Length already set.
+            case ASR::AssumedLength:{ // Set memory only. Length already set unless explicitly provided.
+                llvm::Value* len_to_alloc = string_length_to_allocate ? string_length_to_allocate : get_string_length(str_type, str);
                 set_array_of_strings_memory_on_heap(
                     str_type,
                     str,
-                    get_string_length(str_type, str),
+                    len_to_alloc,
                     array_size_to_allocte,
                     realloc);
+                if (string_length_to_allocate) {
+                    builder->CreateStore(
+                        convert_kind(string_length_to_allocate, llvm::Type::getInt64Ty(context)),
+                        get_string_length(str_type, str, true));
+                }
                 break;
             }
             case ASR::DeferredLength:{ // Set memory + Length
