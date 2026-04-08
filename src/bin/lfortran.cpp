@@ -44,6 +44,7 @@
 #include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/codegen/asr_to_metal.h>
+#include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
@@ -989,6 +990,19 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
                 std::cerr << "Metal code generation failed.\n";
             }
         }
+        if (compiler_options.gpu_backend == "cuda") {
+            LCompilers::diag::Diagnostics cuda_diag;
+            LCompilers::Result<std::string> cuda_res =
+                LCompilers::asr_to_cuda(al, *asr.result, cuda_diag, compiler_options);
+            if (cuda_res.ok) {
+                std::ofstream outfile("pass_cuda_codegen.cu");
+                outfile << cuda_res.result << "\n";
+                outfile.close();
+            } else {
+                std::cerr << cuda_diag.render(lm, compiler_options);
+                std::cerr << "CUDA code generation failed.\n";
+            }
+        }
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -1279,6 +1293,16 @@ int compile_src_to_object_file(const std::string &infile,
         e.save_object_file(*(m->m_m), outfile);
         t2 = std::chrono::high_resolution_clock::now();
         time_llvm_to_bin = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    }
+
+    // CUDA: save the generated kernel source alongside the object file
+    // so the link step (possibly a separate invocation) can find it.
+    if (compiler_options.gpu_backend == "cuda"
+            && !compiler_options.gpu_cuda_source.empty()) {
+        std::string cuda_sidecar = outfile + ".cuda.cu";
+        std::ofstream cu_out(cuda_sidecar);
+        cu_out << compiler_options.gpu_cuda_source;
+        cu_out.close();
     }
 
     if(compiler_options.po.enable_gpu_offloading) {
@@ -2063,6 +2087,70 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 compile_cmd += " " + metal_runtime_obj
                     + " -framework Metal -framework Foundation";
+            }
+            if (compiler_options.gpu_backend == "cuda") {
+                // Collect CUDA kernel source. In single-invocation mode
+                // it's in gpu_cuda_source; in separate compilation it's
+                // saved as a sidecar file next to each .o file.
+                std::string cuda_source = compiler_options.gpu_cuda_source;
+                if (cuda_source.empty()) {
+                    for (auto &s : infiles) {
+                        std::string sidecar = s + ".cuda.cu";
+                        std::ifstream f(sidecar);
+                        if (f.good()) {
+                            std::string content(
+                                (std::istreambuf_iterator<char>(f)),
+                                std::istreambuf_iterator<char>());
+                            cuda_source += content;
+                        }
+                    }
+                }
+
+                // Write CUDA kernel source to a temp .cu file
+                std::string cuda_kernel_src = LFORTRAN_TEMP_DIR
+                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".cu";
+                std::string cuda_kernel_obj = LFORTRAN_TEMP_DIR
+                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".o";
+                {
+                    std::ofstream cu_out(cuda_kernel_src);
+                    cu_out << cuda_source;
+                    cu_out.close();
+                }
+                // Compile kernel .cu with nvcc
+                std::string nvcc_cmd = "nvcc -c -O2 -o " + cuda_kernel_obj
+                    + " " + cuda_kernel_src;
+                int cuda_err = system(nvcc_cmd.c_str());
+                if (cuda_err) {
+                    std::cerr << "Failed to compile CUDA kernel: "
+                        << nvcc_cmd << std::endl;
+                    return 10;
+                }
+
+                // Compile CUDA runtime
+                std::string cuda_runtime_src = runtime_library_dir
+                    + "/../libasr/runtime/lfortran_gpu_cuda.cu";
+                std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
+                    + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
+                std::string cuda_rt_cmd = "nvcc -c -O2"
+                    " -I" + runtime_library_dir + "/../libasr/runtime"
+                    " -o " + cuda_runtime_obj
+                    + " " + cuda_runtime_src;
+                cuda_err = system(cuda_rt_cmd.c_str());
+                if (cuda_err) {
+                    std::cerr << "Failed to compile CUDA runtime: "
+                        << cuda_rt_cmd << std::endl;
+                    return 10;
+                }
+
+                // Replace the linker with nvcc for CUDA linking
+                compile_cmd = "nvcc -o " + outfile + " ";
+                for (auto &s : infiles) {
+                    compile_cmd += s + " ";
+                }
+                compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
+                compile_cmd += " -L" + base_path
+                    + " -Xlinker -rpath -Xlinker " + base_path
+                    + " -l" + runtime_lib + " -lm";
             }
             run_cmd = "./" + outfile;
         }
