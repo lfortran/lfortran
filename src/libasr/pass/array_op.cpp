@@ -711,8 +711,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     void increment_index_variables(std::unordered_map<size_t, Vec<ASR::expr_t*>>& var2indices,
                                    size_t var_with_maxrank, int64_t loop_depth,
-                                   Vec<ASR::stmt_t*>& do_loop_body, const Location& loc) {
-        ASR::expr_t* step = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, get_index_kind(), loc);
+                                   Vec<ASR::stmt_t*>& do_loop_body, const Location& loc,
+                                   std::unordered_map<ASR::expr_t*, ASR::expr_t*>* index2step = nullptr) {
+        ASR::expr_t* default_step = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, get_index_kind(), loc);
         for( size_t i = 0; i < var2indices.size(); i++ ) {
             if( i == var_with_maxrank ) {
                 continue;
@@ -724,6 +725,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::expr_t* index_var = var2indices[i].p[loop_depth];
             if( index_var == nullptr ) {
                 continue;
+            }
+            ASR::expr_t* step = default_step;
+            if( index2step != nullptr ) {
+                auto it = index2step->find(index_var);
+                if( it != index2step->end() ) {
+                    step = it->second;
+                }
             }
             ASR::expr_t* plus_one = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, index_var,
                 ASR::binopType::Add, step, ASRUtils::expr_type(index_var), nullptr));
@@ -907,6 +915,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Common code for target and value
         std::unordered_map<size_t, Vec<ASR::expr_t*>> var2indices;
         std::unordered_map<ASR::expr_t*, std::pair<ASR::expr_t*, IndexType>> index2var;
+        std::unordered_map<ASR::expr_t*, ASR::expr_t*> index2step;
         ASR::ttype_t* index_type = get_index_type(loc);
         for( size_t i = 0; i < vars_expr.size(); i++ ) {
             Vec<ASR::expr_t*> indices;
@@ -923,6 +932,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 if ((i == offset_for_array_indices - 1) && is_value_array && j < rhs_array_indices_args.size() &&
                         rhs_array_indices_args[j].m_left != nullptr) {
                     index2var[index_expr] = std::make_pair(rhs_array_indices_args[j].m_left, IndexType::ScalarIndex);
+                    if (rhs_array_indices_args[j].m_step != nullptr) {
+                        index2step[index_expr] = rhs_array_indices_args[j].m_step;
+                    }
                 } else {
                     index2var[index_expr] = std::make_pair(vars_expr[i],
                         i >= offset_for_array_indices ? IndexType::ArrayIndex : IndexType::ScalarIndex);
@@ -976,7 +988,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                             0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
         increment_index_variables(var2indices, var_with_maxrank, 0,
-                                  do_loop_body, loc);
+                                  do_loop_body, loc, &index2step);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         do_loop_depth += 1;
@@ -989,7 +1001,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             set_index_variables(var2indices, index2var, var_with_maxrank,
                                 i, parent_do_loop_body, loc);
             increment_index_variables(var2indices, var_with_maxrank, i,
-                                      do_loop_body, loc);
+                                      do_loop_body, loc, &index2step);
             ASR::do_loop_head_t do_loop_head;
             do_loop_head.loc = loc;
             do_loop_head.m_v = var2indices[var_with_maxrank].p[i];
