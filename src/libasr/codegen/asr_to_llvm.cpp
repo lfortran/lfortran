@@ -11339,12 +11339,9 @@ public:
                     if (ASRUtils::is_array(target_variable->m_type) &&
                         ASRUtils::is_allocatable(target_variable->m_type) &&
                         ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
-                        visit_expr_load_wrapper(v, 1);
-                        llvm::Value* target_desc = tmp;
-                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, v);
+                        llvm::Value* is_not_allocated = expr_is_unallocated(v);
                         // With move don't throw error when target is unallocated
                         if (!x.m_move_allocation) {
-                            llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                             llvm::Value* target_var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name);
                             llvm_utils->generate_runtime_error(is_not_allocated,
                                 "Array '%s' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
@@ -11360,7 +11357,7 @@ public:
                         thenBB = llvm::BasicBlock::Create(context, "then", fn);
                         mergeBB = llvm::BasicBlock::Create(context, "ifcont");
 
-                        builder->CreateCondBr(is_allocated, thenBB, mergeBB);
+                        builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
                         builder->SetInsertPoint(thenBB); {
                             llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                                 "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
@@ -11391,6 +11388,17 @@ public:
                                                             dim_llvm);
                     }
                 } else {
+                    if (ASRUtils::is_array(target_type) &&
+                        ASRUtils::is_allocatable(target_type) &&
+                        ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
+                        !x.m_move_allocation) {
+                        llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                        llvm_utils->generate_runtime_error(is_not_allocated,
+                            "Array is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
+                            {LLVMUtils::RuntimeLabel("LHS not allocated here", {x.m_target->base.loc}, {})},
+                            infile,
+                            location_manager);
+                    }
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),

@@ -1,0 +1,5 @@
+runtime error: Array is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+  --> tests/errors/mre_alloc_comp_lhs.f90:12:5
+   |
+12 |     b%arr = a%arr
+   |     ^^^^^ LHS not allocated here
