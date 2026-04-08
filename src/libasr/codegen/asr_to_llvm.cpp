@@ -2214,6 +2214,55 @@ public:
 
     void visit_ReAlloc(const ASR::ReAlloc_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 1);
+        ASR::ttype_t* realloc_arg_type = ASRUtils::expr_type(x.m_args[0].m_a);
+        ASR::ttype_t* realloc_storage_type =
+            ASRUtils::type_get_past_allocatable_pointer(realloc_arg_type);
+        auto struct_requires_pre_realloc_finalize = [](ASR::Struct_t* st) -> bool {
+            while (st != nullptr) {
+                for (size_t i = 0; i < st->n_members; i++) {
+                    ASR::symbol_t* member_sym = st->m_symtab->get_symbol(st->m_members[i]);
+                    if (!member_sym || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
+                        continue;
+                    }
+                    ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+                    ASR::ttype_t* member_type = member_var->m_type;
+
+                    if (ASRUtils::is_allocatable(member_type)) {
+                        return true;
+                    }
+
+                    ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable_pointer(member_type));
+                    if (ASR::is_a<ASR::String_t>(*member_base_type)) {
+                        return true;
+                    }
+                }
+
+                if (st->m_parent == nullptr) {
+                    break;
+                }
+                ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(st->m_parent);
+                if (!ASR::is_a<ASR::Struct_t>(*parent_sym)) {
+                    break;
+                }
+                st = ASR::down_cast<ASR::Struct_t>(parent_sym);
+            }
+            return false;
+        };
+        ASR::Struct_t* realloc_struct_sym = nullptr;
+        if (ASR::is_a<ASR::Array_t>(*realloc_storage_type) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(realloc_storage_type))) {
+            ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_args[0].m_a);
+            if (struct_sym) {
+                struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+                if (ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                    ASR::Struct_t* candidate_struct = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                    if (struct_requires_pre_realloc_finalize(candidate_struct)) {
+                        realloc_struct_sym = candidate_struct;
+                    }
+                }
+            }
+        }
         handle_allocated(x.m_args[0].m_a);
         llvm::Value* is_allocated = tmp;
         llvm::Type* index_type = arr_descr->get_index_type();
@@ -2267,6 +2316,17 @@ public:
                 builder->CreateICmpNE(current_str_len, desired_str_len));
         }
         llvm_utils->create_if_else(realloc_condition, [=]() {
+            if (realloc_struct_sym != nullptr) {
+                llvm_utils->create_if_else(is_allocated, [=]() {
+                    int64_t saved_ptr_loads = ptr_loads;
+                    ptr_loads = 1;
+                    visit_expr_load_wrapper(x.m_args[0].m_a, 1, true);
+                    llvm::Value* desc_ptr = tmp;
+                    ptr_loads = saved_ptr_loads;
+                    llvm_symtab_finalizer.finalize_before_deallocate(
+                        desc_ptr, realloc_arg_type, realloc_struct_sym, false);
+                }, [](){});
+            }
             visit_AllocateUtil(x, nullptr, true);
         }, [](){});
     }
