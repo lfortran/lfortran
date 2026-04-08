@@ -781,9 +781,9 @@ public:
                             }
                         }
                     }
-                    // A non-allocatable, non-kernel-arg local array
-                    // is in thread space (FixedSizeArray temporaries).
-                    // Allocatable locals may be VLA workspaces backed
+                    // A non-allocatable, non-kernel-arg, non-VLA local
+                    // array is in thread space (FixedSizeArray temps).
+                    // Allocatable locals and VLA workspaces are backed
                     // by device buffers, so leave those as device.
                     if (!kernel_arg_names.count(val)) {
                         ASR::symbol_t *val_sym =
@@ -793,20 +793,48 @@ public:
                             ASR::ttype_t *vt =
                                 ASR::down_cast<ASR::Variable_t>(
                                     val_sym)->m_type;
-                            if (!ASRUtils::is_allocatable(vt)) {
+                            if (!ASRUtils::is_allocatable(vt) &&
+                                    !vla_workspace_names.count(val)) {
                                 ptr_to_local_alloc.insert(tgt);
                             }
                         }
                     }
                 }
                 // Case 2: Associate target = ArraySection (pointer to
-                // section of an array). If the base array is a local
-                // (not a kernel arg) and not a VLA workspace, the
-                // pointer is thread-space.
+                // section of an array). Compute the section size so
+                // that later Allocate statements referencing
+                // ArraySize(target) can resolve correctly. Also track
+                // whether the pointer is thread-space.
                 if (ASR::is_a<ASR::ArraySection_t>(*assoc->m_value)) {
                     ASR::ArraySection_t *as =
                         ASR::down_cast<ASR::ArraySection_t>(
                             assoc->m_value);
+                    // Compute section size expression
+                    std::stringstream save;
+                    save << src.str();
+                    std::string size_str;
+                    bool first_sz = true;
+                    for (size_t d = 0; d < as->n_args; d++) {
+                        if (as->m_args[d].m_left
+                                && as->m_args[d].m_right
+                                && as->m_args[d].m_step) {
+                            src.str("");
+                            src << "((";
+                            visit_expr(as->m_args[d].m_right);
+                            src << ") - (";
+                            visit_expr(as->m_args[d].m_left);
+                            src << ") + 1)";
+                            std::string dim_sz = src.str();
+                            if (!first_sz) size_str += " * ";
+                            first_sz = false;
+                            size_str += dim_sz;
+                        }
+                    }
+                    src.str("");
+                    src << save.str();
+                    if (!size_str.empty()) {
+                        alloc_array_size_exprs[tgt] = size_str;
+                    }
                     if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
                         std::string base = ASRUtils::symbol_name(
                             ASR::down_cast<ASR::Var_t>(
@@ -820,7 +848,7 @@ public:
                                 ASR::ttype_t *bt =
                                     ASR::down_cast<ASR::Variable_t>(
                                         base_sym)->m_type;
-                                if (!ASRUtils::is_allocatable(bt) ||
+                                if (!ASRUtils::is_allocatable(bt) &&
                                         !vla_workspace_names.count(
                                             base)) {
                                     ptr_to_local_alloc.insert(tgt);
@@ -3486,23 +3514,31 @@ public:
                     if (it != func_array_size_params.end()) {
                         src << it->second;
                     } else {
-                        ASR::ttype_t *arr_type = ASRUtils::expr_type(as->m_v);
-                        if (ASR::is_a<ASR::Array_t>(*arr_type)) {
-                            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
-                                arr_type);
-                            bool first_dim = true;
-                            src << "(";
-                            for (size_t d = 0; d < arr->n_dims; d++) {
-                                if (arr->m_dims[d].m_length) {
-                                    if (!first_dim) src << " * ";
-                                    first_dim = false;
-                                    visit_expr(arr->m_dims[d].m_length);
-                                }
-                            }
-                            if (first_dim) src << "0";
-                            src << ")";
+                        auto pit = ptr_section_sizes.find(arr_name);
+                        auto eit = alloc_array_size_exprs.find(arr_name);
+                        if (pit != ptr_section_sizes.end()) {
+                            src << pit->second;
+                        } else if (eit != alloc_array_size_exprs.end()) {
+                            src << eit->second;
                         } else {
-                            src << "/* unknown array size */";
+                            ASR::ttype_t *arr_type = ASRUtils::expr_type(as->m_v);
+                            if (ASR::is_a<ASR::Array_t>(*arr_type)) {
+                                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                                    arr_type);
+                                bool first_dim = true;
+                                src << "(";
+                                for (size_t d = 0; d < arr->n_dims; d++) {
+                                    if (arr->m_dims[d].m_length) {
+                                        if (!first_dim) src << " * ";
+                                        first_dim = false;
+                                        visit_expr(arr->m_dims[d].m_length);
+                                    }
+                                }
+                                if (first_dim) src << "0";
+                                src << ")";
+                            } else {
+                                src << "/* unknown array size */";
+                            }
                         }
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
@@ -3658,6 +3694,15 @@ public:
         } else if (id == static_cast<int64_t>(IEF::Erfc)) {
             needs_erfc_helper = true;
             src << "_lf_erfc(";
+            visit_expr(f->m_args[0]);
+            src << ")";
+        } else if (id == static_cast<int64_t>(IEF::FMA)) {
+            // ASR FMA convention: args[0]=addend, args[1]*args[2]+args[0]
+            src << "fma(";
+            visit_expr(f->m_args[1]);
+            src << ", ";
+            visit_expr(f->m_args[2]);
+            src << ", ";
             visit_expr(f->m_args[0]);
             src << ")";
         } else {

@@ -24395,7 +24395,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
 
     // GPU Metal: generate Metal shader source after passes have created GpuKernelFunction nodes
-    if (co.gpu_backend == "metal" && co.gpu_metal_source.empty()) {
+    // Always regenerate for each translation unit so that separate compilation
+    // picks up the correct kernel names for every file.
+    if (co.gpu_backend == "metal") {
         diag::Diagnostics metal_diag;
         Result<std::string> metal_res = asr_to_metal(al, asr, metal_diag, co);
         if (metal_res.ok) {

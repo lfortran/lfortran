@@ -898,6 +898,24 @@ public:
                 loop_start = as->m_args[0].m_left;
                 loop_end = as->m_args[0].m_right;
             }
+        } else if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(e));
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, e->base.loc, 4));
+                ASR::expr_t *dim1 = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, e->base.loc, 1,
+                        int_type, ASR::integerbozType::Decimal));
+                loop_start = ASRUtils::EXPR(
+                    ASR::make_ArrayBound_t(al, e->base.loc,
+                        e, dim1, int_type,
+                        ASR::arrayboundType::LBound, nullptr));
+                loop_end = ASRUtils::EXPR(
+                    ASR::make_ArrayBound_t(al, e->base.loc,
+                        e, dim1, int_type,
+                        ASR::arrayboundType::UBound, nullptr));
+            }
         } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
             ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
             find_array_section_bounds(rc->m_left, loop_start, loop_end);
@@ -929,8 +947,8 @@ public:
         }
     }
 
-    // Build an element-wise expression by replacing ArraySection nodes
-    // with ArrayItem nodes indexed by loop_var.
+    // Build an element-wise expression by replacing ArraySection and
+    // whole-array Var nodes with ArrayItem nodes indexed by loop_var.
     ASR::expr_t* elementize_mask(ASR::expr_t *e, ASR::expr_t *loop_var,
             ASR::ttype_t *logical_type, const Location &loc) {
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
@@ -956,6 +974,24 @@ public:
             return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                 as->m_v, new_args.p, new_args.n,
                 elem_type, ASR::arraystorageType::ColMajor, nullptr));
+        } else if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(e));
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                Vec<ASR::array_index_t> new_args;
+                new_args.reserve(al, 1);
+                ASR::array_index_t idx;
+                idx.loc = loc;
+                idx.m_left = nullptr;
+                idx.m_right = loop_var;
+                idx.m_step = nullptr;
+                new_args.push_back(al, idx);
+                ASR::ttype_t *elem_type = ASRUtils::extract_type(type);
+                return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                    e, new_args.p, new_args.n,
+                    elem_type, ASR::arraystorageType::ColMajor, nullptr));
+            }
+            return e;
         } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
             ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
             return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc,
@@ -2018,6 +2054,29 @@ public:
                 continue;
             }
 
+            // Recurse into AssociateBlock bodies
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                inline_sum_in_stmts(ab->m_body, ab->n_body,
+                    ab->m_symtab);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            // Recurse into If bodies
+            if (ASR::is_a<ASR::If_t>(*stmt)) {
+                ASR::If_t *if_stmt = ASR::down_cast<ASR::If_t>(stmt);
+                inline_sum_in_stmts(if_stmt->m_body, if_stmt->n_body,
+                    scope);
+                inline_sum_in_stmts(if_stmt->m_orelse, if_stmt->n_orelse,
+                    scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -2971,6 +3030,17 @@ public:
                     inline_elemental_array_var_in_body(block->m_body,
                         block->n_body, changed);
                 }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            // Recurse into AssociateBlockCall bodies
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                inline_elemental_array_var_in_body(ab->m_body,
+                    ab->n_body, changed);
                 new_body.push_back(al, stmt);
                 continue;
             }
@@ -4194,6 +4264,23 @@ public:
         GpuAllocStructMemberCollector alloc_collector;
         for (size_t i = 0; i < x.n_body; i++) {
             alloc_collector.visit_stmt(*x.m_body[i]);
+        }
+        // Also scan array dimension expressions of involved symbols for
+        // StructInstanceMember accesses. VLA arrays sized by struct
+        // members (e.g., `integer :: n(x%m)`) constitute a non-allocatable
+        // access that must prevent struct removal from involved_syms.
+        for (auto &[sym_name, sym_info] : involved_syms) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_start)
+                    alloc_collector.visit_expr(*arr->m_dims[d].m_start);
+                if (arr->m_dims[d].m_length)
+                    alloc_collector.visit_expr(*arr->m_dims[d].m_length);
+            }
         }
         // Maps (struct_name, member_name) -> decomposed parameter name
         std::map<std::pair<std::string, std::string>, std::string>
@@ -6000,6 +6087,37 @@ public:
                     decomp_map);
                 for (size_t j = 0; j < block->n_body; j++) {
                     block_decomp.visit_stmt(*block->m_body[j]);
+                }
+                // Also decompose StructInstanceMember references in
+                // block-local variable type expressions (e.g., VLA
+                // dimensions like size(self%x) after associate
+                // resolution). Without this, a fully-decomposed struct
+                // removed from involved_syms leaves dangling Var refs.
+                GpuDecomposeStructReplacer block_type_decomp(al,
+                    kernel_scope, decomp_map);
+                for (auto &item : block->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second))
+                        continue;
+                    ASR::Variable_t *bvar =
+                        ASR::down_cast<ASR::Variable_t>(item.second);
+                    if (!ASR::is_a<ASR::Array_t>(*bvar->m_type))
+                        continue;
+                    ASR::Array_t *arr =
+                        ASR::down_cast<ASR::Array_t>(bvar->m_type);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_start) {
+                            block_type_decomp.current_expr =
+                                &(arr->m_dims[d].m_start);
+                            block_type_decomp.replace_expr(
+                                arr->m_dims[d].m_start);
+                        }
+                        if (arr->m_dims[d].m_length) {
+                            block_type_decomp.current_expr =
+                                &(arr->m_dims[d].m_length);
+                            block_type_decomp.replace_expr(
+                                arr->m_dims[d].m_length);
+                        }
+                    }
                 }
             }
             // Recursively process nested BlockCall statements
