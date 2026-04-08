@@ -6,7 +6,11 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-modules_36-53c9a79.stdout",
+<<<<<<< HEAD
     "stdout_hash": "5ade4631a225f27af4e00380ab612cc59ecc7bcf29dae679a860ebb7",
+=======
+    "stdout_hash": "63d1a3b6ac44fbacee6fa913bc56d330980c1290d2944c55ad511cac",
+>>>>>>> e701dc0177 (Initial Fix : Create finalize fn for upoly types and register in VTable)
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
