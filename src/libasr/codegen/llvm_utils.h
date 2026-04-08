@@ -3,11 +3,7 @@
 
 #include "libasr/asr_utils.h"
 #include "libasr/assert.h"
-#include "libasr/containers.h"
 #include "libasr/exception.h"
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
@@ -1440,16 +1436,19 @@ class ASRToLLVMVisitor;
                     llvm::Type::getVoidTy(builder_->getContext()), {llvm_utils_->i8_ptr}, false);
                 llvm::Value* const dispatch_table = llvm_utils_->CreateLoad2(llvm_utils_->vptr_type,
                                                 llvm_utils_->create_gep2(uPoly_llvm_t, ptr, 0));
-                llvm::FunctionType const *fnTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(builder_->getContext()), {}, true);
-                llvm::Value* const finalizer_fn_i8ptr = llvm_utils_->CreateLoad2(
-                                                    llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
-                                                    llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), dispatch_table, 
-                                                        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
-                llvm::Value* const finalizer_fn = builder_->CreateBitCast(finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
+                
+                check_if_allocated_then_finalize(dispatch_table, llvm_utils_->vptr_type,[&](){
+                    llvm::FunctionType const *fnTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(builder_->getContext()), {}, true);
+                    llvm::Value* const finalizer_fn_i8ptr = llvm_utils_->CreateLoad2(
+                                                        llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
+                                                        llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), dispatch_table, 
+                                                            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
+                    llvm::Value* const finalizer_fn = builder_->CreateBitCast(finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
 
-                llvm::Value* const data = llvm_utils_->CreateLoad2(llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
-                                llvm_utils_->create_gep2(uPoly_llvm_t, ptr, 1));
-                builder_->CreateCall(finalizer_fn_type, finalizer_fn, {data});
+                    llvm::Value* const data = llvm_utils_->CreateLoad2(llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
+                                    llvm_utils_->create_gep2(uPoly_llvm_t, ptr, 1));
+                    builder_->CreateCall(finalizer_fn_type, finalizer_fn, {data});
+                });
                 return;
             } 
 
@@ -1670,6 +1669,7 @@ class ASRToLLVMVisitor;
             verify(data_ptr, expected_data_ptr_type);
             switch(data_type->type){
                 case ASR::StructType :{ // Loop and free
+                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)){return;} // TODO
                     const std::string cache_key = "array_data_"+get_type_key(data_type, struct_sym);
                     llvm::Value* arr_size  = array_size();
                     if(is_cached(cache_key)){
@@ -1851,11 +1851,30 @@ class ASRToLLVMVisitor;
             return builder_->CreateCall(fn, fixed_args);
         }
 
-        /// Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.
+        /**
+          * Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.
+          * @param ptr pointer to SSA value that needs to be checked
+          * @param t ASR type reflecting the SSA value type
+          * @param struct_sym current struct if `t` is a StructType or related to a structtype (e.g. array of structs)
+          * @param fin the finalization process that will be executed if (allocated == TRUE)
+          */ 
+         
+         template <typename finProcess>
+         void check_if_allocated_then_finalize(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, finProcess fin){
+             auto const null_ptr_const = llvm::ConstantPointerNull::get(
+                 get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(t), struct_sym)->getPointerTo());
+            llvm_utils_->create_if_else(builder_->CreateICmpNE(ptr, null_ptr_const), fin, [](){}, "is_allocated");
+        }
+        /**
+         * Takes a finalization process and wrap it in allocated or not check to avoid nullptr dereference.
+         * @param ptr pointer to SSA value that needs to be checked
+         * @param t llvm type of ptr.
+         * @param fin the finalization process that will be executed if (allocated == TRUE)
+         */ 
         template <typename finProcess>
-        void check_if_allocated_then_finalize(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, finProcess fin){
-            auto const null_ptr_const = llvm::ConstantPointerNull::get(
-                                            get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(t), struct_sym)->getPointerTo());
+        void check_if_allocated_then_finalize(llvm::Value* const ptr, llvm::Type* const t, finProcess fin){
+            LCOMPILERS_ASSERT_MSG(t->isPointerTy(), "Expected a pointer type")
+            auto const null_ptr_const = llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(t));
             llvm_utils_->create_if_else(builder_->CreateICmpNE(ptr, null_ptr_const), fin, [](){}, "is_allocated");
         }
 
