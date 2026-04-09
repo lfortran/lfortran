@@ -1,0 +1,13 @@
+{
+    "basename": "run-realloc_lhs_20-ef3baef",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/realloc_lhs_20.f90",
+    "infile_hash": "de77388fdd7d7f1ea737734ca2a9e2b38f49015aefd54379e0c2dd5a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-realloc_lhs_20-ef3baef.stderr",
+    "stderr_hash": "cd90e7a73795c4d91de7ad88218f33a80869be40bb49c6d545c246f9",
+    "returncode": 1
+}
