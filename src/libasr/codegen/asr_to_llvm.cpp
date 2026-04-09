@@ -4168,6 +4168,8 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
                 ASR::ttype_t* asr_result_type = ASRUtils::expr_type(
                     const_cast<ASR::expr_t*>(&(x.base)));
+                asr_result_type = ASRUtils::duplicate_type(al, asr_result_type, nullptr,
+                    ASR::array_physical_typeType::DescriptorArray, true);
                 llvm::Type* result_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_array, ASRUtils::type_get_past_allocatable_pointer(asr_result_type),
                     module.get());
@@ -4179,6 +4181,14 @@ public:
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
                     result_desc_type, order, x.m_order);
+                // If the result type is PointerArray, extract the data pointer
+                // from the descriptor, since the assignment expects a raw pointer.
+                ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
+                    ASRUtils::expr_type(const_cast<ASR::expr_t*>(&(x.base))));
+                if (result_ptype != ASR::array_physical_typeType::DescriptorArray) {
+                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(result_desc_type, tmp);
+                    tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), data_ptr);
+                }
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
