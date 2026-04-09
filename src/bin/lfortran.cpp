@@ -2682,7 +2682,11 @@ int main_app(int argc, char *argv[]) {
     } else if (opts.show_julia) {
         outfile = basename.replace_extension(".jl").string();
     } else {
-        outfile = basename.replace_extension(".out").string();
+        #ifdef _WIN32
+            outfile = basename.replace_extension(".exe").string();
+        #else
+            outfile = basename.replace_extension(".out").string();
+        #endif
     }
 
     lfortran_pass_manager.parse_pass_arg(opts.arg_pass, opts.skip_pass);
