@@ -3,6 +3,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
+#include <libasr/string_utils.h>
 
 #include <set>
 
@@ -2470,19 +2471,15 @@ public:
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        std::string val = x.m_r;
-        // Ensure the string has a decimal point for valid Fortran
-        if (val.find('.') == std::string::npos &&
-            val.find('e') == std::string::npos &&
-            val.find('E') == std::string::npos &&
-            val.find('d') == std::string::npos &&
-            val.find('D') == std::string::npos) {
-            val += ".0";
-        }
+        double val = str_to_double(x.m_r);
+        int precision = (kind >= 8) ? 17 : 9;
+        std::ostringstream oss;
+        oss << std::scientific << std::setprecision(precision) << val;
+        std::string val_str = oss.str();
         if (kind >= 8) {
-            src = val + "_8";
+            src = val_str + "_8";
         } else {
-            src = val;
+            src = val_str;
         }
         last_expr_precedence = Precedence::Ext;
     }
