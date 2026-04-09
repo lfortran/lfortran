@@ -169,7 +169,13 @@ public:
         while (current_pos + line_length < r.length()) {
             size_t break_pos = r.find_last_of(',', current_pos + line_length);
             if (break_pos == std::string::npos || break_pos <= current_pos) {
-                break_pos = current_pos + line_length - 1;
+                // No comma found; try to break at a safe delimiter
+                // (space, or after operators/parens) to avoid splitting tokens
+                break_pos = r.find_last_of(" ()+-*/><=", current_pos + line_length);
+                if (break_pos == std::string::npos || break_pos <= current_pos) {
+                    // No safe break point at all; break at the limit
+                    break_pos = current_pos + line_length - 1;
+                }
             }
             r.insert(break_pos + 1, "&\n" + indent);
             current_pos = break_pos + 2 + i_level * indent_spaces;
