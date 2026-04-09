@@ -2474,7 +2474,7 @@ public:
         double val = str_to_double(x.m_r);
         int precision = (kind >= 8) ? 17 : 9;
         std::ostringstream oss;
-        oss << std::scientific << std::setprecision(precision) << val;
+        oss << std::scientific << std::setprecision(9) << val;
         std::string val_str = oss.str();
         if (kind >= 8) {
             src = val_str + "_8";
