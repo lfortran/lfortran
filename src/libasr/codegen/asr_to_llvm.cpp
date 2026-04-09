@@ -203,22 +203,6 @@ private:
         std::cout << os.str() << endline;
     }
 
-    std::string get_symbol_display_name(ASR::symbol_t* sym) {
-        if (!sym) {
-            return "";
-        }
-
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
-            ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
-            if (ext->m_original_name && ext->m_original_name[0] != '\0') {
-                return std::string(ext->m_original_name);
-            }
-            sym = ext->m_external;
-        }
-
-        return std::string(ASRUtils::symbol_name(sym));
-    }
-
     std::string get_expr_name_for_runtime_message(ASR::expr_t* expr) {
         if (!expr) {
             return "";
@@ -226,15 +210,15 @@ private:
 
         if (ASR::is_a<ASR::Var_t>(*expr)) {
             ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
-            return get_symbol_display_name(v->m_v);
+            return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(v->m_v));
         }
 
         if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
             ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
             std::string base_name = get_expr_name_for_runtime_message(sim->m_v);
-            std::string member_name = get_symbol_display_name(sim->m_m);
+            std::string member_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sim->m_m));
             if (base_name.empty()) {
-                return member_name;
+                return "";
             }
             return base_name + "%" + member_name;
         }
