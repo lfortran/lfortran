@@ -11033,6 +11033,29 @@ public:
                 x.m_target, ASRUtils::extract_type(target_type), module.get());
             llvm::Type* value_el_type = llvm_utils->get_el_type(
                 x.m_value, ASRUtils::extract_type(value_type), module.get());
+            bool is_allocatable_descriptor_target = (ASRUtils::is_allocatable(target_type) && target_ptype == ASR::array_physical_typeType::DescriptorArray);
+            if( is_allocatable_descriptor_target && !x.m_realloc_lhs && !x.m_move_allocation ) {
+                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
+                if( !target_expr_name.empty() ) {
+                    llvm::Value* target_name_llvm = LCompilers::create_global_string_ptr(
+                        context, *module, *builder, target_expr_name);
+                    llvm_utils->generate_runtime_error(
+                        is_not_allocated,
+                        "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_name_llvm})},
+                        infile,
+                        location_manager,
+                        target_name_llvm);
+                } else {
+                    llvm_utils->generate_runtime_error(
+                        is_not_allocated,
+                        "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("LHS not allocated here", {x.m_target->base.loc}, {})},
+                        infile,
+                        location_manager);
+                }
+            }
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
