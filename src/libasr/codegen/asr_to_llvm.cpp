@@ -17584,6 +17584,7 @@ public:
         llvm::Value *pending_val{};
         llvm::Value *asynchronous_val{}, *asynchronous_len{};
         llvm::Value *action_val{}, *action_len{};
+        llvm::Value *position_val{}, *position_len{};
 
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
@@ -18004,6 +18005,16 @@ public:
             asynchronous_val = llvm::Constant::getNullValue(character_type);
             asynchronous_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        if (x.m_position) {
+            this->visit_expr_load_wrapper(x.m_position, 0);
+            std::tie(position_val, position_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_position),
+                    tmp);
+        } else {
+            position_val = llvm::Constant::getNullValue(character_type);
+            position_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
 
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -18041,7 +18052,8 @@ public:
                         character_type, llvm::Type::getInt64Ty(context),    // pad_data, pad_len
                         llvm::Type::getInt1Ty(context)->getPointerTo(),    // pending
                         character_type, llvm::Type::getInt64Ty(context),    // asynchronous_data, asynchronous_len
-                        character_type, llvm::Type::getInt64Ty(context)   // action_data, action_len
+                        character_type, llvm::Type::getInt64Ty(context),   // action_data, action_len
+                        character_type, llvm::Type::getInt64Ty(context)    // position_data, position_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -18072,7 +18084,8 @@ public:
             pad_val, pad_len,
             pending_val,
             asynchronous_val, asynchronous_len,
-            action_val, action_len});
+            action_val, action_len,
+            position_val, position_len});
         if (exist_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
                 llvm::Type::getInt1Ty(context), exist_val);
