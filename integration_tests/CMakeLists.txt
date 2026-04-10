@@ -888,7 +888,7 @@ RUN(NAME arrays_104 LABELS gfortran llvm)
 RUN(NAME arrays_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_106 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_107 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --legacy-array-sections)
-RUN(NAME arrays_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME arrays_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_109 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_110 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME arrays_111 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3164,7 +3164,7 @@ RUN(NAME array_section_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStac
 RUN(NAME array_section_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_section_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_section_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME array_section_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK
+RUN(NAME array_section_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME array_section_09 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
