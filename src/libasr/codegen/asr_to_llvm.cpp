@@ -6986,6 +6986,11 @@ public:
                     builder->CreateStore(
                         llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(inner_ptr_type)),
                         struct_ptr_field);
+                } else { // Unlimited polymorphic type
+                    // Intialize type with NULL value (Zeroes)
+                    llvm::Type* const class_type = llvm_utils->getClassType(struct_t);
+                    builder->CreateStore(llvm::Constant::getNullValue(class_type), ptr);
+
                 }
             } else {
                 set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
