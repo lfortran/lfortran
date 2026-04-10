@@ -2167,7 +2167,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 "clang or gcc" << std::endl;
             std::cerr << "Also, if required use --linker-path=<PATH>, "
                 "where PATH has location to look for the linker "
-                "execuatable" << std::endl;
+                "executable" << std::endl;
             return 10;
         }
 
