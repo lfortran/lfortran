@@ -5857,6 +5857,20 @@ public:
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         // Free globals if detecting leaks is ON, to print clean report
         if(compiler_options.detect_leaks){
+            auto finalize_save_variables = [&](auto&& self, SymbolTable* symtab) -> void {
+                llvm_symtab_finalizer.finalize_saved_variables_in_symtab(symtab);
+                for (auto &name_sym_pair : symtab->get_scope()) {
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(name_sym_pair.second);
+                    if (ASR::is_a<ASR::Module_t>(*sym)) {
+                        self(self, ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
+                    } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                        self(self, ASR::down_cast<ASR::Function_t>(sym)->m_symtab);
+                    }
+                }
+            };
+            SymbolTable* translation_unit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
+            finalize_save_variables(finalize_save_variables, translation_unit_symtab);
+
             SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
             for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
                 auto &sym = name_sym_pair.second;

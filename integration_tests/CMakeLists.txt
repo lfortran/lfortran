@@ -3390,7 +3390,7 @@ RUN(NAME procedure_29 LABELS gfortran llvm
 RUN(NAME procedure_30 LABELS llvm)
 RUN(NAME procedure_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_32 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME procedure_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME procedure_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME procedure_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_36 LABELS gfortran llvm)
