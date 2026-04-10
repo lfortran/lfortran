@@ -91,6 +91,8 @@ static inline std::string extract_real(const char *s) {
     std::string x = s;
     x = replace(x, "d", "e");
     x = replace(x, "D", "E");
+    x = replace(x, "q", "e");
+    x = replace(x, "Q", "E");
     return x;
 }
 
@@ -103,6 +105,16 @@ static inline double extract_real_4(const char *s) {
 static inline double extract_real_8(const char *s) {
     std::string r_str = ASRUtils::extract_real(s);
     return std::strtod(r_str.c_str(), nullptr);
+}
+
+static inline double extract_real_16(const char *s) {
+    // Note: ASR::RealConstant_t currently stores m_r as double, so this
+    // truncates the 128-bit value to 64-bit.  A future PR will extend
+    // ASR.asdl to hold the full 128-bit value (e.g. as a string or
+    // a pair of uint64_t).
+    std::string r_str = ASRUtils::extract_real(s);
+    long double r = std::strtold(r_str.c_str(), nullptr);
+    return (double) r;
 }
 
 static inline ASR::expr_t* EXPR(const ASR::asr_t *f)
@@ -4106,6 +4118,10 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
         if (*p == 'd' || *p == 'D') {
             // Double precision
             return 8;
+        }
+        if (*p == 'q' || *p == 'Q') {
+            // Quad precision
+            return 16;
         }
         p++;
     }

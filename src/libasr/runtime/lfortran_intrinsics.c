@@ -49,6 +49,108 @@ typedef enum {
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
 
+/*
+ * Portability layer for 128-bit floating point (fp128 / real(16)).
+ *
+ * __float128 is available on Linux with GCC and Clang.
+ * On macOS and Windows it is not available
+ * A future PR will implement proper 128-bit arithmetic on all platforms.
+ */
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+#  define HAVE_FLOAT128 1
+#else
+#  define HAVE_FLOAT128 0
+   typedef struct { uint8_t bytes[16]; } lf_float128;
+#endif
+
+static inline double lf_float128_to_double(const void *ptr) {
+#if HAVE_FLOAT128
+    __float128 tmp;
+    memcpy(&tmp, ptr, 16);
+    return (double)tmp;
+#else
+ /*NOTE:
+ * On macOS, fp128 comparisons require custom runtime support.
+ * Current implementation is partial due to ASR storing values as double.
+ * Currently we return 0.0 as placeholder, but this should be replaced with a proper conversion in the future.
+ */
+    return 0.0;
+ 
+#endif
+}
+// -----------------------------------------------------
+// fp128 comparison runtime (macOS / no __float128)
+// -----------------------------------------------------
+
+#if !HAVE_FLOAT128
+
+int __eqtf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+
+    memcpy(a_bytes, &a_lo, 8);
+    memcpy(a_bytes + 8, &a_hi, 8);
+
+    memcpy(b_bytes, &b_lo, 8);
+    memcpy(b_bytes + 8, &b_hi, 8);
+
+    double da = lf_float128_to_double(a_bytes);
+    double db = lf_float128_to_double(b_bytes);
+    return (da == db) ? 0 : 1;
+}
+
+int __netf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) != lf_float128_to_double(b_bytes);
+}
+
+int __lttf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) < lf_float128_to_double(b_bytes);
+}
+
+int __letf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) <= lf_float128_to_double(b_bytes);
+}
+
+int __gttf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) > lf_float128_to_double(b_bytes);
+}
+
+int __getf2(uint64_t a_hi, uint64_t a_lo,
+            uint64_t b_hi, uint64_t b_lo)
+{
+    uint8_t a_bytes[16], b_bytes[16];
+    memcpy(a_bytes, &a_lo, 8); memcpy(a_bytes + 8, &a_hi, 8);
+    memcpy(b_bytes, &b_lo, 8); memcpy(b_bytes + 8, &b_hi, 8);
+
+    return lf_float128_to_double(a_bytes) >= lf_float128_to_double(b_bytes);
+}
+
+#endif
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
 /* ----------------------------------------------------- */
@@ -1871,6 +1973,7 @@ typedef enum primitive_types{
     LOGICAL_32_TYPE = 15,
     LOGICAL_16_TYPE = 16,
     LOGICAL_64_TYPE = 17,
+    FLOAT_128_TYPE = 18,
 } Primitive_Types;
 
 static inline bool is_logical_type(Primitive_Types t) {
@@ -1903,6 +2006,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
+        case FLOAT_128_TYPE:
             return 'f';
             break;
         case CHAR_PTR_TYPE:
@@ -2015,6 +2119,14 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             uint64_t tmp = 0;
             memcpy(&tmp, arg_ptr, sizeof(double));
             raw = tmp;
+            break;
+        }
+        case FLOAT_128_TYPE: {
+            byte_count = 16; // fp128 is 16 bytes
+            double d = lf_float128_to_double(arg_ptr);
+            uint64_t raw_tmp = 0;
+            memcpy(&raw_tmp, &d, sizeof(double));
+            raw = raw_tmp;
             break;
         }
         default:
@@ -2402,6 +2514,17 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
     case 'R':
         switch (s_info->serialization_string[s_info->current_stop++])
         {
+        case '1':
+            if (s_info->serialization_string[s_info->current_stop] == '6') {
+            s_info->current_stop++;
+            *PrimitiveType = FLOAT_128_TYPE;
+            } else {
+            // could be R1 (unlikely but safe)
+            fprintf(stderr,
+                "RunTime - compiler internal error : Unknown R kind R1\n");
+            exit(1);
+            }
+            break;
         case '8':
             *PrimitiveType = FLOAT_64_TYPE;
             break;
@@ -2631,6 +2754,20 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             break;
         case UNSIGNED_INTEGER_8_TYPE:
             sprintf(result, "%hhu", *(uint8_t*)arg);
+            break;
+        case FLOAT_128_TYPE:
+            if (s_info->current_arg_info.is_complex) {
+                double real_d = lf_float128_to_double(arg);
+                move_to_next_element(s_info, false);
+                double imag_d = lf_float128_to_double(s_info->current_arg_info.current_arg);
+                char real_str[128], imag_str[128];
+                format_double_fortran(real_str, real_d);
+                format_double_fortran(imag_str, imag_d);
+                sprintf(result, "(%s,%s)", real_str, imag_str);
+            } else {
+                double val_d = lf_float128_to_double(arg);
+                format_double_fortran(result, val_d);
+            }
             break;
         case FLOAT_64_TYPE:
             if(s_info->current_arg_info.is_complex){
