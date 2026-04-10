@@ -203,6 +203,29 @@ private:
         std::cout << os.str() << endline;
     }
 
+    std::string get_expr_name_for_runtime_message(ASR::expr_t* expr) {
+        if (!expr) {
+            return "";
+        }
+
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
+            return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(v->m_v));
+        }
+
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            std::string base_name = get_expr_name_for_runtime_message(sim->m_v);
+            std::string member_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sim->m_m));
+            if (base_name.empty()) {
+                return "";
+            }
+            return base_name + "%" + member_name;
+        }
+
+        return "";
+    }
+
 public:
     diag::Diagnostics &diag;
     llvm::LLVMContext &context;
@@ -4168,6 +4191,8 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
                 ASR::ttype_t* asr_result_type = ASRUtils::expr_type(
                     const_cast<ASR::expr_t*>(&(x.base)));
+                asr_result_type = ASRUtils::duplicate_type(al, asr_result_type, nullptr,
+                    ASR::array_physical_typeType::DescriptorArray, true);
                 llvm::Type* result_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_array, ASRUtils::type_get_past_allocatable_pointer(asr_result_type),
                     module.get());
@@ -4179,6 +4204,14 @@ public:
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
                     result_desc_type, order, x.m_order);
+                // If the result type is PointerArray, extract the data pointer
+                // from the descriptor, since the assignment expects a raw pointer.
+                ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
+                    ASRUtils::expr_type(const_cast<ASR::expr_t*>(&(x.base))));
+                if (result_ptype != ASR::array_physical_typeType::DescriptorArray) {
+                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(result_desc_type, tmp);
+                    tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), data_ptr);
+                }
                 break;
             }
             case ASR::array_physical_typeType::FixedSizeArray: {
@@ -11339,15 +11372,12 @@ public:
                     if (ASRUtils::is_array(target_variable->m_type) &&
                         ASRUtils::is_allocatable(target_variable->m_type) &&
                         ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
-                        visit_expr_load_wrapper(v, 1);
-                        llvm::Value* target_desc = tmp;
-                        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(target_desc, v);
+                        llvm::Value* is_not_allocated = expr_is_unallocated(v);
                         // With move don't throw error when target is unallocated
                         if (!x.m_move_allocation) {
-                            llvm::Value* is_not_allocated = builder->CreateNot(is_allocated);
                             llvm::Value* target_var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name);
                             llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array '%s' is not allocated. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
+                                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
                                     {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_var_name_llvm})},
                                     infile,
                                     location_manager,
@@ -11360,7 +11390,7 @@ public:
                         thenBB = llvm::BasicBlock::Create(context, "then", fn);
                         mergeBB = llvm::BasicBlock::Create(context, "ifcont");
 
-                        builder->CreateCondBr(is_allocated, thenBB, mergeBB);
+                        builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
                         builder->SetInsertPoint(thenBB); {
                             llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                                 "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
@@ -11391,6 +11421,28 @@ public:
                                                             dim_llvm);
                     }
                 } else {
+                    if (ASRUtils::is_array(target_type) &&
+                        ASRUtils::is_allocatable(target_type) &&
+                        ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
+                        !x.m_move_allocation) {
+                        llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                        std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
+                        if (!target_expr_name.empty()) {
+                            llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_expr_name);
+                            llvm_utils->generate_runtime_error(is_not_allocated,
+                                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                                {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_expr_name_llvm})},
+                                infile,
+                                location_manager,
+                                target_expr_name_llvm);
+                        } else {
+                            llvm_utils->generate_runtime_error(is_not_allocated,
+                                "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                                {LLVMUtils::RuntimeLabel("LHS not allocated here", {x.m_target->base.loc}, {})},
+                                infile,
+                                location_manager);
+                        }
+                    }
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
