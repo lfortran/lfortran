@@ -2665,6 +2665,7 @@ RUN(NAME callback_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME callback_06 LABELS gfortran llvm)
 
 RUN(NAME recursion_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME recursion_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
