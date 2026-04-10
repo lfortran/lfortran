@@ -5687,7 +5687,7 @@ _lfortran_open(int32_t unit_num,
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0, NULL, 0,
-        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, 0);
+        NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -6076,7 +6076,8 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *round, int64_t round_len,
                                     char *pad, int64_t pad_len,
                                     bool *pending,
-                                    char *asynchronous, int64_t asynchronous_len) {
+                                    char *asynchronous, int64_t asynchronous_len,
+                                    char *action, int64_t action_len) {
     if (f_name_data && unit_num != -1) {
         if (iostat != NULL) {
             *iostat = 1;
@@ -6328,6 +6329,17 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *iostat = 0;
             // iomsg is left unchanged on success per Fortran standard
         }
+        if (action != NULL) {
+            if (read_access && write_access) {
+                _lfortran_copy_str_and_pad(action, action_len, "READWRITE", 9);
+            } else if (read_access) {
+                _lfortran_copy_str_and_pad(action, action_len, "READ", 4);
+            } else if (write_access) {
+                _lfortran_copy_str_and_pad(action, action_len, "WRITE", 5);
+            } else {
+                _lfortran_copy_str_and_pad(action, action_len, "UNDEFINED", 9);
+            }
+        }
     }
     if (unit_num != -1) {
         bool unit_file_bin;
@@ -6559,6 +6571,17 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         if (iostat != NULL) {
             *iostat = 0;
             // iomsg is left unchanged on success per Fortran standard
+        }
+        if (action != NULL) {
+            if (read_access && write_access) {
+                _lfortran_copy_str_and_pad(action, action_len, "READWRITE", 9);
+            } else if (read_access) {
+                _lfortran_copy_str_and_pad(action, action_len, "READ", 4);
+            } else if (write_access) {
+                _lfortran_copy_str_and_pad(action, action_len, "WRITE", 5);
+            } else {
+                _lfortran_copy_str_and_pad(action, action_len, "UNDEFINED", 9);
+            }
         }
     }
 }
