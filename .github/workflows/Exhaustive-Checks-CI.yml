@@ -340,7 +340,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6=h31ce4ef_102
+            openmpi=5.0.10
             zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
