@@ -5087,6 +5087,10 @@ run = true
 options = "--infer"
 
 [[test]]
+filename = "errors/allocatable_component_reshape_unallocated_01.f90"
+run = true
+
+[[test]]
 filename = "infer_first_assignment_01.f90"
 asr = true
 options = "--infer"

@@ -1,0 +1,16 @@
+program allocatable_component_reshape_unallocated_01
+    implicit none
+
+    type :: t
+        real, allocatable :: arr(:,:)
+    end type t
+
+    type(t) :: x
+    real :: input(2, 3)
+    real :: gradient(6)
+
+    input = reshape([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [2, 3])
+    gradient = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]
+
+    x%arr = reshape(gradient, shape(input))
+end program allocatable_component_reshape_unallocated_01

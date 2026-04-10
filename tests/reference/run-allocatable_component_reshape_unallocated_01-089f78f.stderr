@@ -1,0 +1,5 @@
+runtime error: Array 'x%arr' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+  --> tests/errors/allocatable_component_reshape_unallocated_01.f90:15:5
+   |
+15 |     x%arr = reshape(gradient, shape(input))
+   |     ^^^^^ 'x%arr' not allocated here
