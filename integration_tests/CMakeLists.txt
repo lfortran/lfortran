@@ -455,6 +455,7 @@ RUN(NAME print_arr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME include_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME include_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME include_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran INCLUDE_PATH include_03)
+RUN(NAME include_04 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form INCLUDE_PATH include_04)
 
 RUN(NAME use_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
 RUN(NAME use_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)

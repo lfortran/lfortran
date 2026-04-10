@@ -436,6 +436,14 @@ bool is_digit(unsigned char ch) {
     return (ch >= '0' && ch <= '9');
 }
 
+bool str_compare_ci(const unsigned char *pos, const char *s) {
+    for (size_t i = 0; s[i] != '\0'; i++) {
+        if (pos[i] == '\0') return false;
+        if (tolower(pos[i]) != s[i]) return false;
+    }
+    return true;
+}
+
 enum LineType {
     Comment, Statement, LabeledStatement, Continuation, EndOfFile,
     ContinuationTab, StatementTab, Include,
@@ -487,7 +495,7 @@ LineType determine_line_type(const unsigned char *pos)
         }
         if (col <= 6) {
             return LineType::LabeledStatement;
-        } else if (str_compare(pos, "include")) {
+        } else if (str_compare_ci((const unsigned char*)pos, "include")) {
             return LineType::Include;
         } else {
             return LineType::Statement;
@@ -671,7 +679,8 @@ void process_include(std::string& out, const std::string& s,
 
 bool is_include(const std::string &s, uint32_t pos) {
     while (pos < s.size() && s[pos] == ' ') pos++;
-    if (pos + 6 < s.size() && s.substr(pos, 7) == "include") {
+    if (pos + 6 < s.size() && str_compare_ci(
+            (const unsigned char*)&s[pos], "include")) {
         pos += 7;
         while (pos < s.size() && s[pos] == ' ') pos++;
         if (pos < s.size() && ((s[pos] == '"') || (s[pos] == '\''))) {
@@ -780,7 +789,8 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 }
                 case LineType::Include: {
                     while (pos < s.size() && s[pos] == ' ') pos++;
-                    LCOMPILERS_ASSERT(s.substr(pos, 7) == "include");
+                    LCOMPILERS_ASSERT(str_compare_ci(
+                        (const unsigned char*)&s[pos], "include"));
                     pos += 7;
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
@@ -816,7 +826,8 @@ std::string prescan(const std::string &s, LocationManager &lm,
             if (newline && is_include(s, pos)) {
                 int col = 0; // doesn't matter
                 while (pos < s.size() && s[pos] == ' ') pos++;
-                LCOMPILERS_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
+                LCOMPILERS_ASSERT(pos + 6 < s.size() && str_compare_ci(
+                    (const unsigned char*)&s[pos], "include"))
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
