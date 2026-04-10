@@ -4578,8 +4578,9 @@ namespace FindLoc {
      */
     ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]);
     // Convert ExpressionLength strings to AssumedLength to avoid
-    // referencing variables from the caller's scope in the new function
-    ASR::ttype_t* array_elem_type = ASRUtils::type_get_past_array(array_type);
+    // referencing variables from the caller's scope in the new function.
+    // Use extract_type to look through Pointer/Allocatable/Array wrappers.
+    ASR::ttype_t* array_elem_type = ASRUtils::extract_type(array_type);
     if (ASR::is_a<ASR::String_t>(*array_elem_type)) {
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(array_elem_type);
         if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
@@ -4588,8 +4589,9 @@ namespace FindLoc {
         }
     }
     ASR::ttype_t* value_type = ASRUtils::duplicate_type(al, arg_types[1]);
-    if (ASR::is_a<ASR::String_t>(*value_type)) {
-        ASR::String_t* str = ASR::down_cast<ASR::String_t>(value_type);
+    ASR::ttype_t* value_elem_type = ASRUtils::extract_type(value_type);
+    if (ASR::is_a<ASR::String_t>(*value_elem_type)) {
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(value_elem_type);
         if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
             str->m_len = nullptr;
             str->m_len_kind = ASR::string_length_kindType::AssumedLength;
