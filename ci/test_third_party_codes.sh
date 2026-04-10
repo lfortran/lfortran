@@ -159,6 +159,13 @@ time_section "🧪 Testing Fiats" '
   git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
+  if [[ "$(uname)" == "Darwin" ]]; then
+    rm -rf build
+    git fetch https://github.com/certik/fiats lf1
+    git checkout f5d91ae48c01297a7fb183957654a73721ad4520
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal"
+  fi
+
   print_success "Done with Fiats"
   cd ..
 '
