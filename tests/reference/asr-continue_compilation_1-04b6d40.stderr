@@ -361,6 +361,12 @@ semantic error: Contiguous attribute can only be applied to variables
 299 |     contiguous :: MyClass
     |                   ^^^^^^^ 
 
+semantic error: LEN parameters in parameterized derived types are not supported yet
+   --> tests/errors/continue_compilation_1.f90:302:9
+    |
+302 |         integer, len :: n
+    |         ^^^^^^^^^^^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
