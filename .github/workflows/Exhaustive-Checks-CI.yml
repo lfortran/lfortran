@@ -200,7 +200,7 @@ jobs:
 #          pixi run clean
 
   test_llvm:
-    name: Test LLVM ${{ matrix.llvm-version }}
+    name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
