@@ -1908,6 +1908,7 @@ RUN(NAME select_type_41 LABELS gfortran llvm NO_DETECT_LEAK)
 RUN(NAME select_type_42 LABELS gfortran llvm)
 RUN(NAME select_type_43 LABELS gfortran llvm)
 RUN(NAME select_type_44 LABELS gfortran llvm)
+RUN(NAME select_type_45 LABELS gfortran llvm)
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
