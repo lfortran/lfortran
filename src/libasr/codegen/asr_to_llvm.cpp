@@ -4966,6 +4966,22 @@ public:
                 int kind = ASRUtils::extract_kind_from_ttype_t(logical_const->m_type);
                 arr_elements.push_back(llvm::ConstantInt::get(
                     context, llvm::APInt(kind * 8, logical_const->m_value)));
+            } else if (ASR::is_a<ASR::ComplexConstant_t>(*elem)) {
+                ASR::ComplexConstant_t* comp_const = ASR::down_cast<ASR::ComplexConstant_t>(elem);
+                llvm::Constant *re, *im;
+                llvm::StructType* struct_type;
+                if (a_kind == 4) {
+                    re = llvm::ConstantFP::get(context, llvm::APFloat((float) comp_const->m_re));
+                    im = llvm::ConstantFP::get(context, llvm::APFloat((float) comp_const->m_im));
+                    struct_type = llvm::cast<llvm::StructType>(complex_type_4);
+                } else if (a_kind == 8) {
+                    re = llvm::ConstantFP::get(context, llvm::APFloat((double) comp_const->m_re));
+                    im = llvm::ConstantFP::get(context, llvm::APFloat((double) comp_const->m_im));
+                    struct_type = llvm::cast<llvm::StructType>(complex_type_8);
+                } else {
+                    throw CodeGenError("Complex kind " + std::to_string(a_kind) + " not supported in array initializer");
+                }
+                arr_elements.push_back(llvm::ConstantStruct::get(struct_type, {re, im}));
             }
         }
         if (!arr_type) {
