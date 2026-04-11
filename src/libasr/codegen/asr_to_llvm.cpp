@@ -19720,11 +19720,10 @@ public:
                                                 i64, vla_member_sz);
                                         szs.push_back(ne64);
                                         // Allocate descriptor on heap
-                                        llvm::DataLayout dl(
-                                            module.get());
                                         uint64_t desc_sz =
-                                            dl.getTypeAllocSize(
-                                                desc_type);
+                                            module->getDataLayout()
+                                                .getTypeAllocSize(
+                                                    desc_type);
                                         llvm::FunctionType *mft2 =
                                             llvm::FunctionType::get(
                                                 i8_ptr, {i64}, false);
@@ -19812,11 +19811,10 @@ public:
                                                     i64, 1);
                                         }
                                         szs.push_back(ne64);
-                                        llvm::DataLayout dl(
-                                            module.get());
                                         uint64_t desc_sz =
-                                            dl.getTypeAllocSize(
-                                                desc_type);
+                                            module->getDataLayout()
+                                                .getTypeAllocSize(
+                                                    desc_type);
                                         llvm::FunctionType *mft2 =
                                             llvm::FunctionType::get(
                                                 i8_ptr, {i64}, false);
