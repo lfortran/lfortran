@@ -5332,7 +5332,7 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
     _lfortran_init_standard_units();
     // Initialize all output params to safe defaults for unconnected units
     if (unit_file_bin) *unit_file_bin = false;
-    if (access_id) *access_id = 0;
+    if (access_id) *access_id = -1;
     if (read_access) *read_access = true;
     if (write_access) *write_access = true;
     if (delim) *delim = 0;
@@ -6156,7 +6156,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (access != NULL) {
-            char *access_str = "";
+            char *access_str = "UNDEFINED";
             if (access_id == 0) {
                 access_str = "SEQUENTIAL";
             } else if (access_id == 1) {
@@ -6371,7 +6371,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (access != NULL) {
-            char *access_str = "";
+            char *access_str = "UNDEFINED";
             if (access_id == 0) {
                 access_str = "SEQUENTIAL";
             } else if (access_id == 1) {

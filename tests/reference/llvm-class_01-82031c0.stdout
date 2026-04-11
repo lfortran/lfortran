@@ -41,6 +41,7 @@ FINALIZE_SYMTABLE_circle_area:                    ; preds = %return
 
 define void @__module_class_circle1_circle_print(%class_circle1.circle_class* %this) {
 .entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
   %area = alloca float, align 4
   %1 = bitcast %class_circle1.circle_class* %this to float (%class_circle1.circle_class*)***
@@ -58,7 +59,6 @@ define void @__module_class_circle1_circle_print(%class_circle1.circle_class* %t
   store float %10, float* %11, align 4
   %12 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @serialization_info, i32 0, i32 0), i64* %6, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %11, %string_descriptor* @string_const.2, float* %area)
   %13 = load i64, i64* %6, align 8
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %12, i8** %14, align 8
   %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
