@@ -1,4 +1,4 @@
-module associate_46_mod
+module associate_47_mod
   implicit none
   abstract interface
     function func_i() result(r)
@@ -20,8 +20,8 @@ contains
   end function
 end module
 
-program associate_46
-  use associate_46_mod, only : t
+program associate_47
+  use associate_47_mod, only : t
   implicit none
   type(t) :: x
   associate(me => 1)
