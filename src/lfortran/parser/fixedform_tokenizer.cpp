@@ -1222,6 +1222,12 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "include")) {
+            push_token_advance(cur, "include");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "stop")) {
             push_token_advance(cur, "stop");
             tokenize_line(cur);
