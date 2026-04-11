@@ -1538,10 +1538,91 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         }
 };
 
+/*
+    When pass_array_by_data transforms a callback interface (e.g. `cb`) but the
+    actual function passed through it (e.g. `f`) cannot be transformed (its body
+    contains reshape), the procedure variable's type would be updated to the
+    transformed interface while the actual function keeps its original signature.
+    This causes an LLVM IR type mismatch at the call site.
+
+    This visitor detects such mismatches after PassArrayByDataProcedureVisitor
+    has populated proc2newproc, and removes the offending interface entries
+    before EditProcedureVisitor updates type declarations.
+ */
+class CallbackMismatchCleanup : public ASR::BaseWalkVisitor<CallbackMismatchCleanup> {
+public:
+    PassArrayByDataProcedureVisitor& v;
+    std::set<ASR::symbol_t*> to_remove;
+
+    CallbackMismatchCleanup(PassArrayByDataProcedureVisitor& v_) : v(v_) {}
+
+    void check_callback_args(ASR::symbol_t* callee_name,
+                             ASR::call_arg_t* args, size_t n_args) {
+        ASR::symbol_t* callee_sym = ASRUtils::symbol_get_past_external(callee_name);
+        if (!ASR::is_a<ASR::Function_t>(*callee_sym)) return;
+        ASR::Function_t* callee = ASR::down_cast<ASR::Function_t>(callee_sym);
+
+        for (size_t i = 0; i < n_args && i < callee->n_args; i++) {
+            if (!args[i].m_value) continue;
+            if (!ASR::is_a<ASR::Var_t>(*args[i].m_value)) continue;
+
+            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                args[i].m_value)->m_v;
+            ASR::symbol_t* arg_resolved = ASRUtils::symbol_get_past_external(
+                arg_sym);
+
+            // Is the argument a function being passed as a callback?
+            if (!ASR::is_a<ASR::Function_t>(*arg_resolved)) continue;
+            // Was this function NOT transformed?
+            if (v.proc2newproc.find(arg_resolved) != v.proc2newproc.end()) continue;
+
+            // Get the corresponding parameter's type_declaration (the interface)
+            if (!ASR::is_a<ASR::Var_t>(*callee->m_args[i])) continue;
+            ASR::symbol_t* param_sym = ASR::down_cast<ASR::Var_t>(
+                callee->m_args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*param_sym)) continue;
+            ASR::Variable_t* param = ASR::down_cast<ASR::Variable_t>(param_sym);
+            if (!param->m_type_declaration) continue;
+
+            ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(
+                param->m_type_declaration);
+
+            // If the interface WAS transformed → mismatch
+            if (v.proc2newproc.find(type_decl) != v.proc2newproc.end()) {
+                to_remove.insert(type_decl);
+            }
+        }
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        check_callback_args(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        check_callback_args(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor::visit_FunctionCall(x);
+    }
+
+    void apply() {
+        for (ASR::symbol_t* sym : to_remove) {
+            ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(
+                v.proc2newproc[sym].first);
+            SymbolTable* scope = new_func->m_symtab->parent;
+            scope->erase_symbol(std::string(new_func->m_name));
+            v.newprocs.erase(v.proc2newproc[sym].first);
+            v.proc2newproc.erase(sym);
+        }
+    }
+};
+
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
     PassArrayByDataProcedureVisitor v(al, pass_options);
     v.visit_TranslationUnit(unit);
+    CallbackMismatchCleanup cleanup(v);
+    cleanup.visit_TranslationUnit(unit);
+    cleanup.apply();
     EditProcedureVisitor e(v);
     e.visit_TranslationUnit(unit);
     std::set<ASR::symbol_t*> not_to_be_erased;

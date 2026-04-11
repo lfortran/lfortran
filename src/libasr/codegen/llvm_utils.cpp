@@ -2427,11 +2427,20 @@ namespace LCompilers {
 
         switch (str_type->m_len_kind){
             case ASR::ExpressionLength:
-            case ASR::AssumedLength:{ // Set memory only. Length already set.
+            case ASR::AssumedLength:{
+                llvm::Value* len_to_use;
+                if (string_length_to_allocate) {
+                    len_to_use = convert_kind(
+                        string_length_to_allocate,
+                        llvm::Type::getInt64Ty(context));
+                    builder->CreateStore(len_to_use, get_string_length(str_type, str, true));
+                } else {
+                    len_to_use = get_string_length(str_type, str);
+                }
                 set_array_of_strings_memory_on_heap(
                     str_type,
                     str,
-                    get_string_length(str_type, str),
+                    len_to_use,
                     array_size_to_allocte,
                     realloc);
                 break;
