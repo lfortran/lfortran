@@ -4577,9 +4577,29 @@ namespace FindLoc {
      * end do
      */
     ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]);
+    // Convert ExpressionLength strings to AssumedLength to avoid
+    // referencing variables from the caller's scope in the new function.
+    // Use extract_type to look through Pointer/Allocatable/Array wrappers.
+    ASR::ttype_t* array_elem_type = ASRUtils::extract_type(array_type);
+    if (ASR::is_a<ASR::String_t>(*array_elem_type)) {
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(array_elem_type);
+        if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
+            str->m_len = nullptr;
+            str->m_len_kind = ASR::string_length_kindType::AssumedLength;
+        }
+    }
+    ASR::ttype_t* value_type = ASRUtils::duplicate_type(al, arg_types[1]);
+    ASR::ttype_t* value_elem_type = ASRUtils::extract_type(value_type);
+    if (ASR::is_a<ASR::String_t>(*value_elem_type)) {
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(value_elem_type);
+        if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
+            str->m_len = nullptr;
+            str->m_len_kind = ASR::string_length_kindType::AssumedLength;
+        }
+    }
     ASR::ttype_t* mask_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[3]);
     fill_func_arg("array", array_type);
-    fill_func_arg("value", arg_types[1]);
+    fill_func_arg("value", value_type);
     fill_func_arg("dim", arg_types[2]);
     fill_func_arg("mask", mask_type);
     fill_func_arg("kind", arg_types[4]);

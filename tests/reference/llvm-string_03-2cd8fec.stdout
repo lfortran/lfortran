@@ -38,7 +38,9 @@ target datalayout = "..."
 
 define void @_lcompilers_stringconcat(%string_descriptor* %s1, %string_descriptor* %s2, i32* %s1_len, i32* %s2_len, %string_descriptor* %concat_result) {
 .entry:
+  %StrSlice_StrView2 = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
+  %StrSlice_StrView = alloca %string_descriptor, align 8
   %1 = load i32, i32* %s1_len, align 4
   %2 = load i32, i32* %s2_len, align 4
   %3 = add i32 %1, %2
@@ -73,7 +75,6 @@ ifcont:                                           ; preds = %else, %then
   %19 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
   %20 = load i8*, i8** %19, align 8
   %StrSliceGEP = getelementptr i8, i8* %20, i64 0
-  %StrSlice_StrView = alloca %string_descriptor, align 8
   %21 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
   store i8* %StrSliceGEP, i8** %21, align 8
   %22 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
@@ -101,7 +102,6 @@ ifcont:                                           ; preds = %else, %then
   %42 = sext i32 %30 to i64
   %43 = sub i64 %42, 1
   %StrSliceGEP1 = getelementptr i8, i8* %41, i64 %43
-  %StrSlice_StrView2 = alloca %string_descriptor, align 8
   %44 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 0
   store i8* %StrSliceGEP1, i8** %44, align 8
   %45 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView2, i32 0, i32 1
@@ -137,18 +137,22 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value1 = alloca i32, align 4
   %call_arg_value = alloca i32, align 4
   %2 = call i8* @_lfortran_get_default_allocator()
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %__libasr__created__var__0_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__0_return_slot, align 1
-  %__libasr__created__var__1_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__1_return_slot, align 1
-  %__libasr__created__var__2_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__2_return_slot, align 1
-  %__libasr__created__var__3_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__3_return_slot, align 1
-  %__libasr__created__var__4_return_slot = alloca %string_descriptor, align 8
-  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__4_return_slot, align 1
+  %verb = alloca %string_descriptor, align 8
+  %title = alloca %string_descriptor, align 8
+  %posit = alloca %string_descriptor, align 8
+  %last_name = alloca %string_descriptor, align 8
   %combined = alloca %string_descriptor, align 8
+  %__libasr__created__var__4_return_slot = alloca %string_descriptor, align 8
+  %__libasr__created__var__3_return_slot = alloca %string_descriptor, align 8
+  %__libasr__created__var__2_return_slot = alloca %string_descriptor, align 8
+  %__libasr__created__var__1_return_slot = alloca %string_descriptor, align 8
+  %__libasr__created__var__0_return_slot = alloca %string_descriptor, align 8
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__0_return_slot, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__1_return_slot, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__2_return_slot, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__3_return_slot, align 1
+  store %string_descriptor zeroinitializer, %string_descriptor* %__libasr__created__var__4_return_slot, align 1
   store %string_descriptor zeroinitializer, %string_descriptor* %combined, align 1
   %3 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 1
   store i64 29, i64* %3, align 8
@@ -156,7 +160,6 @@ define i32 @main(i32 %0, i8** %1) {
   %5 = call i8* @_lfortran_get_default_allocator()
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 29)
   store i8* %6, i8** %4, align 8
-  %last_name = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %last_name, align 1
   %7 = getelementptr %string_descriptor, %string_descriptor* %last_name, i32 0, i32 1
   store i64 7, i64* %7, align 8
@@ -164,7 +167,6 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = call i8* @_lfortran_get_default_allocator()
   %10 = call i8* @_lfortran_malloc_alloc(i8* %9, i64 7)
   store i8* %10, i8** %8, align 8
-  %posit = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %posit, align 1
   %11 = getelementptr %string_descriptor, %string_descriptor* %posit, i32 0, i32 1
   store i64 5, i64* %11, align 8
@@ -172,7 +174,6 @@ define i32 @main(i32 %0, i8** %1) {
   %13 = call i8* @_lfortran_get_default_allocator()
   %14 = call i8* @_lfortran_malloc_alloc(i8* %13, i64 5)
   store i8* %14, i8** %12, align 8
-  %title = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %title, align 1
   %15 = getelementptr %string_descriptor, %string_descriptor* %title, i32 0, i32 1
   store i64 4, i64* %15, align 8
@@ -180,7 +181,6 @@ define i32 @main(i32 %0, i8** %1) {
   %17 = call i8* @_lfortran_get_default_allocator()
   %18 = call i8* @_lfortran_malloc_alloc(i8* %17, i64 4)
   store i8* %18, i8** %16, align 8
-  %verb = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %verb, align 1
   %19 = getelementptr %string_descriptor, %string_descriptor* %verb, i32 0, i32 1
   store i64 8, i64* %19, align 8

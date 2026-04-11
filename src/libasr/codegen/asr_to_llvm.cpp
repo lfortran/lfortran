@@ -2116,10 +2116,10 @@ public:
                 if (is_struct_member || is_dummy_arg || compiler_options.po.strict_bounds_checking) {
                     llvm_utils->create_if_else(
                         builder->CreateICmpEQ(
-                            builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
+                            builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt64Ty(context)),
                             builder->CreatePtrToInt(
                                 llvm::ConstantPointerNull::get((x_arr && x_arr->getType() != nullptr) ? x_arr->getType()->getPointerTo() : ptr_val->getType()->getPointerTo()),
-                                llvm::Type::getInt32Ty(context))),
+                                llvm::Type::getInt64Ty(context))),
                         [&]() {
                             llvm::Value* ptr_;
 
@@ -4966,6 +4966,22 @@ public:
                 int kind = ASRUtils::extract_kind_from_ttype_t(logical_const->m_type);
                 arr_elements.push_back(llvm::ConstantInt::get(
                     context, llvm::APInt(kind * 8, logical_const->m_value)));
+            } else if (ASR::is_a<ASR::ComplexConstant_t>(*elem)) {
+                ASR::ComplexConstant_t* comp_const = ASR::down_cast<ASR::ComplexConstant_t>(elem);
+                llvm::Constant *re, *im;
+                llvm::StructType* struct_type;
+                if (a_kind == 4) {
+                    re = llvm::ConstantFP::get(context, llvm::APFloat((float) comp_const->m_re));
+                    im = llvm::ConstantFP::get(context, llvm::APFloat((float) comp_const->m_im));
+                    struct_type = llvm::cast<llvm::StructType>(complex_type_4);
+                } else if (a_kind == 8) {
+                    re = llvm::ConstantFP::get(context, llvm::APFloat((double) comp_const->m_re));
+                    im = llvm::ConstantFP::get(context, llvm::APFloat((double) comp_const->m_im));
+                    struct_type = llvm::cast<llvm::StructType>(complex_type_8);
+                } else {
+                    throw CodeGenError("Complex kind " + std::to_string(a_kind) + " not supported in array initializer");
+                }
+                arr_elements.push_back(llvm::ConstantStruct::get(struct_type, {re, im}));
             }
         }
         if (!arr_type) {
@@ -6135,8 +6151,12 @@ public:
                             ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
                             element_type, module.get());
                         if(ASRUtils::is_character(*v->m_type)){
-                            llvm::Value* str_desc = create_and_setup_string_for_array(v->m_type, nullptr, false, "arr_desc_str_desc");
+                            llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(data_type);
                             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, arr));
+                            ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
+                            if (str_type->m_len) {
+                                setup_string_length(str_desc, str_type, str_type->m_len);
+                            }
                         } else {
                             arr_descr->reset_is_allocated_flag(type_, arr, data_type);
                         }
@@ -9107,25 +9127,41 @@ public:
                 if (is_target_class && is_value_class) {
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_target, ASRUtils::extract_type(target_type), module.get());
-                    // Allocate wrapper on heap (This is the current convention we use for class types)
-                    llvm::Value* null_cond = builder->CreateICmpEQ(
-                        llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
-                        llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
-                    llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
-                        llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                    llvm::Value* value_is_null = builder->CreateICmpEQ(
+                        llvm_value,
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(llvm_value->getType())));
                     llvm_utils->create_if_else(
-                        null_cond,
+                        value_is_null,
                         [&]() {
-                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, wrapper_size);
-                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                wrapper_size, llvm::MaybeAlign());
-                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
-                            builder->CreateStore(wrapper_ptr, llvm_target);
-                        }, []() {});
-                    builder->CreateMemCpy(  llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target), llvm::MaybeAlign(),
-                                            llvm_value, llvm::MaybeAlign(),
-                                            wrapper_size);
+                            // Source class wrapper is null (unallocated);
+                            // store null into target to preserve unallocated status
+                            builder->CreateStore(
+                                llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()),
+                                llvm_target);
+                        },
+                        [&]() {
+                            // Allocate wrapper on heap if needed and memcpy from source
+                            llvm::Value* null_cond = builder->CreateICmpEQ(
+                                llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
+                                llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
+                            llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
+                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            llvm_utils->create_if_else(
+                                null_cond,
+                                [&]() {
+                                    llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                                        context, *module, *builder, wrapper_size);
+                                    builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                        wrapper_size, llvm::MaybeAlign());
+                                    wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                                    builder->CreateStore(wrapper_ptr, llvm_target);
+                                }, []() {});
+                            builder->CreateMemCpy(
+                                llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target), llvm::MaybeAlign(),
+                                llvm_value, llvm::MaybeAlign(),
+                                wrapper_size);
+                        });
                 } else if (is_target_class) {
                     // check_and_allocate_scalar(x.m_target, x.m_value, value_type, true);
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
