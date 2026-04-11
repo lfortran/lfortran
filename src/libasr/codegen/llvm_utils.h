@@ -1054,37 +1054,6 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_save_variable_at_program_exit(ASR::Variable_t* const v){
-            if (v->m_storage != ASR::storage_typeType::Save) return;
-            if (v->m_intent != ASR::Local) return;
-            if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
-            LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
-
-            insert_BB_for_readability((std::string("Finalize_Save_Variable_At_Program_Exit_") + v->m_name).c_str());
-
-            auto const llvm_var = get_llvm_var(v);
-            auto* const struct_sym = get_struct_sym(v);
-            check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
-
-            // Match finalize_variable() behavior for non-allocatable
-            // DescriptorArray strings whose descriptor data is heap allocated.
-            if (!ASRUtils::is_allocatable(v->m_type) && !ASRUtils::is_pointer(v->m_type)) {
-                ASR::ttype_t* t_past = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
-                if (ASRUtils::is_array_t(t_past)) {
-                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(t_past);
-                    if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray
-                        && ASRUtils::extract_type(t_past)->type == ASR::ttypeType::String) {
-                        llvm::Type* arr_llvm_t = get_llvm_type(t_past, struct_sym);
-                        llvm::Type* elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
-                        llvm::Value* data = builder_->CreateLoad(
-                            elem_llvm_t->getPointerTo(),
-                            llvm_utils_->create_gep2(arr_llvm_t, llvm_var, 0));
-                        llvm_utils_->lfortran_free_nocheck(data);
-                    }
-                }
-            }
-        }
-
         void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
@@ -2216,23 +2185,6 @@ class ASRToLLVMVisitor;
             check_all_caches_done_properly();
         }
 
-        void finalize_saved_variables_in_symtab(SymbolTable* symtab){
-            if (non_deallocatable_construct(symtab->asr_owner)) {
-                return;
-            }
-            auto const finalize_str = std::string("FINALIZE_SAVED_VARIABLES_IN_SYMTAB_") +
-                                      std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
-            insert_BB_for_readability(finalize_str.c_str());
-
-            auto MAP = symtab->get_scope();
-            for(auto &str_sym_pair : MAP){
-                ASR::symbol_t* const sym = str_sym_pair.second;
-                if (is_variable(sym)){
-                    finalize_save_variable_at_program_exit(ASR::down_cast<ASR::Variable_t>(sym));
-                }
-            }
-            check_all_caches_done_properly();
-        }
     };
 
     class LLVMList {

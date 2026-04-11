@@ -226,6 +226,40 @@ private:
         return "";
     }
 
+    llvm::Value* allocate_class_wrapper_storage(ASR::expr_t* target_expr,
+                                                llvm::Type* target_llvm_type,
+                                                llvm::Value* wrapper_size) {
+        if (ASR::is_a<ASR::Var_t>(*target_expr)) {
+            ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(target_expr)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
+                ASR::Variable_t* target_var = ASR::down_cast<ASR::Variable_t>(target_sym);
+                if (target_var->m_storage == ASR::storage_typeType::Save) {
+                    std::string wrapper_name = "__lfortran_save_class_wrapper_"
+                        + std::to_string(get_hash((ASR::asr_t*)target_sym));
+                    llvm::GlobalVariable* wrapper_g = module->getGlobalVariable(
+                        wrapper_name, true);
+                    if (!wrapper_g) {
+                        wrapper_g = new llvm::GlobalVariable(
+                            *module,
+                            target_llvm_type,
+                            false,
+                            llvm::GlobalValue::InternalLinkage,
+                            llvm::Constant::getNullValue(target_llvm_type),
+                            wrapper_name);
+                    }
+                    return wrapper_g;
+                }
+            }
+        }
+
+        llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+            context, *module, *builder, wrapper_size);
+        builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+            wrapper_size, llvm::MaybeAlign());
+        return builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+    }
+
 public:
     diag::Diagnostics &diag;
     llvm::LLVMContext &context;
@@ -5857,20 +5891,6 @@ public:
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         // Free globals if detecting leaks is ON, to print clean report
         if(compiler_options.detect_leaks){
-            auto finalize_save_variables = [&](auto&& self, SymbolTable* symtab) -> void {
-                llvm_symtab_finalizer.finalize_saved_variables_in_symtab(symtab);
-                for (auto &name_sym_pair : symtab->get_scope()) {
-                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(name_sym_pair.second);
-                    if (ASR::is_a<ASR::Module_t>(*sym)) {
-                        self(self, ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
-                    } else if (ASR::is_a<ASR::Function_t>(*sym)) {
-                        self(self, ASR::down_cast<ASR::Function_t>(sym)->m_symtab);
-                    }
-                }
-            };
-            SymbolTable* translation_unit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
-            finalize_save_variables(finalize_save_variables, translation_unit_symtab);
-
             SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
             for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
                 auto &sym = name_sym_pair.second;
@@ -9030,11 +9050,8 @@ public:
                         [&]() {
                             llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, target_base_type,
                                 llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
-                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, wrapper_size);
-                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                wrapper_size, llvm::MaybeAlign());
-                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                            llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                                x.m_target, target_llvm_type, wrapper_size);
                             builder->CreateStore(wrapper_ptr, llvm_target);
                         }, []() {});
                     target_ptr = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
@@ -9176,6 +9193,13 @@ public:
                                 llvm_value, llvm::MaybeAlign(),
                                 wrapper_size);
                         });
+                            llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                                x.m_target, target_llvm_type, wrapper_size);
+                            builder->CreateStore(wrapper_ptr, llvm_target);
+                        }, []() {});
+                    builder->CreateMemCpy(  llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target), llvm::MaybeAlign(),
+                                            llvm_value, llvm::MaybeAlign(),
+                                            wrapper_size);
                 } else if (is_target_class) {
                     // check_and_allocate_scalar(x.m_target, x.m_value, value_type, true);
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -9189,11 +9213,8 @@ public:
                         [&]() {
                             llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
                                 llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
-                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, wrapper_size);
-                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                wrapper_size, llvm::MaybeAlign());
-                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                            llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                                x.m_target, target_llvm_type, wrapper_size);
                             builder->CreateStore(wrapper_ptr, llvm_target);
                         }, []() {});
                     llvm_target = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
