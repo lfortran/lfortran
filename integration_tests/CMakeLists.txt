@@ -1683,6 +1683,8 @@ RUN(NAME intrinsics_447 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_448 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # achar
 RUN(NAME intrinsics_449 LABELS gfortran llvm) # storage_size with c_ptr
 RUN(NAME intrinsics_450 LABELS llvm) # storage_size struct alignment
+RUN(NAME intrinsics_451 LABELS gfortran llvm) # findloc with character ExpressionLength
+RUN(NAME intrinsics_452 LABELS gfortran llvm) # findloc with Pointer-wrapped ExpressionLength
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -1907,6 +1909,8 @@ RUN(NAME select_type_41 LABELS gfortran llvm NO_DETECT_LEAK)
 RUN(NAME select_type_42 LABELS gfortran llvm)
 RUN(NAME select_type_43 LABELS gfortran llvm)
 RUN(NAME select_type_44 LABELS gfortran llvm)
+RUN(NAME select_type_45 LABELS gfortran llvm)
+RUN(NAME select_type_46 LABELS gfortran llvm)
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2412,6 +2416,8 @@ RUN(NAME realloc_lhs_19 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_20 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_21 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
@@ -2620,6 +2626,7 @@ RUN(NAME string_110 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_111 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_112 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_113 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_114 LABELS gfortran llvm)
 
 RUN(NAME substring_read LABELS gfortran llvm)
 
