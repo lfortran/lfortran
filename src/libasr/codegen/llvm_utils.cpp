@@ -2294,7 +2294,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_string_descriptor(std::string name){
-        return builder->CreateAlloca(string_descriptor, nullptr, name);
+        return CreateAlloca(string_descriptor, nullptr, name);
     }
 
     llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
