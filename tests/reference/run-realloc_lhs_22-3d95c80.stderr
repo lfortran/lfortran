@@ -1,0 +1,5 @@
+runtime error: Array 'x' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+ --> tests/../integration_tests/realloc_lhs_22.f90:5:5
+  |
+5 |     x = [1, 2, 3]
+  |     ^ 'x' not allocated here
