@@ -519,6 +519,12 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
     }
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        if (x->m_old == ASR::array_physical_typeType::UnboundedPointerArray &&
+            x->m_new == ASR::array_physical_typeType::DescriptorArray) {
+            // assumed-size arrays cannot become descriptors
+            *current_expr = x->m_arg;
+            return;
+        }
         ASR::BaseExprReplacer<EditProcedureReplacer>::replace_ArrayPhysicalCast(x);
         // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
         // later on
