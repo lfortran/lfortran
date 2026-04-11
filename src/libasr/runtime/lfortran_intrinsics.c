@@ -8851,6 +8851,14 @@ static int parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
             (*fmt_pos)++;
         }
     }
+    // Skip optional exponent width specifier (Ee or En) in Ew.dEe / Gw.dEe
+    if (*fmt_pos < fmt_len && (toupper(fmt[*fmt_pos]) == 'E' ||
+                                toupper(fmt[*fmt_pos]) == 'N')) {
+        (*fmt_pos)++;
+        while (*fmt_pos < fmt_len && isdigit((unsigned char)fmt[*fmt_pos])) {
+            (*fmt_pos)++;
+        }
+    }
     return decimals;
 }
 
