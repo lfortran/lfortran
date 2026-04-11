@@ -12193,8 +12193,10 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                     item.second);
                 if (!ASR::is_a<ASR::Pointer_t>(*v->m_type)) continue;
-                if (ASRUtils::is_array(ASR::down_cast<ASR::Pointer_t>(
-                        v->m_type)->m_type)) continue;
+                ASR::ttype_t *pointee_type =
+                    ASR::down_cast<ASR::Pointer_t>(v->m_type)->m_type;
+                if (ASR::is_a<ASR::FunctionType_t>(*pointee_type)) continue;
+                if (ASRUtils::is_array(pointee_type)) continue;
                 uint32_t h = get_hash((ASR::asr_t*)v);
                 if (simple_assoc_vars.count(h)) continue;
                 if (llvm_symtab.find(h) == llvm_symtab.end()) continue;
@@ -12205,8 +12207,6 @@ public:
                 llvm::Type *ptr_type = alloca_inst->getAllocatedType();
                 if (!ptr_type->isPointerTy()) continue;
 #if LLVM_VERSION_MAJOR >= 17
-                ASR::ttype_t *pointee_type =
-                    ASR::down_cast<ASR::Pointer_t>(v->m_type)->m_type;
                 llvm::Type *elem_type =
                     llvm_utils->get_type_from_ttype_t_util(
                         nullptr, pointee_type, module.get());

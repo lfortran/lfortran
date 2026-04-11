@@ -2476,6 +2476,7 @@ RUN(NAME associate_42 LABELS gfortran llvm)
 RUN(NAME associate_43 LABELS gfortran llvm)
 RUN(NAME associate_44 LABELS gfortran llvm)
 RUN(NAME associate_45 LABELS gfortran llvm)
+RUN(NAME associate_46 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
