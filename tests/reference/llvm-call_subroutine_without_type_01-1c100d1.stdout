@@ -29,30 +29,41 @@ target datalayout = "..."
 
 define void @__module_module_call_subroutine_without_type_01_get_i(%module_call_subroutine_without_type_01.mytype_class* %self) {
 .entry:
-  %0 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
-  %1 = icmp eq %module_call_subroutine_without_type_01.mytype_class* %0, null
-  br i1 %1, label %then, label %else
+  %0 = icmp eq %module_call_subroutine_without_type_01.mytype_class* %self, null
+  br i1 %0, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %2 = call i8* @_lfortran_get_default_allocator()
-  %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
-  %4 = bitcast i8* %3 to %module_call_subroutine_without_type_01.mytype_class*
-  store %module_call_subroutine_without_type_01.mytype_class* %4, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
-  br label %ifcont
+  store %module_call_subroutine_without_type_01.mytype_class* null, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  br label %ifcont3
 
 else:                                             ; preds = %.entry
+  %1 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %2 = icmp eq %module_call_subroutine_without_type_01.mytype_class* %1, null
+  br i1 %2, label %then1, label %else2
+
+then1:                                            ; preds = %else
+  %3 = call i8* @_lfortran_get_default_allocator()
+  %4 = call i8* @_lfortran_malloc_alloc(i8* %3, i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %4, i8 0, i32 16, i1 false)
+  %5 = bitcast i8* %4 to %module_call_subroutine_without_type_01.mytype_class*
+  store %module_call_subroutine_without_type_01.mytype_class* %5, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
   br label %ifcont
 
-ifcont:                                           ; preds = %else, %then
-  %5 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
-  %6 = bitcast %module_call_subroutine_without_type_01.mytype_class* %5 to i8*
-  %7 = bitcast %module_call_subroutine_without_type_01.mytype_class* %self to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %6, i8* %7, i32 16, i1 false)
+else2:                                            ; preds = %else
+  br label %ifcont
+
+ifcont:                                           ; preds = %else2, %then1
+  %6 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %7 = bitcast %module_call_subroutine_without_type_01.mytype_class* %6 to i8*
+  %8 = bitcast %module_call_subroutine_without_type_01.mytype_class* %self to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %7, i8* %8, i32 16, i1 false)
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %ifcont, %then
   call void @get_i.__module_module_call_subroutine_without_type_01_get_r()
   br label %return
 
-return:                                           ; preds = %ifcont
+return:                                           ; preds = %ifcont3
   br label %FINALIZE_SYMTABLE_get_i
 
 FINALIZE_SYMTABLE_get_i:                          ; preds = %return

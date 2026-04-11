@@ -9111,25 +9111,41 @@ public:
                 if (is_target_class && is_value_class) {
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_target, ASRUtils::extract_type(target_type), module.get());
-                    // Allocate wrapper on heap (This is the current convention we use for class types)
-                    llvm::Value* null_cond = builder->CreateICmpEQ(
-                        llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
-                        llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
-                    llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
-                        llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                    llvm::Value* value_is_null = builder->CreateICmpEQ(
+                        llvm_value,
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(llvm_value->getType())));
                     llvm_utils->create_if_else(
-                        null_cond,
+                        value_is_null,
                         [&]() {
-                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, wrapper_size);
-                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                wrapper_size, llvm::MaybeAlign());
-                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
-                            builder->CreateStore(wrapper_ptr, llvm_target);
-                        }, []() {});
-                    builder->CreateMemCpy(  llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target), llvm::MaybeAlign(),
-                                            llvm_value, llvm::MaybeAlign(),
-                                            wrapper_size);
+                            // Source class wrapper is null (unallocated);
+                            // store null into target to preserve unallocated status
+                            builder->CreateStore(
+                                llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()),
+                                llvm_target);
+                        },
+                        [&]() {
+                            // Allocate wrapper on heap if needed and memcpy from source
+                            llvm::Value* null_cond = builder->CreateICmpEQ(
+                                llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
+                                llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
+                            llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
+                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            llvm_utils->create_if_else(
+                                null_cond,
+                                [&]() {
+                                    llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                                        context, *module, *builder, wrapper_size);
+                                    builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                        wrapper_size, llvm::MaybeAlign());
+                                    wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                                    builder->CreateStore(wrapper_ptr, llvm_target);
+                                }, []() {});
+                            builder->CreateMemCpy(
+                                llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target), llvm::MaybeAlign(),
+                                llvm_value, llvm::MaybeAlign(),
+                                wrapper_size);
+                        });
                 } else if (is_target_class) {
                     // check_and_allocate_scalar(x.m_target, x.m_value, value_type, true);
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
