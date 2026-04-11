@@ -2,8 +2,8 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%array.1.1 = type { %string_descriptor*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %string_descriptor = type <{ i8*, i64 }>
+%array.1.1 = type { %string_descriptor*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
 %array.1.0 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %array.1 = type { %finalize_02.tt*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
@@ -32,8 +32,12 @@ define void @ss(i32* %nang) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = call i8* @_lfortran_get_default_allocator()
+  %arr_desc_str_desc5 = alloca %string_descriptor, align 8
   %arr_desc4 = alloca %array.1.1, align 8
+  %arr_07 = alloca %string_descriptor, align 8
   %arr_desc3 = alloca %array.1.0, align 8
+  %arr_05 = alloca %string_descriptor, align 8
+  %arr_desc_str_desc = alloca %string_descriptor, align 8
   %arr_desc2 = alloca %array.1.1, align 8
   %arr_desc1 = alloca %array.1.0, align 8
   %arr_desc = alloca %array.1, align 8
@@ -73,7 +77,6 @@ define void @ss(i32* %nang) {
   store i32* null, i32** %arr_03, align 8
   %arr_04 = alloca %array.1.1*, align 8
   store %array.1.1* null, %array.1.1** %arr_04, align 8
-  %arr_desc_str_desc = alloca %string_descriptor, align 8
   %18 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
   store i8* null, i8** %18, align 8
   %19 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 1
@@ -92,7 +95,6 @@ define void @ss(i32* %nang) {
   %27 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 3
   store i8 1, i8* %27, align 1
   store %array.1.1* %arr_desc2, %array.1.1** %arr_04, align 8
-  %arr_05 = alloca %string_descriptor, align 8
   %28 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
   store i8* null, i8** %28, align 8
   %29 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
@@ -119,11 +121,9 @@ define void @ss(i32* %nang) {
   %41 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 0
   store i32* null, i32** %41, align 8
   store %array.1.0* %arr_desc3, %array.1.0** %arr_06, align 8
-  %arr_07 = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %arr_07, align 1
   %arr_08 = alloca %array.1.1*, align 8
   store %array.1.1* null, %array.1.1** %arr_08, align 8
-  %arr_desc_str_desc5 = alloca %string_descriptor, align 8
   %42 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0
   store i8* null, i8** %42, align 8
   %43 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 1
