@@ -5216,7 +5216,13 @@ namespace Hypot {
             b.Assignment(scale, abs_y)
         }));
 
-        body.push_back(al, b.If(b.Eq(scale, b.f_t(0, real_type)), {
+        // NaN check: if either input is NaN, result must be NaN
+        // NaN is detected by x != x (only true for NaN)
+        body.push_back(al, b.If(b.Or(b.NotEq(args[0], args[0]),
+                                      b.NotEq(args[1], args[1])), {
+            b.Assignment(result, b.Add(args[0], args[1]))
+        }, {
+        b.If(b.Eq(scale, b.f_t(0, real_type)), {
             b.Assignment(result, b.f_t(0, real_type))
         }, {
             b.If(
@@ -5233,6 +5239,7 @@ namespace Hypot {
                                     b.Pow(args[1], b.f_t(2, real_type))),
                               b.f_t(0.5, real_type)))
                 })
+        })
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
