@@ -6712,6 +6712,13 @@ LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *
     }
 }
 
+static void skip_list_directed_comma(FILE *filep) {
+    int c;
+    while ((c = fgetc(filep)) != EOF && (c == ' ' || c == '\t')) {}
+    if (c == ',') return;
+    if (c != EOF) ungetc(c, filep);
+}
+
 static bool read_next_nonblank_stdin_line(char *buffer, size_t bufsize, int32_t *iostat)
 {
     while (true) {
@@ -6795,6 +6802,7 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
             fprintf(stderr, "Error: Invalid input for int16_t from file.\n");
             exit(1);
         }
+        skip_list_directed_comma(filep);
 
         if (temp < INT16_MIN || temp > INT16_MAX) {
             if (iostat) { *iostat = 1; return; }
@@ -6882,6 +6890,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
             fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
             exit(1);
         }
+        skip_list_directed_comma(filep);
 
         if (temp < INT32_MIN || temp > INT32_MAX) {
             if (iostat) { *iostat = 1; return; }
@@ -6967,6 +6976,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
             fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
             exit(1);
         }
+        skip_list_directed_comma(filep);
         if (temp < INT64_MIN || temp > INT64_MAX) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Value %" PRId64 " is out of integer(8) range (file).\n", temp);
@@ -7166,6 +7176,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
                 fprintf(stderr, "Error: Failed to read int8_t from file.\n");
                 exit(1);
             }
+            skip_list_directed_comma(filep);
             p[(int64_t)i * (int64_t)stride] = val;
         }
     }
@@ -7317,6 +7328,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
                 fprintf(stderr, "Error: Failed to read int16_t from file.\n");
                 exit(1);
             }
+            skip_list_directed_comma(filep);
             p[(int64_t)i * (int64_t)stride] = val;
         }
     }
@@ -7389,6 +7401,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
                 fprintf(stderr, "Error: Failed to read int32_t from file.\n");
                 exit(1);
             }
+            skip_list_directed_comma(filep);
             p[(int64_t)i * (int64_t)stride] = val;
         }
     }
@@ -7460,6 +7473,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
                 fprintf(stderr, "Error: Failed to read int64_t from file.\n");
                 exit(1);
             }
+            skip_list_directed_comma(filep);
             p[(int64_t)i * (int64_t)stride] = val;
         }
     }
@@ -8412,11 +8426,12 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
     } else {
         // Read as string to handle Fortran D exponent notation
         char buffer[100];
-        if (fscanf(filep, "%99s", buffer) != 1) {
+        if (fscanf(filep, " %99[^ ,\t\n\r]", buffer) != 1) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read double from file.\n");
             exit(1);
         }
+        skip_list_directed_comma(filep);
         if (!parse_fortran_double(buffer, p)) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input from file.\n");
@@ -8833,6 +8848,14 @@ static int parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
         (*fmt_pos)++;
         while (*fmt_pos < fmt_len && isdigit((unsigned char)fmt[*fmt_pos])) {
             decimals = decimals * 10 + (fmt[*fmt_pos] - '0');
+            (*fmt_pos)++;
+        }
+    }
+    // Skip optional exponent width specifier (Ee or En) in Ew.dEe / Gw.dEe
+    if (*fmt_pos < fmt_len && (toupper(fmt[*fmt_pos]) == 'E' ||
+                                toupper(fmt[*fmt_pos]) == 'N')) {
+        (*fmt_pos)++;
+        while (*fmt_pos < fmt_len && isdigit((unsigned char)fmt[*fmt_pos])) {
             (*fmt_pos)++;
         }
     }

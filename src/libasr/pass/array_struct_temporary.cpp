@@ -231,10 +231,18 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
     if (is_compile_time) {
+        ASR::expr_t* const_value = ASRUtils::expr_value(value);
+        ASR::ttype_t* const_type = ASRUtils::expr_type(const_value);
+        ASR::ttype_t* var_type_for_param = value_type;
+        if( ASRUtils::is_array(const_type) &&
+            ASRUtils::extract_physical_type(const_type) !=
+            ASRUtils::extract_physical_type(value_type) ) {
+            var_type_for_param = const_type;
+        }
         ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-            ASRUtils::expr_value(value), ASRUtils::expr_value(value), ASR::storage_typeType::Parameter,
-            ASRUtils::expr_type(ASRUtils::expr_value(value)), ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
+            const_value, const_value, ASR::storage_typeType::Parameter,
+            var_type_for_param, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
             ASR::accessType::Public, ASR::presenceType::Required, false));
         scope->add_symbol(var_name, temporary_variable);
         return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
