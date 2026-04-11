@@ -1454,3 +1454,9 @@ semantic error: Expected logical expression in if statement, but recieved logica
     |
 689 |         if (abs(arr1)(1) /= 2471095) error stop
     |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
+
+semantic error: Unexpected derived-type entities in binary intrinsic numeric operator '-'
+   --> tests/errors/continue_compilation_1.f90:696:13
+    |
+696 |         c = a - b
+    |             ^^^^^ 

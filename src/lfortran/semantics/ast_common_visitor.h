@@ -16582,6 +16582,22 @@ public:
                 throw SemanticAbort();
             }
         } else if( overloaded == nullptr ) {
+            // Handle struct/derived types that don't have overloaded operators
+            if (ASRUtils::is_struct(*ASRUtils::type_get_past_pointer(dest_type))) {
+                std::string op_str = "+";
+                switch (op) {
+                    case (ASR::Add): break;
+                    case (ASR::Sub): op_str = "-"; break;
+                    case (ASR::Mul): op_str = "*"; break;
+                    case (ASR::Div): op_str = "/"; break;
+                    case (ASR::Pow): op_str = "**"; break;
+                    default: op_str = "?";
+                }
+                diag.add(Diagnostic("Unexpected derived-type entities in binary intrinsic numeric operator '" + op_str + "'",
+                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            
             LCOMPILERS_ASSERT(false);
         }
 

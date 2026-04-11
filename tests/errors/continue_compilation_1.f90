@@ -688,4 +688,11 @@ program continue_compilation_1
         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
         if (abs(arr1)(1) /= 2471095) error stop
     end subroutine
+    subroutine derived_type_arithmetic()
+        type :: t
+        end type t
+        type(t) :: a, b
+        type(t) :: c
+        c = a - b
+    end subroutine
 end program

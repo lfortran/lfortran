@@ -669,6 +669,11 @@ public:
       ASRUtils::type_get_past_pointer(left_type));
     ASR::ttype_t *right_type2 = ASRUtils::type_get_past_array(
       ASRUtils::type_get_past_pointer(right_type));
+    //Skip conversion for non-castable types 
+    if (left_type2->type >= num_types || right_type2->type >= num_types) {
+      return;
+    }
+    
     LCOMPILERS_ASSERT(left_type2->type < num_types);
     LCOMPILERS_ASSERT(right_type2->type < num_types);
     int left_type_p = type_priority[left_type2->type];
