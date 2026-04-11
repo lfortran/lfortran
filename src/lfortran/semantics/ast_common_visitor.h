@@ -11939,6 +11939,11 @@ public:
                 }
             } else {
                 ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+                if (select_type_override_type) {
+                    val = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, val,
+                        ASR::cast_kindType::ClassToIntrinsic,
+                        select_type_override_type, nullptr, nullptr));
+                }
                 ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                     ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
                 
