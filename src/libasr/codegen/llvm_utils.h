@@ -1240,27 +1240,24 @@ class ASRToLLVMVisitor;
                     bool const need_free = ( arr_physical_t == ASR::DescriptorArray
                                               || arr_physical_t == ASR::PointerArray) && in_struct;
                     if(need_free) {
-                        // Narrow case: allocatable descriptor-array of deferred-
-                        // length strings can leave its descriptor backing store
-                        // allocated. Free that backing store before wrapper free.
+                        // Allocatable descriptor-array of strings inside a struct
+                        // has its string_descriptor heap-allocated. Free that
+                        // backing store before freeing the array descriptor.
                         if (arr_physical_t == ASR::DescriptorArray
                                 && ASRUtils::extract_type(t_past)->type == ASR::String) {
-                            auto* const str_t = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(t_past));
-                            if (str_t->m_len == nullptr) {
-                                auto* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
-                                llvm::Type* const arr_llvm_t = get_llvm_type(t_past, struct_sym);
-                                llvm::Type* const elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
-                                auto* const data_ptr = builder_->CreateLoad(
-                                    elem_llvm_t->getPointerTo(),
-                                    llvm_utils_->create_gep2(arr_llvm_t, var_ptr, 0));
-                                auto* const data_not_null = builder_->CreateICmpNE(
-                                    data_ptr,
-                                    llvm::ConstantPointerNull::get(
-                                        llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
-                                llvm_utils_->create_if_else(data_not_null,
-                                    [this, data_ptr]() { llvm_utils_->lfortran_free_nocheck(data_ptr); },
-                                    [](){});
-                            }
+                            auto* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
+                            llvm::Type* const arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                            llvm::Type* const elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                            auto* const data_ptr = builder_->CreateLoad(
+                                elem_llvm_t->getPointerTo(),
+                                llvm_utils_->create_gep2(arr_llvm_t, var_ptr, 0));
+                            auto* const data_not_null = builder_->CreateICmpNE(
+                                data_ptr,
+                                llvm::ConstantPointerNull::get(
+                                    llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
+                            llvm_utils_->create_if_else(data_not_null,
+                                [this, data_ptr]() { llvm_utils_->lfortran_free_nocheck(data_ptr); },
+                                [](){});
                         }
                         llvm_utils_->lfortran_free_nocheck(var_ptr);
                     }

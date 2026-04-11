@@ -3336,8 +3336,8 @@ namespace Exponent {
 
     static ASR::expr_t* eval_Exponent(Allocator& al, const Location& loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
-        ASR::ttype_t* arguement_type = expr_type(args[0]);
-        int32_t kind = extract_kind_from_ttype_t(arguement_type);
+        ASR::ttype_t* argument_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(argument_type);
 
         if (kind == 4) {
             float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
@@ -3424,8 +3424,8 @@ namespace Exponent {
 namespace Fraction {
     static ASR::expr_t *eval_Fraction(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        ASR::ttype_t* arguement_type = expr_type(args[0]);
-        int32_t kind = extract_kind_from_ttype_t(arguement_type);
+        ASR::ttype_t* argument_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(argument_type);
         if (kind == 4) {
             float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             int32_t exponent;
@@ -3482,8 +3482,8 @@ namespace Fraction {
 namespace SetExponent {
     static ASR::expr_t *eval_SetExponent(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        ASR::ttype_t* arguement_type = expr_type(args[0]);
-        int32_t kind = extract_kind_from_ttype_t(arguement_type);
+        ASR::ttype_t* argument_type = expr_type(args[0]);
+        int32_t kind = extract_kind_from_ttype_t(argument_type);
         if (kind == 4) {
             float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             int32_t I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;

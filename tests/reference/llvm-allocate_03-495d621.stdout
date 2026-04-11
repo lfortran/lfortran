@@ -1125,8 +1125,8 @@ then10:                                           ; preds = %merge_allocated8
 
 ifcont11:                                         ; preds = %merge_allocated8
   %43 = load %array.3*, %array.3** %c, align 8
-  %44 = ptrtoint %array.3* %43 to i32
-  %45 = icmp eq i32 %44, 0
+  %44 = ptrtoint %array.3* %43 to i64
+  %45 = icmp eq i64 %44, 0
   br i1 %45, label %then12, label %else13
 
 then12:                                           ; preds = %ifcont11

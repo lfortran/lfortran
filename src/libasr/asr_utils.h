@@ -3680,6 +3680,16 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             if (dims == nullptr) {
                 dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
                 dimsn = tnew->n_dims;
+                // UnboundedPointerArray cannot be reconstructed by
+                // make_Array_t_util auto-detection (it needs the
+                // is_dimension_star && is_argument flags only available during
+                // semantic analysis). Preserve it when duplicating with the
+                // same dimensions.
+                if (!override_physical_type &&
+                    tnew->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                    physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+                    override_physical_type = true;
+                }
             }
             return ASRUtils::make_Array_t_util(al, tnew->base.base.loc,
                 duplicated_element_type, dimsp, dimsn, ASR::abiType::Source,

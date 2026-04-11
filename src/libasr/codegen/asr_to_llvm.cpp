@@ -2116,10 +2116,10 @@ public:
                 if (is_struct_member || is_dummy_arg || compiler_options.po.strict_bounds_checking) {
                     llvm_utils->create_if_else(
                         builder->CreateICmpEQ(
-                            builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt32Ty(context)),
+                            builder->CreatePtrToInt(llvm_utils->CreateLoad2(type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val), llvm::Type::getInt64Ty(context)),
                             builder->CreatePtrToInt(
                                 llvm::ConstantPointerNull::get((x_arr && x_arr->getType() != nullptr) ? x_arr->getType()->getPointerTo() : ptr_val->getType()->getPointerTo()),
-                                llvm::Type::getInt32Ty(context))),
+                                llvm::Type::getInt64Ty(context))),
                         [&]() {
                             llvm::Value* ptr_;
 
@@ -6135,8 +6135,12 @@ public:
                             ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
                             element_type, module.get());
                         if(ASRUtils::is_character(*v->m_type)){
-                            llvm::Value* str_desc = create_and_setup_string_for_array(v->m_type, nullptr, false, "arr_desc_str_desc");
+                            llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(data_type);
                             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, arr));
+                            ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
+                            if (str_type->m_len) {
+                                setup_string_length(str_desc, str_type, str_type->m_len);
+                            }
                         } else {
                             arr_descr->reset_is_allocated_flag(type_, arr, data_type);
                         }
