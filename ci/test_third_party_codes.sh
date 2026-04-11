@@ -471,6 +471,23 @@ time_section "🧪 Testing dftatom" '
   make -f Makefile.manual quicktest
 '
 
+##########################
+# Section 8.1: featom (build-only)
+##########################
+time_section "🧪 Building featom (build-only)" '
+  git clone https://github.com/atomic-solvers/featom
+  cd featom
+  git checkout 87872a3266ceeee61a7244e6ecd134dc3bda790f
+  micromamba install -c conda-forge fpm libblas liblapack
+  export LIBRARY_PATH="$CONDA_PREFIX/lib:${LIBRARY_PATH:-}"
+  # Build-only smoke test for now; runtime tests can be added later.
+  FPM_FFLAGS="--cpp --realloc-lhs-arrays --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
+
+  print_success "Done with featom (build-only)"
+  cd ..
+  rm -rf featom
+'
+
 
 ##########################
 # Section 9: fastGPT
