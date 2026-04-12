@@ -1882,34 +1882,34 @@ public:
                     a_advance = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, a_advance->base.loc,
                         static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim),
                         trim_arg.p, trim_arg.n, 0, ASRUtils::expr_type(a_advance), nullptr));
-                    ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, 1,
-                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 3,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                        ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::DescriptorString));
-                    ASR::expr_t *yes_lower = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                        al, loc, s2c(al, "yes"), str_type_len_3));
-                    ASR::expr_t *yes_upper = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                        al, loc, s2c(al, "YES"), str_type_len_3));
-                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
-                        al, loc, compiler_options.po.default_integer_kind));
-                    ASR::expr_t *test_lower = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
-                        loc, a_advance, ASR::cmpopType::Eq, yes_lower, cmp_type, nullptr));
-                    ASR::expr_t *test_upper = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
-                        loc, a_advance, ASR::cmpopType::Eq, yes_upper, cmp_type, nullptr));
-                    ASR::expr_t *test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
-                        loc, test_lower, ASR::logicalbinopType::Or, test_upper, cmp_type, nullptr));
-                    Vec<ASR::stmt_t*> body;
-                    body.reserve(al, 1);
-                    body.push_back(al, ASRUtils::STMT(
-                        ASR::make_FileWrite_t(al, loc, 0, a_unit,
-                        nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr)));
-                    // TODO: Compare with "no" (case-insensitive) in else part
-                    // Throw runtime error if advance expression does not match "no"
-                    newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
-                            body.size(), nullptr, 0));
+                    if (_type == AST::stmtType::Write) {
+                        ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
+                            al, loc, 1,
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 3,
+                                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                            ASR::string_length_kindType::ExpressionLength,
+                            ASR::string_physical_typeType::DescriptorString));
+                        ASR::expr_t *yes_lower = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                            al, loc, s2c(al, "yes"), str_type_len_3));
+                        ASR::expr_t *yes_upper = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                            al, loc, s2c(al, "YES"), str_type_len_3));
+                        ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
+                            al, loc, compiler_options.po.default_integer_kind));
+                        ASR::expr_t *test_lower = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                            loc, a_advance, ASR::cmpopType::Eq, yes_lower, cmp_type, nullptr));
+                        ASR::expr_t *test_upper = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                            loc, a_advance, ASR::cmpopType::Eq, yes_upper, cmp_type, nullptr));
+                        ASR::expr_t *test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                            loc, test_lower, ASR::logicalbinopType::Or, test_upper, cmp_type, nullptr));
+                        Vec<ASR::stmt_t*> body;
+                        body.reserve(al, 1);
+                        body.push_back(al, ASRUtils::STMT(
+                            ASR::make_FileWrite_t(al, loc, 0, a_unit,
+                            nullptr, nullptr, nullptr,
+                            nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr)));
+                        newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
+                                body.size(), nullptr, 0));
+                    }
                     a_end = empty;
                 }
             } else if (m_arg_str == "end") {
