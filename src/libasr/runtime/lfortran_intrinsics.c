@@ -9352,6 +9352,14 @@ static void process_fmt_items_read(InputSource *inputSource,
             repeat_count = 1;
         }
         
+        // Handle ES, EN format descriptors (treat same as E for read)
+        if (spec == 'E' && fmt_pos < fmt_len) {
+            char next = toupper(fmt[fmt_pos]);
+            if (next == 'S' || next == 'N') {
+                fmt_pos++;
+            }
+        }
+
         bool is_tab_descriptor = false;
         char tab_type = ' ';
         if (spec == 'T' && fmt_pos < fmt_len) {
