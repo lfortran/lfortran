@@ -3256,7 +3256,18 @@ entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = getelementptr %array.3, %array.3* %0, i32 0, i32 0
   %3 = load i32*, i32** %2, align 8
-  %4 = bitcast i32* %3 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %4)
+  %4 = ptrtoint i32* %3 to i64
+  %5 = icmp ne i64 %4, 0
+  br i1 %5, label %then, label %else
+
+then:                                             ; preds = %entry
+  %6 = bitcast i32* %3 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   ret void
 }
