@@ -1857,12 +1857,12 @@ namespace LCompilers {
         return malloc_ptr;
     }
 
-    llvm::Value* LLVMUtils::alloc_zeroed_type(llvm::Type* type) {
+    llvm::Value* LLVMUtils::alloc_zeroed_type(llvm::Type* type, std::string name) {
         llvm::DataLayout data_layout(module->getDataLayout());
         uint64_t type_size = data_layout.getTypeAllocSize(type);
         llvm::Value* mem = allocate_zeroed_bytes(
             llvm::ConstantInt::get(context, llvm::APInt(64, type_size)));
-        return builder->CreateBitCast(mem, type->getPointerTo());
+        return builder->CreateBitCast(mem, type->getPointerTo(), !name.empty() ? name : "");
     }
 
     LLVMUtils::UpolyWrapperFields LLVMUtils::extract_upoly_wrapper(
@@ -1881,8 +1881,12 @@ namespace LCompilers {
         return f;
     }
 
-    llvm::Value* LLVMUtils::allocate_string_descriptor_on_heap(llvm::Type* string_desc_type) {
-        return alloc_zeroed_type(string_desc_type);
+    llvm::Value* LLVMUtils::allocate_string_descriptor_on_heap() {
+        return alloc_zeroed_type(string_descriptor);
+    }
+
+    llvm::Value* LLVMUtils::allocate_string_descriptor_on_heap(std::string name) {
+        return alloc_zeroed_type(string_descriptor, name);
     }
 
     void LLVMUtils::ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
@@ -1893,7 +1897,7 @@ namespace LCompilers {
             builder->CreatePtrToInt(str_desc, llvm::Type::getInt64Ty(context)),
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
         create_if_else(str_desc_null, [&]() {
-            llvm::Value* new_str_desc = allocate_string_descriptor_on_heap(string_desc_type);
+            llvm::Value* new_str_desc = allocate_string_descriptor_on_heap();
             builder->CreateStore(new_str_desc, data_ptr_ptr);
         }, [](){});
     }
@@ -2245,7 +2249,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_string_descriptor(llvm::Value* data, llvm::Value* len, std::string name){
-        llvm::Value* str_desc = create_string_descriptor(name);
+        llvm::Value* str_desc = allocate_string_descriptor_on_heap(name);
         builder->CreateStore(data, CreateGEP2(string_descriptor, str_desc, 0));
         builder->CreateStore(len, CreateGEP2(string_descriptor, str_desc, 1));
         return str_desc;
@@ -2294,7 +2298,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::create_string_descriptor(std::string name){
-        return CreateAlloca(string_descriptor, nullptr, name);
+        return allocate_string_descriptor_on_heap(name);
     }
 
     llvm::Value* LLVMUtils::get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data){
@@ -3632,9 +3636,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         create_if_else(desc_is_null, [&]() {
                             llvm::Value* new_descr = arr_api->allocate_descriptor_on_heap(llvm_type);
                             if (ASRUtils::is_character(*alloc_type->m_type)) {
-                                llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
-                                    src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
-                                llvm::Value* str_desc = allocate_string_descriptor_on_heap(llvm_str_desc_type);
+                                llvm::Value* str_desc = allocate_string_descriptor_on_heap();
                                 builder->CreateStore(str_desc, arr_api->get_pointer_to_data(llvm_type, new_descr));
                             } else {
                                 llvm::Type* llvm_data_type = get_el_type(

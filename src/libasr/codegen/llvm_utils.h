@@ -354,7 +354,8 @@ class ASRToLLVMVisitor;
                 llvm::Type* type, llvm::Value* size=nullptr, std::string Name="",
                 bool is_llvm_ptr=false);
 
-            llvm::Value* allocate_string_descriptor_on_heap(llvm::Type* string_desc_type);
+            llvm::Value* allocate_string_descriptor_on_heap();
+            llvm::Value* allocate_string_descriptor_on_heap(std::string name);
             void ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
                 llvm::Type* string_desc_type);
 
@@ -731,7 +732,7 @@ class ASRToLLVMVisitor;
 
             // Allocate zero-initialized memory for the given LLVM type.
             // Returns a typed pointer (bitcast of malloc+memset result).
-            llvm::Value* alloc_zeroed_type(llvm::Type* type);
+            llvm::Value* alloc_zeroed_type(llvm::Type* type, std::string name="");
 
             // Extract vptr and data pointer from a ONE-wrapper {vptr, i8*}.
             // Also derives elem_size and copy_fn from the vptr.

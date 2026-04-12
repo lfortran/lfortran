@@ -2126,10 +2126,7 @@ public:
                             if (is_struct_member || is_dummy_arg) {
                                 ptr_ = arr_descr->allocate_descriptor_on_heap(type);
                                 if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
-                                    llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
-                                        tmp_expr, ASRUtils::extract_type(array_type), module.get());
-                                    llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(
-                                        llvm_str_desc_type);
+                                    llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap();
                                     builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type, ptr_));
                                 }
                             } else {
@@ -6151,7 +6148,7 @@ public:
                             ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
                             element_type, module.get());
                         if(ASRUtils::is_character(*v->m_type)){
-                            llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(data_type);
+                            llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap();
                             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, arr));
                             ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
                             if (str_type->m_len) {
