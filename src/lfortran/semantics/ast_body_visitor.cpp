@@ -5993,6 +5993,16 @@ public:
                         throw SemanticAbort();
                 }
             }
+            if (ASRUtils::is_class_type(ASRUtils::type_get_past_array(target_type)) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type)) &&
+                !ASRUtils::check_class_assignment_compatibility(target, value)) {
+                diag.semantic_error_label(
+                    "Type mismatch in assignment, the types must be compatible",
+                    {target->base.loc, value->base.loc},
+                    "type mismatch (" + ltype + " and " + rtype + ")"
+                );
+                throw SemanticAbort();
+            }
             if (ASRUtils::is_array(ASRUtils::expr_type(value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(target))) {
                     diag.semantic_error_label(
