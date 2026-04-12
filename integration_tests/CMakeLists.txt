@@ -3283,6 +3283,9 @@ RUN(NAME read_66 LABELS gfortran llvm)
 RUN(NAME read_67 LABELS gfortran llvm)
 RUN(NAME read_68 LABELS gfortran llvm)
 RUN(NAME read_69 LABELS gfortran llvm)
+RUN(NAME read_70 LABELS gfortran llvm)
+RUN(NAME read_71 LABELS gfortran llvm)
+RUN(NAME read_72 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3309,6 +3312,7 @@ RUN(NAME write_22 LABELS gfortran llvm)
 RUN(NAME write_23 LABELS gfortran llvm)
 RUN(NAME write_24 LABELS gfortran llvm)
 RUN(NAME write_25 LABELS gfortran llvm)
+RUN(NAME write_26 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -4061,6 +4065,7 @@ RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input
 RUN(NAME formatted_read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME formatted_read_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME formatted_read_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME formatted_read_05 LABELS gfortran llvm)
 
 RUN(NAME format_before_read_01 LABELS gfortran llvm)
 
