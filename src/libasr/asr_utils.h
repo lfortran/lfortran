@@ -7080,7 +7080,8 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
+            int len = 0;
+            ASRUtils::extract_value(char_type->m_len, len);
             ASR::StringConstant_t* value_str = ASR::down_cast<ASR::StringConstant_t>(value);
             char* data = value_str->m_s;
             int src_len = len;
@@ -7152,7 +7153,8 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
+            int len = 0;
+            ASRUtils::extract_value(char_type->m_len, len);
             char* data_char = (char*)data + i*len;
             // take first len characters
             char* new_char = new char[len + 1];
