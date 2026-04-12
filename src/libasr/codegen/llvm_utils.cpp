@@ -660,7 +660,7 @@ namespace LCompilers {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(m_type_);
         llvm::Type* el_type = nullptr;
         bool is_pointer = LLVM::is_llvm_pointer(*m_type_);
-        ASR::ttype_t* m_type = ASRUtils::type_get_past_pointer(m_type_);
+        ASR::ttype_t* m_type = ASRUtils::type_get_past_allocatable_pointer(m_type_);
         switch(m_type->type) {
             case ASR::ttypeType::Integer: {
                 el_type = getIntType(a_kind, is_pointer);
