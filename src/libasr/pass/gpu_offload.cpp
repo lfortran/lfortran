@@ -7274,6 +7274,7 @@ public:
 
 void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
                               const LCompilers::PassOptions& pass_options) {
+    if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
     GpuOffloadVisitor v(al, pass_options, unit);
     v.asr_changed = true;
     while (v.asr_changed) {
