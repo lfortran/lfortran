@@ -8879,6 +8879,7 @@ typedef struct {
     int32_t stride;
     int32_t current_idx;
     bool is_complex;
+    bool reading_imag;    // for complex: true when next read is the imaginary part
     size_t component_sz;
     size_t elem_sz;
 } ArrayReadCont;
@@ -9034,14 +9035,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         }
         int32_t i = arr_cont->current_idx;
         void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
-        if (!read_and_parse_real_field(inputSource, elem_ptr, arr_cont->elem_tc,
-                read_width, advance_no, fmt, fmt_len, fmt_pos,
-                iostat, chunk, consumed_newline, pad_no,
-                blank_mode, scale_factor, decimal_mode)) {
-            arr_cont->active = false;
-            return false;
-        }
-        if (arr_cont->is_complex) {
+        if (arr_cont->is_complex && arr_cont->reading_imag) {
             void* imag_ptr = (char*)elem_ptr + arr_cont->component_sz;
             if (!read_and_parse_real_field(inputSource, imag_ptr, arr_cont->elem_tc,
                     read_width, advance_no, fmt, fmt_len, fmt_pos,
@@ -9050,9 +9044,24 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
                 arr_cont->active = false;
                 return false;
             }
+            arr_cont->reading_imag = false;
+            arr_cont->current_idx++;
+            if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+        } else {
+            if (!read_and_parse_real_field(inputSource, elem_ptr, arr_cont->elem_tc,
+                    read_width, advance_no, fmt, fmt_len, fmt_pos,
+                    iostat, chunk, consumed_newline, pad_no,
+                    blank_mode, scale_factor, decimal_mode)) {
+                arr_cont->active = false;
+                return false;
+            }
+            if (arr_cont->is_complex) {
+                arr_cont->reading_imag = true;
+            } else {
+                arr_cont->current_idx++;
+                if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+            }
         }
-        arr_cont->current_idx++;
-        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
         return true;
     }
 
@@ -9076,6 +9085,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         arr_cont->stride = stride;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = is_complex;
+        arr_cont->reading_imag = false;
         arr_cont->component_sz = component_sz;
         arr_cont->elem_sz = elem_sz;
 
@@ -9087,16 +9097,12 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
             return false;
         }
         if (is_complex) {
-            void* imag_ptr = (char*)elem_ptr + component_sz;
-            if (!read_and_parse_real_field(inputSource, imag_ptr, component_tc,
-                    read_width, advance_no, fmt, fmt_len, fmt_pos,
-                    iostat, chunk, consumed_newline, pad_no,
-                    blank_mode, scale_factor, decimal_mode)) {
-                return false;
-            }
+            arr_cont->reading_imag = true;
+            arr_cont->active = true;
+        } else {
+            arr_cont->current_idx = 1;
+            arr_cont->active = (n_elems > 1);
         }
-        arr_cont->current_idx = 1;
-        arr_cont->active = (n_elems > 1);
         return true;
     }
 
@@ -9573,7 +9579,7 @@ static void common_formatted_read(InputSource *inputSource,
     }
     
     int scale_factor = 0;
-    ArrayReadCont arr_cont = {false, NULL, 0, 0, 0, 0, false, 0, 0};
+    ArrayReadCont arr_cont = {false, NULL, 0, 0, 0, 0, false, false, 0, 0};
 
     while ((arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
         int args_before = arg_idx;
