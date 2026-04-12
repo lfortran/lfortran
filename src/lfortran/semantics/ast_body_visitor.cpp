@@ -1888,13 +1888,18 @@ public:
                             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
                         ASR::string_physical_typeType::DescriptorString));
-                    ASR::expr_t *yes = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                    ASR::expr_t *yes_lower = ASRUtils::EXPR(ASR::make_StringConstant_t(
                         al, loc, s2c(al, "yes"), str_type_len_3));
-                    // TODO: Support case insensitive compare
+                    ASR::expr_t *yes_upper = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, loc, s2c(al, "YES"), str_type_len_3));
                     ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
                         al, loc, compiler_options.po.default_integer_kind));
-                    ASR::expr_t *test = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
-                        loc, adv_val_expr, ASR::cmpopType::Eq, yes, cmp_type, nullptr));
+                    ASR::expr_t *test_lower = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                        loc, a_advance, ASR::cmpopType::Eq, yes_lower, cmp_type, nullptr));
+                    ASR::expr_t *test_upper = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                        loc, a_advance, ASR::cmpopType::Eq, yes_upper, cmp_type, nullptr));
+                    ASR::expr_t *test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                        loc, test_lower, ASR::logicalbinopType::Or, test_upper, cmp_type, nullptr));
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, 1);
                     body.push_back(al, ASRUtils::STMT(
