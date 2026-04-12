@@ -9181,11 +9181,8 @@ public:
                             llvm_utils->create_if_else(
                                 null_cond,
                                 [&]() {
-                                    llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                        context, *module, *builder, wrapper_size);
-                                    builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                        wrapper_size, llvm::MaybeAlign());
-                                    wrapper_ptr = builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+                                    llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                                        x.m_target, target_llvm_type, wrapper_size);
                                     builder->CreateStore(wrapper_ptr, llvm_target);
                                 }, []() {});
                             builder->CreateMemCpy(
@@ -9193,13 +9190,6 @@ public:
                                 llvm_value, llvm::MaybeAlign(),
                                 wrapper_size);
                         });
-                            llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
-                                x.m_target, target_llvm_type, wrapper_size);
-                            builder->CreateStore(wrapper_ptr, llvm_target);
-                        }, []() {});
-                    builder->CreateMemCpy(  llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target), llvm::MaybeAlign(),
-                                            llvm_value, llvm::MaybeAlign(),
-                                            wrapper_size);
                 } else if (is_target_class) {
                     // check_and_allocate_scalar(x.m_target, x.m_value, value_type, true);
                     llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -10434,13 +10424,8 @@ public:
                         uint64_t sz = data_layout.getTypeAllocSize(target_llvm_type);
                         llvm::Value* wrapper_size = llvm::ConstantInt::get(
                             llvm::Type::getInt64Ty(context), sz);
-                        llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                            context, *module, *builder, wrapper_size);
-                        builder->CreateMemSet(wrapper_ptr,
-                            llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                            wrapper_size, llvm::MaybeAlign());
-                        wrapper_ptr = builder->CreateBitCast(wrapper_ptr,
-                            target_llvm_type->getPointerTo());
+                        llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                            x.m_target, target_llvm_type, wrapper_size);
                         builder->CreateStore(wrapper_ptr, ptr_to_target_struct);
                     }, []() {});
                     target_struct = llvm_utils->CreateLoad2(
