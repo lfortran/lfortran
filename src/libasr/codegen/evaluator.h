@@ -13,7 +13,11 @@
 // Forward declare all needed LLVM classes without importing any LLVM header
 // files. Those are only imported in evaluator.cpp and nowhere else, to speed
 // up compilation.
+#ifdef WITH_LIRIC
+namespace liric_llvm {
+#else
 namespace llvm {
+#endif
     class ExecutionEngine;
     class LLVMContext;
     class Module;
@@ -63,6 +67,7 @@ public:
 class LLVMEvaluator
 {
 private:
+    void ensure_jit();
     std::unique_ptr<llvm::orc::KaleidoscopeJIT> jit;
     std::unique_ptr<llvm::LLVMContext> context;
     std::string target_triple;

@@ -65,7 +65,11 @@
 #    include <llvm/Support/Host.h>
 #endif
 
+#ifndef WITH_LIRIC
 #include <libasr/codegen/KaleidoscopeJIT.h>
+#else
+#include <llvm/ExecutionEngine/Orc/KaleidoscopeJIT.h>
+#endif
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -79,6 +83,14 @@
 #endif
 
 namespace LCompilers {
+
+static bool lfortran_verify_llvm_module_enabled() {
+    const char *env = std::getenv("LFORTRAN_VERIFY_LLVM");
+    if (!env || !env[0])
+        return false;
+    return strcmp(env, "0") != 0 && strcmp(env, "false") != 0 &&
+           strcmp(env, "False") != 0;
+}
 
 // Extracts the integer from APInt.
 // APInt does not seem to have this functionality, so we implement it here.
@@ -263,9 +275,6 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
     }
 #endif
 
-    // For some reason the JIT requires a different TargetMachine
-    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
-
     _lfortran_stan(0.5);
 }
 
@@ -273,6 +282,12 @@ LLVMEvaluator::~LLVMEvaluator()
 {
     jit.reset();
     context.reset();
+}
+
+void LLVMEvaluator::ensure_jit() {
+    if (!jit) {
+        jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
+    }
 }
 
 std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source, const std::string &filename="")
@@ -288,8 +303,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
         err.print("", llvm::errs());
         throw LCompilersException("parse_module(): Invalid LLVM IR");
     }
-    bool v = llvm::verifyModule(*module);
-    if (v) {
+    if (lfortran_verify_llvm_module_enabled() && llvm::verifyModule(*module)) {
         throw LCompilersException("parse_module(): module failed verification.");
     };
 #if LLVM_VERSION_MAJOR >= 21
@@ -297,7 +311,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
 #else
     module->setTargetTriple(target_triple);
 #endif
-    module->setDataLayout(jit->getDataLayout());
+    module->setDataLayout(TM->createDataLayout());
     return module;
 }
 
@@ -319,6 +333,7 @@ void LLVMEvaluator::add_module(const std::string &source) {
 }
 
 void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
+    ensure_jit();
     // These are already set in parse_module(), but we set it here again for
     // cases when the Module was constructed directly, not via parse_module().
 #if LLVM_VERSION_MAJOR >= 21
@@ -344,6 +359,7 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
+    ensure_jit();
 #if LLVM_VERSION_MAJOR < 8
     // LLVM 7: Use findSymbol which returns JITSymbol
     llvm::JITSymbol s = jit->findSymbol(name);
@@ -507,7 +523,8 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         fpm.run(func);
     }
     fpm.doFinalization();
-    mpm.add(llvm::createVerifierPass());
+    if (lfortran_verify_llvm_module_enabled())
+        mpm.add(llvm::createVerifierPass());
     mpm.run(m);
 #endif
 }
@@ -536,6 +553,7 @@ llvm::LLVMContext &LLVMEvaluator::get_context()
 }
 
 const llvm::DataLayout &LLVMEvaluator::get_jit_data_layout() {
+    ensure_jit();
     return jit->getDataLayout();
 }
 

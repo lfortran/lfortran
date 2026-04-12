@@ -108,6 +108,26 @@ std::string get_runtime_library_c_header_dir()
     }
 }
 
+std::string get_liric_runtime_archive()
+{
+    char *env_p = std::getenv("LIRIC_RUNTIME_ARCHIVE");
+    if (env_p) return env_p;
+
+    switch (execution_mode)
+    {
+        case ExecutionMode::LFortranDevelopment:
+            return (std::filesystem::path(lfortran_exec_path_dir) /
+                ".." / ".." / "liric_runtime.lrarch").lexically_normal().string();
+        case ExecutionMode::LFortranCtest:
+            return (std::filesystem::path(lfortran_exec_path_dir) /
+                ".." / ".." / ".." / "liric_runtime.lrarch").lexically_normal().string();
+        case ExecutionMode::LFortranInstalled:
+            return "";
+        default:
+            return "";
+    }
+}
+
 std::string get_dwarf_scripts_dir()
 {
     char *env_p = std::getenv("LFORTRAN_DWARF_SCRIPTS_DIR");

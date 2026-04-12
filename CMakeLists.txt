@@ -149,6 +149,10 @@ endif()
 
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
+set(WITH_LIRIC no CACHE BOOL "Use liric as LLVM replacement (C++ compat headers)")
+set(LIRIC_DIR "" CACHE PATH "Path to liric source/build directory")
+set(LIRIC_REQUIRE_REAL_LLVM_LINK no CACHE BOOL
+    "When WITH_LIRIC is enabled, link LLVM libraries required by liric")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
 set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
@@ -221,7 +225,77 @@ if (WITH_UNWIND)
     set(HAVE_LFORTRAN_UNWIND yes)
 endif()
 
-if (WITH_LLVM)
+if (WITH_LIRIC)
+    add_compile_definitions(WITH_LIRIC)
+    if ("${LIRIC_DIR}" STREQUAL "")
+        include(FetchContent)
+        FetchContent_Declare(liric
+            GIT_REPOSITORY https://github.com/krystophny/liric.git
+            GIT_TAG main)
+        FetchContent_MakeAvailable(liric)
+        set(LIRIC_DIR "${liric_SOURCE_DIR}")
+        set(LIRIC_LIB liric)
+        message(STATUS "Fetched liric: ${LIRIC_DIR}")
+    else()
+        find_library(LIRIC_LIB liric
+            PATHS "${LIRIC_DIR}/build" "${LIRIC_DIR}/lib" "${LIRIC_DIR}"
+            NO_DEFAULT_PATH)
+        if (NOT LIRIC_LIB)
+            message(FATAL_ERROR "Could not find libliric in ${LIRIC_DIR}")
+        endif()
+    endif()
+    message(STATUS "Using liric: ${LIRIC_LIB}")
+    message(STATUS "Liric includes: ${LIRIC_DIR}/include/liric")
+    add_library(p::llvm INTERFACE IMPORTED)
+    set_property(TARGET p::llvm PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+        "${LIRIC_DIR}/include/liric" "${LIRIC_DIR}/include")
+    set_property(TARGET p::llvm PROPERTY INTERFACE_COMPILE_OPTIONS
+        $<$<COMPILE_LANGUAGE:CXX>:${LFORTRAN_CXX_NO_RTTI_FLAG}>
+        $<$<COMPILE_LANGUAGE:CXX>:-include>
+        $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/src/libasr/codegen/liric_llvm_alias.h>)
+    set(_lfortran_liric_link_libs "${LIRIC_LIB}" stdc++)
+    if (LIRIC_REQUIRE_REAL_LLVM_LINK)
+        find_package(LLVM REQUIRED)
+        message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} for WITH_LIRIC linkage")
+        message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+        set(_lfortran_liric_saved_suffixes "${CMAKE_FIND_LIBRARY_SUFFIXES}")
+        if (APPLE)
+            set(CMAKE_FIND_LIBRARY_SUFFIXES .dylib .tbd)
+        elseif(UNIX)
+            set(CMAKE_FIND_LIBRARY_SUFFIXES .so)
+        endif()
+        find_library(_lfortran_liric_llvm_c_lib
+            NAMES LLVM-C libLLVM-C LLVM
+            PATHS ${LLVM_LIBRARY_DIRS})
+        set(CMAKE_FIND_LIBRARY_SUFFIXES "${_lfortran_liric_saved_suffixes}")
+        if (_lfortran_liric_llvm_c_lib)
+            set(_lfortran_liric_llvm_libs "${_lfortran_liric_llvm_c_lib}")
+        else()
+            message(WARNING
+                "Could not find shared LLVM C API library; falling back to LLVM C++ components")
+            set(_lfortran_liric_llvm_components
+                core support mcjit orcjit native asmparser asmprinter)
+            if (TARGET LLVMCore)
+                llvm_map_components_to_libnames(_lfortran_liric_llvm_libs
+                    ${_lfortran_liric_llvm_components})
+            else()
+                set(_lfortran_liric_llvm_libs "LLVM")
+            endif()
+        endif()
+        list(APPEND _lfortran_liric_link_libs ${_lfortran_liric_llvm_libs})
+    endif()
+    set_property(TARGET p::llvm PROPERTY INTERFACE_LINK_LIBRARIES
+        ${_lfortran_liric_link_libs})
+    # liric bundles openlibm which may contain non-PIC objects (R_X86_64_32S)
+    # from hand-written assembly; disable PIE for the final executables.
+    if (UNIX AND NOT APPLE)
+        add_link_options(
+            $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-no-pie>
+            -Wl,--allow-multiple-definition)
+    endif()
+    set(HAVE_LFORTRAN_LLVM yes)
+    set(WITH_LLVM yes)
+elseif (WITH_LLVM)
     set(WITH_ZSTD yes CACHE BOOL "Detect (and require) libzstd for LLVM")
     set(USE_DYNAMIC_ZSTD no CACHE BOOL "Use dynamic ZSTD library (default: static)")
     if(WITH_ZSTD)
