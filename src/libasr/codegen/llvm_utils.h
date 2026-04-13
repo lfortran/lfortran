@@ -2168,6 +2168,40 @@ class ASRToLLVMVisitor;
                 case ASR::Array: {
                     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
                     if (arr_t->m_type->type != ASR::StructType) { return; }
+
+                    if (ASRUtils::is_class_type(arr_t->m_type)
+                        && ASRUtils::is_unlimited_polymorphic_type(arr_t->m_type)) {
+                        // class(*) descriptor arrays use ONE-wrapper storage:
+                        // descriptor.data -> wrapper {vptr, i8* payload}.
+                        // For explicit deallocate, free payload here; wrapper
+                        // is freed by call_lfortran_free() in asr_to_llvm.
+                        auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                        auto *const elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                        llvm::Value* const wrapper_ptr_ref =
+                            llvm_utils_->create_gep2(arr_llvm_t, ptr, 0);
+                        llvm::Value* const wrapper_ptr = builder_->CreateLoad(
+                            elem_llvm_t->getPointerTo(), wrapper_ptr_ref);
+                        llvm::Value* const wrapper_not_null = builder_->CreateICmpNE(
+                            wrapper_ptr,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
+                        llvm_utils_->create_if_else(wrapper_not_null, [&]() {
+                            llvm::Value* const payload_ref =
+                                llvm_utils_->create_gep2(elem_llvm_t, wrapper_ptr, 1);
+                            llvm::Value* const payload_ptr = builder_->CreateLoad(
+                                llvm_utils_->i8_ptr, payload_ref);
+                            llvm::Value* const payload_not_null = builder_->CreateICmpNE(
+                                payload_ptr,
+                                llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+                            llvm_utils_->create_if_else(payload_not_null, [this, payload_ptr, payload_ref]() {
+                                llvm_utils_->lfortran_free_nocheck(payload_ptr);
+                                builder_->CreateStore(
+                                    llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);
+                            }, [](){});
+                        }, [](){});
+                        return;
+                    }
+
                     if (!is_finalizable_type(arr_t->m_type, struct_sym, in_struct)) { return; }
                     // Finalize array elements but don't free the array data itself
                     auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);

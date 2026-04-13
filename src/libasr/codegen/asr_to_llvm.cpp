@@ -2664,40 +2664,6 @@ public:
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
-                        // For class(*) arrays, descriptor base_addr points to a
-                        // wrapper whose field 1 owns the actual payload buffer.
-                        // Free payload first, then free wrapper via call_lfortran_free.
-                        if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type)) &&
-                            ASRUtils::is_unlimited_polymorphic_type(ASRUtils::extract_type(cur_type))) {
-                            llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(
-                                tmp_expr, element_type, module.get());
-                            llvm::Value* wrapper_data_ptr = arr_descr->get_pointer_to_data(typ, tmp);
-                            llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(
-                                class_type->getPointerTo(), wrapper_data_ptr);
-
-                            llvm::Value* wrapper_is_not_null = builder->CreateICmpNE(
-                                wrapper_ptr,
-                                llvm::ConstantPointerNull::get(class_type->getPointerTo()));
-                            llvm_utils->create_if_else(wrapper_is_not_null, [=]() {
-                                llvm::Value* data_field = llvm_utils->create_gep2(class_type, wrapper_ptr, 1);
-                                llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_field);
-                                llvm::Value* data_is_not_null = builder->CreateICmpNE(
-                                    data_ptr,
-                                    llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
-                                llvm_utils->create_if_else(data_is_not_null, [=]() {
-                                    llvm::AllocaInst *data_arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
-                                    builder->CreateStore(data_ptr, data_arg_tmp);
-                                    std::vector<llvm::Value*> data_args = {
-                                        allocator,
-                                        llvm_utils->CreateLoad2(character_type, data_arg_tmp)
-                                    };
-                                    builder->CreateCall(free_fn, data_args);
-                                    builder->CreateStore(
-                                        llvm::ConstantPointerNull::get(llvm_utils->i8_ptr), data_field);
-                                }, [](){});
-                            }, [](){});
-                        }
-
                         call_lfortran_free(free_fn, typ,  llvm_data_type);
                     }, [](){});
                 }
