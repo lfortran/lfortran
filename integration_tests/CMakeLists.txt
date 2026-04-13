@@ -2277,7 +2277,7 @@ RUN(NAME derived_types_94 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_96 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_97 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
         EXTRAFILES derived_types_97_mod1.f90 derived_types_97_mod2.f90)
-RUN(NAME derived_types_98 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays NO_DETECT_LEAK)
+RUN(NAME derived_types_98 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME derived_types_99 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_100 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
 RUN(NAME derived_types_101 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2373,7 +2373,7 @@ RUN(NAME allocate_array_descriptor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_e
 RUN(NAME allocate_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME allocate_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK
+RUN(NAME allocate_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME allocate_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
