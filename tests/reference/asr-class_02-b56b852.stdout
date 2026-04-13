@@ -48,6 +48,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             circle_print:
                                                 (StructMethodDeclaration
@@ -57,6 +58,7 @@
                                                     circle_print
                                                     2 circle_print
                                                     Source
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),

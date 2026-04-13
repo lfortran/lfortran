@@ -2857,6 +2857,9 @@ public:
                         } else if (attr->m_attr == AST::simple_attributeType::AttrNoPass) {
                             LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("nopass") == cdf[new_dt_name][use_sym_name].end());
                             cdf[new_dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
+                        } else if (attr->m_attr == AST::simple_attributeType::AttrPrivate) {
+                            LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("private") == cdf[new_dt_name][use_sym_name].end());
+                            cdf[new_dt_name][use_sym_name]["private"] = attr->base.base.loc;
                         }
                         break;
                     }
@@ -3594,7 +3597,7 @@ public:
                                     parent_decl->m_name, parent_decl->m_self_argument,
                                     parent_decl->m_proc_name, parent_decl->m_proc,
                                     parent_decl->m_abi, parent_decl->m_is_deferred,
-                                    parent_decl->m_is_nopass);
+                                    parent_decl->m_is_nopass, parent_decl->m_is_private);
                                 local_proc_sym = ASR::down_cast<ASR::symbol_t>(new_decl);
                                 clss->m_symtab->add_symbol(cand_proc_name, local_proc_sym);
                             }
@@ -3867,6 +3870,7 @@ public:
                     new_dt_name = std::string(mod->m_name) + "_" + new_dt_name;
                 } 
                 bool is_nopass = (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first) && cdf[new_dt_name][pname.first].count("nopass"));
+                bool is_private = (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first) && cdf[new_dt_name][pname.first].count("private"));
                 if (is_pass && is_nopass) {
                     diag.add(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -3920,7 +3924,7 @@ public:
                 ASR::asr_t *v = ASR::make_StructMethodDeclaration_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
-                    is_deferred, is_nopass);
+                    is_deferred, is_nopass, is_private);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
                 sync_pdt_specialization_symbols(clss, proc_scope);

@@ -303,6 +303,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             log_io_error:
                                                 (StructMethodDeclaration
@@ -312,6 +313,7 @@
                                                     log_io_error
                                                     2 log_io_error
                                                     Source
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 )

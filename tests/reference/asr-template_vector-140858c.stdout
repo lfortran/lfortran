@@ -669,6 +669,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -678,6 +679,7 @@
                                                                     __asr_resize
                                                                     7 __asr_resize
                                                                     Source
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 ),
@@ -1518,6 +1520,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -1527,6 +1530,7 @@
                                                                     resize
                                                                     3 resize
                                                                     Source
+                                                                    .false.
                                                                     .false.
                                                                     .false.
                                                                 ),

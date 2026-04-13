@@ -506,6 +506,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .true.
                                                 )
                                         })
                                     toml_tokenizer

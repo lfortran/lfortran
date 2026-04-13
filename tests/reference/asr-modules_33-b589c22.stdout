@@ -690,6 +690,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .true.
                                                 ),
                                             add_project_dependencies:
                                                 (StructMethodDeclaration
@@ -701,6 +702,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .true.
                                                 ),
                                             cache:
                                                 (Variable
@@ -857,6 +859,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .true.
                                                 ),
                                             verbosity:
                                                 (Variable
