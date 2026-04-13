@@ -4083,6 +4083,11 @@ public:
                 ASRUtils::extract_type(x_mv_type));
             ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                if ( LLVM::is_llvm_pointer(*x_mv_type) ) {
+                    llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_v, x_mv_type_, module.get());
+                    array = llvm_utils->CreateLoad2(array_type, array);
+                }
                 // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                 llvm::Type* type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
@@ -5350,7 +5355,9 @@ public:
                 ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(x.m_type)),
                 module.get(), x.m_abi);
-            if (ASRUtils::is_array(x.m_type)) {  // memorize arrays only.
+            if (ASRUtils::is_array(x.m_type) &&
+                ASRUtils::extract_physical_type(x.m_type) !=
+                    ASR::array_physical_typeType::UnboundedPointerArray) {  // memorize arrays only.
                 allocatable_array_details.push_back(
                     { ASRUtils::EXPR(ASR::make_Var_t(
                           al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
@@ -5366,7 +5373,9 @@ public:
                 if (init_value) {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
-                } else if (ASRUtils::is_array(x.m_type)) {
+                } else if (ASRUtils::is_array(x.m_type) &&
+                           ASRUtils::extract_physical_type(x.m_type) !=
+                               ASR::array_physical_typeType::UnboundedPointerArray) {
                     // For pointer/allocatable array module variables, create a
                     // companion global descriptor so the pointer is never NULL.
                     // In separate compilation, main() cannot initialize
@@ -9599,6 +9608,17 @@ public:
                             break;
                         }
                         case ASR::array_physical_typeType::PointerArray: {
+                            break;
+                        }
+                        case ASR::array_physical_typeType::UnboundedPointerArray: {
+                            if (!llvm::isa<llvm::AllocaInst>(llvm_value) &&
+                                !llvm::isa<llvm::GlobalVariable>(llvm_value)) {
+                                llvm::Type* val_type = llvm_value->getType();
+                                llvm::AllocaInst* alloca_ = llvm_utils->CreateAlloca(
+                                    *builder, val_type, nullptr, "upa_ptr");
+                                builder->CreateStore(llvm_value, alloca_);
+                                llvm_value = alloca_;
+                            }
                             break;
                         }
                         default: {
