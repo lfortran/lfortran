@@ -1563,6 +1563,24 @@ class ASRToLLVMVisitor;
             };
 
             bool is_class_type = ASRUtils::non_unlimited_polymorphic_class(&struct_t->base);
+            bool is_unlimited_polymorphic_class =
+                ASRUtils::is_unlimited_polymorphic_type(&struct_t->base);
+
+            if (is_unlimited_polymorphic_class) {
+                // class(*) descriptor arrays use a single wrapper whose payload
+                // points to the contiguous data buffer for all elements.
+                llvm::Type* const wrapper_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
+                llvm::Value* const payload_ref = llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 1);
+                llvm::Value* const payload_ptr = llvm_utils_->CreateLoad2(llvm_utils_->i8_ptr, payload_ref);
+                llvm::Value* const payload_not_null = builder_->CreateICmpNE(
+                    payload_ptr, llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+                llvm_utils_->create_if_else(payload_not_null, [this, payload_ptr, payload_ref]() {
+                    llvm_utils_->lfortran_free_nocheck(payload_ptr);
+                    builder_->CreateStore(
+                        llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);
+                }, [](){});
+                return;
+            }
             
             auto const body_fn = [&]() -> void {
                 auto const loaded_iter = builder_->CreateLoad(iter_llvm_type, iter);
