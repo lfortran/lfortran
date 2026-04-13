@@ -1388,7 +1388,7 @@ class ASRToLLVMVisitor;
                         free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     }
 
-                    free_array_ptr_to_consecutive_data(data, arr_t->m_type, struct_sym);
+                    free_array_ptr_to_consecutive_data(data, arr_t->m_type);
                     END_CACHE(checkpoint_BB);
                 break;
                 }
@@ -1399,7 +1399,7 @@ class ASRToLLVMVisitor;
                     verify(arr, llvm_type_verify_against);
                     auto const data = arr;
                     free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
-                    free_array_ptr_to_consecutive_data(data, arr_t->m_type, struct_sym);
+                    free_array_ptr_to_consecutive_data(data, arr_t->m_type);
                     break;
                 }
                 case ASR::SIMDArray :
@@ -1642,7 +1642,7 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void free_array_ptr_to_consecutive_data(llvm::Value* const ptr, ASR::ttype_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym){
+        void free_array_ptr_to_consecutive_data(llvm::Value* const ptr, ASR::ttype_t* const t){
             llvm::Value* const ptr_not_null = builder_->CreateICmpNE(
                 builder_->CreatePtrToInt(ptr, llvm::Type::getInt64Ty(builder_->getContext())),
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(builder_->getContext()), 0));
