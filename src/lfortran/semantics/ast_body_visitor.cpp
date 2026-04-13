@@ -5998,12 +5998,24 @@ public:
                         throw SemanticAbort();
                 }
             }
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type)) &&
+                !ASRUtils::check_class_assignment_compatibility(target, value)) {
+                std::string ltype_extracted = ASRUtils::type_to_str_fortran_expr(
+                    ASRUtils::extract_type(ASRUtils::expr_type(target)), target);
+                diag.semantic_error_label(
+                    "Type mismatch in assignment, the types must be compatible",
+                    {target->base.loc, value->base.loc},
+                    "type mismatch (" + ltype_extracted + " and " + rtype + ")"
+                );
+                throw SemanticAbort();
+            }
             if (ASRUtils::is_array(ASRUtils::expr_type(value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(target))) {
                     diag.semantic_error_label(
                         "Type mismatch in assignment, the types must be compatible",
                         {target->base.loc, value->base.loc},
-                        "type mismatch (" + ltype + " and " + rtype + ")"
+                        "type mismatch (`" + ltype + "` and `" + rtype + "`)"
                     );
                     throw SemanticAbort();
             }

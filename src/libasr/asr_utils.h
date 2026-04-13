@@ -4935,7 +4935,11 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
         sym_value = ASRUtils::symbol_get_past_external(sym_value);
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(sym_target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(sym_value);
+        bool tar_is_upoly = tar_struct->m_struct_signature != nullptr &&
+            ASR::down_cast<ASR::StructType_t>(
+                tar_struct->m_struct_signature)->m_is_unlimited_polymorphic;
         is_class_same = (sym_target == sym_value);
+        is_class_same = is_class_same || tar_is_upoly;
         is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
