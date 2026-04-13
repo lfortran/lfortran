@@ -17587,6 +17587,7 @@ public:
         llvm::Value *access_val{}, *access_len{};
         llvm::Value *name_val{}, *name_len{};
         llvm::Value *blank_val{}, *blank_len{};
+        llvm::Value *delim_val{}, *delim_len{};
         llvm::Value *recl{}, *number{};
         llvm::Value *named{}, *sequential{}, *sequential_len{};
         llvm::Value *direct{}, *direct_len{};
@@ -17747,6 +17748,16 @@ public:
         } else {
             blank_val = llvm::Constant::getNullValue(character_type);
             blank_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+        if (x.m_delim) {
+            this->visit_expr_load_wrapper(x.m_delim, 0);
+            std::tie(delim_val, delim_len) =
+                llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_delim),
+                    tmp);
+        } else {
+            delim_val = llvm::Constant::getNullValue(character_type);
+            delim_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
         if (x.m_recl) {
             int ptr_loads_copy = ptr_loads;
@@ -18073,7 +18084,8 @@ public:
                         llvm::Type::getInt1Ty(context)->getPointerTo(),    // pending
                         character_type, llvm::Type::getInt64Ty(context),    // asynchronous_data, asynchronous_len
                         character_type, llvm::Type::getInt64Ty(context),   // action_data, action_len
-                        character_type, llvm::Type::getInt64Ty(context)    // position_data, position_len
+                        character_type, llvm::Type::getInt64Ty(context),    // position_data, position_len
+                        character_type, llvm::Type::getInt64Ty(context)    // delim_data, delim_len
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
@@ -18105,7 +18117,8 @@ public:
             pending_val,
             asynchronous_val, asynchronous_len,
             action_val, action_len,
-            position_val, position_len});
+            position_val, position_len,
+            delim_val, delim_len});
         if (exist_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
                 llvm::Type::getInt1Ty(context), exist_val);
