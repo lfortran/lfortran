@@ -660,7 +660,7 @@ namespace LCompilers {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(m_type_);
         llvm::Type* el_type = nullptr;
         bool is_pointer = LLVM::is_llvm_pointer(*m_type_);
-        ASR::ttype_t* m_type = ASRUtils::type_get_past_pointer(m_type_);
+        ASR::ttype_t* m_type = ASRUtils::type_get_past_allocatable_pointer(m_type_);
         switch(m_type->type) {
             case ASR::ttypeType::Integer: {
                 el_type = getIntType(a_kind, is_pointer);
@@ -687,13 +687,22 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::StructType: {
-                if (ASR::down_cast<ASR::StructType_t>(m_type)->m_is_cstruct) {
-                    el_type = getStructType(ASR::down_cast<ASR::Struct_t>(
-                                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
-                                            module);
+                if (expr) {
+                    if (ASR::down_cast<ASR::StructType_t>(m_type)->m_is_cstruct) {
+                        el_type = getStructType(ASR::down_cast<ASR::Struct_t>(
+                                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
+                                                module);
+                    } else {
+                        el_type = getClassType(ASR::down_cast<ASR::Struct_t>(
+                                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))));
+                    }
                 } else {
-                    el_type = getClassType(ASR::down_cast<ASR::Struct_t>(
-                                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))));
+                    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(m_type);
+                    std::vector<llvm::Type*> member_types;
+                    for (size_t i = 0; i < st->n_data_member_types; i++) {
+                        member_types.push_back(get_el_type(nullptr, st->m_data_member_types[i], module));
+                    }
+                    el_type = llvm::StructType::get(context, member_types);
                 }
                 break;
             }
