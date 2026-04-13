@@ -2491,6 +2491,7 @@ RUN(NAME associate_45 LABELS gfortran llvm)
 RUN(NAME associate_46 LABELS gfortran llvm)
 RUN(NAME associate_47 LABELS gfortran llvm)
 RUN(NAME associate_48 LABELS gfortran llvm NO_DETECT_LEAK) # USER_LEAK
+RUN(NAME associate_49 LABELS gfortran llvm NO_DETECT_LEAK) # USER_LEAK
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

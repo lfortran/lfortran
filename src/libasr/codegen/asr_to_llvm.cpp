@@ -12242,7 +12242,7 @@ public:
                 if (!alloca_inst) continue;
                 llvm::Type *ptr_type = alloca_inst->getAllocatedType();
                 if (!ptr_type->isPointerTy()) continue;
-#if LLVM_VERSION_MAJOR >= 17
+#if LLVM_VERSION_MAJOR >= 15
                 llvm::Type *elem_type =
                     llvm_utils->get_type_from_ttype_t_util(
                         nullptr, pointee_type, module.get());
