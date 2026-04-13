@@ -200,7 +200,7 @@ jobs:
 #          pixi run clean
 
   test_llvm:
-    name: Test LLVM ${{ matrix.llvm-version }}
+    name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     # Run on push to main, or only when the specific label is modified on a PR
     if: >-
@@ -209,7 +209,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # this is only run on ubuntu intentionally
+        # this is only run on ubuntu intentionally (except macOS LLVM 22)
         os: ["ubuntu-latest"]
         # Note: The LLVM 11 test is redundant, since it is already tested by
         # most other tests (since LLVM 11 is our default version), but we have
@@ -220,6 +220,10 @@ jobs:
         # work.
         llvm-version: ["8", "10", "11", "15", "17", "18", "19", "21", "22"]
         python-version: ["3.10"]
+        include:
+          - os: macos-latest
+            llvm-version: "22"
+            python-version: "3.10"
     steps:
       - uses: actions/checkout@v6
         with:
@@ -310,7 +314,7 @@ jobs:
             openmpi=5.0.6=hb85ec53_102
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '22')
+        if: contains(matrix.llvm-version, '22') && contains(matrix.os, 'ubuntu')
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -323,6 +327,20 @@ jobs:
             make=4.3
             openmpi=5.0.10
             binutils=2.45.1
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.os, 'macos')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.10
             zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
@@ -356,10 +374,10 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.llvm-version }}
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
 
       - name: Install libunwind
-        if: matrix.llvm-version > 11
+        if: matrix.llvm-version > 11 && contains(matrix.os, 'ubuntu')
         run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Setup WASI SDK
@@ -433,7 +451,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
-      - name: Build Linux
+      - name: Build
         if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
         shell: bash -e -l {0}
         run: |

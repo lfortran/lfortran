@@ -278,6 +278,8 @@ time_section "🧪 Testing M_CLI2" '
   cd ..
 '
 
+if [[ "$(uname)" != "Darwin" ]]; then
+
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
   cd fortran_mpi
@@ -743,6 +745,8 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
 
     cd ..
 '
+
+fi
 
 ##################################
 # Final Summary and Cleanup
