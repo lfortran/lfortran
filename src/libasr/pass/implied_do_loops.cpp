@@ -731,16 +731,25 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
         ASR::expr_t* array_constant_size = get_ArrayConstant_size(x);
+        ASR::dimension_t* orig_m_dims = nullptr;
+        size_t orig_n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, orig_m_dims);
         Vec<ASR::dimension_t> dims;
-        dims.reserve(al, 1);
-        ASR::dimension_t dim;
-        dim.loc = loc;
-        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
-                        ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(
-                                ASRUtils::expr_type(array_constant_size)))));
-        dim.m_length = array_constant_size;
-        dims.push_back(al, dim);
+        if (orig_n_dims > 1 && ASRUtils::is_fixed_size_array(x->m_type)) {
+            dims.reserve(al, orig_n_dims);
+            for (size_t i = 0; i < orig_n_dims; i++) {
+                dims.push_back(al, orig_m_dims[i]);
+            }
+        } else {
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                            ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::expr_type(array_constant_size)))));
+            dim.m_length = array_constant_size;
+            dims.push_back(al, dim);
+        }
         remove_original_statement = false;
         if( is_result_var_fixed_size ) {
             result_type_ = ASRUtils::expr_type(result_var);

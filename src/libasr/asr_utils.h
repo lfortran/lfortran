@@ -3662,6 +3662,16 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             if (dims == nullptr) {
                 dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
                 dimsn = tnew->n_dims;
+                // UnboundedPointerArray cannot be reconstructed by
+                // make_Array_t_util auto-detection (it needs the
+                // is_dimension_star && is_argument flags only available during
+                // semantic analysis). Preserve it when duplicating with the
+                // same dimensions.
+                if (!override_physical_type &&
+                    tnew->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                    physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+                    override_physical_type = true;
+                }
             }
             return ASRUtils::make_Array_t_util(al, tnew->base.base.loc,
                 duplicated_element_type, dimsp, dimsn, ASR::abiType::Source,
@@ -4925,7 +4935,11 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
         sym_value = ASRUtils::symbol_get_past_external(sym_value);
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(sym_target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(sym_value);
+        bool tar_is_upoly = tar_struct->m_struct_signature != nullptr &&
+            ASR::down_cast<ASR::StructType_t>(
+                tar_struct->m_struct_signature)->m_is_unlimited_polymorphic;
         is_class_same = (sym_target == sym_value);
+        is_class_same = is_class_same || tar_is_upoly;
         is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
@@ -7070,7 +7084,8 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
+            int len = 0;
+            ASRUtils::extract_value(char_type->m_len, len);
             ASR::StringConstant_t* value_str = ASR::down_cast<ASR::StringConstant_t>(value);
             char* data = value_str->m_s;
             int src_len = len;
@@ -7142,7 +7157,8 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
+            int len = 0;
+            ASRUtils::extract_value(char_type->m_len, len);
             char* data_char = (char*)data + i*len;
             // take first len characters
             char* new_char = new char[len + 1];

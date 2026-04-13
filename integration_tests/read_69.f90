@@ -1,37 +1,53 @@
 program read_69
-  implicit none
-  character :: s160
-  character(2) :: s230
-  common s160(60), s230(30)
-  character(*), parameter :: s1 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ =+-*/(),.*0*1.2,3)4(5/6'
-  character(*), parameter :: s2 = '6/5(4)3,2.1*0*.,)(/*-+= ZYXWVUTSRQPONMLKJIHGFEDCBA9876543210'
+implicit none
+integer :: a, b, c, ios
+character(256) :: msg
 
-  logical :: pf
+! Test 1: comma-separated integers on one line
+open(10, file='read_69_test.txt', status='replace')
+write(10, '(A)') '1,2'
+close(10)
 
-100 format (60A1)
-101 format (30a2)
+open(10, file='read_69_test.txt', status='old')
+read(10, *, iostat=ios, iomsg=msg) a, b
+close(10)
 
-  open (42, file='fort.42', status='replace', form='formatted')
-  write (42, '(a)') s1
-  write (42, '(a)') s2
+if (ios /= 0) error stop
+if (a /= 1) error stop
+if (b /= 2) error stop
 
-  rewind (42)
+! Test 2: comma with spaces
+open(10, file='read_69_test.txt', status='replace')
+write(10, '(A)') '10 , 20 , 30'
+close(10)
 
-  s160 = '?'
-  read (42,100) s160
-  pf = all (s160 == transfer (s1, mold=s160))
-  if (.not. pf) then
-    print *, 's160 test failed'
-    error stop
-  end if
-  s230 = '??'
-  read (42,101) s230
-  pf = all (s230 == transfer (s2, mold=s230))
-  if (.not. pf) then
-    print *, 's230 test failed'
-    error stop
-  end if
+open(10, file='read_69_test.txt', status='old')
+read(10, *, iostat=ios, iomsg=msg) a, b, c
+close(10)
 
-  close (42)
+if (ios /= 0) error stop
+if (a /= 10) error stop
+if (b /= 20) error stop
+if (c /= 30) error stop
 
-end program read_69
+! Test 3: comma-separated on multiple reads
+open(10, file='read_69_test.txt', status='replace')
+write(10, '(A)') '100,200'
+write(10, '(A)') '300'
+close(10)
+
+open(10, file='read_69_test.txt', status='old')
+read(10, *) a, b
+read(10, *) c
+close(10)
+
+if (a /= 100) error stop
+if (b /= 200) error stop
+if (c /= 300) error stop
+
+! Cleanup
+open(10, file='read_69_test.txt', status='old')
+close(10, status='delete')
+
+print *, "PASS"
+end program

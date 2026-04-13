@@ -339,7 +339,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:100:13
     |
 100 |             array = [ (i,i = 1,this%n) ]
-    |             ^^^^^   ^^^^^^^^^^^^^^^^^^^^ type mismatch (integer and integer[:])
+    |             ^^^^^   ^^^^^^^^^^^^^^^^^^^^ type mismatch (`integer` and `integer[:]`)
 
 semantic error: PRINT statement is not allowed inside a PURE procedure
    --> tests/errors/continue_compilation_2.f90:117:9
@@ -942,7 +942,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_2.f90:527:5
     |
 527 |     lhs = rhs
-    |     ^^^   ^^^ type mismatch (string and string[:])
+    |     ^^^   ^^^ type mismatch (`string` and `string[:]`)
 
 semantic error: Missing actual argument 'string' in call to 'index'
    --> tests/errors/continue_compilation_2.f90:528:14
