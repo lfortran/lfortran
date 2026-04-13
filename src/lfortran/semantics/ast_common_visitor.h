@@ -16467,6 +16467,27 @@ public:
                                                       right_type, conversion_cand,
                                                       &source_type, &dest_type);
           }
+            // Fortran standard: real(dp)*complex(sp) produces complex(dp).
+            // When mixing real and complex, use max(real_kind, complex_kind).
+            {
+                ASR::ttype_t *src2 = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(source_type)));
+                ASR::ttype_t *dst2 = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(dest_type)));
+                if (ASRUtils::is_real(*src2) && ASRUtils::is_complex(*dst2)) {
+                    int src_kind = ASRUtils::extract_kind_from_ttype_t(src2);
+                    int dst_kind = ASRUtils::extract_kind_from_ttype_t(dst2);
+                    if (src_kind > dst_kind) {
+                        dest_type = ASRUtils::TYPE(ASR::make_Complex_t(
+                            al, dest_type->base.loc, src_kind));
+                        ASR::expr_t **other = (conversion_cand == &left) ? &right : &left;
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc,
+                            other, ASRUtils::expr_type(*other), dest_type, diag);
+                    }
+                }
+            }
             if((op == ASR::binopType::Pow) &&
                 ASRUtils::is_real(*dest_type) &&
                 ASRUtils::is_integer(*right_type)){ // Don't cast exponent to preserve precision.
