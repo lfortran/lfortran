@@ -8885,6 +8885,7 @@ public:
 
                 if (array_section->m_args[i].m_right) {
                     if (arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
+                        i == value_rank - 1 &&
                         ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right) &&
                         ASR::down_cast<ASR::ArrayBound_t>(array_section->m_args[i].m_right)->m_value == nullptr) {
                         llvm::Value *lbound = builder->CreateSExtOrTrunc(
