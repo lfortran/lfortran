@@ -3490,13 +3490,14 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
     char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
-    ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr
+    ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr,
+    int64_t a_corank = 0
 ) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
         a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
-        a_pass_attr, a_self_argument
+        a_pass_attr, a_self_argument, a_corank
     );
 }
 
@@ -6874,6 +6875,22 @@ static inline bool is_allocatable(ASR::ttype_t* type) {
 
 static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
+}
+
+static inline bool is_coarray(ASR::symbol_t* s) {
+    s = symbol_get_past_external(s);
+    if (ASR::is_a<ASR::Variable_t>(*s)) {
+        return ASR::down_cast<ASR::Variable_t>(s)->m_corank > 0;
+    }
+    return false;
+}
+
+static inline int64_t symbol_corank(ASR::symbol_t* s) {
+    s = symbol_get_past_external(s);
+    if (ASR::is_a<ASR::Variable_t>(*s)) {
+        return ASR::down_cast<ASR::Variable_t>(s)->m_corank;
+    }
+    return 0;
 }
 
 static inline void import_struct_t(Allocator& al,

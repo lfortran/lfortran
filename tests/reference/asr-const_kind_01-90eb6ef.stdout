@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r1:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r2:
                                 (Variable
@@ -87,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r3:
                                 (Variable
@@ -110,6 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             sp:
                                 (Variable
@@ -133,6 +137,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     const_kind_01

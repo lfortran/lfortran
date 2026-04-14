@@ -38,6 +38,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ia5:
                                 (Variable
@@ -70,6 +71,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ia9:
                                 (Variable
@@ -102,6 +104,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     string_13

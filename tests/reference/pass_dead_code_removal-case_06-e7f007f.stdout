@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ap:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             bp:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -127,6 +131,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             cp:
                                 (Variable
@@ -156,6 +161,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             d:
                                 (Variable
@@ -185,6 +191,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             dp:
                                 (Variable
@@ -214,6 +221,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             grade_fixed:
                                 (Variable
@@ -243,6 +251,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             marks:
                                 (Variable
@@ -266,6 +275,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             marks_fixed:
                                 (Variable
@@ -289,6 +299,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     cond_03

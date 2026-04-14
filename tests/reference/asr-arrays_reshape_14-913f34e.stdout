@@ -105,6 +105,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             test_1d_to_nd:
                                 (Function
@@ -140,6 +141,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -168,6 +170,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             c:
                                                 (Variable
@@ -200,6 +203,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d:
                                                 (Variable
@@ -228,6 +232,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             eps:
                                                 (Variable
@@ -251,6 +256,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -274,6 +280,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             j:
                                                 (Variable
@@ -297,6 +304,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             k:
                                                 (Variable
@@ -320,6 +328,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             l:
                                                 (Variable
@@ -343,6 +352,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             newshape:
                                                 (Variable
@@ -371,6 +381,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             newshape1:
                                                 (Variable
@@ -399,6 +410,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     test_1d_to_nd
@@ -948,6 +960,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -976,6 +989,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             c:
                                                 (Variable
@@ -1008,6 +1022,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d:
                                                 (Variable
@@ -1036,6 +1051,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             eps:
                                                 (Variable
@@ -1059,6 +1075,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -1082,6 +1099,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             j:
                                                 (Variable
@@ -1105,6 +1123,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             k:
                                                 (Variable
@@ -1128,6 +1147,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             l:
                                                 (Variable
@@ -1151,6 +1171,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             newshape:
                                                 (Variable
@@ -1179,6 +1200,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             newshape1:
                                                 (Variable
@@ -1207,6 +1229,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     test_nd_to_1d
@@ -1777,6 +1800,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d:
                                                 (Variable
@@ -1805,6 +1829,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -1828,6 +1853,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             j:
                                                 (Variable
@@ -1851,6 +1877,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             k:
                                                 (Variable
@@ -1874,6 +1901,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             l:
                                                 (Variable
@@ -1897,6 +1925,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     test_reshape_with_argument

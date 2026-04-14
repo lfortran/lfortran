@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             a:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     _lcompilers_optimization_fma_f32
@@ -173,6 +177,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             a:
                                 (Variable
@@ -196,6 +201,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -219,6 +225,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -242,6 +249,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     _lcompilers_optimization_fma_f321
@@ -317,6 +325,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             a:
                                 (Variable
@@ -340,6 +349,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -363,6 +373,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -386,6 +397,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     _lcompilers_optimization_fma_f322
@@ -461,6 +473,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             a:
                                 (Variable
@@ -484,6 +497,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -507,6 +521,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -530,6 +545,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     _lcompilers_optimization_fma_f323
@@ -605,6 +621,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             a:
                                 (Variable
@@ -628,6 +645,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -651,6 +669,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -674,6 +693,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     _lcompilers_optimization_fma_f64
@@ -754,6 +774,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             pi:
                                 (Variable
@@ -783,6 +804,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r:
                                 (Variable
@@ -806,6 +828,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             s1:
                                 (Variable
@@ -844,6 +867,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             s2:
                                 (Variable
@@ -882,6 +906,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -911,6 +936,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             z:
                                 (Variable
@@ -949,6 +975,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     fma

@@ -64,6 +64,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             lhs:
                                                 (Variable
@@ -89,6 +90,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             rhs:
                                                 (Variable
@@ -119,6 +121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     date_to_string
@@ -277,6 +280,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             rhs:
                                                 (Variable
@@ -330,6 +334,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             temporary:
                                                 (Variable
@@ -355,6 +360,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             time_to_string:
                                                 (ExternalSymbol
@@ -739,6 +745,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             millisec:
                                                 (Variable
@@ -762,6 +769,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             minute:
                                                 (Variable
@@ -785,6 +793,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             second:
                                                 (Variable
@@ -808,6 +817,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -844,6 +854,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             zone:
                                                 (Variable
@@ -867,6 +878,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     new_toml_time
@@ -1109,6 +1121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             lfortran_iomsg1:
                                                 (Variable
@@ -1132,6 +1145,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             lhs:
                                                 (Variable
@@ -1157,6 +1171,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             rhs:
                                                 (Variable
@@ -1193,6 +1208,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     time_to_string
@@ -1440,6 +1456,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             month:
                                                 (Variable
@@ -1463,6 +1480,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1497,6 +1515,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -1565,6 +1584,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             time:
                                                 (Variable
@@ -1603,6 +1623,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1695,6 +1716,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             millisec:
                                                 (Variable
@@ -1720,6 +1742,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             minute:
                                                 (Variable
@@ -1743,6 +1766,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             second:
                                                 (Variable
@@ -1766,6 +1790,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1802,6 +1827,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -2020,6 +2046,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             err:
                                                 (Variable
@@ -2043,6 +2070,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             first:
                                                 (Variable
@@ -2066,6 +2094,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             raw:
                                                 (Variable
@@ -2089,6 +2118,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             stat:
                                                 (Variable
@@ -2112,6 +2142,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             timestamp:
                                                 (Variable
@@ -2165,6 +2196,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     toml_raw_to_timestamp

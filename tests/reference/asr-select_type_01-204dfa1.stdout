@@ -54,6 +54,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     base
@@ -112,6 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             bptr:
                                 (Variable
@@ -142,6 +144,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             child:
                                 (Struct
@@ -170,6 +173,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     child
@@ -218,6 +222,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             perform_select_type:
                                 (Function
@@ -253,6 +258,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ~select_type_block_:
                                                 (Block

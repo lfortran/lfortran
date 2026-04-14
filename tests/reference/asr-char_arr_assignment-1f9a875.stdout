@@ -34,6 +34,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     char_arr_assignment

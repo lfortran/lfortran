@@ -101,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     bindc_06
@@ -275,6 +276,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f_int8:
                                 (Variable
@@ -298,6 +300,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f_logical:
                                 (Variable
@@ -321,6 +324,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f_type_c_ptr:
                                 (Variable
@@ -344,6 +348,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     bindc_06_mod

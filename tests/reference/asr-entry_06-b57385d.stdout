@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             w:
                                                 (Variable
@@ -62,6 +63,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     mvndfn
@@ -120,6 +122,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     entry_06
@@ -211,6 +214,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             w:
                                 (Variable
@@ -239,6 +243,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     mvndfn
@@ -311,6 +316,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             mvndfn:
                                 (Variable
@@ -334,6 +340,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             mvndfn_main__lcompilers:
                                 (Variable
@@ -357,6 +364,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             w:
                                 (Variable
@@ -385,6 +393,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     mvndfn_main__lcompilers
@@ -770,6 +779,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             mvndnt:
                                 (Variable
@@ -793,6 +803,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             w:
                                 (Variable
@@ -823,6 +834,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     mvndnt
