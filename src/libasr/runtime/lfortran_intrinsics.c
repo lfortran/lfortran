@@ -6139,20 +6139,27 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         }
         
         fp = get_file_pointer_from_unit(u_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim_mode, &blank_zero, &unit_recl, &sign_mode, &decimal_mode, &encoding_mode, &round_mode_val, &pad_mode);
+        bool is_connected = (u_num != -1 && fp != NULL);
         if (write != NULL) {
-            if (write_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(write, write_len, "UNKNOWN", 7);
+            } else if (write_access) {
                 _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(write, write_len, "NO", 2);
             }
         } if (read != NULL) {
-            if (read_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(read, read_len, "UNKNOWN", 7);
+            } else if (read_access) {
                 _lfortran_copy_str_and_pad(read, read_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(read, read_len, "NO", 2);
             }
         } if (readwrite != NULL) {
-            if (read_access && write_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(readwrite, readwrite_len, "UNKNOWN", 7);
+            } else if (read_access && write_access) {
                 _lfortran_copy_str_and_pad(readwrite, readwrite_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(readwrite, readwrite_len, "NO", 2);
@@ -6170,8 +6177,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             _lfortran_copy_str_and_pad(access, access_len, access_str, strlen(access_str));
         }
         if (blank != NULL) {
-            // For formatted files only
-            if (unit_file_bin) {
+            if (!is_connected || unit_file_bin) {
                 _lfortran_copy_str_and_pad(blank, blank_len, "UNDEFINED", 9);
             } else {
                 if (blank_zero) {
@@ -6182,7 +6188,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (delim != NULL) {
-            if (unit_file_bin) {
+            if (!is_connected || unit_file_bin) {
                 _lfortran_copy_str_and_pad(delim, delim_len, "UNDEFINED", 9);
             } else if (delim_mode == 1) {
                 _lfortran_copy_str_and_pad(delim, delim_len, "APOSTROPHE", 10);
@@ -6193,7 +6199,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (pad != NULL) {
-            if (unit_file_bin || u_num == -1) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(pad, pad_len, "UNDEFINED", 9);
+            } else if (unit_file_bin) {
                 _lfortran_copy_str_and_pad(pad, pad_len, "UNDEFINED", 9);
             } else {
                 if (pad_mode == 0) {
@@ -6229,35 +6237,45 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *recl = unit_recl;
         }
         if (sequential != NULL) {
-            if (access_id == 0) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(sequential, sequential_len, "UNKNOWN", 7);
+            } else if (access_id == 0) {
                 _lfortran_copy_str_and_pad(sequential, sequential_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(sequential, sequential_len, "NO", 2);
             }
         }
         if (direct != NULL) {
-            if (access_id == 2) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(direct, direct_len, "UNKNOWN", 7);
+            } else if (access_id == 2) {
                 _lfortran_copy_str_and_pad(direct, direct_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(direct, direct_len, "NO", 2);
             }
         }
         if (form != NULL) {
-            if (unit_file_bin) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(form, form_len, "UNDEFINED", 9);
+            } else if (unit_file_bin) {
                 _lfortran_copy_str_and_pad(form, form_len, "UNFORMATTED", 11);
             } else {
                 _lfortran_copy_str_and_pad(form, form_len, "FORMATTED", 9);
             }
         }
         if (formatted != NULL) {
-            if (!unit_file_bin) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(formatted, formatted_len, "UNKNOWN", 7);
+            } else if (!unit_file_bin) {
                 _lfortran_copy_str_and_pad(formatted, formatted_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(formatted, formatted_len, "NO", 2);
             }
         }
         if (unformatted != NULL) {
-            if (unit_file_bin) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(unformatted, unformatted_len, "UNKNOWN", 7);
+            } else if (unit_file_bin) {
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
@@ -6281,7 +6299,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (sign != NULL) {
-            if (unit_file_bin || u_num == -1) {
+            if (!is_connected) {
                 _lfortran_copy_str_and_pad(sign, sign_len, "UNDEFINED", 9);
             } else {
                 if (sign_mode == 1) {
@@ -6294,12 +6312,12 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (encoding != NULL) {
-            if (unit_file_bin || u_num == -1) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(encoding, encoding_len, "UNKNOWN", 7);
+            } else if (unit_file_bin) {
                 _lfortran_copy_str_and_pad(encoding, encoding_len, "UNDEFINED", 9);
             } else {
-                if (encoding_mode == 0) {
-                    _lfortran_copy_str_and_pad(encoding, encoding_len, "UNKNOWN", 7);
-                } else if (encoding_mode == 1) {
+                if (encoding_mode == 1) {
                     _lfortran_copy_str_and_pad(encoding, encoding_len, "UTF-8", 5);
                 } else {
                     _lfortran_copy_str_and_pad(encoding, encoding_len, "DEFAULT", 7);
@@ -6307,14 +6325,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (stream != NULL) {
-            if (access_id == 1) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(stream, stream_len, "UNKNOWN", 7);
+            } else if (access_id == 1) {
                 _lfortran_copy_str_and_pad(stream, stream_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(stream, stream_len, "NO", 2);
             }
         }
         if (round != NULL) {
-            if (unit_file_bin || u_num == -1) {
+            if (!is_connected) {
                 _lfortran_copy_str_and_pad(round, round_len, "UNDEFINED", 9);
             } else {
                 if (round_mode_val == 1) {
@@ -6336,14 +6356,20 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *pending = false;
         }
         if (asynchronous != NULL) {
-            _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "UNDEFINED", 9);
+            } else {
+                _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
+            }
         }
         if (iostat != NULL) {
             *iostat = 0;
             // iomsg is left unchanged on success per Fortran standard
         }
         if (action != NULL) {
-            if (read_access && write_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(action, action_len, "UNDEFINED", 9);
+            } else if (read_access && write_access) {
                 _lfortran_copy_str_and_pad(action, action_len, "READWRITE", 9);
             } else if (read_access) {
                 _lfortran_copy_str_and_pad(action, action_len, "READ", 4);
@@ -6354,7 +6380,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (position != NULL) {
-            if (fp == NULL) {
+            if (fp == NULL || access_id == 2) {
                 _lfortran_copy_str_and_pad(position, position_len, "UNDEFINED", 9);
             } else {
                 long current_pos = ftell(fp);
@@ -6375,6 +6401,15 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                         _lfortran_copy_str_and_pad(position, position_len, "ASIS", 4);
                     }
                 }
+            }
+        }
+        if (recl != NULL) {
+            if (access_id == 1) {
+                *recl = -2;
+            } else if (access_id == 2) {
+                *recl = unit_recl;
+            } else {
+                *recl = -1;
             }
         }
     }
@@ -6398,22 +6433,33 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *exists = false;
         }
         if (number != NULL) {
-            *number = unit_num;
+            if (fp != NULL) {
+                *number = unit_num;
+            } else {
+                *number = -1;
+            }
         }
+        bool is_connected = (fp != NULL);
         if (write != NULL) {
-            if (write_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(write, write_len, "UNKNOWN", 7);
+            } else if (write_access) {
                 _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(write, write_len, "NO", 2);
             }
         } if (read != NULL) {
-            if (read_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(read, read_len, "UNKNOWN", 7);
+            } else if (read_access) {
                 _lfortran_copy_str_and_pad(read, read_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(read, read_len, "NO", 2);
             }
         } if (readwrite != NULL) {
-            if (read_access && write_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(readwrite, readwrite_len, "UNKNOWN", 7);
+            } else if (read_access && write_access) {
                 _lfortran_copy_str_and_pad(readwrite, readwrite_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(readwrite, readwrite_len, "NO", 2);
@@ -6433,18 +6479,24 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         if (name != NULL) {
             bool dummy_unit_file_bin;
             char *unit_name = get_file_name_from_unit(unit_num, &dummy_unit_file_bin);
-            if (unit_name != NULL) {
-                _lfortran_copy_str_and_pad(name, name_len, unit_name, strlen(unit_name));
+            if (!is_connected) {
+                if (named != NULL) {
+                    *named = false;
+                }
             } else {
-                _lfortran_copy_str_and_pad(name, name_len, "", 0);
-            }
-            if (named != NULL) {
-                *named = (unit_name != NULL);
+                if (unit_name != NULL) {
+                    _lfortran_copy_str_and_pad(name, name_len, unit_name, strlen(unit_name));
+                } else {
+                    _lfortran_copy_str_and_pad(name, name_len, "", 0);
+                }
+                if (named != NULL) {
+                    *named = (unit_name != NULL);
+                }
             }
         }
         if (blank != NULL) {
             // For formatted files only
-            if (unit_file_bin) {
+            if (unit_file_bin || fp == NULL) {
                 _lfortran_copy_str_and_pad(blank, blank_len, "UNDEFINED", 9);
             } else {
                 if (blank_zero) {
@@ -6508,6 +6560,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (sequential != NULL) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(sequential, sequential_len, "UNKNOWN", 7);
+             } else
             if (access_id == 0) {
                 _lfortran_copy_str_and_pad(sequential, sequential_len, "YES", 3);
             } else {
@@ -6515,28 +6570,36 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (direct != NULL) {
-            if (access_id == 2) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(direct, direct_len, "UNKNOWN", 7);
+            } else if (access_id == 2) {
                 _lfortran_copy_str_and_pad(direct, direct_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(direct, direct_len, "NO", 2);
             }
         }
         if (form != NULL) {
-            if (unit_file_bin) {
+            if (fp == NULL) {
+                _lfortran_copy_str_and_pad(form, form_len, "UNDEFINED", 9);
+            } else if (unit_file_bin) {
                 _lfortran_copy_str_and_pad(form, form_len, "UNFORMATTED", 11);
             } else {
                 _lfortran_copy_str_and_pad(form, form_len, "FORMATTED", 9);
             }
         }
         if (formatted != NULL) {
-            if (!unit_file_bin) {
+            if (fp == NULL) {
+                _lfortran_copy_str_and_pad(formatted, formatted_len, "UNKNOWN", 7);
+            } else if (!unit_file_bin) {
                 _lfortran_copy_str_and_pad(formatted, formatted_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(formatted, formatted_len, "NO", 2);
             }
         }
         if (unformatted != NULL) {
-            if (unit_file_bin) {
+            if (fp == NULL) {
+                _lfortran_copy_str_and_pad(unformatted, unformatted_len, "UNKNOWN", 7);
+            } else if (unit_file_bin) {
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "YES", 3);
             } else {
                 _lfortran_copy_str_and_pad(unformatted, unformatted_len, "NO", 2);
@@ -6559,7 +6622,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (sign != NULL) {
-            if (unit_file_bin || fp == NULL) {
+            if (!is_connected) {
                 _lfortran_copy_str_and_pad(sign, sign_len, "UNDEFINED", 9);
             } else {
                 if (sign_mode == 1) {
@@ -6572,12 +6635,12 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (encoding != NULL) {
-            if (unit_file_bin || fp == NULL) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(encoding, encoding_len, "UNKNOWN", 7);
+            } else if (unit_file_bin) {
                 _lfortran_copy_str_and_pad(encoding, encoding_len, "UNDEFINED", 9);
             } else {
-                if (encoding_mode == 0) {
-                    _lfortran_copy_str_and_pad(encoding, encoding_len, "UNKNOWN", 7);
-                } else if (encoding_mode == 1) {
+                if (encoding_mode == 1) {
                     _lfortran_copy_str_and_pad(encoding, encoding_len, "UTF-8", 5);
                 } else {
                     _lfortran_copy_str_and_pad(encoding, encoding_len, "DEFAULT", 7);
@@ -6585,6 +6648,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (stream != NULL) {
+            if (fp == NULL) {
+                _lfortran_copy_str_and_pad(stream, stream_len, "UNKNOWN", 7);
+             } else
             if (access_id == 1) {
                 _lfortran_copy_str_and_pad(stream, stream_len, "YES", 3);
             } else {
@@ -6592,7 +6658,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (round != NULL) {
-            if (unit_file_bin || fp == NULL) {
+            if (!is_connected) {
                 _lfortran_copy_str_and_pad(round, round_len, "UNDEFINED", 9);
             } else {
                 if (round_mode_val == 1) {
@@ -6614,14 +6680,20 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *pending = false;
         }
         if (asynchronous != NULL) {
-            _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
+            if (!fp) {
+                _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "UNDEFINED", 9);
+            } else {
+                _lfortran_copy_str_and_pad(asynchronous, asynchronous_len, "NO", 2);
+            }
         }
         if (iostat != NULL) {
             *iostat = 0;
             // iomsg is left unchanged on success per Fortran standard
         }
         if (action != NULL) {
-            if (read_access && write_access) {
+            if (!is_connected) {
+                _lfortran_copy_str_and_pad(action, action_len, "UNDEFINED", 9);
+            } else if (read_access && write_access) {
                 _lfortran_copy_str_and_pad(action, action_len, "READWRITE", 9);
             } else if (read_access) {
                 _lfortran_copy_str_and_pad(action, action_len, "READ", 4);
@@ -6632,7 +6704,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (position != NULL) {
-            if (fp == NULL) {
+            if (fp == NULL || access_id == 2) {
                 _lfortran_copy_str_and_pad(position, position_len, "UNDEFINED", 9);
             } else {
                 long current_pos = ftell(fp);
