@@ -3323,6 +3323,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         return builder->CreatePtrToInt(tag_i8, llvm::Type::getInt32Ty(context));
     }
 
+    const std::map<ASR::symbol_t*, llvm::Constant*>& LLVMUtils::get_known_class_vtables() {
+        return struct_api->newclass2vtab;
+    }
+
+    llvm::Constant* LLVMUtils::get_class_vptr_constant(ASR::symbol_t* struct_sym) {
+        return struct_api->get_pointer_to_method(struct_sym, module);
+    }
+
     void LLVMUtils::init_string_descriptors(llvm::Value* data_mem,
             llvm::Value* num_elements, llvm::Value* str_len) {
         llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
