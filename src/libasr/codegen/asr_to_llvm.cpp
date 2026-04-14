@@ -23598,9 +23598,15 @@ public:
             ptr_loads = ptr_loads_copy;
             navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
 
-            llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get())->getPointerTo();
+            bool nested_iface = false;
+            if (func->m_symtab->parent && func->m_symtab->parent->asr_owner) {
+                if (ASR::is_a<ASR::symbol_t>(*func->m_symtab->parent->asr_owner)) {
+                    nested_iface = true;
+                }
+            }
+            llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get(), nested_iface)->getPointerTo();
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
-            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get(), nested_iface);
 
             // Self argument has been inserted into args by the semantic
             // layer (with a value distinct from m_dt — see
