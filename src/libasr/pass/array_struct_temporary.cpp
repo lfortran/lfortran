@@ -1240,7 +1240,7 @@ bool is_directly_addressable_array_expr(ASR::expr_t* value) {
         }
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(value);
-            return !ASR::is_a<ASR::Array_t>(*struct_instance_member->m_type);
+            return !ASRUtils::is_array(ASRUtils::expr_type(struct_instance_member->m_v));
         }
         case ASR::exprType::GetPointer: {
             // GetPointer is just an address into existing expr,
