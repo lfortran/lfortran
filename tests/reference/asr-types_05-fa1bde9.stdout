@@ -60,7 +60,7 @@
                         (Var 2 r)
                         (RealBinOp
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             Mul
@@ -69,14 +69,14 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
                             )
                             (Real 4)
                             (RealConstant
-                                2.000000
+                                "2.00000000000000000e+00"
                                 (Real 4)
                             )
                         )
@@ -92,19 +92,19 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
                             )
                             Mul
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                2.000000
+                                "2.00000000000000000e+00"
                                 (Real 4)
                             )
                         )
@@ -120,7 +120,7 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
@@ -132,25 +132,25 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 Add
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    4.000000
+                                    "4.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
                             (Real 4)
                             (RealConstant
-                                8.000000
+                                "8.00000000000000000e+00"
                                 (Real 4)
                             )
                         )
@@ -166,7 +166,7 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
@@ -174,7 +174,7 @@
                             Mul
                             (RealBinOp
                                 (RealConstant
-                                    3.000000
+                                    "3.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 Sub
@@ -183,20 +183,20 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
                             (Real 4)
                             (RealConstant
-                                4.000000
+                                "4.00000000000000000e+00"
                                 (Real 4)
                             )
                         )
@@ -217,7 +217,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                0.000000
+                                "0.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()
@@ -230,7 +230,7 @@
                         (Var 2 r)
                         (RealBinOp
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             Div
@@ -239,14 +239,14 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
                             )
                             (Real 4)
                             (RealConstant
-                                0.500000
+                                "5.00000000000000000e-01"
                                 (Real 4)
                             )
                         )
@@ -262,19 +262,19 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
                             )
                             Div
                             (RealConstant
-                                2.000000
+                                "2.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                0.500000
+                                "5.00000000000000000e-01"
                                 (Real 4)
                             )
                         )
@@ -287,7 +287,7 @@
                         (Cast
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 Mul
@@ -296,14 +296,14 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
@@ -325,19 +325,19 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 Mul
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
@@ -359,7 +359,7 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
@@ -371,25 +371,25 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            3.000000
+                                            "3.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     Add
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        4.000000
+                                        "4.00000000000000000e+00"
                                         (Real 4)
                                     )
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    8.000000
+                                    "8.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
@@ -411,7 +411,7 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
@@ -419,7 +419,7 @@
                                 Mul
                                 (RealBinOp
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Sub
@@ -428,20 +428,20 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            1.000000
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    4.000000
+                                    "4.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
@@ -472,7 +472,7 @@
                         (Cast
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 Div
@@ -481,14 +481,14 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.500000
+                                    "5.00000000000000000e-01"
                                     (Real 4)
                                 )
                             )
@@ -510,19 +510,19 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 Div
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.500000
+                                    "5.00000000000000000e-01"
                                     (Real 4)
                                 )
                             )

@@ -216,7 +216,7 @@
                     [(Assignment
                         (Var 2 eps)
                         (RealConstant
-                            0.000000
+                            "1.00000000000000008e-15"
                             (Real 8)
                         )
                         ()
@@ -226,7 +226,7 @@
                     (Assignment
                         (Var 2 pi)
                         (RealConstant
-                            3.141593
+                            "3.14159265358979312e+00"
                             (Real 8)
                         )
                         ()
@@ -242,12 +242,12 @@
                                     (RealBinOp
                                         (RealUnaryMinus
                                             (RealConstant
-                                                0.250000
+                                                "2.50000000000000000e-01"
                                                 (Real 8)
                                             )
                                             (Real 8)
                                             (RealConstant
-                                                -0.250000
+                                                "-2.50000000000000000e-01"
                                                 (Real 8)
                                             )
                                         )
@@ -290,13 +290,13 @@
                         (Var 2 va0)
                         (RealBinOp
                             (RealConstant
-                                0.500000
+                                "5.00000000000000000e-01"
                                 (Real 8)
                             )
                             Mul
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 8)
                                 )
                                 Sub

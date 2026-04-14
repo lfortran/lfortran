@@ -672,7 +672,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             case ASR::ttypeType::Real: {
                 double init_val = 0.0;
                 if (v->m_value) {
-                    init_val = ASR::down_cast<ASR::RealConstant_t>(v->m_value)->m_r;
+                    init_val = str_to_double(ASR::down_cast<ASR::RealConstant_t>(v->m_value)->m_r);
                 }
                 switch (kind) {
                     case 4: global_var_idx = m_wa.declare_global_var(f32, init_val); break;
@@ -1730,7 +1730,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     if (ASR::is_a<ASR::RealConstant_t>(*val)) {
                         ASR::RealConstant_t *c =
                             ASR::down_cast<ASR::RealConstant_t>(val);
-                        if (c->m_r == 2.0) {
+                        if (str_to_double(c->m_r) == 2.0) {
                             // drop the last stack item in the wasm stack
                             m_wa.emit_drop();
                             this->visit_expr(*x.m_left);
@@ -1788,7 +1788,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     if (ASR::is_a<ASR::RealConstant_t>(*val)) {
                         ASR::RealConstant_t *c =
                             ASR::down_cast<ASR::RealConstant_t>(val);
-                        if (c->m_r == 2.0) {
+                        if (str_to_double(c->m_r) == 2.0) {
                             // drop the last stack item in the wasm stack
                             m_wa.emit_drop();
                             this->visit_expr(*x.m_left);
@@ -2432,7 +2432,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        double val = x.m_r;
+        double val = str_to_double(x.m_r);
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch (a_kind) {
             case 4: {

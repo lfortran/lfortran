@@ -4623,7 +4623,7 @@ public:
                 ASR::ttype_t* raw_type = ASRUtils::type_get_past_array(type);
 
                 if (ASR::is_a<ASR::Real_t>(*raw_type)) {
-                    arg = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, 0.0, raw_type));
+                    arg = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, s2c(al, "0.0"), raw_type));
                 } else if (ASR::is_a<ASR::Integer_t>(*raw_type)) {
                     arg = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, raw_type));
                 } else if (ASR::is_a<ASR::Logical_t>(*raw_type)) {
@@ -7787,7 +7787,7 @@ public:
             ASR::ttype_t *type0 = ASRUtils::TYPE(
                 ASR::make_Real_t(al, x.base.base.loc, kind));
             ASR::expr_t *right = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                x.base.base.loc, 0, type0));
+                x.base.base.loc, s2c(al, "0.0"), type0));
             ASR::ttype_t *type = ASRUtils::TYPE(
                 ASR::make_Logical_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             ASR::expr_t *value = nullptr;

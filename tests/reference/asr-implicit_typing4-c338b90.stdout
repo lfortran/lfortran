@@ -84,13 +84,13 @@
                             Eq
                             (Cast
                                 (RealConstant
-                                    0.000000
+                                    "0.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 RealToReal
                                 (Real 8)
                                 (RealConstant
-                                    0.000000
+                                    "0.00000000000000000e+00"
                                     (Real 8)
                                 )
                                 ()
@@ -163,13 +163,13 @@
                         (Var 2 dnan)
                         (Cast
                             (RealConstant
-                                0.000000
+                                "0.00000000000000000e+00"
                                 (Real 4)
                             )
                             RealToReal
                             (Real 8)
                             (RealConstant
-                                0.000000
+                                "0.00000000000000000e+00"
                                 (Real 8)
                             )
                             ()

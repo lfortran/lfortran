@@ -157,7 +157,7 @@
                                                         )
                                                         Sub
                                                         (RealConstant
-                                                            0.490000
+                                                            "4.90000009536743164e-01"
                                                             (Real 4)
                                                         )
                                                         (Real 4)
@@ -169,7 +169,7 @@
                                                 )
                                                 Gt
                                                 (RealConstant
-                                                    0.000001
+                                                    "9.99999997475242708e-07"
                                                     (Real 4)
                                                 )
                                                 (Logical 4)
@@ -401,7 +401,7 @@
                         (Var 2 x)
                         (ArrayBroadcast
                             (RealConstant
-                                0.490000
+                                "4.90000009536743164e-01"
                                 (Real 4)
                             )
                             (ArrayConstant

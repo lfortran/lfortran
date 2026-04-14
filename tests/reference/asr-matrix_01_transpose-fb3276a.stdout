@@ -727,7 +727,7 @@
                                     )
                                     Gt
                                     (RealConstant
-                                        0.000001
+                                        "9.99999997475242708e-07"
                                         (Real 4)
                                     )
                                     (Logical 4)
@@ -941,13 +941,13 @@
                                     Gt
                                     (Cast
                                         (RealConstant
-                                            0.000000
+                                            "9.99999996004197200e-13"
                                             (Real 4)
                                         )
                                         RealToReal
                                         (Real 8)
                                         (RealConstant
-                                            0.000000
+                                            "9.99999996004197200e-13"
                                             (Real 8)
                                         )
                                         ()
@@ -1199,7 +1199,7 @@
                                     )
                                     Gt
                                     (RealConstant
-                                        0.000001
+                                        "9.99999997475242708e-07"
                                         (Real 4)
                                     )
                                     (Logical 4)
@@ -1262,7 +1262,7 @@
                                     )
                                     Gt
                                     (RealConstant
-                                        0.000001
+                                        "9.99999997475242708e-07"
                                         (Real 4)
                                     )
                                     (Logical 4)

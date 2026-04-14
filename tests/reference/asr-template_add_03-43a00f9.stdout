@@ -791,7 +791,7 @@
                                     [(Assignment
                                         (Var 8 x)
                                         (RealConstant
-                                            5.100000
+                                            "5.09999990463256836e+00"
                                             (Real 4)
                                         )
                                         ()
@@ -801,7 +801,7 @@
                                     (Assignment
                                         (Var 8 y)
                                         (RealConstant
-                                            7.200000
+                                            "7.19999980926513672e+00"
                                             (Real 4)
                                         )
                                         ()
@@ -848,7 +848,7 @@
                                                     )
                                                     Sub
                                                     (RealConstant
-                                                        12.300000
+                                                        "1.23000001907348633e+01"
                                                         (Real 4)
                                                     )
                                                     (Real 4)
@@ -860,7 +860,7 @@
                                             )
                                             Gt
                                             (RealConstant
-                                                0.000010
+                                                "9.99999974737875164e-06"
                                                 (Real 4)
                                             )
                                             (Logical 4)

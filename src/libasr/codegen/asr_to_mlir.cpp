@@ -474,14 +474,15 @@ public:
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         mlir::Type type; mlir::FloatAttr attr;
+        double value = std::stod(x.m_r);
         switch (kind) {
             case 4: {
                 type = builder->getF32Type();
-                attr = builder->getF32FloatAttr(x.m_r);
+                attr = builder->getF32FloatAttr(value);
                 break;
             } case 8: {
                 type = builder->getF64Type();
-                attr = builder->getF64FloatAttr(x.m_r);
+                attr = builder->getF64FloatAttr(value);
                 break;
             }
             default:

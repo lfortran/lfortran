@@ -145,7 +145,7 @@
                                         Kind
                                         (Real 8)
                                         (RealConstant
-                                            0.000000
+                                            "0.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         (Integer 4)
@@ -521,7 +521,7 @@
                                 (RealBinOp
                                     (RealBinOp
                                         (RealConstant
-                                            4.000000
+                                            "4.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         Mul
@@ -558,7 +558,7 @@
                                     IntegerToReal
                                     (Real 8)
                                     (RealConstant
-                                        1048576.000000
+                                        "1.04857600000000000e+06"
                                         (Real 8)
                                     )
                                     ()
@@ -693,7 +693,7 @@
                     (Assignment
                         (Var 6 ghz)
                         (RealConstant
-                            1000000000.000000
+                            "1.00000000000000000e+09"
                             (Real 8)
                         )
                         ()
@@ -703,7 +703,7 @@
                     (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
-                            0.062500
+                            "6.25000000000000000e-02"
                             (Real 8)
                         )
                         ()
@@ -714,7 +714,7 @@
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
-                                3.200000
+                                "3.20000000000000018e+00"
                                 (Real 8)
                             )
                             Mul
@@ -773,7 +773,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    100.000000
+                                    "1.00000000000000000e+02"
                                     (Real 8)
                                 )
                                 ()
@@ -989,7 +989,7 @@
                     (Assignment
                         (Var 6 ghz)
                         (RealConstant
-                            1000000000.000000
+                            "1.00000000000000000e+09"
                             (Real 8)
                         )
                         ()
@@ -999,7 +999,7 @@
                     (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
-                            0.062500
+                            "6.25000000000000000e-02"
                             (Real 8)
                         )
                         ()
@@ -1010,7 +1010,7 @@
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
-                                3.200000
+                                "3.20000000000000018e+00"
                                 (Real 8)
                             )
                             Mul
@@ -1069,7 +1069,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    100.000000
+                                    "1.00000000000000000e+02"
                                     (Real 8)
                                 )
                                 ()
@@ -1165,7 +1165,7 @@
                             (Var 6 err)
                             Gt
                             (RealConstant
-                                0.001000
+                                "1.00000004749745131e-03"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -1302,7 +1302,7 @@
                     (Assignment
                         (Var 6 ghz)
                         (RealConstant
-                            1000000000.000000
+                            "1.00000000000000000e+09"
                             (Real 8)
                         )
                         ()
@@ -1312,7 +1312,7 @@
                     (Assignment
                         (Var 6 fma_clock)
                         (RealConstant
-                            0.062500
+                            "6.25000000000000000e-02"
                             (Real 8)
                         )
                         ()
@@ -1323,7 +1323,7 @@
                         (Var 6 freq)
                         (RealBinOp
                             (RealConstant
-                                3.200000
+                                "3.20000000000000018e+00"
                                 (Real 8)
                             )
                             Mul
@@ -1382,7 +1382,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    100.000000
+                                    "1.00000000000000000e+02"
                                     (Real 8)
                                 )
                                 ()
@@ -1478,7 +1478,7 @@
                             (Var 6 err)
                             Gt
                             (RealConstant
-                                0.001000
+                                "1.00000004749745131e-03"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -4390,7 +4390,7 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
-                                                    0.000000
+                                                    "0.00000000000000000e+00"
                                                     (Real 4)
                                                 )
                                                 ()
@@ -4900,7 +4900,7 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 (RealConstant
-                                                    0.000000
+                                                    "0.00000000000000000e+00"
                                                     (Real 4)
                                                 )
                                                 ()

@@ -50,13 +50,13 @@
                         (IntrinsicElementalFunction
                             Sin
                             [(RealConstant
-                                1.500000
+                                "1.50000000000000000e+00"
                                 (Real 8)
                             )]
                             0
                             (Real 8)
                             (RealConstant
-                                0.997495
+                                "9.97494986604054446e-01"
                                 (Real 8)
                             )
                         )

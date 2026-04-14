@@ -204,7 +204,7 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            2.000000
+                                            "2.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()

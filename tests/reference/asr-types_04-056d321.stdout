@@ -82,7 +82,7 @@
                     [(Assignment
                         (Var 2 r)
                         (RealConstant
-                            1.500000
+                            "1.50000000000000000e+00"
                             (Real 4)
                         )
                         ()

@@ -497,7 +497,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000001
+                                "9.99999997475242708e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -540,7 +540,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000001
+                                "9.99999997475242708e-07"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -589,7 +589,7 @@
                                 )
                                 Gt
                                 (RealConstant
-                                    0.000001
+                                    "9.99999997475242708e-07"
                                     (Real 4)
                                 )
                                 (Logical 4)
@@ -640,7 +640,7 @@
                                 )
                                 Gt
                                 (RealConstant
-                                    0.000001
+                                    "9.99999997475242708e-07"
                                     (Real 4)
                                 )
                                 (Logical 4)

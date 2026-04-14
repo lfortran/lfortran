@@ -713,7 +713,7 @@ namespace LCompilers {
                     assign_val = ASRUtils::EXPR(ASR::make_RealSqrt_t(al, loc, c, c_type, nullptr));
                 }
                 return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 1), b.GetUBound(array, curr_idx + 1), {
-                    b.Assignment(c, ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, 0.0, ASRUtils::expr_type(c)))),
+                    b.Assignment(c, ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, s2c(al, "0.0"), ASRUtils::expr_type(c)))),
                     inner_most_do_loop,
                     b.Assignment(b.ArrayItem_01(res, {res_idx}), assign_val)
                 });

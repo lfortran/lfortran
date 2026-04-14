@@ -94,7 +94,7 @@
                                                     (Assignment
                                                         (Var 3 y)
                                                         (RealConstant
-                                                            3.500000
+                                                            "3.50000000000000000e+00"
                                                             (Real 4)
                                                         )
                                                         ()
@@ -181,7 +181,7 @@
                                     (Assignment
                                         (Var 3 y)
                                         (RealConstant
-                                            5.500000
+                                            "5.50000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()

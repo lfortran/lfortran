@@ -1095,7 +1095,7 @@
                                     [(Assignment
                                         (Var 16 result)
                                         (RealConstant
-                                            1.000000
+                                            "1.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
@@ -1270,7 +1270,7 @@
                                     [(Assignment
                                         (Var 15 result)
                                         (RealConstant
-                                            0.000000
+                                            "0.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
@@ -2754,7 +2754,7 @@
                                             31 triple_max_l
                                             ()
                                             [((RealConstant
-                                                7.000000
+                                                "7.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (Real 4)
@@ -2771,7 +2771,7 @@
                                             31 triple_max_r
                                             ()
                                             [((RealConstant
-                                                7.000000
+                                                "7.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (Real 4)
@@ -3079,7 +3079,7 @@
                                             28 triple_minus_l
                                             ()
                                             [((RealConstant
-                                                7.000000
+                                                "7.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (Real 4)
@@ -3096,7 +3096,7 @@
                                             28 triple_minus_r
                                             ()
                                             [((RealConstant
-                                                7.000000
+                                                "7.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (Real 4)

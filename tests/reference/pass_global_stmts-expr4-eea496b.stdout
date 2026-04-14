@@ -166,7 +166,7 @@
                     [(Assignment
                         (Var 2 f1)
                         (RealConstant
-                            5.000000
+                            "5.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -177,17 +177,17 @@
                         (Var 2 f2)
                         (RealBinOp
                             (RealConstant
-                                5.000000
+                                "5.00000000000000000e+00"
                                 (Real 4)
                             )
                             Add
                             (RealConstant
-                                3.000000
+                                "3.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                8.000000
+                                "8.00000000000000000e+00"
                                 (Real 4)
                             )
                         )
@@ -200,28 +200,28 @@
                         (RealBinOp
                             (RealBinOp
                                 (RealConstant
-                                    5.000000
+                                    "5.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 Add
                                 (RealConstant
-                                    3.000000
+                                    "3.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    8.000000
+                                    "8.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
                             Mul
                             (RealConstant
-                                2.000000
+                                "2.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                16.000000
+                                "1.60000000000000000e+01"
                                 (Real 4)
                             )
                         )
@@ -233,29 +233,29 @@
                         (Var 2 f4)
                         (RealBinOp
                             (RealConstant
-                                5.000000
+                                "5.00000000000000000e+00"
                                 (Real 4)
                             )
                             Add
                             (RealBinOp
                                 (RealConstant
-                                    3.000000
+                                    "3.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 Mul
                                 (RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    6.000000
+                                    "6.00000000000000000e+00"
                                     (Real 4)
                                 )
                             )
                             (Real 4)
                             (RealConstant
-                                11.000000
+                                "1.10000000000000000e+01"
                                 (Real 4)
                             )
                         )
@@ -267,17 +267,17 @@
                         (Var 2 f5)
                         (RealBinOp
                             (RealConstant
-                                5.000000
+                                "5.00000000000000000e+00"
                                 (Real 4)
                             )
                             Sub
                             (RealConstant
-                                3.000000
+                                "3.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                2.000000
+                                "2.00000000000000000e+00"
                                 (Real 4)
                             )
                         )
@@ -289,17 +289,17 @@
                         (Var 2 f6)
                         (RealBinOp
                             (RealConstant
-                                4.000000
+                                "4.00000000000000000e+00"
                                 (Real 4)
                             )
                             Pow
                             (RealConstant
-                                3.000000
+                                "3.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Real 4)
                             (RealConstant
-                                64.000000
+                                "6.40000000000000000e+01"
                                 (Real 4)
                             )
                         )

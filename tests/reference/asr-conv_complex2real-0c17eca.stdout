@@ -60,11 +60,11 @@
                         (Var 2 z)
                         (ComplexConstructor
                             (RealConstant
-                                3.000000
+                                "3.00000000000000000e+00"
                                 (Real 4)
                             )
                             (RealConstant
-                                4.000000
+                                "4.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Complex 4)
@@ -106,7 +106,7 @@
                                     (Var 2 x)
                                     Sub
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -118,7 +118,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)

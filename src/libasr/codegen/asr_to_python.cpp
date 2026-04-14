@@ -470,7 +470,7 @@ public:
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        s = std::to_string(x.m_r);
+        s = x.m_r;
         last_expr_precedence = Precedence::Constant;
     }
 

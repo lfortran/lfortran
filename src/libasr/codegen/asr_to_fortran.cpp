@@ -3,6 +3,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
+#include <libasr/string_utils.h>
 
 #include <set>
 
@@ -168,7 +169,13 @@ public:
         while (current_pos + line_length < r.length()) {
             size_t break_pos = r.find_last_of(',', current_pos + line_length);
             if (break_pos == std::string::npos || break_pos <= current_pos) {
-                break_pos = current_pos + line_length - 1;
+                // No comma found; try to break at a safe delimiter
+                // (space, or after operators/parens) to avoid splitting tokens
+                break_pos = r.find_last_of(" ()+-*/><=", current_pos + line_length);
+                if (break_pos == std::string::npos || break_pos <= current_pos) {
+                    // No safe break point at all; break at the limit
+                    break_pos = current_pos + line_length - 1;
+                }
             }
             r.insert(break_pos + 1, "&\n" + indent);
             current_pos = break_pos + 2 + i_level * indent_spaces;
@@ -2470,10 +2477,15 @@ public:
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        double val = str_to_double(x.m_r);
+        int precision = (kind >= 8) ? 17 : 9;
+        std::ostringstream oss;
+        oss << std::scientific << std::setprecision(precision) << val;
+        std::string val_str = oss.str();
         if (kind >= 8) {
-            src = ASRUtils::to_string_with_precision(x.m_r, 16) + "_8";
+            src = val_str + "_8";
         } else {
-            src = ASRUtils::to_string_with_precision(x.m_r, 8);
+            src = val_str;
         }
         last_expr_precedence = Precedence::Ext;
     }

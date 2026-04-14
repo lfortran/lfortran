@@ -14,11 +14,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Default
@@ -43,11 +43,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        0.800000
+                                        "8.00000011920928955e-01"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        0.800000
+                                        "8.00000011920928955e-01"
                                         (Real 4)
                                     )
                                     Default
@@ -166,11 +166,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        0.550000
+                                        "5.50000011920928955e-01"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        0.550000
+                                        "5.50000011920928955e-01"
                                         (Real 4)
                                     )
                                     Default
@@ -195,11 +195,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        0.620000
+                                        "6.20000004768371582e-01"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        0.620000
+                                        "6.20000004768371582e-01"
                                         (Real 4)
                                     )
                                     Default
@@ -224,11 +224,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Default
@@ -253,11 +253,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Default
@@ -426,7 +426,7 @@
                                     (Var 3 y)
                                     Sub
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -438,7 +438,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -469,7 +469,7 @@
                                     (Var 3 z)
                                     Sub
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -481,7 +481,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -528,7 +528,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        0.000000
+                                        "0.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -540,7 +540,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -587,7 +587,7 @@
                                     )
                                     Sub
                                     (RealConstant
-                                        0.220000
+                                        "2.19999998807907104e-01"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -599,7 +599,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -646,7 +646,7 @@
                                     )
                                     Add
                                     (RealConstant
-                                        0.210000
+                                        "2.09999993443489075e-01"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -658,7 +658,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -689,7 +689,7 @@
                                     (Var 3 bf1)
                                     Sub
                                     (RealConstant
-                                        0.800000
+                                        "8.00000011920928955e-01"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -701,7 +701,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -732,7 +732,7 @@
                                     (Var 3 xx90)
                                     Sub
                                     (RealConstant
-                                        0.550000
+                                        "5.50000011920928955e-01"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -744,7 +744,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)
@@ -775,7 +775,7 @@
                                     (Var 3 xx95)
                                     Sub
                                     (RealConstant
-                                        0.620000
+                                        "6.20000004768371582e-01"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -787,7 +787,7 @@
                             )
                             Gt
                             (RealConstant
-                                0.000010
+                                "9.99999974737875164e-06"
                                 (Real 4)
                             )
                             (Logical 4)

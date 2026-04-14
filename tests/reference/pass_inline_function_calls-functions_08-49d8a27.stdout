@@ -189,7 +189,7 @@
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
-                                                2.000000
+                                                "2.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             ()
@@ -207,7 +207,7 @@
                                                 3 f_real
                                                 ()
                                                 [((RealConstant
-                                                    0.000000
+                                                    "0.00000000000000000e+00"
                                                     (Real 4)
                                                 ))]
                                                 (Real 4)
@@ -302,7 +302,7 @@
                                             (Var 5 a)
                                             Eq
                                             (RealConstant
-                                                0.000000
+                                                "0.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             (Logical 4)
@@ -311,7 +311,7 @@
                                         [(Assignment
                                             (Var 5 b)
                                             (RealConstant
-                                                2.000000
+                                                "2.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             ()
@@ -327,7 +327,7 @@
                                                     3 f
                                                     ()
                                                     [((RealConstant
-                                                        1.000000
+                                                        "1.00000000000000000e+00"
                                                         (Real 4)
                                                     ))]
                                                     (Real 4)
@@ -359,13 +359,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        5.000000
+                                        "5.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Save
@@ -417,13 +417,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        5.000000
+                                        "5.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Save

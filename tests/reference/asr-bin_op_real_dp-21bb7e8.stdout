@@ -106,7 +106,7 @@
                         (Var 2 zero)
                         (RealBinOp
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             Div
@@ -115,14 +115,14 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    7.000000
+                                    "7.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
                             )
                             (Real 4)
                             (RealConstant
-                                0.142857
+                                "1.42857142857142849e-01"
                                 (Real 4)
                             )
                         )
@@ -135,7 +135,7 @@
                         (Cast
                             (RealBinOp
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 Div
@@ -144,21 +144,21 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        7.000000
+                                        "7.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     ()
                                 )
                                 (Real 4)
                                 (RealConstant
-                                    0.142857
+                                    "1.42857142857142849e-01"
                                     (Real 4)
                                 )
                             )
                             RealToReal
                             (Real 8)
                             (RealConstant
-                                0.142857
+                                "1.42857142857142849e-01"
                                 (Real 8)
                             )
                             ()
@@ -171,7 +171,7 @@
                         (Var 2 v)
                         (RealBinOp
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 8)
                             )
                             Div
@@ -180,14 +180,14 @@
                                 IntegerToReal
                                 (Real 8)
                                 (RealConstant
-                                    7.000000
+                                    "7.00000000000000000e+00"
                                     (Real 8)
                                 )
                                 ()
                             )
                             (Real 8)
                             (RealConstant
-                                0.142857
+                                "1.42857142857142849e-01"
                                 (Real 8)
                             )
                         )
@@ -199,7 +199,7 @@
                         (Var 2 x)
                         (RealBinOp
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             Div
@@ -208,14 +208,14 @@
                                 IntegerToReal
                                 (Real 4)
                                 (RealConstant
-                                    7.000000
+                                    "7.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 ()
                             )
                             (Real 4)
                             (RealConstant
-                                0.142857
+                                "1.42857142857142849e-01"
                                 (Real 4)
                             )
                         )

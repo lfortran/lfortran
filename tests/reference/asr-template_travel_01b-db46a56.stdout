@@ -1575,19 +1575,19 @@
                                             12 avg_real_s_from_t
                                             ()
                                             [((RealConstant
-                                                1.000000
+                                                "1.00000000000000000e+00"
                                                 (Real 4)
                                             ))
                                             ((RealConstant
-                                                3.000000
+                                                "3.00000000000000000e+00"
                                                 (Real 4)
                                             ))
                                             ((RealConstant
-                                                1.500000
+                                                "1.50000000000000000e+00"
                                                 (Real 4)
                                             ))
                                             ((RealConstant
-                                                4.000000
+                                                "4.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (Real 4)
@@ -1604,12 +1604,12 @@
                                             12 avg_real_s_from_s
                                             ()
                                             [((RealConstant
-                                                1.100000
+                                                "1.10000002384185791e+00"
                                                 (Real 4)
                                             ))
                                             ((Var 12 s1))
                                             ((RealConstant
-                                                2.000000
+                                                "2.00000000000000000e+00"
                                                 (Real 4)
                                             ))
                                             ((Var 12 s1))]

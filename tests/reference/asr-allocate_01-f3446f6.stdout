@@ -2215,11 +2215,11 @@
                             NotEq
                             (ComplexConstructor
                                 (RealConstant
-                                    114345.000000
+                                    "1.14345000000000000e+05"
                                     (Real 4)
                                 )
                                 (RealConstant
-                                    0.000000
+                                    "0.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (Complex 4)

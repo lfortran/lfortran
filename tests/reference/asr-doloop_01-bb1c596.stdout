@@ -38,7 +38,7 @@
                         ((Var 2 i)
                         (Cast
                             (RealConstant
-                                1.500000
+                                "1.50000000000000000e+00"
                                 (Real 4)
                             )
                             RealToInteger
@@ -48,7 +48,7 @@
                         )
                         (Cast
                             (RealConstant
-                                10.500000
+                                "1.05000000000000000e+01"
                                 (Real 4)
                             )
                             RealToInteger
@@ -58,7 +58,7 @@
                         )
                         (Cast
                             (RealConstant
-                                2.400000
+                                "2.40000009536743164e+00"
                                 (Real 4)
                             )
                             RealToInteger

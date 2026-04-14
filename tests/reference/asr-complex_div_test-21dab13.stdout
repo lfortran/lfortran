@@ -37,11 +37,11 @@
                         (Var 2 x)
                         (ComplexConstructor
                             (RealConstant
-                                3.000000
+                                "3.00000000000000000e+00"
                                 (Real 4)
                             )
                             (RealConstant
-                                4.000000
+                                "4.00000000000000000e+00"
                                 (Real 4)
                             )
                             (Complex 4)
@@ -62,7 +62,7 @@
                             Div
                             (Cast
                                 (RealConstant
-                                    4.000000
+                                    "4.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 RealToComplex
@@ -146,11 +146,11 @@
                                 Add
                                 (ComplexConstructor
                                     (RealConstant
-                                        0.000000
+                                        "0.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        3.000000
+                                        "3.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (Complex 4)

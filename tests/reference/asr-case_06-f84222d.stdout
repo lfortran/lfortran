@@ -106,11 +106,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Save
@@ -135,11 +135,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -164,11 +164,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Save
@@ -193,11 +193,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        2.000000
+                                        "2.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -362,7 +362,7 @@
                                             IntegerToReal
                                             (Real 4)
                                             (RealConstant
-                                                1.000000
+                                                "1.00000000000000000e+00"
                                                 (Real 4)
                                             )
                                             ()

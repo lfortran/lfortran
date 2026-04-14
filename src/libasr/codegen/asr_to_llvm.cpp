@@ -4991,10 +4991,10 @@ public:
                 ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
                 if (a_kind == 4) {
                     arr_elements.push_back(llvm::ConstantFP::get(
-                        context, llvm::APFloat((float) real_const->m_r)));
+                        context, llvm::APFloat((float)str_to_double(real_const->m_r))));
                 } else if (a_kind == 8) {
                     arr_elements.push_back(llvm::ConstantFP::get(
-                        context, llvm::APFloat((double) real_const->m_r)));
+                        context, llvm::APFloat(str_to_double(real_const->m_r))));
                 }
             } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
                 ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
@@ -6513,9 +6513,9 @@ public:
                 ASR::ttype_t* const_type = target_type != nullptr ? target_type : rc->m_type;
                 llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(nullptr, const_type, module.get());
                 if (llvm_type->isFloatTy()) {
-                    return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
+                    return llvm::ConstantFP::get(llvm_type, static_cast<float>(str_to_double(rc->m_r)));
                 } else if (llvm_type->isDoubleTy()) {
-                    return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                    return llvm::ConstantFP::get(llvm_type, str_to_double(rc->m_r));
                 }
                 break;
             }
@@ -14051,7 +14051,7 @@ public:
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        double val = x.m_r;
+        double val = str_to_double(x.m_r);
         int a_kind = ((ASR::Real_t*)(&(x.m_type->base)))->m_kind;
         switch( a_kind ) {
 
@@ -14182,7 +14182,7 @@ public:
         } else if (ASRUtils::is_real(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                values.push_back(llvm::ConstantFP::get(el_type, down_cast<ASR::RealConstant_t>(el)->m_r));
+                values.push_back(llvm::ConstantFP::get(el_type, str_to_double(down_cast<ASR::RealConstant_t>(el)->m_r)));
             }
         } else if (ASRUtils::is_logical(*x_m_type)) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x_m_type);

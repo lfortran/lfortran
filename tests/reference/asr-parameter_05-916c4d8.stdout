@@ -15,7 +15,7 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            5.000000
+                                            "5.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         RealToInteger
@@ -50,13 +50,13 @@
                                         IntegerToReal
                                         (Real 4)
                                         (RealConstant
-                                            5.000000
+                                            "5.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        5.000000
+                                        "5.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -85,13 +85,13 @@
                                         IntegerToReal
                                         (Real 8)
                                         (RealConstant
-                                            5.000000
+                                            "5.00000000000000000e+00"
                                             (Real 8)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        5.000000
+                                        "5.00000000000000000e+00"
                                         (Real 8)
                                     )
                                     Parameter

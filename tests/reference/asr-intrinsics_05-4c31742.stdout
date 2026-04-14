@@ -38,13 +38,13 @@
                         (IntrinsicElementalFunction
                             Sinh
                             [(RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                1.175201
+                                "1.17520119364380138e+00"
                                 (Real 4)
                             )
                         )
@@ -68,13 +68,13 @@
                         (IntrinsicElementalFunction
                             Cosh
                             [(RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                1.543081
+                                "1.54308063481524371e+00"
                                 (Real 4)
                             )
                         )
@@ -98,13 +98,13 @@
                         (IntrinsicElementalFunction
                             Tanh
                             [(RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )]
                             0
                             (Real 4)
                             (RealConstant
-                                0.761594
+                                "7.61594155955764851e-01"
                                 (Real 4)
                             )
                         )

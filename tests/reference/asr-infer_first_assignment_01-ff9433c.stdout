@@ -128,7 +128,7 @@
     (Assignment
         (Var 1 y)
         (RealConstant
-            3.140000
+            "3.14000010490417480e+00"
             (Real 4)
         )
         ()
@@ -139,11 +139,11 @@
         (Var 1 z)
         (ComplexConstructor
             (RealConstant
-                1.000000
+                "1.00000000000000000e+00"
                 (Real 4)
             )
             (RealConstant
-                2.000000
+                "2.00000000000000000e+00"
                 (Real 4)
             )
             (Complex 4)

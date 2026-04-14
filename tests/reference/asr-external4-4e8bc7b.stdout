@@ -310,13 +310,13 @@
                             [(IntrinsicElementalFunction
                                 Log
                                 [(RealConstant
-                                    2.000000
+                                    "2.00000000000000000e+00"
                                     (Real 8)
                                 )]
                                 0
                                 (Real 8)
                                 (RealConstant
-                                    0.693147
+                                    "6.93147180559945286e-01"
                                     (Real 8)
                                 )
                             )]

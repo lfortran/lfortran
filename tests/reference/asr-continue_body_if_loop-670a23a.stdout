@@ -87,7 +87,7 @@
                     [(Assignment
                         (Var 2 s)
                         (RealConstant
-                            0.000000
+                            "0.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -131,7 +131,7 @@
                                     IntegerToReal
                                     (Real 4)
                                     (RealConstant
-                                        1000000.000000
+                                        "1.00000000000000000e+06"
                                         (Real 4)
                                     )
                                     ()

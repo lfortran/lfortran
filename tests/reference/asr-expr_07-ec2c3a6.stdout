@@ -15,22 +15,22 @@
                                     Local
                                     (RealBinOp
                                         (RealConstant
-                                            3.300000
+                                            "3.29999995231628418e+00"
                                             (Real 4)
                                         )
                                         Add
                                         (RealConstant
-                                            6.000000
+                                            "6.00000000000000000e+00"
                                             (Real 4)
                                         )
                                         (Real 4)
                                         (RealConstant
-                                            9.300000
+                                            "9.29999995231628418e+00"
                                             (Real 4)
                                         )
                                     )
                                     (RealConstant
-                                        9.300000
+                                        "9.29999995231628418e+00"
                                         (Real 4)
                                     )
                                     Save

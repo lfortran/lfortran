@@ -154,6 +154,36 @@ def unl_loop_del(b):
                      bytes('\n', encoding='utf-8'))
 
 
+def _normalize_float_match(m):
+    """
+    Truncate a scientific-notation float string to 8 significant digits.
+    This makes hashes platform-independent by ignoring differences in the
+    last few digits caused by different libm implementations (e.g., sin/cos).
+    Groups: 1=sign, 2=first_digit, 3=remaining_digits, 4=exponent
+    """
+    sign = m.group(1)         # b"" or b"-"
+    first_digit = m.group(2)  # e.g. b"1"
+    rest_digits = m.group(3)  # e.g. b"23456789012345678"
+    exp_part = m.group(4)     # e.g. b"e+00"
+    all_digits = first_digit + rest_digits
+    # Keep only first 8 significant digits
+    truncated = all_digits[:8].ljust(8, b"0")
+    return b'"' + sign + truncated[0:1] + b"." + truncated[1:] + exp_part + b'"'
+
+
+def normalize_floats(b):
+    """
+    Normalize all scientific-notation float strings in bytes content to
+    8 significant digits. Matches patterns like "1.23456789012345678e+00"
+    or "-1.23456789012345678e-01" (enclosed in double quotes).
+    """
+    return re.sub(
+        rb'"(-?)([0-9])\.([0-9]+)(e[+-][0-9]+)"',
+        _normalize_float_match,
+        b
+    )
+
+
 def run(basename: str, cmd: Union[pathlib.Path, str],
         out_dir: Union[pathlib.Path, str], infile=None, extra_args=None):
     """
@@ -216,13 +246,13 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
         infile_hash = None
     if outfile:
         temp = unl_loop_del(open(outfile, "rb").read())
-        outfile_hash = hashlib.sha224(temp).hexdigest()
+        outfile_hash = hashlib.sha224(normalize_floats(temp)).hexdigest()
         outfile = os.path.basename(outfile)
     else:
         outfile_hash = None
     if stdout_file:
         temp = unl_loop_del(open(stdout_file, "rb").read())
-        stdout_hash = hashlib.sha224(temp).hexdigest()
+        stdout_hash = hashlib.sha224(normalize_floats(temp)).hexdigest()
         stdout_file = os.path.basename(stdout_file)
     else:
         stdout_hash = None
@@ -368,6 +398,8 @@ def do_verify_reference_hash(jr, dr, s):
         if dr[f]:
             f_r = os.path.join(os.path.dirname(jr), dr[f])
             temp = unl_loop_del(open(f_r, "rb").read())
+            if f in ["outfile", "stdout"]:
+                temp = normalize_floats(temp)
             f_r_hash = hashlib.sha224(temp).hexdigest()
             if (f_r_hash != dr[f + "_hash"]):
                 # This string builds up the error message.

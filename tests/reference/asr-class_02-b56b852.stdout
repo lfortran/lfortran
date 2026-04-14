@@ -442,7 +442,7 @@
                                         (StructConstructor
                                             2 circle
                                             [((RealConstant
-                                                1.000000
+                                                "1.00000000000000000e+00"
                                                 (Real 4)
                                             ))]
                                             (StructType
@@ -465,7 +465,7 @@
                                             ()
                                         )
                                         (RealConstant
-                                            1.500000
+                                            "1.50000000000000000e+00"
                                             (Real 4)
                                         )
                                         ()
@@ -493,19 +493,19 @@
                                     Local
                                     (Cast
                                         (RealConstant
-                                            3.141593
+                                            "3.14159265358979312e+00"
                                             (Real 8)
                                         )
                                         RealToReal
                                         (Real 4)
                                         (RealConstant
-                                            3.141593
+                                            "3.14159265358979312e+00"
                                             (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
-                                        3.141593
+                                        "3.14159265358979312e+00"
                                         (Real 4)
                                     )
                                     Save

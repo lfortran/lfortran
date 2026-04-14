@@ -1850,7 +1850,7 @@ static inline bool is_value_constant(ASR::expr_t *a_value, double& const_value) 
         const_value = const_int->m_n;
     } else if (ASR::is_a<ASR::RealConstant_t>(*a_value)) {
         ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(a_value);
-        const_value = const_real->m_r;
+        const_value = str_to_double(const_real->m_r);
     } else {
         return false;
     }
@@ -2068,7 +2068,7 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
             if constexpr (std::is_same<T, double>::value){
-                value = (T) const_real->m_r;
+                value = str_to_double(const_real->m_r);
             }
             break;
         }
@@ -2576,7 +2576,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 0, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, s2c(al, "0.0"), asr_type));
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 0.0, 0.0, asr_type));
@@ -2599,7 +2599,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 1, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, s2c(al, "1.0"), asr_type));
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 0.0, asr_type));
@@ -2640,7 +2640,7 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
                 default:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, s2c(al, double_to_str_precision(val)), asr_type));
         }
         default: {
             throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
@@ -2673,7 +2673,7 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
                 default:
                     throw LCompilersException("get_maximum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, s2c(al, double_to_str_precision(val)), asr_type));
         }
         default: {
             throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
@@ -4392,7 +4392,7 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* realconst_x = ASR::down_cast<ASR::RealConstant_t>(x);
             ASR::RealConstant_t* realconst_y = ASR::down_cast<ASR::RealConstant_t>(y);
-            return realconst_x->m_r == realconst_y->m_r;
+            return std::string(realconst_x->m_r) == std::string(realconst_y->m_r);
         }
         default: {
             // Let it pass for now.
@@ -7047,8 +7047,8 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
         case ASR::ttypeType::Real: {
             ASR::RealConstant_t* value_real = ASR::down_cast<ASR::RealConstant_t>(value);
             switch (kind) {
-                case 4: ((float*)x->m_data)[i] = value_real->m_r; break;
-                case 8: ((double*)x->m_data)[i] = value_real->m_r; break;
+                case 4: ((float*)x->m_data)[i] = std::stof(value_real->m_r); break;
+                case 8: ((double*)x->m_data)[i] = str_to_double(value_real->m_r); break;
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }
@@ -7210,9 +7210,9 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         case ASR::ttypeType::Real: {
             switch (kind) {
                 case 4: value = EXPR(ASR::make_RealConstant_t(al, loc,
-                                    ((float*)data)[i], type)); break;
+                                    s2c(al, double_to_str_precision(((float*)data)[i])), type)); break;
                 case 8: value = EXPR(ASR::make_RealConstant_t(al, loc,
-                                    ((double*)data)[i], type)); break;
+                                    s2c(al, double_to_str_precision(((double*)data)[i])), type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }
@@ -7299,7 +7299,7 @@ T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
+        data[i] = (T) str_to_double(ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r);
     }
     return data;
 }

@@ -37,11 +37,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -66,11 +66,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 8)
                                     )
                                     (RealConstant
-                                        1.000000
+                                        "1.00000000000000000e+00"
                                         (Real 8)
                                     )
                                     Parameter
@@ -140,7 +140,7 @@
                     [(Assignment
                         (Var 2 r3)
                         (RealConstant
-                            1.000000
+                            "1.00000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -151,13 +151,13 @@
                         (Var 2 r3)
                         (Cast
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 8)
                             )
                             RealToReal
                             (Real 4)
                             (RealConstant
-                                1.000000
+                                "1.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()

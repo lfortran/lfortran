@@ -296,7 +296,7 @@
                                     [(Assignment
                                         (Var 3 yy)
                                         (RealConstant
-                                            6.600000
+                                            "6.59999990463256836e+00"
                                             (Real 4)
                                         )
                                         ()

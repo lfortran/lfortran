@@ -1354,7 +1354,7 @@ public:
 
     void visit_RealConstant(const ASR::RealConstant_t& x)
     {
-        src = double_to_scientific(x.m_r);
+        src = x.m_r;
         last_expr_precedence = julia_prec::Base;
     }
 

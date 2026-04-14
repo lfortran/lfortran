@@ -114,7 +114,7 @@ expr
     | UnsignedIntegerBitNot(expr arg, ttype type, expr? value)
     | UnsignedIntegerCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | UnsignedIntegerBinOp(expr left, binop op, expr right, ttype type, expr? value)
-    | RealConstant(float r, ttype type)
+    | RealConstant(string r, ttype type)
     | RealUnaryMinus(expr arg, ttype type, expr? value)
     | RealCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | RealBinOp(expr left, binop op, expr right, ttype type, expr? value)

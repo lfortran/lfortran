@@ -84,7 +84,7 @@
                             [(BitCast
                                 (Var 2 m)
                                 (RealConstant
-                                    1.000000
+                                    "1.00000000000000000e+00"
                                     (Real 4)
                                 )
                                 (Var 2 size)

@@ -87,7 +87,7 @@
                     (Assignment
                         (Var 2 f2)
                         (RealConstant
-                            5.300000
+                            "5.30000019073486328e+00"
                             (Real 4)
                         )
                         ()

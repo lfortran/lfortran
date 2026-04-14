@@ -427,13 +427,13 @@
                                         (Var 4 eps)
                                         (Cast
                                             (RealConstant
-                                                0.000000
+                                                "9.99999996004197200e-13"
                                                 (Real 4)
                                             )
                                             RealToReal
                                             (Real 8)
                                             (RealConstant
-                                                0.000000
+                                                "9.99999996004197200e-13"
                                                 (Real 8)
                                             )
                                             ()
@@ -519,7 +519,7 @@
                                                     )
                                                     Add
                                                     (RealConstant
-                                                        0.500000
+                                                        "5.00000000000000000e-01"
                                                         (Real 4)
                                                     )
                                                     (Real 4)
@@ -667,13 +667,13 @@
                                                             Sub
                                                             (Cast
                                                                 (RealConstant
-                                                                    0.500000
+                                                                    "5.00000000000000000e-01"
                                                                     (Real 4)
                                                                 )
                                                                 RealToReal
                                                                 (Real 8)
                                                                 (RealConstant
-                                                                    0.500000
+                                                                    "5.00000000000000000e-01"
                                                                     (Real 8)
                                                                 )
                                                                 ()
@@ -874,13 +874,13 @@
                                                                 Sub
                                                                 (Cast
                                                                     (RealConstant
-                                                                        0.500000
+                                                                        "5.00000000000000000e-01"
                                                                         (Real 4)
                                                                     )
                                                                     RealToReal
                                                                     (Real 8)
                                                                     (RealConstant
-                                                                        0.500000
+                                                                        "5.00000000000000000e-01"
                                                                         (Real 8)
                                                                     )
                                                                     ()
@@ -1237,13 +1237,13 @@
                                         (Var 3 eps)
                                         (Cast
                                             (RealConstant
-                                                0.000000
+                                                "9.99999996004197200e-13"
                                                 (Real 4)
                                             )
                                             RealToReal
                                             (Real 8)
                                             (RealConstant
-                                                0.000000
+                                                "9.99999996004197200e-13"
                                                 (Real 8)
                                             )
                                             ()
@@ -1389,13 +1389,13 @@
                                                         Sub
                                                         (Cast
                                                             (RealConstant
-                                                                0.500000
+                                                                "5.00000000000000000e-01"
                                                                 (Real 4)
                                                             )
                                                             RealToReal
                                                             (Real 8)
                                                             (RealConstant
-                                                                0.500000
+                                                                "5.00000000000000000e-01"
                                                                 (Real 8)
                                                             )
                                                             ()
@@ -1494,7 +1494,7 @@
                                                             )
                                                             Add
                                                             (RealConstant
-                                                                0.500000
+                                                                "5.00000000000000000e-01"
                                                                 (Real 4)
                                                             )
                                                             (Real 4)
@@ -1707,13 +1707,13 @@
                                                         Sub
                                                         (Cast
                                                             (RealConstant
-                                                                0.500000
+                                                                "5.00000000000000000e-01"
                                                                 (Real 4)
                                                             )
                                                             RealToReal
                                                             (Real 8)
                                                             (RealConstant
-                                                                0.500000
+                                                                "5.00000000000000000e-01"
                                                                 (Real 8)
                                                             )
                                                             ()
@@ -1971,7 +1971,7 @@
                                                         )
                                                         Add
                                                         (RealConstant
-                                                            0.500000
+                                                            "5.00000000000000000e-01"
                                                             (Real 4)
                                                         )
                                                         (Real 4)
@@ -2136,7 +2136,7 @@
                                                     )
                                                     Add
                                                     (RealConstant
-                                                        0.500000
+                                                        "5.00000000000000000e-01"
                                                         (Real 4)
                                                     )
                                                     (Real 4)

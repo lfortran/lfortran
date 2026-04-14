@@ -14,11 +14,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        3.300000
+                                        "3.29999995231628418e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        3.300000
+                                        "3.29999995231628418e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -43,11 +43,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        3.500000
+                                        "3.50000000000000000e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        3.500000
+                                        "3.50000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -72,11 +72,11 @@
                                     []
                                     Local
                                     (RealConstant
-                                        3.700000
+                                        "3.70000004768371582e+00"
                                         (Real 4)
                                     )
                                     (RealConstant
-                                        3.700000
+                                        "3.70000004768371582e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -102,17 +102,17 @@
                                     Local
                                     (RealUnaryMinus
                                         (RealConstant
-                                            3.300000
+                                            "3.29999995231628418e+00"
                                             (Real 4)
                                         )
                                         (Real 4)
                                         (RealConstant
-                                            -3.300000
+                                            "-3.29999995231628418e+00"
                                             (Real 4)
                                         )
                                     )
                                     (RealConstant
-                                        -3.300000
+                                        "-3.29999995231628418e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -138,17 +138,17 @@
                                     Local
                                     (RealUnaryMinus
                                         (RealConstant
-                                            3.500000
+                                            "3.50000000000000000e+00"
                                             (Real 4)
                                         )
                                         (Real 4)
                                         (RealConstant
-                                            -3.500000
+                                            "-3.50000000000000000e+00"
                                             (Real 4)
                                         )
                                     )
                                     (RealConstant
-                                        -3.500000
+                                        "-3.50000000000000000e+00"
                                         (Real 4)
                                     )
                                     Parameter
@@ -174,17 +174,17 @@
                                     Local
                                     (RealUnaryMinus
                                         (RealConstant
-                                            3.700000
+                                            "3.70000004768371582e+00"
                                             (Real 4)
                                         )
                                         (Real 4)
                                         (RealConstant
-                                            -3.700000
+                                            "-3.70000004768371582e+00"
                                             (Real 4)
                                         )
                                     )
                                     (RealConstant
-                                        -3.700000
+                                        "-3.70000004768371582e+00"
                                         (Real 4)
                                     )
                                     Parameter

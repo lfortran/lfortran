@@ -98,7 +98,7 @@
                                                             IntegerToReal
                                                             (Real 4)
                                                             (RealConstant
-                                                                2.000000
+                                                                "2.00000000000000000e+00"
                                                                 (Real 4)
                                                             )
                                                             ()
@@ -115,7 +115,7 @@
                                                             IntegerToReal
                                                             (Real 4)
                                                             (RealConstant
-                                                                2.000000
+                                                                "2.00000000000000000e+00"
                                                                 (Real 4)
                                                             )
                                                             ()
@@ -179,7 +179,7 @@
                                             (Var 3 v)
                                             Mul
                                             (RealConstant
-                                                4.600000
+                                                "4.59999990463256836e+00"
                                                 (Real 4)
                                             )
                                             (Pointer
@@ -290,7 +290,7 @@
                     [(Assignment
                         (Var 2 x)
                         (RealConstant
-                            0.420000
+                            "4.19999986886978149e-01"
                             (Real 4)
                         )
                         ()
@@ -300,7 +300,7 @@
                     (Assignment
                         (Var 2 y)
                         (RealConstant
-                            0.350000
+                            "3.49999994039535522e-01"
                             (Real 4)
                         )
                         ()
@@ -310,7 +310,7 @@
                     (Assignment
                         (Var 2 myreal)
                         (RealConstant
-                            9.100000
+                            "9.10000038146972656e+00"
                             (Real 4)
                         )
                         ()
@@ -320,7 +320,7 @@
                     (Assignment
                         (Var 2 theta)
                         (RealConstant
-                            1.500000
+                            "1.50000000000000000e+00"
                             (Real 4)
                         )
                         ()
@@ -330,7 +330,7 @@
                     (Assignment
                         (Var 2 a)
                         (RealConstant
-                            0.400000
+                            "4.00000005960464478e-01"
                             (Real 4)
                         )
                         ()
@@ -359,7 +359,7 @@
                                     (Var 2 myreal)
                                     Sub
                                     (RealConstant
-                                        41.860001
+                                        "4.18600006103515625e+01"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -367,7 +367,7 @@
                                 )
                                 Gt
                                 (RealConstant
-                                    0.000010
+                                    "9.99999974737875164e-06"
                                     (Real 4)
                                 )
                                 (Logical 4)
@@ -379,7 +379,7 @@
                                     (Var 2 myreal)
                                     Sub
                                     (RealConstant
-                                        41.860001
+                                        "4.18600006103515625e+01"
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -388,12 +388,12 @@
                                 Lt
                                 (RealUnaryMinus
                                     (RealConstant
-                                        0.000010
+                                        "9.99999974737875164e-06"
                                         (Real 4)
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        -0.000010
+                                        "-9.99999974737875164e-06"
                                         (Real 4)
                                     )
                                 )

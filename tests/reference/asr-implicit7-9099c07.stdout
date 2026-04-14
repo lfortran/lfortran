@@ -159,7 +159,7 @@
                             IntegerToReal
                             (Real 4)
                             (RealConstant
-                                5.000000
+                                "5.00000000000000000e+00"
                                 (Real 4)
                             )
                             ()
