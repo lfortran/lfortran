@@ -21629,6 +21629,9 @@ public:
                                  ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value)) &&
                                 value->getType()->isPointerTy() ) {
                         use_value = true;
+                    } else if (ASR::is_a<ASR::GetPointer_t>(*x.m_args[i].m_value) &&
+                               value->getType()->isPointerTy()) {
+                        use_value = true;
                     }
                     if (use_value) {
                         tmp = value;
