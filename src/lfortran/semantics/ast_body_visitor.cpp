@@ -7102,6 +7102,7 @@ public:
                     }
                     final_sym=original_sym;
                     original_sym = nullptr;
+                    legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 }
                 break;
             }
