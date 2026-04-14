@@ -109,12 +109,46 @@ static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
  */
 static inline bool needs_fortran_char_abi(const ASR::Function_t& x) {
     ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(x);
-    if (ftype->m_abi == ASR::abiType::BindC ||
-        ftype->m_abi == ASR::abiType::Intrinsic) {
+    if (ftype->m_abi == ASR::abiType::Intrinsic) {
         return false;
     }
     // Skip compiler-internal functions (names starting with '_')
     if (x.m_name && x.m_name[0] == '_') return false;
+
+    // For functions inside a Program, Module, or Function scope
+    // (e.g., implicit interfaces from --implicit-interface), check if a
+    // TU-level function with the same name exists and needs the char ABI.
+    // Both ASR nodes map to the same LLVM function, so they must agree on
+    // the calling convention. This check must run BEFORE the BindC
+    // early-return below, because implicit interfaces are marked BindC yet
+    // the shared LLVM function may use the Fortran char ABI.
+    if (x.m_symtab->parent && x.m_symtab->parent->asr_owner) {
+        ASR::asr_t* owner = x.m_symtab->parent->asr_owner;
+        if (ASR::is_a<ASR::symbol_t>(*owner)) {
+            // Walk up from the immediate parent to find the TranslationUnit
+            SymbolTable* scope = x.m_symtab->parent;
+            while (scope->parent && scope->parent->asr_owner &&
+                   ASR::is_a<ASR::symbol_t>(*scope->parent->asr_owner)) {
+                scope = scope->parent;
+            }
+            if (scope->parent && scope->parent->asr_owner &&
+                ASR::is_a<ASR::unit_t>(*scope->parent->asr_owner)) {
+                ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(
+                    scope->parent->asr_owner);
+                ASR::symbol_t* tu_sym = tu->m_symtab->get_symbol(x.m_name);
+                if (tu_sym && ASR::is_a<ASR::Function_t>(*tu_sym)) {
+                    ASR::Function_t* tu_fn = ASR::down_cast<ASR::Function_t>(tu_sym);
+                    if (&tu_fn->base != &x.base) {
+                        return needs_fortran_char_abi(*tu_fn);
+                    }
+                }
+            }
+        }
+    }
+
+    if (ftype->m_abi == ASR::abiType::BindC) {
+        return false;
+    }
 
     if (ftype->m_deftype == ASR::deftypeType::Interface) {
         // Module procedure interfaces (m_module == true) use the internal
@@ -127,8 +161,6 @@ static inline bool needs_fortran_char_abi(const ASR::Function_t& x) {
         // (parent scope is TranslationUnit, not Module/Program/Function).
         if (x.m_symtab->parent && x.m_symtab->parent->asr_owner) {
             ASR::asr_t* owner = x.m_symtab->parent->asr_owner;
-            // If owner is a symbol_t, the function is nested inside
-            // a Module, Program, or Function — skip.
             if (ASR::is_a<ASR::symbol_t>(*owner)) {
                 return false;
             }
@@ -22384,16 +22416,30 @@ public:
             // function parameter type. This handles cases like passing a
             // CFI descriptor (%array*) to a function declared with i8**
             // parameter type.
+            // Skip this bitcast if the callee needs the Fortran char ABI
+            // (e.g., implicit interface inside a program that maps to a
+            // TU-level function with hidden length params). The char ABI
+            // block below handles those args properly.
             if (x_abi == ASR::abiType::BindC && callee_fn_type) {
-                const char* fn_name = callee_fn_type->m_bindc_name;
-                if (!fn_name) {
-                    fn_name = ASRUtils::symbol_name(func_subrout);
+                bool callee_needs_char_abi = false;
+                {
+                    ASR::symbol_t* callee_sym_check = symbol_get_past_external(x.m_name);
+                    if (ASR::is_a<ASR::Function_t>(*callee_sym_check)) {
+                        callee_needs_char_abi = needs_fortran_char_abi(
+                            *ASR::down_cast<ASR::Function_t>(callee_sym_check));
+                    }
                 }
-                llvm::Function* fn = module->getFunction(fn_name);
-                if (fn && i < fn->getFunctionType()->getNumParams()) {
-                    llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
-                    if (tmp->getType() != expected_type) {
-                        tmp = builder->CreateBitCast(tmp, expected_type);
+                if (!callee_needs_char_abi) {
+                    const char* fn_name = callee_fn_type->m_bindc_name;
+                    if (!fn_name) {
+                        fn_name = ASRUtils::symbol_name(func_subrout);
+                    }
+                    llvm::Function* fn = module->getFunction(fn_name);
+                    if (fn && i < fn->getFunctionType()->getNumParams()) {
+                        llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
+                        if (tmp->getType() != expected_type) {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
                     }
                 }
             }
@@ -22411,8 +22457,7 @@ public:
             if (ASR::is_a<ASR::Function_t>(*callee_sym)) {
                 callee_fn = ASR::down_cast<ASR::Function_t>(callee_sym);
             }
-            if (callee_fn && needs_fortran_char_abi(*callee_fn) &&
-                ASRUtils::get_FunctionType(callee_fn)->m_deftype == ASR::deftypeType::Interface) {
+            if (callee_fn && needs_fortran_char_abi(*callee_fn)) {
                 std::vector<llvm::Value*> hidden_lengths;
                 size_t arg_offset = 0;
                 for (size_t i = 0; i < x.n_args; i++) {
@@ -24051,9 +24096,12 @@ public:
             ASRUtils::symbol_get_past_external(x.m_name));
         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
             ASRUtils::get_struct_sym_from_struct_expr(x.m_dt));
+        // Runtime polymorphic calls dispatch through vtables which always
+        // use the internal string_descriptor convention, so skip the
+        // external Fortran character ABI.
         llvm::FunctionType* fnTy = llvm_utils->get_function_type(
             *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym)),
-            module.get());
+            module.get(), /*skip_fortran_char_abi=*/true);
         llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
         llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
         llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
@@ -24121,9 +24169,12 @@ public:
             ASRUtils::symbol_get_past_external(x.m_name));
         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
             ASRUtils::get_struct_sym_from_struct_expr(x.m_dt));
+        // Runtime polymorphic calls dispatch through vtables which always
+        // use the internal string_descriptor convention, so skip the
+        // external Fortran character ABI.
         llvm::FunctionType* fnTy = llvm_utils->get_function_type(
             *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym)),
-            module.get());
+            module.get(), /*skip_fortran_char_abi=*/true);
         llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
         llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
         llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
