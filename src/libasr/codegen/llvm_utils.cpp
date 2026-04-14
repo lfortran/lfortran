@@ -1260,7 +1260,9 @@ namespace LCompilers {
             ftype->m_abi != ASR::abiType::BindC &&
             x.m_name && x.m_name[0] != '_') {
             if (ftype->m_deftype == ASR::deftypeType::Interface) {
-                apply_fortran_char_abi = true;
+                // Module procedure interfaces (m_module == true) use the
+                // internal string_descriptor convention, not external char ABI.
+                apply_fortran_char_abi = !ftype->m_module;
             } else if (ftype->m_deftype == ASR::deftypeType::Implementation) {
                 // Only standalone top-level functions (parent is TranslationUnit)
                 bool nested = false;

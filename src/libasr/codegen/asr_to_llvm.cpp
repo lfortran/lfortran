@@ -117,9 +117,10 @@ static inline bool needs_fortran_char_abi(const ASR::Function_t& x) {
     if (x.m_name && x.m_name[0] == '_') return false;
 
     if (ftype->m_deftype == ASR::deftypeType::Interface) {
-        // Interface declarations describe external routines — always use
-        // the standard Fortran calling convention.
-        return true;
+        // Module procedure interfaces (m_module == true) use the internal
+        // string_descriptor convention, not the external Fortran char ABI.
+        // Only true external interfaces need the i8* + hidden length ABI.
+        return !ftype->m_module;
     }
     if (ftype->m_deftype == ASR::deftypeType::Implementation) {
         // Implementation: only apply to standalone top-level functions
