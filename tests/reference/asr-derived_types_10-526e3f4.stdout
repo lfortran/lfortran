@@ -153,6 +153,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             proc:
                                                 (StructMethodDeclaration
@@ -162,6 +163,7 @@
                                                     print_something
                                                     2 print_something
                                                     Source
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
@@ -201,6 +203,7 @@
                                                     unary
                                                     2 unary
                                                     Source
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),

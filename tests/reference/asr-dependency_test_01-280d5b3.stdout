@@ -464,6 +464,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .true.
                                                 ),
                                             cache:
                                                 (Variable
@@ -574,6 +575,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .true.
                                                 ),
                                             ndep:
                                                 (Variable

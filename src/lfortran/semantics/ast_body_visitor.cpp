@@ -7016,6 +7016,25 @@ public:
                 break;
             }
             case (ASR::symbolType::StructMethodDeclaration) : {
+                {
+                    ASR::StructMethodDeclaration_t* smd = ASR::down_cast<ASR::StructMethodDeclaration_t>(original_sym);
+                    if (smd->m_is_private) {
+                        ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(smd->m_parent_symtab->asr_owner);
+                        ASR::symbol_t* defining_module = struct_sym ? ASRUtils::get_asr_owner(struct_sym) : nullptr;
+                        bool caller_is_same_module = (current_module != nullptr && defining_module != nullptr &&
+                            ASR::is_a<ASR::Module_t>(*defining_module) &&
+                            current_module == ASR::down_cast<ASR::Module_t>(defining_module));
+                        if (!caller_is_same_module) {
+                            diag.add(Diagnostic(
+                                "Type-bound procedure '" + std::string(smd->m_name)
+                                    + "' is PRIVATE and inaccessible outside its defining module",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {x.base.base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
+                }
                 final_sym = original_sym;
                 original_sym = nullptr;
                 break;
@@ -7073,6 +7092,21 @@ public:
                     }
                 } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym);
+                    if (class_proc->m_is_private) {
+                        ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(class_proc->m_parent_symtab->asr_owner);
+                        ASR::symbol_t* defining_module = struct_sym ? ASRUtils::get_asr_owner(struct_sym) : nullptr;
+                        bool caller_is_same_module = (current_module != nullptr && defining_module != nullptr &&
+                            ASR::is_a<ASR::Module_t>(*defining_module) && current_module == ASR::down_cast<ASR::Module_t>(defining_module));
+                        if (!caller_is_same_module) {
+                            diag.add(Diagnostic(
+                                "Type-bound procedure '" + std::string(class_proc->m_name)
+                                    + "' is PRIVATE and inaccessible outside its defining module",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {x.base.base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
                     nopass = class_proc->m_is_nopass;
                     final_sym = original_sym;
                     original_sym = nullptr;

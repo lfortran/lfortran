@@ -6137,7 +6137,7 @@ class SymbolDuplicator {
             structMethod->m_name, structMethod->m_self_argument,
             structMethod->m_proc_name, structMethod->m_proc,
             structMethod->m_abi, structMethod->m_is_deferred,
-            structMethod->m_is_nopass));
+            structMethod->m_is_nopass, structMethod->m_is_private));
     }
 
 };

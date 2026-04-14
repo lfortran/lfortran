@@ -829,7 +829,7 @@ public:
                     al, loc, new_st, s2c(al, item.first),
                     smd->m_self_argument, smd->m_proc_name,
                     smd->m_proc, smd->m_abi,
-                    smd->m_is_deferred, smd->m_is_nopass);
+                    smd->m_is_deferred, smd->m_is_nopass, smd->m_is_private);
                 new_st->add_symbol(item.first,
                     down_cast<ASR::symbol_t>(new_smd));
             }

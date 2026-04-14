@@ -138,6 +138,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 ),
                                             print:
                                                 (StructMethodDeclaration
@@ -147,6 +148,7 @@
                                                     circle_print
                                                     2 circle_print
                                                     Source
+                                                    .false.
                                                     .false.
                                                     .false.
                                                 ),
