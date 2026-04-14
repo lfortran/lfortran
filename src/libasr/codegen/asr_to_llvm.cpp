@@ -8885,6 +8885,7 @@ public:
 
                 if (array_section->m_args[i].m_right) {
                     if (arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
+                        i == value_rank - 1 &&
                         ASR::is_a<ASR::ArrayBound_t>(*array_section->m_args[i].m_right) &&
                         ASR::down_cast<ASR::ArrayBound_t>(array_section->m_args[i].m_right)->m_value == nullptr) {
                         llvm::Value *lbound = builder->CreateSExtOrTrunc(
@@ -21627,6 +21628,9 @@ public:
                     } else if ( (ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
                                  ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value)) &&
                                 value->getType()->isPointerTy() ) {
+                        use_value = true;
+                    } else if (ASR::is_a<ASR::GetPointer_t>(*x.m_args[i].m_value) &&
+                               value->getType()->isPointerTy()) {
                         use_value = true;
                     }
                     if (use_value) {

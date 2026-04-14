@@ -2248,16 +2248,7 @@ namespace Bgt {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = false;
-        if (val1 * val2 > 0 || ((val1 * val2 == 0) && (val1 > 0 || val2 > 0))) {
-            if (val1 > val2) {
-                result = true;
-            }
-        } else {
-            if (val1 < val2) {
-                result = true;
-            }
-        }
+        bool result = static_cast<uint64_t>(val1) > static_cast<uint64_t>(val2);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -2269,12 +2260,14 @@ namespace Bgt {
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
         body.push_back(al, b.Assignment(result, b.bool_t(0, logical)));
-        body.push_back(al, b.If(b.Or(b.Gt(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.And(b.Eq(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.Or(b.Gt(args[0], b.i_t(0, arg_types[0])), b.Gt(args[1], b.i_t(0, arg_types[0]))))), {
+        body.push_back(al, b.If(b.Or(
+            b.And(b.GtE(args[0], b.i_t(0, arg_types[0])), b.GtE(args[1], b.i_t(0, arg_types[0]))),
+            b.And(b.Lt(args[0], b.i_t(0, arg_types[0])), b.Lt(args[1], b.i_t(0, arg_types[0])))), {
             b.If(b.Gt(args[0], args[1]), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }, {
-            b.If(b.Lt(args[0], args[1]), {
+            b.If(b.Lt(args[0], b.i_t(0, arg_types[0])), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }));
@@ -2293,16 +2286,7 @@ namespace Blt {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = false;
-        if (val1 * val2 > 0 || ((val1 * val2 == 0) && (val1 > 0 || val2 > 0))) {
-            if (val1 < val2) {
-                result = true;
-            }
-        } else {
-            if (val1 > val2) {
-                result = true;
-            }
-        }
+        bool result = static_cast<uint64_t>(val1) < static_cast<uint64_t>(val2);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -2314,12 +2298,14 @@ namespace Blt {
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
         body.push_back(al, b.Assignment(result, b.bool_t(0, logical)));
-        body.push_back(al, b.If(b.Or(b.Gt(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.And(b.Eq(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.Or(b.Gt(args[0], b.i_t(0, arg_types[0])), b.Gt(args[1], b.i_t(0, arg_types[0]))))), {
+        body.push_back(al, b.If(b.Or(
+            b.And(b.GtE(args[0], b.i_t(0, arg_types[0])), b.GtE(args[1], b.i_t(0, arg_types[0]))),
+            b.And(b.Lt(args[0], b.i_t(0, arg_types[0])), b.Lt(args[1], b.i_t(0, arg_types[0])))), {
             b.If(b.Lt(args[0], args[1]), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }, {
-            b.If(b.Gt(args[0], args[1]), {
+            b.If(b.GtE(args[0], b.i_t(0, arg_types[0])), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }));
@@ -2338,16 +2324,7 @@ namespace Bge {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = false;
-        if (val1 * val2 > 0 || ((val1 * val2 == 0) && (val1 > 0 || val2 > 0))) {
-            if (val1 >= val2) {
-                result = true;
-            }
-        } else {
-            if (val1 <= val2) {
-                result = true;
-            }
-        }
+        bool result = static_cast<uint64_t>(val1) >= static_cast<uint64_t>(val2);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -2359,12 +2336,14 @@ namespace Bge {
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
         body.push_back(al, b.Assignment(result, b.bool_t(0, logical)));
-        body.push_back(al, b.If(b.Or(b.Gt(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.And(b.Eq(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.Or(b.Gt(args[0], b.i_t(0, arg_types[0])), b.Gt(args[1], b.i_t(0, arg_types[0]))))), {
+        body.push_back(al, b.If(b.Or(
+            b.And(b.GtE(args[0], b.i_t(0, arg_types[0])), b.GtE(args[1], b.i_t(0, arg_types[0]))),
+            b.And(b.Lt(args[0], b.i_t(0, arg_types[0])), b.Lt(args[1], b.i_t(0, arg_types[0])))), {
             b.If(b.GtE(args[0], args[1]), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }, {
-            b.If(b.LtE(args[0], args[1]), {
+            b.If(b.Lt(args[0], b.i_t(0, arg_types[0])), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }));
@@ -2456,16 +2435,7 @@ namespace Ble {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = false;
-        if (val1 * val2 > 0 || ((val1 * val2 == 0) && (val1 > 0 || val2 > 0))) {
-            if (val1 <= val2) {
-                result = true;
-            }
-        } else {
-            if (val1 >= val2) {
-                result = true;
-            }
-        }
+        bool result = static_cast<uint64_t>(val1) <= static_cast<uint64_t>(val2);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -2477,12 +2447,14 @@ namespace Ble {
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, logical, ReturnVar);
         body.push_back(al, b.Assignment(result, b.bool_t(0, logical)));
-        body.push_back(al, b.If(b.Or(b.Gt(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.And(b.Eq(b.Mul(args[0], args[1]), b.i_t(0, arg_types[0])), b.Or(b.Gt(args[0], b.i_t(0, arg_types[0])), b.Gt(args[1], b.i_t(0, arg_types[0]))))), {
+        body.push_back(al, b.If(b.Or(
+            b.And(b.GtE(args[0], b.i_t(0, arg_types[0])), b.GtE(args[1], b.i_t(0, arg_types[0]))),
+            b.And(b.Lt(args[0], b.i_t(0, arg_types[0])), b.Lt(args[1], b.i_t(0, arg_types[0])))), {
             b.If(b.LtE(args[0], args[1]), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }, {
-            b.If(b.GtE(args[0], args[1]), {
+            b.If(b.GtE(args[0], b.i_t(0, arg_types[0])), {
                 b.Assignment(result, b.bool_t(1, logical))
             }, {})
         }));
