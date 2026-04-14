@@ -5087,11 +5087,11 @@ run = true
 options = "--infer"
 
 [[test]]
-filename = "errors/allocatable_component_reshape_unallocated_01.f90"
+filename = "../integration_tests/allocatable_component_reshape_unallocated_01.f90"
 run = true
 
 [[test]]
-filename = "errors/allocatable_component_unnamed_unallocated_01.f90"
+filename = "../integration_tests/allocatable_component_unnamed_unallocated_01.f90"
 run = true
 
 [[test]]

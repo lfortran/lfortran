@@ -13,4 +13,9 @@ program allocatable_component_reshape_unallocated_01
     gradient = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]
 
     x%arr = reshape(gradient, shape(input))
+
+    if (.not. allocated(x%arr)) error stop
+    if (size(x%arr, 1) /= 2) error stop
+    if (size(x%arr, 2) /= 3) error stop
+    if (any(x%arr /= reshape([10.0, 20.0, 30.0, 40.0, 50.0, 60.0], [2, 3]))) error stop
 end program allocatable_component_reshape_unallocated_01

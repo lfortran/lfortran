@@ -1,0 +1,13 @@
+{
+    "basename": "run-allocatable_component_unnamed_unallocated_01-9346375",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/allocatable_component_unnamed_unallocated_01.f90",
+    "infile_hash": "30f5f138e7c36a574f6802a9710c25fce0150b498ad207715f686d9f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-allocatable_component_unnamed_unallocated_01-9346375.stderr",
+    "stderr_hash": "679704f58a59bf3bf873a19bfc3266310630f2e52caf8c3bf7885935",
+    "returncode": 1
+}
