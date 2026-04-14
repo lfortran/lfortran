@@ -110,19 +110,10 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
-        std::string intrinsic_name_ = std::string(ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id));
+        std::string intrinsic_name_ = std::string(ASRUtils::get_array_intrinsic_name(
+            x->m_arr_intrinsic_id));
         if (x->m_value) {
             *current_expr = x->m_value;
-            return;
-        }
-        if (in_ttype) {
-            replace_ttype(x->m_type);
-            for (size_t i = 0; i < x->n_args; i++) {
-                ASR::expr_t** current_expr_copy = current_expr;
-                current_expr = &(x->m_args[i]);
-                self().replace_expr(x->m_args[i]);
-                current_expr = current_expr_copy;
-            }
             return;
         }
         replace_ttype(x->m_type);
