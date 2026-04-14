@@ -400,6 +400,14 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 output.append(token(tok, cur));
                 continue;
             }
+            // Null preprocessing directive (C99 6.10.7 / C23 6.10.9):
+            // A line containing only "#" (with optional whitespace and/or
+            // C-style comments) has no effect.
+            "#" whitespace? (comment whitespace?)* newline {
+                if (!branch_enabled) continue;
+                output.append("\n");
+                continue;
+            }
             "#" whitespace? "define" whitespace @t1 name @t2 (whitespace? | whitespace @t3 [^\n\x00]* @t4 ) newline  {
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2), macro_subs;
