@@ -15987,6 +15987,35 @@ public:
                             diags.diagnostics.begin(), diags.diagnostics.end());
                         throw SemanticAbort();
                     }
+                } else if (ASR::is_a<ASR::Variable_t>(*f2) &&
+                           ASR::is_a<ASR::FunctionType_t>(
+                               *ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2)))) {
+                    ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(f2);
+                    LCOMPILERS_ASSERT(proc_var->m_type_declaration != nullptr);
+                    ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(
+                        proc_var->m_type_declaration);
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*type_decl));
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(type_decl);
+                    diag::Diagnostics diags;
+                    visit_kwargs(args, x.m_keywords, x.n_keywords,
+                        f->m_args, f->n_args, x.base.base.loc, f,
+                        diags, /*type_bound=*/0, /*is_nopass=*/true);
+                    if (diags.has_error()) {
+                        diag.diagnostics.insert(diag.diagnostics.end(),
+                            diags.diagnostics.begin(), diags.diagnostics.end());
+                        throw SemanticAbort();
+                    }
+                    if (x.n_member >= 1) {
+                        args_with_mdt.n = 0;
+                        args_with_mdt.reserve(al, args.size() + 1);
+                        ASR::call_arg_t v_expr_call_arg;
+                        v_expr_call_arg.loc = v_expr->base.loc;
+                        v_expr_call_arg.m_value = v_expr;
+                        args_with_mdt.push_back(al, v_expr_call_arg);
+                        for (size_t k = 0; k < args.size(); k++) {
+                            args_with_mdt.push_back(al, args[k]);
+                        }
+                    }
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
                     ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f2);

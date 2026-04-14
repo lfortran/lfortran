@@ -8218,19 +8218,12 @@ static inline ASR::asr_t* make_Associate_t_util(
         ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(target_type);
         ASR::array_physical_typeType value_ptype = ASRUtils::extract_physical_type(value_type);
         if( target_ptype != value_ptype ) {
-            ASR::dimension_t *target_m_dims = nullptr, *value_m_dims = nullptr;
+            ASR::dimension_t *target_m_dims = nullptr;
             size_t target_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, target_m_dims);
-            size_t value_n_dims = ASRUtils::extract_dimensions_from_ttype(value_type, value_m_dims);
             Vec<ASR::dimension_t> dim_vec;
             Vec<ASR::dimension_t>* dim_vec_ptr = nullptr;
-            if( (!ASRUtils::is_dimension_empty(target_m_dims, target_n_dims) ||
-                !ASRUtils::is_dimension_empty(value_m_dims, value_n_dims)) &&
-                target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
-                if( !ASRUtils::is_dimension_empty(target_m_dims, target_n_dims) ) {
-                    dim_vec.from_pointer_n(target_m_dims, target_n_dims);
-                } else {
-                    dim_vec.from_pointer_n(value_m_dims, value_n_dims);
-                }
+            if( target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                dim_vec.from_pointer_n(target_m_dims, target_n_dims);
                 dim_vec_ptr = &dim_vec;
             }
             a_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, a_loc, a_value,

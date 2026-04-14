@@ -1581,7 +1581,10 @@ public:
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
+        bool _inside_apc_copy = _inside_array_physical_cast_type;
+        _inside_array_physical_cast_type = false;
         visit_ttype(*x.m_type);
+        _inside_array_physical_cast_type = _inside_apc_copy;
         if (x.m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
             require(x.n_dims == 0, "Assumed-rank arrays must have 0 dimensions");
             return ;
