@@ -3500,6 +3500,14 @@ public:
         llvm_utils->set_api->remove_item(pset, el, module.get(), asr_el_type);
     }
 
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        throw LCompilersException("visit_IntrinsicArrayFunction() not implemented");
+    }
+
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -25526,6 +25534,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
+#if LLVM_VERSION_MAJOR < 15
+    LLVM::fix_pointer_type_mismatches(*v.module);
+#endif
     std::string msg;
     llvm::raw_string_ostream err(msg);
     if (llvm::verifyModule(*v.module, &err)) {
