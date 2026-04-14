@@ -1122,8 +1122,10 @@ class ASRToLLVMVisitor;
                     auto const checkPoint_BB = 
                     START_CACHE(cache_key, ptr);
                     check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
-                        if (struct_sym != nullptr && ASRUtils::is_class_type(t_past)
-                                && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                        if (struct_sym != nullptr
+                            && ASR::is_a<ASR::StructType_t>(*t_past)
+                            && ASRUtils::is_class_type(t_past)
+                            && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                             // Keep unlimited polymorphic cleanup scoped to the
                             // allocatable deallocation flow to avoid finalizing
                             // aliased/non-owning class(*) values.
@@ -1594,6 +1596,7 @@ class ASRToLLVMVisitor;
                     struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
                 }
                 finalize(struct_element, &struct_t->base, struct_sym, false);
+
             };
             
             llvm_utils_->create_loop("Finalize_array_of_structs", cond_fn , body_fn);
@@ -1658,20 +1661,43 @@ class ASRToLLVMVisitor;
         }
 
         void free_array_ptr_to_consecutive_data(llvm::Value* const ptr, ASR::ttype_t* const t){
-            if(ASRUtils::extract_type(t)->type == ASR::String){ 
-                // Array of strings are special handled. 
-                // it's always stack allocated. (e.g. StringDescriptor -> {i8*, i64})
-                return;
-            } else if (ASRUtils::non_unlimited_polymorphic_class(t)){
-                // Class => {VTable* , underlying_struct*}
-                // Array of non polymorphic classes is speical handled.
-                // Array doesn't allocate consecutive classes, It allocates only one (on stack)
-                // and inserts consecutive structs (heap).
-                // `free_array_data` handles that clean up.
-                return;
-            }
-            
-            llvm_utils_->lfortran_free_nocheck(ptr);
+            llvm::Value* const ptr_not_null = builder_->CreateICmpNE(
+                builder_->CreatePtrToInt(ptr, llvm::Type::getInt64Ty(builder_->getContext())),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(builder_->getContext()), 0));
+            llvm_utils_->create_if_else(ptr_not_null, [this, ptr, t]() {
+                if(ASRUtils::extract_type(t)->type == ASR::String){
+                    // Array of strings are special handled.
+                    // it's always stack allocated. (e.g. StringDescriptor -> {i8*, i64})
+                    return;
+                } else if (ASRUtils::non_unlimited_polymorphic_class(t)){
+                    // Class => {VTable* , underlying_struct*}
+                    // Array of non polymorphic classes is speical handled.
+                    // Array doesn't allocate consecutive classes, It allocates only one (on stack)
+                    // and inserts consecutive structs (heap).
+                    // `free_array_data` handles that clean up.
+                    return;
+                } else if (ASRUtils::is_class_type(t) && ASRUtils::is_unlimited_polymorphic_type(t)) {
+                    // ONE-wrapper layout for class(*) arrays: descriptor data points
+                    // to wrapper {vptr, i8* payload}. Free payload before wrapper.
+                    llvm::Type* const generic_wrapper = llvm::StructType::get(
+                        builder_->getContext(), {llvm_utils_->i8_ptr, llvm_utils_->i8_ptr}, true);
+                    llvm::Value* const wrapper_ptr = builder_->CreateBitCast(
+                        ptr, generic_wrapper->getPointerTo());
+                    llvm::Value* const payload_ptr_ref = llvm_utils_->create_gep2(
+                        generic_wrapper, wrapper_ptr, 1);
+                    llvm::Value* const payload_ptr = builder_->CreateLoad(
+                        llvm_utils_->i8_ptr, payload_ptr_ref);
+                    llvm::Value* const payload_not_null = builder_->CreateICmpNE(
+                        payload_ptr, llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+                    llvm_utils_->create_if_else(payload_not_null, [this, payload_ptr, payload_ptr_ref]() {
+                        llvm_utils_->lfortran_free_nocheck(payload_ptr);
+                        builder_->CreateStore(
+                            llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ptr_ref);
+                    }, [](){});
+                }
+
+                llvm_utils_->lfortran_free_nocheck(ptr);
+            }, [](){});
         }
 
 /*>>>>>>>>>>>>>>>>>>>>> Utilities <<<<<<<<<<<<<<<<<<<<<<< */
@@ -2160,6 +2186,40 @@ class ASRToLLVMVisitor;
                 case ASR::Array: {
                     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
                     if (arr_t->m_type->type != ASR::StructType) { return; }
+
+                    if (ASRUtils::is_class_type(arr_t->m_type)
+                        && ASRUtils::is_unlimited_polymorphic_type(arr_t->m_type)) {
+                        // class(*) descriptor arrays use ONE-wrapper storage:
+                        // descriptor.data -> wrapper {vptr, i8* payload}.
+                        // For explicit deallocate, free payload here; wrapper
+                        // is freed by call_lfortran_free() in asr_to_llvm.
+                        auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                        auto *const elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
+                        llvm::Value* const wrapper_ptr_ref =
+                            llvm_utils_->create_gep2(arr_llvm_t, ptr, 0);
+                        llvm::Value* const wrapper_ptr = builder_->CreateLoad(
+                            elem_llvm_t->getPointerTo(), wrapper_ptr_ref);
+                        llvm::Value* const wrapper_not_null = builder_->CreateICmpNE(
+                            wrapper_ptr,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
+                        llvm_utils_->create_if_else(wrapper_not_null, [&]() {
+                            llvm::Value* const payload_ref =
+                                llvm_utils_->create_gep2(elem_llvm_t, wrapper_ptr, 1);
+                            llvm::Value* const payload_ptr = builder_->CreateLoad(
+                                llvm_utils_->i8_ptr, payload_ref);
+                            llvm::Value* const payload_not_null = builder_->CreateICmpNE(
+                                payload_ptr,
+                                llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+                            llvm_utils_->create_if_else(payload_not_null, [this, payload_ptr, payload_ref]() {
+                                llvm_utils_->lfortran_free_nocheck(payload_ptr);
+                                builder_->CreateStore(
+                                    llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);
+                            }, [](){});
+                        }, [](){});
+                        return;
+                    }
+
                     if (!is_finalizable_type(arr_t->m_type, struct_sym, in_struct)) { return; }
                     // Finalize array elements but don't free the array data itself
                     auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);

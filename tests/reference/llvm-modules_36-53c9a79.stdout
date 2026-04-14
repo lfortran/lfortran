@@ -702,20 +702,31 @@ entry:
   %3 = getelementptr %string_descriptor, %string_descriptor* %2, i32 0, i32 0
   %4 = load i8*, i8** %3, align 8
   call void @_lfortran_free_alloc(i8* %1, i8* %4)
+  %5 = ptrtoint %string_descriptor* %2 to i64
+  %6 = icmp ne i64 %5, 0
+  br i1 %6, label %then, label %else
+
+then:                                             ; preds = %"Finalize_struct_fpm_run_settings's_name_member"
+  br label %ifcont
+
+else:                                             ; preds = %"Finalize_struct_fpm_run_settings's_name_member"
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   br label %"Finalize_struct_fpm_run_settings's_args_member"
 
-"Finalize_struct_fpm_run_settings's_args_member": ; preds = %"Finalize_struct_fpm_run_settings's_name_member"
-  %5 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %0, i32 0, i32 2
-  %6 = getelementptr %string_descriptor, %string_descriptor* %5, i32 0, i32 0
-  %7 = load i8*, i8** %6, align 8
-  call void @_lfortran_free_alloc(i8* %1, i8* %7)
+"Finalize_struct_fpm_run_settings's_args_member": ; preds = %ifcont
+  %7 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %0, i32 0, i32 2
+  %8 = getelementptr %string_descriptor, %string_descriptor* %7, i32 0, i32 0
+  %9 = load i8*, i8** %8, align 8
+  call void @_lfortran_free_alloc(i8* %1, i8* %9)
   br label %"Finalize_struct_fpm_run_settings's_runner_member"
 
 "Finalize_struct_fpm_run_settings's_runner_member": ; preds = %"Finalize_struct_fpm_run_settings's_args_member"
-  %8 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %0, i32 0, i32 3
-  %9 = getelementptr %string_descriptor, %string_descriptor* %8, i32 0, i32 0
-  %10 = load i8*, i8** %9, align 8
-  call void @_lfortran_free_alloc(i8* %1, i8* %10)
+  %10 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %0, i32 0, i32 3
+  %11 = getelementptr %string_descriptor, %string_descriptor* %10, i32 0, i32 0
+  %12 = load i8*, i8** %11, align 8
+  call void @_lfortran_free_alloc(i8* %1, i8* %12)
   ret void
 }
 

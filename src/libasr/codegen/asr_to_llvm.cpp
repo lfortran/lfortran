@@ -2697,6 +2697,7 @@ public:
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
+
                         call_lfortran_free(free_fn, typ,  llvm_data_type);
                     }, [](){});
                 }
