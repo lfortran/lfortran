@@ -1245,6 +1245,56 @@ namespace LCompilers {
                 throw CodeGenError("Argument type not implemented");
             }
         }
+
+        // For non-BindC functions, use the standard Fortran calling convention
+        // for scalar character arguments: pass i8* instead of string_descriptor*,
+        // and append hidden i64 length arguments at the end of the parameter list.
+        // This applies to:
+        // - Interface declarations (external routines)
+        // - Standalone implementations at TranslationUnit level only
+        // Skip compiler-internal functions (names starting with '_') and functions
+        // inside modules, programs, or other functions.
+        ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(x);
+        bool apply_fortran_char_abi = false;
+        if (ftype->m_abi != ASR::abiType::Intrinsic &&
+            ftype->m_abi != ASR::abiType::BindC &&
+            x.m_name && x.m_name[0] != '_') {
+            if (ftype->m_deftype == ASR::deftypeType::Interface) {
+                apply_fortran_char_abi = true;
+            } else if (ftype->m_deftype == ASR::deftypeType::Implementation) {
+                // Only standalone top-level functions (parent is TranslationUnit)
+                bool nested = false;
+                if (x.m_symtab->parent && x.m_symtab->parent->asr_owner) {
+                    if (ASR::is_a<ASR::symbol_t>(*x.m_symtab->parent->asr_owner)) {
+                        nested = true;
+                    }
+                }
+                apply_fortran_char_abi = !nested;
+            }
+        }
+        if (apply_fortran_char_abi) {
+            size_t n_hidden_lengths = 0;
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (!ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
+                    continue;
+                }
+                ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+                ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(arg->m_type));
+                if (ASRUtils::is_character(*arg_type) &&
+                    !ASRUtils::is_array(arg->m_type) &&
+                    !ASRUtils::is_allocatable(arg->m_type) &&
+                    !ASRUtils::is_pointer(arg->m_type)) {
+                    args[i] = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    n_hidden_lengths++;
+                }
+            }
+            for (size_t i = 0; i < n_hidden_lengths; i++) {
+                args.push_back(llvm::Type::getInt64Ty(context));
+            }
+        }
+
         return args;
     }
 

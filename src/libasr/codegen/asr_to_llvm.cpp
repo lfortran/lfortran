@@ -99,6 +99,59 @@ static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
 }
 
 /**
+ * Check if a function needs the standard Fortran calling convention
+ * for character arguments (i8* + hidden i64 length at end of arg list).
+ * This applies to:
+ * - Interface declarations (external routines) that are non-BindC, non-Intrinsic
+ * - Standalone Implementation functions at TranslationUnit level only
+ * Functions inside modules, programs, or other functions use LFortran's
+ * internal string_descriptor convention.
+ */
+static inline bool needs_fortran_char_abi(const ASR::Function_t& x) {
+    ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(x);
+    if (ftype->m_abi == ASR::abiType::BindC ||
+        ftype->m_abi == ASR::abiType::Intrinsic) {
+        return false;
+    }
+    // Skip compiler-internal functions (names starting with '_')
+    if (x.m_name && x.m_name[0] == '_') return false;
+
+    if (ftype->m_deftype == ASR::deftypeType::Interface) {
+        // Interface declarations describe external routines — always use
+        // the standard Fortran calling convention.
+        return true;
+    }
+    if (ftype->m_deftype == ASR::deftypeType::Implementation) {
+        // Implementation: only apply to standalone top-level functions
+        // (parent scope is TranslationUnit, not Module/Program/Function).
+        if (x.m_symtab->parent && x.m_symtab->parent->asr_owner) {
+            ASR::asr_t* owner = x.m_symtab->parent->asr_owner;
+            // If owner is a symbol_t, the function is nested inside
+            // a Module, Program, or Function — skip.
+            if (ASR::is_a<ASR::symbol_t>(*owner)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Check if a specific argument of a function is a scalar character
+ * that should use the Fortran ABI (i8* + hidden length).
+ * Only applies to scalar, non-allocatable, non-pointer character args.
+ */
+static inline bool is_fortran_abi_char_arg(ASR::Variable_t* arg) {
+    ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+        ASRUtils::type_get_past_pointer(arg->m_type));
+    return ASRUtils::is_character(*arg_type) &&
+           !ASRUtils::is_array(arg->m_type) &&
+           !ASRUtils::is_allocatable(arg->m_type) &&
+           !ASRUtils::is_pointer(arg->m_type);
+}
+
+/**
  * Compute the final mangled LLVM function name.
  *
  * This function encapsulates all mangling logic in one place:
@@ -7225,8 +7278,7 @@ public:
             ++arg_it;
         }
 
-        for (; arg_it != F.arg_end(); ++arg_it) {
-            LCOMPILERS_ASSERT(asr_arg_idx < x.n_args);
+        for (; arg_it != F.arg_end() && asr_arg_idx < x.n_args; ++arg_it) {
             llvm::Argument &llvm_arg = *arg_it;
             ASR::symbol_t *s = symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(x.m_args[asr_arg_idx])->m_v);
@@ -7317,6 +7369,45 @@ public:
                 }
             }
             asr_arg_idx++;
+        }
+
+        // For standalone non-module functions using the standard Fortran ABI
+        // for character arguments, the LLVM function receives i8* + hidden i64
+        // lengths. Build local string_descriptor allocas so the rest of codegen
+        // sees the expected type.
+        ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(x);
+        if (needs_fortran_char_abi(x) &&
+            ftype->m_deftype == ASR::deftypeType::Implementation) {
+            // arg_it now points at the first hidden length parameter
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::symbol_t* s = symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*s)) continue;
+                ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(s);
+                if (!is_fortran_abi_char_arg(arg)) continue;
+
+                uint32_t h = get_hash((ASR::asr_t*)arg);
+                // llvm_symtab[h] currently holds the i8* parameter
+                llvm::Value* char_ptr = llvm_symtab[h];
+
+                // Get the hidden length from the trailing arguments
+                LCOMPILERS_ASSERT(arg_it != F.arg_end());
+                llvm::Value* char_len = &*arg_it;
+                char_len->setName(std::string(arg->m_name) + "_len");
+                ++arg_it;
+
+                // Build a local string_descriptor and populate it
+                llvm::Value* str_desc = builder->CreateAlloca(
+                    string_descriptor, nullptr,
+                    std::string(arg->m_name) + "_desc");
+                builder->CreateStore(char_ptr,
+                    llvm_utils->create_gep2(string_descriptor, str_desc, 0));
+                builder->CreateStore(char_len,
+                    llvm_utils->create_gep2(string_descriptor, str_desc, 1));
+
+                // Replace the symbol table entry with the descriptor
+                llvm_symtab[h] = str_desc;
+            }
         }
     }
 
@@ -22302,6 +22393,64 @@ public:
 
             args.push_back(tmp);
         }
+
+        // For non-module, non-BindC external interface functions, apply the
+        // standard Fortran calling convention for scalar character arguments:
+        // pass i8* (data pointer) instead of string_descriptor*, and append
+        // hidden i64 length arguments at the end.
+        {
+            ASR::symbol_t* callee_sym = symbol_get_past_external(x.m_name);
+            ASR::Function_t* callee_fn = nullptr;
+            if (ASR::is_a<ASR::Function_t>(*callee_sym)) {
+                callee_fn = ASR::down_cast<ASR::Function_t>(callee_sym);
+            }
+            if (callee_fn && needs_fortran_char_abi(*callee_fn) &&
+                ASRUtils::get_FunctionType(callee_fn)->m_deftype == ASR::deftypeType::Interface) {
+                std::vector<llvm::Value*> hidden_lengths;
+                size_t arg_offset = 0;
+                for (size_t i = 0; i < x.n_args; i++) {
+                    size_t args_idx = i - arg_offset;
+                    if (args_idx >= args.size()) break;
+                    if (i >= callee_fn->n_args) break;
+                    if (!ASR::is_a<ASR::Var_t>(*callee_fn->m_args[i])) continue;
+                    ASR::symbol_t* formal_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(callee_fn->m_args[i])->m_v);
+                    if (!ASR::is_a<ASR::Variable_t>(*formal_sym)) continue;
+                    ASR::Variable_t* formal = ASR::down_cast<ASR::Variable_t>(formal_sym);
+                    ASR::ttype_t* formal_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(formal->m_type));
+                    if (!ASRUtils::is_character(*formal_type) ||
+                        ASRUtils::is_array(formal->m_type) ||
+                        ASRUtils::is_allocatable(formal->m_type) ||
+                        ASRUtils::is_pointer(formal->m_type)) {
+                        continue;
+                    }
+                    // This is a scalar character argument - extract data ptr and length
+                    llvm::Value* arg_val = args[args_idx];
+                    if (x.m_args[i].m_value == nullptr) {
+                        // Absent optional: pass null i8* and length 0
+                        args[args_idx] = llvm::ConstantPointerNull::get(
+                            llvm::Type::getInt8Ty(context)->getPointerTo());
+                        hidden_lengths.push_back(
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                    } else {
+                        // arg_val is a string_descriptor* - extract data pointer and length
+                        llvm::Value* data_ptr = builder->CreateLoad(
+                            character_type,
+                            llvm_utils->create_gep2(string_descriptor, arg_val, 0));
+                        llvm::Value* str_len = builder->CreateLoad(
+                            llvm::Type::getInt64Ty(context),
+                            llvm_utils->create_gep2(string_descriptor, arg_val, 1));
+                        args[args_idx] = data_ptr;
+                        hidden_lengths.push_back(str_len);
+                    }
+                }
+                for (llvm::Value* len : hidden_lengths) {
+                    args.push_back(len);
+                }
+            }
+        }
+
         convert_call_args_depth--;
         return args;
     }
