@@ -7364,7 +7364,13 @@ public:
                     llvm_symtab[h] = &llvm_arg;
                 }
                 if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                    llvm::FunctionType* fntype = llvm_utils->get_function_type(*arg, module.get());
+                    bool nested_iface = false;
+                    if (arg->m_symtab->parent && arg->m_symtab->parent->asr_owner) {
+                        if (ASR::is_a<ASR::symbol_t>(*arg->m_symtab->parent->asr_owner)) {
+                            nested_iface = true;
+                        }
+                    }
+                    llvm::FunctionType* fntype = llvm_utils->get_function_type(*arg, module.get(), nested_iface);
                     llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, arg->m_name, module.get());
                     llvm_symtab_fn[h] = fn;
                 }
@@ -23748,9 +23754,17 @@ public:
                 throw CodeGenError("Procedure variable '" + std::string(v->m_name)
                     + "' has no interface. Add explicit interface or ensure it is called somewhere.");
             }
-            llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get());
+            ASR::Function_t* iface_fn = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            bool nested_iface = false;
+            if (iface_fn->m_symtab->parent && iface_fn->m_symtab->parent->asr_owner) {
+                if (ASR::is_a<ASR::symbol_t>(*iface_fn->m_symtab->parent->asr_owner)) {
+                    nested_iface = true;
+                }
+            }
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(
+                *iface_fn, module.get(), nested_iface);
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
-            std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);

@@ -800,9 +800,11 @@ class ASRToLLVMVisitor;
 
             llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module);
 
-            llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
+            llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module,
+                    bool skip_fortran_char_abi = false);
 
-            std::vector<llvm::Type*> convert_args(const ASR::Function_t &x, llvm::Module* module);
+            std::vector<llvm::Type*> convert_args(const ASR::Function_t &x, llvm::Module* module,
+                    bool skip_fortran_char_abi = false);
 
             std::vector<llvm::Type*> convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x);
 
