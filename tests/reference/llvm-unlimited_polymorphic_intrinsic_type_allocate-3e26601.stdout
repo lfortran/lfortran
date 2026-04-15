@@ -6,7 +6,7 @@ target datalayout = "..."
 %"~unlimited_polymorphic_type" = type <{ i32 (...)**, i8* }>
 
 @_Type_Info_integer_8 = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* inttoptr (i32 8 to i8*), i8* inttoptr (i64 8 to i8*), i8* null }, align 8
-@_VTable_integer_8 = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_integer_8 to i8*), i8* bitcast (void (i8*, i8*)* @_copy_integer_8 to i8*), i8* bitcast (void (i8**)* @_allocate_integer_8 to i8*)] }, align 8
+@_VTable_integer_8 = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_integer_8 to i8*), i8* bitcast (void (i8*, i8*)* @_copy_integer_8 to i8*), i8* bitcast (void (i8**)* @_allocate_integer_8 to i8*), i8* bitcast (void (i8*)* @finalize_i64_for_UPoly to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [10 x i8] c"integer(8)"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data, i32 0, i32 0), i64 10 }>
@@ -47,7 +47,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = load i8*, i8** %8, align 8
   %10 = bitcast i8* %9 to i64*
   %11 = bitcast %"~unlimited_polymorphic_type"* %6 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %11, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %11, align 8
   %12 = load i64, i64* %x, align 8
   store i64 %12, i64* %10, align 8
   %13 = alloca i1, align 1
@@ -185,12 +185,17 @@ entry:
   store i8* %2, i8** %0, align 8
   %3 = bitcast i8* %2 to <{ i32 (...)**, i8* }>*
   %4 = bitcast <{ i32 (...)**, i8* }>* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
   %5 = call i8* @_lfortran_get_default_allocator()
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 8)
   call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 8, i1 false)
   %7 = getelementptr <{ i32 (...)**, i8* }>, <{ i32 (...)**, i8* }>* %3, i32 0, i32 1
   store i8* %6, i8** %7, align 8
+  ret void
+}
+
+define internal void @finalize_i64_for_UPoly(i8* %0) {
+entry:
   ret void
 }
 
@@ -208,7 +213,7 @@ define internal void @"finalize_allocatable__StructType_Class__~unlimited_polymo
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = icmp ne %"~unlimited_polymorphic_type"* %0, null
-  br i1 %2, label %is_allocated.then, label %is_allocated.else
+  br i1 %2, label %is_allocated.then, label %is_allocated.else8
 
 is_allocated.then:                                ; preds = %entry
   %3 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 0
@@ -216,7 +221,7 @@ is_allocated.then:                                ; preds = %entry
   %5 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 1
   %6 = load i8*, i8** %5, align 8
   %7 = icmp ne i8* %6, null
-  br i1 %7, label %then, label %else5
+  br i1 %7, label %then, label %else6
 
 then:                                             ; preds = %is_allocated.then
   %8 = bitcast i32 (...)** %4 to i8**
@@ -244,27 +249,45 @@ else:                                             ; preds = %then1
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then2
-  br label %ifcont4
+  br label %ifcont5
 
 else3:                                            ; preds = %then
-  br label %ifcont4
+  %20 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 0
+  %21 = load i32 (...)**, i32 (...)*** %20, align 8
+  %22 = icmp ne i32 (...)** %21, null
+  br i1 %22, label %is_allocated.then4, label %is_allocated.else
 
-ifcont4:                                          ; preds = %else3, %ifcont
+is_allocated.then4:                               ; preds = %else3
+  %23 = getelementptr inbounds i32 (...)*, i32 (...)** %21, i32 2
+  %24 = load i8*, i32 (...)** %23, align 8
+  %25 = bitcast i8* %24 to void (i8*)*
+  %26 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 1
+  %27 = load i8*, i8** %26, align 8
+  call void %25(i8* %27)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %else3
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then4
+  br label %ifcont5
+
+ifcont5:                                          ; preds = %is_allocated.ifcont, %ifcont
   call void @_lfortran_free_alloc(i8* %1, i8* %6)
-  br label %ifcont6
+  br label %ifcont7
 
-else5:                                            ; preds = %is_allocated.then
-  br label %ifcont6
+else6:                                            ; preds = %is_allocated.then
+  br label %ifcont7
 
-ifcont6:                                          ; preds = %else5, %ifcont4
-  %20 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %20)
-  br label %is_allocated.ifcont
+ifcont7:                                          ; preds = %else6, %ifcont5
+  %28 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %28)
+  br label %is_allocated.ifcont9
 
-is_allocated.else:                                ; preds = %entry
-  br label %is_allocated.ifcont
+is_allocated.else8:                               ; preds = %entry
+  br label %is_allocated.ifcont9
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %ifcont6
+is_allocated.ifcont9:                             ; preds = %is_allocated.else8, %ifcont7
   ret void
 }
 
