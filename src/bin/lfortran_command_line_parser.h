@@ -59,6 +59,7 @@ namespace LCompilers::CommandLineInterface {
         std::string linker{""};
         std::string linker_path{""};
         bool print_targets = false;
+        bool print_c_include_dir = false;
         bool fixed_form_infer = false;
         bool cpp = false;
         bool cpp_infer = false;
