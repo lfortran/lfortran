@@ -2411,6 +2411,7 @@ RUN(NAME allocate_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME allocate_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_65 LABELS gfortran llvm)
+RUN(NAME allocate_66 LABELS gfortran llvm)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)

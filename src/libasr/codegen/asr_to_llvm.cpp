@@ -1867,6 +1867,17 @@ public:
                                 source_wrapper_type->getPointerTo(), source_handle);
                         }
 
+                        llvm::Value* is_source_not_allocated = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(source_handle, llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                        llvm_utils->generate_runtime_error(is_source_not_allocated,
+                            "allocate with source= requires an allocated/associated polymorphic source expression",
+                            {LLVMUtils::RuntimeLabel(
+                                "source expression is not allocated/associated",
+                                {m_source->base.loc}, {})},
+                            infile,
+                            location_manager);
+
                         llvm::FunctionType* alloc_fn_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), { llvm_utils->i8_ptr->getPointerTo() }, false);
                         llvm::PointerType* alloc_fn_ptr_type = llvm::PointerType::get(alloc_fn_type, 0);
