@@ -727,6 +727,8 @@ class ASRToLLVMVisitor;
             llvm::Value* get_class_element_from_array(ASR::Struct_t* class_symbol, ASR::StructType_t* struct_type, llvm::Value* array_data_ptr, llvm::Value* idx);
             llvm::Value* get_class_type_size_from_vptr(llvm::Value* vptr);
             llvm::Value* get_class_type_tag_from_vptr(llvm::Value* vptr);
+            const std::map<ASR::symbol_t*, llvm::Constant*>& get_known_class_vtables();
+            llvm::Constant* get_class_vptr_constant(ASR::symbol_t* struct_sym);
             llvm::Value* get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr);
 
             // Allocate zero-initialized memory for the given LLVM type.
@@ -1156,7 +1158,32 @@ class ASRToLLVMVisitor;
                                     llvm_utils_->create_if_else(char_not_null,
                                         [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
                                         [](){});
-                                }, [](){});
+                                }, [this, vptr, data_ptr]() {
+                                    // For class(*) payloads with concrete struct dynamic type,
+                                    // run the concrete struct finalizer before freeing payload.
+                                    for (auto &vtab_entry : llvm_utils_->get_known_class_vtables()) {
+                                        ASR::symbol_t* struct_sym_candidate =
+                                            ASRUtils::symbol_get_past_external(vtab_entry.first);
+                                        if (!struct_sym_candidate ||
+                                            !ASR::is_a<ASR::Struct_t>(*struct_sym_candidate)) {
+                                            continue;
+                                        }
+                                        ASR::Struct_t* struct_t =
+                                            ASR::down_cast<ASR::Struct_t>(struct_sym_candidate);
+                                        llvm::Value* struct_vptr = builder_->CreateBitCast(
+                                            llvm_utils_->get_class_vptr_constant(struct_sym_candidate),
+                                            llvm_utils_->vptr_type);
+                                        llvm::Value* is_match = builder_->CreateICmpEQ(vptr, struct_vptr);
+                                        llvm_utils_->create_if_else(is_match, [this, data_ptr, struct_t]() {
+                                            llvm::Type* struct_llvm_type = llvm_utils_->getStructType(
+                                                struct_t, llvm_utils_->module, false);
+                                            llvm::Value* typed_data_ptr = builder_->CreateBitCast(
+                                                data_ptr, struct_llvm_type->getPointerTo());
+                                            finalize(typed_data_ptr, struct_t->m_struct_signature,
+                                                struct_t, false);
+                                        }, [](){});
+                                    }
+                                });
                                 llvm_utils_->lfortran_free_nocheck(data_ptr);
                             }, [](){});
                         } else {
