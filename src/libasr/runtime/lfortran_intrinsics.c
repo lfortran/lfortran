@@ -7913,6 +7913,10 @@ static int read_complex_expr(FILE *filep, char *buffer, size_t bufsize) {
     // Skip leading whitespace
     while ((ch = fgetc(filep)) != EOF && isspace(ch));
 
+    if (ch == ',') {
+        while ((ch = fgetc(filep)) != EOF && isspace(ch));
+    }
+
     if (ch == EOF) return 0;
 
     if (ch == '(') {
@@ -8591,14 +8595,39 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
             exit(1);
         }
     } else {
-        // Read as string to handle Fortran D exponent notation
-        char buffer[100];
-        if (fscanf(filep, " %99[^ ,\t\n\r]", buffer) != 1) {
+        int c;
+        while ((c = fgetc(filep)) != EOF && isspace(c)) {}
+
+        if (c == EOF) {
             if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read double from file.\n");
             exit(1);
         }
-        skip_list_directed_comma(filep);
+
+        if (c == ',') {
+            while ((c = fgetc(filep)) != EOF && isspace(c)) {}
+            if (c == EOF) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read double from file.\n");
+                exit(1);
+            }
+        }
+
+        if (c == ',' || c == '/') {
+            ungetc(c, filep);
+            return;
+        }
+
+        char buffer[100];
+        int len = 0;
+        do {
+            if (len < 99) buffer[len++] = (char)c;
+            c = fgetc(filep);
+        } while (c != EOF && !isspace(c) && c != ',' && c != '/');
+
+        buffer[len] = '\0';
+        if (c != EOF) ungetc(c, filep);
+
         if (!parse_fortran_double(buffer, p)) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input from file.\n");
