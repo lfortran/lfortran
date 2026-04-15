@@ -1127,13 +1127,6 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
-        // assignment
-        // TODO: this is fragile
-        if (contains(cur, nline, '=')) {
-            tokenize_line(cur);
-            return true;
-        }
-
         // `GOTO (X,Z,Y) M` translates to (roughly)
         // `IF (M .EQ. 1) THEN;  GOTO X; ELSE IF (M .EQ. 2) GOTO Z; IF (M .EQ. 3) GOTO Y; ENDIF`
         if (next_is(cur, "goto(")) {
@@ -1273,6 +1266,13 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "cycle")){
             push_token_advance(cur, "cycle");
             tokenize_line(cur);
+        }
+
+        // assignment
+        // TODO: this is fragile, check after all tokens
+        if (contains(cur, nline, '=')) {
+            tokenize_line(cur);
+            return true;
         }
 
         if (l != -1) {
