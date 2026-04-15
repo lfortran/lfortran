@@ -16,7 +16,7 @@ FileBackspace(int label, expr? unit, expr? iostat, expr? err)
 | :--- | :--- | :--- |
 | `label` | `int` | Statement label. |
 | `unit` | `expr?` | Integer expression specifying the unit number. |
-| `iostat` | `expr?` | Integer variable for status. |
+| `iostat` | `expr?` | See [FileOpen mode behavior](fileopen.md#mode-behavior-brief) (`iostat` and `iomsg`). |
 | `err` | `expr?` | Statement label for error branching. |
 
 ### Return values
