@@ -1,0 +1,5 @@
+runtime error: Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+  --> tests/../integration_tests/allocatable_component_unnamed_unallocated_01.f90:10:5
+   |
+10 |     x(1)%arr = [1, 2, 3]
+   |     ^^^^^^^^ LHS not allocated here

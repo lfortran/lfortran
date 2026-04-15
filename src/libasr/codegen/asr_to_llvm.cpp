@@ -11112,6 +11112,29 @@ public:
                 x.m_target, ASRUtils::extract_type(target_type), module.get());
             llvm::Type* value_el_type = llvm_utils->get_el_type(
                 x.m_value, ASRUtils::extract_type(value_type), module.get());
+            bool is_allocatable_descriptor_target = (ASRUtils::is_allocatable(target_type) && target_ptype == ASR::array_physical_typeType::DescriptorArray);
+            if( is_allocatable_descriptor_target && !x.m_realloc_lhs && !x.m_move_allocation ) {
+                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
+                if( !target_expr_name.empty() ) {
+                    llvm::Value* target_name_llvm = LCompilers::create_global_string_ptr(
+                        context, *module, *builder, target_expr_name);
+                    llvm_utils->generate_runtime_error(
+                        is_not_allocated,
+                        "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_name_llvm})},
+                        infile,
+                        location_manager,
+                        target_name_llvm);
+                } else {
+                    llvm_utils->generate_runtime_error(
+                        is_not_allocated,
+                        "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("LHS not allocated here", {x.m_target->base.loc}, {})},
+                        infile,
+                        location_manager);
+                }
+            }
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
@@ -11431,6 +11454,31 @@ public:
             ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_components[0]->base.loc, 4));
 
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            bool is_allocatable_descriptor_target = ASRUtils::is_array(target_type) &&
+                ASRUtils::is_allocatable(target_type) &&
+                ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
+            if (is_allocatable_descriptor_target && !x.m_move_allocation) {
+                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
+                if (!target_expr_name.empty()) {
+                    llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(
+                        context, *module, *builder, target_expr_name);
+                    llvm_utils->generate_runtime_error(is_not_allocated,
+                        "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("'%s' not allocated here",
+                            {x.m_target->base.loc}, {target_expr_name_llvm})},
+                        infile,
+                        location_manager,
+                        target_expr_name_llvm);
+                } else {
+                    llvm_utils->generate_runtime_error(is_not_allocated,
+                        "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("LHS not allocated here",
+                            {x.m_target->base.loc}, {})},
+                        infile,
+                        location_manager);
+                }
+            }
             ASR::dimension_t* m_dims = nullptr;
             size_t rank = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
             for (size_t dim = 0; dim < rank; dim++) {
@@ -11455,17 +11503,6 @@ public:
                         ASRUtils::is_allocatable(target_variable->m_type) &&
                         ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
                         llvm::Value* is_not_allocated = expr_is_unallocated(v);
-                        // With move don't throw error when target is unallocated
-                        if (!x.m_move_allocation) {
-                            llvm::Value* target_var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name);
-                            llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
-                                    {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_var_name_llvm})},
-                                    infile,
-                                    location_manager,
-                                    target_var_name_llvm);
-                        }
-
                         llvm::Function *fn = builder->GetInsertBlock()->getParent();
                         llvm::BasicBlock *thenBB = nullptr;
                         llvm::BasicBlock *mergeBB = nullptr;
@@ -11503,28 +11540,6 @@ public:
                                                             dim_llvm);
                     }
                 } else {
-                    if (ASRUtils::is_array(target_type) &&
-                        ASRUtils::is_allocatable(target_type) &&
-                        ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
-                        !x.m_move_allocation) {
-                        llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
-                        std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
-                        if (!target_expr_name.empty()) {
-                            llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_expr_name);
-                            llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
-                                {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_expr_name_llvm})},
-                                infile,
-                                location_manager,
-                                target_expr_name_llvm);
-                        } else {
-                            llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
-                                {LLVMUtils::RuntimeLabel("LHS not allocated here", {x.m_target->base.loc}, {})},
-                                infile,
-                                location_manager);
-                        }
-                    }
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),

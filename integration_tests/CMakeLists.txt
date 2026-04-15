@@ -4202,6 +4202,8 @@ RUN(NAME allocatable_cchar_01 LABELS gfortran llvm)
 RUN(NAME allocatable_nested_types_01 LABELS gfortran llvm)
 RUN(NAME allocatable_derived_array_01 LABELS gfortran llvm)
 RUN(NAME allocatable_component_assign_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME allocatable_component_reshape_unallocated_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME allocatable_component_unnamed_unallocated_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_oob_01 FAIL LABELS gfortran llvm NO_FAST GFORTRAN_ARGS -fcheck=bounds)
 
 RUN(NAME sync_all_01 LABELS llvm)
