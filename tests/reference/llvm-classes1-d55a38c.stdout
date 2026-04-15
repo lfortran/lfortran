@@ -140,6 +140,7 @@ entry:
 
 define internal void @finalize_StructType__base_of_xx_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %xx.base*
   ret void
 }
 

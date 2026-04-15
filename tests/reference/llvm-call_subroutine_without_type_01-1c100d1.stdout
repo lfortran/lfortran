@@ -314,6 +314,7 @@ entry:
 
 define internal void @finalize_StructType__mytype_of_module_call_subroutine_without_type_01_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype*
   ret void
 }
 

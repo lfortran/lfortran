@@ -931,6 +931,7 @@ entry:
 
 define internal void @finalize_StructType__shape_of_select_type_13_module_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %select_type_13_module.shape*
   ret void
 }
 
@@ -979,6 +980,7 @@ entry:
 
 define internal void @finalize_StructType__circle_of_select_type_13_module_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %select_type_13_module.circle*
   ret void
 }
 
@@ -1041,6 +1043,7 @@ entry:
 
 define internal void @finalize_StructType__rectangle_of_select_type_13_module_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %select_type_13_module.rectangle*
   ret void
 }
 

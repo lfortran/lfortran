@@ -327,6 +327,7 @@ entry:
 
 define internal void @finalize_StructType__complextype_of_complex_module_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %complex_module.complextype*
   ret void
 }
 
