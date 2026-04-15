@@ -1913,6 +1913,26 @@ public:
                         continue;
                     }
 
+                    if (m_source && !m_source_is_class && ASRUtils::is_allocatable(m_source)) {
+                        int64_t saved_ptr_loads = ptr_loads;
+                        ptr_loads = 1;
+                        this->visit_expr(*m_source);
+                        llvm::Value* source_ptr = tmp;
+                        ptr_loads = saved_ptr_loads;
+                        tmp = nullptr;
+
+                        llvm::Value* is_source_not_allocated = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(source_ptr, llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                        llvm_utils->generate_runtime_error(is_source_not_allocated,
+                            "allocate with source= requires an allocated/associated source expression",
+                            {LLVMUtils::RuntimeLabel(
+                                "source expression is not allocated/associated",
+                                {m_source->base.loc}, {})},
+                            infile,
+                            location_manager);
+                    }
+
                     if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
@@ -11321,6 +11341,9 @@ public:
                     ASR::is_a<ASR::Logical_t>(*asr_type)) {
                     check_and_allocate_scalar(x.m_target);
                 }
+                llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
+                target = llvm_utils->CreateLoad2(target_ptr_type, target);
+            } else if (!value->getType()->isPointerTy()) {
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
