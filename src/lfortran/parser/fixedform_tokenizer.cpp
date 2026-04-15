@@ -1090,6 +1090,13 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        // assignment
+        // TODO: this is fragile
+        if (is_possible_assignment(cur, cur)) {
+            tokenize_line(cur);
+            return true;
+        }
+
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
             lex_cond(cur);
@@ -1266,13 +1273,6 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "cycle")){
             push_token_advance(cur, "cycle");
             tokenize_line(cur);
-        }
-
-        // assignment
-        // TODO: this is fragile, check after all tokens
-        if (contains(cur, nline, '=')) {
-            tokenize_line(cur);
-            return true;
         }
 
         if (l != -1) {
