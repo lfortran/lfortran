@@ -674,9 +674,19 @@ jobs:
           username: ${{ env.USER }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine image tags
+        id: image-tags
+        run: |
+          TAGS="${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest"
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:${VERSION}"
+          fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name == 'push' }}
-          tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest
+          tags: ${{ steps.image-tags.outputs.tags }}
