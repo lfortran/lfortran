@@ -23631,6 +23631,7 @@ public:
                 for (size_t i = 0; i < subrout_called->n_args; i++) {
                     ASR::expr_t* expected_arg = subrout_called->m_args[i];
                     ASR::expr_t* passed_arg = x.m_args[i].m_value;
+                    if (passed_arg == nullptr || expected_arg == nullptr) continue;
                     ASR::ttype_t* expected_arg_type = ASRUtils::expr_type(expected_arg);
                     ASR::ttype_t* passed_arg_type = ASRUtils::expr_type(passed_arg);
                     if (ASR::is_a<ASR::ArrayItem_t>(*passed_arg)) {
