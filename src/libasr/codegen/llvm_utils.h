@@ -1572,11 +1572,31 @@ class ASRToLLVMVisitor;
                 // class(*) descriptor arrays use a single wrapper whose payload
                 // points to the contiguous data buffer for all elements.
                 llvm::Type* const wrapper_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
+                llvm::Value* const vptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->vptr_type,
+                    llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 0));
                 llvm::Value* const payload_ref = llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 1);
                 llvm::Value* const payload_ptr = llvm_utils_->CreateLoad2(llvm_utils_->i8_ptr, payload_ref);
                 llvm::Value* const payload_not_null = builder_->CreateICmpNE(
                     payload_ptr, llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
-                llvm_utils_->create_if_else(payload_not_null, [this, payload_ptr, payload_ref]() {
+                llvm_utils_->create_if_else(payload_not_null, [this, vptr, payload_ptr, payload_ref]() {
+                    llvm::Value* const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
+                    llvm::Value* const is_string = builder_->CreateICmpEQ(
+                        type_tag,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
+                    llvm_utils_->create_if_else(is_string, [this, payload_ptr]() {
+                        llvm::Value* const str_desc = builder_->CreateBitCast(
+                            payload_ptr, llvm_utils_->string_descriptor->getPointerTo());
+                        llvm::Value* const char_ptr = llvm_utils_->CreateLoad2(
+                            llvm_utils_->character_type,
+                            llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
+                        llvm::Value* const char_not_null = builder_->CreateICmpNE(
+                            char_ptr,
+                            llvm::ConstantPointerNull::get(llvm_utils_->character_type));
+                        llvm_utils_->create_if_else(char_not_null,
+                            [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
+                            [](){});
+                    }, [](){});
                     llvm_utils_->lfortran_free_nocheck(payload_ptr);
                     builder_->CreateStore(
                         llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);
@@ -2204,6 +2224,9 @@ class ASRToLLVMVisitor;
                             llvm::ConstantPointerNull::get(
                                 llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
                         llvm_utils_->create_if_else(wrapper_not_null, [&]() {
+                            llvm::Value* const vptr = builder_->CreateLoad(
+                                llvm_utils_->vptr_type,
+                                llvm_utils_->create_gep2(elem_llvm_t, wrapper_ptr, 0));
                             llvm::Value* const payload_ref =
                                 llvm_utils_->create_gep2(elem_llvm_t, wrapper_ptr, 1);
                             llvm::Value* const payload_ptr = builder_->CreateLoad(
@@ -2211,7 +2234,24 @@ class ASRToLLVMVisitor;
                             llvm::Value* const payload_not_null = builder_->CreateICmpNE(
                                 payload_ptr,
                                 llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
-                            llvm_utils_->create_if_else(payload_not_null, [this, payload_ptr, payload_ref]() {
+                            llvm_utils_->create_if_else(payload_not_null, [this, vptr, payload_ptr, payload_ref]() {
+                                llvm::Value* const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
+                                llvm::Value* const is_string = builder_->CreateICmpEQ(
+                                    type_tag,
+                                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
+                                llvm_utils_->create_if_else(is_string, [this, payload_ptr]() {
+                                    llvm::Value* const str_desc = builder_->CreateBitCast(
+                                        payload_ptr, llvm_utils_->string_descriptor->getPointerTo());
+                                    llvm::Value* const char_ptr = builder_->CreateLoad(
+                                        llvm_utils_->character_type,
+                                        llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
+                                    llvm::Value* const char_not_null = builder_->CreateICmpNE(
+                                        char_ptr,
+                                        llvm::ConstantPointerNull::get(llvm_utils_->character_type));
+                                    llvm_utils_->create_if_else(char_not_null,
+                                        [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
+                                        [](){});
+                                }, [](){});
                                 llvm_utils_->lfortran_free_nocheck(payload_ptr);
                                 builder_->CreateStore(
                                     llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);

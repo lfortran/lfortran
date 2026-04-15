@@ -9550,6 +9550,10 @@ public:
                                                 llvm::Value* orig_descs = loaded_data_ptr;
                                                 loaded_data_ptr = llvm_utils->consolidate_char_descriptors(
                                                     loaded_data_ptr, n_elems_i64);
+                                                llvm::Value* consolidated_flat_buf = llvm_utils->CreateLoad2(
+                                                    character_type,
+                                                    llvm_utils->create_gep2(string_descriptor, loaded_data_ptr, 0));
+                                                heap_fixed_size_arrays.push_back(al, consolidated_flat_buf);
                                                 pending_char_writebacks.push_back(
                                                     {orig_descs, loaded_data_ptr, n_elems_i64});
                                             } else {
@@ -12038,6 +12042,10 @@ public:
                     n_elems, llvm::Type::getInt64Ty(context));
                 dst_first_el_ptr = llvm_utils->consolidate_char_descriptors(
                     dst_first_el_ptr, n_elems_i64);
+                llvm::Value* consolidated_flat_buf = llvm_utils->CreateLoad2(
+                    character_type,
+                    llvm_utils->create_gep2(string_descriptor, dst_first_el_ptr, 0));
+                heap_fixed_size_arrays.push_back(al, consolidated_flat_buf);
             }
 
             builder->CreateStore(dst_first_el_ptr,
@@ -22370,6 +22378,10 @@ public:
                         n_elems, llvm::Type::getInt64Ty(context));
                     dest_data_ptr = llvm_utils->consolidate_char_descriptors(
                         src_data_ptr, n_elems_i64);
+                    llvm::Value* consolidated_flat_buf = llvm_utils->CreateLoad2(
+                        character_type,
+                        llvm_utils->create_gep2(string_descriptor, dest_data_ptr, 0));
+                    heap_fixed_size_arrays.push_back(al, consolidated_flat_buf);
                 }
 
                 llvm::Type* expected_data_ptr_type = dest_data_type->getPointerTo();
