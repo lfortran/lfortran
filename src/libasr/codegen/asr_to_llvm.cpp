@@ -22531,11 +22531,17 @@ public:
     }
 
     void generate_fma(ASR::call_arg_t* m_args) {
-        this->visit_expr_wrapper(m_args[0].m_value, true);
+        this->visit_expr_load_wrapper(m_args[0].m_value,
+            LLVM::is_llvm_pointer(*expr_type(m_args[0].m_value)) ? 2 : 1,
+            true);
         llvm::Value* a = tmp;
-        this->visit_expr_wrapper(m_args[1].m_value, true);
+        this->visit_expr_load_wrapper(m_args[1].m_value,
+            LLVM::is_llvm_pointer(*expr_type(m_args[1].m_value)) ? 2 : 1,
+            true);
         llvm::Value* b = tmp;
-        this->visit_expr_wrapper(m_args[2].m_value, true);
+        this->visit_expr_load_wrapper(m_args[2].m_value,
+            LLVM::is_llvm_pointer(*expr_type(m_args[2].m_value)) ? 2 : 1,
+            true);
         llvm::Value* c = tmp;
 #if LLVM_VERSION_MAJOR >= 8
         tmp = builder->CreateIntrinsic(llvm::Intrinsic::fma,
