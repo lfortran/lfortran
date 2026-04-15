@@ -2647,38 +2647,19 @@ public:
                         }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
-                        if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                            llvm::Value* data = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
-                            llvm::Value* data_ptr;
-                            if (ASRUtils::is_unlimited_polymorphic_type(tmp_expr)) {
-                                data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data);
-                            } else {
-                                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
-                                data_ptr = llvm_utils->CreateLoad2(llvm_utils->getStructType(
-                                    ASR::down_cast<ASR::Struct_t>(struct_sym), module.get(), true), data);
-                                data_ptr = builder->CreateBitCast(data_ptr, llvm_utils->i8_ptr);
+                        if( ASRUtils::is_pointer(cur_type) || 
+                            !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(cur_type)) ) { // TODO : Clean this by coordinating with `finalize_before_deallocate()`
+                            if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::type_get_past_allocatable_pointer(cur_type)) && ASRUtils::is_pointer(cur_type) ){
+                                auto const inner_struct = llvm_utils->CreateLoad2(llvm_utils->getStructType(struct_sym, module.get(), true), llvm_utils->create_gep2(llvm_data_type, tmp, 1));
+                                llvm_utils->lfortran_free(inner_struct);
                             }
-                            llvm::Value* cond_data = builder->CreateICmpNE(
-                            builder->CreatePtrToInt(data_ptr, llvm::Type::getInt64Ty(context)),
-                            builder->CreatePtrToInt(
-                                llvm::ConstantPointerNull::get(llvm_utils->i8_ptr),
-                                llvm::Type::getInt64Ty(context)) );
-                            llvm_utils->create_if_else(cond_data, [=]() {
-                                llvm::AllocaInst *data_arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
-                                builder->CreateStore(data_ptr, data_arg_tmp);
-                                std::vector<llvm::Value*> data_args = {allocator, llvm_utils->CreateLoad2(character_type, data_arg_tmp)};
-                                builder->CreateCall(free_fn, data_args);
-                                builder->CreateStore(
-                                    llvm::ConstantPointerNull::get(llvm_utils->i8_ptr),
-                                    builder->CreateBitCast(data, llvm_utils->i8_ptr->getPointerTo()));
-                            }, [](){});
+                            llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
+                            builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
+                            std::vector<llvm::Value*> args = {allocator, llvm_utils->CreateLoad2(character_type, arg_tmp)};
+                            builder->CreateCall(free_fn, args);
                         }
-                        llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
-                        builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
-                        std::vector<llvm::Value*> args = {allocator, llvm_utils->CreateLoad2(character_type, arg_tmp)};
-                        builder->CreateCall(free_fn, args);
                         builder->CreateStore(
-                            llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_);
+                            llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_); // Store NULL as identifier for deallocated variable.
                     }, [](){});
                 } else {
                     if( LLVM::is_llvm_pointer(*cur_type) ) {
