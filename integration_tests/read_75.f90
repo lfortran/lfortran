@@ -11,7 +11,7 @@ program read_75
   double precision :: d1, d2, d3
   complex :: c1, c2, c3
 
-  open (42, file='fort.42', status='replace', form='formatted')
+  open (42, file='read_75.dat', status='replace', form='formatted')
   write (42,'(a)') cdata
   rewind (42)
   d1 = 1.0d0
