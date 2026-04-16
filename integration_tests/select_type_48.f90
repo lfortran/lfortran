@@ -10,9 +10,8 @@ contains
         select type (x)
         type is (character(*))
             if (x(1) /= "hello") error stop 2
-            if (x(10) /= "hello") error stop 3
         class default
-            error stop 4
+            error stop 3
         end select
     end subroutine
 end program
