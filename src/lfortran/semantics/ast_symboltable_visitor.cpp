@@ -2613,7 +2613,7 @@ public:
             visit_procedure_decl(*x.m_contains[i]);
         }
         std::string sym_name = to_lower(x.m_name);
-        if (current_scope->get_symbol(sym_name) != nullptr) {
+        if (!compiler_options.implicit_typing && parent_scope->get_symbol(sym_name) != nullptr) {
             diag.add(diag::Diagnostic(
                 "DerivedType already defined",
                 diag::Level::Error, diag::Stage::Semantic, {
