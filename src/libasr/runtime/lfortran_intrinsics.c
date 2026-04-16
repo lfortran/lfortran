@@ -11443,28 +11443,82 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
 // Namelist I/O Support
 // ============================================================================
 
+typedef struct {
+    FILE *fp;
+    char *data;
+    int64_t elem_len;
+    int64_t n_elems;
+    int64_t elem_idx;
+    int64_t pos;
+    bool is_file;
+} nml_writer_t;
+
+static void write_char(nml_writer_t *w, char c) {
+    if (w->is_file) {
+        fputc(c, w->fp);
+        return;
+    }
+
+    if (w->elem_idx >= w->n_elems) return;
+
+    char *dest = w->data + w->elem_idx * w->elem_len;
+
+    if (c == '\n') {
+        while (w->pos < w->elem_len) {
+            dest[w->pos++] = ' ';
+        }
+        w->elem_idx++;
+        w->pos = 0;
+        return;
+    }
+
+    if (w->pos < w->elem_len) {
+        dest[w->pos++] = c;
+    }
+}
+
+static void write_str(nml_writer_t *w, const char *s) {
+    while (*s) {
+        write_char(w, *s++);
+    }
+}
+
 // Helper function to write a single namelist item value
-static void write_nml_value(FILE *fp, const lfortran_nml_item_t *item, int64_t offset) {
+static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, int64_t offset) {
+    char buf[128];
     void *ptr = (char*)item->data + offset;
+
     switch (item->type) {
         case LFORTRAN_NML_INT1:
-            fprintf(fp, "%d", *(int8_t*)ptr);
+            snprintf(buf, sizeof(buf), "%d", *(int8_t*)ptr);
+            write_str(w, buf);
             break;
+
         case LFORTRAN_NML_INT2:
-            fprintf(fp, "%d", *(int16_t*)ptr);
+            snprintf(buf, sizeof(buf), "%d", *(int16_t*)ptr);
+            write_str(w, buf);
             break;
+
         case LFORTRAN_NML_INT4:
-            fprintf(fp, "%d", *(int32_t*)ptr);
+            snprintf(buf, sizeof(buf), "%d", *(int32_t*)ptr);
+            write_str(w, buf);
             break;
+
         case LFORTRAN_NML_INT8:
-            fprintf(fp, "%" PRId64, *(int64_t*)ptr);
+            snprintf(buf, sizeof(buf), "%" PRId64, *(int64_t*)ptr);
+            write_str(w, buf);
             break;
+
         case LFORTRAN_NML_REAL4:
-            fprintf(fp, "%.7E", *(float*)ptr);
+            snprintf(buf, sizeof(buf), "%.7E", *(float*)ptr);
+            write_str(w, buf);
             break;
+
         case LFORTRAN_NML_REAL8:
-            fprintf(fp, "%.16E", *(double*)ptr);
+            snprintf(buf, sizeof(buf), "%.16E", *(double*)ptr);
+            write_str(w, buf);
             break;
+
         case LFORTRAN_NML_LOGICAL1:
         case LFORTRAN_NML_LOGICAL2:
         case LFORTRAN_NML_LOGICAL4:
@@ -11473,31 +11527,40 @@ static void write_nml_value(FILE *fp, const lfortran_nml_item_t *item, int64_t o
             if (item->type == LFORTRAN_NML_LOGICAL1) val = *(int8_t*)ptr != 0;
             else if (item->type == LFORTRAN_NML_LOGICAL2) val = *(int16_t*)ptr != 0;
             else if (item->type == LFORTRAN_NML_LOGICAL4) val = *(int32_t*)ptr != 0;
-            else if (item->type == LFORTRAN_NML_LOGICAL8) val = *(int64_t*)ptr != 0;
-            fprintf(fp, "%s", val ? ".true." : ".false.");
+            else val = *(int64_t*)ptr != 0;
+
+            write_str(w, val ? ".true." : ".false.");
             break;
         }
+
         case LFORTRAN_NML_COMPLEX4: {
-            struct _lfortran_complex_32 *c = (struct _lfortran_complex_32*)ptr;
-            fprintf(fp, "(%.7E,%.7E)", c->re, c->im);
+            struct _lfortran_complex_32 *c = ptr;
+            snprintf(buf, sizeof(buf), "(%.7E,%.7E)", c->re, c->im);
+            write_str(w, buf);
             break;
         }
+
         case LFORTRAN_NML_COMPLEX8: {
-            struct _lfortran_complex_64 *c = (struct _lfortran_complex_64*)ptr;
-            fprintf(fp, "(%.16E,%.16E)", c->re, c->im);
+            struct _lfortran_complex_64 *c = ptr;
+            snprintf(buf, sizeof(buf), "(%.16E,%.16E)", c->re, c->im);
+            write_str(w, buf);
             break;
         }
+
         case LFORTRAN_NML_CHAR: {
             char *str = (char*)ptr;
-            fprintf(fp, "'");
+
+            write_char(w, '\'');
+
             for (int64_t i = 0; i < item->elem_len; i++) {
                 if (str[i] == '\'') {
-                    fprintf(fp, "''");
+                    write_str(w, "''");
                 } else {
-                    fputc(str[i], fp);
+                    write_char(w, str[i]);
                 }
             }
-            fprintf(fp, "'");
+
+            write_char(w, '\'');
             break;
         }
     }
@@ -11541,6 +11604,38 @@ static int64_t get_element_size(const lfortran_nml_item_t *item) {
     }
 }
 
+void namelist_write_impl(nml_writer_t *w,
+                         const lfortran_nml_group_t *group)
+{
+    write_str(w, " &");
+    write_str(w, group->group_name);
+    write_char(w, '\n');
+
+    for (int32_t i = 0; i < group->n_items; i++) {
+        const lfortran_nml_item_t *item = &group->items[i];
+
+        write_str(w, "  ");
+        write_str(w, item->name);
+        write_char(w, '=');
+
+        if (item->rank == 0) {
+            write_nml_value(w, item, 0);
+        } else {
+            int64_t total = compute_array_size(item);
+            int64_t elem_size = get_element_size(item);
+
+            for (int64_t j = 0; j < total; j++) {
+                if (j > 0) write_char(w, ',');
+                write_nml_value(w, item, j * elem_size);
+            }
+        }
+
+        write_char(w, '\n');
+    }
+
+    write_str(w, " /\n");
+}
+
 LFORTRAN_API void _lfortran_namelist_write(
     int32_t unit_num,
     int32_t *iostat,
@@ -11577,31 +11672,46 @@ LFORTRAN_API void _lfortran_namelist_write(
         }
     }
 
-    // Write namelist header
-    fprintf(filep, " &%s\n", group->group_name);
+    nml_writer_t w;
+    memset(&w, 0, sizeof(w));
 
-    // Write each item
-    for (int32_t i = 0; i < group->n_items; i++) {
-        const lfortran_nml_item_t *item = &group->items[i];
-        fprintf(filep, "  %s=", item->name);
+    w.fp = filep;
+    w.is_file = true;
 
-        if (item->rank == 0) {
-            // Scalar
-            write_nml_value(filep, item, 0);
-        } else {
-            // Array
-            int64_t total_size = compute_array_size(item);
-            int64_t elem_size = get_element_size(item);
-            for (int64_t j = 0; j < total_size; j++) {
-                if (j > 0) fprintf(filep, ",");
-                write_nml_value(filep, item, j * elem_size);
-            }
+    namelist_write_impl(&w, group);
+
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_namelist_write_str_array(
+    char *data,
+    int64_t elem_len,
+    int64_t n_elems,
+    int32_t *iostat,
+    const lfortran_nml_group_t *group)
+{
+    nml_writer_t w;
+    memset(&w, 0, sizeof(w));
+
+    w.data = data;
+    w.elem_len = elem_len;
+    w.n_elems = n_elems;
+    w.elem_idx = 0;
+    w.pos = 0;
+
+    w.is_file = false;
+
+    namelist_write_impl(&w, group);
+
+    while (w.elem_idx < w.n_elems) {
+        char *dest = w.data + w.elem_idx * w.elem_len;
+
+        for (int64_t i = 0; i < w.elem_len; i++) {
+            dest[i] = ' ';
         }
-        fprintf(filep, "\n");
-    }
 
-    // Write namelist terminator
-    fprintf(filep, " /\n");
+        w.elem_idx++;
+    }
 
     if (iostat) *iostat = 0;
 }
