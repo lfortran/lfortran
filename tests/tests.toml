@@ -1568,6 +1568,14 @@ filename = "errors/allocate_01.f90"
 run = true
 
 [[test]]
+filename = "errors/allocate_02.f90"
+run = true
+
+[[test]]
+filename = "errors/allocate_03.f90"
+run = true
+
+[[test]]
 filename = "errors/allocated_04.f90"
 run = true
 
@@ -5093,6 +5101,14 @@ options = "--infer"
 filename = "errors/infer_realloc_disabled_01.f90"
 run = true
 options = "--infer"
+
+[[test]]
+filename = "../integration_tests/allocatable_component_reshape_unallocated_01.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/allocatable_component_unnamed_unallocated_01.f90"
+run = true
 
 [[test]]
 filename = "infer_first_assignment_01.f90"

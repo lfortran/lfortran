@@ -167,6 +167,7 @@ entry:
 
 define internal void @finalize_StructType__point_of_defs_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %defs.point*
   ret void
 }
 
@@ -229,6 +230,7 @@ entry:
 
 define internal void @finalize_StructType__point2d_of_defs_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %defs.point2d*
   ret void
 }
 

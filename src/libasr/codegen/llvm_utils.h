@@ -1122,47 +1122,7 @@ class ASRToLLVMVisitor;
                     auto const checkPoint_BB = 
                     START_CACHE(cache_key, ptr);
                     check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
-                        if (struct_sym != nullptr
-                            && ASR::is_a<ASR::StructType_t>(*t_past)
-                            && ASRUtils::is_class_type(t_past)
-                            && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-                            // Keep unlimited polymorphic cleanup scoped to the
-                            // allocatable deallocation flow to avoid finalizing
-                            // aliased/non-owning class(*) values.
-            // TODO :: Remove this if block.
-                            llvm::Type* const derived_llvm_type = get_llvm_type(t_past, struct_sym);
-                            auto const vptr = llvm_utils_->CreateLoad2(
-                                llvm_utils_->vptr_type,
-                                llvm_utils_->create_gep2(derived_llvm_type, ptr, 0));
-                            auto const data_ptr = llvm_utils_->CreateLoad2(
-                                llvm_utils_->i8_ptr,
-                                llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
-                            auto const data_not_null = builder_->CreateICmpNE(
-                                data_ptr,
-                                llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
-                            llvm_utils_->create_if_else(data_not_null, [&]() {
-                                auto const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
-                                auto const is_string = builder_->CreateICmpEQ(
-                                    type_tag,
-                                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
-                                llvm_utils_->create_if_else(is_string, [&]() {
-                                    auto const str_desc = builder_->CreateBitCast(
-                                        data_ptr, llvm_utils_->string_descriptor->getPointerTo());
-                                    auto const char_ptr = llvm_utils_->CreateLoad2(
-                                        llvm_utils_->character_type,
-                                        llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
-                                    auto const char_not_null = builder_->CreateICmpNE(
-                                        char_ptr,
-                                        llvm::ConstantPointerNull::get(llvm_utils_->character_type));
-                                    llvm_utils_->create_if_else(char_not_null,
-                                        [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
-                                        [](){});
-                                }, [&](){finalize(ptr, t_past, struct_sym, in_struct);});
-                                llvm_utils_->lfortran_free_nocheck(data_ptr);
-                            }, [](){});
-                        } else {
-                            finalize(ptr, t_past, struct_sym, in_struct);
-                        }
+                        finalize(ptr, t_past, struct_sym, in_struct);
                         free_allocatable_ptr(ptr, t, struct_sym, in_struct);
                         
                     });
@@ -1428,6 +1388,8 @@ class ASRToLLVMVisitor;
                 builder_->CreateCall(type_finalizer_cache_[cache_key], {ptr});
                 return;
             }
+            const auto checkPoint_BB = 
+            START_CACHE(cache_key, ptr);
 
             if (ASRUtils::is_class_type(t) && ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                 // Call finalizer from VTable
@@ -1449,11 +1411,13 @@ class ASRToLLVMVisitor;
                                     llvm_utils_->create_gep2(uPoly_llvm_t, ptr, 1));
                     builder_->CreateCall(finalizer_fn_type, finalizer_fn, {data});
                 });
+                llvm::Value* const data = llvm_utils_->CreateLoad2(llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
+                                    llvm_utils_->create_gep2(uPoly_llvm_t, ptr, 1));
+                llvm_utils_->lfortran_free_nocheck(data);
+                END_CACHE(checkPoint_BB); // TODO : Clean things up (use only signel END_CACHE call in this function)
                 return;
             } 
 
-            const auto checkPoint_BB = 
-            START_CACHE(cache_key, ptr);
             if (ASRUtils::is_class_type(t) && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
                 // {VTable*, struct*} -- Fetch struct
                 llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
@@ -1903,6 +1867,8 @@ class ASRToLLVMVisitor;
          * @param struct_sym current struct if `type` contains StructType type (e.g. array of struct), nullptr if no StructType present. 
          */
         llvm::Type* get_llvm_type(ASR::ttype_t* type, ASR::Struct_t* struct_sym){
+            // TODO : Uncomment line below
+            // LCOMPILERS_ASSERT(!(ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type)) ^ (struct_sym != nullptr)))
             static auto const dummy_var_symbol = ASRUtils::EXPR(ASR::make_Var_t(al_, type->base.loc, nullptr));
             ASR::down_cast<ASR::Var_t>(dummy_var_symbol)->m_v = (ASR::symbol_t*)struct_sym;
             return llvm_utils_->get_type_from_ttype_t_util(dummy_var_symbol, type, llvm_utils_->module);
@@ -2218,10 +2184,10 @@ class ASRToLLVMVisitor;
 
         void check_all_caches_done_properly(){
             for(auto const& cache_pair : type_finalizer_cache_){
-                if(cache_pair.second->back().getTerminator() != nullptr){
-                    LCOMPILERS_ASSERT(("Cache function" + 
+                if(cache_pair.second->back().getTerminator() == nullptr){
+                    throw LCompilersException("Cache function" + 
                             cache_pair.second->getName().str() +
-                            "Not properly created").c_str())
+                            "Not properly created");
                 }
                 
             }
@@ -2311,8 +2277,9 @@ class ASRToLLVMVisitor;
                     return;
                 }
                 case ASR::StructType: {
-                    if (!is_finalizable_type(t_past, struct_sym, in_struct)) { return; }
-                    finalize(ptr, t_past, struct_sym, in_struct);
+                    auto t_past_ptr = ASRUtils::type_get_past_pointer(t); // Pointer variables doesn't get finalized (This function handles deallocation) -- bypass it
+                    if (!is_finalizable_type(t_past_ptr, struct_sym, in_struct)) { return; }
+                    finalize(ptr, t_past_ptr, struct_sym, in_struct);
                     return;
                 }
                 default:
@@ -2336,14 +2303,25 @@ class ASRToLLVMVisitor;
                     finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
                 }
             }
-            check_all_caches_done_properly();
+            LCOMPILERS_ASSERT([&]() { check_all_caches_done_properly(); return true;}());
         }
 
+        // Wrapper to the `get_UPoly_finalize_fn(ASR::ttype_t*, ASR::Struct_t*)` below 
         llvm::Function* get_UPoly_finalize_fn(ASR::Struct_t* const struct_sym){
             ASR::StructType_t* const struct_t = ASR::down_cast<ASR::StructType_t>(struct_sym->m_struct_signature);
             return get_UPoly_finalize_fn(&struct_t->base, struct_sym);
         }
-        llvm::Function* get_UPoly_finalize_fn(ASR::ttype_t* const type, ASR::Struct_t* const struct_sym){
+        
+        /**
+         * @brief Get a finalizer function for a type that's gonna be used with unlimited polymorphic type.
+         *
+         * Example : `allocate(INTEGER :: Upoly_variable)`
+         * We need to return a function that should be able to finalize an integer type that is gonna be wrapped in an unlimited polymorphic wrapper. 
+         * @param type The type we're allocating the Upoly against. 
+         * @param struct_sym StructSymbol bounded to type type .
+         */
+        llvm::Function* get_UPoly_finalize_fn(ASR::ttype_t* const type, ASR::Struct_t* const struct_sym = nullptr){
+            LCOMPILERS_ASSERT(type)
             const std::string cache_key = get_type_key(type, struct_sym)+"_for_UPoly";
             if(is_cached(cache_key)){
                 return type_finalizer_cache_[cache_key];
@@ -2363,8 +2341,14 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT(saved_BB)
             llvm::BasicBlock *const entry = llvm::BasicBlock::Create(builder_->getContext(), "entry", fn);
             builder_->SetInsertPoint(entry);
-            // Convert the pointer to the appropiate type
-            // Go and finalize.
+
+            // Convert the pointer to the appropiate type + Call finalize on it
+            llvm::Value* const i8_ptr_arg = &fn->args().begin()[0];
+            llvm::Type*  const llvm_type = get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(type), struct_sym);
+            LCOMPILERS_ASSERT_MSG(!llvm_type->isPointerTy(), "Expected a not pointer type")
+            llvm::Value* const correctly_typed_ptr = builder_->CreateBitCast(i8_ptr_arg, llvm_type->getPointerTo());
+            finalize(correctly_typed_ptr, type, struct_sym, false);
+
 
             // Set terminal block + Revert
             builder_->CreateRetVoid();

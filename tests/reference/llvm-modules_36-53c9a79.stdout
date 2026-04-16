@@ -558,6 +558,7 @@ entry:
 
 define internal void @finalize_StructType__fpm_build_settings_of_modules_36_fpm_main_01_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_build_settings*
   ret void
 }
 
@@ -697,10 +698,10 @@ entry:
 
 define internal void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_run_settings*
+  call void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %1)
   ret void
 }
-
-declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64)
 
 define internal void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %0) {
 entry:
@@ -741,6 +742,8 @@ ifcont:                                           ; preds = %else, %then
 }
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64)
 
 declare void @_lfortran_internal_alloc_finalize()
 

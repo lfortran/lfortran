@@ -1867,6 +1867,17 @@ public:
                                 source_wrapper_type->getPointerTo(), source_handle);
                         }
 
+                        llvm::Value* is_source_not_allocated = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(source_handle, llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                        llvm_utils->generate_runtime_error(is_source_not_allocated,
+                            "allocate with source= requires an allocated/associated polymorphic source expression",
+                            {LLVMUtils::RuntimeLabel(
+                                "source expression is not allocated/associated",
+                                {m_source->base.loc}, {})},
+                            infile,
+                            location_manager);
+
                         llvm::FunctionType* alloc_fn_type = llvm::FunctionType::get(
                             llvm::Type::getVoidTy(context), { llvm_utils->i8_ptr->getPointerTo() }, false);
                         llvm::PointerType* alloc_fn_ptr_type = llvm::PointerType::get(alloc_fn_type, 0);
@@ -1900,6 +1911,26 @@ public:
                         }
 
                         continue;
+                    }
+
+                    if (m_source && !m_source_is_class && ASRUtils::is_allocatable(m_source)) {
+                        int64_t saved_ptr_loads = ptr_loads;
+                        ptr_loads = 1;
+                        this->visit_expr(*m_source);
+                        llvm::Value* source_ptr = tmp;
+                        ptr_loads = saved_ptr_loads;
+                        tmp = nullptr;
+
+                        llvm::Value* is_source_not_allocated = builder->CreateICmpEQ(
+                            builder->CreatePtrToInt(source_ptr, llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                        llvm_utils->generate_runtime_error(is_source_not_allocated,
+                            "allocate with source= requires an allocated/associated source expression",
+                            {LLVMUtils::RuntimeLabel(
+                                "source expression is not allocated/associated",
+                                {m_source->base.loc}, {})},
+                            infile,
+                            location_manager);
                     }
 
                     if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
@@ -2647,38 +2678,19 @@ public:
                         }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
-                        if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                            llvm::Value* data = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
-                            llvm::Value* data_ptr;
-                            if (ASRUtils::is_unlimited_polymorphic_type(tmp_expr)) {
-                                data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data);
-                            } else {
-                                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
-                                data_ptr = llvm_utils->CreateLoad2(llvm_utils->getStructType(
-                                    ASR::down_cast<ASR::Struct_t>(struct_sym), module.get(), true), data);
-                                data_ptr = builder->CreateBitCast(data_ptr, llvm_utils->i8_ptr);
+                        if( ASRUtils::is_pointer(cur_type) || 
+                            !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(cur_type)) ) { // TODO : Clean this by coordinating with `finalize_before_deallocate()`
+                            if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::type_get_past_allocatable_pointer(cur_type)) && ASRUtils::is_pointer(cur_type) ){
+                                auto const inner_struct = llvm_utils->CreateLoad2(llvm_utils->getStructType(struct_sym, module.get(), true), llvm_utils->create_gep2(llvm_data_type, tmp, 1));
+                                llvm_utils->lfortran_free(inner_struct);
                             }
-                            llvm::Value* cond_data = builder->CreateICmpNE(
-                            builder->CreatePtrToInt(data_ptr, llvm::Type::getInt64Ty(context)),
-                            builder->CreatePtrToInt(
-                                llvm::ConstantPointerNull::get(llvm_utils->i8_ptr),
-                                llvm::Type::getInt64Ty(context)) );
-                            llvm_utils->create_if_else(cond_data, [=]() {
-                                llvm::AllocaInst *data_arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
-                                builder->CreateStore(data_ptr, data_arg_tmp);
-                                std::vector<llvm::Value*> data_args = {allocator, llvm_utils->CreateLoad2(character_type, data_arg_tmp)};
-                                builder->CreateCall(free_fn, data_args);
-                                builder->CreateStore(
-                                    llvm::ConstantPointerNull::get(llvm_utils->i8_ptr),
-                                    builder->CreateBitCast(data, llvm_utils->i8_ptr->getPointerTo()));
-                            }, [](){});
+                            llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
+                            builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
+                            std::vector<llvm::Value*> args = {allocator, llvm_utils->CreateLoad2(character_type, arg_tmp)};
+                            builder->CreateCall(free_fn, args);
                         }
-                        llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
-                        builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
-                        std::vector<llvm::Value*> args = {allocator, llvm_utils->CreateLoad2(character_type, arg_tmp)};
-                        builder->CreateCall(free_fn, args);
                         builder->CreateStore(
-                            llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_);
+                            llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_); // Store NULL as identifier for deallocated variable.
                     }, [](){});
                 } else {
                     if( LLVM::is_llvm_pointer(*cur_type) ) {
@@ -11100,6 +11112,29 @@ public:
                 x.m_target, ASRUtils::extract_type(target_type), module.get());
             llvm::Type* value_el_type = llvm_utils->get_el_type(
                 x.m_value, ASRUtils::extract_type(value_type), module.get());
+            bool is_allocatable_descriptor_target = (ASRUtils::is_allocatable(target_type) && target_ptype == ASR::array_physical_typeType::DescriptorArray);
+            if( is_allocatable_descriptor_target && !x.m_realloc_lhs && !x.m_move_allocation ) {
+                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
+                if( !target_expr_name.empty() ) {
+                    llvm::Value* target_name_llvm = LCompilers::create_global_string_ptr(
+                        context, *module, *builder, target_expr_name);
+                    llvm_utils->generate_runtime_error(
+                        is_not_allocated,
+                        "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_name_llvm})},
+                        infile,
+                        location_manager,
+                        target_name_llvm);
+                } else {
+                    llvm_utils->generate_runtime_error(
+                        is_not_allocated,
+                        "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("LHS not allocated here", {x.m_target->base.loc}, {})},
+                        infile,
+                        location_manager);
+                }
+            }
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
@@ -11331,6 +11366,9 @@ public:
                 }
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
+            } else if (!value->getType()->isPointerTy()) {
+                llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
+                target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
             builder->CreateStore(value, target);
         } else {
@@ -11416,6 +11454,31 @@ public:
             ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_components[0]->base.loc, 4));
 
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            bool is_allocatable_descriptor_target = ASRUtils::is_array(target_type) &&
+                ASRUtils::is_allocatable(target_type) &&
+                ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
+            if (is_allocatable_descriptor_target && !x.m_move_allocation) {
+                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
+                if (!target_expr_name.empty()) {
+                    llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(
+                        context, *module, *builder, target_expr_name);
+                    llvm_utils->generate_runtime_error(is_not_allocated,
+                        "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("'%s' not allocated here",
+                            {x.m_target->base.loc}, {target_expr_name_llvm})},
+                        infile,
+                        location_manager,
+                        target_expr_name_llvm);
+                } else {
+                    llvm_utils->generate_runtime_error(is_not_allocated,
+                        "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                        {LLVMUtils::RuntimeLabel("LHS not allocated here",
+                            {x.m_target->base.loc}, {})},
+                        infile,
+                        location_manager);
+                }
+            }
             ASR::dimension_t* m_dims = nullptr;
             size_t rank = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
             for (size_t dim = 0; dim < rank; dim++) {
@@ -11440,17 +11503,6 @@ public:
                         ASRUtils::is_allocatable(target_variable->m_type) &&
                         ASRUtils::extract_physical_type(target_variable->m_type) == ASR::array_physical_typeType::DescriptorArray) {
                         llvm::Value* is_not_allocated = expr_is_unallocated(v);
-                        // With move don't throw error when target is unallocated
-                        if (!x.m_move_allocation) {
-                            llvm::Value* target_var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name);
-                            llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
-                                    {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_var_name_llvm})},
-                                    infile,
-                                    location_manager,
-                                    target_var_name_llvm);
-                        }
-
                         llvm::Function *fn = builder->GetInsertBlock()->getParent();
                         llvm::BasicBlock *thenBB = nullptr;
                         llvm::BasicBlock *mergeBB = nullptr;
@@ -11488,28 +11540,6 @@ public:
                                                             dim_llvm);
                     }
                 } else {
-                    if (ASRUtils::is_array(target_type) &&
-                        ASRUtils::is_allocatable(target_type) &&
-                        ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
-                        !x.m_move_allocation) {
-                        llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
-                        std::string target_expr_name = get_expr_name_for_runtime_message(x.m_target);
-                        if (!target_expr_name.empty()) {
-                            llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, target_expr_name);
-                            llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
-                                {LLVMUtils::RuntimeLabel("'%s' not allocated here", {x.m_target->base.loc}, {target_expr_name_llvm})},
-                                infile,
-                                location_manager,
-                                target_expr_name_llvm);
-                        } else {
-                            llvm_utils->generate_runtime_error(is_not_allocated,
-                                "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
-                                {LLVMUtils::RuntimeLabel("LHS not allocated here", {x.m_target->base.loc}, {})},
-                                infile,
-                                location_manager);
-                        }
-                    }
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
@@ -12814,10 +12844,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -12898,10 +12934,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateFCmpOEQ(left, right);
@@ -12939,10 +12981,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         llvm::Value* real_left = complex_re(left, left->getType());
         llvm::Value* real_right = complex_re(right, right->getType());
         llvm::Value* img_left = complex_im(left, left->getType());
@@ -13057,10 +13105,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
         // Match widths if logical kinds differ
         if (left->getType() != right->getType()) {
             unsigned left_bits = left->getType()->getIntegerBitWidth();
@@ -13256,10 +13310,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left_val = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right_val = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left_val);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right_val);
         llvm::Value *zero, *cond;
         if (ASRUtils::is_integer(*x.m_type)) {
             int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
@@ -13770,11 +13830,17 @@ public:
             return;
         }
         lookup_enum_value_for_nonints = true;
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left_val = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right_val = tmp;
         lookup_enum_value_for_nonints = false;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left_val);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
         if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
             llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
@@ -22512,11 +22578,17 @@ public:
     }
 
     void generate_fma(ASR::call_arg_t* m_args) {
-        this->visit_expr_wrapper(m_args[0].m_value, true);
+        this->visit_expr_load_wrapper(m_args[0].m_value,
+            LLVM::is_llvm_pointer(*expr_type(m_args[0].m_value)) ? 2 : 1,
+            true);
         llvm::Value* a = tmp;
-        this->visit_expr_wrapper(m_args[1].m_value, true);
+        this->visit_expr_load_wrapper(m_args[1].m_value,
+            LLVM::is_llvm_pointer(*expr_type(m_args[1].m_value)) ? 2 : 1,
+            true);
         llvm::Value* b = tmp;
-        this->visit_expr_wrapper(m_args[2].m_value, true);
+        this->visit_expr_load_wrapper(m_args[2].m_value,
+            LLVM::is_llvm_pointer(*expr_type(m_args[2].m_value)) ? 2 : 1,
+            true);
         llvm::Value* c = tmp;
 #if LLVM_VERSION_MAJOR >= 8
         tmp = builder->CreateIntrinsic(llvm::Intrinsic::fma,

@@ -151,6 +151,7 @@ entry:
 
 define internal void @finalize_StructType__circle_of_class_circle2_for_UPoly(i8* %0) {
 entry:
+  %1 = bitcast i8* %0 to %class_circle2.circle*
   ret void
 }
 
