@@ -329,6 +329,7 @@ entry:
   br i1 %2, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
+  call void @finalize_StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %0)
   %3 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %0, i32 0, i32 1
   %4 = load %module_call_subroutine_without_type_01.mytype*, %module_call_subroutine_without_type_01.mytype** %3, align 8
   %5 = icmp ne %module_call_subroutine_without_type_01.mytype* %4, null
@@ -345,6 +346,40 @@ is_allocated.else:                                ; preds = %is_allocated.then
 is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
   %7 = bitcast %module_call_subroutine_without_type_01.mytype_class* %0 to i8*
   call void @_lfortran_free_alloc(i8* %1, i8* %7)
+  br label %is_allocated.ifcont3
+
+is_allocated.else2:                               ; preds = %entry
+  br label %is_allocated.ifcont3
+
+is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
+  ret void
+}
+
+define internal void @finalize_StructType_Class__mytype_of_module_call_subroutine_without_type_01(%module_call_subroutine_without_type_01.mytype_class* %0) {
+entry:
+  %1 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %0, i32 0, i32 0
+  %2 = load i32 (...)**, i32 (...)*** %1, align 8
+  %3 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %0, i32 0, i32 1
+  %4 = load %module_call_subroutine_without_type_01.mytype**, %module_call_subroutine_without_type_01.mytype** %3, align 8
+  %5 = bitcast %module_call_subroutine_without_type_01.mytype** %4 to i8*
+  %6 = icmp ne i32 (...)** %2, null
+  br i1 %6, label %is_allocated.then, label %is_allocated.else2
+
+is_allocated.then:                                ; preds = %entry
+  %7 = getelementptr inbounds i32 (...)*, i32 (...)** %2, i32 2
+  %8 = load i8*, i32 (...)** %7, align 8
+  %9 = bitcast i8* %8 to void (i8*)*
+  %10 = icmp ne i8* %5, null
+  br i1 %10, label %is_allocated.then1, label %is_allocated.else
+
+is_allocated.then1:                               ; preds = %is_allocated.then
+  call void %9(i8* %5)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
   br label %is_allocated.ifcont3
 
 is_allocated.else2:                               ; preds = %entry
