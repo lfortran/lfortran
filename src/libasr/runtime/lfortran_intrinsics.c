@@ -5997,8 +5997,8 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
                 }
                 return;
             } else {
-                printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
-                exit(1);
+            printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
+            exit(1);
             }
         }
         fflush(filep);
@@ -6730,13 +6730,44 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
     }
 }
 
-LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
+LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len)
 {
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id = -1;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if( filep == NULL ) {
         printf("Specified UNIT %d in REWIND is not created or connected.\n", unit_num);
         exit(1);
+    }
+    if (access_id == 2) {
+        if (iostat != NULL) {
+            *iostat = 5002;
+            if (iomsg != NULL && iomsg_len > 0) {
+                char msg[100];
+                snprintf(msg, sizeof(msg), "REWIND cannot be used on UNIT %d opened with DIRECT access.", unit_num);
+                _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg));
+            }
+            return;
+        } else {
+            printf("REWIND cannot be used on UNIT %d opened with DIRECT access.\n", unit_num);
+            exit(1);
+        }
+    }
+    if (fseek(filep, 0, SEEK_SET) != 0) {
+        if (iostat != NULL) {
+            *iostat = -1;
+            if (iomsg != NULL && iomsg_len > 0) {
+                char *msg = strerror(errno);
+                _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg));
+            }
+            return;
+        } else {
+            printf("REWIND failed for UNIT %d.\n", unit_num);
+            exit(1);
+        }
     }
     rewind(filep);
     seq_char_state_reset(unit_num);
