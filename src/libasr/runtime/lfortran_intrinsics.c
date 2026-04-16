@@ -5201,10 +5201,18 @@ struct UNIT_FILE unit_to_file[MAXUNITS];
 static int32_t seq_char_pending[MAXUNITS];
 static int32_t seq_char_record_len[MAXUNITS];
 
+// Pending list-directed null-repeat state per unit.
+static int32_t lf_list_dir_null_remaining[MAXUNITS];
+
 static inline void seq_char_state_reset(int32_t unit_num) {
     if (unit_num < 0 || unit_num >= MAXUNITS) return;
     seq_char_pending[unit_num] = 0;
     seq_char_record_len[unit_num] = 0;
+}
+
+static inline void list_dir_state_reset(int32_t unit_num) {
+    if (unit_num < 0 || unit_num >= MAXUNITS) return;
+    lf_list_dir_null_remaining[unit_num] = 0;
 }
 
 // Pre-connect standard Fortran units at program startup.
@@ -5283,6 +5291,7 @@ static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode, int decimal_mode, int encoding, int round_mode, int pad_mode) {
     _lfortran_init_standard_units();
     seq_char_state_reset(unit_num);
+    list_dir_state_reset(unit_num);
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             // Update existing entry - only update filename if explicitly provided (not NULL)
@@ -5377,6 +5386,7 @@ char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
 
 void remove_from_unit_to_file(int32_t unit_num) {
     seq_char_state_reset(unit_num);
+    list_dir_state_reset(unit_num);
     int index = -1;
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
@@ -6740,6 +6750,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
     }
     rewind(filep);
     seq_char_state_reset(unit_num);
+    list_dir_state_reset(unit_num);
 }
 
 LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
@@ -6886,12 +6897,8 @@ static void skip_list_directed_comma(FILE *filep) {
     if (c != EOF) ungetc(c, filep);
 }
 
-// List-directed read: track remaining null-value repeats per unit.
-#define LF_LIST_DIR_MAX_UNITS 1024
-static int lf_list_dir_null_remaining[LF_LIST_DIR_MAX_UNITS] = {0};
-
 static int list_directed_check_null_repeat(int32_t unit_num) {
-    if (unit_num >= 0 && unit_num < LF_LIST_DIR_MAX_UNITS
+    if (unit_num >= 0 && unit_num < MAXUNITS
             && lf_list_dir_null_remaining[unit_num] > 0) {
         lf_list_dir_null_remaining[unit_num]--;
         return 1;
@@ -8047,7 +8054,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
         }
         int null_count = list_directed_parse_null_repeat(buffer);
         if (null_count > 0) {
-            if (unit_num >= 0 && unit_num < LF_LIST_DIR_MAX_UNITS) {
+            if (unit_num >= 0 && unit_num < MAXUNITS) {
                 lf_list_dir_null_remaining[unit_num] = null_count - 1;
             }
             return;
@@ -8111,7 +8118,7 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
         }
         int null_count = list_directed_parse_null_repeat(buffer);
         if (null_count > 0) {
-            if (unit_num >= 0 && unit_num < LF_LIST_DIR_MAX_UNITS) {
+            if (unit_num >= 0 && unit_num < MAXUNITS) {
                 lf_list_dir_null_remaining[unit_num] = null_count - 1;
             }
             return;
@@ -8199,7 +8206,7 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
         }
         int null_count = list_directed_parse_null_repeat(buffer);
         if (null_count > 0) {
-            if (unit_num >= 0 && unit_num < LF_LIST_DIR_MAX_UNITS) {
+            if (unit_num >= 0 && unit_num < MAXUNITS) {
                 lf_list_dir_null_remaining[unit_num] = null_count - 1;
             }
             return;
@@ -8690,7 +8697,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
         }
         int null_count = list_directed_parse_null_repeat(buffer);
         if (null_count > 0) {
-            if (unit_num >= 0 && unit_num < LF_LIST_DIR_MAX_UNITS) {
+            if (unit_num >= 0 && unit_num < MAXUNITS) {
                 lf_list_dir_null_remaining[unit_num] = null_count - 1;
             }
             return;
