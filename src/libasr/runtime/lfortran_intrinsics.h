@@ -281,6 +281,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* pad, int64_t pad_len
 );
 LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
+LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_sleep(int32_t seconds);
 LFORTRAN_API int32_t _lfortran_get_decimal_mode(int32_t unit_num);
@@ -415,6 +416,14 @@ typedef struct {
 
 LFORTRAN_API void _lfortran_namelist_write(
     int32_t unit_num,
+    int32_t *iostat,
+    const lfortran_nml_group_t *group
+);
+
+LFORTRAN_API void _lfortran_namelist_write_str_array(
+    char *data,
+    int64_t elem_len,
+    int64_t n_elems,
     int32_t *iostat,
     const lfortran_nml_group_t *group
 );

@@ -906,9 +906,33 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    // Check if the line starting at `cur` is an assignment to a variable
+    // whose name starts with an IO keyword (e.g., PRINTP = 1 in fixed-form
+    // becomes printp=1 after prescanning). Returns true if there is a '='
+    // (not '==') before any ',' at parenthesis depth 0, indicating an
+    // assignment rather than an IO statement.
+    bool is_io_keyword_assignment(unsigned char *p) {
+        if (*p == '=' && *(p+1) != '=') return true;
+        if (!is_char(*p) && !is_digit(*p) && *p != '_') return false;
+        int depth = 0;
+        while (*p != '\n' && *p != '\0') {
+            if (*p == '(') depth++;
+            else if (*p == ')') depth--;
+            else if (depth == 0) {
+                if (*p == '=' && *(p+1) != '=') return true;
+                if (*p == ',') return false;
+            }
+            p++;
+        }
+        return false;
+    }
+
     bool lex_io(unsigned char *&cur) {
         for(const auto &io_str: io_names) {
             if (next_is(cur, io_str)) {
+                if (is_io_keyword_assignment(cur + io_str.size())) {
+                    return false;
+                }
                 if (io_str == "format") {
                     unsigned char *format_start = cur;
                     cur += io_str.size();
@@ -1581,8 +1605,11 @@ struct FixedFormRecursiveDescent {
                 push_token_advance(cur, "case");
                 push_token_advance(cur, "default");
                 tokenize_line(cur);
-            } else {
+            } else if (next_is(cur, "case")) {
+                push_token_advance(cur, "case");
                 tokenize_line(cur);
+            } else {
+                lex_body_statement(cur);
             }
         }
         push_token_advance(cur, "endselect");

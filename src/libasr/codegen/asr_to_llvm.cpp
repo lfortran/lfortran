@@ -5981,7 +5981,8 @@ public:
 
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
-        bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false) {
+        bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false,
+        bool reserve_data_memory=true) {
         // Skip function call for AssumedLength strings
         // Their descriptors come from the original parameter inside subroutines
         if (ASRUtils::is_character(*m_type)) {
@@ -6015,7 +6016,7 @@ public:
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
             llvm::Type* ptr_typ = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get());
-            fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
+            fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only, reserve_data_memory);
             // For non-allocatable DescriptorArray character arrays,
             // fill_array_details allocated an array of string_descriptors
             // but their data pointers are uninitialized. Set the string
@@ -7107,9 +7108,21 @@ public:
                 (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::StringArraySinglePointer &&
                 ASRUtils::is_dimension_empty(m_dims,n_dims))))
             ) {
+                auto is_array_const_or_ctor = [](ASR::expr_t* e) {
+                    return e && (ASR::is_a<ASR::ArrayConstant_t>(*e) ||
+                                 ASR::is_a<ASR::ArrayConstructor_t>(*e));
+                };
+                ASR::expr_t* init_value = v->m_value ? v->m_value : v->m_symbolic_value;
+                bool skip_data_alloc = (v->m_storage == ASR::storage_typeType::Parameter)
+                    && !is_malloc_array_type
+                    && ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray
+                    && !ASRUtils::is_character(*ASRUtils::type_get_past_array(v->m_type))
+                    && !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(v->m_type))
+                    && is_array_const_or_ctor(init_value);
                 fill_array_details_(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)), ptr, type_, m_dims, n_dims,
-                    is_malloc_array_type, is_array_type, is_list, v->m_type);
+                    is_malloc_array_type, is_array_type, is_list, v->m_type,
+                    /*is_data_only=*/false, /*reserve_data_memory=*/!skip_data_alloc);
                 // Now that the descriptor is initialized, initialize allocatable
                 // members of each element for DescriptorArray struct arrays.
                 if( ASR::is_a<ASR::StructType_t>(
@@ -18366,19 +18379,45 @@ public:
     }
 
     void visit_FileRewind(const ASR::FileRewind_t &x) {
+        llvm::Value *unit_val = nullptr;
+        llvm::Value *iostat = nullptr;
+        llvm::Value *iomsg = nullptr;
+        llvm::Value *iomsg_len = nullptr;
+
+        this->visit_expr_wrapper(x.m_unit, true);
+        unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+
+        if (x.m_iostat) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_iostat, false);
+            ptr_loads = ptr_copy;
+            iostat = tmp;
+        } else {
+            iostat = llvm::ConstantInt::getNullValue(llvm::Type::getInt32Ty(context)->getPointerTo());
+        }
+
+        if (x.m_iomsg) {
+            std::tie(iomsg, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+        } else {
+            iomsg = llvm::Constant::getNullValue(character_type);
+            iomsg_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+        }
+
         std::string runtime_func_name = "_lfortran_rewind";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt32Ty(context)
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
+                        character_type,
+                        llvm::Type::getInt64Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
-        this->visit_expr_wrapper(x.m_unit, true);
-        llvm::Value *unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
-        builder->CreateCall(fn, {unit_val});
+        builder->CreateCall(fn, {unit_val, iostat, iomsg, iomsg_len});
     }
 
     void visit_FileEndfile(const ASR::FileEndfile_t &x) {
@@ -18476,12 +18515,21 @@ public:
         // Handle namelist write
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
+            bool is_string_array = false;
 
             if (x.m_unit == nullptr) {
                 unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 6, true));
             } else {
-                this->visit_expr_wrapper(x.m_unit, true);
-                unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+                ASR::ttype_t* unit_type = expr_type(x.m_unit);
+                is_string_array = ASRUtils::is_character(*unit_type) && ASRUtils::is_array(unit_type);
+
+                if (is_string_array) {
+                    this->visit_expr_wrapper(x.m_unit, false);
+                    unit_val = tmp;
+                } else {
+                    this->visit_expr_wrapper(x.m_unit, true);
+                    unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+                }
             }
 
             if (x.m_iostat) {
@@ -18497,36 +18545,89 @@ public:
             // Build namelist descriptor and call _lfortran_namelist_write
             llvm::Value* nml_group = build_namelist_descriptor(x.m_nml);
 
-            // Get or create _lfortran_namelist_write function
-            std::string func_name = "_lfortran_namelist_write";
+            std::string func_name;
+            if (is_string_array) {
+                func_name = "_lfortran_namelist_write_str_array";
+            } else {
+                func_name = "_lfortran_namelist_write";
+            }
             llvm::Function* fn = module->getFunction(func_name);
+
             if (!fn) {
-                // Define item struct type (must match build_namelist_descriptor)
                 llvm::StructType* item_type = llvm::StructType::get(
-                    character_type,                               // name
-                    llvm::Type::getInt32Ty(context),             // type
-                    llvm::Type::getInt32Ty(context),             // rank
-                    llvm::Type::getInt64Ty(context),             // elem_len
-                    llvm::Type::getInt8Ty(context)->getPointerTo(), // data
-                    llvm::Type::getInt64Ty(context)->getPointerTo()  // shape
+                    character_type,
+                    llvm::Type::getInt32Ty(context),
+                    llvm::Type::getInt32Ty(context),
+                    llvm::Type::getInt64Ty(context),
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm::Type::getInt64Ty(context)->getPointerTo()
                 );
+
                 llvm::StructType* group_type = llvm::StructType::get(
                     character_type,
                     llvm::Type::getInt32Ty(context),
                     item_type->getPointerTo()
                 );
-                std::vector<llvm::Type*> args{
-                    llvm::Type::getInt32Ty(context),         // unit_num
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
-                    group_type->getPointerTo()              // group
-                };
+
+                std::vector<llvm::Type*> args;
+                if (is_string_array) {
+                    args = {
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),
+                        llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
+                        group_type->getPointerTo()
+                    };
+                } else {
+                    args = {
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
+                        group_type->getPointerTo()
+                    };
+                }
+
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), args, false);
-                fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, func_name, module.get());
+                    llvm::Type::getVoidTy(context), args, false
+                );
+
+                fn = llvm::Function::Create(
+                    function_type,
+                    llvm::Function::ExternalLinkage,
+                    func_name,
+                    module.get()
+                );
             }
 
-            builder->CreateCall(fn, {unit_val, iostat, nml_group});
+            if (is_string_array) {
+                llvm::Value* data_ptr = builder->CreateStructGEP(string_descriptor, unit_val, 0);
+                data_ptr = builder->CreateLoad(
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    data_ptr
+                );
+
+                llvm::Value* len_ptr = builder->CreateStructGEP(string_descriptor, unit_val, 1);
+                llvm::Value* elem_len = builder->CreateLoad(
+                    llvm::Type::getInt64Ty(context),
+                    len_ptr
+                );
+
+                ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
+                ASR::dimension_t* dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(unit_type, dims);
+                LCOMPILERS_ASSERT(n_dims >= 1);
+
+                int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
+
+                llvm::Value* n_elems = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context),
+                    llvm::APInt(64, n_elems_val)
+                );
+
+                builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat, nml_group});
+            } else {
+                builder->CreateCall(fn, {unit_val, iostat, nml_group});
+            }
+
             return;
         }
 

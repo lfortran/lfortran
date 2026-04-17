@@ -3490,13 +3490,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
         llvm::Type* i8_ty = llvm::Type::getInt8Ty(context);
 
-        llvm::Value* desc_size = llvm::ConstantInt::get(i64_ty,
-            module->getDataLayout().getTypeAllocSize(str_desc_ty));
-        llvm::Value* total_bytes = builder->CreateMul(n_elems_i64, desc_size);
-        llvm::Value* descs_buf = LLVMArrUtils::lfortran_malloc(
-            context, *module, *builder, total_bytes);
-        llvm::Value* descs = builder->CreateBitCast(
-            descs_buf, str_desc_ty->getPointerTo());
+        // Stack-allocate the per-element string descriptors; their lifetime is
+        // bounded by the enclosing call, so a heap allocation would leak.
+        llvm::Value* descs = CreateAlloca(*builder, str_desc_ty, n_elems_i64);
 
         llvm::Value* idx = CreateAlloca(*builder, i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
