@@ -6753,16 +6753,17 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
         exit(1);
     }
     if (access_id == 2) {
+        const char *msg = "REWIND cannot be used on UNIT %d opened with DIRECT access.";
+        char buffer[256];
+        snprintf(buffer, sizeof(buffer), msg, unit_num);
         if (iostat != NULL) {
             *iostat = 5002;
             if (iomsg != NULL && iomsg_len > 0) {
-                char msg[100];
-                snprintf(msg, sizeof(msg), "REWIND cannot be used on UNIT %d opened with DIRECT access.", unit_num);
-                _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg));
+                _lfortran_copy_str_and_pad(iomsg, iomsg_len, buffer, strlen(buffer));
             }
             return;
         } else {
-            printf("REWIND cannot be used on UNIT %d opened with DIRECT access.\n", unit_num);
+            printf("%s\n", buffer);
             exit(1);
         }
     }
