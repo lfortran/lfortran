@@ -1600,8 +1600,11 @@ struct FixedFormRecursiveDescent {
                 push_token_advance(cur, "case");
                 push_token_advance(cur, "default");
                 tokenize_line(cur);
-            } else {
+            } else if (next_is(cur, "case")) {
+                push_token_advance(cur, "case");
                 tokenize_line(cur);
+            } else {
+                lex_body_statement(cur);
             }
         }
         push_token_advance(cur, "endselect");
