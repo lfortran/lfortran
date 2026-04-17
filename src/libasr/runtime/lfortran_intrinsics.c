@@ -10043,7 +10043,13 @@ static void common_formatted_read(InputSource *inputSource,
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
+        return;
+    } else if (unit_num == -2) {
         // Read from stdin
+        int inp = 0;
+        do {
+            inp = fgetc(stdin);
+        } while (inp != '\n' && inp != EOF);
         return;
     }
 
