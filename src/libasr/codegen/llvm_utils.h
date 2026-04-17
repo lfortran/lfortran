@@ -1419,11 +1419,34 @@ class ASRToLLVMVisitor;
             } 
 
             if (ASRUtils::is_class_type(t) && !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
-                // {VTable*, struct*} -- Fetch struct
-                llvm::Type* const derived_llvm_type = get_llvm_type(t, struct_sym);
-                ptr = llvm_utils_->CreateLoad2(
-                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true),
-                    llvm_utils_->create_gep2(derived_llvm_type, ptr, 1));
+                // Using vptr for finalisation.
+                llvm::Type* const class_llvm_t = get_llvm_type(t, struct_sym);
+                llvm::FunctionType* const finalizer_fn_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(builder_->getContext()), {llvm_utils_->i8_ptr}, false);
+                llvm::Value* const dispatch_table = llvm_utils_->CreateLoad2(
+                    llvm_utils_->vptr_type,
+                    llvm_utils_->create_gep2(class_llvm_t, ptr, 0));
+                llvm::Type* const data_ptr_type =
+                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true)->getPointerTo();
+                llvm::Value* const data_typed = llvm_utils_->CreateLoad2(
+                    data_ptr_type,
+                    llvm_utils_->create_gep2(class_llvm_t, ptr, 1));
+                llvm::Value* const data = builder_->CreateBitCast(data_typed, llvm_utils_->i8_ptr);
+                check_if_allocated_then_finalize(dispatch_table, llvm_utils_->vptr_type, [&]() {
+                    llvm::FunctionType const *fnTy = llvm::FunctionType::get(
+                        llvm::Type::getInt32Ty(builder_->getContext()), {}, true);
+                    llvm::Value* const finalizer_fn_i8ptr = llvm_utils_->CreateLoad2(
+                        llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
+                        llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), dispatch_table,
+                            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
+                    llvm::Value* const finalizer_fn = builder_->CreateBitCast(
+                        finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
+                    check_if_allocated_then_finalize(data, llvm_utils_->i8_ptr, [&]() {
+                        builder_->CreateCall(finalizer_fn_type, finalizer_fn, {data});
+                    });
+                });
+                END_CACHE(checkPoint_BB);
+                return;
             }
 
             if (ASRUtils::is_class_type(t)) {
@@ -2039,6 +2062,7 @@ class ASRToLLVMVisitor;
                 case ASR::StructType:{
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
                     bool finalizable_struct = false;
+                    finalizable_struct |= ASRUtils::is_class_type(t);
                     finalizable_struct |= struc_t->m_is_unlimited_polymorphic;
                     // Check for user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
                     if(struct_sym && struct_sym->n_member_functions > 0) { return true; }

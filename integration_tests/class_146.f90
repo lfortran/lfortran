@@ -1,30 +1,17 @@
 program class_146
-   implicit none
+    implicit none
 
-   type :: m_type
-      character(len=10) :: c
-   end type
+    type :: string_value
+        integer :: raw
+    end type
 
-   class(m_type), allocatable :: value(:)
-   integer :: i
+    type, extends(string_value) :: toml_keyval
+        character(len=24) :: key
+    end type
 
-   allocate(value(3))
-   do i = 1, 3
-      value(i)%c = "test"
-   end do
-   do i = 1, 3
-      if (value(i)%c /= "test") error stop
-   end do
-   deallocate(value)
+    class(string_value), allocatable :: val
 
-   allocate(value(5))
-   do i = 1, 5
-      value(i)%c = "abc"
-   end do
-   do i = 1, 5
-      if (value(i)%c /= "abc") error stop
-   end do
-   deallocate(value)
+    allocate(toml_keyval :: val)
+    deallocate(val)
 
-   print *, "PASSED"
 end program

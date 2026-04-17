@@ -2474,12 +2474,12 @@ public:
 
     void visit_Rewind(const AST::Rewind_t& x) {
         mark_IO_side_effect();
-        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }, {"iomsg", 3}};
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Rewind";
-        fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
-        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
-        tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+        fill_args_for_rewind_inquire_flush(x, 4, args, 4, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2], *iomsg = args[3];
+        tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err, iomsg);
     }
 
     void visit_Endfile(const AST::Endfile_t& x) {
