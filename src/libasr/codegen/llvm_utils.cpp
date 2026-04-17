@@ -3326,14 +3326,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     void LLVMUtils::init_string_descriptors(llvm::Value* data_mem,
             llvm::Value* num_elements, llvm::Value* str_len) {
         llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
-        llvm::Type* i8_ty = llvm::Type::getInt8Ty(context);
-
-        llvm::Value* char_bytes = builder->CreateMul(num_elements, str_len);
-        llvm::Value* char_data = LLVMArrUtils::lfortran_malloc(
-            context, *module, *builder, char_bytes);
-        builder->CreateMemSet(char_data,
-            llvm::ConstantInt::get(context, llvm::APInt(8, 32)),
-            char_bytes, llvm::MaybeAlign());
 
         llvm::Value* desc_arr = builder->CreateBitCast(
             data_mem, string_descriptor->getPointerTo());
@@ -3346,9 +3338,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Value* ci = CreateLoad2(i64_ty, idx);
             llvm::Value* dp = builder->CreateInBoundsGEP(
                 string_descriptor, desc_arr, ci);
-            llvm::Value* ep = builder->CreateInBoundsGEP(
-                i8_ty, char_data, builder->CreateMul(ci, str_len));
-            builder->CreateStore(ep,
+            llvm::Value* char_buf = LLVMArrUtils::lfortran_malloc(
+                context, *module, *builder, str_len);
+            builder->CreateMemSet(char_buf,
+                llvm::ConstantInt::get(context, llvm::APInt(8, 32)),
+                str_len, llvm::MaybeAlign());
+            builder->CreateStore(char_buf,
                 create_gep2(string_descriptor, dp, 0));
             builder->CreateStore(str_len,
                 create_gep2(string_descriptor, dp, 1));

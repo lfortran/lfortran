@@ -1546,6 +1546,68 @@ class ASRToLLVMVisitor;
 /*>>>>>>>>>>>>>>>>>>>>> Array Finalization Utilities <<<<<<<<<<<<<<<<<<<<<<< */
 
         /**
+         * @brief Finalize all elements of a class(*) (unlimited polymorphic) array.
+         * @details ONE-wrapper layout: data_ptr -> wrapper {vptr, payload*} where
+         *          payload is a contiguous buffer of array_size elements. Loops over
+         *          all elements, calling the vtable finalize function on each, then
+         *          frees the payload and nulls the payload pointer.
+         *
+         * @param data_ptr   pointer to the class(*) wrapper {vptr, i8* payload}
+         * @param struct_t   ASR StructType for the unlimited polymorphic type
+         * @param struct_sym the Struct_t symbol
+         * @param array_size number of elements in the array
+         */
+        void finalize_upoly_array_elements(llvm::Value* const data_ptr,
+                ASR::StructType_t* const struct_t, ASR::Struct_t* const struct_sym,
+                llvm::Value* array_size) {
+            llvm::Type* const wrapper_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
+            llvm::Value* const vptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->vptr_type,
+                llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 0));
+            llvm::Value* const payload_ref = llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 1);
+            llvm::Value* const payload_ptr = llvm_utils_->CreateLoad2(llvm_utils_->i8_ptr, payload_ref);
+            llvm::Value* const payload_not_null = builder_->CreateICmpNE(
+                payload_ptr, llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+            llvm_utils_->create_if_else(payload_not_null, [&]() {
+                llvm::Value* const elem_size = llvm_utils_->get_class_type_size_from_vptr(vptr);
+                llvm::FunctionType* const finalizer_fn_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(builder_->getContext()), {llvm_utils_->i8_ptr}, false);
+                llvm::FunctionType const *fnTy = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(builder_->getContext()), {}, true);
+                llvm::Value* const finalizer_fn_i8ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->i8_ptr,
+                    llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), vptr,
+                        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
+                llvm::Value* const finalizer_fn = builder_->CreateBitCast(
+                    finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
+
+                auto const iter_type = llvm::Type::getInt64Ty(builder_->getContext());
+                auto const iter = builder_->CreateAlloca(iter_type, nullptr, "upoly_arr_iter");
+                builder_->CreateStore(llvm::ConstantInt::get(iter_type, -1, true), iter);
+
+                auto const cond_fn = [&]() {
+                    auto const loaded = builder_->CreateLoad(iter_type, iter);
+                    auto const incremented = builder_->CreateAdd(
+                        loaded, llvm::ConstantInt::get(iter_type, 1));
+                    builder_->CreateStore(incremented, iter);
+                    return builder_->CreateICmpSLT(incremented, array_size);
+                };
+                auto const body_fn = [&]() {
+                    auto const loaded = builder_->CreateLoad(iter_type, iter);
+                    auto const byte_offset = builder_->CreateMul(loaded, elem_size);
+                    auto const elem_ptr = builder_->CreateGEP(
+                        llvm::Type::getInt8Ty(builder_->getContext()), payload_ptr, byte_offset);
+                    builder_->CreateCall(finalizer_fn_type, finalizer_fn, {elem_ptr});
+                };
+                llvm_utils_->create_loop("Finalize_upoly_array_elements", cond_fn, body_fn);
+
+                llvm_utils_->lfortran_free_nocheck(payload_ptr);
+                builder_->CreateStore(
+                    llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);
+            }, [](){});
+        }
+
+        /**
          * @brief Handles the process of freeing each and every struct in an array.
          * @details Create a loop on `array_size` to fetch each struct, then call finalize_struct on it.
          *          It also handles the special memory allocation of Class type.
@@ -1573,38 +1635,7 @@ class ASRToLLVMVisitor;
                 ASRUtils::is_unlimited_polymorphic_type(&struct_t->base);
 
             if (is_unlimited_polymorphic_class) {
-                // class(*) descriptor arrays use a single wrapper whose payload
-                // points to the contiguous data buffer for all elements.
-                llvm::Type* const wrapper_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
-                llvm::Value* const vptr = llvm_utils_->CreateLoad2(
-                    llvm_utils_->vptr_type,
-                    llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 0));
-                llvm::Value* const payload_ref = llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 1);
-                llvm::Value* const payload_ptr = llvm_utils_->CreateLoad2(llvm_utils_->i8_ptr, payload_ref);
-                llvm::Value* const payload_not_null = builder_->CreateICmpNE(
-                    payload_ptr, llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
-                llvm_utils_->create_if_else(payload_not_null, [this, vptr, payload_ptr, payload_ref]() {
-                    llvm::Value* const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
-                    llvm::Value* const is_string = builder_->CreateICmpEQ(
-                        type_tag,
-                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
-                    llvm_utils_->create_if_else(is_string, [this, payload_ptr]() {
-                        llvm::Value* const str_desc = builder_->CreateBitCast(
-                            payload_ptr, llvm_utils_->string_descriptor->getPointerTo());
-                        llvm::Value* const char_ptr = llvm_utils_->CreateLoad2(
-                            llvm_utils_->character_type,
-                            llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
-                        llvm::Value* const char_not_null = builder_->CreateICmpNE(
-                            char_ptr,
-                            llvm::ConstantPointerNull::get(llvm_utils_->character_type));
-                        llvm_utils_->create_if_else(char_not_null,
-                            [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
-                            [](){});
-                    }, [](){});
-                    llvm_utils_->lfortran_free_nocheck(payload_ptr);
-                    builder_->CreateStore(
-                        llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);
-                }, [](){});
+                finalize_upoly_array_elements(data_ptr, struct_t, struct_sym, array_size);
                 return;
             }
             
@@ -1656,7 +1687,6 @@ class ASRToLLVMVisitor;
             verify(data_ptr, expected_data_ptr_type);
             switch(data_type->type){
                 case ASR::StructType :{ // Loop and free
-                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)){return;} // TODO
                     const std::string cache_key = "array_data_"+get_type_key(data_type, struct_sym);
                     llvm::Value* arr_size  = array_size();
                     if(is_cached(cache_key)){
@@ -2237,8 +2267,8 @@ class ASRToLLVMVisitor;
                         && ASRUtils::is_unlimited_polymorphic_type(arr_t->m_type)) {
                         // class(*) descriptor arrays use ONE-wrapper storage:
                         // descriptor.data -> wrapper {vptr, i8* payload}.
-                        // For explicit deallocate, free payload here; wrapper
-                        // is freed by call_lfortran_free() in asr_to_llvm.
+                        // For explicit deallocate, finalize all elements and free payload;
+                        // wrapper is freed by call_lfortran_free() in asr_to_llvm.
                         auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
                         auto *const elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
                         llvm::Value* const wrapper_ptr_ref =
@@ -2250,38 +2280,11 @@ class ASRToLLVMVisitor;
                             llvm::ConstantPointerNull::get(
                                 llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
                         llvm_utils_->create_if_else(wrapper_not_null, [&]() {
-                            llvm::Value* const vptr = builder_->CreateLoad(
-                                llvm_utils_->vptr_type,
-                                llvm_utils_->create_gep2(elem_llvm_t, wrapper_ptr, 0));
-                            llvm::Value* const payload_ref =
-                                llvm_utils_->create_gep2(elem_llvm_t, wrapper_ptr, 1);
-                            llvm::Value* const payload_ptr = builder_->CreateLoad(
-                                llvm_utils_->i8_ptr, payload_ref);
-                            llvm::Value* const payload_not_null = builder_->CreateICmpNE(
-                                payload_ptr,
-                                llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
-                            llvm_utils_->create_if_else(payload_not_null, [this, vptr, payload_ptr, payload_ref]() {
-                                llvm::Value* const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
-                                llvm::Value* const is_string = builder_->CreateICmpEQ(
-                                    type_tag,
-                                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
-                                llvm_utils_->create_if_else(is_string, [this, payload_ptr]() {
-                                    llvm::Value* const str_desc = builder_->CreateBitCast(
-                                        payload_ptr, llvm_utils_->string_descriptor->getPointerTo());
-                                    llvm::Value* const char_ptr = builder_->CreateLoad(
-                                        llvm_utils_->character_type,
-                                        llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
-                                    llvm::Value* const char_not_null = builder_->CreateICmpNE(
-                                        char_ptr,
-                                        llvm::ConstantPointerNull::get(llvm_utils_->character_type));
-                                    llvm_utils_->create_if_else(char_not_null,
-                                        [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
-                                        [](){});
-                                }, [](){});
-                                llvm_utils_->lfortran_free_nocheck(payload_ptr);
-                                builder_->CreateStore(
-                                    llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr), payload_ref);
-                            }, [](){});
+                            llvm::Value* arr_size = llvm_utils_->get_array_size(
+                                ptr, arr_llvm_t, t_past, &asr_to_llvm_visitor_);
+                            finalize_upoly_array_elements(wrapper_ptr,
+                                ASR::down_cast<ASR::StructType_t>(arr_t->m_type),
+                                struct_sym, arr_size);
                         }, [](){});
                         return;
                     }
