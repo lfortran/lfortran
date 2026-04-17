@@ -2481,7 +2481,7 @@ RUN(NAME associate_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES a
 RUN(NAME associate_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME associate_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES associate_21_mod.f90)
-RUN(NAME associate_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK)
+RUN(NAME associate_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # USER_LEAK
 RUN(NAME associate_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_24 LABELS gfortran llvm)
 RUN(NAME associate_25 LABELS gfortran llvm)
