@@ -1615,16 +1615,18 @@ class ASRToLLVMVisitor;
         }
             
         /**
-         * @details It's responsbile of deallocating each element within the array;
-         * It's main job is to properly free aggregate types (e.g. struct, class, array of strings, etc.).
+         * @brief Free character payload owned by a class(*) string payload buffer.
          *
-         * You should expect a loop and a call to type finalizer.
-         * Example : finalize each {i32, i64*} within the array.
-         * Notice: it's a utility for `finalize_array`, not meant to be used by other finalizers.
+         * The payload may be represented in either of these layouts:
+         * 1. contiguous character buffer shared by all descriptors, or
+         * 2. per-element separately allocated character buffers.
          *
-         * @param data_ptr  should be a pointer to array's data (e.g. `i32*` OR `{i64, f32}*`)
-         * @param data_type should be the underlying ASR type of the array.
-         * @param array_size is lambda object returning array's size. Lazy evaluate as only array of structs requires looping on each element (for now).
+         * This helper detects the layout and frees the corresponding character
+         * storage without freeing the payload buffer itself.
+         *
+         * @param payload_ptr pointer to the payload buffer castable to
+         *                    `string_descriptor*`.
+         * @param n_elems_i64 number of string descriptors in the payload.
          */
         void free_upoly_string_payload_chars(llvm::Value* payload_ptr, llvm::Value* n_elems_i64) {
             llvm::Type* const i64_t = llvm::Type::getInt64Ty(builder_->getContext());
@@ -1700,6 +1702,21 @@ class ASRToLLVMVisitor;
             });
         }
 
+        /**
+         * @details It is responsible for deallocating each element within the array;
+         * its main job is to properly free aggregate types (e.g. struct, class,
+         * array of strings, etc.).
+         *
+         * You should expect a loop and a call to a type finalizer.
+         * Example: finalize each `{i32, i64*}` within the array.
+         * Notice: it is a utility for `finalize_array`, not meant to be used by
+         * other finalizers.
+         *
+         * @param data_ptr should be a pointer to array data
+         *                 (e.g. `i32*` or `{i64, f32}*`).
+         * @param data_type underlying ASR element type of the array.
+         * @param array_size lambda returning array size lazily.
+         */
         template<typename LazyEval>
         void free_array_data(llvm::Value* data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
