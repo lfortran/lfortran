@@ -23,6 +23,7 @@ public:
     Tokenizer m_tokenizer;
     FixedFormTokenizer f_tokenizer;
     Vec<AST::ast_t*> result;
+    Vec<AST::ast_t*> m_extra;
     bool fixed_form;
     bool continue_compilation;
 
@@ -32,6 +33,7 @@ public:
             continue_compilation(continue_compilation) {
         m_tokenizer.openmp_enabled = openmp;
         result.reserve(al, 32);
+        m_extra.reserve(al, 4);
     }
 
     bool parse(const std::string &input);

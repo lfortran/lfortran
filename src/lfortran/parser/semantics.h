@@ -385,14 +385,35 @@ decl_attribute_t** VAR_DECL_NAMELISTb(Allocator &al,
     return v.p;
 }
 
-var_sym_t* VAR_DECL_NAMELISTc(Allocator &al,
-            Vec<ast_t*> id_list) {
-    var_sym_t* a = al.allocate<var_sym_t>(id_list.size());
-    for (size_t i=0; i<id_list.size(); i++) {
-        a[i].m_name = name2char(id_list[i]);
-    }
-    return a;
+// Push a new namelist group Declaration onto the list
+static inline void nml_group_push(Allocator &al, Vec<ast_t*> &out,
+        ast_t *group_name, ast_t *first_var, Location &l) {
+    var_sym_t *sp = al.allocate<var_sym_t>(1);
+    std::memset(sp, 0, sizeof(var_sym_t));
+    sp[0].m_name = name2char(first_var);
+    out.push_back(al, make_Declaration_t(al, l, nullptr,
+        VAR_DECL_NAMELISTb(al, l, name2char(group_name)), 1, sp, 1, nullptr));
 }
+
+// Add a variable to the last namelist group in the list
+static inline void nml_group_add_var(Allocator &al, Vec<ast_t*> &out,
+        ast_t *var) {
+    Declaration_t *last = down_cast2<Declaration_t>(out[out.size()-1]);
+    size_t n = last->n_syms + 1;
+    var_sym_t *new_syms = al.allocate<var_sym_t>(n);
+    std::memcpy(new_syms, last->m_syms, last->n_syms * sizeof(var_sym_t));
+    std::memset(&new_syms[n-1], 0, sizeof(var_sym_t));
+    new_syms[n-1].m_name = name2char(var);
+    last->m_syms = new_syms;
+    last->n_syms = n;
+}
+
+#define NML_GROUP_1(out, gname, var, l) \
+    LIST_NEW(out); nml_group_push(p.m_a, out, gname, var, l)
+#define NML_GROUP_ADD_VAR(out, list, var, l) \
+    out = list; nml_group_add_var(p.m_a, out, var)
+#define NML_GROUP_NEW(out, list, gname, var, l) \
+    out = list; nml_group_push(p.m_a, out, gname, var, l)
 
 decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
         Location &loc) {
@@ -415,13 +436,6 @@ decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
         nullptr, \
         VAR_DECL2b(p.m_a, xattr0), 1, \
         varsym.p, varsym.n, trivia_cast(trivia))
-
-#define VAR_DECL_NAMELIST(id, id_list, trivia, l) \
-        make_Declaration_t(p.m_a, l, \
-        nullptr, \
-        VAR_DECL_NAMELISTb(p.m_a, l, name2char(id)), 1, \
-        VAR_DECL_NAMELISTc(p.m_a, id_list), id_list.n, \
-        trivia_cast(trivia))
 
 #define VAR_DECL_PARAMETER(varsym, trivia, l) \
         make_Declaration_t(p.m_a, l, \
@@ -1898,6 +1912,29 @@ return make_Program_t(al, a_loc,
 #define LIST_NEW(l) l.reserve(p.m_a, 4)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
+#define DRAIN_EXTRA(dst) for (size_t _i = 0; _i < p.m_extra.size(); _i++) \
+    dst.push_back(p.m_a, p.m_extra[_i]); \
+    p.m_extra.n = 0
+
+static inline ast_t* namelist_first_extra_rest(
+        LCompilers::LFortran::Parser &p,
+        Vec<ast_t*> const &groups, ast_t *trivia, Location &l) {
+    // Return the first group's Declaration (with trivia),
+    // push any additional groups into p.m_extra.
+    LCOMPILERS_ASSERT(groups.size() >= 1);
+    // Set trivia on the first Declaration
+    LCompilers::LFortran::AST::Declaration_t *first =
+        LCompilers::LFortran::AST::down_cast2<LCompilers::LFortran::AST::Declaration_t>(groups[0]);
+    first->m_trivia = trivia_cast(trivia);
+    first->base.base.loc = l;
+    for (size_t i = 1; i < groups.size(); i++) {
+        p.m_extra.push_back(p.m_a, groups[i]);
+    }
+    return groups[0];
+}
+
+#define NAMELIST_FIRST_EXTRA_REST(groups, trivia, l) \
+    namelist_first_extra_rest(p, groups, trivia, l)
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
     if (LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::expr_t>(*repeat)) {
