@@ -2710,7 +2710,17 @@ public:
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
-                        call_lfortran_free(free_fn, typ,  llvm_data_type);
+                        if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
+                            // Non-unlimited polymorphic class arrays use a single
+                            // wrapper {vptr, data*} stored as the descriptor's data
+                            // pointer. finalize_before_deallocate already frees the
+                            // per-element payloads, the consecutive struct block and
+                            // the wrapper itself, so skip call_lfortran_free to avoid
+                            // a double-free; just null the descriptor's data pointer.
+                            arr_descr->reset_is_allocated_flag(typ, tmp, llvm_data_type);
+                        } else {
+                            call_lfortran_free(free_fn, typ,  llvm_data_type);
+                        }
                     }, [](){});
                 }
             }

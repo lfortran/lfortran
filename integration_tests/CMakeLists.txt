@@ -2947,6 +2947,7 @@ RUN(NAME class_142 LABELS gfortran llvm NO_DETECT_LEAK)
 RUN(NAME class_143 LABELS gfortran llvm)
 RUN(NAME class_144 LABELS gfortran llvm)
 RUN(NAME class_145 LABELS gfortran llvm)
+RUN(NAME class_146 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
