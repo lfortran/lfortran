@@ -1626,6 +1626,80 @@ class ASRToLLVMVisitor;
          * @param data_type should be the underlying ASR type of the array.
          * @param array_size is lambda object returning array's size. Lazy evaluate as only array of structs requires looping on each element (for now).
          */
+        void free_upoly_string_payload_chars(llvm::Value* payload_ptr, llvm::Value* n_elems_i64) {
+            llvm::Type* const i64_t = llvm::Type::getInt64Ty(builder_->getContext());
+            llvm::Value* const str_desc = builder_->CreateBitCast(
+                payload_ptr, llvm_utils_->string_descriptor->getPointerTo());
+            llvm::Value* const one = llvm::ConstantInt::get(i64_t, 1);
+            llvm::Value* const many = builder_->CreateICmpSGT(n_elems_i64, one);
+
+            llvm_utils_->create_if_else(many, [this, str_desc, n_elems_i64, i64_t]() {
+                llvm::Value* const first_desc = builder_->CreateInBoundsGEP(
+                    llvm_utils_->string_descriptor, str_desc,
+                    llvm::ConstantInt::get(i64_t, 0));
+                llvm::Value* const second_desc = builder_->CreateInBoundsGEP(
+                    llvm_utils_->string_descriptor, str_desc,
+                    llvm::ConstantInt::get(i64_t, 1));
+                llvm::Value* const first_char = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type,
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, first_desc, 0));
+                llvm::Value* const second_char = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type,
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, second_desc, 0));
+                llvm::Value* const first_len = llvm_utils_->CreateLoad2(
+                    i64_t,
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, first_desc, 1));
+                llvm::Value* const expected_second = builder_->CreateInBoundsGEP(
+                    llvm::Type::getInt8Ty(builder_->getContext()), first_char, first_len);
+                llvm::Value* const contiguous = builder_->CreateICmpEQ(second_char, expected_second);
+
+                llvm_utils_->create_if_else(contiguous, [this, first_char]() {
+                    llvm::Value* const first_not_null = builder_->CreateICmpNE(
+                        first_char,
+                        llvm::ConstantPointerNull::get(llvm_utils_->character_type));
+                    llvm_utils_->create_if_else(first_not_null,
+                        [this, first_char]() { llvm_utils_->lfortran_free_nocheck(first_char); },
+                        [](){});
+                }, [this, str_desc, n_elems_i64, i64_t]() {
+                    llvm::Value* const i = builder_->CreateAlloca(i64_t, nullptr, "upoly_char_free_i");
+                    builder_->CreateStore(llvm::ConstantInt::get(i64_t, 0), i);
+                    llvm_utils_->create_loop("upoly_char_free_loop", [&]() {
+                        return builder_->CreateICmpSLT(
+                            llvm_utils_->CreateLoad2(i64_t, i), n_elems_i64);
+                    }, [&]() {
+                        llvm::Value* const i_val = llvm_utils_->CreateLoad2(i64_t, i);
+                        llvm::Value* const desc_i = builder_->CreateInBoundsGEP(
+                            llvm_utils_->string_descriptor, str_desc, i_val);
+                        llvm::Value* const char_field = llvm_utils_->create_gep2(
+                            llvm_utils_->string_descriptor, desc_i, 0);
+                        llvm::Value* const char_ptr_i = llvm_utils_->CreateLoad2(
+                            llvm_utils_->character_type, char_field);
+                        llvm::Value* const char_not_null = builder_->CreateICmpNE(
+                            char_ptr_i,
+                            llvm::ConstantPointerNull::get(llvm_utils_->character_type));
+                        llvm_utils_->create_if_else(char_not_null, [this, char_ptr_i, char_field]() {
+                            llvm_utils_->lfortran_free_nocheck(char_ptr_i);
+                            builder_->CreateStore(
+                                llvm::ConstantPointerNull::get(llvm_utils_->character_type),
+                                char_field);
+                        }, [](){});
+                        builder_->CreateStore(
+                            builder_->CreateAdd(i_val, llvm::ConstantInt::get(i64_t, 1)), i);
+                    });
+                });
+            }, [this, str_desc]() {
+                llvm::Value* const char_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type,
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
+                llvm::Value* const char_not_null = builder_->CreateICmpNE(
+                    char_ptr,
+                    llvm::ConstantPointerNull::get(llvm_utils_->character_type));
+                llvm_utils_->create_if_else(char_not_null,
+                    [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
+                    [](){});
+            });
+        }
+
         template<typename LazyEval>
         void free_array_data(llvm::Value* data_ptr, ASR::ttype_t* const data_type, ASR::Struct_t* struct_sym, LazyEval &array_size){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(data_type))
@@ -1633,7 +1707,34 @@ class ASRToLLVMVisitor;
             verify(data_ptr, expected_data_ptr_type);
             switch(data_type->type){
                 case ASR::StructType :{ // Loop and free
-                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)){return;} // TODO
+                    if(ASRUtils::is_unlimited_polymorphic_type(struct_sym)){
+                        // class(*) descriptor arrays use ONE-wrapper storage:
+                        // data_ptr -> {vptr, i8* payload}. If payload stores
+                        // string descriptors, free their char data here.
+                        llvm::Type* const wrapper_type_llvm = get_llvm_type(data_type, struct_sym);
+                        llvm::Value* const vptr = llvm_utils_->CreateLoad2(
+                            llvm_utils_->vptr_type,
+                            llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 0));
+                        llvm::Value* const payload_ref = llvm_utils_->create_gep2(wrapper_type_llvm, data_ptr, 1);
+                        llvm::Value* const payload_ptr = llvm_utils_->CreateLoad2(
+                            llvm_utils_->i8_ptr, payload_ref);
+                        llvm::Value* const payload_not_null = builder_->CreateICmpNE(
+                            payload_ptr,
+                            llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
+
+                        llvm_utils_->create_if_else(payload_not_null, [this, vptr, payload_ptr, &array_size]() {
+                            llvm::Value* const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
+                            llvm::Value* const is_string = builder_->CreateICmpEQ(
+                                type_tag,
+                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
+                            llvm_utils_->create_if_else(is_string, [this, payload_ptr, &array_size]() {
+                                llvm::Type* const i64_t = llvm::Type::getInt64Ty(builder_->getContext());
+                                llvm::Value* const n_elems = llvm_utils_->convert_kind(array_size(), i64_t);
+                                free_upoly_string_payload_chars(payload_ptr, n_elems);
+                            }, [](){});
+                        }, [](){});
+                        return;
+                    }
                     const std::string cache_key = "array_data_"+get_type_key(data_type, struct_sym);
                     llvm::Value* arr_size  = array_size();
                     if(is_cached(cache_key)){
@@ -2236,23 +2337,17 @@ class ASRToLLVMVisitor;
                             llvm::Value* const payload_not_null = builder_->CreateICmpNE(
                                 payload_ptr,
                                 llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr));
-                            llvm_utils_->create_if_else(payload_not_null, [this, vptr, payload_ptr, payload_ref]() {
+                            llvm_utils_->create_if_else(payload_not_null, [this, vptr, payload_ptr, payload_ref, ptr, arr_llvm_t, t_past]() {
                                 llvm::Value* const type_tag = llvm_utils_->get_class_type_tag_from_vptr(vptr);
                                 llvm::Value* const is_string = builder_->CreateICmpEQ(
                                     type_tag,
                                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 5));
-                                llvm_utils_->create_if_else(is_string, [this, payload_ptr]() {
-                                    llvm::Value* const str_desc = builder_->CreateBitCast(
-                                        payload_ptr, llvm_utils_->string_descriptor->getPointerTo());
-                                    llvm::Value* const char_ptr = builder_->CreateLoad(
-                                        llvm_utils_->character_type,
-                                        llvm_utils_->create_gep2(llvm_utils_->string_descriptor, str_desc, 0));
-                                    llvm::Value* const char_not_null = builder_->CreateICmpNE(
-                                        char_ptr,
-                                        llvm::ConstantPointerNull::get(llvm_utils_->character_type));
-                                    llvm_utils_->create_if_else(char_not_null,
-                                        [this, char_ptr]() { llvm_utils_->lfortran_free_nocheck(char_ptr); },
-                                        [](){});
+                                llvm_utils_->create_if_else(is_string, [this, payload_ptr, ptr, arr_llvm_t, t_past]() {
+                                    llvm::Type* const i64_t = llvm::Type::getInt64Ty(builder_->getContext());
+                                    llvm::Value* const n_elems = llvm_utils_->convert_kind(
+                                        llvm_utils_->get_array_size(ptr, arr_llvm_t, t_past, &asr_to_llvm_visitor_),
+                                        i64_t);
+                                    free_upoly_string_payload_chars(payload_ptr, n_elems);
                                 }, [](){});
                                 llvm_utils_->lfortran_free_nocheck(payload_ptr);
                                 builder_->CreateStore(
