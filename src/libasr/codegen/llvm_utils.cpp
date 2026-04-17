@@ -16,45 +16,6 @@ namespace LCompilers {
             return builder.CreateStore(x, y);
         }
 
-#if LLVM_VERSION_MAJOR < 15
-        void fix_pointer_type_mismatches(llvm::Module &module) {
-            for (auto &F : module) {
-                for (auto &BB : F) {
-                    for (auto &I : BB) {
-                        if (auto *SI = llvm::dyn_cast<llvm::StoreInst>(&I)) {
-                            llvm::Value *val = SI->getValueOperand();
-                            llvm::Value *ptr = SI->getPointerOperand();
-                            if (val->getType()->isPointerTy() &&
-                                    ptr->getType()->getNumContainedTypes() > 0) {
-                                llvm::Type *expected = ptr->getType()->getContainedType(0);
-                                if (val->getType() != expected) {
-                                    llvm::IRBuilder<> builder(SI);
-                                    llvm::Value *cast = builder.CreateBitCast(val, expected);
-                                    SI->setOperand(0, cast);
-                                }
-                            }
-                        } else if (auto *CI = llvm::dyn_cast<llvm::CallInst>(&I)) {
-                            llvm::FunctionType *FTy = CI->getFunctionType();
-                            for (unsigned i = 0; i < CI->arg_size(); ++i) {
-                                llvm::Value *arg = CI->getArgOperand(i);
-                                if (i < FTy->getNumParams()) {
-                                    llvm::Type *expected = FTy->getParamType(i);
-                                    if (arg->getType() != expected &&
-                                            arg->getType()->isPointerTy() &&
-                                            expected->isPointerTy()) {
-                                        llvm::IRBuilder<> builder(CI);
-                                        llvm::Value *cast = builder.CreateBitCast(arg, expected);
-                                        CI->setArgOperand(i, cast);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-#endif
-
         const char* get_allocator_function_name() {
             return use_memory_debug()
                 ? "_lfortran_get_compiler_mem_dbg_allocator"
