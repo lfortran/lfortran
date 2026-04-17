@@ -16710,7 +16710,11 @@ public:
         llvm::Value *iostat_user = nullptr; // User's iostat variable 
         int iostat_kind = 4; // kind of iostat variable (default INT32)
         bool is_string = false;
-        if (x.m_unit == nullptr) {
+        bool empty_read = (x.n_values == 0 && x.m_iostat == nullptr && x.m_iomsg == nullptr);
+        if (empty_read && x.m_unit == nullptr) {
+            unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                                              llvm::APInt(32, -2, true));
+        } else if (x.m_unit == nullptr) {
             // Read from stdin
             unit_val = llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
@@ -16721,6 +16725,19 @@ public:
             if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_unit))){
                 // Convert the unit to 32 bit integer (We only support unit number up to 1000).
                 unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+            }
+            if (empty_read && !is_string) {
+                // Unit is provided with no values, no iostat, no iomsg.
+                // If unit is 5 (stdin), set `unit_val` = -2.
+                // The unit need not be a compile-time constant.
+                llvm::Value* is_stdin = builder->CreateICmpEQ(unit_val,
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 5));
+                unit_val = builder->CreateSelect(is_stdin,
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                                            llvm::APInt(32, -2, true)),
+                    unit_val);
+            } else {
+                empty_read = false;
             }
         }
 
@@ -16832,7 +16849,7 @@ public:
             emit_seek_record_from_rec(x.m_rec, unit_val, iostat);
         }
 
-        if (x.m_fmt) {
+        if (x.m_fmt && !empty_read) {
             emit_formatted_read(x, unit_val, iostat, read_size, advance, advance_length, is_string);
         } else {
             llvm::Value* var_to_read_into = nullptr; // Var expression that we'll read into.
@@ -17334,7 +17351,7 @@ public:
             // Here, we can use `_lfortran_empty_read` function to move to the
             // pointer to the next line.
             // Skip for internal (string) reads — no file position to advance.
-            if (!is_string) {
+            if (!is_string || empty_read) {
             std::string runtime_func_name = "_lfortran_empty_read";
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {

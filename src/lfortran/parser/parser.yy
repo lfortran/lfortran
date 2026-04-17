@@ -1915,7 +1915,8 @@ read_statement
     | KW_READ "(" write_arg_list ")" "," expr_list { $$ = READ($3, $6, @$); }
     | KW_READ "(" write_arg_list ")" { $$ = READ0($3, @$); }
     | KW_READ TK_INTEGER "," expr_list { $$ = READ2($2, $4, @$); }
-    | KW_READ "*" "," expr_list { $$ = READ3($4, @$); }
+    | KW_READ "*" "," expr_list_opt { $$ = READ3($4, @$); }
+    | KW_READ "*" { $$ = READ6(@$); }
     | KW_READ TK_INTEGER { $$ = READ4($2, @$); }
     | KW_READ TK_STRING "," expr_list { $$ = READ5($2, $4, @$); }
     ;
