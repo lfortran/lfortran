@@ -2939,7 +2939,7 @@ RUN(NAME class_133 LABELS gfortran llvm)
 RUN(NAME class_134 LABELS gfortran llvm)
 RUN(NAME class_135 LABELS gfortran llvm)
 
-RUN(NAME class_137 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays NO_DETECT_LEAK)
+RUN(NAME class_137 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_138 LABELS gfortran llvm)
 RUN(NAME class_139 LABELS gfortran llvm)
 RUN(NAME class_140 LABELS gfortran llvm)
