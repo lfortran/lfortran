@@ -1193,6 +1193,7 @@ RUN(NAME submodule_44a LABELS gfortran llvm_submodule EXTRAFILES submodule_44b.f
 RUN(NAME c_sizeof_02 LABELS gfortran llvm)
 RUN(NAME c_sizeof_03 LABELS gfortran llvm)
 RUN(NAME c_sizeof_04 LABELS gfortran llvm)
+RUN(NAME c_sizeof_05 LABELS gfortran llvm)
 RUN(NAME sizeof_01 LABELS gfortran llvm)
 RUN(NAME iso_c_binding_04 LABELS gfortran llvm)
 RUN(NAME submodule_45 LABELS gfortran llvm)

@@ -14759,8 +14759,14 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t *size_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, x.base.base.loc, 8));
+        ASR::expr_t *value = nullptr;
+        int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
+        if (type_size > 0) {
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, type_size, size_type));
+        }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
-            size_type, nullptr);
+            size_type, value);
     }
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {
@@ -14775,8 +14781,14 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t *size_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, x.base.base.loc, 8));
+        ASR::expr_t *value = nullptr;
+        int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
+        if (type_size > 0) {
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, type_size, size_type));
+        }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
-            size_type, nullptr);
+            size_type, value);
     }
 
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
