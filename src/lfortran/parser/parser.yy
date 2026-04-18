@@ -1126,6 +1126,8 @@ decl
     | requirement_decl
     | enum_decl
     | data_statement sep { $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
+    | TK_OMP sep {
+        LLOC(@$, @1); $$ = VAR_DECL_OMP_PRAGMA($1, TRIVIA_AFTER($2, @$), @$); }
     ;
 
 contains_block_opt

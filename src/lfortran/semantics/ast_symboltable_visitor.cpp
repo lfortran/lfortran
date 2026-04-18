@@ -2347,6 +2347,12 @@ public:
                 throw SemanticAbort();
             }
 
+        } else if (x.m_type == AST::OMPPragma) {
+            // OpenMP declarative directive in a specification part (e.g.
+            // `!$omp threadprivate(...)`). No ASR node is emitted yet; the
+            // directive is accepted so codes using it can compile. Backends
+            // that implement OpenMP storage semantics will need to revisit.
+            return;
         } else {
             diag.add(diag::Diagnostic(
                 "The pragma type not supported yet",
