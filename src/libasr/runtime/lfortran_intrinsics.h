@@ -95,6 +95,13 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void
 
 LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask);
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void);
+
+/* CFI allocation helpers — used by ISO_Fortran_binding.h so that
+   CFI_allocate/CFI_deallocate go through the same allocator as Fortran
+   allocate/deallocate (important for --detect-leaks). */
+LFORTRAN_API void  _lfortran_set_cfi_debug_mode(int mode);
+LFORTRAN_API void* _lfortran_cfi_calloc(size_t nmemb, size_t size);
+LFORTRAN_API void  _lfortran_cfi_free(void* ptr);
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
