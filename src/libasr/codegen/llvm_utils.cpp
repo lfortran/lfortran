@@ -1150,6 +1150,11 @@ namespace LCompilers {
         }
     }
 
+    llvm::Type* LLVMUtils::get_dict_sc_kvp_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type) {
+        return static_cast<LLVMDictSeparateChaining*>(dict_api_sc)
+            ->get_key_value_pair_type(key_type, value_type);
+    }
+
     void LLVMUtils::set_set_api(ASR::Set_t* /*set_type*/) {
         // As per benchmarks, separate chaining
         // does not provide significant gains over

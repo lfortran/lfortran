@@ -830,6 +830,8 @@ class ASRToLLVMVisitor;
 
             void set_dict_api(ASR::Dict_t* dict_type);
 
+            llvm::Type* get_dict_sc_kvp_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type);
+
             void set_set_api(ASR::Set_t* set_type);
 
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
@@ -1568,7 +1570,8 @@ class ASRToLLVMVisitor;
 
                 if (key_finalizable || val_finalizable) {
                     llvm::Type* kvp_ptr_type = dict_llvm_type->getStructElementType(3);
-                    llvm::Type* kvp_type = kvp_ptr_type->getPointerElementType();
+                    llvm::Type* kvp_type = llvm_utils_->get_dict_sc_kvp_type(
+                        dict_t->m_key_type, dict_t->m_value_type);
                     auto i32_type = llvm::Type::getInt32Ty(builder_->getContext());
                     auto i8_type = llvm::Type::getInt8Ty(builder_->getContext());
 
@@ -1663,8 +1666,8 @@ class ASRToLLVMVisitor;
                 if (key_finalizable || val_finalizable) {
                     llvm::Type* kl_type = dict_llvm_type->getStructElementType(1);
                     llvm::Type* vl_type = dict_llvm_type->getStructElementType(2);
-                    llvm::Type* key_elem_type = kl_type->getStructElementType(2)->getPointerElementType();
-                    llvm::Type* val_elem_type = vl_type->getStructElementType(2)->getPointerElementType();
+                    llvm::Type* key_elem_type = get_llvm_type(dict_t->m_key_type, nullptr);
+                    llvm::Type* val_elem_type = get_llvm_type(dict_t->m_value_type, nullptr);
                     auto i32_type = llvm::Type::getInt32Ty(builder_->getContext());
                     auto i8_type = llvm::Type::getInt8Ty(builder_->getContext());
 
@@ -1672,11 +1675,11 @@ class ASRToLLVMVisitor;
                     llvm::Value* capacity = llvm_utils_->CreateLoad2(i32_type,
                         llvm_utils_->create_gep2(kl_type, kl, 1));
                     llvm::Value* key_data = llvm_utils_->CreateLoad2(
-                        key_elem_type->getPointerTo(),
+                        kl_type->getStructElementType(2),
                         llvm_utils_->create_gep2(kl_type, kl, 2));
                     llvm::Value* vl = llvm_utils_->create_gep2(dict_llvm_type, ptr, 2);
                     llvm::Value* val_data = llvm_utils_->CreateLoad2(
-                        val_elem_type->getPointerTo(),
+                        vl_type->getStructElementType(2),
                         llvm_utils_->create_gep2(vl_type, vl, 2));
                     llvm::Value* key_mask = llvm_utils_->CreateLoad2(
                         llvm_utils_->character_type,
@@ -3195,14 +3198,14 @@ class ASRToLLVMVisitor;
                 llvm::Type* kv_pair_type, llvm::Value* key_mask,
                 llvm::Module* module, ASR::ttype_t* key_asr_type);
 
-            llvm::Type* get_key_value_pair_type(std::string key_type_code, std::string value_type_code);
-
-            llvm::Type* get_key_value_pair_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_pair_type);
-
             void dict_init_given_initial_capacity(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict, 
                 llvm::Module* module, llvm::Value* initial_capacity);
 
         public:
+
+            llvm::Type* get_key_value_pair_type(std::string key_type_code, std::string value_type_code);
+
+            llvm::Type* get_key_value_pair_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_pair_type);
 
             LLVMDictSeparateChaining(
                 llvm::LLVMContext& context_,
