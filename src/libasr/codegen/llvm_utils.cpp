@@ -9103,6 +9103,29 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loopend);
     }
 
+    void LLVMSetLinearProbing::free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module) {
+        llvm::Type* set_type = get_set_type(el_type_code, 0, nullptr);
+        llvm::Value* el_list = get_el_list(set_type, set);
+        llvm_utils->list_api->free_data_using_type(el_type_code, el_list, module);
+        llvm::Value* el_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(),
+            get_pointer_to_mask(set_type, set));
+        llvm_utils->lfortran_free(el_mask);
+    }
+
+    void LLVMSetSeparateChaining::free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module) {
+        (void)module;
+        llvm::Type* set_type = get_set_type(el_type_code, 0, nullptr);
+        llvm::Value* elems = llvm_utils->CreateLoad2(
+            typecode2elstruct[el_type_code]->getPointerTo(),
+            get_pointer_to_elems(set_type, set));
+        llvm_utils->lfortran_free(elems);
+        llvm::Value* el_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(),
+            get_pointer_to_mask(set_type, set));
+        llvm_utils->lfortran_free(el_mask);
+    }
+
     llvm::Value* LLVMSetInterface::len(llvm::Type* type, llvm::Value* set) {
         return llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_occupancy(type, set));
     }

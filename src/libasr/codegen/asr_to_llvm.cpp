@@ -6778,6 +6778,7 @@ public:
         bool is_list = false;
         bool is_dict = ASR::is_a<ASR::Dict_t>(*v->m_type);
         bool is_tuple = ASR::is_a<ASR::Tuple_t>(*v->m_type);
+        bool is_set = ASR::is_a<ASR::Set_t>(*v->m_type);
         if (v->m_intent == intent_local ||
             v->m_intent == intent_return_var ||
             !v->m_intent) {
@@ -7199,7 +7200,7 @@ public:
                     }
                 }
             }
-            if( init_expr != nullptr && !is_list && !is_dict && !is_tuple) {
+            if( init_expr != nullptr && !is_list && !is_dict && !is_tuple && !is_set) {
                 target_var = ptr;
                 if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
@@ -7246,6 +7247,11 @@ public:
                             llvm_utils->set_string_memory_on_heap(t->m_physical_type, item_ptr, llvm_utils->get_string_length(t, item_ptr));
                         }
                     }
+                } else if (is_set) {
+                    ASR::Set_t* asr_set = ASR::down_cast<ASR::Set_t>(v->m_type);
+                    llvm_utils->set_set_api(asr_set);
+                    std::string el_type_code = ASRUtils::get_type_code(asr_set->m_type);
+                    llvm_utils->set_api->set_init(el_type_code, ptr, module.get(), 0);
                 }
             }
         }
@@ -10462,8 +10468,25 @@ public:
             ptr_loads = ptr_loads_copy;
             ASR::Set_t* value_set_type = ASR::down_cast<ASR::Set_t>(asr_value_type);
             llvm_utils->set_set_api(value_set_type);
+            std::string el_type_code = ASRUtils::get_type_code(value_set_type->m_type);
+            // Free old target data before deepcopy
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+                if (v->m_intent == ASR::intentType::Local ||
+                    v->m_intent == ASR::intentType::ReturnVar ||
+                    v->m_intent == ASR::intentType::Out ||
+                    v->m_intent == ASR::intentType::InOut ||
+                    !v->m_intent) {
+                    llvm_utils->set_api->free_data(el_type_code, target_set, module.get());
+                }
+            }
             llvm_utils->set_api->set_deepcopy(x.m_value, value_set, target_set,
                                     value_set_type, module.get());
+            // Free source temp data for SetConstant expressions
+            if (ASR::is_a<ASR::SetConstant_t>(*x.m_value)) {
+                llvm_utils->set_api->free_data(el_type_code, value_set, module.get());
+            }
             return ;
         } else if ((is_target_class || is_target_struct) &&
                     (is_value_class || is_value_struct)) {

@@ -1569,11 +1569,28 @@ class ASRToLLVMVisitor;
         }
         
         void finalize_set(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on set -- Create a function to finalize each element.
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            (void)struct_sym;
+            ASR::Set_t* set_t = ASR::down_cast<ASR::Set_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
+            (void)set_t;
+            llvm::Type* set_llvm_type = get_llvm_type(t, nullptr);
+
+            // Linear probing set layout: {i32 occupancy, list el_list, i8* el_mask}
+            // list layout: {i32 end_point, i32 capacity, T* data}
+
+            // Free the list's data pointer (field 1 of set = el_list, field 2 of list = data*)
+            llvm::Value* el_list = llvm_utils_->create_gep2(set_llvm_type, ptr, 1);
+            llvm::Type* list_llvm_type = set_llvm_type->getStructElementType(1);
+            llvm::Value* data_ptr_field = llvm_utils_->create_gep2(list_llvm_type, el_list, 2);
+            llvm::Value* data_ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->character_type, data_ptr_field);
+            llvm_utils_->lfortran_free(data_ptr);
+
+            // Free the mask (field 2 of set = el_mask)
+            llvm::Value* mask_field = llvm_utils_->create_gep2(set_llvm_type, ptr, 2);
+            llvm::Value* mask_ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->character_type, mask_field);
+            llvm_utils_->lfortran_free(mask_ptr);
         }
 
         void finalize_tuple(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
@@ -2164,8 +2181,9 @@ class ASRToLLVMVisitor;
                 case ASR::Dict:
                 case ASR::Tuple:
                 case ASR::UnionType:
-                case ASR::Set:
                 return false; // >>>>> TO DO <<<<<
+                case ASR::Set:
+                return true;
                 case ASR::String:
                 return true;
                 case ASR::FunctionType:
@@ -3150,6 +3168,9 @@ class ASRToLLVMVisitor;
                 ASR::Set_t* set_type, llvm::Module* module) = 0;
 
             virtual
+            void free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module) = 0;
+
+            virtual
             llvm::Value* len(llvm::Type* type, llvm::Value* set);
 
             virtual
@@ -3217,6 +3238,8 @@ class ASRToLLVMVisitor;
             void set_deepcopy(
                 ASR::expr_t* set_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Set_t* set_type, llvm::Module* module);
+
+            void free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module);
 
             ~LLVMSetLinearProbing();
     };
@@ -3297,6 +3320,8 @@ class ASRToLLVMVisitor;
             void set_deepcopy(
                 ASR::expr_t* set_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Set_t* set_type, llvm::Module* module);
+
+            void free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module);
 
             ~LLVMSetSeparateChaining();
     };
