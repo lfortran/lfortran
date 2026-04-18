@@ -276,6 +276,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
 const std::vector<std::string> declarators{
             "integer*",
             "integer",
+            "parameter",
 	    "real*",
             "real",
 	    "complex*",
@@ -1003,7 +1004,9 @@ struct FixedFormRecursiveDescent {
                         };
                         if (*cur != ')') {
                             // Missing right parenthesis
-                            return false;
+                            // Return true here because it is still a subroutine call starting with the "call" keyword.
+                            // We report the error later in the parser.
+                            return true;
                         }
                         cur++;
                     }
@@ -1014,6 +1017,9 @@ struct FixedFormRecursiveDescent {
                 if (next_is_eol(cur) || *cur == ';') {
                     return true;
                 }
+                // Return true here because it is still a subroutine call starting with the "call" keyword.
+                // We report the error later in the parser.
+                return true;
             }
         }
         return false;
@@ -1090,16 +1096,24 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (is_do_loop(cur)) {
+            lex_do(cur);
+            return true;
+        }
+
+        // assignment
+        // TODO: this is fragile
+        if (is_possible_assignment(cur, cur)) {
+            tokenize_line(cur);
+            return true;
+        }
+
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
             lex_cond(cur);
             return true;
         }
         unsigned char *nline = cur; next_line(nline);
-        if (is_do_loop(cur)) {
-            lex_do(cur);
-            return true;
-        }
 
         if (next_is(cur, "doconcurrent(")) {
             lex_do_concurrent(cur);
@@ -1123,13 +1137,6 @@ struct FixedFormRecursiveDescent {
 
         if (is_function_call(cur)) {
             push_token_advance(cur, "call");
-            tokenize_line(cur);
-            return true;
-        }
-
-        // assignment
-        // TODO: this is fragile
-        if (contains(cur, nline, '=')) {
             tokenize_line(cur);
             return true;
         }
