@@ -19,5 +19,6 @@ program class_35
     class default
       error stop "Unexpected type"
    end select
+   deallocate(ptr)
 
 end program

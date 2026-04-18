@@ -56,5 +56,7 @@ program class_141
 
   if (.not. associated(b%data)) error stop
   if (b%data /= 42) error stop
+  deallocate(a%data)
+  deallocate(b%data)
   print *, "PASS"
 end program

@@ -68,6 +68,9 @@
                         ()
                         .false.
                         .false.
+                    )
+                    (ExplicitDeallocate
+                        [(Var 2 x)]
                     )]
                 )
         })
