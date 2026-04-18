@@ -10368,9 +10368,11 @@ public:
             ASR::List_t* value_asr_list = ASR::down_cast<ASR::List_t>(
                                             ASRUtils::expr_type(x.m_value));
             std::string value_type_code = ASRUtils::get_type_code(value_asr_list->m_type);
-            // Free old target data before deepcopy for variables that were
-            // initialized via list_init (Local/ReturnVar/unset intent) or
-            // that point to caller-initialized data (Out/InOut intent).
+            // Free old target data (and any heap resources owned by its
+            // elements, e.g. allocatable strings) before deepcopy for
+            // variables that were initialized via list_init
+            // (Local/ReturnVar/unset intent) or that point to
+            // caller-initialized data (Out/InOut intent).
             if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
                     ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
@@ -10379,7 +10381,8 @@ public:
                     v->m_intent == ASR::intentType::Out ||
                     v->m_intent == ASR::intentType::InOut ||
                     !v->m_intent) {
-                    list_api->free_data_using_type(value_type_code, target_list, module.get());
+                    llvm_symtab_finalizer.finalize_temporary(
+                        target_list, ASRUtils::expr_type(x.m_target));
                 }
             }
             list_api->list_deepcopy(x.m_value, value_list, target_list,
@@ -10388,8 +10391,11 @@ public:
             // ListConstant always creates fresh allocated data that can be
             // safely freed after deepcopy. Other non-Var sources (e.g.,
             // ListItem, FunctionCall) may hold shared or scope-managed data.
+            // finalize_temporary also frees heap resources owned by elements
+            // (e.g. allocatable strings) that were deep-copied above.
             if (ASR::is_a<ASR::ListConstant_t>(*x.m_value)) {
-                list_api->free_data_using_type(value_type_code, value_list, module.get());
+                llvm_symtab_finalizer.finalize_temporary(
+                    value_list, ASRUtils::expr_type(x.m_value));
             }
             return ;
         } else if( is_target_tuple && is_value_tuple ) {
