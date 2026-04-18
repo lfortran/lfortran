@@ -27,3 +27,9 @@ semantic error: Coarray 's' has corank 2 but 1 coindices were provided
    |
 20 |     s%y[1] = 5
    |     ^^^^^^ 
+
+semantic error: Coarray coindices do not support step notation (e.g., [i:j:k])
+  --> tests/errors/continue_compilation_coarrays.f90:23:9
+   |
+23 |     a = z[1:5:2]
+   |         ^^^^^^^^ 
