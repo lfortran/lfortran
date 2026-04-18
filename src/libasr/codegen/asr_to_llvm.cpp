@@ -3103,6 +3103,10 @@ public:
                 ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg)));
             llvm::Type* list_type = list_api->get_list_type(nullptr, type_code, 0);
             tmp = list_api->len_using_type(list_type, plist);
+            if (ASR::is_a<ASR::ListConstant_t>(*x.m_arg)) {
+                llvm_symtab_finalizer.finalize_temporary(
+                    plist, ASRUtils::expr_type(x.m_arg));
+            }
         }
     }
 
@@ -3157,6 +3161,10 @@ public:
         llvm_utils->set_dict_api(x_dict);
         llvm::Type* dict_type = llvm_utils->get_dict_type(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
         tmp = llvm_utils->dict_api->len(dict_type, pdict);
+        if (ASR::is_a<ASR::DictConstant_t>(*x.m_arg)) {
+            llvm_symtab_finalizer.finalize_temporary(
+                pdict, ASRUtils::expr_type(x.m_arg));
+        }
     }
 
     void visit_SetLen(const ASR::SetLen_t& x) {
@@ -3174,6 +3182,10 @@ public:
         llvm_utils->set_set_api(x_set);
         llvm::Type* set_type = llvm_utils->get_set_type(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
         tmp = llvm_utils->set_api->len(set_type, pset);
+        if (ASR::is_a<ASR::SetConstant_t>(*x.m_arg)) {
+            llvm_symtab_finalizer.finalize_temporary(
+                pset, ASRUtils::expr_type(x.m_arg));
+        }
     }
 
     void visit_ListInsert(const ASR::ListInsert_t& x) {

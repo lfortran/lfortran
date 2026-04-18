@@ -4129,7 +4129,7 @@ RUN(NAME tuple_test_04_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME tuple_test_concat_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME tuple_test_nested_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
-RUN(NAME dict_test_01_ LABELS llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # No gfortran
+RUN(NAME dict_test_01_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME dict_test_02_ LABELS llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # No gfortran
 # RUN(NAME dict_test_03_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran # Fix segault
 RUN(NAME dict_test_04_ LABELS llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # No gfortran
