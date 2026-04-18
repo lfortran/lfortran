@@ -2340,11 +2340,24 @@ public:
             }
 
         } else if (x.m_type == AST::OMPPragma) {
-            // OpenMP declarative directive in a specification part (e.g.
-            // `!$omp threadprivate(...)`). No ASR node is emitted yet; the
-            // directive is accepted so codes using it can compile. Backends
-            // that implement OpenMP storage semantics will need to revisit.
-            return;
+            if (!compiler_options.openmp) {
+                // Sentinel outside --openmp is already silenced by the
+                // tokenizer; reaching here without the flag would be a bug.
+                return;
+            }
+            // The grammar now accepts `!$omp threadprivate(...)` in
+            // specification parts, but per-thread storage is not yet
+            // implemented. Reject loudly so codes do not silently get shared
+            // storage under OpenMP; see issue #11132 for the implementation
+            // tracker.
+            diag.add(diag::Diagnostic(
+                "OpenMP `" + std::string(x.m_text) + "` is not yet "
+                "implemented; compiling under `--openmp` would produce "
+                "shared storage and silently break correctness. "
+                "See https://github.com/lfortran/lfortran/issues/11132",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         } else {
             diag.add(diag::Diagnostic(
                 "The pragma type not supported yet",
