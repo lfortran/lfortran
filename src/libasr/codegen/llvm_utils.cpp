@@ -6063,9 +6063,24 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         // end
         llvm_utils->start_new_block(loopend);
+        // Free old arrays after re-inserting all entries into the new arrays
+        llvm_utils->lfortran_free(
+            llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), old_key_value_pairs));
+        llvm_utils->lfortran_free(
+            llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), old_key_mask));
         builder->CreateBr(mergeBB_rehash);
         llvm_utils->start_new_block(elseBB_rehash);
         {
+            // Free new arrays allocated by dict_init_given_initial_capacity
+            // before restoring old arrays
+            llvm::Value* new_kvp = llvm_utils->CreateLoad2(
+                kv_pair_type->getPointerTo(),
+                get_pointer_to_key_value_pairs_using_type(key_asr_type, value_asr_type, dict));
+            llvm_utils->lfortran_free(new_kvp);
+            llvm::Value* new_key_mask = llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
+            llvm_utils->lfortran_free(new_key_mask);
             LLVM::CreateStore(*builder,
                 llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), old_capacity),
                 get_pointer_to_capacity(dict_type, dict)

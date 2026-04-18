@@ -1559,10 +1559,92 @@ class ASRToLLVMVisitor;
             llvm::Type* dict_llvm_type = get_llvm_type(t, nullptr);
 
             bool use_separate_chaining = ASRUtils::is_allocatable_descriptor_string(dict_t->m_key_type);
+            bool key_finalizable = is_finalizable_type(dict_t->m_key_type, nullptr, false);
+            bool val_finalizable = is_finalizable_type(dict_t->m_value_type, nullptr, false);
 
             if (use_separate_chaining) {
                 // SC layout: {i32 occupancy, i32 num_buckets_filled, i32 capacity,
                 //             key_value_pair* key_value_pairs, i8* key_mask, i1 rehash_flag}
+
+                if (key_finalizable || val_finalizable) {
+                    llvm::Type* kvp_ptr_type = dict_llvm_type->getStructElementType(3);
+                    llvm::Type* kvp_type = kvp_ptr_type->getPointerElementType();
+                    auto i32_type = llvm::Type::getInt32Ty(builder_->getContext());
+                    auto i8_type = llvm::Type::getInt8Ty(builder_->getContext());
+
+                    llvm::Value* capacity = llvm_utils_->CreateLoad2(i32_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 2));
+                    llvm::Value* kvp_arr = llvm_utils_->CreateLoad2(kvp_ptr_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 3));
+                    llvm::Value* key_mask = llvm_utils_->CreateLoad2(
+                        llvm_utils_->character_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 4));
+
+                    auto* iter = builder_->CreateAlloca(i32_type, nullptr, "dict_sc_fin_i");
+                    builder_->CreateStore(
+                        llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
+
+                    llvm_utils_->create_loop("finalize_dict_sc",
+                        [&]() -> llvm::Value* {
+                            auto* loaded = builder_->CreateLoad(i32_type, iter);
+                            auto* next = builder_->CreateAdd(loaded,
+                                llvm::ConstantInt::get(i32_type, 1));
+                            builder_->CreateStore(next, iter);
+                            return builder_->CreateICmpSLT(next, capacity);
+                        },
+                        [&]() {
+                            auto* idx = builder_->CreateLoad(i32_type, iter);
+                            auto* mask_val = llvm_utils_->CreateLoad2(i8_type,
+                                llvm_utils_->create_ptr_gep2(i8_type, key_mask, idx));
+                            auto* is_occupied = builder_->CreateICmpEQ(mask_val,
+                                llvm::ConstantInt::get(i8_type, 1));
+
+                            llvm_utils_->create_if_else(is_occupied, [&]() {
+                                auto* entry = llvm_utils_->create_ptr_gep2(kvp_type, kvp_arr, idx);
+                                if (key_finalizable) {
+                                    finalize(llvm_utils_->create_gep2(kvp_type, entry, 0),
+                                             dict_t->m_key_type, nullptr, false);
+                                }
+                                if (val_finalizable) {
+                                    finalize(llvm_utils_->create_gep2(kvp_type, entry, 1),
+                                             dict_t->m_value_type, nullptr, false);
+                                }
+                                // Walk chain to finalize elements in chain nodes
+                                auto* chain_itr = builder_->CreateAlloca(
+                                    llvm_utils_->character_type, nullptr, "chain_itr");
+                                builder_->CreateStore(
+                                    llvm_utils_->CreateLoad2(llvm_utils_->character_type,
+                                        llvm_utils_->create_gep2(kvp_type, entry, 2)),
+                                    chain_itr);
+                                llvm_utils_->create_loop("finalize_dict_chain",
+                                    [&]() -> llvm::Value* {
+                                        return builder_->CreateICmpNE(
+                                            builder_->CreateLoad(llvm_utils_->character_type, chain_itr),
+                                            llvm::ConstantPointerNull::get(
+                                                llvm::cast<llvm::PointerType>(llvm_utils_->character_type)));
+                                    },
+                                    [&]() {
+                                        auto* node_raw = builder_->CreateLoad(
+                                            llvm_utils_->character_type, chain_itr);
+                                        auto* node = builder_->CreateBitCast(
+                                            node_raw, kvp_type->getPointerTo());
+                                        if (key_finalizable) {
+                                            finalize(llvm_utils_->create_gep2(kvp_type, node, 0),
+                                                     dict_t->m_key_type, nullptr, false);
+                                        }
+                                        if (val_finalizable) {
+                                            finalize(llvm_utils_->create_gep2(kvp_type, node, 1),
+                                                     dict_t->m_value_type, nullptr, false);
+                                        }
+                                        builder_->CreateStore(
+                                            llvm_utils_->CreateLoad2(llvm_utils_->character_type,
+                                                llvm_utils_->create_gep2(kvp_type, node, 2)),
+                                            chain_itr);
+                                    });
+                            }, [](){});
+                        });
+                }
+
                 // Free key_value_pairs (field 3)
                 llvm::Value* kvp_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 3);
                 llvm::Value* kvp_ptr = llvm_utils_->CreateLoad2(
@@ -1577,6 +1659,63 @@ class ASRToLLVMVisitor;
             } else {
                 // LP layout: {i32 occupancy, list key_list, list value_list, i8* key_mask}
                 // list = {i32 end_point, i32 capacity, T* data}
+
+                if (key_finalizable || val_finalizable) {
+                    llvm::Type* kl_type = dict_llvm_type->getStructElementType(1);
+                    llvm::Type* vl_type = dict_llvm_type->getStructElementType(2);
+                    llvm::Type* key_elem_type = kl_type->getStructElementType(2)->getPointerElementType();
+                    llvm::Type* val_elem_type = vl_type->getStructElementType(2)->getPointerElementType();
+                    auto i32_type = llvm::Type::getInt32Ty(builder_->getContext());
+                    auto i8_type = llvm::Type::getInt8Ty(builder_->getContext());
+
+                    llvm::Value* kl = llvm_utils_->create_gep2(dict_llvm_type, ptr, 1);
+                    llvm::Value* capacity = llvm_utils_->CreateLoad2(i32_type,
+                        llvm_utils_->create_gep2(kl_type, kl, 1));
+                    llvm::Value* key_data = llvm_utils_->CreateLoad2(
+                        key_elem_type->getPointerTo(),
+                        llvm_utils_->create_gep2(kl_type, kl, 2));
+                    llvm::Value* vl = llvm_utils_->create_gep2(dict_llvm_type, ptr, 2);
+                    llvm::Value* val_data = llvm_utils_->CreateLoad2(
+                        val_elem_type->getPointerTo(),
+                        llvm_utils_->create_gep2(vl_type, vl, 2));
+                    llvm::Value* key_mask = llvm_utils_->CreateLoad2(
+                        llvm_utils_->character_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 3));
+
+                    auto* iter = builder_->CreateAlloca(i32_type, nullptr, "dict_lp_fin_i");
+                    builder_->CreateStore(
+                        llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
+
+                    llvm_utils_->create_loop("finalize_dict_lp",
+                        [&]() -> llvm::Value* {
+                            auto* loaded = builder_->CreateLoad(i32_type, iter);
+                            auto* next = builder_->CreateAdd(loaded,
+                                llvm::ConstantInt::get(i32_type, 1));
+                            builder_->CreateStore(next, iter);
+                            return builder_->CreateICmpSLT(next, capacity);
+                        },
+                        [&]() {
+                            auto* idx = builder_->CreateLoad(i32_type, iter);
+                            auto* mask_val = llvm_utils_->CreateLoad2(i8_type,
+                                llvm_utils_->create_ptr_gep2(i8_type, key_mask, idx));
+                            auto* is_occupied = builder_->CreateAnd(
+                                builder_->CreateICmpNE(mask_val, llvm::ConstantInt::get(i8_type, 0)),
+                                builder_->CreateICmpNE(mask_val, llvm::ConstantInt::get(i8_type, 3)));
+
+                            llvm_utils_->create_if_else(is_occupied, [&]() {
+                                if (key_finalizable) {
+                                    finalize(llvm_utils_->create_ptr_gep2(
+                                        key_elem_type, key_data, idx),
+                                        dict_t->m_key_type, nullptr, false);
+                                }
+                                if (val_finalizable) {
+                                    finalize(llvm_utils_->create_ptr_gep2(
+                                        val_elem_type, val_data, idx),
+                                        dict_t->m_value_type, nullptr, false);
+                                }
+                            }, [](){});
+                        });
+                }
 
                 // Free key_list.data (field 1, sub-field 2)
                 llvm::Value* key_list = llvm_utils_->create_gep2(dict_llvm_type, ptr, 1);
