@@ -16240,12 +16240,8 @@ public:
             }
 
             tmp = ASR::make_CoarrayRef_t(
-                al, loc,
-                base,
-                coindices.p, coindices.n,
-                ASRUtils::expr_type(base),
-                nullptr
-            );
+                al, loc, base,
+                coindices.p, coindices.n, ASRUtils::expr_type(base), nullptr);
         } else {
             // Simple coarray access like x[i] or x(i,j)[k]
             ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
@@ -16282,22 +16278,14 @@ public:
                 ASR::expr_t *base = ASRUtils::EXPR(create_ArrayRef(loc, x.m_args, x.n_args,
                                        nullptr, 0, nullptr, v, f2));
                 tmp = ASR::make_CoarrayRef_t(
-                    al, loc,
-                    base,
-                    coindices.p, coindices.n,
-                    ASRUtils::expr_type(base),
-                    nullptr
-                );
+                    al, loc, base,
+                    coindices.p, coindices.n, ASRUtils::expr_type(base), nullptr);
             } else {
                 // x[k]
                 ASR::expr_t *base = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
                 tmp = ASR::make_CoarrayRef_t(
-                    al, loc,
-                    base,
-                    coindices.p, coindices.n,
-                    ASRUtils::expr_type(base),
-                    nullptr
-                );
+                    al, loc, base,
+                    coindices.p, coindices.n, ASRUtils::expr_type(base), nullptr);
             }
         }
     }
