@@ -1511,15 +1511,7 @@ class ASRToLLVMVisitor;
 
             // If elements themselves own heap resources, finalize each before
             // freeing the outer data buffer.
-            bool elem_finalizable = false;
-            switch(elem_type->type) {
-                case ASR::List:
-                case ASR::String:
-                    elem_finalizable = true;
-                    break;
-                default:
-                    break;
-            }
+            bool elem_finalizable = is_finalizable_type(elem_type, nullptr, false);
 
             if (elem_finalizable) {
                 llvm::Type* elem_llvm_type = get_llvm_type(elem_type, nullptr);
@@ -1548,7 +1540,7 @@ class ASRToLLVMVisitor;
                     auto* idx = builder_->CreateLoad(iter_type, iter);
                     auto* elem = llvm_utils_->create_ptr_gep2(
                         elem_llvm_type, data, idx);
-                    finalize_type(elem, elem_type, nullptr);
+                    finalize(elem, elem_type, nullptr, false);
                 };
                 llvm_utils_->create_loop("finalize_list_elems", cond_fn, body_fn);
             }
@@ -1636,11 +1628,18 @@ class ASRToLLVMVisitor;
         }
 
         void finalize_tuple(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on tuple -- Create a function to finalize each element within (more like a struct).
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            (void)struct_sym;
+            ASR::Tuple_t* tuple_t = ASR::down_cast<ASR::Tuple_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
+            llvm::Type* tuple_llvm_type = get_llvm_type(t, nullptr);
+            for (size_t i = 0; i < tuple_t->n_type; i++) {
+                ASR::ttype_t* elem_type = tuple_t->m_type[i];
+                if (is_finalizable_type(elem_type, nullptr, false)) {
+                    llvm::Value* elem_ptr = llvm_utils_->create_gep2(
+                        tuple_llvm_type, ptr, i);
+                    finalize(elem_ptr, elem_type, nullptr, false);
+                }
+            }
         }
 
         void finalize_union(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
@@ -2222,7 +2221,15 @@ class ASRToLLVMVisitor;
                     return true;
                 case ASR::Dict:
                     return true;
-                case ASR::Tuple:
+                case ASR::Tuple: {
+                    ASR::Tuple_t* tuple_t = ASR::down_cast<ASR::Tuple_t>(t);
+                    for (size_t i = 0; i < tuple_t->n_type; i++) {
+                        if (is_finalizable_type(tuple_t->m_type[i], nullptr, false)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
                 case ASR::UnionType:
                 return false; // >>>>> TO DO <<<<<
                 case ASR::Set:
@@ -2361,6 +2368,16 @@ class ASRToLLVMVisitor;
     public:
 
 /*>>>>>>>>>>>>>>>>>>>>> Entry <<<<<<<<<<<<<<<<<<<<<<< */
+
+        /**
+         * Finalize a temporary expression value (e.g. a TupleConstant temp
+         * after it has been deep-copied into a list). Frees any heap
+         * resources owned by the value.
+         */
+        void finalize_temporary(llvm::Value* const ptr, ASR::ttype_t* const t) {
+            if (!is_finalizable_type(t, nullptr, false)) return;
+            finalize_type(ptr, t, nullptr);
+        }
 
         /**
          * Finalize nested allocatable components before explicit deallocate.

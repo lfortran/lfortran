@@ -2975,6 +2975,12 @@ public:
                 ele_list_t->m_type, false, false);
             list_api->free_data_using_type(tc, item, module.get());
         }
+        // Free heap resources inside a temporary TupleConstant after the
+        // deep-copy into the list (e.g. allocatable strings in the tuple).
+        if (ASR::is_a<ASR::TupleConstant_t>(*x.m_ele) &&
+                ASR::is_a<ASR::Tuple_t>(*asr_list->m_type)) {
+            llvm_symtab_finalizer.finalize_temporary(item, asr_list->m_type);
+        }
     }
 
     void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {
