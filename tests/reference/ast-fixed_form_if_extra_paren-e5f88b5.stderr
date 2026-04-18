@@ -1,4 +1,4 @@
-tokenizer error: Unmatched `)` after the condition of the if statement
+tokenizer error: Unexpected token after the condition of the if statement
  --> tests/errors/fixed_form_if_extra_paren.f:3:30
   |
 3 |          if (a == sayhello())) error stop
