@@ -16167,21 +16167,31 @@ public:
     void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
         std::string var_name = to_lower(x.m_name);
         const Location &loc = x.base.base.loc;
-        
-        size_t n_coindices = 0;
-        n_coindices = x.n_coargs; // For now we treat all coargs as coindices, since we don't have codimensions implemented yet 
-
-        // Visit each coarg expression to convert them to ASR
-        // (for now we don't store them, but we do validate them)
+        Vec<ASR::array_index_t> coindices;
+        coindices.reserve(al, x.n_coargs);
         for (size_t i = 0; i < x.n_coargs; i++) {
+            // Coarrays do not support step notation in coindices
+            if (x.m_coargs[i].m_step) {
+                diag.add(Diagnostic(
+                    "Coarray coindices do not support step notation (e.g., [i:j:k])",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            
+            ASR::expr_t* idx = nullptr;
             if (x.m_coargs[i].m_start) {
                 this->visit_expr(*x.m_coargs[i].m_start);
-            }
-            if (x.m_coargs[i].m_end) {
+                idx = ASRUtils::EXPR(tmp);
+            } else if (x.m_coargs[i].m_end) {
                 this->visit_expr(*x.m_coargs[i].m_end);
-            }
-            if (x.m_coargs[i].m_step) {
-                this->visit_expr(*x.m_coargs[i].m_step);
+                idx = ASRUtils::EXPR(tmp);
+            } else continue;
+            if (idx) {
+                ASR::array_index_t ai;
+                ai.m_left = idx;
+                ai.m_right = nullptr;
+                ai.m_step = nullptr;
+                coindices.push_back(al, ai);
             }
         }
 
@@ -16209,24 +16219,33 @@ public:
 
             // Semantic check: number of coindices must match corank
             int64_t var_corank = ASRUtils::symbol_corank(f2);
-            if (var_corank > 0 && (int64_t)n_coindices != var_corank) {
+            if (var_corank > 0 && (int64_t)coindices.n != var_corank) {
                 diag.add(Diagnostic(
                     "Coarray '" + to_lower(x.m_member[x.n_member - 1].m_name) +
                     "' has corank " + std::to_string(var_corank) +
-                    " but " + std::to_string(n_coindices) + " coindices were provided",
+                    " but " + std::to_string(coindices.n) + " coindices were provided",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
 
+            ASR::expr_t *base = nullptr;
             if (x.n_args > 0) {
-                tmp = create_ArrayRef(loc, x.m_args, x.n_args,
-                                      nullptr, 0, v_expr, v, f2);
+                base = ASRUtils::EXPR(create_ArrayRef(loc, x.m_args, x.n_args,
+                                       nullptr, 0, v_expr, v, f2));
             } else {
                 ASR::ttype_t *type = ASRUtils::symbol_type(f2);
-                tmp = ASR::make_StructInstanceMember_t(al, loc, v_expr,
+                base = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, v_expr,
                     ASRUtils::import_struct_instance_member(al, v, current_scope),
-                    type, nullptr);
+                    type, nullptr));
             }
+
+            tmp = ASR::make_CoarrayRef_t(
+                al, loc,
+                base,
+                coindices.p, coindices.n,
+                ASRUtils::expr_type(base),
+                nullptr
+            );
         } else {
             // Simple coarray access like x[i] or x(i,j)[k]
             ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
@@ -16249,22 +16268,36 @@ public:
 
             // Semantic check: number of coindices must match corank
             int64_t var_corank = ASRUtils::symbol_corank(f2);
-            if (var_corank > 0 && (int64_t)n_coindices != var_corank) {
+            if (var_corank > 0 && (int64_t)coindices.n != var_corank) {
                 diag.add(Diagnostic(
                     "Coarray '" + var_name + "' has corank " +
                     std::to_string(var_corank) + " but " +
-                    std::to_string(n_coindices) + " coindices were provided",
+                    std::to_string(coindices.n) + " coindices were provided",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
 
             if (x.n_args > 0) {
-                // x(i,j)[k] -> resolve as ArrayItem/ArraySection of x(i,j)
-                tmp = create_ArrayRef(loc, x.m_args, x.n_args,
-                                      nullptr, 0, nullptr, v, f2);
+                // x(i,j)[k]
+                ASR::expr_t *base = ASRUtils::EXPR(create_ArrayRef(loc, x.m_args, x.n_args,
+                                       nullptr, 0, nullptr, v, f2));
+                tmp = ASR::make_CoarrayRef_t(
+                    al, loc,
+                    base,
+                    coindices.p, coindices.n,
+                    ASRUtils::expr_type(base),
+                    nullptr
+                );
             } else {
-                // x[i] -> resolve as just Var(x)
-                tmp = ASR::make_Var_t(al, loc, v);
+                // x[k]
+                ASR::expr_t *base = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+                tmp = ASR::make_CoarrayRef_t(
+                    al, loc,
+                    base,
+                    coindices.p, coindices.n,
+                    ASRUtils::expr_type(base),
+                    nullptr
+                );
             }
         }
     }
