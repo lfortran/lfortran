@@ -59,6 +59,7 @@
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/fuse_array_reduction.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
@@ -121,7 +122,8 @@ namespace LCompilers {
             {"unique_symbols", &pass_unique_symbols},
             {"insert_deallocate", &pass_insert_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
-            {"array_struct_temporary", &pass_array_struct_temporary}
+            {"array_struct_temporary", &pass_array_struct_temporary},
+            {"fuse_array_reduction", &pass_fuse_array_reduction}
         };
 
         bool apply_default_passes;
@@ -249,6 +251,7 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "gpu_offload",
+                "fuse_array_reduction",
                 "array_struct_temporary",
                 "transform_optional_argument_functions",
                 "select_case",
