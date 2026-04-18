@@ -2964,6 +2964,17 @@ public:
         llvm::Value *item = tmp;
         ptr_loads = ptr_loads_copy;
         list_api->append(x.m_a, plist, item, asr_list->m_type, module.get());
+        // Free the temporary ListConstant data buffer after deep-copy into
+        // the list.  The append above deep-copies the element, so the
+        // original temporary's data is no longer needed.
+        if (ASR::is_a<ASR::ListConstant_t>(*x.m_ele) &&
+                ASR::is_a<ASR::List_t>(*asr_list->m_type)) {
+            ASR::List_t* ele_list_t = ASR::down_cast<ASR::List_t>(
+                asr_list->m_type);
+            std::string tc = ASRUtils::get_type_code(
+                ele_list_t->m_type, false, false);
+            list_api->free_data_using_type(tc, item, module.get());
+        }
     }
 
     void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {

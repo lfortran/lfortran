@@ -1504,7 +1504,55 @@ class ASRToLLVMVisitor;
         }
 
         void finalize_list(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
+            ASR::List_t* list_t = ASR::down_cast<ASR::List_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
             llvm::Type* list_llvm_type = get_llvm_type(t, struct_sym);
+            ASR::ttype_t* elem_type = list_t->m_type;
+
+            // If elements themselves own heap resources, finalize each before
+            // freeing the outer data buffer.
+            bool elem_finalizable = false;
+            switch(elem_type->type) {
+                case ASR::List:
+                case ASR::String:
+                    elem_finalizable = true;
+                    break;
+                default:
+                    break;
+            }
+
+            if (elem_finalizable) {
+                llvm::Type* elem_llvm_type = get_llvm_type(elem_type, nullptr);
+                // end_point = number of live elements (field 0)
+                llvm::Value* end_point = llvm_utils_->CreateLoad2(
+                    llvm::Type::getInt32Ty(builder_->getContext()),
+                    llvm_utils_->create_gep2(list_llvm_type, ptr, 0));
+                // data pointer (field 2)
+                llvm::Value* data = llvm_utils_->CreateLoad2(
+                    elem_llvm_type->getPointerTo(),
+                    llvm_utils_->create_gep2(list_llvm_type, ptr, 2));
+
+                auto iter_type = llvm::Type::getInt32Ty(builder_->getContext());
+                auto* iter = builder_->CreateAlloca(iter_type, nullptr, "list_fin_iter");
+                builder_->CreateStore(
+                    llvm::ConstantInt::get(iter_type, uint64_t(-1), true), iter);
+
+                auto cond_fn = [&]() -> llvm::Value* {
+                    auto* loaded = builder_->CreateLoad(iter_type, iter);
+                    auto* next = builder_->CreateAdd(loaded,
+                        llvm::ConstantInt::get(iter_type, 1));
+                    builder_->CreateStore(next, iter);
+                    return builder_->CreateICmpSLT(next, end_point);
+                };
+                auto body_fn = [&]() {
+                    auto* idx = builder_->CreateLoad(iter_type, iter);
+                    auto* elem = llvm_utils_->create_ptr_gep2(
+                        elem_llvm_type, data, idx);
+                    finalize_type(elem, elem_type, nullptr);
+                };
+                llvm_utils_->create_loop("finalize_list_elems", cond_fn, body_fn);
+            }
+
             // List struct layout: { i32 end_point, i32 capacity, T* data }
             llvm::Value* data_ptr_field = llvm_utils_->create_gep2(list_llvm_type, ptr, 2);
             llvm::Value* data_ptr = llvm_utils_->CreateLoad2(
@@ -2111,19 +2159,8 @@ class ASRToLLVMVisitor;
                 case ASR::Array:
                     return is_array_finalizable(ASR::down_cast<ASR::Array_t>(t), struct_sym);
                 break;
-                case ASR::List: {
-                    ASR::List_t* list_t = ASR::down_cast<ASR::List_t>(t);
-                    switch(list_t->m_type->type) {
-                        case ASR::Integer:
-                        case ASR::Real:
-                        case ASR::Complex:
-                        case ASR::UnsignedInteger:
-                        case ASR::Logical:
-                            return true;
-                        default:
-                            return false;
-                    }
-                }
+                case ASR::List:
+                    return true;
                 case ASR::Dict:
                 case ASR::Tuple:
                 case ASR::UnionType:
