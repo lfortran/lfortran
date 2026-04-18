@@ -404,9 +404,6 @@ public:
     // Track list-type call_arg_value allocas that need their data freed
     // at scope exit. Maps alloca -> element type_code for free_data_using_type.
     std::map<llvm::Value*, std::string> list_call_arg_to_finalize;
-    // Set of allocas already used for list deepcopy (for detecting reuse)
-    std::set<llvm::Value*> list_call_arg_inited;
-
     // Get or create an alloca for a call argument of the given type.
     // Reuses allocas from the pool when possible.
     llvm::AllocaInst* get_call_arg_alloca(llvm::Type* type) {
@@ -417,6 +414,16 @@ public:
         }
         // Need to create a new alloca
         llvm::AllocaInst* alloca = llvm_utils->CreateAlloca(type, nullptr, "call_arg_value");
+        // Zero-initialize struct allocas (e.g. list, tuple) at entry block
+        // so null-guarded free is safe on the very first use in a loop.
+        if (type->isStructTy()) {
+            llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+            llvm::IRBuilder<> entry_builder(context);
+            entry_builder.SetInsertPoint(&entry_block, std::next(alloca->getIterator()));
+            uint64_t type_size = module->getDataLayout().getTypeAllocSize(type);
+            entry_builder.CreateMemSet(alloca, entry_builder.getInt8(0), type_size,
+                llvm::MaybeAlign(alloca->getAlign()));
+        }
         pool.push_back(alloca);
         idx++;
         return alloca;
@@ -436,7 +443,6 @@ public:
             list_api->free_data_using_type(kv.second, kv.first, module.get());
         }
         list_call_arg_to_finalize.clear();
-        list_call_arg_inited.clear();
     }
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
@@ -5808,7 +5814,6 @@ public:
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
-        list_call_arg_inited.clear();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -5861,7 +5866,6 @@ public:
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
-        list_call_arg_inited.clear();
         if (compiler_options.emit_debug_info) {
             debug_current_scope = SP;
             builder->SetCurrentDebugLocation(nullptr);
@@ -7424,7 +7428,6 @@ public:
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
-        list_call_arg_inited.clear();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -7603,7 +7606,6 @@ public:
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
-        list_call_arg_inited.clear();
         bindc_stride_exits.clear();
         if (compiler_options.emit_debug_info) {
             llvm::DISubprogram *SP = nullptr;
@@ -10384,6 +10386,11 @@ public:
                     llvm_symtab_finalizer.finalize_temporary(
                         target_list, ASRUtils::expr_type(x.m_target));
                 }
+            } else if (ASR::is_a<ASR::ListItem_t>(*x.m_target)) {
+                // List element is being overwritten — free old element data
+                // before deepcopy replaces it.
+                llvm_symtab_finalizer.finalize_temporary(
+                    target_list, ASRUtils::expr_type(x.m_target));
             }
             list_api->list_deepcopy(x.m_value, value_list, target_list,
                                     value_asr_list, module.get());
@@ -22010,12 +22017,11 @@ public:
                                             arg_type);
                                         std::string tc = ASRUtils::get_type_code(
                                             list_t->m_type, false, false);
-                                        // Free old data in reused alloca from a prior call
-                                        if (list_call_arg_inited.count(target)) {
-                                            list_api->free_data_using_type(
-                                                tc, target, module.get());
-                                        }
-                                        list_call_arg_inited.insert(target);
+                                        // Always free old data before deepcopy.
+                                        // The alloca is zero-initialized at entry, so
+                                        // the null-guarded free is a no-op on first use.
+                                        list_api->free_data_using_type(
+                                            tc, target, module.get());
                                         list_call_arg_to_finalize[target] = tc;
                                     }
                                     llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
