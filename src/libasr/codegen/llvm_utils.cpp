@@ -7059,9 +7059,21 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* tmp = LLVMList::find_item_position(list, item, item_type, module);
         LLVM::CreateStore(*builder, tmp, item_pos);
 
+        // Free the heap-allocated char data of the removed string element
+        // before the shift loop overwrites its descriptor.
+        if (ASRUtils::is_allocatable_descriptor_string(item_type)) {
+            llvm::Value* pos_val = llvm_utils->CreateLoad2(pos_type, item_pos);
+            llvm::Value* el_ptr = read_item_using_ttype(item_type, list, pos_val,
+                false, module, true);
+            llvm::Value* char_data = llvm_utils->CreateLoad2(
+                llvm_utils->character_type,
+                llvm_utils->create_gep2(llvm_utils->string_descriptor, el_ptr, 0));
+            llvm_utils->lfortran_free(char_data);
+        }
+
         /* While loop equivalent in C++:
          * item_pos = find_item_position();
-         * while(end_point > item_pos) {
+         * while(end_point > item_pos + 1) {
          *     tmp = item_pos + 1;
          *     list[item_pos] = list[tmp];
          *     item_pos = tmp;
@@ -7075,8 +7087,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value *cond = builder->CreateICmpSGT(current_end_point,
-                                         llvm_utils->CreateLoad2(pos_type, item_pos));
+            llvm::Value* pos_val = llvm_utils->CreateLoad2(pos_type, item_pos);
+            llvm::Value* next_pos = builder->CreateAdd(pos_val,
+                llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            llvm::Value *cond = builder->CreateICmpSGT(current_end_point, next_pos);
             builder->CreateCondBr(cond, loopbody, loopend);
         }
 
