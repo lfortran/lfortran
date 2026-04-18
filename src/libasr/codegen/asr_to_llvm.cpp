@@ -10457,8 +10457,33 @@ public:
                 ASR::Tuple_t* value_tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_value_type);
                 std::string type_code = ASRUtils::get_type_code(value_tuple_type->m_type,
                                                                 value_tuple_type->n_type);
+                // Free old allocatable string data in the target tuple
+                // before deepcopy overwrites the descriptors.
+                // String members are always initialized at variable
+                // declaration, so this is safe for Var targets.
+                if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                    for (size_t i = 0; i < value_tuple_type->n_type; i++) {
+                        if (ASRUtils::is_descriptorString(value_tuple_type->m_type[i]) &&
+                                ASRUtils::is_deferredLength_string(value_tuple_type->m_type[i])) {
+                            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+                                nullptr, value_tuple_type->m_type[i], module.get());
+                            llvm::Value* dest_item_ptr = tuple_api->read_item_using_pos(
+                                el_type, target_tuple, value_tuple_type, i, true);
+                            ASR::String_t *t = ASR::down_cast<ASR::String_t>(
+                                ASRUtils::extract_type(value_tuple_type->m_type[i]));
+                            llvm::Value* old_data = llvm_utils->get_string_data(t, dest_item_ptr);
+                            llvm_utils->lfortran_free(old_data);
+                        }
+                    }
+                }
                 tuple_api->tuple_deepcopy(x.m_value, value_tuple, target_tuple,
                                           value_tuple_type, module.get());
+                // Free source TupleConstant temporary's heap resources
+                // after deepcopy.
+                if (ASR::is_a<ASR::TupleConstant_t>(*x.m_value)) {
+                    llvm_symtab_finalizer.finalize_temporary(
+                        value_tuple, asr_value_type);
+                }
             }
             return ;
         } else if( is_target_dict && is_value_dict ) {
