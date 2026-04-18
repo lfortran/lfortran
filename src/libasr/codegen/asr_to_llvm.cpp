@@ -422,7 +422,11 @@ public:
             entry_builder.SetInsertPoint(&entry_block, std::next(alloca->getIterator()));
             uint64_t type_size = module->getDataLayout().getTypeAllocSize(type);
             entry_builder.CreateMemSet(alloca, entry_builder.getInt8(0), type_size,
+#if LLVM_VERSION_MAJOR >= 11
                 llvm::MaybeAlign(alloca->getAlign()));
+#else
+                llvm::MaybeAlign(alloca->getAlignment()));
+#endif
         }
         pool.push_back(alloca);
         idx++;
