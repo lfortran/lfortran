@@ -5991,7 +5991,8 @@ public:
 
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
-        bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false) {
+        bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false,
+        bool reserve_data_memory=true) {
         // Skip function call for AssumedLength strings
         // Their descriptors come from the original parameter inside subroutines
         if (ASRUtils::is_character(*m_type)) {
@@ -6025,7 +6026,7 @@ public:
         if( is_array_type && !is_malloc_array_type &&
             !is_list ) {
             llvm::Type* ptr_typ = llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get());
-            fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only);
+            fill_array_details(ptr_typ, ptr, llvm_data_type, m_dims, n_dims, is_data_only, reserve_data_memory);
             // For non-allocatable DescriptorArray character arrays,
             // fill_array_details allocated an array of string_descriptors
             // but their data pointers are uninitialized. Set the string
@@ -7117,9 +7118,21 @@ public:
                 (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::StringArraySinglePointer &&
                 ASRUtils::is_dimension_empty(m_dims,n_dims))))
             ) {
+                auto is_array_const_or_ctor = [](ASR::expr_t* e) {
+                    return e && (ASR::is_a<ASR::ArrayConstant_t>(*e) ||
+                                 ASR::is_a<ASR::ArrayConstructor_t>(*e));
+                };
+                ASR::expr_t* init_value = v->m_value ? v->m_value : v->m_symbolic_value;
+                bool skip_data_alloc = (v->m_storage == ASR::storage_typeType::Parameter)
+                    && !is_malloc_array_type
+                    && ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray
+                    && !ASRUtils::is_character(*ASRUtils::type_get_past_array(v->m_type))
+                    && !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(v->m_type))
+                    && is_array_const_or_ctor(init_value);
                 fill_array_details_(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)), ptr, type_, m_dims, n_dims,
-                    is_malloc_array_type, is_array_type, is_list, v->m_type);
+                    is_malloc_array_type, is_array_type, is_list, v->m_type,
+                    /*is_data_only=*/false, /*reserve_data_memory=*/!skip_data_alloc);
                 // Now that the descriptor is initialized, initialize allocatable
                 // members of each element for DescriptorArray struct arrays.
                 if( ASR::is_a<ASR::StructType_t>(
@@ -11622,6 +11635,21 @@ public:
         llvm_utils->create_if_else(
             llvm_cond,
             [&]() {
+                    // For Pointer class types, only allocate the class wrapper
+                    // (not the data payload). The data pointer will be set by
+                    // the callee or by pointer association. Allocating data here
+                    // would leak because the callee typically nullifies the out
+                    // parameter before setting it to the actual target.
+                    if (ASR::is_a<ASR::Pointer_t>(*asr_ttype) &&
+                        ASRUtils::is_class_type(asr_type)) {
+                        llvm::DataLayout DL(module->getDataLayout());
+                        llvm::Value* wrapper_size = llvm::ConstantInt::get(
+                            context, llvm::APInt(32, DL.getTypeAllocSize(llvm_type)));
+                        llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                            target_expr, llvm_type, wrapper_size);
+                        builder->CreateStore(wrapper_ptr, tmp);
+                        return;
+                    }
                     Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
                     ASR::alloc_arg_t alloc_arg;
                     alloc_arg.loc = target_expr->base.loc;
