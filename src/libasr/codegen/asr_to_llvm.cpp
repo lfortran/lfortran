@@ -5866,6 +5866,20 @@ public:
                 llvm::APInt(32, compiler_options.fpe_traps));
             builder->CreateCall(fpe_fn, {mask_val});
         }
+        // Enable CFI debug mode so CFI_allocate/CFI_deallocate use the
+        // tracked allocator, keeping them in sync with Fortran allocate/deallocate.
+        if (compiler_options.detect_leaks) {
+            llvm::Function *fn = module->getFunction("_lfortran_set_cfi_debug_mode");
+            if (!fn) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+                fn = llvm::Function::Create(ft,
+                    llvm::Function::ExternalLinkage, "_lfortran_set_cfi_debug_mode", module.get());
+            }
+            builder->CreateCall(fn, {llvm::ConstantInt::get(context, llvm::APInt(32, 1))});
+        }
         // Set runtime color preference based on compiler option (only when enabled)
         if (compiler_options.use_runtime_colors) {
             if (compiler_options.emit_debug_info) debug_emit_loc(x);
