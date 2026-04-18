@@ -9951,6 +9951,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                     llvm::Value* total_memory = builder->CreateMul(num_elements,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, data_type_size)));
+                    // Finalize nested allocatable members of old dest elements
+                    // before freeing the data buffer, to avoid leaking them.
+                    finalizer_instnace.finalize_before_deallocate(
+                        dest, src_ty, struct_sym, false);
                     llvm_utils->lfortran_free(dest_data);
                     llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest, llvm_data_type);
                     llvm::Value* reloaded_dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
