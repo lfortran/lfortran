@@ -2861,6 +2861,19 @@ public:
         ptr_loads = ptr_loads_copy;
         tuple_api->tuple_init(const_cast<ASR::expr_t*>(&x.base), const_tuple, init_values, tuple_type,
                               module.get());
+        // tuple_init deep-copies each element value into the tuple,
+        // allocating new buffers. Free the original temporary data of
+        // constant elements (ListConstant, TupleConstant, DictConstant,
+        // SetConstant) whose heap buffers are now orphaned.
+        for (size_t i = 0; i < x.n_elements; i++) {
+            if (ASR::is_a<ASR::ListConstant_t>(*x.m_elements[i]) ||
+                ASR::is_a<ASR::TupleConstant_t>(*x.m_elements[i]) ||
+                ASR::is_a<ASR::DictConstant_t>(*x.m_elements[i]) ||
+                ASR::is_a<ASR::SetConstant_t>(*x.m_elements[i])) {
+                llvm_symtab_finalizer.finalize_temporary(
+                    init_values[i], tuple_type->m_type[i]);
+            }
+        }
         tmp = const_tuple;
     }
 
