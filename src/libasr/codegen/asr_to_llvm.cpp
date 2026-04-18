@@ -18804,6 +18804,7 @@ public:
             is_string_array_unit = ASRUtils::is_array(ASRUtils::expr_type(x.m_unit));
             ptr_loads = 0;
             runtime_func_name = "_lfortran_string_write";
+            args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo()); // allocator
             args_type.push_back(character_type->getPointerTo());// str_holder
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_allocatable
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_deferred
@@ -19164,6 +19165,9 @@ public:
 
 
         std::vector<llvm::Value *> printf_args;
+        if(is_string){
+            printf_args.push_back(llvm_utils->get_allocator(module.get()));
+        }
         printf_args.push_back(unit);
         if(is_string){
             llvm::Value* is_allocatable = llvm::ConstantInt::get(context, llvm::APInt(8,
