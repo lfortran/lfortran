@@ -2349,20 +2349,22 @@ public:
 
         } else if (x.m_type == AST::OMPPragma) {
             if (!compiler_options.openmp) {
-                // Sentinel outside --openmp is already silenced by the
-                // tokenizer; reaching here without the flag would be a bug.
+                // Sentinel outside --openmp is silenced at tokenizer level;
+                // if one reaches here without the flag, treat as a no-op.
                 return;
             }
-            // The grammar now accepts `!$omp threadprivate(...)` in
-            // specification parts, but per-thread storage is not yet
-            // implemented. Reject loudly so codes do not silently get shared
-            // storage under OpenMP; see issue #11132 for the implementation
-            // tracker.
+            std::string text = x.m_text;
+            // Only the threadprivate declarative directive is meaningful in a
+            // specification part. Other OMP directives in this position are
+            // either data-environment directives we do not support yet or a
+            // user error; keep them rejected.
+            if (is_omp_threadprivate_directive(text)) {
+                mark_omp_threadprivate_vars(text, x.base.base.loc);
+                return;
+            }
             diag.add(diag::Diagnostic(
-                "OpenMP `" + std::string(x.m_text) + "` is not yet "
-                "implemented; compiling under `--openmp` would produce "
-                "shared storage and silently break correctness. "
-                "See https://github.com/lfortran/lfortran/issues/11132",
+                "OpenMP directive `" + text + "` is not supported in a "
+                "specification part",
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();

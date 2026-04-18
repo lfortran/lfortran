@@ -8905,19 +8905,13 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::DistributeParallelDo, clauses.p, clauses.n, body.p, body.n)));
-            } else if (LCompilers::startswith(to_lower(x.m_construct_name), "threadprivate")) {
-                // Declarative directive: parsing is supported, but per-thread
-                // storage semantics are not yet implemented. Emit a clear
-                // diagnostic pointing to the implementation tracker instead
-                // of silently producing shared storage under --openmp.
-                diag.add(Diagnostic(
-                    "OpenMP `threadprivate` is not yet implemented; "
-                    "compiling under `--openmp` would produce shared storage "
-                    "and silently break correctness. "
-                    "See https://github.com/lfortran/lfortran/issues/11132",
-                    Level::Error, Stage::Semantic, {
-                        Label("", {loc})}));
-                throw SemanticAbort();
+            } else if (is_omp_threadprivate_directive(std::string(x.m_construct_name))) {
+                // Declarative directive appearing in an executable section
+                // (e.g. inside a subroutine before the first executable
+                // statement). Mark the referenced variables so the LLVM
+                // backend emits them with thread-local storage.
+                mark_omp_threadprivate_vars(std::string(x.m_construct_name), loc);
+                return;
             } else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
