@@ -95,6 +95,13 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void
 
 LFORTRAN_API void _lfortran_enable_fpe_traps(int32_t trap_mask);
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void);
+
+/* CFI allocation helpers — used by ISO_Fortran_binding.h so that
+   CFI_allocate/CFI_deallocate go through the same allocator as Fortran
+   allocate/deallocate (important for --detect-leaks). */
+LFORTRAN_API void  _lfortran_set_cfi_debug_mode(int mode);
+LFORTRAN_API void* _lfortran_cfi_calloc(size_t nmemb, size_t size);
+LFORTRAN_API void  _lfortran_cfi_free(void* ptr);
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
@@ -136,8 +143,8 @@ LFORTRAN_API float_complex_t _lfortran_cexp(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zexp(double_complex_t x);
 LFORTRAN_API float _lfortran_slog(float x);
 LFORTRAN_API double _lfortran_dlog(double x);
-LFORTRAN_API bool _lfortran_sis_nan(float x);
-LFORTRAN_API bool _lfortran_dis_nan(double x);
+LFORTRAN_API int32_t _lfortran_sis_nan(float x);
+LFORTRAN_API int32_t _lfortran_dis_nan(double x);
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zlog(double_complex_t x);
 LFORTRAN_API float _lfortran_serf(float x);
@@ -342,7 +349,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
 LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_64 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_size, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num, int32_t *iostat);
-LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, 
+LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
         bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
         int64_t format_len, ...);
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...);

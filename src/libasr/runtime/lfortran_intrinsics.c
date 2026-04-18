@@ -330,6 +330,31 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void
     return &compiler_mem_dbg_allocator;
 }
 
+/* --- CFI allocation helpers --- */
+/* Route CFI_allocate/CFI_deallocate through the debug allocator when
+   --detect-leaks is active, so that C-side frees are properly tracked. */
+
+static int _cfi_debug_mode = 0;
+
+LFORTRAN_API void _lfortran_set_cfi_debug_mode(int mode) {
+    _cfi_debug_mode = mode;
+}
+
+LFORTRAN_API void* _lfortran_cfi_calloc(size_t nmemb, size_t size) {
+    if (_cfi_debug_mode) {
+        return dbg_calloc(NULL, (int64_t)nmemb, (int64_t)size);
+    }
+    return calloc(nmemb, size);
+}
+
+LFORTRAN_API void _lfortran_cfi_free(void* ptr) {
+    if (_cfi_debug_mode) {
+        dbg_free(NULL, ptr);
+    } else {
+        free(ptr);
+    }
+}
+
 /* --- End default allocator --- */
 
 /* Internal allocation wrappers — used for memory that stays within the
@@ -3842,11 +3867,11 @@ LFORTRAN_API double _lfortran_dlog(double x)
     return log(x);
 }
 
-LFORTRAN_API bool _lfortran_sis_nan(float x) {
+LFORTRAN_API int32_t _lfortran_sis_nan(float x) {
     return isnan(x);
 }
 
-LFORTRAN_API bool _lfortran_dis_nan(double x) {
+LFORTRAN_API int32_t _lfortran_dis_nan(double x) {
     return isnan(x);
 }
 
@@ -10180,7 +10205,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred,
+LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
     bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
     int64_t format_len, ...) {
     va_list args;
@@ -10260,7 +10285,7 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
             _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
         }
     } else {
-        _lfortran_strcpy_alloc(_lfortran_get_default_allocator(), str_holder, len, is_allocatable, is_deferred, str, str_len);
+        _lfortran_strcpy_alloc(al, str_holder, len, is_allocatable, is_deferred, str, str_len);
     }
 
     internal_free(s);
