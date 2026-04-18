@@ -2863,11 +2863,11 @@ public:
                               module.get());
         // tuple_init deep-copies each element value into the tuple,
         // allocating new buffers. Free the original temporary data of
-        // constant elements (ListConstant, TupleConstant, DictConstant,
-        // SetConstant) whose heap buffers are now orphaned.
+        // constant/concat elements whose heap buffers are now orphaned.
         for (size_t i = 0; i < x.n_elements; i++) {
             if (ASR::is_a<ASR::ListConstant_t>(*x.m_elements[i]) ||
                 ASR::is_a<ASR::TupleConstant_t>(*x.m_elements[i]) ||
+                ASR::is_a<ASR::TupleConcat_t>(*x.m_elements[i]) ||
                 ASR::is_a<ASR::DictConstant_t>(*x.m_elements[i]) ||
                 ASR::is_a<ASR::SetConstant_t>(*x.m_elements[i])) {
                 llvm_symtab_finalizer.finalize_temporary(
@@ -2994,9 +2994,9 @@ public:
                 ele_list_t->m_type, false, false);
             list_api->free_data_using_type(tc, item, module.get());
         }
-        // Free heap resources inside a temporary TupleConstant after the
-        // deep-copy into the list (e.g. allocatable strings in the tuple).
-        if (ASR::is_a<ASR::TupleConstant_t>(*x.m_ele) &&
+        // Free heap resources inside a temporary TupleConstant/TupleConcat
+        // after the deep-copy into the list (e.g. allocatable strings in the tuple).
+        if (is_owned_tuple_temporary(x.m_ele) &&
                 ASR::is_a<ASR::Tuple_t>(*asr_list->m_type)) {
             llvm_symtab_finalizer.finalize_temporary(item, asr_list->m_type);
         }
@@ -3922,6 +3922,14 @@ public:
         tmp = repeat_list;
     }
 
+    // Returns true when `e` is a tuple expression whose LLVM alloca
+    // owns deep-copied heap resources (e.g. strings) that must be freed
+    // after the value has been consumed (deep-copied or compared).
+    static bool is_owned_tuple_temporary(ASR::expr_t* e) {
+        return ASR::is_a<ASR::TupleConstant_t>(*e)
+            || ASR::is_a<ASR::TupleConcat_t>(*e);
+    }
+
     void visit_TupleCompare(const ASR::TupleCompare_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -3952,6 +3960,15 @@ public:
         else if(x.m_op == ASR::cmpopType::GtE) {
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left), 3);
+        }
+        // Free heap resources in temporary tuple operands after comparison
+        if (is_owned_tuple_temporary(x.m_left)) {
+            llvm_symtab_finalizer.finalize_temporary(
+                left, ASRUtils::expr_type(x.m_left));
+        }
+        if (is_owned_tuple_temporary(x.m_right)) {
+            llvm_symtab_finalizer.finalize_temporary(
+                right, ASRUtils::expr_type(x.m_right));
         }
     }
 
@@ -4021,6 +4038,16 @@ public:
                                     al, x.base.base.loc, v_type.p, v_type.n));
         tuple_api->concat(x.m_left, left, right, tuple_type_left, tuple_type_right, concat_tuple,
                           tuple_type, module.get());
+        // concat() deep-copies elements into concat_tuple. Free heap
+        // resources (e.g. strings) owned by temporary operands.
+        if (is_owned_tuple_temporary(x.m_left)) {
+            llvm_symtab_finalizer.finalize_temporary(
+                left, ASRUtils::expr_type(x.m_left));
+        }
+        if (is_owned_tuple_temporary(x.m_right)) {
+            llvm_symtab_finalizer.finalize_temporary(
+                right, ASRUtils::expr_type(x.m_right));
+        }
         tmp = concat_tuple;
     }
 
@@ -10491,9 +10518,8 @@ public:
                 }
                 tuple_api->tuple_deepcopy(x.m_value, value_tuple, target_tuple,
                                           value_tuple_type, module.get());
-                // Free source TupleConstant temporary's heap resources
-                // after deepcopy.
-                if (ASR::is_a<ASR::TupleConstant_t>(*x.m_value)) {
+                // Free source temporary's heap resources after deepcopy.
+                if (is_owned_tuple_temporary(x.m_value)) {
                     llvm_symtab_finalizer.finalize_temporary(
                         value_tuple, asr_value_type);
                 }
