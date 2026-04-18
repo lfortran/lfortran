@@ -330,6 +330,31 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void
     return &compiler_mem_dbg_allocator;
 }
 
+/* --- CFI allocation helpers --- */
+/* Route CFI_allocate/CFI_deallocate through the debug allocator when
+   --detect-leaks is active, so that C-side frees are properly tracked. */
+
+static int _cfi_debug_mode = 0;
+
+LFORTRAN_API void _lfortran_set_cfi_debug_mode(int mode) {
+    _cfi_debug_mode = mode;
+}
+
+LFORTRAN_API void* _lfortran_cfi_calloc(size_t nmemb, size_t size) {
+    if (_cfi_debug_mode) {
+        return dbg_calloc(NULL, (int64_t)nmemb, (int64_t)size);
+    }
+    return calloc(nmemb, size);
+}
+
+LFORTRAN_API void _lfortran_cfi_free(void* ptr) {
+    if (_cfi_debug_mode) {
+        dbg_free(NULL, ptr);
+    } else {
+        free(ptr);
+    }
+}
+
 /* --- End default allocator --- */
 
 /* Internal allocation wrappers — used for memory that stays within the
@@ -3842,11 +3867,11 @@ LFORTRAN_API double _lfortran_dlog(double x)
     return log(x);
 }
 
-LFORTRAN_API bool _lfortran_sis_nan(float x) {
+LFORTRAN_API int32_t _lfortran_sis_nan(float x) {
     return isnan(x);
 }
 
-LFORTRAN_API bool _lfortran_dis_nan(double x) {
+LFORTRAN_API int32_t _lfortran_dis_nan(double x) {
     return isnan(x);
 }
 
