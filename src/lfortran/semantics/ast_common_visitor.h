@@ -16188,6 +16188,7 @@ public:
             } else continue;
             if (idx) {
                 ASR::array_index_t ai;
+                ai.loc = loc;
                 ai.m_left = idx;
                 ai.m_right = nullptr;
                 ai.m_step = nullptr;
