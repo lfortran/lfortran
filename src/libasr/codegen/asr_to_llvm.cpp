@@ -3,6 +3,7 @@
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <utility>
 
@@ -400,6 +401,12 @@ public:
     std::map<llvm::Type*, size_t> call_arg_alloca_idx;
     int convert_call_args_depth = 0;
 
+    // Track list-type call_arg_value allocas that need their data freed
+    // at scope exit. Maps alloca -> element type_code for free_data_using_type.
+    std::map<llvm::Value*, std::string> list_call_arg_to_finalize;
+    // Set of allocas already used for list deepcopy (for detecting reuse)
+    std::set<llvm::Value*> list_call_arg_inited;
+
     // Get or create an alloca for a call argument of the given type.
     // Reuses allocas from the pool when possible.
     llvm::AllocaInst* get_call_arg_alloca(llvm::Type* type) {
@@ -421,6 +428,15 @@ public:
         for (auto& kv : call_arg_alloca_idx) {
             kv.second = 0;
         }
+    }
+
+    // Free data buffers of list-type call_arg_value allocas at scope exit.
+    void finalize_list_call_arg_allocas() {
+        for (auto& kv : list_call_arg_to_finalize) {
+            list_api->free_data_using_type(kv.second, kv.first, module.get());
+        }
+        list_call_arg_to_finalize.clear();
+        list_call_arg_inited.clear();
     }
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
@@ -5774,6 +5790,8 @@ public:
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
+        list_call_arg_to_finalize.clear();
+        list_call_arg_inited.clear();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -5825,6 +5843,8 @@ public:
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
+        list_call_arg_to_finalize.clear();
+        list_call_arg_inited.clear();
         if (compiler_options.emit_debug_info) {
             debug_current_scope = SP;
             builder->SetCurrentDebugLocation(nullptr);
@@ -5916,6 +5936,7 @@ public:
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        finalize_list_call_arg_allocas();
         // Free globals if detecting leaks is ON, to print clean report
         if(compiler_options.detect_leaks){
             SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
@@ -7379,6 +7400,8 @@ public:
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
+        list_call_arg_to_finalize.clear();
+        list_call_arg_inited.clear();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
         SymbolTable* current_scope_copy = current_scope;
@@ -7556,6 +7579,8 @@ public:
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
+        list_call_arg_to_finalize.clear();
+        list_call_arg_inited.clear();
         bindc_stride_exits.clear();
         if (compiler_options.emit_debug_info) {
             llvm::DISubprogram *SP = nullptr;
@@ -7847,6 +7872,7 @@ public:
         if (x.m_return_var) {
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+            finalize_list_call_arg_allocas();
             free_heap_fixed_size_arrays();
             convert_bindc_strides_to_byte();
             llvm::Function* fn = builder->GetInsertBlock()->getParent();
@@ -7924,6 +7950,7 @@ public:
         } else {
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+            finalize_list_call_arg_allocas();
             free_heap_fixed_size_arrays();
             convert_bindc_strides_to_byte();
             builder->CreateRetVoid();
@@ -10318,8 +10345,29 @@ public:
             ASR::List_t* value_asr_list = ASR::down_cast<ASR::List_t>(
                                             ASRUtils::expr_type(x.m_value));
             std::string value_type_code = ASRUtils::get_type_code(value_asr_list->m_type);
+            // Free old target data before deepcopy for variables that were
+            // initialized via list_init (Local/ReturnVar/unset intent) or
+            // that point to caller-initialized data (Out/InOut intent).
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+                if (v->m_intent == ASR::intentType::Local ||
+                    v->m_intent == ASR::intentType::ReturnVar ||
+                    v->m_intent == ASR::intentType::Out ||
+                    v->m_intent == ASR::intentType::InOut ||
+                    !v->m_intent) {
+                    list_api->free_data_using_type(value_type_code, target_list, module.get());
+                }
+            }
             list_api->list_deepcopy(x.m_value, value_list, target_list,
                                     value_asr_list, module.get());
+            // Free source temp data for ListConstant expressions only.
+            // ListConstant always creates fresh allocated data that can be
+            // safely freed after deepcopy. Other non-Var sources (e.g.,
+            // ListItem, FunctionCall) may hold shared or scope-managed data.
+            if (ASR::is_a<ASR::ListConstant_t>(*x.m_value)) {
+                list_api->free_data_using_type(value_type_code, value_list, module.get());
+            }
             return ;
         } else if( is_target_tuple && is_value_tuple ) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -21891,7 +21939,33 @@ public:
                             llvm::AllocaInst *target = get_call_arg_alloca(target_type);
                             if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||
                                 ASR::is_a<ASR::List_t>(*arg_type) ) {
+                                    if (ASR::is_a<ASR::List_t>(*arg_type)) {
+                                        ASR::List_t* list_t = ASR::down_cast<ASR::List_t>(
+                                            arg_type);
+                                        std::string tc = ASRUtils::get_type_code(
+                                            list_t->m_type, false, false);
+                                        // Free old data in reused alloca from a prior call
+                                        if (list_call_arg_inited.count(target)) {
+                                            list_api->free_data_using_type(
+                                                tc, target, module.get());
+                                        }
+                                        list_call_arg_inited.insert(target);
+                                        list_call_arg_to_finalize[target] = tc;
+                                    }
                                     llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
+                                    // Free source temp data for ListConstant only.
+                                    // Other non-Var sources (e.g., ListItem) may hold
+                                    // shallow-copy data pointers shared with a parent
+                                    // list, so they must NOT be freed here.
+                                    if (ASR::is_a<ASR::List_t>(*arg_type) &&
+                                        ASR::is_a<ASR::ListConstant_t>(*x.m_args[i].m_value)) {
+                                        ASR::List_t* list_t = ASR::down_cast<ASR::List_t>(
+                                            arg_type);
+                                        std::string tc = ASRUtils::get_type_code(
+                                            list_t->m_type, false, false);
+                                        list_api->free_data_using_type(
+                                            tc, value, module.get());
+                                    }
                             } else {
                                 if (value->getType()->isIntegerTy() &&
                                         target_type->isIntegerTy() &&

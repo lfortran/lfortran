@@ -1504,11 +1504,12 @@ class ASRToLLVMVisitor;
         }
 
         void finalize_list(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on list -- Create a function to finalize each element.
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            llvm::Type* list_llvm_type = get_llvm_type(t, struct_sym);
+            // List struct layout: { i32 end_point, i32 capacity, T* data }
+            llvm::Value* data_ptr_field = llvm_utils_->create_gep2(list_llvm_type, ptr, 2);
+            llvm::Value* data_ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->character_type, data_ptr_field);
+            llvm_utils_->lfortran_free(data_ptr);
         }
 
         void finalize_dict(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
@@ -2110,7 +2111,19 @@ class ASRToLLVMVisitor;
                 case ASR::Array:
                     return is_array_finalizable(ASR::down_cast<ASR::Array_t>(t), struct_sym);
                 break;
-                case ASR::List:
+                case ASR::List: {
+                    ASR::List_t* list_t = ASR::down_cast<ASR::List_t>(t);
+                    switch(list_t->m_type->type) {
+                        case ASR::Integer:
+                        case ASR::Real:
+                        case ASR::Complex:
+                        case ASR::UnsignedInteger:
+                        case ASR::Logical:
+                            return true;
+                        default:
+                            return false;
+                    }
+                }
                 case ASR::Dict:
                 case ASR::Tuple:
                 case ASR::UnionType:
