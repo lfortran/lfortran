@@ -830,6 +830,8 @@ class ASRToLLVMVisitor;
 
             void set_dict_api(ASR::Dict_t* dict_type);
 
+            llvm::Type* get_dict_sc_kvp_type(ASR::ttype_t* key_type, ASR::ttype_t* value_type);
+
             void set_set_api(ASR::Set_t* set_type);
 
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
@@ -1504,35 +1506,282 @@ class ASRToLLVMVisitor;
         }
 
         void finalize_list(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on list -- Create a function to finalize each element.
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            ASR::List_t* list_t = ASR::down_cast<ASR::List_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
+            llvm::Type* list_llvm_type = get_llvm_type(t, struct_sym);
+            ASR::ttype_t* elem_type = list_t->m_type;
+
+            // If elements themselves own heap resources, finalize each before
+            // freeing the outer data buffer.
+            bool elem_finalizable = is_finalizable_type(elem_type, nullptr, false);
+
+            if (elem_finalizable) {
+                llvm::Type* elem_llvm_type = get_llvm_type(elem_type, nullptr);
+                // end_point = number of live elements (field 0)
+                llvm::Value* end_point = llvm_utils_->CreateLoad2(
+                    llvm::Type::getInt32Ty(builder_->getContext()),
+                    llvm_utils_->create_gep2(list_llvm_type, ptr, 0));
+                // data pointer (field 2)
+                llvm::Value* data = llvm_utils_->CreateLoad2(
+                    elem_llvm_type->getPointerTo(),
+                    llvm_utils_->create_gep2(list_llvm_type, ptr, 2));
+
+                auto iter_type = llvm::Type::getInt32Ty(builder_->getContext());
+                auto* iter = builder_->CreateAlloca(iter_type, nullptr, "list_fin_iter");
+                builder_->CreateStore(
+                    llvm::ConstantInt::get(iter_type, uint64_t(-1), true), iter);
+
+                auto cond_fn = [&]() -> llvm::Value* {
+                    auto* loaded = builder_->CreateLoad(iter_type, iter);
+                    auto* next = builder_->CreateAdd(loaded,
+                        llvm::ConstantInt::get(iter_type, 1));
+                    builder_->CreateStore(next, iter);
+                    return builder_->CreateICmpSLT(next, end_point);
+                };
+                auto body_fn = [&]() {
+                    auto* idx = builder_->CreateLoad(iter_type, iter);
+                    auto* elem = llvm_utils_->create_ptr_gep2(
+                        elem_llvm_type, data, idx);
+                    finalize(elem, elem_type, nullptr, false);
+                };
+                llvm_utils_->create_loop("finalize_list_elems", cond_fn, body_fn);
+            }
+
+            // List struct layout: { i32 end_point, i32 capacity, T* data }
+            llvm::Value* data_ptr_field = llvm_utils_->create_gep2(list_llvm_type, ptr, 2);
+            llvm::Value* data_ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->character_type, data_ptr_field);
+            llvm_utils_->lfortran_free(data_ptr);
         }
 
         void finalize_dict(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on dictionary -- Create a function to finalize each element.
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            (void)struct_sym;
+            ASR::Dict_t* dict_t = ASR::down_cast<ASR::Dict_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
+            llvm::Type* dict_llvm_type = get_llvm_type(t, nullptr);
+
+            bool use_separate_chaining = ASRUtils::is_allocatable_descriptor_string(dict_t->m_key_type);
+            bool key_finalizable = is_finalizable_type(dict_t->m_key_type, nullptr, false);
+            bool val_finalizable = is_finalizable_type(dict_t->m_value_type, nullptr, false);
+
+            if (use_separate_chaining) {
+                // SC layout: {i32 occupancy, i32 num_buckets_filled, i32 capacity,
+                //             key_value_pair* key_value_pairs, i8* key_mask, i1 rehash_flag}
+
+                if (key_finalizable || val_finalizable) {
+                    llvm::Type* kvp_ptr_type = dict_llvm_type->getStructElementType(3);
+                    llvm::Type* kvp_type = llvm_utils_->get_dict_sc_kvp_type(
+                        dict_t->m_key_type, dict_t->m_value_type);
+                    auto i32_type = llvm::Type::getInt32Ty(builder_->getContext());
+                    auto i8_type = llvm::Type::getInt8Ty(builder_->getContext());
+
+                    llvm::Value* capacity = llvm_utils_->CreateLoad2(i32_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 2));
+                    llvm::Value* kvp_arr = llvm_utils_->CreateLoad2(kvp_ptr_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 3));
+                    llvm::Value* key_mask = llvm_utils_->CreateLoad2(
+                        llvm_utils_->character_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 4));
+
+                    auto* iter = builder_->CreateAlloca(i32_type, nullptr, "dict_sc_fin_i");
+                    builder_->CreateStore(
+                        llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
+
+                    llvm_utils_->create_loop("finalize_dict_sc",
+                        [&]() -> llvm::Value* {
+                            auto* loaded = builder_->CreateLoad(i32_type, iter);
+                            auto* next = builder_->CreateAdd(loaded,
+                                llvm::ConstantInt::get(i32_type, 1));
+                            builder_->CreateStore(next, iter);
+                            return builder_->CreateICmpSLT(next, capacity);
+                        },
+                        [&]() {
+                            auto* idx = builder_->CreateLoad(i32_type, iter);
+                            auto* mask_val = llvm_utils_->CreateLoad2(i8_type,
+                                llvm_utils_->create_ptr_gep2(i8_type, key_mask, idx));
+                            auto* is_occupied = builder_->CreateICmpEQ(mask_val,
+                                llvm::ConstantInt::get(i8_type, 1));
+
+                            llvm_utils_->create_if_else(is_occupied, [&]() {
+                                auto* entry = llvm_utils_->create_ptr_gep2(kvp_type, kvp_arr, idx);
+                                if (key_finalizable) {
+                                    finalize(llvm_utils_->create_gep2(kvp_type, entry, 0),
+                                             dict_t->m_key_type, nullptr, false);
+                                }
+                                if (val_finalizable) {
+                                    finalize(llvm_utils_->create_gep2(kvp_type, entry, 1),
+                                             dict_t->m_value_type, nullptr, false);
+                                }
+                                // Walk chain to finalize elements in chain nodes
+                                auto* chain_itr = builder_->CreateAlloca(
+                                    llvm_utils_->character_type, nullptr, "chain_itr");
+                                builder_->CreateStore(
+                                    llvm_utils_->CreateLoad2(llvm_utils_->character_type,
+                                        llvm_utils_->create_gep2(kvp_type, entry, 2)),
+                                    chain_itr);
+                                llvm_utils_->create_loop("finalize_dict_chain",
+                                    [&]() -> llvm::Value* {
+                                        return builder_->CreateICmpNE(
+                                            builder_->CreateLoad(llvm_utils_->character_type, chain_itr),
+                                            llvm::ConstantPointerNull::get(
+                                                llvm::cast<llvm::PointerType>(llvm_utils_->character_type)));
+                                    },
+                                    [&]() {
+                                        auto* node_raw = builder_->CreateLoad(
+                                            llvm_utils_->character_type, chain_itr);
+                                        auto* node = builder_->CreateBitCast(
+                                            node_raw, kvp_type->getPointerTo());
+                                        if (key_finalizable) {
+                                            finalize(llvm_utils_->create_gep2(kvp_type, node, 0),
+                                                     dict_t->m_key_type, nullptr, false);
+                                        }
+                                        if (val_finalizable) {
+                                            finalize(llvm_utils_->create_gep2(kvp_type, node, 1),
+                                                     dict_t->m_value_type, nullptr, false);
+                                        }
+                                        builder_->CreateStore(
+                                            llvm_utils_->CreateLoad2(llvm_utils_->character_type,
+                                                llvm_utils_->create_gep2(kvp_type, node, 2)),
+                                            chain_itr);
+                                    });
+                            }, [](){});
+                        });
+                }
+
+                // Free key_value_pairs (field 3)
+                llvm::Value* kvp_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 3);
+                llvm::Value* kvp_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, kvp_field);
+                llvm_utils_->lfortran_free(kvp_ptr);
+
+                // Free key_mask (field 4)
+                llvm::Value* mask_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 4);
+                llvm::Value* mask_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, mask_field);
+                llvm_utils_->lfortran_free(mask_ptr);
+            } else {
+                // LP layout: {i32 occupancy, list key_list, list value_list, i8* key_mask}
+                // list = {i32 end_point, i32 capacity, T* data}
+
+                if (key_finalizable || val_finalizable) {
+                    llvm::Type* kl_type = dict_llvm_type->getStructElementType(1);
+                    llvm::Type* vl_type = dict_llvm_type->getStructElementType(2);
+                    llvm::Type* key_elem_type = get_llvm_type(dict_t->m_key_type, nullptr);
+                    llvm::Type* val_elem_type = get_llvm_type(dict_t->m_value_type, nullptr);
+                    auto i32_type = llvm::Type::getInt32Ty(builder_->getContext());
+                    auto i8_type = llvm::Type::getInt8Ty(builder_->getContext());
+
+                    llvm::Value* kl = llvm_utils_->create_gep2(dict_llvm_type, ptr, 1);
+                    llvm::Value* capacity = llvm_utils_->CreateLoad2(i32_type,
+                        llvm_utils_->create_gep2(kl_type, kl, 1));
+                    llvm::Value* key_data = llvm_utils_->CreateLoad2(
+                        kl_type->getStructElementType(2),
+                        llvm_utils_->create_gep2(kl_type, kl, 2));
+                    llvm::Value* vl = llvm_utils_->create_gep2(dict_llvm_type, ptr, 2);
+                    llvm::Value* val_data = llvm_utils_->CreateLoad2(
+                        vl_type->getStructElementType(2),
+                        llvm_utils_->create_gep2(vl_type, vl, 2));
+                    llvm::Value* key_mask = llvm_utils_->CreateLoad2(
+                        llvm_utils_->character_type,
+                        llvm_utils_->create_gep2(dict_llvm_type, ptr, 3));
+
+                    auto* iter = builder_->CreateAlloca(i32_type, nullptr, "dict_lp_fin_i");
+                    builder_->CreateStore(
+                        llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
+
+                    llvm_utils_->create_loop("finalize_dict_lp",
+                        [&]() -> llvm::Value* {
+                            auto* loaded = builder_->CreateLoad(i32_type, iter);
+                            auto* next = builder_->CreateAdd(loaded,
+                                llvm::ConstantInt::get(i32_type, 1));
+                            builder_->CreateStore(next, iter);
+                            return builder_->CreateICmpSLT(next, capacity);
+                        },
+                        [&]() {
+                            auto* idx = builder_->CreateLoad(i32_type, iter);
+                            auto* mask_val = llvm_utils_->CreateLoad2(i8_type,
+                                llvm_utils_->create_ptr_gep2(i8_type, key_mask, idx));
+                            auto* is_occupied = builder_->CreateAnd(
+                                builder_->CreateICmpNE(mask_val, llvm::ConstantInt::get(i8_type, 0)),
+                                builder_->CreateICmpNE(mask_val, llvm::ConstantInt::get(i8_type, 3)));
+
+                            llvm_utils_->create_if_else(is_occupied, [&]() {
+                                if (key_finalizable) {
+                                    finalize(llvm_utils_->create_ptr_gep2(
+                                        key_elem_type, key_data, idx),
+                                        dict_t->m_key_type, nullptr, false);
+                                }
+                                if (val_finalizable) {
+                                    finalize(llvm_utils_->create_ptr_gep2(
+                                        val_elem_type, val_data, idx),
+                                        dict_t->m_value_type, nullptr, false);
+                                }
+                            }, [](){});
+                        });
+                }
+
+                // Free key_list.data (field 1, sub-field 2)
+                llvm::Value* key_list = llvm_utils_->create_gep2(dict_llvm_type, ptr, 1);
+                llvm::Type* key_list_type = dict_llvm_type->getStructElementType(1);
+                llvm::Value* key_data_field = llvm_utils_->create_gep2(key_list_type, key_list, 2);
+                llvm::Value* key_data = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, key_data_field);
+                llvm_utils_->lfortran_free(key_data);
+
+                // Free value_list.data (field 2, sub-field 2)
+                llvm::Value* value_list = llvm_utils_->create_gep2(dict_llvm_type, ptr, 2);
+                llvm::Type* value_list_type = dict_llvm_type->getStructElementType(2);
+                llvm::Value* value_data_field = llvm_utils_->create_gep2(value_list_type, value_list, 2);
+                llvm::Value* value_data = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, value_data_field);
+                llvm_utils_->lfortran_free(value_data);
+
+                // Free key_mask (field 3)
+                llvm::Value* mask_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 3);
+                llvm::Value* mask_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, mask_field);
+                llvm_utils_->lfortran_free(mask_ptr);
+            }
         }
         
         void finalize_set(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on set -- Create a function to finalize each element.
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            (void)struct_sym;
+            ASR::Set_t* set_t = ASR::down_cast<ASR::Set_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
+            (void)set_t;
+            llvm::Type* set_llvm_type = get_llvm_type(t, nullptr);
+
+            // Linear probing set layout: {i32 occupancy, list el_list, i8* el_mask}
+            // list layout: {i32 end_point, i32 capacity, T* data}
+
+            // Free the list's data pointer (field 1 of set = el_list, field 2 of list = data*)
+            llvm::Value* el_list = llvm_utils_->create_gep2(set_llvm_type, ptr, 1);
+            llvm::Type* list_llvm_type = set_llvm_type->getStructElementType(1);
+            llvm::Value* data_ptr_field = llvm_utils_->create_gep2(list_llvm_type, el_list, 2);
+            llvm::Value* data_ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->character_type, data_ptr_field);
+            llvm_utils_->lfortran_free(data_ptr);
+
+            // Free the mask (field 2 of set = el_mask)
+            llvm::Value* mask_field = llvm_utils_->create_gep2(set_llvm_type, ptr, 2);
+            llvm::Value* mask_ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->character_type, mask_field);
+            llvm_utils_->lfortran_free(mask_ptr);
         }
 
         void finalize_tuple(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on tuple -- Create a function to finalize each element within (more like a struct).
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            (void)struct_sym;
+            ASR::Tuple_t* tuple_t = ASR::down_cast<ASR::Tuple_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
+            llvm::Type* tuple_llvm_type = get_llvm_type(t, nullptr);
+            for (size_t i = 0; i < tuple_t->n_type; i++) {
+                ASR::ttype_t* elem_type = tuple_t->m_type[i];
+                if (is_finalizable_type(elem_type, nullptr, false)) {
+                    llvm::Value* elem_ptr = llvm_utils_->create_gep2(
+                        tuple_llvm_type, ptr, i);
+                    finalize(elem_ptr, elem_type, nullptr, false);
+                }
+            }
         }
 
         void finalize_union(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
@@ -2111,11 +2360,22 @@ class ASRToLLVMVisitor;
                     return is_array_finalizable(ASR::down_cast<ASR::Array_t>(t), struct_sym);
                 break;
                 case ASR::List:
+                    return true;
                 case ASR::Dict:
-                case ASR::Tuple:
+                    return true;
+                case ASR::Tuple: {
+                    ASR::Tuple_t* tuple_t = ASR::down_cast<ASR::Tuple_t>(t);
+                    for (size_t i = 0; i < tuple_t->n_type; i++) {
+                        if (is_finalizable_type(tuple_t->m_type[i], nullptr, false)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
                 case ASR::UnionType:
-                case ASR::Set:
                 return false; // >>>>> TO DO <<<<<
+                case ASR::Set:
+                return true;
                 case ASR::String:
                 return true;
                 case ASR::FunctionType:
@@ -2250,6 +2510,16 @@ class ASRToLLVMVisitor;
     public:
 
 /*>>>>>>>>>>>>>>>>>>>>> Entry <<<<<<<<<<<<<<<<<<<<<<< */
+
+        /**
+         * Finalize a temporary expression value (e.g. a TupleConstant temp
+         * after it has been deep-copied into a list). Frees any heap
+         * resources owned by the value.
+         */
+        void finalize_temporary(llvm::Value* const ptr, ASR::ttype_t* const t) {
+            if (!is_finalizable_type(t, nullptr, false)) return;
+            finalize_type(ptr, t, nullptr);
+        }
 
         /**
          * Finalize nested allocatable components before explicit deallocate.
@@ -2756,6 +3026,9 @@ class ASRToLLVMVisitor;
                 ASR::Dict_t* dict_type, llvm::Module* module) = 0;
 
             virtual
+            void free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module) = 0;
+
+            virtual
             llvm::Value* len(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
@@ -2852,6 +3125,8 @@ class ASRToLLVMVisitor;
             void dict_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module);
 
+            void free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module);
+
             llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 
             void get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
@@ -2923,14 +3198,14 @@ class ASRToLLVMVisitor;
                 llvm::Type* kv_pair_type, llvm::Value* key_mask,
                 llvm::Module* module, ASR::ttype_t* key_asr_type);
 
-            llvm::Type* get_key_value_pair_type(std::string key_type_code, std::string value_type_code);
-
-            llvm::Type* get_key_value_pair_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_pair_type);
-
             void dict_init_given_initial_capacity(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value* dict, 
                 llvm::Module* module, llvm::Value* initial_capacity);
 
         public:
+
+            llvm::Type* get_key_value_pair_type(std::string key_type_code, std::string value_type_code);
+
+            llvm::Type* get_key_value_pair_type(ASR::ttype_t* key_asr_type, ASR::ttype_t* value_pair_type);
 
             LLVMDictSeparateChaining(
                 llvm::LLVMContext& context_,
@@ -3002,6 +3277,8 @@ class ASRToLLVMVisitor;
 
             void dict_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module);
+
+            void free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module);
 
             llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 
@@ -3100,6 +3377,9 @@ class ASRToLLVMVisitor;
                 ASR::Set_t* set_type, llvm::Module* module) = 0;
 
             virtual
+            void free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module) = 0;
+
+            virtual
             llvm::Value* len(llvm::Type* type, llvm::Value* set);
 
             virtual
@@ -3167,6 +3447,8 @@ class ASRToLLVMVisitor;
             void set_deepcopy(
                 ASR::expr_t* set_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Set_t* set_type, llvm::Module* module);
+
+            void free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module);
 
             ~LLVMSetLinearProbing();
     };
@@ -3247,6 +3529,8 @@ class ASRToLLVMVisitor;
             void set_deepcopy(
                 ASR::expr_t* set_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Set_t* set_type, llvm::Module* module);
+
+            void free_data(std::string& el_type_code, llvm::Value* set, llvm::Module* module);
 
             ~LLVMSetSeparateChaining();
     };
