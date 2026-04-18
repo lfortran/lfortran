@@ -11625,6 +11625,21 @@ public:
         llvm_utils->create_if_else(
             llvm_cond,
             [&]() {
+                    // For Pointer class types, only allocate the class wrapper
+                    // (not the data payload). The data pointer will be set by
+                    // the callee or by pointer association. Allocating data here
+                    // would leak because the callee typically nullifies the out
+                    // parameter before setting it to the actual target.
+                    if (ASR::is_a<ASR::Pointer_t>(*asr_ttype) &&
+                        ASRUtils::is_class_type(asr_type)) {
+                        llvm::DataLayout DL(module->getDataLayout());
+                        llvm::Value* wrapper_size = llvm::ConstantInt::get(
+                            context, llvm::APInt(32, DL.getTypeAllocSize(llvm_type)));
+                        llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                            target_expr, llvm_type, wrapper_size);
+                        builder->CreateStore(wrapper_ptr, tmp);
+                        return;
+                    }
                     Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
                     ASR::alloc_arg_t alloc_arg;
                     alloc_arg.loc = target_expr->base.loc;
