@@ -1561,11 +1561,53 @@ class ASRToLLVMVisitor;
         }
 
         void finalize_dict(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
-            // >>>>> TO DO <<<<<
-            // Verify
-            // Loop on dictionary -- Create a function to finalize each element.
-            // Free the ptr holding the consecutive data.
-            (void)ptr; (void)t; (void) struct_sym;
+            (void)struct_sym;
+            ASR::Dict_t* dict_t = ASR::down_cast<ASR::Dict_t>(
+                ASRUtils::type_get_past_allocatable_pointer(t));
+            llvm::Type* dict_llvm_type = get_llvm_type(t, nullptr);
+
+            bool use_separate_chaining = ASRUtils::is_allocatable_descriptor_string(dict_t->m_key_type);
+
+            if (use_separate_chaining) {
+                // SC layout: {i32 occupancy, i32 num_buckets_filled, i32 capacity,
+                //             key_value_pair* key_value_pairs, i8* key_mask, i1 rehash_flag}
+                // Free key_value_pairs (field 3)
+                llvm::Value* kvp_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 3);
+                llvm::Value* kvp_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, kvp_field);
+                llvm_utils_->lfortran_free(kvp_ptr);
+
+                // Free key_mask (field 4)
+                llvm::Value* mask_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 4);
+                llvm::Value* mask_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, mask_field);
+                llvm_utils_->lfortran_free(mask_ptr);
+            } else {
+                // LP layout: {i32 occupancy, list key_list, list value_list, i8* key_mask}
+                // list = {i32 end_point, i32 capacity, T* data}
+
+                // Free key_list.data (field 1, sub-field 2)
+                llvm::Value* key_list = llvm_utils_->create_gep2(dict_llvm_type, ptr, 1);
+                llvm::Type* key_list_type = dict_llvm_type->getStructElementType(1);
+                llvm::Value* key_data_field = llvm_utils_->create_gep2(key_list_type, key_list, 2);
+                llvm::Value* key_data = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, key_data_field);
+                llvm_utils_->lfortran_free(key_data);
+
+                // Free value_list.data (field 2, sub-field 2)
+                llvm::Value* value_list = llvm_utils_->create_gep2(dict_llvm_type, ptr, 2);
+                llvm::Type* value_list_type = dict_llvm_type->getStructElementType(2);
+                llvm::Value* value_data_field = llvm_utils_->create_gep2(value_list_type, value_list, 2);
+                llvm::Value* value_data = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, value_data_field);
+                llvm_utils_->lfortran_free(value_data);
+
+                // Free key_mask (field 3)
+                llvm::Value* mask_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 3);
+                llvm::Value* mask_ptr = llvm_utils_->CreateLoad2(
+                    llvm_utils_->character_type, mask_field);
+                llvm_utils_->lfortran_free(mask_ptr);
+            }
         }
         
         void finalize_set(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
@@ -2179,6 +2221,7 @@ class ASRToLLVMVisitor;
                 case ASR::List:
                     return true;
                 case ASR::Dict:
+                    return true;
                 case ASR::Tuple:
                 case ASR::UnionType:
                 return false; // >>>>> TO DO <<<<<
@@ -2824,6 +2867,9 @@ class ASRToLLVMVisitor;
                 ASR::Dict_t* dict_type, llvm::Module* module) = 0;
 
             virtual
+            void free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module) = 0;
+
+            virtual
             llvm::Value* len(llvm::Type* type, llvm::Value* dict) = 0;
 
             virtual
@@ -2919,6 +2965,8 @@ class ASRToLLVMVisitor;
 
             void dict_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module);
+
+            void free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module);
 
             llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 
@@ -3070,6 +3118,8 @@ class ASRToLLVMVisitor;
 
             void dict_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module);
+
+            void free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* module);
 
             llvm::Value* len(llvm::Type* type, llvm::Value* dict);
 

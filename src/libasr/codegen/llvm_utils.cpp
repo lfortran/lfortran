@@ -4305,6 +4305,26 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         LLVM::CreateStore(*builder, dest_key_mask, dest_key_mask_ptr);
     }
 
+    void LLVMDict::free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* /*module*/) {
+        std::string key_type_code = ASRUtils::get_type_code(dict_type->m_key_type);
+        std::string value_type_code = ASRUtils::get_type_code(dict_type->m_value_type);
+        llvm::Type* dict_type_ = get_dict_type(key_type_code, value_type_code, 0, 0, nullptr, nullptr);
+
+        // Free key_list data
+        llvm::Value* key_list = get_key_list(dict_type_, dict);
+        llvm_utils->list_api->free_data_using_type(key_type_code, key_list, nullptr);
+
+        // Free value_list data
+        llvm::Value* value_list = get_value_list(dict_type_, dict);
+        llvm_utils->list_api->free_data_using_type(value_type_code, value_list, nullptr);
+
+        // Free key_mask
+        llvm::Value* key_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(),
+            get_pointer_to_keymask(dict_type->m_key_type, dict_type->m_value_type, dict));
+        llvm_utils->lfortran_free(key_mask);
+    }
+
     void LLVMDictSeparateChaining::deepcopy_key_value_pair_linked_list(ASR::expr_t* src_expr,
         llvm::Value* srci, llvm::Value* desti, llvm::Value* dest_key_value_pairs,
         ASR::Dict_t* dict_type, llvm::Module* module) {
@@ -4571,6 +4591,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm_utils->start_new_block(loopend);
         LLVM::CreateStore(*builder, dest_key_value_pairs,
                           get_pointer_to_key_value_pairs_using_type(dict_type->m_key_type, dict_type->m_value_type, dest));
+    }
+
+    void LLVMDictSeparateChaining::free_data(ASR::Dict_t* dict_type, llvm::Value* dict, llvm::Module* /*module*/) {
+        // SC layout: {i32 occupancy, i32 num_buckets_filled, i32 capacity,
+        //             key_value_pair* key_value_pairs, i8* key_mask, i1 rehash_flag}
+
+        // Free key_value_pairs
+        llvm::Value* kvp = llvm_utils->CreateLoad2(
+            get_key_value_pair_type(dict_type->m_key_type, dict_type->m_value_type)->getPointerTo(),
+            get_pointer_to_key_value_pairs_using_type(dict_type->m_key_type, dict_type->m_value_type, dict));
+        llvm_utils->lfortran_free(kvp);
+
+        // Free key_mask
+        llvm::Value* key_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(),
+            get_pointer_to_keymask(dict_type->m_key_type, dict_type->m_value_type, dict));
+        llvm_utils->lfortran_free(key_mask);
     }
 
     void LLVMList::check_index_within_bounds_using_type(llvm::Type* list_type, llvm::Value* list,

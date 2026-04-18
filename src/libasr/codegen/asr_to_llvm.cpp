@@ -10455,8 +10455,24 @@ public:
 
             std::string key_type_code = ASRUtils::get_type_code(value_dict_type->m_key_type);
             std::string value_type_code = ASRUtils::get_type_code(value_dict_type->m_value_type);
+            // Free old target data before deepcopy
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+                if (v->m_intent == ASR::intentType::Local ||
+                    v->m_intent == ASR::intentType::ReturnVar ||
+                    v->m_intent == ASR::intentType::Out ||
+                    v->m_intent == ASR::intentType::InOut ||
+                    !v->m_intent) {
+                    llvm_utils->dict_api->free_data(value_dict_type, target_dict, module.get());
+                }
+            }
             llvm_utils->dict_api->dict_deepcopy(nullptr, value_dict, target_dict,
                                     value_dict_type, module.get());
+            // Free source temp data for DictConstant expressions
+            if (ASR::is_a<ASR::DictConstant_t>(*x.m_value)) {
+                llvm_utils->dict_api->free_data(value_dict_type, value_dict, module.get());
+            }
             return ;
         } else if( is_target_set && is_value_set ) {
             int64_t ptr_loads_copy = ptr_loads;

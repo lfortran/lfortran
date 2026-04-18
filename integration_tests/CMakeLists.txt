@@ -4109,7 +4109,7 @@ RUN(NAME format_before_read_01 LABELS gfortran llvm)
 RUN(NAME list_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME list_of_lists_test LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME set_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
-RUN(NAME dict_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # No gfortran
+RUN(NAME dict_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME list_of_tuples_test LABELS llvm llvm_wasm llvm_wasm_emcc NO_DETECT_LEAK) # No gfortran
 
 
