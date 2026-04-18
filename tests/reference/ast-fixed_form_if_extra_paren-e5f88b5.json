@@ -1,0 +1,13 @@
+{
+    "basename": "ast-fixed_form_if_extra_paren-e5f88b5",
+    "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/fixed_form_if_extra_paren.f",
+    "infile_hash": "b73a89053e70a0b0b38774fe4bff26ce0dc9889bf5b0ad402abe2720",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-fixed_form_if_extra_paren-e5f88b5.stderr",
+    "stderr_hash": "cf84e6d92b2adce6c41b852669bdbbc961685ee6ff2a5b3b4f0ab6ec",
+    "returncode": 2
+}

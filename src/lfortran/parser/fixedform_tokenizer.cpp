@@ -790,6 +790,15 @@ struct FixedFormRecursiveDescent {
         if (try_expr(end, false)) {
             if (*end == ')') {
                 end++;
+                if (*end == ')') {
+                    Location loc;
+                    loc.first = end - string_start;
+                    loc.last = end - string_start;
+                    diag.add(diag::Diagnostic(
+                        "Unmatched `)` after the condition of the if statement",
+                        diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                    throw parser_local::TokenizerAbort();
+                }
                 if (next_is(end, "then")) {
                     if (next_is_eol(end+4) || *(end+4) == '!') {
                         multiline = true;
