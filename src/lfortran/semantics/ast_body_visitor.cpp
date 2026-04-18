@@ -8884,7 +8884,11 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::DistributeParallelDo, clauses.p, clauses.n, body.p, body.n)));
-            }else {
+            } else if (LCompilers::startswith(to_lower(x.m_construct_name), "threadprivate")) {
+                // Declarative directive: accepted but not lowered yet. Storage
+                // semantics will need a follow-up in codegen and the OpenMP runtime.
+                return;
+            } else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
                     +" is not supported yet",
