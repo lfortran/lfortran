@@ -79,5 +79,14 @@ program class_142
         if (v%data /= 42) error stop
     end select
 
+    select type (v => n1%value)
+    type is (container)
+        deallocate(v%data)
+    end select
+    select type (v => n2%value)
+    type is (container)
+        deallocate(v%data)
+    end select
+
     print *, "PASS"
 end program

@@ -14,6 +14,8 @@ allocate(character(len=3) :: shorts(3))
 shorts = ['abc', 'def', 'ghi']
 long = 'banana'
 return_value=maxloc([0,merge(1, 0, shorts == long)],dim=1)
+deallocate(shorts)
+deallocate(long)
 
 end subroutine update
 end program

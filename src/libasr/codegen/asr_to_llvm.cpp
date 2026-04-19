@@ -22155,7 +22155,7 @@ public:
                     llvm::Type* scalar_llvm_type = llvm_utils->get_el_type(
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::Value* scalar_ptr = tmp;
-                    if (ASRUtils::is_pointer(scalar_type)) {
+                    if (LLVM::is_llvm_pointer(*scalar_type)) {
                         scalar_ptr = llvm_utils->CreateLoad2(
                             scalar_llvm_type->getPointerTo(), tmp);
                     }
@@ -22196,7 +22196,7 @@ public:
                     llvm::Type* elem_llvm_chk = llvm_utils->get_el_type(
                         x.m_args[i].m_value, elem_asr_chk, module.get());
                     llvm::Value* poly_scalar_ptr = tmp;
-                    if (ASRUtils::is_pointer(arg_type)) {
+                    if (LLVM::is_llvm_pointer(*arg_type)) {
                         poly_scalar_ptr = llvm_utils->CreateLoad2(
                             elem_llvm_chk->getPointerTo(), tmp);
                     }
@@ -23628,7 +23628,9 @@ public:
                 llvm::BasicBlock *optional_check_mergeBB = nullptr;
                 if (i + 1 < x.n_args && x.m_args[i + 1].m_value != nullptr) {
                     ASR::expr_t* next_arg = x.m_args[i + 1].m_value;
-                    if (ASR::is_a<ASR::Var_t>(*next_arg)) {
+                    if (ASR::is_a<ASR::Var_t>(*next_arg) &&
+                        ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(next_arg)->m_v))) {
                         ASR::Variable_t* next_var = ASRUtils::EXPR2VAR(next_arg);
                         std::string var_name = std::string(next_var->m_name);
                         ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(next_var->m_type);

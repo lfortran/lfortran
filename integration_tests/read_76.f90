@@ -1,29 +1,35 @@
 program read_76
   implicit none
 
-  integer :: i, i1, i2, idata(4)
+  double precision :: d1, d2, d3
+  complex :: c1, c2
 
-  open (42, file='fort.42', status='replace', form='formatted')
-  write (42, '(a)') '1234567890'
-  write (42, '(a)') ' 12345'
+  open (42, file='read_76.dat', status='replace', form='formatted')
+  write (42,'(a)') '1.0D0  (2.0, 2.0)  3.0D0  (4.0, 4.0)  5.0D0'
+  write (42,'(a)') '6.0D0  (7.0, 7.0) / 8.0D0  (9.0, 9.0) 10.0D0'
   rewind (42)
-  read (42, 100) i1, i2
-100 format (tr4, i2, tl2, i3)
 
-  if (i1 /= 56) then
-     error stop
-  end if
+  d1 = -1.0d0
+  c1 = (-2.0, -3.0)
+  d2 = -3.0d0
+  c2 = (-4.0, -5.0)
+  d3 = -5.0d0
+  read (42, *) d1, c1, d2, c2, d3
 
-  if (i2 /= 567) then
-     error stop
-  end if
+  ! Slash should terminate assignment for the remaining items in this READ.
+  d1 = -1.0d0
+  c1 = (-2.0, -3.0)
+  d2 = -3.0d0
+  c2 = (-4.0, -5.0)
+  d3 = -5.0d0
+  read (42, *) d1, c1, d2, c2, d3
 
-  idata = -42
-  read (42, 101) (idata(i), i=1,4)
-101 format (i6.6, t1, i6.4, tl6, i6.3, tl9, i6.0)
+  if (abs(d1 - 6.0d0) > 0.0001d0) error stop 'd1 failed'
+  if (abs(real(c1) - 7.0) > 0.0001 .or. abs(aimag(c1) - 7.0) > 0.0001) error stop 'c1 failed'
+  if (abs(d2 + 3.0d0) > 0.0001d0) error stop 'd2 failed'
+  if (abs(real(c2) + 4.0) > 0.0001 .or. abs(aimag(c2) + 5.0) > 0.0001) error stop 'c2 failed'
+  if (abs(d3 + 5.0d0) > 0.0001d0) error stop 'd3 failed'
 
-  if (.not. all(idata == 12345)) then
-     error stop
-  end if
-
-end program read_76
+  close (42, status='delete')
+  print *, 'ok'
+end program

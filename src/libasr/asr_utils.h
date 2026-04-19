@@ -3293,6 +3293,49 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
                 is_dependent_only_on_argument = false;
             }
         }
+
+        // Function calls returning non-primitive types (allocatable strings,
+        // arrays, structs, etc.) will be converted to subroutine calls by
+        // subroutine_from_function, replacing the call expression with a
+        // local return-slot variable. After that transformation the dimension
+        // no longer depends only on function arguments, so treat it as such.
+        bool returns_non_primitive_type(ASR::ttype_t* t) {
+            if (!t) return false;
+            if (ASR::is_a<ASR::Allocatable_t>(*t) ||
+                ASR::is_a<ASR::Array_t>(*t)) return true;
+            ASR::ttype_t* base = t;
+            while (ASR::is_a<ASR::Allocatable_t>(*base))
+                base = ASR::down_cast<ASR::Allocatable_t>(base)->m_type;
+            while (ASR::is_a<ASR::Pointer_t>(*base))
+                base = ASR::down_cast<ASR::Pointer_t>(base)->m_type;
+            if (ASR::is_a<ASR::StructType_t>(*base) ||
+                ASR::is_a<ASR::SymbolicExpression_t>(*base) ||
+                ASR::is_a<ASR::List_t>(*base) ||
+                ASR::is_a<ASR::Dict_t>(*base) ||
+                ASR::is_a<ASR::Set_t>(*base) ||
+                ASR::is_a<ASR::Tuple_t>(*base)) return true;
+            if (ASR::is_a<ASR::String_t>(*base)) {
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(base);
+                return str->m_physical_type != ASR::string_physical_typeType::CChar;
+            }
+            return false;
+        }
+
+        void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+            if (returns_non_primitive_type(x.m_type)) {
+                is_dependent_only_on_argument = false;
+            } else {
+                ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments>::visit_IntrinsicElementalFunction(x);
+            }
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            if (returns_non_primitive_type(x.m_type)) {
+                is_dependent_only_on_argument = false;
+            } else {
+                ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments>::visit_FunctionCall(x);
+            }
+        }
 };
 
 class ExprReferencesSymbolVisitor:

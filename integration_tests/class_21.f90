@@ -21,6 +21,7 @@ program class_21
     call sub1()
     call sub3(val2)
     if (val2%origin /= 2) error stop
+    deallocate(val2)
 contains 
     subroutine sub1()
         call sub2(val_par%origin)
