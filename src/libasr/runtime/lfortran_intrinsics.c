@@ -7397,8 +7397,8 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
     }
 
     if (unit_file_bin) {
+        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read record marker.\n");
@@ -7420,6 +7420,19 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
                     exit(1);
                 }
                 p[(int64_t)i * (int64_t)stride] = val;
+            }
+        }
+        if (access_id == 0) {
+            int32_t record_marker_end;
+            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
+                exit(1);
+            }
+            if (record_marker_end != record_marker_start) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Mismatched record markers in int8 array read.\n");
+                exit(1);
             }
         }
     } else {
@@ -7470,8 +7483,8 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
     }
 
     if (unit_file_bin) {
+        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read record marker.\n");
@@ -7499,6 +7512,19 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
                     exit(1);
                 }
                 memcpy((char*)p + (int64_t)i * (int64_t)stride * kind, tmp, kind);
+            }
+        }
+        if (access_id == 0) {
+            int32_t record_marker_end;
+            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
+                exit(1);
+            }
+            if (record_marker_end != record_marker_start) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Mismatched record markers in logical array read.\n");
+                exit(1);
             }
         }
     } else {
@@ -7549,8 +7575,8 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
+        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read record marker.\n");
@@ -7572,6 +7598,19 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
                     exit(1);
                 }
                 p[(int64_t)i * (int64_t)stride] = val;
+            }
+        }
+        if (access_id == 0) {
+            int32_t record_marker_end;
+            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
+                exit(1);
+            }
+            if (record_marker_end != record_marker_start) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Mismatched record markers in int16 array read.\n");
+                exit(1);
             }
         }
     } else {
@@ -7622,8 +7661,8 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
+        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read record marker.\n");
@@ -7645,6 +7684,19 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
                     exit(1);
                 }
                 p[(int64_t)i * (int64_t)stride] = val;
+            }
+        }
+        if (access_id == 0) {
+            int32_t record_marker_end;
+            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
+                exit(1);
+            }
+            if (record_marker_end != record_marker_start) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Mismatched record markers in int32 array read.\n");
+                exit(1);
             }
         }
     } else {
@@ -7694,8 +7746,8 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
+        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            int32_t record_marker_start;
             if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read record marker.\n");
@@ -7717,6 +7769,19 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
                     exit(1);
                 }
                 p[(int64_t)i * (int64_t)stride] = val;
+            }
+        }
+        if (access_id == 0) {
+            int32_t record_marker_end;
+            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
+                exit(1);
+            }
+            if (record_marker_end != record_marker_start) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Mismatched record markers in int64 array read.\n");
+                exit(1);
             }
         }
     } else {
