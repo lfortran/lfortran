@@ -19,4 +19,7 @@ program continue_compilation_coarrays
     ! Corank = 2, but only 1 coindex provided → ERROR
     s%y[1] = 5
 
+    integer :: z[*], a
+    a = z[1:5:2]
+
 end program continue_compilation_coarrays

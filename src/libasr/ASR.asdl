@@ -164,6 +164,7 @@ expr
     | ArrayConstant(int n_data, void data, ttype type, arraystorage storage_format)
     | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value)
     | ArraySection(expr v, array_index* args, ttype type, expr? value)
+    | CoarrayRef(expr var, array_index* coindices, ttype type, expr? value)
     | ArraySize(expr v, expr? dim, ttype type, expr? value)
     | ArrayRank(expr v, ttype type, expr? value)
     | ArrayBound(expr v, expr? dim, ttype type, arraybound bound, expr? value)
