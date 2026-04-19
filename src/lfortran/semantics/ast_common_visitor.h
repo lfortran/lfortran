@@ -12392,6 +12392,34 @@ public:
     }
 
     ASR::asr_t* create_StringLen_from_expr(ASR::expr_t* v, ASR::ttype_t* type, const Location& loc) {
+        // Optimize len(trim(s)) -> len_trim(s) to avoid return-slot ordering
+        // issues when the expression appears as an array dimension
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*v)) {
+            auto* ief = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(v);
+            if (ief->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::StringTrim)) {
+                ASR::expr_t* m_value = nullptr;
+                if (ief->m_value) {
+                    ASR::ttype_t* val_type = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(ief->m_value));
+                    if (ASR::is_a<ASR::String_t>(*val_type)) {
+                        int64_t len_val;
+                        if (ASRUtils::extract_value(
+                                ASR::down_cast<ASR::String_t>(val_type)->m_len, len_val)) {
+                            m_value = make_ConstantWithType(
+                                make_IntegerConstant_t, len_val, type, loc);
+                        }
+                    }
+                }
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 1);
+                args.push_back(al, ief->m_args[0]);
+                return ASR::make_IntrinsicElementalFunction_t(al, loc,
+                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringLenTrim),
+                    args.p, args.size(), 0, type, m_value);
+            }
+        }
+
         ASR::expr_t* len_compiletime = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(v)) ) {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(v)));
