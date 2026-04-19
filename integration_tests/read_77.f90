@@ -1,4 +1,4 @@
-program read_76
+program read_77
   implicit none
 
   integer :: i, i1, i2, idata(4)
@@ -26,4 +26,4 @@ program read_76
      error stop
   end if
 
-end program read_76
+end program read_77
