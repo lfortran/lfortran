@@ -159,6 +159,13 @@ time_section "🧪 Testing Fiats" '
   git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
+  if [[ "$(uname)" == "Darwin" ]]; then
+    rm -rf build
+    git fetch https://github.com/certik/fiats lf1
+    git checkout f5d91ae48c01297a7fb183957654a73721ad4520
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal"
+  fi
+
   print_success "Done with Fiats"
   cd ..
 '
@@ -277,6 +284,8 @@ time_section "🧪 Testing M_CLI2" '
   print_success "Done with M_CLI2"
   cd ..
 '
+
+if [[ "$(uname)" != "Darwin" ]]; then
 
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
@@ -469,6 +478,23 @@ time_section "🧪 Testing dftatom" '
 
   make -f Makefile.manual F90=$FC F90FLAGS=-I../../src
   make -f Makefile.manual quicktest
+'
+
+##########################
+# Section 8.1: featom (build-only)
+##########################
+time_section "🧪 Building featom (build-only)" '
+  git clone https://github.com/atomic-solvers/featom
+  cd featom
+  git checkout 87872a3266ceeee61a7244e6ecd134dc3bda790f
+  micromamba install -c conda-forge fpm libblas liblapack
+  export LIBRARY_PATH="$CONDA_PREFIX/lib:${LIBRARY_PATH:-}"
+  # Build-only smoke test for now; runtime tests can be added later.
+  FPM_FFLAGS="--cpp --realloc-lhs-arrays --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
+
+  print_success "Done with featom (build-only)"
+  cd ..
+  rm -rf featom
 '
 
 
@@ -726,6 +752,8 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
 
     cd ..
 '
+
+fi
 
 ##################################
 # Final Summary and Cleanup

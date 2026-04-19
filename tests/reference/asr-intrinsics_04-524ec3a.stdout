@@ -49,6 +49,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             z:
                                 (Variable
@@ -72,6 +73,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     intrinsics_04

@@ -5699,7 +5699,7 @@ public:
                                                     nullptr, nullptr, ASR::storage_typeType::Default, storage_array_type, nullptr,
                                                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                                                     false, false, false, nullptr, false, false,
-                                                    ASR::pass_attrType::NotMethod, nullptr);
+                                                    ASR::pass_attrType::NotMethod, nullptr, 0);
 
                                                 current_scope->add_symbol(storage_name, ASR::down_cast<ASR::symbol_t>(storage_var));
 
@@ -6332,6 +6332,7 @@ public:
                 char *bindc_name = nullptr;
                 bool is_volatile = false;
                 bool is_protected = false;
+                int64_t corank = 0;
                 AST::AttrType_t *sym_type = nullptr;
 
                 if (AST::is_a<AST::AttrType_t>(*x.m_vartype))
@@ -6611,6 +6612,10 @@ public:
                             if (ap->m_name) {
                                 pass_arg_name = s2c(al, to_lower(std::string(ap->m_name)));
                             }
+                        } else if (AST::is_a<AST::AttrCodimension_t>(*a)) {
+                            AST::AttrCodimension_t *ac =
+                                AST::down_cast<AST::AttrCodimension_t>(a);
+                            corank = ac->n_codim;
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute type not implemented yet",
@@ -6712,6 +6717,10 @@ public:
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                         s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                }
+                // Corank from var_sym codimension (e.g., integer :: x[*])
+                if (s.n_codim > 0) {
+                    corank = s.n_codim;
                 }
                 if (!is_argument && !is_allocatable && !is_pointer
                         && !is_dimension_star && dims.size() > 0) {
@@ -6832,6 +6841,9 @@ public:
                             }
                             current_scope->add_symbol(sym, symbol);
                             variable_added_to_symtab = symbol_variable;
+                            if (corank > 0) {
+                                symbol_variable->m_corank = corank;
+                            }
                         } else {
                             // Compute pass_attr for procedure pointer components in structs
                             ASR::pass_attrType pass_attr = ASR::pass_attrType::NotMethod;
@@ -6852,7 +6864,7 @@ public:
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr, target_attr, contig_attr, bindc_name, is_volatile,
-                                is_protected, pass_attr, self_argument
+                                is_protected, pass_attr, self_argument, corank
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
@@ -11939,6 +11951,11 @@ public:
                 }
             } else {
                 ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+                if (select_type_override_type) {
+                    val = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, val,
+                        ASR::cast_kindType::ClassToIntrinsic,
+                        select_type_override_type, nullptr, nullptr));
+                }
                 ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                     ASRUtils::extract_kind_from_ttype_t(v_variable_m_type)));
                 
@@ -14742,8 +14759,14 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t *size_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, x.base.base.loc, 8));
+        ASR::expr_t *value = nullptr;
+        int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
+        if (type_size > 0) {
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, type_size, size_type));
+        }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
-            size_type, nullptr);
+            size_type, value);
     }
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {
@@ -14758,8 +14781,14 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t *size_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, x.base.base.loc, 8));
+        ASR::expr_t *value = nullptr;
+        int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
+        if (type_size > 0) {
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, type_size, size_type));
+        }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
-            size_type, nullptr);
+            size_type, value);
     }
 
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
@@ -16138,6 +16167,23 @@ public:
     void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
         std::string var_name = to_lower(x.m_name);
         const Location &loc = x.base.base.loc;
+        
+        size_t n_coindices = 0;
+        n_coindices = x.n_coargs; // For now we treat all coargs as coindices, since we don't have codimensions implemented yet 
+
+        // Visit each coarg expression to convert them to ASR
+        // (for now we don't store them, but we do validate them)
+        for (size_t i = 0; i < x.n_coargs; i++) {
+            if (x.m_coargs[i].m_start) {
+                this->visit_expr(*x.m_coargs[i].m_start);
+            }
+            if (x.m_coargs[i].m_end) {
+                this->visit_expr(*x.m_coargs[i].m_end);
+            }
+            if (x.m_coargs[i].m_step) {
+                this->visit_expr(*x.m_coargs[i].m_step);
+            }
+        }
 
         if (x.n_member > 0) {
             // Struct member coarray access like s%x[i] or s%x(j)[i]
@@ -16151,6 +16197,27 @@ public:
                     to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
             ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+
+            // Semantic check: variable must be a coarray
+            if (!ASRUtils::is_coarray(f2)) {
+                diag.add(Diagnostic(
+                    "Variable '" + to_lower(x.m_member[x.n_member - 1].m_name) +
+                    "' is not a coarray; coindex notation [..] requires a codimension attribute",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+
+            // Semantic check: number of coindices must match corank
+            int64_t var_corank = ASRUtils::symbol_corank(f2);
+            if (var_corank > 0 && (int64_t)n_coindices != var_corank) {
+                diag.add(Diagnostic(
+                    "Coarray '" + to_lower(x.m_member[x.n_member - 1].m_name) +
+                    "' has corank " + std::to_string(var_corank) +
+                    " but " + std::to_string(n_coindices) + " coindices were provided",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+
             if (x.n_args > 0) {
                 tmp = create_ArrayRef(loc, x.m_args, x.n_args,
                                       nullptr, 0, v_expr, v, f2);
@@ -16170,6 +16237,27 @@ public:
                 throw SemanticAbort();
             }
             ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+
+            // Semantic check: variable must be a coarray
+            if (!ASRUtils::is_coarray(f2)) {
+                diag.add(Diagnostic(
+                    "Variable '" + var_name +
+                    "' is not a coarray; coindex notation [..] requires a codimension attribute",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+
+            // Semantic check: number of coindices must match corank
+            int64_t var_corank = ASRUtils::symbol_corank(f2);
+            if (var_corank > 0 && (int64_t)n_coindices != var_corank) {
+                diag.add(Diagnostic(
+                    "Coarray '" + var_name + "' has corank " +
+                    std::to_string(var_corank) + " but " +
+                    std::to_string(n_coindices) + " coindices were provided",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+
             if (x.n_args > 0) {
                 // x(i,j)[k] -> resolve as ArrayItem/ArraySection of x(i,j)
                 tmp = create_ArrayRef(loc, x.m_args, x.n_args,
@@ -16462,6 +16550,27 @@ public:
                                                       right_type, conversion_cand,
                                                       &source_type, &dest_type);
           }
+            // Fortran standard: real(dp)*complex(sp) produces complex(dp).
+            // When mixing real and complex, use max(real_kind, complex_kind).
+            {
+                ASR::ttype_t *src2 = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(source_type)));
+                ASR::ttype_t *dst2 = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(dest_type)));
+                if (ASRUtils::is_real(*src2) && ASRUtils::is_complex(*dst2)) {
+                    int src_kind = ASRUtils::extract_kind_from_ttype_t(src2);
+                    int dst_kind = ASRUtils::extract_kind_from_ttype_t(dst2);
+                    if (src_kind > dst_kind) {
+                        dest_type = ASRUtils::TYPE(ASR::make_Complex_t(
+                            al, dest_type->base.loc, src_kind));
+                        ASR::expr_t **other = (conversion_cand == &left) ? &right : &left;
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc,
+                            other, ASRUtils::expr_type(*other), dest_type, diag);
+                    }
+                }
+            }
             if((op == ASR::binopType::Pow) &&
                 ASRUtils::is_real(*dest_type) &&
                 ASRUtils::is_integer(*right_type)){ // Don't cast exponent to preserve precision.
@@ -17967,7 +18076,7 @@ public:
                     ASR::storage_typeType::Default, arg_type_arr[i], nullptr,
                     ASR::abiType::BindC, ASR::accessType::Public,
                     ASR::presenceType::Required, false, false, false, nullptr,
-                    false, false, ASR::pass_attrType::NotMethod, nullptr));
+                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0));
             fn_scope->add_symbol(arg_name, arg_sym);
             args.push_back(al, ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, arg_sym)));
@@ -17982,7 +18091,7 @@ public:
                     ASR::storage_typeType::Default, return_type, nullptr,
                     ASR::abiType::BindC, ASR::accessType::Public,
                     ASR::presenceType::Required, false, false, false, nullptr,
-                    false, false, ASR::pass_attrType::NotMethod, nullptr));
+                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0));
             fn_scope->add_symbol(rv_name, rv_sym);
             return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, rv_sym));
         }

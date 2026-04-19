@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f2:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f3:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f4:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f5:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f6:
                                 (Variable
@@ -144,6 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     f

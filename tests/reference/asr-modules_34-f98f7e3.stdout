@@ -82,6 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             version:
                                                 (Variable
@@ -117,6 +118,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     package_config_t
@@ -241,6 +243,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     associate_block
@@ -324,6 +327,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             package:
                                                 (Variable
@@ -367,6 +371,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             version:
                                                 (Variable
@@ -392,6 +397,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     build_model
@@ -514,6 +520,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             string:
                                                 (Variable
@@ -539,6 +546,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     as_string
@@ -632,6 +640,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             string:
                                                 (Variable
@@ -657,6 +666,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     to_string
@@ -733,6 +743,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration

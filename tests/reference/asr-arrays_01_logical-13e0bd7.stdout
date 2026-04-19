@@ -34,6 +34,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -62,6 +63,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -92,6 +94,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i:
                                 (Variable
@@ -115,6 +118,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             j:
                                 (Variable
@@ -138,6 +142,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     arrays_01_logical

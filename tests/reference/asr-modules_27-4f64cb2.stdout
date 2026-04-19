@@ -125,6 +125,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             pos:
                                                 (Variable
@@ -148,6 +149,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ptr:
                                                 (Variable
@@ -173,6 +175,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             stat:
                                                 (Variable
@@ -196,6 +199,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     get_elem_array
@@ -257,6 +261,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             pos:
                                                 (Variable
@@ -280,6 +285,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ptr:
                                                 (Variable
@@ -305,6 +311,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             stat:
                                                 (Variable
@@ -328,6 +335,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     get_elem_keyval
@@ -389,6 +397,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             pos:
                                                 (Variable
@@ -412,6 +421,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ptr:
                                                 (Variable
@@ -437,6 +447,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             stat:
                                                 (Variable
@@ -460,6 +471,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     get_elem_table
@@ -612,6 +624,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             stat:
                                                 (Variable
@@ -635,6 +648,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -658,6 +672,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     get_value_float_dp
@@ -715,6 +730,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             stat:
                                                 (Variable
@@ -738,6 +754,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -761,6 +778,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     get_value_float_sp
@@ -813,6 +831,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     tomlf_build_keyval

@@ -94,6 +94,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     bar_a
@@ -142,6 +143,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     bar_b
@@ -190,6 +192,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     bar_c
@@ -243,6 +246,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             foo_a:
                                 (Struct
@@ -276,6 +280,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     foo_a
@@ -334,6 +339,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     foo_b
@@ -392,6 +398,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     foo_c

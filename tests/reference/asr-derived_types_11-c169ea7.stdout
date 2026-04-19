@@ -68,6 +68,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -115,6 +116,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y:
                                 (Struct
@@ -149,6 +151,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     y

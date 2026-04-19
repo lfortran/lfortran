@@ -39,6 +39,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -67,6 +68,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -90,6 +92,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     copy_from_to
@@ -185,6 +188,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r:
                                 (Variable
@@ -208,6 +212,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             verify:
                                 (Function
@@ -241,6 +246,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -269,6 +275,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -292,6 +299,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             r:
                                                 (Variable
@@ -315,6 +323,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     verify
@@ -437,6 +446,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y:
                                 (Variable
@@ -465,6 +475,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     arrays_08_func

@@ -40,6 +40,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f:
                                 (Function
@@ -79,6 +80,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     f
@@ -178,6 +180,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -212,6 +215,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     g
@@ -427,6 +431,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     h
@@ -580,6 +585,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             stat:
                                 (Variable
@@ -603,6 +609,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     allocate_03

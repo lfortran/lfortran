@@ -3,4 +3,5 @@ program arrays_10
   integer, pointer :: x(:)
   allocate(x(1))
   x = [ 1 ]
+  deallocate(x)
 end program arrays_10

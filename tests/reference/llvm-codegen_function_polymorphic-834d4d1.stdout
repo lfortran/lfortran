@@ -11,57 +11,33 @@ define void @__module_codegen_function_polymorphic_my_func(%codegen_function_pol
   %1 = load %codegen_function_polymorphic.abstype_class*, %codegen_function_polymorphic.abstype_class** %obj, align 8
   %2 = ptrtoint %codegen_function_polymorphic.abstype_class* %1 to i64
   %3 = icmp ne i64 %2, 0
-  br i1 %3, label %then, label %else5
+  br i1 %3, label %then, label %else2
 
 then:                                             ; preds = %.entry
   %4 = load %codegen_function_polymorphic.abstype_class*, %codegen_function_polymorphic.abstype_class** %obj, align 8
   %5 = load %codegen_function_polymorphic.abstype_class*, %codegen_function_polymorphic.abstype_class** %obj, align 8
   %6 = ptrtoint %codegen_function_polymorphic.abstype_class* %5 to i64
   %7 = icmp ne i64 %6, 0
-  br i1 %7, label %then1, label %else3
+  br i1 %7, label %then1, label %else
 
 then1:                                            ; preds = %then
-  %8 = getelementptr %codegen_function_polymorphic.abstype_class, %codegen_function_polymorphic.abstype_class* %5, i32 0, i32 1
-  %9 = load %codegen_function_polymorphic.abstype*, %codegen_function_polymorphic.abstype** %8, align 8
-  %10 = bitcast %codegen_function_polymorphic.abstype* %9 to i8*
-  %11 = ptrtoint i8* %10 to i64
-  %12 = icmp ne i64 %11, 0
-  br i1 %12, label %then2, label %else
-
-then2:                                            ; preds = %then1
-  %13 = alloca i8*, align 8
-  store i8* %10, i8** %13, align 8
-  %14 = load i8*, i8** %13, align 8
-  call void @_lfortran_free_alloc(i8* %0, i8* %14)
-  %15 = bitcast %codegen_function_polymorphic.abstype** %8 to i8**
-  store i8* null, i8** %15, align 8
-  br label %ifcont
-
-else:                                             ; preds = %then1
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then2
-  %16 = alloca i8*, align 8
-  %17 = bitcast %codegen_function_polymorphic.abstype_class* %5 to i8*
-  store i8* %17, i8** %16, align 8
-  %18 = load i8*, i8** %16, align 8
-  call void @_lfortran_free_alloc(i8* %0, i8* %18)
+  call void @finalize_allocatable__StructType_Class__abstype_of_codegen_function_polymorphic(%codegen_function_polymorphic.abstype_class* %5)
   store %codegen_function_polymorphic.abstype_class* null, %codegen_function_polymorphic.abstype_class** %obj, align 8
-  br label %ifcont4
+  br label %ifcont
 
-else3:                                            ; preds = %then
-  br label %ifcont4
+else:                                             ; preds = %then
+  br label %ifcont
 
-ifcont4:                                          ; preds = %else3, %ifcont
-  br label %ifcont6
+ifcont:                                           ; preds = %else, %then1
+  br label %ifcont3
 
-else5:                                            ; preds = %.entry
-  br label %ifcont6
+else2:                                            ; preds = %.entry
+  br label %ifcont3
 
-ifcont6:                                          ; preds = %else5, %ifcont4
+ifcont3:                                          ; preds = %else2, %ifcont
   br label %return
 
-return:                                           ; preds = %ifcont6
+return:                                           ; preds = %ifcont3
   br label %FINALIZE_SYMTABLE_my_func
 
 FINALIZE_SYMTABLE_my_func:                        ; preds = %return
@@ -71,3 +47,70 @@ FINALIZE_SYMTABLE_my_func:                        ; preds = %return
 declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare i8* @_lfortran_get_default_allocator()
+
+define internal void @finalize_allocatable__StructType_Class__abstype_of_codegen_function_polymorphic(%codegen_function_polymorphic.abstype_class* %0) {
+entry:
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = icmp ne %codegen_function_polymorphic.abstype_class* %0, null
+  br i1 %2, label %is_allocated.then, label %is_allocated.else2
+
+is_allocated.then:                                ; preds = %entry
+  call void @finalize_StructType_Class__abstype_of_codegen_function_polymorphic(%codegen_function_polymorphic.abstype_class* %0)
+  %3 = getelementptr %codegen_function_polymorphic.abstype_class, %codegen_function_polymorphic.abstype_class* %0, i32 0, i32 1
+  %4 = load %codegen_function_polymorphic.abstype*, %codegen_function_polymorphic.abstype** %3, align 8
+  %5 = icmp ne %codegen_function_polymorphic.abstype* %4, null
+  br i1 %5, label %is_allocated.then1, label %is_allocated.else
+
+is_allocated.then1:                               ; preds = %is_allocated.then
+  %6 = bitcast %codegen_function_polymorphic.abstype* %4 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
+  %7 = bitcast %codegen_function_polymorphic.abstype_class* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %7)
+  br label %is_allocated.ifcont3
+
+is_allocated.else2:                               ; preds = %entry
+  br label %is_allocated.ifcont3
+
+is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
+  ret void
+}
+
+define internal void @finalize_StructType_Class__abstype_of_codegen_function_polymorphic(%codegen_function_polymorphic.abstype_class* %0) {
+entry:
+  %1 = getelementptr %codegen_function_polymorphic.abstype_class, %codegen_function_polymorphic.abstype_class* %0, i32 0, i32 0
+  %2 = load i32 (...)**, i32 (...)*** %1, align 8
+  %3 = getelementptr %codegen_function_polymorphic.abstype_class, %codegen_function_polymorphic.abstype_class* %0, i32 0, i32 1
+  %4 = load %codegen_function_polymorphic.abstype**, %codegen_function_polymorphic.abstype** %3, align 8
+  %5 = bitcast %codegen_function_polymorphic.abstype** %4 to i8*
+  %6 = icmp ne i32 (...)** %2, null
+  br i1 %6, label %is_allocated.then, label %is_allocated.else2
+
+is_allocated.then:                                ; preds = %entry
+  %7 = getelementptr inbounds i32 (...)*, i32 (...)** %2, i32 2
+  %8 = load i8*, i32 (...)** %7, align 8
+  %9 = bitcast i8* %8 to void (i8*)*
+  %10 = icmp ne i8* %5, null
+  br i1 %10, label %is_allocated.then1, label %is_allocated.else
+
+is_allocated.then1:                               ; preds = %is_allocated.then
+  call void %9(i8* %5)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %is_allocated.then
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then1
+  br label %is_allocated.ifcont3
+
+is_allocated.else2:                               ; preds = %entry
+  br label %is_allocated.ifcont3
+
+is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
+  ret void
+}

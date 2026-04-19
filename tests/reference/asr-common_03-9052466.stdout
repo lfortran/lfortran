@@ -164,6 +164,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             e:
                                                 (Variable
@@ -187,6 +188,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             f:
                                                 (Variable
@@ -210,6 +212,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     b
@@ -260,6 +263,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     file_common_block_b
@@ -301,6 +305,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             z2:
                                                 (Variable
@@ -324,6 +329,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     blank#block
@@ -373,6 +379,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     file_common_block_blank#block
@@ -414,6 +421,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             g:
                                                 (Variable
@@ -437,6 +445,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             h:
                                                 (Variable
@@ -460,6 +469,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             j:
                                                 (Variable
@@ -483,6 +493,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     c
@@ -534,6 +545,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     file_common_block_c
@@ -580,6 +592,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -603,6 +616,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -631,6 +645,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sample
@@ -681,6 +696,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     file_common_block_sample
@@ -737,6 +753,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             sample:
                                 (ExternalSymbol

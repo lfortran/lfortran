@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     f
@@ -96,6 +97,7 @@
                     .false.
                     NotMethod
                     ()
+                    0
                 )
         })
     []

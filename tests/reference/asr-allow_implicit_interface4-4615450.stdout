@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     dqk15w
@@ -95,6 +96,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             hlgth:
                                 (Variable
@@ -118,6 +120,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ~implicit_interface_f_6:
                                 (Function
@@ -146,6 +149,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ~implicit_interface_f_6_return_var:
                                                 (Variable
@@ -169,6 +173,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     ~implicit_interface_f_6
@@ -289,6 +294,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             c_return_var_name:
                                                 (Variable
@@ -312,6 +318,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d:
                                                 (Variable
@@ -335,6 +342,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     c
@@ -383,6 +391,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f:
                                 (Variable
@@ -406,6 +415,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             func:
                                 (Variable
@@ -429,6 +439,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             sub2:
                                 (Function
@@ -457,6 +468,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sub2
@@ -564,6 +576,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             a_return_var_name:
                                                 (Variable
@@ -587,6 +600,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -610,6 +624,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     a
@@ -658,6 +673,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             sub:
                                 (Function
@@ -686,6 +702,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sub

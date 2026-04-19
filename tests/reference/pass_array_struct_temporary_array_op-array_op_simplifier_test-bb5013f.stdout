@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_index_0_1:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_index_0_2:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_index_1_:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_index_1_1:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_index_1_2:
                                 (Variable
@@ -144,6 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             a:
                                 (Variable
@@ -174,6 +180,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -204,6 +211,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -227,6 +235,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             d:
                                 (Variable
@@ -259,6 +268,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     main

@@ -16,8 +16,8 @@ FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* valu
 | :--- | :--- | :--- |
 | `label` | `int` | Statement label. |
 | `unit` | `expr?` | Integer expression specifying the unit number. |
-| `iomsg` | `expr?` | Character variable for error message. |
-| `iostat` | `expr?` | Integer variable for status. |
+| `iomsg` | `expr?` | See [FileOpen mode behavior](fileopen.md#mode-behavior-brief) (`iostat` and `iomsg`). |
+| `iostat` | `expr?` | See [FileOpen mode behavior](fileopen.md#mode-behavior-brief) (`iostat` and `iomsg`). |
 | `id` | `expr?` | Integer expression for asynchronous I/O. |
 | `values` | `expr*` | List of expressions to write. |
 | `separator` | `expr?` | Separator expression. |
@@ -35,6 +35,46 @@ None.
 ## Description
 
 The `FileWrite` node represents the Fortran `WRITE` statement, which is used to transfer data from the items in the output list or a namelist group to an external file or an internal file.
+
+### Specifier behavior (brief)
+
+- `unit`:
+    - Selects the external unit (or internal file expression) used as the write target.
+
+- `values`:
+    - Output list of expressions/items written by the statement.
+
+- `id`:
+    - Associates the statement with an asynchronous transfer identifier.
+
+- `rec`:
+    - Record number for direct-access I/O writes.
+
+    ```fortran
+    write(unit=20, rec=5) row
+    ```
+
+- `pos`:
+    - Sets/uses stream file position for stream access writes.
+
+- `nml`:
+    - Namelist group symbol when the write is namelist-driven.
+
+    ```fortran
+    write(unit=30, nml=config)
+    ```
+
+- `separator` and `end`:
+    - Optional output formatting controls used by lowered/internal write forms.
+
+- `is_formatted`:
+    - Internal ASR flag indicating whether this write is treated as formatted transfer.
+
+- `overloaded`:
+    - Internal lowered statement used when WRITE resolves through an overloaded procedure.
+
+- `iostat` and `iomsg`:
+    - See [FileOpen mode behavior](fileopen.md#mode-behavior-brief) (`iostat` and `iomsg`).
 
 ## Examples
 

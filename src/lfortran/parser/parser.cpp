@@ -592,7 +592,7 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             skip_rest_of_line(s, pos);
             out += '\n';
             return;
-        } else if (s[pos] == ' ') {
+        } else if (s[pos] == ' ' || s[pos] == '\t') {
             // Skip white space in a fixed-form parser
             pos++;
             col++;

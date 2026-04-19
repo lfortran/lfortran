@@ -35,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             zero:
                                 (Variable
@@ -64,6 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     a
@@ -158,6 +160,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     b

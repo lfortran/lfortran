@@ -34,6 +34,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -62,6 +63,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ifault:
                                 (Variable
@@ -85,6 +87,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             n:
                                 (Variable
@@ -108,6 +111,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r:
                                 (Variable
@@ -131,6 +135,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     f
@@ -226,6 +231,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -254,6 +260,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             g:
                                 (Variable
@@ -277,6 +284,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ifault:
                                 (Variable
@@ -300,6 +308,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             n:
                                 (Variable
@@ -323,6 +332,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r:
                                 (Variable
@@ -346,6 +356,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     g

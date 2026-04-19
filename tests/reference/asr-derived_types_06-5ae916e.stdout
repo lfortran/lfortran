@@ -39,6 +39,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ~unlimited_polymorphic_type:
                                                 (Struct

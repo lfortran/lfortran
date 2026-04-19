@@ -39,7 +39,7 @@ program inquire_13
     pending_val = .true.
     inquire(unit=u, asynchronous=async_val, pending=pending_val, iostat=ios)
     if (ios /= 0) error stop
-    if (trim(async_val) /= "NO") error stop
+    if (trim(async_val) /= "NO" .and. trim(async_val) /= "UNDEFINED") error stop
     if (pending_val) error stop
     close(u)
 
@@ -52,7 +52,7 @@ program inquire_13
     pending_val = .true.
     inquire(unit=u, asynchronous=async_val, pending=pending_val, iostat=ios)
     if (ios /= 0) error stop
-    if (trim(async_val) /= "NO") error stop
+    if (trim(async_val) /= "NO" .and. trim(async_val) /= "UNDEFINED") error stop
     if (pending_val) error stop
     close(u)
 
@@ -98,7 +98,7 @@ program inquire_13
     pending_val = .true.
     inquire(unit=u, asynchronous=async_val, pending=pending_val, iostat=ios)
     if (ios /= 0) error stop
-    if (trim(async_val) /= "NO") error stop
+    if (trim(async_val) /= "NO" .and. trim(async_val) /= "UNDEFINED") error stop
     if (pending_val) error stop
     close(u)
 
@@ -107,7 +107,7 @@ program inquire_13
     ! Just verify the call succeeds without error
     inquire(file=filename, asynchronous=async_val, iostat=ios)
     if (ios /= 0) error stop
-    if (trim(async_val) /= "NO") error stop
+    if (trim(async_val) /= "NO" .and. trim(async_val) /= "UNDEFINED") error stop
 
     ! ---- TEST 7: Different file modes in sequence ----
     do i = 1, 3

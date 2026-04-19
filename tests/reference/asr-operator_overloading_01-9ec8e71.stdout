@@ -45,6 +45,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -84,6 +85,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ~add:
                                 (ExternalSymbol
@@ -381,6 +383,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             log1:
                                                 (Variable
@@ -404,6 +407,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             log2:
                                                 (Variable
@@ -427,6 +431,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     bin_add
@@ -530,6 +535,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             log2:
                                                 (Variable
@@ -553,6 +559,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -576,6 +583,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     logical_and

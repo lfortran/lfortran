@@ -34,6 +34,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -62,6 +63,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             driver:
                                 (Function
@@ -95,6 +97,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             driver_arg_1:
                                                 (Variable
@@ -123,6 +126,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     driver
@@ -183,6 +187,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     implicit_interface5
