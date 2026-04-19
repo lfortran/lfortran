@@ -1185,8 +1185,10 @@ public:
         if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*xx.m_test)) {
             ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(xx.m_test);
             if (ASR::is_a<ASR::Logical_t>(*intrinsic_func->m_type)) {
-                ASR::expr_t* function_call = process_attributes(xx.base.base.loc, xx.m_test);
-                xx.m_test = function_call;
+                if (is_logical_intrinsic_symbolic(xx.m_test)) {
+                    ASR::expr_t* function_call = process_attributes(xx.base.base.loc, xx.m_test);
+                    xx.m_test = function_call;
+                }
             }
         }
     }
