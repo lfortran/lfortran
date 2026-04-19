@@ -499,6 +499,12 @@ public:
         llvm_utils->dim_descr_type_ = arr_descr->get_dimension_descriptor_type();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
+
+        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
+            llvm::FastMathFlags fmf;
+            fmf.setFast();
+            builder->setFastMathFlags(fmf);
+        }
     }
 
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
@@ -5892,6 +5898,12 @@ public:
                 llvm::Type::getInt32Ty(context), command_line_args, false);
         llvm::Function *F = llvm::Function::Create(function_type,
                 llvm::Function::ExternalLinkage, "main", module.get());
+        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
+            F->addFnAttr("no-nans-fp-math", "true");
+            F->addFnAttr("no-infs-fp-math", "true");
+            F->addFnAttr("no-signed-zeros-fp-math", "true");
+            F->addFnAttr("unsafe-fp-math", "true");
+        }
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
         if (compiler_options.emit_debug_info) {
@@ -7663,6 +7675,12 @@ public:
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
         bindc_stride_exits.clear();
+        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
+            F->addFnAttr("no-nans-fp-math", "true");
+            F->addFnAttr("no-infs-fp-math", "true");
+            F->addFnAttr("no-signed-zeros-fp-math", "true");
+            F->addFnAttr("unsafe-fp-math", "true");
+        }
         if (compiler_options.emit_debug_info) {
             llvm::DISubprogram *SP = nullptr;
             debug_emit_function(x, SP);
