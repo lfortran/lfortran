@@ -22155,7 +22155,7 @@ public:
                     llvm::Type* scalar_llvm_type = llvm_utils->get_el_type(
                         x.m_args[i].m_value, elem_asr_type, module.get());
                     llvm::Value* scalar_ptr = tmp;
-                    if (ASRUtils::is_pointer(scalar_type)) {
+                    if (LLVM::is_llvm_pointer(*scalar_type)) {
                         scalar_ptr = llvm_utils->CreateLoad2(
                             scalar_llvm_type->getPointerTo(), tmp);
                     }
@@ -22196,7 +22196,7 @@ public:
                     llvm::Type* elem_llvm_chk = llvm_utils->get_el_type(
                         x.m_args[i].m_value, elem_asr_chk, module.get());
                     llvm::Value* poly_scalar_ptr = tmp;
-                    if (ASRUtils::is_pointer(arg_type)) {
+                    if (LLVM::is_llvm_pointer(*arg_type)) {
                         poly_scalar_ptr = llvm_utils->CreateLoad2(
                             elem_llvm_chk->getPointerTo(), tmp);
                     }
