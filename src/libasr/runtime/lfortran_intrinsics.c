@@ -8857,8 +8857,10 @@ typedef struct {
         } str;
     };
     long record_start_pos;
-    int access_id;      // 0=sequential, 1=stream, 2=direct
-    int32_t record_len; // record length for direct access
+    long pos_in_record;     // 0-based column position within current record
+    long record_length;     // length of current record in characters
+    int access_id;          // 0=sequential, 1=stream, 2=direct
+    int32_t record_len;     // record length for direct access
 } InputSource;
 
 // Shared buffer parsing functions for formatted reads
@@ -9040,8 +9042,25 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
     int i = 0;
 
     switch (inputSource->inputMethod) {
-    case INPUT_FILE:
-        return fgets(buf, size, inputSource->file);
+    case INPUT_FILE: {
+        char *ret = fgets(buf, size, inputSource->file);
+        if (ret != NULL) {
+            // Keep record-local cursor in sync for T/TL/TR editing.
+            // Count only non-newline chars consumed from current record.
+            size_t n = strlen(buf);
+            size_t consumed = 0;
+            for (size_t j = 0; j < n; j++) {
+                if (buf[j] == '\n') break;
+                consumed++;
+            }
+            inputSource->pos_in_record += (long)consumed;
+            if (inputSource->record_length >= 0 &&
+                    inputSource->pos_in_record > inputSource->record_length) {
+                inputSource->pos_in_record = inputSource->record_length;
+            }
+        }
+        return ret;
+    }
     case INPUT_STRING:
         while (i < size - 1 && inputSource->str.pos < inputSource->str.len) {
             char c = inputSource->str.buf[inputSource->str.pos++];
@@ -9064,8 +9083,13 @@ static inline int read_character(InputSource *inputSource)
 {
     switch (inputSource->inputMethod) {
 
-    case INPUT_FILE:
-        return fgetc(inputSource->file);
+    case INPUT_FILE: {
+        int c = fgetc(inputSource->file);
+        if (c != EOF && c != '\n') {
+            inputSource->pos_in_record++;
+        }
+        return c;
+    }
 
     case INPUT_STRING:
         if (inputSource->str.pos < inputSource->str.len) {
@@ -9469,6 +9493,41 @@ static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
     }
 }
 
+// Initialize record state: reset position to column 1 and compute record length
+static void init_record_state(InputSource *inputSource)
+{
+    inputSource->pos_in_record = 0;
+    
+    if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
+        // For sequential/stream access, scan from record_start_pos to find '\n'
+        if (inputSource->access_id != 2) {  // Not direct access
+            long saved_pos = ftell(inputSource->file);
+            fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
+            
+            inputSource->record_length = 0;
+            int c;
+            while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
+                inputSource->record_length++;
+            }
+            
+            // Restore position to start of record
+            fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
+        } else {
+            // For direct access, record_length is already known from record_len
+            inputSource->record_length = inputSource->record_len;
+        }
+    } else if (inputSource->inputMethod == INPUT_STRING) {
+        // For strings, scan to find newline within the buffer
+        inputSource->record_length = inputSource->str.len;
+        for (size_t i = 0; i < inputSource->str.len; i++) {
+            if (inputSource->str.buf[i] == '\n') {
+                inputSource->record_length = i;
+                break;
+            }
+        }
+    }
+}
+
 static void handle_read_TL(InputSource *inputSource, int width)
 {
     int move_left = (width > 0) ? width : 1;
@@ -9481,12 +9540,14 @@ static void handle_read_TL(InputSource *inputSource, int width)
         }
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
-            long current_pos = ftell(inputSource->file);
-            if (current_pos >= move_left) {
-                fseek(inputSource->file, -move_left, SEEK_CUR);
-            } else {
-                fseek(inputSource->file, 0, SEEK_SET);
-            }
+            // Move within current record, never crossing record boundary
+            long new_pos = inputSource->pos_in_record - move_left;
+            if (new_pos < 0) new_pos = 0;
+            
+            inputSource->pos_in_record = new_pos;
+            fseek(inputSource->file,
+                  inputSource->record_start_pos + new_pos,
+                  SEEK_SET);
         }
     }
 }
@@ -9503,8 +9564,18 @@ static void handle_read_T(InputSource *inputSource, int position)
         inputSource->str.pos = target_pos;
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
-            long target_pos = inputSource->record_start_pos + (position - 1);
-            fseek(inputSource->file, target_pos, SEEK_SET);
+            // Convert 1-based position to 0-based offset
+            long target = position - 1;
+            
+            // Clamp to record boundaries
+            if (target < 0) target = 0;
+            if (target > inputSource->record_length)
+                target = inputSource->record_length;
+            
+            inputSource->pos_in_record = target;
+            fseek(inputSource->file,
+                  inputSource->record_start_pos + target,
+                  SEEK_SET);
         }
     }
 }
@@ -9518,6 +9589,7 @@ static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *c
         long next_record = inputSource->record_start_pos + inputSource->record_len;
         fseek(inputSource->file, next_record, SEEK_SET);
         inputSource->record_start_pos = next_record;
+        init_record_state(inputSource);
         *consumed_newline = false;
         return;
     }
@@ -9534,6 +9606,7 @@ static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *c
     }
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
         inputSource->record_start_pos = ftell(inputSource->file);
+        init_record_state(inputSource);
     }
     *consumed_newline = false;
 }
@@ -9555,7 +9628,7 @@ LFORTRAN_API void _lfortran_string_formatted_read(
     char* pad, int64_t pad_len,
     ...) {
     
-    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}, .record_start_pos = 0, .access_id = 0, .record_len = 0};
+    InputSource inputSource = {INPUT_STRING, .str = {src_data, src_len, 0}, .record_start_pos = 0, .pos_in_record = 0, .record_length = src_len, .access_id = 0, .record_len = 0};
     
     va_list args;
     va_start(args, pad_len);
@@ -9846,6 +9919,7 @@ static void common_formatted_read(InputSource *inputSource,
 {
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
         inputSource->record_start_pos = ftell(inputSource->file);
+        init_record_state(inputSource);
     }
     if (chunk) *chunk = 0;
     if (iostat) *iostat = 0;
@@ -9927,6 +10001,7 @@ static void common_formatted_read(InputSource *inputSource,
             }
             if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
                 inputSource->record_start_pos = ftell(inputSource->file);
+                init_record_state(inputSource);
             }
             first_cycle = false;
             consumed_newline = false;
