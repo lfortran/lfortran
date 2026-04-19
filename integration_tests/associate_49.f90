@@ -10,6 +10,7 @@ type(w_t) :: w
 allocate(w%ptr)
 w%ptr%x = 42
 call run(w)
+deallocate(w%ptr)
 contains
 subroutine process(x)
     integer, optional, intent(in) :: x
