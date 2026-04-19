@@ -453,6 +453,7 @@ RUN(NAME fixed_form_select_case_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form 
 RUN(NAME fixed_form_select_rank_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_comment_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_io_keyword_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_io_keyword_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME print_arr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran mlir)
 RUN(NAME print_arr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
