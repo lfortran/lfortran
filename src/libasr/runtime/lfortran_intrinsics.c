@@ -5502,10 +5502,6 @@ trim_trailing_spaces(char** str, int64_t* len, bool init)
         i++;
     }
     *len = last_non_space + 1;
-    // Null terminate if there's room
-    if (*len < i) {
-        (*str)[*len] = '\0';
-    }
 }
 
 /*
