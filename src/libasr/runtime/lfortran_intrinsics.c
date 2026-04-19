@@ -8002,6 +8002,13 @@ static int read_complex_expr(FILE *filep, char *buffer, size_t bufsize) {
     if (ch == ',') {
         return -1;
     }
+    // Slash terminates list-directed input for the current READ statement.
+    // Keep it in the stream so subsequent items in the same statement also
+    // remain unchanged.
+    if (ch == '/') {
+        ungetc(ch, filep);
+        return -1;
+    }
     if (ch == '(') {
         buffer[i++] = (char)ch;
         while (i < bufsize - 1 && (ch = fgetc(filep)) != EOF) {
@@ -8012,7 +8019,7 @@ static int read_complex_expr(FILE *filep, char *buffer, size_t bufsize) {
         return (ch == ')') ? 1 : 0;
     } else {
         buffer[i++] = (char)ch;
-        while (i < bufsize - 1 && (ch = fgetc(filep)) != EOF && !isspace(ch) && ch != ',') {
+        while (i < bufsize - 1 && (ch = fgetc(filep)) != EOF && !isspace(ch) && ch != ',' && ch != '/') {
             buffer[i++] = (char)ch;
         }
         buffer[i] = '\0';
