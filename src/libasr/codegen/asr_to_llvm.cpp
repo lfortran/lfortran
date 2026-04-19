@@ -500,7 +500,7 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
 
-        if (compiler_options.po.fast) {
+        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
             llvm::FastMathFlags fmf;
             fmf.setFast();
             builder->setFastMathFlags(fmf);
@@ -5898,7 +5898,7 @@ public:
                 llvm::Type::getInt32Ty(context), command_line_args, false);
         llvm::Function *F = llvm::Function::Create(function_type,
                 llvm::Function::ExternalLinkage, "main", module.get());
-        if (compiler_options.po.fast) {
+        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
             F->addFnAttr("no-nans-fp-math", "true");
             F->addFnAttr("no-infs-fp-math", "true");
             F->addFnAttr("no-signed-zeros-fp-math", "true");
@@ -7675,7 +7675,7 @@ public:
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
         bindc_stride_exits.clear();
-        if (compiler_options.po.fast) {
+        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
             F->addFnAttr("no-nans-fp-math", "true");
             F->addFnAttr("no-infs-fp-math", "true");
             F->addFnAttr("no-signed-zeros-fp-math", "true");
