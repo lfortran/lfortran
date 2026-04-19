@@ -130,8 +130,8 @@ time_section "🧪 Testing splpak" '
   git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
 
   git clean -dfx
-  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32" --verbose
-  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32"
+  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math" --verbose
+  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math"
 
   cd ../
   rm -rf splpak
