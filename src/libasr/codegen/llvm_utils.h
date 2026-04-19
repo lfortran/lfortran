@@ -1550,7 +1550,7 @@ class ASRToLLVMVisitor;
             // List struct layout: { i32 end_point, i32 capacity, T* data }
             llvm::Value* data_ptr_field = llvm_utils_->create_gep2(list_llvm_type, ptr, 2);
             llvm::Value* data_ptr = llvm_utils_->CreateLoad2(
-                llvm_utils_->character_type, data_ptr_field);
+                list_llvm_type->getStructElementType(2), data_ptr_field);
             llvm_utils_->lfortran_free(data_ptr);
         }
 
@@ -1651,7 +1651,7 @@ class ASRToLLVMVisitor;
                 // Free key_value_pairs (field 3)
                 llvm::Value* kvp_field = llvm_utils_->create_gep2(dict_llvm_type, ptr, 3);
                 llvm::Value* kvp_ptr = llvm_utils_->CreateLoad2(
-                    llvm_utils_->character_type, kvp_field);
+                    dict_llvm_type->getStructElementType(3), kvp_field);
                 llvm_utils_->lfortran_free(kvp_ptr);
 
                 // Free key_mask (field 4)
@@ -1725,7 +1725,7 @@ class ASRToLLVMVisitor;
                 llvm::Type* key_list_type = dict_llvm_type->getStructElementType(1);
                 llvm::Value* key_data_field = llvm_utils_->create_gep2(key_list_type, key_list, 2);
                 llvm::Value* key_data = llvm_utils_->CreateLoad2(
-                    llvm_utils_->character_type, key_data_field);
+                    key_list_type->getStructElementType(2), key_data_field);
                 llvm_utils_->lfortran_free(key_data);
 
                 // Free value_list.data (field 2, sub-field 2)
@@ -1733,7 +1733,7 @@ class ASRToLLVMVisitor;
                 llvm::Type* value_list_type = dict_llvm_type->getStructElementType(2);
                 llvm::Value* value_data_field = llvm_utils_->create_gep2(value_list_type, value_list, 2);
                 llvm::Value* value_data = llvm_utils_->CreateLoad2(
-                    llvm_utils_->character_type, value_data_field);
+                    value_list_type->getStructElementType(2), value_data_field);
                 llvm_utils_->lfortran_free(value_data);
 
                 // Free key_mask (field 3)
@@ -1759,7 +1759,7 @@ class ASRToLLVMVisitor;
             llvm::Type* list_llvm_type = set_llvm_type->getStructElementType(1);
             llvm::Value* data_ptr_field = llvm_utils_->create_gep2(list_llvm_type, el_list, 2);
             llvm::Value* data_ptr = llvm_utils_->CreateLoad2(
-                llvm_utils_->character_type, data_ptr_field);
+                list_llvm_type->getStructElementType(2), data_ptr_field);
             llvm_utils_->lfortran_free(data_ptr);
 
             // Free the mask (field 2 of set = el_mask)
