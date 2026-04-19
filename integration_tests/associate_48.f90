@@ -39,4 +39,5 @@ program associate_48
     if (arr(1)%ptr%items(1)%v /= 6) error stop
     if (arr(1)%ptr%items(2)%v /= 14) error stop
     print *, "done"
+    deallocate(arr(1)%ptr)
 end program

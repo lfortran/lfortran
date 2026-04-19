@@ -261,6 +261,26 @@
                             )
                             ()
                         )
+                    )
+                    (ExplicitDeallocate
+                        [(StructInstanceMember
+                            (Var 7 type_1)
+                            7 1_t_2_type_2
+                            (Pointer
+                                (Array
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )]
                     )]
                 ),
             associate_08_module_1:

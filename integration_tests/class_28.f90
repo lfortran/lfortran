@@ -37,5 +37,6 @@ program class_28
     allocate(new_ent)
 
     other = new_ent % other
+    deallocate(new_ent)
 
 end program

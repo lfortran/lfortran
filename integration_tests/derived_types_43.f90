@@ -16,4 +16,5 @@ program derived_types_43
     s%scales(1)%f(1) = 2.0
     print *, s%scales(1)%f
     if (abs(sum(s%scales(1)%f) - 3.0) > 1e-6) error stop
+    deallocate(s%scales(1)%f)
 end program

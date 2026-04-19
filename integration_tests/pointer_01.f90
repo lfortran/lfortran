@@ -19,6 +19,7 @@ program pointer_01
    if (associated(int_ptr) .neqv. .true.) error stop
 
    if (product(int_ptr) == 6) then
+      deallocate(int_ptr)
       nullify(int_ptr)
 
       allocate(int_ptr(5))
@@ -41,6 +42,7 @@ program pointer_01
    if (associated(logical_ptr) .neqv. .true.) error stop
 
    if (size(logical_ptr) == 5) then
+      deallocate(logical_ptr)
       nullify(logical_ptr)
 
       allocate(logical_ptr(2))
@@ -63,9 +65,12 @@ program pointer_01
    if (associated(real_ptr) .neqv. .true.) error stop
 
    if (sum(real_ptr) /= 11.0) then
+      deallocate(real_ptr)
       nullify(real_ptr)
    end if
 
+   deallocate(int_ptr)
+   deallocate(logical_ptr)
 
    ! Uncomment after fixing #4506
 
