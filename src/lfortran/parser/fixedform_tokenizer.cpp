@@ -297,7 +297,8 @@ const std::vector<std::string> declarators{
 
 std::vector<std::string> lines{};
 
-std::vector<std::string> io_names{"open", "read", "write", "format", "close", "print"};
+std::vector<std::string> io_names{ "open",  "read",    "write",  "format", "close",
+                                   "print", "inquire", "rewind", "flush" };
 
 void FixedFormTokenizer::set_string(const std::string &str)
 {
@@ -1124,7 +1125,6 @@ struct FixedFormRecursiveDescent {
         }
 
         // assignment
-        // TODO: this is fragile
         if (is_possible_assignment(cur, cur)) {
             tokenize_line(cur);
             return true;
