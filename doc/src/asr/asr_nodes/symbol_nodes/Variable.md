@@ -134,6 +134,8 @@ declared with the `[...]` notation:
 integer :: scalar_coarray[*]      ! rank 0, corank 1
 integer :: array_coarray(10)[*]   ! rank 1, corank 1
 integer :: matrix[*,*]            ! rank 0, corank 2
+integer :: scalar_not_coarray         ! rank 0, corank 0
+integer :: array_not_coarray(10)      ! rank 1, corank 0
 ```
 
 The `corank` field of a `Variable` node indicates how many codimensions the variable

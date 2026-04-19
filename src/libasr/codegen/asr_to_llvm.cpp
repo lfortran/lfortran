@@ -5011,6 +5011,16 @@ public:
         );
     }
 
+    void visit_CoarrayRef(const ASR::CoarrayRef_t& x) {
+        // We visit the base expression and ignore the coindices
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        this->visit_expr_wrapper(x.m_var, true);
+        // In single-image mode, coindices are ignored; tmp already contains the base expression result
+    }
+
     void visit_StructConstant(const ASR::StructConstant_t& x) {
         std::vector<llvm::Constant *> elements;
         llvm::StructType* t = llvm::cast<llvm::StructType>(
