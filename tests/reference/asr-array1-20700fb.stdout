@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -57,6 +58,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b2:
                                 (Variable
@@ -87,6 +89,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b3:
                                 (Variable
@@ -119,6 +122,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             d:
                                 (Variable
@@ -142,6 +146,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             e:
                                 (Variable
@@ -170,6 +175,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             e2:
                                 (Variable
@@ -200,6 +206,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             e3:
                                 (Variable
@@ -232,6 +239,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f:
                                 (Variable
@@ -255,6 +263,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             g:
                                 (Variable
@@ -283,6 +292,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             g2:
                                 (Variable
@@ -313,6 +323,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             g3:
                                 (Variable
@@ -345,6 +356,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     array1

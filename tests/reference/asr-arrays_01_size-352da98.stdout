@@ -34,6 +34,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -62,6 +63,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i:
                                 (Variable
@@ -85,6 +87,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             size_a:
                                 (Variable
@@ -108,6 +111,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             size_b:
                                 (Variable
@@ -131,6 +135,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     arrays_01

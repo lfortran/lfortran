@@ -44,6 +44,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             custom_div:
                                 (ExternalSymbol
@@ -169,6 +170,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -192,6 +194,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             res:
                                                 (Variable
@@ -220,6 +223,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     custom_div
@@ -313,6 +317,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     custom_int

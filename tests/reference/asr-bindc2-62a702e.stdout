@@ -59,6 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             newshape:
                                 (Variable
@@ -87,6 +88,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             queries:
                                 (Variable
@@ -110,6 +112,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -142,6 +145,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             xv:
                                 (Variable
@@ -172,6 +176,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     bindc2

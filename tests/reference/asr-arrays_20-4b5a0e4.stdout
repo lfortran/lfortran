@@ -36,6 +36,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             list_integer:
                                 (Variable
@@ -66,6 +67,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             list_logical:
                                 (Variable
@@ -96,6 +98,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     arrays_20

@@ -41,4 +41,5 @@ program associate_16
     print *, test
 
     if (test /= 2) error stop
+    deallocate(map % inverse(1) % target)
 end program

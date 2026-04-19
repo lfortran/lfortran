@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -164,6 +165,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -187,6 +189,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     to_negative~genericprocedure

@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             c:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             lhs:
                                 (Variable
@@ -103,6 +106,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             r1:
                                 (Variable
@@ -131,6 +135,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             rhs:
                                 (Variable
@@ -159,6 +164,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     transfer_09

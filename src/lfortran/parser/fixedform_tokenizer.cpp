@@ -276,6 +276,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
 const std::vector<std::string> declarators{
             "integer*",
             "integer",
+            "parameter",
 	    "real*",
             "real",
 	    "complex*",
@@ -906,9 +907,33 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    // Check if the line starting at `cur` is an assignment to a variable
+    // whose name starts with an IO keyword (e.g., PRINTP = 1 in fixed-form
+    // becomes printp=1 after prescanning). Returns true if there is a '='
+    // (not '==') before any ',' at parenthesis depth 0, indicating an
+    // assignment rather than an IO statement.
+    bool is_io_keyword_assignment(unsigned char *p) {
+        if (*p == '=' && *(p+1) != '=') return true;
+        if (!is_char(*p) && !is_digit(*p) && *p != '_') return false;
+        int depth = 0;
+        while (*p != '\n' && *p != '\0') {
+            if (*p == '(') depth++;
+            else if (*p == ')') depth--;
+            else if (depth == 0) {
+                if (*p == '=' && *(p+1) != '=') return true;
+                if (*p == ',') return false;
+            }
+            p++;
+        }
+        return false;
+    }
+
     bool lex_io(unsigned char *&cur) {
         for(const auto &io_str: io_names) {
             if (next_is(cur, io_str)) {
+                if (is_io_keyword_assignment(cur + io_str.size())) {
+                    return false;
+                }
                 if (io_str == "format") {
                     unsigned char *format_start = cur;
                     cur += io_str.size();
@@ -979,7 +1004,9 @@ struct FixedFormRecursiveDescent {
                         };
                         if (*cur != ')') {
                             // Missing right parenthesis
-                            return false;
+                            // Return true here because it is still a subroutine call starting with the "call" keyword.
+                            // We report the error later in the parser.
+                            return true;
                         }
                         cur++;
                     }
@@ -990,6 +1017,9 @@ struct FixedFormRecursiveDescent {
                 if (next_is_eol(cur) || *cur == ';') {
                     return true;
                 }
+                // Return true here because it is still a subroutine call starting with the "call" keyword.
+                // We report the error later in the parser.
+                return true;
             }
         }
         return false;
@@ -1066,16 +1096,24 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (is_do_loop(cur)) {
+            lex_do(cur);
+            return true;
+        }
+
+        // assignment
+        // TODO: this is fragile
+        if (is_possible_assignment(cur, cur)) {
+            tokenize_line(cur);
+            return true;
+        }
+
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
             lex_cond(cur);
             return true;
         }
         unsigned char *nline = cur; next_line(nline);
-        if (is_do_loop(cur)) {
-            lex_do(cur);
-            return true;
-        }
 
         if (next_is(cur, "doconcurrent(")) {
             lex_do_concurrent(cur);
@@ -1099,13 +1137,6 @@ struct FixedFormRecursiveDescent {
 
         if (is_function_call(cur)) {
             push_token_advance(cur, "call");
-            tokenize_line(cur);
-            return true;
-        }
-
-        // assignment
-        // TODO: this is fragile
-        if (contains(cur, nline, '=')) {
             tokenize_line(cur);
             return true;
         }
@@ -1560,7 +1591,12 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "rank");
         tokenize_line(cur); // tokenize rest of line where `select rank` starts
         while (!next_is(cur, "endselect\n")) {
-            tokenize_line(cur);
+            if (next_is(cur, "rank")) {
+                push_token_advance(cur, "rank");
+                tokenize_line(cur);
+            } else {
+                lex_body_statement(cur);
+            }
         }
         push_token_advance(cur, "endselect");
         tokenize_line(cur);
@@ -1576,8 +1612,11 @@ struct FixedFormRecursiveDescent {
                 push_token_advance(cur, "case");
                 push_token_advance(cur, "default");
                 tokenize_line(cur);
-            } else {
+            } else if (next_is(cur, "case")) {
+                push_token_advance(cur, "case");
                 tokenize_line(cur);
+            } else {
+                lex_body_statement(cur);
             }
         }
         push_token_advance(cur, "endselect");

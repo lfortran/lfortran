@@ -44,6 +44,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     base
@@ -94,6 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i:
                                 (Variable
@@ -117,6 +119,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             struct_from:
                                 (Variable
@@ -147,6 +150,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             struct_from2:
                                 (Variable
@@ -182,6 +186,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             struct_from3:
                                 (Variable
@@ -212,6 +217,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             struct_to:
                                 (Variable
@@ -242,6 +248,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             struct_to2:
                                 (Variable
@@ -277,6 +284,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             struct_to3:
                                 (Variable
@@ -307,6 +315,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             to:
                                 (Variable
@@ -337,6 +346,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             toml_value:
                                 (Struct
@@ -365,6 +375,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     toml_value

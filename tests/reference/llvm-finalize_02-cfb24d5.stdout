@@ -2,8 +2,8 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%array.1.1 = type { %string_descriptor*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %string_descriptor = type <{ i8*, i64 }>
+%array.1.1 = type { %string_descriptor*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
 %array.1.0 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %array.1 = type { %finalize_02.tt*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
@@ -32,8 +32,12 @@ define void @ss(i32* %nang) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = call i8* @_lfortran_get_default_allocator()
+  %arr_desc_str_desc5 = alloca %string_descriptor, align 8
   %arr_desc4 = alloca %array.1.1, align 8
+  %arr_07 = alloca %string_descriptor, align 8
   %arr_desc3 = alloca %array.1.0, align 8
+  %arr_05 = alloca %string_descriptor, align 8
+  %arr_desc_str_desc = alloca %string_descriptor, align 8
   %arr_desc2 = alloca %array.1.1, align 8
   %arr_desc1 = alloca %array.1.0, align 8
   %arr_desc = alloca %array.1, align 8
@@ -73,7 +77,6 @@ define void @ss(i32* %nang) {
   store i32* null, i32** %arr_03, align 8
   %arr_04 = alloca %array.1.1*, align 8
   store %array.1.1* null, %array.1.1** %arr_04, align 8
-  %arr_desc_str_desc = alloca %string_descriptor, align 8
   %18 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 0
   store i8* null, i8** %18, align 8
   %19 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc, i32 0, i32 1
@@ -92,7 +95,6 @@ define void @ss(i32* %nang) {
   %27 = getelementptr %array.1.1, %array.1.1* %arr_desc2, i32 0, i32 3
   store i8 1, i8* %27, align 1
   store %array.1.1* %arr_desc2, %array.1.1** %arr_04, align 8
-  %arr_05 = alloca %string_descriptor, align 8
   %28 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
   store i8* null, i8** %28, align 8
   %29 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 1
@@ -119,11 +121,9 @@ define void @ss(i32* %nang) {
   %41 = getelementptr %array.1.0, %array.1.0* %arr_desc3, i32 0, i32 0
   store i32* null, i32** %41, align 8
   store %array.1.0* %arr_desc3, %array.1.0** %arr_06, align 8
-  %arr_07 = alloca %string_descriptor, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %arr_07, align 1
   %arr_08 = alloca %array.1.1*, align 8
   store %array.1.1* null, %array.1.1** %arr_08, align 8
-  %arr_desc_str_desc5 = alloca %string_descriptor, align 8
   %42 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 0
   store i8* null, i8** %42, align 8
   %43 = getelementptr %string_descriptor, %string_descriptor* %arr_desc_str_desc5, i32 0, i32 1
@@ -184,27 +184,49 @@ Finalize_Variable_arr_05:                         ; preds = %Finalize_Variable_a
   %65 = getelementptr %string_descriptor, %string_descriptor* %arr_05, i32 0, i32 0
   %66 = load i8*, i8** %65, align 8
   call void @_lfortran_free_alloc(i8* %0, i8* %66)
+  %67 = ptrtoint %string_descriptor* %arr_05 to i64
+  %68 = icmp ne i64 %67, 0
+  br i1 %68, label %then, label %else
+
+then:                                             ; preds = %Finalize_Variable_arr_05
+  br label %ifcont
+
+else:                                             ; preds = %Finalize_Variable_arr_05
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   br label %Finalize_Variable_arr_06
 
-Finalize_Variable_arr_06:                         ; preds = %Finalize_Variable_arr_05
-  %67 = load %array.1.0*, %array.1.0** %arr_06, align 8
-  call void @finalize_allocatable__Array_1_i32(%array.1.0* %67)
+Finalize_Variable_arr_06:                         ; preds = %ifcont
+  %69 = load %array.1.0*, %array.1.0** %arr_06, align 8
+  call void @finalize_allocatable__Array_1_i32(%array.1.0* %69)
   br label %Finalize_Variable_arr_07
 
 Finalize_Variable_arr_07:                         ; preds = %Finalize_Variable_arr_06
-  %68 = getelementptr %string_descriptor, %string_descriptor* %arr_07, i32 0, i32 0
-  %69 = load i8*, i8** %68, align 8
-  call void @_lfortran_free_alloc(i8* %0, i8* %69)
+  %70 = getelementptr %string_descriptor, %string_descriptor* %arr_07, i32 0, i32 0
+  %71 = load i8*, i8** %70, align 8
+  call void @_lfortran_free_alloc(i8* %0, i8* %71)
   br label %Finalize_Variable_arr_08
 
 Finalize_Variable_arr_08:                         ; preds = %Finalize_Variable_arr_07
-  %70 = load %array.1.1*, %array.1.1** %arr_08, align 8
-  call void @finalize_allocatable__Array_1_str(%array.1.1* %70)
+  %72 = load %array.1.1*, %array.1.1** %arr_08, align 8
+  call void @finalize_allocatable__Array_1_str(%array.1.1* %72)
   br label %Finalize_Variable_arr_09
 
 Finalize_Variable_arr_09:                         ; preds = %Finalize_Variable_arr_08
-  %71 = bitcast i32* %59 to i8*
-  call void @_lfortran_free_alloc(i8* %0, i8* %71)
+  %73 = ptrtoint i32* %59 to i64
+  %74 = icmp ne i64 %73, 0
+  br i1 %74, label %then6, label %else7
+
+then6:                                            ; preds = %Finalize_Variable_arr_09
+  %75 = bitcast i32* %59 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %75)
+  br label %ifcont8
+
+else7:                                            ; preds = %Finalize_Variable_arr_09
+  br label %ifcont8
+
+ifcont8:                                          ; preds = %else7, %then6
   ret void
 }
 
@@ -277,8 +299,19 @@ is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
 is_allocated.ifcont:                              ; preds = %is_allocated.else, %loop.end
-  %22 = bitcast %finalize_02.tt* %5 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %22)
+  %22 = ptrtoint %finalize_02.tt* %5 to i64
+  %23 = icmp ne i64 %22, 0
+  br i1 %23, label %then, label %else
+
+then:                                             ; preds = %is_allocated.ifcont
+  %24 = bitcast %finalize_02.tt* %5 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %24)
+  br label %ifcont
+
+else:                                             ; preds = %is_allocated.ifcont
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   ret void
 }
 
@@ -327,8 +360,19 @@ entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = getelementptr %array.1.0, %array.1.0* %0, i32 0, i32 0
   %3 = load i32*, i32** %2, align 8
-  %4 = bitcast i32* %3 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %4)
+  %4 = ptrtoint i32* %3 to i64
+  %5 = icmp ne i64 %4, 0
+  br i1 %5, label %then, label %else
+
+then:                                             ; preds = %entry
+  %6 = bitcast i32* %3 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   ret void
 }
 
@@ -356,6 +400,17 @@ entry:
   %4 = getelementptr %string_descriptor, %string_descriptor* %3, i32 0, i32 0
   %5 = load i8*, i8** %4, align 8
   call void @_lfortran_free_alloc(i8* %1, i8* %5)
+  %6 = ptrtoint %string_descriptor* %3 to i64
+  %7 = icmp ne i64 %6, 0
+  br i1 %7, label %then, label %else
+
+then:                                             ; preds = %entry
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   ret void
 }
 

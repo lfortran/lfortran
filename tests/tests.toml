@@ -1568,6 +1568,14 @@ filename = "errors/allocate_01.f90"
 run = true
 
 [[test]]
+filename = "errors/allocate_02.f90"
+run = true
+
+[[test]]
+filename = "errors/allocate_03.f90"
+run = true
+
+[[test]]
 filename = "errors/allocated_04.f90"
 run = true
 
@@ -3299,6 +3307,10 @@ filename = "errors/continue_compilation_3.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_coarrays.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_ff_1.f"
 fixed_form_cc_asr = true
 
@@ -3320,6 +3332,10 @@ continue_compilation = true
 
 [[test]]
 filename = "../integration_tests/realloc_lhs_20.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_22.f90"
 run = true
 
 [[test]]
@@ -5085,6 +5101,14 @@ options = "--infer"
 filename = "errors/infer_realloc_disabled_01.f90"
 run = true
 options = "--infer"
+
+[[test]]
+filename = "../integration_tests/allocatable_component_reshape_unallocated_01.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/allocatable_component_unnamed_unallocated_01.f90"
+run = true
 
 [[test]]
 filename = "infer_first_assignment_01.f90"

@@ -6,7 +6,7 @@ target datalayout = "..."
 %"~unlimited_polymorphic_type" = type <{ i32 (...)**, i8* }>
 
 @_Type_Info_integer_8 = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* inttoptr (i32 8 to i8*), i8* inttoptr (i64 8 to i8*), i8* null }, align 8
-@_VTable_integer_8 = linkonce_odr unnamed_addr constant { [4 x i8*] } { [4 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_integer_8 to i8*), i8* bitcast (void (i8*, i8*)* @_copy_integer_8 to i8*), i8* bitcast (void (i8**)* @_allocate_integer_8 to i8*)] }, align 8
+@_VTable_integer_8 = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_integer_8 to i8*), i8* bitcast (void (i8*, i8*)* @_copy_integer_8 to i8*), i8* bitcast (void (i8**)* @_allocate_integer_8 to i8*), i8* bitcast (void (i8*)* @finalize_i64_for_UPoly to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [10 x i8] c"integer(8)"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([10 x i8], [10 x i8]* @string_const_data, i32 0, i32 0), i64 10 }>
@@ -47,7 +47,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = load i8*, i8** %8, align 8
   %10 = bitcast i8* %9 to i64*
   %11 = bitcast %"~unlimited_polymorphic_type"* %6 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %11, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %11, align 8
   %12 = load i64, i64* %x, align 8
   store i64 %12, i64* %10, align 8
   %13 = alloca i1, align 1
@@ -185,12 +185,18 @@ entry:
   store i8* %2, i8** %0, align 8
   %3 = bitcast i8* %2 to <{ i32 (...)**, i8* }>*
   %4 = bitcast <{ i32 (...)**, i8* }>* %3 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [4 x i8*] }, { [4 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_integer_8, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
   %5 = call i8* @_lfortran_get_default_allocator()
   %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 8)
   call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 8, i1 false)
   %7 = getelementptr <{ i32 (...)**, i8* }>, <{ i32 (...)**, i8* }>* %3, i32 0, i32 1
   store i8* %6, i8** %7, align 8
+  ret void
+}
+
+define internal void @finalize_i64_for_UPoly(i8* %0) {
+entry:
+  %1 = bitcast i8* %0 to i64*
   ret void
 }
 
@@ -211,60 +217,42 @@ entry:
   br i1 %2, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
-  %3 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 0
-  %4 = load i32 (...)**, i32 (...)*** %3, align 8
-  %5 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 1
-  %6 = load i8*, i8** %5, align 8
-  %7 = icmp ne i8* %6, null
-  br i1 %7, label %then, label %else5
-
-then:                                             ; preds = %is_allocated.then
-  %8 = bitcast i32 (...)** %4 to i8**
-  %9 = getelementptr inbounds i8*, i8** %8, i64 -1
-  %10 = load i8*, i8** %9, align 8
-  %11 = bitcast i8* %10 to { i8*, i8* }*
-  %12 = getelementptr { i8*, i8* }, { i8*, i8* }* %11, i32 0, i32 0
-  %13 = load i8*, i8** %12, align 8
-  %14 = ptrtoint i8* %13 to i32
-  %15 = icmp eq i32 %14, 5
-  br i1 %15, label %then1, label %else3
-
-then1:                                            ; preds = %then
-  %16 = bitcast i8* %6 to %string_descriptor*
-  %17 = getelementptr %string_descriptor, %string_descriptor* %16, i32 0, i32 0
-  %18 = load i8*, i8** %17, align 8
-  %19 = icmp ne i8* %18, null
-  br i1 %19, label %then2, label %else
-
-then2:                                            ; preds = %then1
-  call void @_lfortran_free_alloc(i8* %1, i8* %18)
-  br label %ifcont
-
-else:                                             ; preds = %then1
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then2
-  br label %ifcont4
-
-else3:                                            ; preds = %then
-  br label %ifcont4
-
-ifcont4:                                          ; preds = %else3, %ifcont
-  call void @_lfortran_free_alloc(i8* %1, i8* %6)
-  br label %ifcont6
-
-else5:                                            ; preds = %is_allocated.then
-  br label %ifcont6
-
-ifcont6:                                          ; preds = %else5, %ifcont4
-  %20 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %20)
+  call void @"finalize_StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %0)
+  %3 = bitcast %"~unlimited_polymorphic_type"* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %3)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %ifcont6
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+  ret void
+}
+
+define internal void @"finalize_StructType_Class__~unlimited_polymorphic_type"(%"~unlimited_polymorphic_type"* %0) {
+entry:
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 0
+  %3 = load i32 (...)**, i32 (...)*** %2, align 8
+  %4 = icmp ne i32 (...)** %3, null
+  br i1 %4, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  %5 = getelementptr inbounds i32 (...)*, i32 (...)** %3, i32 2
+  %6 = load i8*, i32 (...)** %5, align 8
+  %7 = bitcast i8* %6 to void (i8*)*
+  %8 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 1
+  %9 = load i8*, i8** %8, align 8
+  call void %7(i8* %9)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+  %10 = getelementptr %"~unlimited_polymorphic_type", %"~unlimited_polymorphic_type"* %0, i32 0, i32 1
+  %11 = load i8*, i8** %10, align 8
+  call void @_lfortran_free_alloc(i8* %1, i8* %11)
   ret void
 }
 

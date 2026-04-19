@@ -499,6 +499,77 @@ public:
         }
 };
 
+// Replaces BitCast (transfer) nodes that return arrays with temporary variables
+class BitCastArrayReplacer: public ASR::BaseExprReplacer<BitCastArrayReplacer> {
+    public:
+
+    Allocator& al;
+    SymbolTable* current_scope;
+    Vec<ASR::stmt_t*> bc_stmts;
+
+    BitCastArrayReplacer(Allocator& al_):
+        al(al_), current_scope(nullptr) {
+        bc_stmts.n = 0;
+    }
+
+    void replace_BitCast(ASR::BitCast_t* x) {
+        if( !ASRUtils::is_array(x->m_type) ) {
+            return ;
+        }
+        // Create a temporary variable with the BitCast's result type
+        const Location& loc = x->base.base.loc;
+        std::string tmp_name = current_scope->get_unique_name(
+            "__libasr_bitcast_tmp_");
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(
+                al, loc, current_scope, s2c(al, tmp_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, x->m_type, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(tmp_name, tmp_sym);
+        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+
+        // Create assignment: tmp = BitCast(...)
+        ASR::expr_t* bitcast_expr = ASRUtils::EXPR((ASR::asr_t*)x);
+        bc_stmts.push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(
+                al, loc, tmp_var, bitcast_expr, nullptr, false, false)));
+
+        // Replace the BitCast in the expression with the temporary
+        *current_expr = tmp_var;
+    }
+};
+
+class BitCastArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<BitCastArrayVisitor> {
+    private:
+
+    BitCastArrayReplacer replacer;
+
+    public:
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+    BitCastArrayVisitor(Allocator& al_):
+        replacer(al_) {}
+
+    void set_scope(SymbolTable* scope) {
+        replacer.current_scope = scope;
+    }
+
+    Vec<ASR::stmt_t*>& get_bc_stmts() {
+        return replacer.bc_stmts;
+    }
+
+    void init_bc_stmts() {
+        replacer.bc_stmts.n = 0;
+        replacer.bc_stmts.reserve(replacer.al, 1);
+    }
+};
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -1505,6 +1576,42 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             current_expr = current_expr_copy;
             replacer.result_expr = nullptr;
             return ;
+        }
+
+        // Pre-evaluate any BitCast (transfer) nodes with array results
+        // that are nested inside the value expression. BitCast is a
+        // whole-array operation and must not be expanded element-wise.
+        // We materialize them into temporaries before the loop so that
+        // the loop can index into the temporary instead.
+        // Skip when the value IS a BitCast directly — that case is
+        // handled specially below.
+        if (!ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
+            BitCastArrayVisitor bc_visitor(al);
+            bc_visitor.set_scope(current_scope);
+            bc_visitor.init_bc_stmts();
+            bc_visitor.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
+            bc_visitor.call_replacer();
+            // Lower each `tmp = BitCast(...)` assignment through visit_stmt
+            // so it goes through the full array_op lowering (element-wise
+            // loop expansion for char BitCast, memcpy for mismatched sizes, etc.)
+            Vec<ASR::stmt_t*>& bc_stmts = bc_visitor.get_bc_stmts();
+            for (size_t i = 0; i < bc_stmts.size(); i++) {
+                Vec<ASR::stmt_t*> saved_pass_result;
+                saved_pass_result.from_pointer_n_copy(al,
+                    pass_result.p, pass_result.size());
+                pass_result.n = 0;
+                pass_result.reserve(al, 1);
+                visit_stmt(*bc_stmts[i]);
+                if (pass_result.size() > 0) {
+                    for (size_t j = 0; j < pass_result.size(); j++) {
+                        saved_pass_result.push_back(al, pass_result[j]);
+                    }
+                } else {
+                    saved_pass_result.push_back(al, bc_stmts[i]);
+                }
+                pass_result.from_pointer_n_copy(al,
+                    saved_pass_result.p, saved_pass_result.size());
+            }
         }
 
         Vec<ASR::expr_t**> vars;

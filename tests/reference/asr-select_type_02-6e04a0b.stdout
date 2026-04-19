@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             y:
                                                 (Variable
@@ -57,6 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     point
@@ -160,6 +162,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     color_point
@@ -208,6 +211,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             p:
                                 (Variable
@@ -237,6 +241,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             p3d:
                                 (Variable
@@ -265,6 +270,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             p_or_cp:
                                 (Variable
@@ -296,6 +302,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             point:
                                 (ExternalSymbol
@@ -334,6 +341,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     point_3d
@@ -410,6 +418,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     ~select_type_block_
@@ -522,6 +531,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     ~select_type_block_1

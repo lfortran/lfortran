@@ -1537,7 +1537,7 @@ public:
                 nullptr, ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false, 
                 false, false, nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr));
+                ASR::pass_attrType::NotMethod, nullptr, 0));
                 current_scope->add_symbol(fmt_string_name, fmt_string_sym);
                 ASR::expr_t* fmt_string_var = ASRUtils::EXPR(ASR::make_Var_t(
                     al, a_fmt->base.loc, fmt_string_sym));
@@ -1559,7 +1559,7 @@ public:
                     current_scope, s2c(al, loop_var), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, int_type, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false, false, false, nullptr,
-                    false, false, ASR::pass_attrType::NotMethod, nullptr));
+                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0));
                 current_scope->add_symbol(loop_var, loop_var_sym);
                 ASR::expr_t* loop_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, a_fmt->base.loc, loop_var_sym));
 
@@ -1882,29 +1882,34 @@ public:
                     a_advance = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, a_advance->base.loc,
                         static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim),
                         trim_arg.p, trim_arg.n, 0, ASRUtils::expr_type(a_advance), nullptr));
-                    ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, 1,
-                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 3,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                        ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::DescriptorString));
-                    ASR::expr_t *yes = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                        al, loc, s2c(al, "yes"), str_type_len_3));
-                    // TODO: Support case insensitive compare
-                    ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
-                        al, loc, compiler_options.po.default_integer_kind));
-                    ASR::expr_t *test = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
-                        loc, adv_val_expr, ASR::cmpopType::Eq, yes, cmp_type, nullptr));
-                    Vec<ASR::stmt_t*> body;
-                    body.reserve(al, 1);
-                    body.push_back(al, ASRUtils::STMT(
-                        ASR::make_FileWrite_t(al, loc, 0, a_unit,
-                        nullptr, nullptr, nullptr,
-                        nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr)));
-                    // TODO: Compare with "no" (case-insensitive) in else part
-                    // Throw runtime error if advance expression does not match "no"
-                    newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
-                            body.size(), nullptr, 0));
+                    if (_type == AST::stmtType::Write) {
+                        ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
+                            al, loc, 1,
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 3,
+                                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                            ASR::string_length_kindType::ExpressionLength,
+                            ASR::string_physical_typeType::DescriptorString));
+                        ASR::expr_t *yes_lower = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                            al, loc, s2c(al, "yes"), str_type_len_3));
+                        ASR::expr_t *yes_upper = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                            al, loc, s2c(al, "YES"), str_type_len_3));
+                        ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
+                            al, loc, compiler_options.po.default_integer_kind));
+                        ASR::expr_t *test_lower = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                            loc, a_advance, ASR::cmpopType::Eq, yes_lower, cmp_type, nullptr));
+                        ASR::expr_t *test_upper = ASRUtils::EXPR(ASR::make_StringCompare_t(al,
+                            loc, a_advance, ASR::cmpopType::Eq, yes_upper, cmp_type, nullptr));
+                        ASR::expr_t *test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                            loc, test_lower, ASR::logicalbinopType::Or, test_upper, cmp_type, nullptr));
+                        Vec<ASR::stmt_t*> body;
+                        body.reserve(al, 1);
+                        body.push_back(al, ASRUtils::STMT(
+                            ASR::make_FileWrite_t(al, loc, 0, a_unit,
+                            nullptr, nullptr, nullptr,
+                            nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr)));
+                        newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
+                                body.size(), nullptr, 0));
+                    }
                     a_end = empty;
                 }
             } else if (m_arg_str == "end") {
@@ -2469,12 +2474,12 @@ public:
 
     void visit_Rewind(const AST::Rewind_t& x) {
         mark_IO_side_effect();
-        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }, {"iomsg", 3}};
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Rewind";
-        fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
-        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
-        tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+        fill_args_for_rewind_inquire_flush(x, 4, args, 4, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2], *iomsg = args[3];
+        tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err, iomsg);
     }
 
     void visit_Endfile(const AST::Endfile_t& x) {
@@ -5993,12 +5998,24 @@ public:
                         throw SemanticAbort();
                 }
             }
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type)) &&
+                !ASRUtils::check_class_assignment_compatibility(target, value)) {
+                std::string ltype_extracted = ASRUtils::type_to_str_fortran_expr(
+                    ASRUtils::extract_type(ASRUtils::expr_type(target)), target);
+                diag.semantic_error_label(
+                    "Type mismatch in assignment, the types must be compatible",
+                    {target->base.loc, value->base.loc},
+                    "type mismatch (" + ltype_extracted + " and " + rtype + ")"
+                );
+                throw SemanticAbort();
+            }
             if (ASRUtils::is_array(ASRUtils::expr_type(value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(target))) {
                     diag.semantic_error_label(
                         "Type mismatch in assignment, the types must be compatible",
                         {target->base.loc, value->base.loc},
-                        "type mismatch (" + ltype + " and " + rtype + ")"
+                        "type mismatch (`" + ltype + "` and `" + rtype + "`)"
                     );
                     throw SemanticAbort();
             }
@@ -7085,6 +7102,7 @@ public:
                     }
                     final_sym=original_sym;
                     original_sym = nullptr;
+                    legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 }
                 break;
             }
@@ -7358,7 +7376,7 @@ public:
                                                     nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                     nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                    ASR::pass_attrType::NotMethod, nullptr));
+                                                    ASR::pass_attrType::NotMethod, nullptr, 0));
                                             passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                             new_args.push_back(al, ASRUtils::EXPR(
                                                 ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -7458,7 +7476,7 @@ public:
                                             nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                             nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                             ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                            ASR::pass_attrType::NotMethod, nullptr));
+                                            ASR::pass_attrType::NotMethod, nullptr, 0));
                                     param_func->m_symtab->add_symbol(arg_name, arg_sym);
                                     new_args.push_back(al, ASRUtils::EXPR(
                                         ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -7490,7 +7508,7 @@ public:
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                 nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                ASR::pass_attrType::NotMethod, nullptr));
+                                                ASR::pass_attrType::NotMethod, nullptr, 0));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                         new_args.push_back(al, ASRUtils::EXPR(
                                             ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -9012,7 +9030,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                 nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                ASR::pass_attrType::NotMethod, nullptr));
+                                                ASR::pass_attrType::NotMethod, nullptr, 0));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                         new_args.push_back(al, ASRUtils::EXPR(
                                             ASR::make_Var_t(al, call->base.base.loc, arg_sym)));

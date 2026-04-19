@@ -1,0 +1,5 @@
+runtime error: allocate with source= requires an allocated/associated polymorphic source expression
+ --> tests/errors/allocate_02.f90:7:4
+  |
+7 |    allocate(obj, source = get_return())
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source expression is not allocated/associated

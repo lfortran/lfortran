@@ -38,6 +38,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             w:
                                 (Variable
@@ -74,6 +75,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             w_ceil:
                                 (Variable
@@ -97,6 +99,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -126,6 +129,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x_ceil:
                                 (Variable
@@ -149,6 +153,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y:
                                 (Variable
@@ -185,6 +190,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y_ceil:
                                 (Variable
@@ -208,6 +214,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             z:
                                 (Variable
@@ -237,6 +244,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             z_ceil:
                                 (Variable
@@ -260,6 +268,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     intrinsics_31
