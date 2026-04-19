@@ -75,7 +75,30 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
+            ASR::ttype_t* arg_t = ASRUtils::expr_type(x->m_args[i]);
+            ASR::ttype_t* inner = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(arg_t)));
+            if (ASR::is_a<ASR::String_t>(*inner)) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(inner);
+                if (str_t->m_len_kind == ASR::string_length_kindType::ExpressionLength
+                        && str_t->m_len != nullptr
+                        && !ASRUtils::is_value_constant(str_t->m_len)) {
+                    ASR::ttype_t* new_str = ASRUtils::TYPE(ASR::make_String_t(al,
+                        str_t->base.base.loc, str_t->m_kind, nullptr,
+                        ASR::string_length_kindType::AssumedLength,
+                        str_t->m_physical_type));
+                    if (arg_t == inner) {
+                        arg_t = new_str;
+                    } else if (ASR::is_a<ASR::Array_t>(*arg_t)) {
+                        ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(arg_t);
+                        arg_t = ASRUtils::TYPE(ASR::make_Array_t(al,
+                            arr_t->base.base.loc, new_str,
+                            arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type));
+                    }
+                }
+            }
+            arg_types.push_back(al, arg_t);
         }
         ASR::ttype_t* type = nullptr;
         type = ASRUtils::extract_type(x->m_type);
@@ -87,7 +110,8 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
-        std::string intrinsic_name_ = std::string(ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id));
+        std::string intrinsic_name_ = std::string(ASRUtils::get_array_intrinsic_name(
+            x->m_arr_intrinsic_id));
         if (x->m_value) {
             *current_expr = x->m_value;
             return;
@@ -116,7 +140,30 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
+            ASR::ttype_t* arg_t = ASRUtils::expr_type(x->m_args[i]);
+            ASR::ttype_t* inner = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(arg_t)));
+            if (ASR::is_a<ASR::String_t>(*inner)) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(inner);
+                if (str_t->m_len_kind == ASR::string_length_kindType::ExpressionLength
+                        && str_t->m_len != nullptr
+                        && !ASRUtils::is_value_constant(str_t->m_len)) {
+                    ASR::ttype_t* new_str = ASRUtils::TYPE(ASR::make_String_t(al,
+                        str_t->base.base.loc, str_t->m_kind, nullptr,
+                        ASR::string_length_kindType::AssumedLength,
+                        str_t->m_physical_type));
+                    if (arg_t == inner) {
+                        arg_t = new_str;
+                    } else if (ASR::is_a<ASR::Array_t>(*arg_t)) {
+                        ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(arg_t);
+                        arg_t = ASRUtils::TYPE(ASR::make_Array_t(al,
+                            arr_t->base.base.loc, new_str,
+                            arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type));
+                    }
+                }
+            }
+            arg_types.push_back(al, arg_t);
         }
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             global_scope, arg_types, x->m_type, new_args, x->m_overload_id, index_kind);

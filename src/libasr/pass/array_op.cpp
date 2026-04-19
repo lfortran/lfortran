@@ -273,6 +273,28 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     }
 };
 
+class CleanupDegenerateArraySection: public ASR::BaseExprReplacer<CleanupDegenerateArraySection> {
+    public:
+    Allocator& al;
+    CleanupDegenerateArraySection(Allocator& al_): al(al_) {}
+
+    void replace_ArraySection(ASR::ArraySection_t* x) {
+        ASR::BaseExprReplacer<CleanupDegenerateArraySection>::replace_ArraySection(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x->m_v))) {
+            *current_expr = x->m_v;
+        }
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        ASR::BaseExprReplacer<CleanupDegenerateArraySection>::replace_StructInstanceMember(x);
+        if (ASRUtils::is_array(x->m_type) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x->m_v)) &&
+            !ASRUtils::is_array(ASRUtils::symbol_type(x->m_m))) {
+            x->m_type = ASRUtils::extract_type(x->m_type);
+        }
+    }
+};
+
 class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     private:
@@ -1142,6 +1164,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
 
         for( size_t i = 0; i < vars.size(); i++ ) {
+            if (var_ranks[i] == 0) continue;
             Vec<ASR::array_index_t> indices;
             indices.reserve(al, var_ranks[i]);
             for( size_t j = 0; j < var_ranks[i]; j++ ) {
@@ -1163,6 +1186,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         for( size_t i = 0; i < fix_types_args.size(); i++ ) {
             array_broadcast_visitor.current_expr = fix_types_args[i];
             array_broadcast_visitor.call_replacer();
+        }
+
+        CleanupDegenerateArraySection cleanup(al);
+        for( size_t i = 0; i < fix_types_args.size(); i++ ) {
+            cleanup.current_expr = fix_types_args[i];
+            cleanup.replace_expr(*fix_types_args[i]);
         }
 
         FixTypeVisitor fix_types(al);
@@ -1445,6 +1474,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 if (x.m_args[i].m_type != nullptr) {
                     continue;
                 }
+                if (ASRUtils::is_assumed_rank_array(
+                        ASRUtils::expr_type(x.m_args[i].m_a))) {
+                    continue;
+                }
                 ASRUtils::ExprStmtDuplicator duplicator(al);
                 ASR::expr_t* source_copy = duplicator.duplicate_expr(xx.m_source);
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
@@ -1537,12 +1570,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
             return ;
         }
-        bool is_target_assumed_rank = (ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_target) && 
-            ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_target)->m_old == ASR::array_physical_typeType::AssumedRankArray) 
-            || ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_target));
-        bool is_value_assumed_rank = (ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_value) && 
-            ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_value)->m_old == ASR::array_physical_typeType::AssumedRankArray)
-            || ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_value));
+        bool target_has_apc_from_assumed = ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_target) &&
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_target)->m_old == ASR::array_physical_typeType::AssumedRankArray;
+        bool value_has_apc_from_assumed = ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_value) &&
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_value)->m_old == ASR::array_physical_typeType::AssumedRankArray;
+        bool is_target_truly_assumed_rank = ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_target));
+        bool is_value_truly_assumed_rank = ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_value));
+        bool is_target_assumed_rank = target_has_apc_from_assumed || is_target_truly_assumed_rank;
+        bool is_value_assumed_rank = value_has_apc_from_assumed || is_value_truly_assumed_rank;
         xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
         const Location loc = x.base.base.loc;
 
@@ -1736,6 +1771,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     return;
                 }
             }
+        }
+
+        if (is_target_truly_assumed_rank || is_value_truly_assumed_rank) {
+            pass_result.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+            return;
         }
 
         Vec<ASR::expr_t**> fix_type_args;
