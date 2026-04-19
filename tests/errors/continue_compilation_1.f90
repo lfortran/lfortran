@@ -647,7 +647,7 @@ program continue_compilation_1
     type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
     a(1) = .true.
     derived_cls = base_var
-
+    call print_len_non_char("  Hello World  ")
 
 
 
@@ -688,4 +688,13 @@ program continue_compilation_1
         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
         if (abs(arr1)(1) /= 2471095) error stop
     end subroutine
+
+    subroutine print_len_non_char(generic)
+        implicit none
+        class(*), intent(in) :: generic
+        integer :: a
+        a = 5
+        print *, len(generic)
+        print *, len(a)
+    end subroutine print_len_non_char
 end program

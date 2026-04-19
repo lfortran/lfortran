@@ -12393,6 +12393,12 @@ public:
 
     ASR::asr_t* create_StringLen_from_expr(ASR::expr_t* v, ASR::ttype_t* type, const Location& loc) {
         ASR::expr_t* len_compiletime = nullptr;
+        if( !ASRUtils::is_character(*ASRUtils::expr_type(v)) ) {
+            diag.add(Diagnostic(
+                "Unexpected args, Len expects (char) as arguments",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
         if( ASRUtils::is_array(ASRUtils::expr_type(v)) ) {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(v)));
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
