@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __do_loop_inc1:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __do_loop_inc2:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             j:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             k:
                                 (Variable
@@ -144,6 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     doloop_04

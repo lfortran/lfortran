@@ -76,5 +76,6 @@ tdata%n = 5
 call a_func(c_funloc(lcompilers_initialise_array))
 call b_func(c_funloc(b_func_fortran))
 call c_func(c_loc(a))
+deallocate(a)
 
 end program bindc_04

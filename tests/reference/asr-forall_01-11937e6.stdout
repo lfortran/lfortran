@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ivec:
                                 (Variable
@@ -57,6 +58,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     forall_01

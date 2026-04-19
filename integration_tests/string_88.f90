@@ -11,4 +11,5 @@ program string_88
   if (len(list1) /= 23) error stop
   if (len(list2) /= 23) error stop
   if (len(list3) /= 23) error stop
+  deallocate(list3)
 end program string_88

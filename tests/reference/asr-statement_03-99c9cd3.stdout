@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             dg:
                                 (Function
@@ -57,6 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -80,6 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     dg

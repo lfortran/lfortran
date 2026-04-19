@@ -2563,6 +2563,11 @@ int main_app(int argc, char *argv[]) {
 #endif
     }
 
+    if (opts.print_c_include_dir) {
+        std::cout << LCompilers::LFortran::get_c_include_dir() << std::endl;
+        return 0;
+    }
+
     if(opts.static_link && opts.shared_link) {
         std::cerr << "Options '--static' and '--shared' cannot be used together" << std::endl;
         return 1;

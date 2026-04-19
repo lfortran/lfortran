@@ -108,6 +108,21 @@ std::string get_runtime_library_c_header_dir()
     }
 }
 
+std::string get_c_include_dir()
+{
+    switch (execution_mode)
+    {
+        case ExecutionMode::LFortranDevelopment:
+            return lfortran_exec_path_dir + "/../libasr/runtime";
+        case ExecutionMode::LFortranCtest:
+            return lfortran_exec_path_dir + "/../../libasr/runtime";
+        case ExecutionMode::LFortranInstalled:
+            return lfortran_exec_path_dir + "/" + CMAKE_INSTALL_INCLUDEDIR_RELATIVE + "/lfortran";
+        default:
+            return "";
+    }
+}
+
 std::string get_dwarf_scripts_dir()
 {
     char *env_p = std::getenv("LFORTRAN_DWARF_SCRIPTS_DIR");

@@ -82,3 +82,8 @@ install(
     FILES ../../../src/libasr/runtime/lfortran_intrinsics.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lfortran/impure
 )
+
+install(
+    FILES ../../../src/libasr/runtime/ISO_Fortran_binding.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lfortran
+)

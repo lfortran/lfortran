@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             dp:
                                 (Variable
@@ -84,6 +86,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             sp:
                                 (Variable
@@ -116,6 +119,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             sp2:
                                 (Variable
@@ -148,6 +152,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     intrinsics_07

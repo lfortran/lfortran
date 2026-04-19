@@ -34,6 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sub
@@ -115,6 +116,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y:
                                 (Variable
@@ -143,6 +145,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     uppercase1

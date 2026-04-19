@@ -113,6 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             type_1:
                                 (Variable
@@ -153,6 +154,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     associate2
@@ -259,6 +261,26 @@
                             )
                             ()
                         )
+                    )
+                    (ExplicitDeallocate
+                        [(StructInstanceMember
+                            (Var 7 type_1)
+                            7 1_t_2_type_2
+                            (Pointer
+                                (Array
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                        )]
                     )]
                 ),
             associate_08_module_1:
@@ -320,6 +342,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     associate_block
@@ -392,6 +415,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             type_1:
                                                 (Variable
@@ -432,6 +456,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sub_1
@@ -588,6 +613,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
+                                                                    0
                                                                 )
                                                         })
                                                     associate_block
@@ -709,6 +735,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sub_2
@@ -852,6 +879,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     t_1
@@ -912,6 +940,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     t_2

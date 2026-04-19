@@ -1,0 +1,13 @@
+{
+    "basename": "run-allocatable_component_reshape_unallocated_01-15046b1",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/allocatable_component_reshape_unallocated_01.f90",
+    "infile_hash": "313d8d25c884dd74e02ad6ed9f70cdf1d594b70fc7c912b1f7e575d4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-allocatable_component_reshape_unallocated_01-15046b1.stderr",
+    "stderr_hash": "f189ede90d14e98aef9467208e1527a7e6af77b41a51a16c2f9cf387",
+    "returncode": 1
+}

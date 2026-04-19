@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             j:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             l1:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             l2:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             m:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             nq:
                                 (Variable
@@ -144,6 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             v:
                                 (Variable
@@ -176,6 +182,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ve:
                                 (Variable
@@ -208,6 +215,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             vev:
                                 (Variable
@@ -238,6 +246,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             wrk5:
                                 (Variable
@@ -266,6 +275,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             zero:
                                 (Variable
@@ -289,6 +299,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     f

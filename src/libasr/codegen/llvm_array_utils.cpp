@@ -1998,7 +1998,14 @@ namespace LCompilers {
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), type_code_val));
             args.push_back(data_ptr_val);
+            llvm::Type* i32_type = llvm::Type::getInt32Ty(context);
+            if (n_elems->getType() != i32_type) {
+                n_elems = builder->CreateTrunc(n_elems, i32_type);
+            }
             args.push_back(n_elems);
+            if (stride_val->getType() != i32_type) {
+                stride_val = builder->CreateTrunc(stride_val, i32_type);
+            }
             args.push_back(stride_val);
     }
 

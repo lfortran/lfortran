@@ -51,6 +51,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -74,6 +75,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     sizeof_01
@@ -83,7 +85,7 @@
                         (SizeOfType
                             (Integer 4)
                             (Integer 8)
-                            ()
+                            (IntegerConstant 4 (Integer 8) Decimal)
                         )
                         ()
                         .false.

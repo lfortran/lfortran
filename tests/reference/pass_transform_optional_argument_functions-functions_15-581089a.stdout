@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_created_variable_1:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_created_variable_2:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_created_variable_3:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             __libasr_created_variable_4:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             a:
                                 (Variable
@@ -144,6 +149,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             b:
                                 (Variable
@@ -167,6 +173,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             f:
                                 (Function
@@ -195,6 +202,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             f:
                                                 (Variable
@@ -218,6 +226,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -241,6 +250,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     f
@@ -531,6 +541,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             __libasr_is_present_e:
                                                 (Variable
@@ -554,6 +565,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             a:
                                                 (Variable
@@ -577,6 +589,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -600,6 +613,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             c:
                                                 (Variable
@@ -623,6 +637,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             d:
                                                 (Variable
@@ -646,6 +661,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             e:
                                                 (Variable
@@ -669,6 +685,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             f:
                                                 (Variable
@@ -692,6 +709,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     sub_1

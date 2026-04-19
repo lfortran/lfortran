@@ -42,6 +42,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             ~implicit_interface_mess_3:
                                 (Function
@@ -70,6 +71,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 ),
                                             ~implicit_interface_mess_3_return_var:
                                                 (Variable
@@ -93,6 +95,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
+                                                    0
                                                 )
                                         })
                                     ~implicit_interface_mess_3

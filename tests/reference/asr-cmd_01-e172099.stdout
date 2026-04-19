@@ -29,6 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             count:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             i:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     test_get_command_argument

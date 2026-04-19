@@ -54,6 +54,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             l:
                                 (Variable
@@ -77,6 +78,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     intrinsics_47

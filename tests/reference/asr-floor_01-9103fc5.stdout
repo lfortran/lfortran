@@ -35,6 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x2:
                                 (Variable
@@ -64,6 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             x3:
                                 (Variable
@@ -93,6 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y1:
                                 (Variable
@@ -129,6 +132,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y2:
                                 (Variable
@@ -165,6 +169,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 ),
                             y3:
                                 (Variable
@@ -201,6 +206,7 @@
                                     .false.
                                     NotMethod
                                     ()
+                                    0
                                 )
                         })
                     floor_01

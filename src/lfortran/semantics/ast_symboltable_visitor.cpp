@@ -388,6 +388,22 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+            implicit_stack.push_back(implicit_dictionary);
+        } else {
+            for (size_t i=0;i<x.n_implicit;i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
         for (size_t i=0; i<x.n_decl; i++) {
             try {
                 if ( AST::is_a<AST::Interface_t>(*x.m_decl[i]) ) {
@@ -473,22 +489,6 @@ public:
     }
 
     void visit_Module(const AST::Module_t &x) {
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-            implicit_stack.push_back(implicit_dictionary);
-        } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    diag.add(diag::Diagnostic(
-                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
-        }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -560,6 +560,19 @@ public:
         generic_procedures.clear();
         current_module_dependencies.reserve(al, 4);
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        
+        simd_variables.clear();
+        bool is_global_save_enabled_copy = is_global_save_enabled;
+        check_if_global_save_is_enabled( x );
+        in_program = true;
+        for (size_t i=0; i<x.n_use; i++) {
+            try {
+                visit_unit_decl1(*x.m_use[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -575,17 +588,7 @@ public:
                 }
             }
         }
-        simd_variables.clear();
-        bool is_global_save_enabled_copy = is_global_save_enabled;
-        check_if_global_save_is_enabled( x );
-        in_program = true;
-        for (size_t i=0; i<x.n_use; i++) {
-            try {
-                visit_unit_decl1(*x.m_use[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-        }
+        
         for (size_t i=0; i<x.n_decl; i++) {
             if (is_equivalence_declaration(x.m_decl[i])) continue;
             if (is_common_declaration(x.m_decl[i])) continue;
@@ -1192,21 +1195,6 @@ public:
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-        } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    diag.add(diag::Diagnostic(
-                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
-        }
         simd_variables.clear();
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
@@ -1283,6 +1271,21 @@ public:
                 visit_unit_decl1(*x.m_use[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0;i<x.n_implicit;i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
@@ -1691,21 +1694,6 @@ public:
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-        } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
-                    diag.add(diag::Diagnostic(
-                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
-        }
         simd_variables.clear();
         // Extract local (including dummy) variables first
         current_symbol = (int64_t) ASR::symbolType::Function;
@@ -1782,6 +1770,21 @@ public:
                 visit_unit_decl1(*x.m_use[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0;i<x.n_implicit;i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
@@ -2613,7 +2616,7 @@ public:
             visit_procedure_decl(*x.m_contains[i]);
         }
         std::string sym_name = to_lower(x.m_name);
-        if (current_scope->get_symbol(sym_name) != nullptr) {
+        if (!compiler_options.implicit_typing && parent_scope->get_symbol(sym_name) != nullptr) {
             diag.add(diag::Diagnostic(
                 "DerivedType already defined",
                 diag::Level::Error, diag::Stage::Semantic, {

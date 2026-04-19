@@ -297,7 +297,7 @@ program continue_compilation_1
     integer :: arr_idl(4)
     contiguous :: contig_not_declared
     contiguous :: MyClass
-
+    class(Derived), allocatable :: derived_cls
 
 
 
@@ -646,7 +646,7 @@ program continue_compilation_1
     type(Base), target :: ptr_tgt_base
     type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
     a(1) = .true.
-
+    derived_cls = base_var
 
 
 

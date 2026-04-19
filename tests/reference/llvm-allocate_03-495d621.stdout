@@ -2,9 +2,9 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
+%string_descriptor = type <{ i8*, i64 }>
 %array.3 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [3 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
-%string_descriptor = type <{ i8*, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"c\00", align 1
 @1 = private unnamed_addr constant [43 x i8] c"tests/../integration_tests/allocate_03.f90\00", align 1
@@ -234,6 +234,7 @@ target datalayout = "..."
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
   %arr_desc = alloca %array.3, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
@@ -987,7 +988,6 @@ ifcont38:                                         ; preds = %ifcont36
   store i32 %443, i32* %444, align 4
   %445 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %317, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %444)
   %446 = load i64, i64* %317, align 8
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %447 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %445, i8** %447, align 8
   %448 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
@@ -1387,6 +1387,8 @@ FINALIZE_SYMTABLE_f:                              ; preds = %return
 
 define i32 @g(%array.3** %x) {
 .entry:
+  %stringFormat_desc31 = alloca %string_descriptor, align 8
+  %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
   %r = alloca i32, align 4
   %1 = alloca i64, align 8
@@ -1595,7 +1597,6 @@ ifcont6:                                          ; preds = %ifcont4
   store i32 %127, i32* %128, align 4
   %129 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %128)
   %130 = load i64, i64* %1, align 8
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %131 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %129, i8** %131, align 8
   %132 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
@@ -2035,7 +2036,6 @@ ifcont30:                                         ; preds = %ifcont28
   store i32 %392, i32* %393, align 4
   %394 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %266, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %393)
   %395 = load i64, i64* %266, align 8
-  %stringFormat_desc31 = alloca %string_descriptor, align 8
   %396 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc31, i32 0, i32 0
   store i8* %394, i8** %396, align 8
   %397 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc31, i32 0, i32 1
@@ -2482,6 +2482,7 @@ FINALIZE_SYMTABLE_g:                              ; preds = %return
 
 define void @h(%array.3** %c) {
 .entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = load %array.3*, %array.3** %c, align 8
   %2 = load %array.3*, %array.3** %c, align 8
@@ -2770,7 +2771,6 @@ ifcont23:                                         ; preds = %ifcont21
   store i32 %154, i32* %155, align 4
   %156 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %28, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %155)
   %157 = load i64, i64* %28, align 8
-  %stringFormat_desc = alloca %string_descriptor, align 8
   %158 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %156, i8** %158, align 8
   %159 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
@@ -3256,7 +3256,18 @@ entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = getelementptr %array.3, %array.3* %0, i32 0, i32 0
   %3 = load i32*, i32** %2, align 8
-  %4 = bitcast i32* %3 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %4)
+  %4 = ptrtoint i32* %3 to i64
+  %5 = icmp ne i64 %4, 0
+  br i1 %5, label %then, label %else
+
+then:                                             ; preds = %entry
+  %6 = bitcast i32* %3 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   ret void
 }
