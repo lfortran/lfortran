@@ -8998,12 +8998,45 @@ public:
         llvm::Value* target_desc = tmp;
         ptr_loads = ptr_loads_copy;
 
-        ASR::ttype_t* target_desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
+        int value_rank = array_section->n_args;
+        int target_rank = 0;
+        for (int i = 0; i < value_rank; i++) {
+            if (array_section->m_args[i].m_step != nullptr) {
+                target_rank++;
+            }
+        }
+        LCOMPILERS_ASSERT(target_rank > 0);
+        // Build a descriptor type with target_rank dimensions.
+        // The target (callee) may have fewer dimensions than the number of
+        // sliced dimensions in the section (e.g., sequence association of a
+        // 2D section to a 1D assumed-size dummy). The intermediate descriptor
+        // must have room for all sliced dimensions.
+        ASR::ttype_t* target_base_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))));
+        Vec<ASR::dimension_t> section_dims;
+        section_dims.reserve(al, target_rank);
+        for (int i = 0; i < target_rank; i++) {
+            ASR::dimension_t empty_dim;
+            empty_dim.loc = x.base.base.loc;
+            empty_dim.m_start = nullptr;
+            empty_dim.m_length = nullptr;
+            section_dims.push_back(al, empty_dim);
+        }
+        ASR::ttype_t* section_desc_type = ASRUtils::make_Array_t_util(al,
+            x.base.base.loc, target_base_type, section_dims.p, target_rank,
+            ASR::abiType::Source, false,
+            ASR::array_physical_typeType::DescriptorArray, true);
+        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_target, section_desc_type, module.get());
+        // Also compute the callee's descriptor type (may have fewer dims
+        // than section descriptor, e.g. 1D assumed-size for a 2D section).
+        ASR::ttype_t* callee_desc_asr_type = ASRUtils::duplicate_type_with_empty_dims(al,
             ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))),
-             ASR::array_physical_typeType::DescriptorArray, true);
-        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_desc_type, module.get());
-        int value_rank = array_section->n_args, target_rank = 0;
+            ASR::array_physical_typeType::DescriptorArray, true);
+        llvm::Type* callee_desc_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_target, callee_desc_asr_type, module.get());
         llvm::Value *target = arr_descr->create_descriptor_alloca(
             target_type, "array_section_descriptor");
         if( ASRUtils::is_character(*expr_type(x.m_target))){
@@ -9070,13 +9103,11 @@ public:
                     unsigned idx_bits = idx_type->getIntegerBitWidth();
                     ds.p[i] = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
                 }
-                target_rank++;
             } else {
                 visit_expr_wrapper(array_section->m_args[i].m_right, true);
                 non_sliced_indices.p[i] = tmp;
             }
         }
-        LCOMPILERS_ASSERT(target_rank > 0);
         arr_descr->fill_dimension_descriptor(target_type, target, target_rank);
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
             arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
@@ -9135,7 +9166,12 @@ public:
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 array_section->n_args, target_rank, location_manager);
         }
-        builder->CreateStore(target, target_desc);
+        llvm::Value* store_val = target;
+        if (target_type != callee_desc_type) {
+            store_val = builder->CreateBitCast(target,
+                callee_desc_type->getPointerTo());
+        }
+        builder->CreateStore(store_val, target_desc);
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
