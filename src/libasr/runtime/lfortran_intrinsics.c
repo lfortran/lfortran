@@ -555,16 +555,6 @@ bool streql(const char *s1, const char* s2) {
 #endif
 }
 
-LFORTRAN_API double _lfortran_sum(int n, double *v)
-{
-    int i, r;
-    r = 0;
-    for (i=0; i < n; i++) {
-        r += v[i];
-    }
-    return r;
-}
-
 LFORTRAN_API void _lfortran_random_number(int n, double *v)
 {
     int i;
