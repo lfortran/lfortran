@@ -23638,7 +23638,9 @@ public:
                 llvm::BasicBlock *optional_check_mergeBB = nullptr;
                 if (i + 1 < x.n_args && x.m_args[i + 1].m_value != nullptr) {
                     ASR::expr_t* next_arg = x.m_args[i + 1].m_value;
-                    if (ASR::is_a<ASR::Var_t>(*next_arg)) {
+                    if (ASR::is_a<ASR::Var_t>(*next_arg) &&
+                        ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(next_arg)->m_v))) {
                         ASR::Variable_t* next_var = ASRUtils::EXPR2VAR(next_arg);
                         std::string var_name = std::string(next_var->m_name);
                         ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(next_var->m_type);

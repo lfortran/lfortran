@@ -102,7 +102,6 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void);
 LFORTRAN_API void  _lfortran_set_cfi_debug_mode(int mode);
 LFORTRAN_API void* _lfortran_cfi_calloc(size_t nmemb, size_t size);
 LFORTRAN_API void  _lfortran_cfi_free(void* ptr);
-LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API void _lfortran_init_random_clock();
 LFORTRAN_API int _lfortran_init_random_seed(unsigned seed);

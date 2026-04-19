@@ -7352,7 +7352,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     }
 
     void LLVMList::free_data_using_type(llvm::Type* list_type, llvm::Value* list, llvm::Module* /*module*/) {
-        llvm::Type* el_type_ptr = list_type->getStructElementType(0);
+        llvm::Type* el_type_ptr = list_type->getStructElementType(2);
         llvm::Value* data = llvm_utils->CreateLoad2(el_type_ptr, get_pointer_to_list_data_using_type(list_type, list));
         llvm_utils->lfortran_free(data);
     }
