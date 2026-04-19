@@ -9095,6 +9095,19 @@ public:
             }
         }
         LCOMPILERS_ASSERT(target_rank > 0);
+        // Sequence association (--legacy-array-sections): a multi-dim section
+        // may have more sliced dims than the callee's 1D assumed-size descriptor
+        // can hold. Cap target_rank at the descriptor's rank so we only fill
+        // dims that fit. The first sliced dim gets stride=1 (before any
+        // accumulation), which is correct for contiguous sequence association.
+        int desc_rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))));
+        if (target_rank > desc_rank) {
+            LCOMPILERS_ASSERT(desc_rank == 1 && "Rank mismatch only expected "
+                "for 1D assumed-size sequence association");
+            target_rank = desc_rank;
+        }
         arr_descr->fill_dimension_descriptor(target_type, target, target_rank);
         if( arr_physical_type == ASR::array_physical_typeType::PointerArray ||
             arr_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||

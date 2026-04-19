@@ -700,6 +700,7 @@ namespace LCompilers {
             int j = 0;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
+                    if (j < target_rank) {
                     llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
@@ -728,6 +729,7 @@ namespace LCompilers {
                     builder->CreateStore(dim_length,
                                          get_dimension_size(target_dim_des, false));
                     j++;
+                    }
                 }
             }
             LCOMPILERS_ASSERT(j == target_rank);
@@ -792,6 +794,7 @@ namespace LCompilers {
             llvm::Value* stride = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
+                    if (j < target_rank) {
                     llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
@@ -816,6 +819,7 @@ namespace LCompilers {
                     builder->CreateStore(dim_length,
                                          get_dimension_size(target_dim_des, false));
                     j++;
+                    }
                 }
                 // Convert dimension info to index_type to match descriptor stride format
                 stride = builder->CreateMul(stride,
