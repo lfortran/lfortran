@@ -1,3 +1,9 @@
+tokenizer error: Unexpected token after the condition of the if statement
+   --> tests/errors/continue_compilation_ff_1.f:120:27
+    |
+120 |       IF (i == ICHAR(x_2))) error stop
+    |                           ^ 
+
 syntax error: Newline is unexpected here
   --> tests/errors/continue_compilation_ff_1.f:93:14
    |

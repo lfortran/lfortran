@@ -781,7 +781,7 @@ struct FixedFormRecursiveDescent {
     }
 
     // returns TRUE iff multiline-if
-    bool lex_if_statement(unsigned char *&cur) {
+    bool lex_if_statement(unsigned char *&cur, bool continue_compilation = false) {
         push_token_advance(cur, "if");
         LCOMPILERS_ASSERT(*t.cur == '(')
         tokenize_until(t.cur+1);
@@ -790,6 +790,28 @@ struct FixedFormRecursiveDescent {
         if (try_expr(end, false)) {
             if (*end == ')') {
                 end++;
+                // After the condition's `)`, the if-body must begin with
+                // a letter (regular statement: `then`, `goto`, `call`, ...)
+                // or a digit (arithmetic-if label). Anything else (e.g. a
+                // stray `)`) is a tokenization error.
+                if (!is_char(*end) && !is_digit(*end)) {
+                    Location loc;
+                    loc.first = end - string_start;
+                    loc.last = end - string_start;
+                    diag.add(diag::Diagnostic(
+                        "Unexpected token after the condition of the if statement",
+                        diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                    if (continue_compilation) {
+                        // Skip stray chars so the body below starts with a
+                        // valid token (letter, digit, or end-of-line).
+                        while (*end != '\n' && *end != '\0'
+                                && !is_char(*end) && !is_digit(*end)) {
+                            end++;
+                        }
+                    } else {
+                        throw parser_local::TokenizerAbort();
+                    }
+                }
                 if (next_is(end, "then")) {
                     if (next_is_eol(end+4) || *(end+4) == '!') {
                         multiline = true;
@@ -1110,7 +1132,7 @@ struct FixedFormRecursiveDescent {
 
         if (lex_io(cur)) return true;
         if (next_is(cur, "if(")) {
-            lex_cond(cur);
+            lex_cond(cur, continue_compilation);
             return true;
         }
         unsigned char *nline = cur; next_line(nline);
@@ -1654,8 +1676,8 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
-    void lex_cond(unsigned char *&cur) {
-        if (lex_if_statement(cur)) while (if_advance_or_terminate(cur));
+    void lex_cond(unsigned char *&cur, bool continue_compilation = false) {
+        if (lex_if_statement(cur, continue_compilation)) while (if_advance_or_terminate(cur));
     }
 
     void lex_subroutine(unsigned char *&cur) {
