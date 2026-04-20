@@ -24,11 +24,14 @@ module fortuno_basetypes
   
     subroutine test_list_free(this)
       class(test_list), intent(inout) :: this                                     
-  
-      select type (item => this%storage_(1)%item)                                 
-      class default
-      end select
-  
+
+      if (associated(this%storage_)) then
+        select type (item => this%storage_(1)%item)
+        class default
+        end select
+        deallocate(this%storage_)
+      end if
+
     end subroutine test_list_free
   
   end module fortuno_basetypes
