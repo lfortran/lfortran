@@ -3250,6 +3250,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'g') {
                     int width = 0;
                     int precision = 0;
+                    int exp_digits = -1;
                     bool has_dot = false;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
@@ -3258,6 +3259,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     if (dot != NULL) {
                         has_dot = true;
                         precision = atoi(dot + 1); // get digits after '.'
+                    }
+                    const char *exp_pos = strpbrk(value + 1, "eE");
+                    if (exp_pos != NULL) {
+                        exp_digits = atoi(exp_pos + 1);
                     }
                     char buffer[100];
                     char formatted[100];
@@ -3292,7 +3297,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             double final_val = double_val * scale;
                             char mantissa[64], exponent[16];
                             snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
-                            if (width > 0) {
+                            if (exp_digits > 0) {
+                                snprintf(exponent, sizeof(exponent), "E%+0*d", exp_digits + 1, exp);
+                            } else if (width > 0) {
                                 snprintf(exponent, sizeof(exponent), "E%+03d", exp);
                             } else {
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
@@ -3300,9 +3307,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
                         }
                         int len = strlen(formatted);
-                        if (width > len) {
-                            int padding = width - len;
-                            snprintf(buffer, sizeof(buffer), "%*s", width, formatted);
+                        int effective_width = width;
+                        // For Gw.d without explicit Ee, fixed-style output uses a reduced
+                        // field width to reserve room for a potential exponent form.
+                        if (exp_digits <= 0 && strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL && width > 4) {
+                            effective_width = width - 4;
+                        }
+                        if (effective_width > len) {
+                            int padding = effective_width - len;
+                            snprintf(buffer, sizeof(buffer), "%*s", effective_width, formatted);
                         } else {
                             strcpy(buffer, formatted);
                         }
