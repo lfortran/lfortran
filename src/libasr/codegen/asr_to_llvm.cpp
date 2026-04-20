@@ -1945,7 +1945,7 @@ public:
                         continue;
                     }
 
-                    if (m_source && !m_source_is_class && ASRUtils::is_allocatable(m_source)) {
+                    if (m_source && !m_source_is_class && (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source)))) {
                         int64_t saved_ptr_loads = ptr_loads;
                         ptr_loads = 1;
                         this->visit_expr(*m_source);
@@ -1985,7 +1985,7 @@ public:
                             curr_arg_m_a_type);
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             int64_t ptr_loads_copy = ptr_loads;
-                            if (ASRUtils::is_allocatable(m_source)) {
+                            if (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) {
                                 ptr_loads = 1;
                             } else {
                                 ptr_loads = 0;
@@ -2144,7 +2144,7 @@ public:
                         }
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             llvm::Value* src = nullptr; {
-                                const auto load = ASRUtils::is_allocatable(m_source) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
+                                const auto load = (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
                                 this->visit_expr_load_wrapper(m_source, load);
                                 src = tmp;
                                 tmp = nullptr;
