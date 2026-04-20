@@ -674,12 +674,18 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     // Expand the macro once
                     std::string expansion;
                     if (macro_definitions[t].function_like) {
+                        unsigned char *before_skip = cur;
                         while (*cur == ' ' || *cur == '\t') cur++;
                         if (*cur != '(') {
-                            Location loc;
-                            loc.first = cur - string_start;
-                            loc.last = loc.first;
-                            throw PreprocessorError("function-like macro invocation must have argument list", loc);
+                            // Per C standard and J3/25-176r3 (2.1.1 ag01):
+                            // if a function-like macro name is not followed
+                            // by '(' it is not a macro invocation; leave it
+                            // unchanged.
+                            cur = before_skip;
+                            output.append(t);
+                            interval_end(lm, output.size(), cur-string_start,
+                                token(tok, cur).size()-1, 1);
+                            continue;
                         }
                         std::vector<std::string> args;
                         args = parse_arguments(string_start, cur, false);
@@ -1198,12 +1204,12 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
         if (macro_definitions.find(str) != macro_definitions.end()) {
             std::string v;
             if (macro_definitions.at(str).function_like) {
+                unsigned char *before_skip = cur;
                 while (*cur == ' ' || *cur == '\t') cur++;
                 if (*cur != '(') {
-                    Location loc;
-                    loc.first = cur - string_start;
-                    loc.last = loc.first;
-                    throw PreprocessorError("function-like macro invocation must have argument list", loc);
+                    // Not a macro invocation; treat as plain name
+                    cur = before_skip;
+                    return 0;
                 }
                 std::vector<std::string> args;
                 args = parse_arguments(string_start, cur, false);
