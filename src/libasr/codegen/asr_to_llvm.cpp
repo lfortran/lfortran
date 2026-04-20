@@ -1945,7 +1945,7 @@ public:
                         continue;
                     }
 
-                    if (m_source && !m_source_is_class && ASRUtils::is_allocatable(m_source)) {
+                    if (m_source && !m_source_is_class && (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source)))) {
                         int64_t saved_ptr_loads = ptr_loads;
                         ptr_loads = 1;
                         this->visit_expr(*m_source);
@@ -1985,7 +1985,7 @@ public:
                             curr_arg_m_a_type);
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             int64_t ptr_loads_copy = ptr_loads;
-                            if (ASRUtils::is_allocatable(m_source)) {
+                            if (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) {
                                 ptr_loads = 1;
                             } else {
                                 ptr_loads = 0;
@@ -2144,7 +2144,7 @@ public:
                         }
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             llvm::Value* src = nullptr; {
-                                const auto load = ASRUtils::is_allocatable(m_source) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
+                                const auto load = (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
                                 this->visit_expr_load_wrapper(m_source, load);
                                 src = tmp;
                                 tmp = nullptr;
@@ -5260,9 +5260,17 @@ public:
 
         // variable name to use in declaration
         std::string llvm_var_name = "";
-        if (x.m_abi == ASR::abiType::BindC && x.m_bindc_name) {
-            // for external global variable with bindc, use the C name
-            llvm_var_name = x.m_bindc_name;
+        if (x.m_abi == ASR::abiType::BindC) {
+            if (x.m_bindc_name && x.m_bindc_name[0] != '\0') {
+                // bind(c, name='foo') — use the explicit name
+                llvm_var_name = x.m_bindc_name;
+            } else if (!x.m_bindc_name) {
+                // bind(c) without name= — use the Fortran name
+                llvm_var_name = x.m_name;
+            } else {
+                // bind(c, name='') — empty name, use mangled name
+                llvm_var_name = mangle_prefix + x.m_name;
+            }
         } else {
             llvm_var_name = mangle_prefix + x.m_name;
         }
@@ -21591,37 +21599,60 @@ public:
                                             tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
                                     } else {
-                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)) {
+                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)
+                                                && !ASR::is_a<ASR::StructType_t>(*arg_type)) {
                                             // Dereference the pointer argument (unless it is a CPtr)
                                             // to pass by value
                                             // E.g.:
                                             // i32* -> i32
                                             // {double,double}* -> {double,double}
+                                            // StructType is excluded because the LLVM function
+                                            // signature always uses a pointer for struct args,
+                                            // even with bind(C) + value.
                                             tmp = llvm_utils->CreateLoad2(arg_llvm_type, tmp);
                                         }
                                     }
                                 }
                                 if (!orig_arg->m_value_attr && arg->m_value_attr
                                         && arg->m_abi == ASR::abiType::BindC) {
-                                    llvm::Type *target_type = tmp->getType();
-                                    llvm::AllocaInst *target = get_call_arg_alloca(target_type);
-                                    builder->CreateStore(tmp, target);
-                                    // The callee may expect a different (but
-                                    // layout-compatible) pointer type, e.g.
-                                    // %complex_4* vs [2 x float]* for complex
-                                    // values in bind(C) functions.  Bitcast to
-                                    // match the callee parameter type.
-                                    llvm::Type *orig_llvm_type =
-                                        llvm_utils->get_type_from_ttype_t_util(
-                                            ASRUtils::EXPR(ASR::make_Var_t(
-                                                al, orig_arg->base.base.loc,
-                                                &orig_arg->base)),
-                                            orig_arg->m_type, module.get());
-                                    if (orig_llvm_type != target_type) {
-                                        tmp = builder->CreateBitCast(
-                                            target, orig_llvm_type->getPointerTo());
+                                    if (ASR::is_a<ASR::StructType_t>(
+                                            *ASRUtils::extract_type(arg->m_type))) {
+                                        // Struct types are already pointer-typed
+                                        // in LLVM even with bind(C) + value, so
+                                        // tmp is already a valid pointer to pass
+                                        // by reference. Only bitcast if the
+                                        // callee expects a different pointer type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type->getPointerTo() != tmp->getType()) {
+                                            tmp = builder->CreateBitCast(
+                                                tmp, orig_llvm_type->getPointerTo());
+                                        }
                                     } else {
-                                        tmp = target;
+                                        llvm::Type *target_type = tmp->getType();
+                                        llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                                        builder->CreateStore(tmp, target);
+                                        // The callee may expect a different (but
+                                        // layout-compatible) pointer type, e.g.
+                                        // %complex_4* vs [2 x float]* for complex
+                                        // values in bind(C) functions.  Bitcast to
+                                        // match the callee parameter type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type != target_type) {
+                                            tmp = builder->CreateBitCast(
+                                                target, orig_llvm_type->getPointerTo());
+                                        } else {
+                                            tmp = target;
+                                        }
                                     }
                                 }
                             } else {
@@ -21680,25 +21711,44 @@ public:
                                 }
                                 if (orig_arg && !orig_arg->m_value_attr && arg->m_value_attr
                                         && arg->m_abi == ASR::abiType::BindC) {
-                                    llvm::Type *target_type = tmp->getType();
-                                    llvm::AllocaInst *target = get_call_arg_alloca(target_type);
-                                    builder->CreateStore(tmp, target);
-                                    // The callee may expect a different (but
-                                    // layout-compatible) pointer type, e.g.
-                                    // %complex_4* vs [2 x float]* for complex
-                                    // values in bind(C) functions.  Bitcast to
-                                    // match the callee parameter type.
-                                    llvm::Type *orig_llvm_type =
-                                        llvm_utils->get_type_from_ttype_t_util(
-                                            ASRUtils::EXPR(ASR::make_Var_t(
-                                                al, orig_arg->base.base.loc,
-                                                &orig_arg->base)),
-                                            orig_arg->m_type, module.get());
-                                    if (orig_llvm_type != target_type) {
-                                        tmp = builder->CreateBitCast(
-                                            target, orig_llvm_type->getPointerTo());
+                                    if (ASR::is_a<ASR::StructType_t>(
+                                            *ASRUtils::extract_type(arg->m_type))) {
+                                        // Struct types are already pointer-typed
+                                        // in LLVM even with bind(C) + value, so
+                                        // tmp is already a valid pointer to pass
+                                        // by reference. Only bitcast if the
+                                        // callee expects a different pointer type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type->getPointerTo() != tmp->getType()) {
+                                            tmp = builder->CreateBitCast(
+                                                tmp, orig_llvm_type->getPointerTo());
+                                        }
                                     } else {
-                                        tmp = target;
+                                        llvm::Type *target_type = tmp->getType();
+                                        llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                                        builder->CreateStore(tmp, target);
+                                        // The callee may expect a different (but
+                                        // layout-compatible) pointer type, e.g.
+                                        // %complex_4* vs [2 x float]* for complex
+                                        // values in bind(C) functions.  Bitcast to
+                                        // match the callee parameter type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type != target_type) {
+                                            tmp = builder->CreateBitCast(
+                                                target, orig_llvm_type->getPointerTo());
+                                        } else {
+                                            tmp = target;
+                                        }
                                     }
                                 }
                             }
@@ -21864,6 +21914,11 @@ public:
                         orig_arg->m_type, module.get());
                     if (tmp->getType() != expected_type) {
                         tmp = builder->CreateBitCast(tmp, expected_type);
+                    }
+                    if (ASRUtils::is_pointer(orig_arg->m_type)) {
+                        llvm::AllocaInst *target = get_call_arg_alloca(tmp->getType());
+                        builder->CreateStore(tmp, target);
+                        tmp = target;
                     }
                 }
             } else {
@@ -22782,7 +22837,15 @@ public:
                 if (fn && i < fn->getFunctionType()->getNumParams()) {
                     llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
                     if (tmp->getType() != expected_type) {
-                        tmp = builder->CreateBitCast(tmp, expected_type);
+                        if (!tmp->getType()->isPointerTy() && expected_type->isPointerTy()) {
+                            // Non-pointer value (e.g. loaded struct) needs to become
+                            // a pointer for the callee. Store to a temp alloca.
+                            llvm::AllocaInst *target = get_call_arg_alloca(tmp->getType());
+                            builder->CreateStore(tmp, target);
+                            tmp = target;
+                        } else {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
                     }
                 }
             }

@@ -134,10 +134,19 @@ std::string get_line(std::string str, int n)
 }
 
 void populate_span(diag::Span &s, const LocationManager &lm) {
+    std::string first_filename, last_filename;
     lm.pos_to_linecol(lm.output_to_input_pos(s.loc.first, false),
-        s.first_line, s.first_column, s.filename);
+        s.first_line, s.first_column, first_filename);
     lm.pos_to_linecol(lm.output_to_input_pos(s.loc.last, true),
-        s.last_line, s.last_column, s.filename);
+        s.last_line, s.last_column, last_filename);
+    s.filename = first_filename;
+    if (first_filename != last_filename
+            || s.last_line < s.first_line
+            || (s.last_line == s.first_line
+                && s.last_column < s.first_column)) {
+        s.last_line = s.first_line;
+        s.last_column = s.first_column;
+    }
     std::string input;
     if (read_file(s.filename, input)) {
         for (uint32_t i = s.first_line; i <= s.last_line; i++) {
