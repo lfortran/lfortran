@@ -21591,12 +21591,16 @@ public:
                                             tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
                                     } else {
-                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)) {
+                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)
+                                                && !ASR::is_a<ASR::StructType_t>(*arg_type)) {
                                             // Dereference the pointer argument (unless it is a CPtr)
                                             // to pass by value
                                             // E.g.:
                                             // i32* -> i32
                                             // {double,double}* -> {double,double}
+                                            // StructType is excluded because the LLVM function
+                                            // signature always uses a pointer for struct args,
+                                            // even with bind(C) + value.
                                             tmp = llvm_utils->CreateLoad2(arg_llvm_type, tmp);
                                         }
                                     }
@@ -22782,7 +22786,15 @@ public:
                 if (fn && i < fn->getFunctionType()->getNumParams()) {
                     llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
                     if (tmp->getType() != expected_type) {
-                        tmp = builder->CreateBitCast(tmp, expected_type);
+                        if (!tmp->getType()->isPointerTy() && expected_type->isPointerTy()) {
+                            // Non-pointer value (e.g. loaded struct) needs to become
+                            // a pointer for the callee. Store to a temp alloca.
+                            llvm::AllocaInst *target = get_call_arg_alloca(tmp->getType());
+                            builder->CreateStore(tmp, target);
+                            tmp = target;
+                        } else {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
                     }
                 }
             }
