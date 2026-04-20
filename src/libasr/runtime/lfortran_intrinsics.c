@@ -3263,6 +3263,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     const char *exp_pos = strpbrk(value + 1, "eE");
                     if (exp_pos != NULL) {
                         exp_digits = atoi(exp_pos + 1);
+                        if (exp_digits < 1) exp_digits = 1;
+                        if (exp_digits > 8) exp_digits = 8;
                     }
                     char buffer[100];
                     char formatted[100];
@@ -3298,7 +3300,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             char mantissa[64], exponent[16];
                             snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
                             if (exp_digits > 0) {
-                                snprintf(exponent, sizeof(exponent), "E%+0*d", exp_digits + 1, exp);
+                                int exp_width = exp_digits + 1;
+                                // Keep width bounded so snprintf target size is provably safe.
+                                if (exp_width < 2) exp_width = 2;
+                                if (exp_width > 9) exp_width = 9;
+                                snprintf(exponent, sizeof(exponent), "E%+0*d", exp_width, exp);
                             } else if (width > 0) {
                                 snprintf(exponent, sizeof(exponent), "E%+03d", exp);
                             } else {
@@ -3314,7 +3320,6 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             effective_width = width - 4;
                         }
                         if (effective_width > len) {
-                            int padding = effective_width - len;
                             snprintf(buffer, sizeof(buffer), "%*s", effective_width, formatted);
                         } else {
                             strcpy(buffer, formatted);
