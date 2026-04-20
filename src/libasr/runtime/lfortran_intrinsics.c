@@ -10935,7 +10935,7 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
     internal_free(buf);
 }
 
-LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr, int64_t elem_len) {
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char *arr, int64_t elem_len) {
     (void)format;
     const char *pos = str;
     const char *end = str + len;
@@ -10947,7 +10947,7 @@ LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *
         }
         if (pos >= end) break;
 
-        char *dest = arr[count];
+        char *dest = arr + count * elem_len;
         int64_t dest_pos = 0;
 
         if (*pos == '\'' || *pos == '"') {
