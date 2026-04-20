@@ -4692,6 +4692,12 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                // A Function's argument count should always match the
+                // FunctionType_t signature we're comparing against. Mismatches
+                // here indicate an inconsistency somewhere upstream; fall back
+                // to a type-only comparison but flag it in debug builds.
+                LCOMPILERS_ASSERT(left_func == nullptr || left_func->n_args == a2->n_arg_types);
+                LCOMPILERS_ASSERT(right_func == nullptr || right_func->n_args == b2->n_arg_types);
                 if (left_func == nullptr || right_func == nullptr
                     || left_func->n_args != a2->n_arg_types
                     || right_func->n_args != b2->n_arg_types) {
@@ -4849,6 +4855,8 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
+                LCOMPILERS_ASSERT(left_func == nullptr || left_func->n_args == a2->n_arg_types);
+                LCOMPILERS_ASSERT(right_func == nullptr || right_func->n_args == b2->n_arg_types);
                 if (left_func == nullptr || right_func == nullptr
                     || left_func->n_args != a2->n_arg_types
                     || right_func->n_args != b2->n_arg_types) {
@@ -4955,6 +4963,8 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
         ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
         ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
 
+        LCOMPILERS_ASSERT(left_func == nullptr || left_func->n_args == left_ft->n_arg_types);
+        LCOMPILERS_ASSERT(right_func == nullptr || right_func->n_args == right_ft->n_arg_types);
         if (left_func == nullptr || right_func == nullptr
             || left_func->n_args != left_ft->n_arg_types
             || right_func->n_args != right_ft->n_arg_types) {
