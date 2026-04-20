@@ -7889,16 +7889,9 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
         }
 
         if (c == ',') {
-            while ((c = fgetc(filep)) != EOF && isspace(c)) {
-            }
-            if (c == EOF) {
-                if (iostat) { *iostat = -1; return; }
-                printf("Runtime error: End of file!\n");
-                exit(1);
-            }
+            return;
         }
-
-        if (c == ',' || c == '/') {
+        if (c == '/') {
             ungetc(c, filep);
             return;
         }
@@ -7928,12 +7921,18 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
                     if (len < (size_t)p_len) tmp_buffer[len++] = (char)c;
                 }
             }
+            skip_trailing_comma(filep);
         } else {
             do {
                 if (len < (size_t)p_len) tmp_buffer[len++] = (char)c;
                 c = fgetc(filep);
             } while (c != EOF && !isspace(c) && c != ',' && c != '/');
-            if (c != EOF) ungetc(c, filep);
+            if (c == '/') {
+                ungetc(c, filep);
+            } else if (c != ',' && c != EOF) {
+                ungetc(c, filep);
+                skip_trailing_comma(filep);
+            }
         }
 
         memcpy(*p, tmp_buffer, len);
