@@ -3138,6 +3138,14 @@ static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
 // LLVM struct layout rules used by LFortran's codegen on LP64 targets.
 // Returns {size_bytes, align_bytes}. Returns {-1, -1} on failure.
 static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type) {
+    if (ASR::is_a<ASR::Array_t>(*type)) {
+        ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
+        int64_t n_elem = get_fixed_size_of_array(arr->m_dims, arr->n_dims);
+        if (n_elem <= 0) return {-1, -1};
+        auto [elem_size, elem_align] = compute_type_size_align(arr->m_type);
+        if (elem_size < 0) return {-1, -1};
+        return {n_elem * elem_size, elem_align};
+    }
     type = type_get_past_array(
                type_get_past_allocatable(
                    type_get_past_pointer(type)));
