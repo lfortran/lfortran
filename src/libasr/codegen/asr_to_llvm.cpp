@@ -21869,6 +21869,11 @@ public:
                     if (tmp->getType() != expected_type) {
                         tmp = builder->CreateBitCast(tmp, expected_type);
                     }
+                    if (ASRUtils::is_pointer(orig_arg->m_type)) {
+                        llvm::AllocaInst *target = get_call_arg_alloca(tmp->getType());
+                        builder->CreateStore(tmp, target);
+                        tmp = target;
+                    }
                 }
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
