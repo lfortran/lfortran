@@ -1,7 +1,7 @@
 program bindc_46
   implicit none
 
-  type :: t
+  type, bind(c) :: t
     integer :: x
   end type
 
