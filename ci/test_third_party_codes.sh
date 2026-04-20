@@ -109,7 +109,7 @@ time_section "🧪 Testing caffeine" '
   # Now build and test caffeine with LFortran
   git clone -b build4 https://github.com/certik/caffeine.git
   cd caffeine
-  git checkout 0529b3c
+  git checkout 50f6ae6
   pixi r -e lfortran test
 
   print_success "Done with caffeine"
