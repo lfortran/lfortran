@@ -10761,21 +10761,51 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
-    int64_t eff_len = len - off;
-    char *buf = (char*)internal_malloc(eff_len + 1);
-    if (!buf) return;
-    memcpy(buf, str + off, eff_len);
-    buf[eff_len] = '\0';
-    int rc;
-    if (offset) {
-        int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%d%n", i, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, i);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int skip = 0;
+    int token_len = 0;
+
+    if (offset && _lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+        internal_free(buf);
+        return;
     }
+
+    while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t')) {
+        skip++;
+    }
+    while (buf[skip + token_len] && buf[skip + token_len] != ' ' &&
+            buf[skip + token_len] != '\t' && buf[skip + token_len] != '\n' &&
+            buf[skip + token_len] != ',' && buf[skip + token_len] != '/') {
+        token_len++;
+    }
+
+    int rc = 0;
+    if (token_len > 0) {
+        char tok[16];
+        if (token_len < (int)sizeof(tok)) {
+            for (int j = 0; j < token_len; j++) {
+                tok[j] = (char)tolower((unsigned char)buf[skip + j]);
+            }
+            tok[token_len] = '\0';
+
+            if (strcmp(tok, "t") == 0 || strcmp(tok, "true") == 0 ||
+                    strcmp(tok, ".t.") == 0 || strcmp(tok, ".true.") == 0 ||
+                    strcmp(tok, ".true") == 0) {
+                *i = 1;
+                rc = 1;
+            } else if (strcmp(tok, "f") == 0 || strcmp(tok, "false") == 0 ||
+                    strcmp(tok, ".f.") == 0 || strcmp(tok, ".false.") == 0 ||
+                    strcmp(tok, ".false") == 0) {
+                *i = 0;
+                rc = 1;
+            }
+        }
+    }
+
+    if (offset) {
+        *offset = off + skip + token_len;
+    }
+    (void)format;
     internal_free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
