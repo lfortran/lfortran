@@ -758,7 +758,15 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(fc->m_name);
             if (ASR::is_a<ASR::Function_t>(*sym)) {
-                return ASR::down_cast<ASR::Function_t>(sym);
+                ASR::Function_t* called_func = ASR::down_cast<ASR::Function_t>(sym);
+                if (called_func->m_return_var != nullptr) {
+                    ASR::ttype_t* ret_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(called_func->m_return_var));
+                    if (ASR::is_a<ASR::FunctionType_t>(*ret_type)) {
+                        return get_function_from_expr(called_func->m_return_var);
+                    }
+                }
+                return called_func;
             } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
                 ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
                 ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(var_sym->m_type_declaration);
