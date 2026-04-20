@@ -100,7 +100,7 @@ time_section "🧪 Testing caffeine" '
   # Build GASNet first (caffeine depends on it)
   git clone -b build https://github.com/certik/gasnet.git
   cd gasnet
-  git checkout 659f6a1c064622968667a8d123515a43a4d30b6c
+  git checkout 2949970115991c3eb71ba7c16edc87807d687e97
   pixi install
   pixi r build
   pixi r install

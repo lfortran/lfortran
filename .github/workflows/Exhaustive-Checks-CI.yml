@@ -30,11 +30,8 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    # Run on push to main, or when the PR has the label at the time of the event
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' &&
-           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: disabled to save CI runners while iterating on caffeine test
+    if: false
     steps:
       - uses: actions/checkout@v6
         with:
@@ -95,10 +92,8 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: disabled to save CI runners while iterating on caffeine test
+    if: false
     steps:
       - uses: actions/checkout@v6
         with:
@@ -202,24 +197,13 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: limited to macOS LLVM 22 only while iterating on caffeine test
     strategy:
       fail-fast: false
       matrix:
-        # this is only run on ubuntu intentionally (except macOS LLVM 22)
-        os: ["ubuntu-latest"]
-        # Note: The LLVM 11 test is redundant, since it is already tested by
-        # most other tests (since LLVM 11 is our default version), but we have
-        # it here as well for consistency, and that way other tests can freely
-        # switch to other versions as needed. We test all versions here in
-        # exactly the same manner, to ensure that users can just change the
-        # `llvmdev` version in their conda environment and everything will just
-        # work.
-        llvm-version: ["8", "10", "11", "15", "17", "18", "19", "21", "22"]
-        python-version: ["3.10"]
+        os: []
+        llvm-version: []
+        python-version: []
         include:
           - os: macos-latest
             llvm-version: "22"
@@ -485,10 +469,8 @@ jobs:
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: disabled to save CI runners while iterating on caffeine test
+    if: false
     steps:
       - uses: actions/checkout@v6
         with:
@@ -520,10 +502,8 @@ jobs:
   test_without_llvm:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: disabled to save CI runners while iterating on caffeine test
+    if: false
     steps:
       - uses: actions/checkout@v6
         with:
@@ -544,10 +524,8 @@ jobs:
   test_mlir:
     name: Test MLIR backend
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: disabled to save CI runners while iterating on caffeine test
+    if: false
     steps:
       - uses: actions/checkout@v6
         with:
@@ -596,10 +574,8 @@ jobs:
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: disabled to save CI runners while iterating on caffeine test
+    if: false
     steps:
       - uses: actions/checkout@v6
         with:
@@ -650,10 +626,8 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # TEMP: disabled to save CI runners while iterating on caffeine test
+    if: false
     permissions:
       contents: read
       packages: write

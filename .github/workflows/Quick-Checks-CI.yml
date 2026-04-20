@@ -29,6 +29,7 @@ jobs:
   Build:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
+    if: false  # TEMP: disabled to save CI runners while iterating on caffeine test
     strategy:
       fail-fast: false
       matrix:
@@ -333,6 +334,7 @@ jobs:
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
+    if: false  # TEMP: disabled to save CI runners while iterating on caffeine test
     steps:
       - uses: actions/checkout@v6
         with:
