@@ -21615,25 +21615,44 @@ public:
                                 }
                                 if (!orig_arg->m_value_attr && arg->m_value_attr
                                         && arg->m_abi == ASR::abiType::BindC) {
-                                    llvm::Type *target_type = tmp->getType();
-                                    llvm::AllocaInst *target = get_call_arg_alloca(target_type);
-                                    builder->CreateStore(tmp, target);
-                                    // The callee may expect a different (but
-                                    // layout-compatible) pointer type, e.g.
-                                    // %complex_4* vs [2 x float]* for complex
-                                    // values in bind(C) functions.  Bitcast to
-                                    // match the callee parameter type.
-                                    llvm::Type *orig_llvm_type =
-                                        llvm_utils->get_type_from_ttype_t_util(
-                                            ASRUtils::EXPR(ASR::make_Var_t(
-                                                al, orig_arg->base.base.loc,
-                                                &orig_arg->base)),
-                                            orig_arg->m_type, module.get());
-                                    if (orig_llvm_type != target_type) {
-                                        tmp = builder->CreateBitCast(
-                                            target, orig_llvm_type->getPointerTo());
+                                    if (ASR::is_a<ASR::StructType_t>(
+                                            *ASRUtils::extract_type(arg->m_type))) {
+                                        // Struct types are already pointer-typed
+                                        // in LLVM even with bind(C) + value, so
+                                        // tmp is already a valid pointer to pass
+                                        // by reference. Only bitcast if the
+                                        // callee expects a different pointer type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type->getPointerTo() != tmp->getType()) {
+                                            tmp = builder->CreateBitCast(
+                                                tmp, orig_llvm_type->getPointerTo());
+                                        }
                                     } else {
-                                        tmp = target;
+                                        llvm::Type *target_type = tmp->getType();
+                                        llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                                        builder->CreateStore(tmp, target);
+                                        // The callee may expect a different (but
+                                        // layout-compatible) pointer type, e.g.
+                                        // %complex_4* vs [2 x float]* for complex
+                                        // values in bind(C) functions.  Bitcast to
+                                        // match the callee parameter type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type != target_type) {
+                                            tmp = builder->CreateBitCast(
+                                                target, orig_llvm_type->getPointerTo());
+                                        } else {
+                                            tmp = target;
+                                        }
                                     }
                                 }
                             } else {
@@ -21692,25 +21711,44 @@ public:
                                 }
                                 if (orig_arg && !orig_arg->m_value_attr && arg->m_value_attr
                                         && arg->m_abi == ASR::abiType::BindC) {
-                                    llvm::Type *target_type = tmp->getType();
-                                    llvm::AllocaInst *target = get_call_arg_alloca(target_type);
-                                    builder->CreateStore(tmp, target);
-                                    // The callee may expect a different (but
-                                    // layout-compatible) pointer type, e.g.
-                                    // %complex_4* vs [2 x float]* for complex
-                                    // values in bind(C) functions.  Bitcast to
-                                    // match the callee parameter type.
-                                    llvm::Type *orig_llvm_type =
-                                        llvm_utils->get_type_from_ttype_t_util(
-                                            ASRUtils::EXPR(ASR::make_Var_t(
-                                                al, orig_arg->base.base.loc,
-                                                &orig_arg->base)),
-                                            orig_arg->m_type, module.get());
-                                    if (orig_llvm_type != target_type) {
-                                        tmp = builder->CreateBitCast(
-                                            target, orig_llvm_type->getPointerTo());
+                                    if (ASR::is_a<ASR::StructType_t>(
+                                            *ASRUtils::extract_type(arg->m_type))) {
+                                        // Struct types are already pointer-typed
+                                        // in LLVM even with bind(C) + value, so
+                                        // tmp is already a valid pointer to pass
+                                        // by reference. Only bitcast if the
+                                        // callee expects a different pointer type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type->getPointerTo() != tmp->getType()) {
+                                            tmp = builder->CreateBitCast(
+                                                tmp, orig_llvm_type->getPointerTo());
+                                        }
                                     } else {
-                                        tmp = target;
+                                        llvm::Type *target_type = tmp->getType();
+                                        llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                                        builder->CreateStore(tmp, target);
+                                        // The callee may expect a different (but
+                                        // layout-compatible) pointer type, e.g.
+                                        // %complex_4* vs [2 x float]* for complex
+                                        // values in bind(C) functions.  Bitcast to
+                                        // match the callee parameter type.
+                                        llvm::Type *orig_llvm_type =
+                                            llvm_utils->get_type_from_ttype_t_util(
+                                                ASRUtils::EXPR(ASR::make_Var_t(
+                                                    al, orig_arg->base.base.loc,
+                                                    &orig_arg->base)),
+                                                orig_arg->m_type, module.get());
+                                        if (orig_llvm_type != target_type) {
+                                            tmp = builder->CreateBitCast(
+                                                target, orig_llvm_type->getPointerTo());
+                                        } else {
+                                            tmp = target;
+                                        }
                                     }
                                 }
                             }
