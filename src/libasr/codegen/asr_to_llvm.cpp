@@ -5260,9 +5260,17 @@ public:
 
         // variable name to use in declaration
         std::string llvm_var_name = "";
-        if (x.m_abi == ASR::abiType::BindC && x.m_bindc_name) {
-            // for external global variable with bindc, use the C name
-            llvm_var_name = x.m_bindc_name;
+        if (x.m_abi == ASR::abiType::BindC) {
+            if (x.m_bindc_name && x.m_bindc_name[0] != '\0') {
+                // bind(c, name='foo') — use the explicit name
+                llvm_var_name = x.m_bindc_name;
+            } else if (!x.m_bindc_name) {
+                // bind(c) without name= — use the Fortran name
+                llvm_var_name = x.m_name;
+            } else {
+                // bind(c, name='') — empty name, use mangled name
+                llvm_var_name = mangle_prefix + x.m_name;
+            }
         } else {
             llvm_var_name = mangle_prefix + x.m_name;
         }
