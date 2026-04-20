@@ -7411,7 +7411,18 @@ public:
                                        ASR::is_a<ASR::Complex_t>(*t);
                             };
                             bool both_numeric = is_numeric(passed_elem) && is_numeric(param_elem);
-                            bool same_type_class = (passed_elem->type == param_elem->type);
+                            // `same_type_class` is only meaningful for scalar
+                            // built-in types where the AST-level Cast node can
+                            // paper over differences in kind/length. Structs,
+                            // classes, pointers, and function types must still
+                            // be checked strictly — otherwise e.g. passing
+                            // type(foo) where type(bar) is expected would be
+                            // silently accepted.
+                            bool same_type_class = (passed_elem->type == param_elem->type)
+                                && !ASR::is_a<ASR::StructType_t>(*passed_elem)
+                                && !ASR::is_a<ASR::Pointer_t>(*passed_elem)
+                                && !ASR::is_a<ASR::FunctionType_t>(*passed_elem)
+                                && !ASRUtils::is_class_type(passed_elem);
                             bool compatible_types = both_numeric || same_type_class;
                             bool both_are_arrays = ASRUtils::is_array(passed_type) && ASRUtils::is_array(param_type);
                             bool both_are_integers = ASR::is_a<ASR::Integer_t>(*passed_elem) &&
