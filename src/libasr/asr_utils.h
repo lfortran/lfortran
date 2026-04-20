@@ -4618,7 +4618,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                     ? ASRUtils::symbol_get_past_external(
                           ASRUtils::get_struct_sym_from_struct_expr(b_expr))
                     : nullptr;
-                if (a_struct_sym != nullptr && b_struct_sym != nullptr) {
+                if (a_struct_sym != nullptr && b_struct_sym != nullptr
+                    && ASR::is_a<ASR::Struct_t>(*a_struct_sym)
+                    && ASR::is_a<ASR::Struct_t>(*b_struct_sym)) {
                     ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(a_struct_sym);
                     ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(b_struct_sym);
                     return is_derived_type_similar(x_struct, y_struct);
@@ -4690,7 +4692,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
-                if (left_func == nullptr || right_func == nullptr) {
+                if (left_func == nullptr || right_func == nullptr
+                    || left_func->n_args != a2->n_arg_types
+                    || right_func->n_args != b2->n_arg_types) {
                     return types_equal(a, b, nullptr, nullptr, true);
                 }
 
@@ -4810,7 +4814,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 } else if (a_expr != nullptr) {
                     ASR::symbol_t* a_sym = ASRUtils::symbol_get_past_external(
                         ASRUtils::get_struct_sym_from_struct_expr(a_expr));
-                    if (a_sym != nullptr) {
+                    if (a_sym != nullptr && ASR::is_a<ASR::Struct_t>(*a_sym)) {
                         x_struct = ASR::down_cast<ASR::Struct_t>(a_sym);
                     }
                 }
@@ -4818,7 +4822,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 if (b_expr != nullptr) {
                     ASR::symbol_t* b_sym = ASRUtils::symbol_get_past_external(
                         ASRUtils::get_struct_sym_from_struct_expr(b_expr));
-                    if (b_sym != nullptr) {
+                    if (b_sym != nullptr && ASR::is_a<ASR::Struct_t>(*b_sym)) {
                         y_struct = ASR::down_cast<ASR::Struct_t>(b_sym);
                     }
                 }
@@ -4845,7 +4849,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
-                if (left_func == nullptr || right_func == nullptr) {
+                if (left_func == nullptr || right_func == nullptr
+                    || left_func->n_args != a2->n_arg_types
+                    || right_func->n_args != b2->n_arg_types) {
                     return types_equal(a, b, nullptr, nullptr, true);
                 }
 
@@ -4949,7 +4955,9 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
         ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
         ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
 
-        if (left_func == nullptr || right_func == nullptr) {
+        if (left_func == nullptr || right_func == nullptr
+            || left_func->n_args != left_ft->n_arg_types
+            || right_func->n_args != right_ft->n_arg_types) {
             return types_equal(x, y, nullptr, nullptr, true);
         }
 
