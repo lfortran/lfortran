@@ -3695,6 +3695,10 @@ RUN(NAME cpp_pre_14 LABELS gfortran llvm
     COPY_TO_BIN cpp_pre_14_include.h
     GFORTRAN_ARGS -cpp)
 
+RUN(NAME cpp_pre_15 LABELS gfortran llvm
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
+
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME minpack_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
