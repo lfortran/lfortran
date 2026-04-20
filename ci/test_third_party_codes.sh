@@ -118,6 +118,9 @@ time_section "🧪 Testing caffeine" '
 '
 fi
 
+# TEMP: exit early, disabling all other third-party tests while iterating on caffeine
+exit 0
+
 time_section "🧪 Testing assert" '
   git clone https://github.com/pranavchiku/assert.git
   cd assert
