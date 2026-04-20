@@ -12393,20 +12393,32 @@ public:
 
     ASR::asr_t* create_StringLen_from_expr(ASR::expr_t* v, ASR::ttype_t* type, const Location& loc) {
         ASR::expr_t* len_compiletime = nullptr;
-        if( !ASRUtils::is_character(*ASRUtils::expr_type(v)) ) {
-            diag.add(Diagnostic(
-                "Unexpected args, Len expects (char) as arguments",
-                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
+        ASR::ttype_t* v_type = ASRUtils::expr_type(v);
+        if( !ASRUtils::is_character(*v_type) ) {
+            if (ASRUtils::is_unlimited_polymorphic_type(v_type)) {
+                diag.add(Diagnostic(
+                    "Character intrinsic 'len' with class(*) argument must be inside " 
+                    "'type is (character(len=*))' guard", Level::Error, Stage::Semantic, {
+                        Label("invalid use of character intrinsic with polymorphic argument",
+                        {v->base.loc})
+                    }));
+                throw SemanticAbort();
+            } else {
+                diag.add(Diagnostic(
+                    "Argument of 'len' intrinsic must be CHARACTER, found " + 
+                    ASRUtils::type_to_str_fortran_expr(v_type, v) + " instead.", 
+                    Level::Error, Stage::Semantic, {Label("", {v->base.loc})}));
+                throw SemanticAbort();
+            }
         }
-        if( ASRUtils::is_array(ASRUtils::expr_type(v)) ) {
+        if( ASRUtils::is_array(v_type) ) {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(v)));
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
             int64_t length;
             len_compiletime = ASRUtils::extract_value(str->m_len, length) ? 
             make_ConstantWithType(make_IntegerConstant_t, length, type, loc) : nullptr;
             // TODO: If possible try to use m_len of `character(len=m_len)`
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v));
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(v_type);
             Vec<ASR::array_index_t> lbs; lbs.reserve(al, n_dims);
             for( int i = 0; i < n_dims; i++ ) {
                 ASR::array_index_t index;
@@ -12417,7 +12429,7 @@ public:
                 lbs.push_back(al, index);
             }
             v = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, v, lbs.p, lbs.size(),
-                    ASRUtils::extract_type(ASRUtils::expr_type(v)),
+                    ASRUtils::extract_type(v_type),
                         ASR::arraystorageType::ColMajor, nullptr));
         } else if(ASR::is_a<ASR::ArrayItem_t>(*v)) {
             ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(v);
@@ -12445,7 +12457,7 @@ public:
         }
 
         { // Try to get expression's string length (if exist)
-            ASR::ttype_t* base_t = ASRUtils::type_get_past_allocatable_pointer( ASRUtils::expr_type(v));
+            ASR::ttype_t* base_t = ASRUtils::type_get_past_allocatable_pointer( v_type );
             base_t = ASRUtils::type_get_past_array(base_t);
             if (ASR::is_a<ASR::String_t>(*base_t)) {
                 ASR::String_t* string_t = ASR::down_cast<ASR::String_t>(base_t);
