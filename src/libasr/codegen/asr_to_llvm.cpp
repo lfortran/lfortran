@@ -11897,15 +11897,7 @@ public:
                 visit_expr(*x_m_components_0_size);
                 llvm::Value* value_size = tmp;
 
-                // Skip shape check when RHS has zero size (e.g. allocatable
-                // function result returning an empty array). This is
-                // technically non-conformable per the standard, but real-world
-                // Fortran libraries rely on it being a no-op, and other
-                // compilers (gfortran, flang) accept it silently.
-                llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
-                llvm::Value* shape_mismatch = builder->CreateAnd(
-                    builder->CreateICmpNE(value_size, zero),
-                    builder->CreateICmpNE(value_size, target_size));
+                llvm::Value* shape_mismatch = builder->CreateICmpNE(value_size, target_size);
 
                 ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
                 if (target_variable) {
