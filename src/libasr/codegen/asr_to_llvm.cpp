@@ -7606,7 +7606,7 @@ public:
                     llvm_symtab[h] = &llvm_arg;
                 }
                 if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                    llvm::FunctionType* fntype = llvm_utils->get_function_type(*arg, module.get());
+                    llvm::FunctionType* fntype = llvm_utils->get_function_type(*arg, module.get(), /*for_indirect_callable=*/true);
                     llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, arg->m_name, module.get());
                     llvm_symtab_fn[h] = fn;
                 }
@@ -7743,7 +7743,7 @@ public:
                             ASR::Var_t *arg = down_cast<ASR::Var_t>(x.m_args[i]);
                             if ( arg->m_v == item.second ) {
                                 interface_as_arg = true;
-                                llvm::FunctionType* fntype = llvm_utils->get_function_type(*v, module.get());
+                                llvm::FunctionType* fntype = llvm_utils->get_function_type(*v, module.get(), /*for_indirect_callable=*/true);
                                 llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, v->m_name, module.get());
                                 uint32_t hash = get_hash((ASR::asr_t*)v);
                                 llvm_symtab_fn[hash] = fn;
@@ -24144,9 +24144,9 @@ public:
             ptr_loads = ptr_loads_copy;
             navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
 
-            llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get())->getPointerTo();
+            llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get(), /*for_indirect_callable=*/true)->getPointerTo();
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
-            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get(), /*for_indirect_callable=*/true);
 
             // Self argument has been inserted into args by the semantic
             // layer (with a value distinct from m_dt — see
@@ -24300,7 +24300,7 @@ public:
                 throw CodeGenError("Procedure variable '" + std::string(v->m_name)
                     + "' has no interface. Add explicit interface or ensure it is called somewhere.");
             }
-            llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get());
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get(), /*for_indirect_callable=*/true);
             fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
@@ -24756,7 +24756,7 @@ public:
             navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
 
             llvm::Value* callee = llvm_utils->CreateLoad2(
-                llvm_utils->get_function_type(*func, module.get())->getPointerTo(), tmp);
+                llvm_utils->get_function_type(*func, module.get(), /*for_indirect_callable=*/true)->getPointerTo(), tmp);
 
             // Self argument has been inserted into args by the semantic
             // layer (with a value distinct from m_dt — see
@@ -24764,7 +24764,7 @@ public:
             // all args including self with proper class wrapping.
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
-                *func, module.get());
+                *func, module.get(), /*for_indirect_callable=*/true);
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
@@ -24876,7 +24876,7 @@ public:
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
-            llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get(), /*for_indirect_callable=*/true);
             ASR::expr_t* proc_sym_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, (ASR::symbol_t*) s));
             llvm::Type* fn_type = llvm_utils->get_type_from_ttype_t_util(proc_sym_expr,
                 s->m_function_signature, module.get());
