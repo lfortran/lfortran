@@ -2123,6 +2123,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
         parent_expr(nullptr), lhs_var(nullptr) {}
 
+    void replace_ttype(ASR::ttype_t* /*x*/) {
+        // Do nothing
+    }
+
     bool is_current_expr_linked_to_target(ExprsWithTargetType& exprs_with_target, ASR::expr_t** &current_expr) {
         return exprs_with_target.find(*current_expr) != exprs_with_target.end();
     }
