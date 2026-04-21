@@ -7429,6 +7429,62 @@ public:
         size_t asr_arg_idx = 0;
         auto arg_it = F.arg_begin();
 
+        ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(x);
+        bool is_compiler_generated = (x.m_name[0] == '_' && x.m_name[1] == 'l');
+        bool is_top_level = x.m_symtab->parent &&
+                            x.m_symtab->parent->asr_owner &&
+                            ASR::is_a<ASR::unit_t>(*x.m_symtab->parent->asr_owner);
+        bool in_module = false;
+        {
+            SymbolTable* s = x.m_symtab->parent;
+            while (s && s->asr_owner) {
+                if (ASR::is_a<ASR::symbol_t>(*s->asr_owner) &&
+                    ASR::is_a<ASR::Module_t>(
+                        *ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+                    in_module = true;
+                    break;
+                }
+                s = s->parent;
+            }
+        }
+        bool is_external_iface = (ftype->m_deftype == ASR::deftypeType::Interface &&
+                                   ftype->m_abi != ASR::abiType::Intrinsic &&
+                                   ftype->m_abi != ASR::abiType::BindC &&
+                                   !ftype->m_module &&
+                                   !is_compiler_generated &&
+                                   !in_module);
+        bool uses_standard_fortran_abi = is_external_iface ||
+                                         (is_top_level &&
+                                          !ftype->m_module &&
+                                          ftype->m_abi != ASR::abiType::Intrinsic &&
+                                          ftype->m_abi != ASR::abiType::BindC &&
+                                          !is_compiler_generated);
+        // standard Fortran ABI (i8* data + hidden i64 length at end)
+        struct CharArgInfo {
+            uint32_t hash;
+            std::string name;
+        };
+        std::vector<CharArgInfo> char_args_to_reconstruct;
+
+        // Pre-count hidden character length args for standard Fortran ABI
+        size_t n_hidden_char_args = 0;
+        if (uses_standard_fortran_abi) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::symbol_t *sym = symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (!ASRUtils::is_array(v->m_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*v->m_type) &&
+                        !ASR::is_a<ASR::Pointer_t>(*v->m_type) &&
+                        ASRUtils::is_character(*v->m_type)) {
+                        n_hidden_char_args++;
+                    }
+                }
+            }
+        }
+        size_t n_main_llvm_args = F.arg_size() - n_hidden_char_args;
+
         // Windows complex(kind=8) uses "pass-as-subroutine" (sret-style) ABI:
         // the LLVM function has an extra hidden first argument to store the
         // return value, while ASR still models it as a function with a return var.
@@ -7442,10 +7498,15 @@ public:
             sret->setName("_sret");
             current_sret_arg = sret;
             ++arg_it;
+            n_main_llvm_args--;
         }
 
-        for (; arg_it != F.arg_end(); ++arg_it) {
-            LCOMPILERS_ASSERT(asr_arg_idx < x.n_args);
+        size_t llvm_arg_count = 0;
+        for (; arg_it != F.arg_end() && llvm_arg_count < n_main_llvm_args; ++arg_it, ++llvm_arg_count) {
+            if (asr_arg_idx >= x.n_args) {
+                // Extra LLVM args beyond ASR args (array dimensions, return var, etc.)
+                continue;
+            }
             llvm::Argument &llvm_arg = *arg_it;
             ASR::symbol_t *s = symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(x.m_args[asr_arg_idx])->m_v);
@@ -7515,7 +7576,22 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
-                    llvm_symtab[h] = llvm_sym;
+                    // For non-module functions using standard Fortran ABI,
+                    // character args arrive as i8* with hidden length at end.
+                    // Reconstruct a local string_descriptor for the body.
+                                        if (uses_standard_fortran_abi && !ASRUtils::is_array(arg->m_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*arg->m_type) &&
+                        !ASR::is_a<ASR::Pointer_t>(*arg->m_type) &&
+                        ASRUtils::is_character(*arg->m_type)) {
+                        llvm::Value* str_desc = builder->CreateAlloca(
+                            string_descriptor, nullptr, arg_s + "_desc");
+                        builder->CreateStore(llvm_sym,
+                            llvm_utils->create_gep2(string_descriptor, str_desc, 0));
+                        llvm_symtab[h] = str_desc;
+                        char_args_to_reconstruct.push_back({h, arg_s});
+                    } else {
+                        llvm_symtab[h] = llvm_sym;
+                    }
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
@@ -7536,6 +7612,18 @@ public:
                 }
             }
             asr_arg_idx++;
+        }
+
+        // Fill in the hidden length fields for character args in standard Fortran ABI
+        for (size_t ci = 0; ci < char_args_to_reconstruct.size(); ci++) {
+            LCOMPILERS_ASSERT(arg_it != F.arg_end());
+            llvm::Argument &len_arg = *arg_it;
+            len_arg.setName(char_args_to_reconstruct[ci].name + "_len");
+            uint32_t h = char_args_to_reconstruct[ci].hash;
+            llvm::Value* str_desc = llvm_symtab[h];
+            builder->CreateStore(&len_arg,
+                llvm_utils->create_gep2(string_descriptor, str_desc, 1));
+            ++arg_it;
         }
     }
 
@@ -23946,6 +24034,79 @@ public:
         }
     }
 
+    // For external interface functions (standard Fortran ABI), character
+    // arguments must be passed as i8* with hidden i64 length arguments
+    // appended at the end of the argument list.
+    template <typename T>
+    void fixup_args_for_external_interface_char(
+            const T &x, ASR::Function_t* s,
+            std::vector<llvm::Value*>& args,
+            llvm::Function* fn) {
+        // Signature-driven fixup: check if the LLVM function has more params
+        // than our current args (indicating hidden char length params appended
+        // by convert_args for standard Fortran ABI).
+        if (!fn || fn->arg_size() <= args.size()) {
+            return;
+        }
+        std::vector<llvm::Value*> hidden_lengths;
+        size_t arg_idx = 0;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value == nullptr) {
+                arg_idx++;
+                continue;
+            }
+            ASR::Variable_t* formal_arg = nullptr;
+            if (i < s->n_args) {
+                ASR::symbol_t* formal_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(s->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*formal_sym)) {
+                    formal_arg = ASR::down_cast<ASR::Variable_t>(formal_sym);
+                }
+            }
+            if (formal_arg == nullptr || arg_idx >= args.size()) {
+                arg_idx++;
+                continue;
+            }
+            ASR::ttype_t* arg_type = formal_arg->m_type;
+            if (!ASRUtils::is_array(arg_type) &&
+                !ASR::is_a<ASR::Allocatable_t>(*arg_type) &&
+                !ASR::is_a<ASR::Pointer_t>(*arg_type) &&
+                ASRUtils::is_character(*arg_type)) {
+                llvm::Value* arg_val = args[arg_idx];
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(arg_type));
+                // If the arg is already i8* (from BindC/implicit interface handling
+                // which bitcasts string_descriptor* to i8*), bitcast back to
+                // string_descriptor* to extract the data and length fields.
+                llvm::Value* desc_ptr;
+                if (arg_val->getType() == character_type) {
+                    desc_ptr = builder->CreateBitCast(arg_val,
+                        string_descriptor->getPointerTo());
+                } else {
+                    desc_ptr = arg_val;
+                }
+                llvm::Value* data_ptr = builder->CreateLoad(
+                    character_type,
+                    llvm_utils->create_gep2(string_descriptor, desc_ptr, 0));
+                llvm::Value* len_val;
+                if (str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_len)) {
+                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_len)->m_n;
+                    len_val = llvm::ConstantInt::get(context, llvm::APInt(64, len));
+                } else {
+                    len_val = builder->CreateLoad(
+                        llvm::Type::getInt64Ty(context),
+                        llvm_utils->create_gep2(string_descriptor, desc_ptr, 1));
+                }
+                args[arg_idx] = data_ptr;
+                hidden_lengths.push_back(len_val);
+            }
+            arg_idx++;
+        }
+        for (auto& len : hidden_lengths) {
+            args.push_back(len);
+        }
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
@@ -24180,6 +24341,7 @@ public:
                     }
                 }
             }
+            fixup_args_for_external_interface_char(x, s, args, fn);
             builder->CreateCall(fn, args);
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
@@ -24730,6 +24892,7 @@ public:
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             args = convert_call_args(x, false);
+            fixup_args_for_external_interface_char(x, s, args, fn);
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
