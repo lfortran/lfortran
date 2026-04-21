@@ -19025,6 +19025,41 @@ public:
         }
     }
 
+    // Import a GenericProcedure/CustomOperator from module `m` into the
+    // current scope, merging with an existing same-named generic in the
+    // current scope if one is present. Used by `import_all` so that `use a;
+    // use b` merges generics defined in both modules (F2018 C1515), matching
+    // the behaviour of the `use, only:` path.
+    template <typename T>
+    void import_or_merge_generic(const ASR::Module_t* m, T* gp,
+            std::string& sym,
+            ASR::asr_t* (*constructor)(Allocator&, const Location&,
+                SymbolTable*, char*, ASR::symbol_t**, size_t,
+                ASR::accessType)) {
+        ASR::Module_t* m_nc = const_cast<ASR::Module_t*>(m);
+        if (current_scope->get_symbol(sym) != nullptr) {
+            std::queue<std::pair<std::string, std::string>> tbi;
+            process_generic_proc_custom_op<T>(sym, (ASR::symbol_t*)gp, tbi,
+                gp->base.base.loc, m_nc, constructor, nullptr);
+            while (!tbi.empty()) {
+                std::string rs = tbi.front().first;
+                std::string ls = tbi.front().second;
+                tbi.pop();
+                if (current_scope->resolve_symbol(ls) == nullptr) {
+                    std::string msym_ = std::string(m->m_name);
+                    import_symbols_util(m_nc, msym_, rs, ls, tbi,
+                                        gp->base.base.loc);
+                }
+            }
+            return;
+        }
+        ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
+            al, gp->base.base.loc, current_scope,
+            /* a_name */ gp->m_name, (ASR::symbol_t*)gp,
+            m->m_name, nullptr, 0, gp->m_name, dflt_access);
+        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
+    }
+
     std::string import_all(const ASR::Module_t* m, bool to_submodule=false,
                            std::vector<std::string> symbols_already_imported_with_renaming = {},
                            std::set<std::string> submodule_proc_names = {}) {
@@ -19040,7 +19075,23 @@ public:
                 continue;
             }
             if( current_scope->get_symbol(item.first) != nullptr) {
-                continue;
+                // If the existing symbol and the incoming symbol are both
+                // generic interfaces (GenericProcedure) or user-defined
+                // operators (CustomOperator), merge their specific procedures
+                // instead of skipping. This is required by Fortran semantics:
+                // generics with the same name imported from multiple modules
+                // are merged at the use-point (F2018 C1515).
+                ASR::symbol_t* existing = current_scope->get_symbol(item.first);
+                ASR::symbol_t* existing_past = ASRUtils::symbol_get_past_external(existing);
+                bool is_gp_merge = existing_past != nullptr &&
+                    ASR::is_a<ASR::GenericProcedure_t>(*item.second) &&
+                    ASR::is_a<ASR::GenericProcedure_t>(*existing_past);
+                bool is_co_merge = existing_past != nullptr &&
+                    ASR::is_a<ASR::CustomOperator_t>(*item.second) &&
+                    ASR::is_a<ASR::CustomOperator_t>(*existing_past);
+                if (!is_gp_merge && !is_co_merge) {
+                    continue;
+                }
             }
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -19069,29 +19120,15 @@ public:
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
                 ASR::GenericProcedure_t *gp = ASR::down_cast<
                     ASR::GenericProcedure_t>(item.second);
-                ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                    al, gp->base.base.loc,
-                    current_scope,
-                    /* a_name */ gp->m_name,
-                    (ASR::symbol_t*)gp,
-                    m->m_name, nullptr, 0, gp->m_name,
-                    dflt_access
-                    );
                 std::string sym = to_lower(gp->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
+                import_or_merge_generic<ASR::GenericProcedure_t>(
+                    m, gp, sym, &ASR::make_GenericProcedure_t);
             }  else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
                 ASR::CustomOperator_t *gp = ASR::down_cast<
                     ASR::CustomOperator_t>(item.second);
-                ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                    al, gp->base.base.loc,
-                    current_scope,
-                    /* a_name */ gp->m_name,
-                    (ASR::symbol_t*)gp,
-                    m->m_name, nullptr, 0, gp->m_name,
-                    dflt_access
-                    );
                 std::string sym = gp->m_name;
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
+                import_or_merge_generic<ASR::CustomOperator_t>(
+                    m, gp, sym, &ASR::make_CustomOperator_t);
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
                 // check if m_access of mvar is public
