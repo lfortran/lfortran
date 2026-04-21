@@ -3445,7 +3445,9 @@ public:
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
                                           size_t &value_index,
-                                          Vec<ASR::expr_t*>* collected_values = nullptr) {
+                                          Vec<ASR::expr_t*>* collected_values = nullptr,
+                                          Vec<int64_t>* collected_indices = nullptr,
+                                          ASR::Variable_t* target_variable = nullptr) {
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
         ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
         ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
@@ -3497,9 +3499,28 @@ public:
         //collect values when in top level module scope instead of runtime assignments for data stmts
         bool top_level_module_scope = (current_module != nullptr && collected_values == nullptr);
         Vec<ASR::expr_t*> local_collected_values;
+        Vec<int64_t> local_collected_indices;
         if (top_level_module_scope) {
             local_collected_values.reserve(al, data_stmt_set->n_value);
+            local_collected_indices.reserve(al, data_stmt_set->n_value);
             collected_values = &local_collected_values;
+            collected_indices = &local_collected_indices;
+            // Determine the target Variable from the first ArrayItem so we can
+            // compute flat (ColMajor) indices and preserve the full array shape.
+            ASR::expr_t* first_val = implied_do_loop->m_values[0];
+            while (ASR::is_a<ASR::ImpliedDoLoop_t>(*first_val)) {
+                first_val = ASR::down_cast<ASR::ImpliedDoLoop_t>(first_val)->m_values[0];
+            }
+            if (ASR::is_a<ASR::ArrayItem_t>(*first_val)) {
+                ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(first_val);
+                if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                        target_variable = ASR::down_cast<ASR::Variable_t>(sym);
+                    }
+                }
+            }
         }
 
         ASRUtils::ExprStmtDuplicator exprDuplicator(al);
@@ -3511,7 +3532,7 @@ public:
                     // Substitute the current loop variable in nested loop before recursing
                     ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
                     substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
-                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values);
+                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
                     ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
                     for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
@@ -3535,6 +3556,49 @@ public:
                         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
                         if (!expression_value) expression_value = value;
                         collected_values->push_back(al, expression_value);
+                        if (collected_indices && target_variable) {
+                            // Compute flat (ColMajor) index from the substituted
+                            // subscripts, using the target variable's dimensions
+                            // (including declared lower bounds).
+                            ASR::ttype_t* tv_arr_ttype = ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(target_variable->m_type));
+                            ASR::dimension_t* tv_dims = nullptr;
+                            size_t tv_n_dims = 0;
+                            if (ASR::is_a<ASR::Array_t>(*tv_arr_ttype)) {
+                                ASR::Array_t* tv_arr_t = ASR::down_cast<ASR::Array_t>(tv_arr_ttype);
+                                tv_dims = tv_arr_t->m_dims;
+                                tv_n_dims = tv_arr_t->n_dims;
+                            }
+                            int64_t flat = 0;
+                            int64_t stride = 1;
+                            bool indices_valid = (tv_n_dims == array_item_expr->n_args);
+                            for (size_t d = 0; d < tv_n_dims && d < array_item_expr->n_args; d++) {
+                                int64_t idx_val = 0;
+                                int64_t start_val = 1;
+                                int64_t dim_size = 1;
+                                bool ok = true;
+                                ASR::expr_t* idx_expr = array_item_expr->m_args[d].m_right;
+                                if (idx_expr) {
+                                    ASR::expr_t* iv = ASRUtils::expr_value(idx_expr);
+                                    if (!iv) iv = idx_expr;
+                                    if (!ASRUtils::extract_value(iv, idx_val)) ok = false;
+                                } else {
+                                    ok = false;
+                                }
+                                if (tv_dims[d].m_start) {
+                                    ASR::expr_t* sv = ASRUtils::expr_value(tv_dims[d].m_start);
+                                    if (sv) ASRUtils::extract_value(sv, start_val);
+                                }
+                                if (tv_dims[d].m_length) {
+                                    ASR::expr_t* lv = ASRUtils::expr_value(tv_dims[d].m_length);
+                                    if (lv) ASRUtils::extract_value(lv, dim_size);
+                                }
+                                if (!ok) { indices_valid = false; break; }
+                                flat += (idx_val - start_val) * stride;
+                                stride *= dim_size;
+                            }
+                            collected_indices->push_back(al, indices_valid ? flat : (int64_t)-1);
+                        }
                     } else {
                         ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
                         ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
@@ -3555,46 +3619,93 @@ public:
             }
         }
 
-        //In module scope, set the collected values directly on the array variable as an ArrayConstructor
-        if (top_level_module_scope && local_collected_values.size() > 0) {
-            ASR::expr_t* first_val = implied_do_loop->m_values[0];
-            while (ASR::is_a<ASR::ImpliedDoLoop_t>(*first_val)) {
-                first_val = ASR::down_cast<ASR::ImpliedDoLoop_t>(first_val)->m_values[0];
+        //In module scope, set the collected values on the array variable as a
+        //full-size ArrayConstructor, preserving any values from prior DATA
+        //statements and placing new values at their correct flat (ColMajor)
+        //positions.
+        if (top_level_module_scope && local_collected_values.size() > 0
+                && target_variable != nullptr) {
+            ASR::Variable_t* v2 = target_variable;
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, data_stmt.base.base.loc,
+                                    compiler_options.po.default_integer_kind));
+            ASR::ttype_t* tv_arr_ttype = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(v2->m_type));
+            int64_t total_size = ASRUtils::get_fixed_size_of_array(tv_arr_ttype);
+            bool have_indices = (local_collected_indices.size()
+                                    == local_collected_values.size());
+            bool indices_ok = (total_size > 0) && have_indices;
+            if (indices_ok) {
+                for (size_t k = 0; k < local_collected_indices.size(); k++) {
+                    if (local_collected_indices[k] < 0
+                        || local_collected_indices[k] >= total_size) {
+                        indices_ok = false;
+                        break;
+                    }
+                }
             }
-            if (ASR::is_a<ASR::ArrayItem_t>(*first_val)) {
-                ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(first_val);
-                ASR::Variable_t* v2 = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
-                    v2 = ASR::down_cast<ASR::Variable_t>(
-                        ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
+
+            if (indices_ok) {
+                ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(tv_arr_ttype)->m_type;
+                std::vector<ASR::expr_t*> slots(total_size, nullptr);
+
+                // Preserve values from a prior DATA statement if any.
+                if (v2->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v2->m_value)) {
+                    ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(v2->m_value);
+                    int64_t prev_size = ASRUtils::get_fixed_size_of_array(prev->m_type);
+                    for (int64_t k = 0; k < prev_size && k < total_size; k++) {
+                        slots[k] = ASRUtils::fetch_ArrayConstant_value(al, prev, (int)k);
+                    }
                 }
-                if (v2) {
-                    ASR::ttype_t *int_type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, data_stmt.base.base.loc,
-                                            compiler_options.po.default_integer_kind));
-                    Vec<ASR::dimension_t> dims;
-                    dims.reserve(al, 1);
-                    ASR::dimension_t dim;
-                    dim.loc = data_stmt.base.base.loc;
-                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                        al, data_stmt.base.base.loc, 1, int_type));
-                    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                        al, data_stmt.base.base.loc, (int64_t)local_collected_values.size(), int_type));
-                    dims.push_back(al, dim);
-                    ASR::ttype_t* arr_type = ASRUtils::duplicate_type(al, v2->m_type, &dims);
-                    ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
-                        al, data_stmt.base.base.loc, local_collected_values.p,
-                        local_collected_values.size(), arr_type,
-                        ASR::arraystorageType::ColMajor);
-                    v2->m_value = ASRUtils::EXPR(arr_constructor);
-                    v2->m_symbolic_value = ASRUtils::EXPR(arr_constructor);
-                    SetChar var_deps_vec;
-                    var_deps_vec.reserve(al, 1);
-                    ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
-                        v2->m_symbolic_value, v2->m_value);
-                    v2->m_dependencies = var_deps_vec.p;
-                    v2->n_dependencies = var_deps_vec.size();
+                for (size_t k = 0; k < local_collected_values.size(); k++) {
+                    slots[local_collected_indices[k]] = local_collected_values[k];
                 }
+                Vec<ASR::expr_t*> full_values;
+                full_values.reserve(al, (size_t)total_size);
+                for (int64_t k = 0; k < total_size; k++) {
+                    if (slots[k] == nullptr) {
+                        slots[k] = ASRUtils::get_constant_zero_with_given_type(al, elem_type);
+                    }
+                    full_values.push_back(al, slots[k]);
+                }
+                ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
+                    al, data_stmt.base.base.loc, full_values.p,
+                    full_values.size(), v2->m_type,
+                    ASR::arraystorageType::ColMajor);
+                v2->m_value = ASRUtils::EXPR(arr_constructor);
+                v2->m_symbolic_value = ASRUtils::EXPR(arr_constructor);
+                SetChar var_deps_vec;
+                var_deps_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                    v2->m_symbolic_value, v2->m_value);
+                v2->m_dependencies = var_deps_vec.p;
+                v2->n_dependencies = var_deps_vec.size();
+            } else {
+                // Fallback: old behavior (1D ArrayConstructor sized to
+                // collected values). Used when we can't compute flat indices
+                // or array bounds aren't known at compile time.
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::dimension_t dim;
+                dim.loc = data_stmt.base.base.loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, data_stmt.base.base.loc, 1, int_type));
+                dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, data_stmt.base.base.loc, (int64_t)local_collected_values.size(), int_type));
+                dims.push_back(al, dim);
+                ASR::ttype_t* arr_type = ASRUtils::duplicate_type(al, v2->m_type, &dims);
+                ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
+                    al, data_stmt.base.base.loc, local_collected_values.p,
+                    local_collected_values.size(), arr_type,
+                    ASR::arraystorageType::ColMajor);
+                v2->m_value = ASRUtils::EXPR(arr_constructor);
+                v2->m_symbolic_value = ASRUtils::EXPR(arr_constructor);
+                SetChar var_deps_vec;
+                var_deps_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                    v2->m_symbolic_value, v2->m_value);
+                v2->m_dependencies = var_deps_vec.p;
+                v2->n_dependencies = var_deps_vec.size();
             }
         }
     }
@@ -18914,6 +19025,75 @@ public:
         }
     }
 
+    // Return true if every specific procedure of `incoming` resolves (past
+    // ExternalSymbol) to a specific already referenced by `existing`. Used to
+    // avoid re-merging a GenericProcedure/CustomOperator that reaches the
+    // current scope through multiple re-export chains with identical content.
+    bool generic_specifics_subset(ASR::symbol_t* existing,
+            ASR::symbol_t* incoming, bool is_gp) {
+        size_t e_n, i_n;
+        ASR::symbol_t** e_procs;
+        ASR::symbol_t** i_procs;
+        if (is_gp) {
+            ASR::GenericProcedure_t* e = ASR::down_cast<ASR::GenericProcedure_t>(existing);
+            ASR::GenericProcedure_t* i = ASR::down_cast<ASR::GenericProcedure_t>(incoming);
+            e_n = e->n_procs; i_n = i->n_procs;
+            e_procs = e->m_procs; i_procs = i->m_procs;
+        } else {
+            ASR::CustomOperator_t* e = ASR::down_cast<ASR::CustomOperator_t>(existing);
+            ASR::CustomOperator_t* i = ASR::down_cast<ASR::CustomOperator_t>(incoming);
+            e_n = e->n_procs; i_n = i->n_procs;
+            e_procs = e->m_procs; i_procs = i->m_procs;
+        }
+        for (size_t ii = 0; ii < i_n; ii++) {
+            ASR::symbol_t* ip = ASRUtils::symbol_get_past_external(i_procs[ii]);
+            bool found = false;
+            for (size_t ee = 0; ee < e_n; ee++) {
+                if (ASRUtils::symbol_get_past_external(e_procs[ee]) == ip) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    // Import a GenericProcedure/CustomOperator from module `m` into the
+    // current scope, merging with an existing same-named generic in the
+    // current scope if one is present. Used by `import_all` so that `use a;
+    // use b` merges generics defined in both modules (F2018 C1515), matching
+    // the behaviour of the `use, only:` path.
+    template <typename T>
+    void import_or_merge_generic(const ASR::Module_t* m, T* gp,
+            std::string& sym,
+            ASR::asr_t* (*constructor)(Allocator&, const Location&,
+                SymbolTable*, char*, ASR::symbol_t**, size_t,
+                ASR::accessType)) {
+        ASR::Module_t* m_nc = const_cast<ASR::Module_t*>(m);
+        if (current_scope->get_symbol(sym) != nullptr) {
+            std::queue<std::pair<std::string, std::string>> tbi;
+            process_generic_proc_custom_op<T>(sym, (ASR::symbol_t*)gp, tbi,
+                gp->base.base.loc, m_nc, constructor, nullptr);
+            while (!tbi.empty()) {
+                std::string rs = tbi.front().first;
+                std::string ls = tbi.front().second;
+                tbi.pop();
+                if (current_scope->resolve_symbol(ls) == nullptr) {
+                    std::string msym_ = std::string(m->m_name);
+                    import_symbols_util(m_nc, msym_, rs, ls, tbi,
+                                        gp->base.base.loc);
+                }
+            }
+            return;
+        }
+        ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
+            al, gp->base.base.loc, current_scope,
+            /* a_name */ gp->m_name, (ASR::symbol_t*)gp,
+            m->m_name, nullptr, 0, gp->m_name, dflt_access);
+        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
+    }
+
     std::string import_all(const ASR::Module_t* m, bool to_submodule=false,
                            std::vector<std::string> symbols_already_imported_with_renaming = {},
                            std::set<std::string> submodule_proc_names = {}) {
@@ -18929,7 +19109,39 @@ public:
                 continue;
             }
             if( current_scope->get_symbol(item.first) != nullptr) {
-                continue;
+                // If the existing symbol and the incoming symbol are both
+                // generic interfaces (GenericProcedure) or user-defined
+                // operators (CustomOperator), merge their specific procedures
+                // instead of skipping. This is required by Fortran semantics:
+                // generics with the same name imported from multiple modules
+                // are merged at the use-point (F2018 C1515).
+                ASR::symbol_t* existing = current_scope->get_symbol(item.first);
+                ASR::symbol_t* existing_past = ASRUtils::symbol_get_past_external(existing);
+                ASR::symbol_t* incoming_past = ASRUtils::symbol_get_past_external(item.second);
+                // Skip if the incoming symbol already resolves to the same
+                // underlying symbol as the existing one (re-import of the same
+                // generic via a different re-export chain).
+                if (existing_past == incoming_past) {
+                    continue;
+                }
+                bool is_gp_merge = existing_past != nullptr && incoming_past != nullptr &&
+                    ASR::is_a<ASR::GenericProcedure_t>(*incoming_past) &&
+                    ASR::is_a<ASR::GenericProcedure_t>(*existing_past);
+                bool is_co_merge = existing_past != nullptr && incoming_past != nullptr &&
+                    ASR::is_a<ASR::CustomOperator_t>(*incoming_past) &&
+                    ASR::is_a<ASR::CustomOperator_t>(*existing_past);
+                if (!is_gp_merge && !is_co_merge) {
+                    continue;
+                }
+                // Skip the merge if the incoming generic's specific procedures
+                // (compared by their past-external target) are all already
+                // referenced by the existing generic. This is the common case
+                // when the same underlying generic reaches the current scope
+                // through two re-export chains (each module constructs its own
+                // GenericProcedure node but the specifics are the same).
+                if (generic_specifics_subset(existing_past, incoming_past, is_gp_merge)) {
+                    continue;
+                }
             }
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -18958,29 +19170,15 @@ public:
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
                 ASR::GenericProcedure_t *gp = ASR::down_cast<
                     ASR::GenericProcedure_t>(item.second);
-                ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                    al, gp->base.base.loc,
-                    current_scope,
-                    /* a_name */ gp->m_name,
-                    (ASR::symbol_t*)gp,
-                    m->m_name, nullptr, 0, gp->m_name,
-                    dflt_access
-                    );
                 std::string sym = to_lower(gp->m_name);
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
+                import_or_merge_generic<ASR::GenericProcedure_t>(
+                    m, gp, sym, &ASR::make_GenericProcedure_t);
             }  else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
                 ASR::CustomOperator_t *gp = ASR::down_cast<
                     ASR::CustomOperator_t>(item.second);
-                ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-                    al, gp->base.base.loc,
-                    current_scope,
-                    /* a_name */ gp->m_name,
-                    (ASR::symbol_t*)gp,
-                    m->m_name, nullptr, 0, gp->m_name,
-                    dflt_access
-                    );
                 std::string sym = gp->m_name;
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
+                import_or_merge_generic<ASR::CustomOperator_t>(
+                    m, gp, sym, &ASR::make_CustomOperator_t);
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
                 // check if m_access of mvar is public

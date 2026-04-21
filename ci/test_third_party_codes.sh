@@ -85,6 +85,40 @@ fi
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+if [[ "$(uname)" == "Darwin" ]]; then
+time_section "🧪 Testing caffeine" '
+  which lfortran
+  lfortran --version
+
+  # Install pixi (needed to drive gasnet and caffeine builds)
+  if ! command -v pixi >/dev/null 2>&1; then
+    curl -fsSL https://pixi.sh/install.sh | bash
+    export PATH="$HOME/.pixi/bin:$PATH"
+  fi
+  pixi --version
+
+  # Build GASNet first (caffeine depends on it)
+  git clone -b build https://github.com/certik/gasnet.git
+  cd gasnet
+  git checkout 2949970115991c3eb71ba7c16edc87807d687e97
+  pixi install
+  pixi r build
+  pixi r install
+  cd ..
+
+  # Now build and test caffeine with LFortran
+  git clone -b build4 https://github.com/certik/caffeine.git
+  cd caffeine
+  git checkout 50f6ae6
+  pixi r -e lfortran test
+
+  print_success "Done with caffeine"
+  cd ..
+  rm -rf caffeine gasnet
+'
+fi
+
+
 time_section "🧪 Testing assert" '
   git clone https://github.com/pranavchiku/assert.git
   cd assert

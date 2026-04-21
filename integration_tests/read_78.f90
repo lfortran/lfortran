@@ -1,25 +1,21 @@
+module read_78_mod
+   implicit none
+contains
+   subroutine get_sarr(val, arr)
+      character(len=*), intent(in) :: val
+      character(len=*), allocatable, intent(out) :: arr(:)
+
+      if (.not. allocated(arr)) allocate(arr(2))
+      read(val, *) arr
+   end subroutine get_sarr
+end module read_78_mod
+
 program read_78
-  implicit none
+   use read_78_mod, only: get_sarr
+   implicit none
+   character(len=16), allocatable :: arr(:)
 
-  character(4) :: c1
-  real :: r1
-  integer :: i1
-  logical :: l1
+   call get_sarr('alpha, beta', arr)
 
-  open (42, status='scratch', form='formatted')
-  write (42,'(a)') "'ONE ',,3,F"
-
-  rewind (42)
-  c1 = 'none'
-  r1 = 2.0
-  i1 = -42
-  l1 = .true.
-  read (42, *) c1, r1, i1, l1
-
-  if (c1 /= 'ONE ') error stop "c1 failed"
-  if (abs(r1 - 2.0) >= 0.0001) error stop "r1 (null) not preserved"
-  if (i1 /= 3) error stop "i1 failed"
-  if (l1) error stop "l1 failed"
-
-  close (42)
-end program
+   if (trim(arr(1)) /= 'alpha' .or. trim(arr(2)) /= 'beta') error stop
+end program read_78
