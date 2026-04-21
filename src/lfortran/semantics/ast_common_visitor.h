@@ -19040,36 +19040,32 @@ public:
                 continue;
             }
             if( current_scope->get_symbol(item.first) != nullptr) {
-                // Merge same-named GenericProcedure/CustomOperator interfaces
-                // imported from multiple modules (F2018 C1515). All other
-                // same-named collisions are skipped as before.
+                // F2018 C1515: merge same-named GenericProcedure / user-
+                // defined operator interfaces imported from multiple modules.
+                // All other same-named collisions are skipped as before.
                 ASR::symbol_t* existing = ASRUtils::symbol_get_past_external(
                     current_scope->get_symbol(item.first));
                 ASR::symbol_t* incoming = ASRUtils::symbol_get_past_external(item.second);
-                bool is_gp = existing && incoming
-                    && ASR::is_a<ASR::GenericProcedure_t>(*existing)
-                    && ASR::is_a<ASR::GenericProcedure_t>(*incoming);
-                bool is_co = existing && incoming
-                    && ASR::is_a<ASR::CustomOperator_t>(*existing)
-                    && ASR::is_a<ASR::CustomOperator_t>(*incoming);
-                if (existing == incoming || (!is_gp && !is_co)) continue;
-                // Extract specific-procedure arrays uniformly for GP and CO.
-                ASR::symbol_t **e_procs, **i_procs;
-                size_t e_n, i_n;
-                if (is_gp) {
-                    auto e = ASR::down_cast<ASR::GenericProcedure_t>(existing);
-                    auto i = ASR::down_cast<ASR::GenericProcedure_t>(incoming);
-                    e_procs = e->m_procs; e_n = e->n_procs;
-                    i_procs = i->m_procs; i_n = i->n_procs;
-                } else {
-                    auto e = ASR::down_cast<ASR::CustomOperator_t>(existing);
-                    auto i = ASR::down_cast<ASR::CustomOperator_t>(incoming);
-                    e_procs = e->m_procs; e_n = e->n_procs;
-                    i_procs = i->m_procs; i_n = i->n_procs;
-                }
-                // If incoming specifics are all already referenced by existing
-                // (common when the same generic reaches this scope via two
-                // re-export chains), nothing to merge.
+                bool mergeable = existing && incoming
+                    && existing->type == incoming->type
+                    && (existing->type == ASR::symbolType::GenericProcedure
+                        || existing->type == ASR::symbolType::CustomOperator);
+                if (!mergeable) continue;
+                bool is_gp = existing->type == ASR::symbolType::GenericProcedure;
+                auto specifics = [&](ASR::symbol_t* s) {
+                    return is_gp
+                        ? std::make_pair(
+                            ASR::down_cast<ASR::GenericProcedure_t>(s)->m_procs,
+                            ASR::down_cast<ASR::GenericProcedure_t>(s)->n_procs)
+                        : std::make_pair(
+                            ASR::down_cast<ASR::CustomOperator_t>(s)->m_procs,
+                            ASR::down_cast<ASR::CustomOperator_t>(s)->n_procs);
+                };
+                auto [e_procs, e_n] = specifics(existing);
+                auto [i_procs, i_n] = specifics(incoming);
+                // Skip if incoming specifics are all already referenced by
+                // existing (common when the same generic reaches this scope
+                // via two re-export chains, or when it is simply re-imported).
                 bool subset = true;
                 for (size_t ii = 0; ii < i_n && subset; ii++) {
                     ASR::symbol_t* ip = ASRUtils::symbol_get_past_external(i_procs[ii]);
