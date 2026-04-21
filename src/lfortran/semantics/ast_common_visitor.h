@@ -19025,6 +19025,40 @@ public:
         }
     }
 
+    // Return true if every specific procedure of `incoming` resolves (past
+    // ExternalSymbol) to a specific already referenced by `existing`. Used to
+    // avoid re-merging a GenericProcedure/CustomOperator that reaches the
+    // current scope through multiple re-export chains with identical content.
+    bool generic_specifics_subset(ASR::symbol_t* existing,
+            ASR::symbol_t* incoming, bool is_gp) {
+        size_t e_n, i_n;
+        ASR::symbol_t** e_procs;
+        ASR::symbol_t** i_procs;
+        if (is_gp) {
+            ASR::GenericProcedure_t* e = ASR::down_cast<ASR::GenericProcedure_t>(existing);
+            ASR::GenericProcedure_t* i = ASR::down_cast<ASR::GenericProcedure_t>(incoming);
+            e_n = e->n_procs; i_n = i->n_procs;
+            e_procs = e->m_procs; i_procs = i->m_procs;
+        } else {
+            ASR::CustomOperator_t* e = ASR::down_cast<ASR::CustomOperator_t>(existing);
+            ASR::CustomOperator_t* i = ASR::down_cast<ASR::CustomOperator_t>(incoming);
+            e_n = e->n_procs; i_n = i->n_procs;
+            e_procs = e->m_procs; i_procs = i->m_procs;
+        }
+        for (size_t ii = 0; ii < i_n; ii++) {
+            ASR::symbol_t* ip = ASRUtils::symbol_get_past_external(i_procs[ii]);
+            bool found = false;
+            for (size_t ee = 0; ee < e_n; ee++) {
+                if (ASRUtils::symbol_get_past_external(e_procs[ee]) == ip) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
     // Import a GenericProcedure/CustomOperator from module `m` into the
     // current scope, merging with an existing same-named generic in the
     // current scope if one is present. Used by `import_all` so that `use a;
@@ -19083,13 +19117,29 @@ public:
                 // are merged at the use-point (F2018 C1515).
                 ASR::symbol_t* existing = current_scope->get_symbol(item.first);
                 ASR::symbol_t* existing_past = ASRUtils::symbol_get_past_external(existing);
-                bool is_gp_merge = existing_past != nullptr &&
-                    ASR::is_a<ASR::GenericProcedure_t>(*item.second) &&
+                ASR::symbol_t* incoming_past = ASRUtils::symbol_get_past_external(item.second);
+                // Skip if the incoming symbol already resolves to the same
+                // underlying symbol as the existing one (re-import of the same
+                // generic via a different re-export chain).
+                if (existing_past == incoming_past) {
+                    continue;
+                }
+                bool is_gp_merge = existing_past != nullptr && incoming_past != nullptr &&
+                    ASR::is_a<ASR::GenericProcedure_t>(*incoming_past) &&
                     ASR::is_a<ASR::GenericProcedure_t>(*existing_past);
-                bool is_co_merge = existing_past != nullptr &&
-                    ASR::is_a<ASR::CustomOperator_t>(*item.second) &&
+                bool is_co_merge = existing_past != nullptr && incoming_past != nullptr &&
+                    ASR::is_a<ASR::CustomOperator_t>(*incoming_past) &&
                     ASR::is_a<ASR::CustomOperator_t>(*existing_past);
                 if (!is_gp_merge && !is_co_merge) {
+                    continue;
+                }
+                // Skip the merge if the incoming generic's specific procedures
+                // (compared by their past-external target) are all already
+                // referenced by the existing generic. This is the common case
+                // when the same underlying generic reaches the current scope
+                // through two re-export chains (each module constructs its own
+                // GenericProcedure node but the specifics are the same).
+                if (generic_specifics_subset(existing_past, incoming_past, is_gp_merge)) {
                     continue;
                 }
             }
