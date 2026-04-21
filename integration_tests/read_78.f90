@@ -1,15 +1,21 @@
+module read_78_mod
+   implicit none
+contains
+   subroutine get_sarr(val, arr)
+      character(len=*), intent(in) :: val
+      character(len=*), allocatable, intent(out) :: arr(:)
+
+      if (.not. allocated(arr)) allocate(arr(2))
+      read(val, *) arr
+   end subroutine get_sarr
+end module read_78_mod
+
 program read_78
-  implicit none
+   use read_78_mod, only: get_sarr
+   implicit none
+   character(len=16), allocatable :: arr(:)
 
-  character(10) :: cdata = '12 345 678'
-  complex :: c1, c2
+   call get_sarr('alpha, beta', arr)
 
-  read (cdata, 100) c1,            c2
-100 format (bz,    2F5.2, bn, t1, 2F5.1)
-
-  if (abs (real  (c1) - 120.34) > 0.0001) error stop
-  if (abs (aimag (c1) - 506.78) > 0.0001) error stop
-  if (abs (real  (c2) - 123.4) > 0.0001) error stop
-  if (abs (aimag (c2) - 567.8) > 0.0001) error stop
-
+   if (trim(arr(1)) /= 'alpha' .or. trim(arr(2)) /= 'beta') error stop
 end program read_78

@@ -28,6 +28,11 @@ program cpp_pre_15
   r = mymacro  (99)
   if (r /= 100) error stop
 
+  ! FLM name at end of source line (next char is newline, not '(')
+  r = &
+      mymacro
+  if (r /= 10) error stop
+
   ! FLM name as subroutine dummy argument name
   call sub(1, mymacro(42))
 
