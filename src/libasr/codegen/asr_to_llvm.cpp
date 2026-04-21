@@ -11809,6 +11809,16 @@ public:
                 visit_expr(*x_m_components_0_size);
                 llvm::Value* value_size = tmp;
 
+                // Skip shape check when RHS has zero size (e.g. allocatable
+                // function result returning an empty array). This is
+                // technically non-conformable per the standard, but real-world
+                // Fortran libraries rely on it being a no-op, and other
+                // compilers (gfortran, flang) accept it silently.
+                llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                llvm::Value* shape_mismatch = builder->CreateAnd(
+                    builder->CreateICmpNE(value_size, zero),
+                    builder->CreateICmpNE(value_size, target_size));
+
                 ASR::Variable_t* target_variable = ASRUtils::expr_to_variable_or_null(x.m_target);
                 if (target_variable) {
                     ASR::expr_t* v = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, (ASR::symbol_t *)target_variable));
@@ -11824,7 +11834,7 @@ public:
 
                         builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
                         builder->SetInsertPoint(thenBB); {
-                            llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                            llvm_utils->generate_runtime_error(shape_mismatch,
                                                                 "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
                                                                 {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
                                                                 LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
@@ -11840,7 +11850,7 @@ public:
 
                         start_new_block(mergeBB);
                     } else {
-                        llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                        llvm_utils->generate_runtime_error(shape_mismatch,
                                                             "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                      {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
                                                          LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
@@ -11853,7 +11863,7 @@ public:
                                                             dim_llvm);
                     }
                 } else {
-                    llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
+                    llvm_utils->generate_runtime_error(shape_mismatch,
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
                                                        LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
