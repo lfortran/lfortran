@@ -3138,6 +3138,14 @@ static inline int64_t get_fixed_size_of_array(ASR::ttype_t* type) {
 // LLVM struct layout rules used by LFortran's codegen on LP64 targets.
 // Returns {size_bytes, align_bytes}. Returns {-1, -1} on failure.
 static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type) {
+    if (ASR::is_a<ASR::Array_t>(*type)) {
+        ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
+        int64_t n_elem = get_fixed_size_of_array(arr->m_dims, arr->n_dims);
+        if (n_elem <= 0) return {-1, -1};
+        auto [elem_size, elem_align] = compute_type_size_align(arr->m_type);
+        if (elem_size < 0) return {-1, -1};
+        return {n_elem * elem_size, elem_align};
+    }
     type = type_get_past_array(
                type_get_past_allocatable(
                    type_get_past_pointer(type)));
@@ -4610,7 +4618,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                     ? ASRUtils::symbol_get_past_external(
                           ASRUtils::get_struct_sym_from_struct_expr(b_expr))
                     : nullptr;
-                if (a_struct_sym != nullptr && b_struct_sym != nullptr) {
+                if (a_struct_sym != nullptr && b_struct_sym != nullptr
+                    && ASR::is_a<ASR::Struct_t>(*a_struct_sym)
+                    && ASR::is_a<ASR::Struct_t>(*b_struct_sym)) {
                     ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(a_struct_sym);
                     ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(b_struct_sym);
                     return is_derived_type_similar(x_struct, y_struct);
@@ -4682,7 +4692,15 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
-                if (left_func == nullptr || right_func == nullptr) {
+                // A Function's argument count should always match the
+                // FunctionType_t signature we're comparing against. Mismatches
+                // here indicate an inconsistency somewhere upstream; fall back
+                // to a type-only comparison but flag it in debug builds.
+                LCOMPILERS_ASSERT(left_func == nullptr || left_func->n_args == a2->n_arg_types);
+                LCOMPILERS_ASSERT(right_func == nullptr || right_func->n_args == b2->n_arg_types);
+                if (left_func == nullptr || right_func == nullptr
+                    || left_func->n_args != a2->n_arg_types
+                    || right_func->n_args != b2->n_arg_types) {
                     return types_equal(a, b, nullptr, nullptr, true);
                 }
 
@@ -4802,7 +4820,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 } else if (a_expr != nullptr) {
                     ASR::symbol_t* a_sym = ASRUtils::symbol_get_past_external(
                         ASRUtils::get_struct_sym_from_struct_expr(a_expr));
-                    if (a_sym != nullptr) {
+                    if (a_sym != nullptr && ASR::is_a<ASR::Struct_t>(*a_sym)) {
                         x_struct = ASR::down_cast<ASR::Struct_t>(a_sym);
                     }
                 }
@@ -4810,7 +4828,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 if (b_expr != nullptr) {
                     ASR::symbol_t* b_sym = ASRUtils::symbol_get_past_external(
                         ASRUtils::get_struct_sym_from_struct_expr(b_expr));
-                    if (b_sym != nullptr) {
+                    if (b_sym != nullptr && ASR::is_a<ASR::Struct_t>(*b_sym)) {
                         y_struct = ASR::down_cast<ASR::Struct_t>(b_sym);
                     }
                 }
@@ -4837,7 +4855,11 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
                 ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
 
-                if (left_func == nullptr || right_func == nullptr) {
+                LCOMPILERS_ASSERT(left_func == nullptr || left_func->n_args == a2->n_arg_types);
+                LCOMPILERS_ASSERT(right_func == nullptr || right_func->n_args == b2->n_arg_types);
+                if (left_func == nullptr || right_func == nullptr
+                    || left_func->n_args != a2->n_arg_types
+                    || right_func->n_args != b2->n_arg_types) {
                     return types_equal(a, b, nullptr, nullptr, true);
                 }
 
@@ -4941,7 +4963,11 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
         ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
         ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
 
-        if (left_func == nullptr || right_func == nullptr) {
+        LCOMPILERS_ASSERT(left_func == nullptr || left_func->n_args == left_ft->n_arg_types);
+        LCOMPILERS_ASSERT(right_func == nullptr || right_func->n_args == right_ft->n_arg_types);
+        if (left_func == nullptr || right_func == nullptr
+            || left_func->n_args != left_ft->n_arg_types
+            || right_func->n_args != right_ft->n_arg_types) {
             return types_equal(x, y, nullptr, nullptr, true);
         }
 

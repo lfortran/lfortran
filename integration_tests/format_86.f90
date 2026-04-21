@@ -1,16 +1,20 @@
 program format_86
-  implicit none
+    implicit none
 
-  character(32) :: cdata(3)
+    character(14) :: c1
+    character(20) :: c2
+    double precision :: d1, d2
 
-  write (cdata, 100)
-100 format(tr6, " 123.40 567.80", t5, "  12.34506.78", &
-             1x, "120.34 506.78" // &
-           tr6, " 123.40 567.80", t5, " +12.34506.78", &
-             1x, "120.34 506.78")
+    d1 = 123.456d0
+    d2 = 789.012d0
 
-  if (cdata(1) /= '      12.34506.78.120.34 506.78') error stop
-  if (cdata(2) /= ' ') error stop
-  if (cdata(3) /= '     +12.34506.78.120.34 506.78') error stop
+    write (c1, '(G14.8)') d1
+    if (c1 /= ' 123.45600') error stop
+
+    write (c2, '(G20.2)') d2
+    if (c2 /= '            0.79E+03') error stop
+
+    write (c2, '(G20.2E4)') d2
+    if (c2 /= '          0.79E+0003') error stop
 
 end program format_86

@@ -7396,20 +7396,40 @@ public:
                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
                                             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
                                             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
-                        // For implicit_argument_casting, skip type checking in most cases
-                        // EXCEPT for arrays where both are integers but with different kinds -
-                        // Call_t_body cannot handle this case and would assert
+                        // For implicit_argument_casting, skip type checking for
+                        // compatible type families (e.g., numeric↔numeric, string↔string)
+                        // but reject fundamentally incompatible types (e.g., string→integer)
+                        // that would cause an ICE in Call_t_body.
+                        // Also reject arrays of integers with different kinds, which
+                        // Call_t_body cannot handle.
                         if (compiler_options.implicit_argument_casting && !skip_check) {
                             ASR::ttype_t* passed_elem = ASRUtils::type_get_past_array(passed_type);
                             ASR::ttype_t* param_elem = ASRUtils::type_get_past_array(param_type);
+                            auto is_numeric = [](ASR::ttype_t* t) {
+                                return ASR::is_a<ASR::Integer_t>(*t) ||
+                                       ASR::is_a<ASR::Real_t>(*t) ||
+                                       ASR::is_a<ASR::Complex_t>(*t);
+                            };
+                            bool both_numeric = is_numeric(passed_elem) && is_numeric(param_elem);
+                            // `same_type_class` is only meaningful for scalar
+                            // built-in types where the AST-level Cast node can
+                            // paper over differences in kind/length. Structs,
+                            // classes, pointers, and function types must still
+                            // be checked strictly — otherwise e.g. passing
+                            // type(foo) where type(bar) is expected would be
+                            // silently accepted.
+                            bool same_type_class = (passed_elem->type == param_elem->type)
+                                && !ASR::is_a<ASR::StructType_t>(*passed_elem)
+                                && !ASR::is_a<ASR::Pointer_t>(*passed_elem)
+                                && !ASR::is_a<ASR::FunctionType_t>(*passed_elem)
+                                && !ASRUtils::is_class_type(passed_elem);
+                            bool compatible_types = both_numeric || same_type_class;
                             bool both_are_arrays = ASRUtils::is_array(passed_type) && ASRUtils::is_array(param_type);
                             bool both_are_integers = ASR::is_a<ASR::Integer_t>(*passed_elem) &&
                                                      ASR::is_a<ASR::Integer_t>(*param_elem);
                             bool different_kinds = ASRUtils::extract_kind_from_ttype_t(passed_elem) !=
                                                    ASRUtils::extract_kind_from_ttype_t(param_elem);
-                            // Only reject arrays of integers with different kinds
-                            // All other cases can be handled by Call_t_body
-                            if (!(both_are_arrays && both_are_integers && different_kinds)) {
+                            if (compatible_types && !(both_are_arrays && both_are_integers && different_kinds)) {
                                 skip_check = true;
                             }
                         }

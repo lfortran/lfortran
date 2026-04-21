@@ -1185,7 +1185,15 @@ public:
                                    nullptr);
         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp));
         ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature);
-        func_type->m_abi = ASR::abiType::Source;
+        ASR::FunctionType_t* iface_type = ASRUtils::get_FunctionType(proc_interface);
+        if (iface_type != nullptr &&
+            (iface_type->m_abi == ASR::abiType::BindC ||
+             iface_type->m_abi == ASR::abiType::BindJS ||
+             iface_type->m_abi == ASR::abiType::BindPython)) {
+            func_type->m_abi = iface_type->m_abi;
+        } else {
+            func_type->m_abi = ASR::abiType::Source;
+        }
         func_type->m_deftype = ASR::deftypeType::Implementation;
         parent_scope->add_or_overwrite_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;

@@ -758,7 +758,33 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(fc->m_name);
             if (ASR::is_a<ASR::Function_t>(*sym)) {
-                return ASR::down_cast<ASR::Function_t>(sym);
+                ASR::Function_t* called_func = ASR::down_cast<ASR::Function_t>(sym);
+                if (called_func->m_return_var != nullptr) {
+                    ASR::ttype_t* ret_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(called_func->m_return_var));
+                    if (ASR::is_a<ASR::FunctionType_t>(*ret_type)
+                            && ASR::is_a<ASR::Var_t>(*called_func->m_return_var)) {
+                        // The call returns a procedure pointer. Resolve it
+                        // directly (without recursing into get_function_from_expr)
+                        // to avoid an infinite loop when the return variable's
+                        // type_declaration points back at `called_func` itself.
+                        ASR::Var_t* rv = ASR::down_cast<ASR::Var_t>(called_func->m_return_var);
+                        ASR::symbol_t* rv_sym = ASRUtils::symbol_get_past_external(rv->m_v);
+                        if (ASR::is_a<ASR::Variable_t>(*rv_sym)) {
+                            ASR::Variable_t* rv_var = ASR::down_cast<ASR::Variable_t>(rv_sym);
+                            ASR::symbol_t* td = rv_var->m_type_declaration;
+                            if (td != nullptr) {
+                                td = ASRUtils::symbol_get_past_external(td);
+                                if (td != nullptr
+                                        && ASR::is_a<ASR::Function_t>(*td)
+                                        && td != (ASR::symbol_t*)called_func) {
+                                    return ASR::down_cast<ASR::Function_t>(td);
+                                }
+                            }
+                        }
+                    }
+                }
+                return called_func;
             } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
                 ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
                 ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(var_sym->m_type_declaration);

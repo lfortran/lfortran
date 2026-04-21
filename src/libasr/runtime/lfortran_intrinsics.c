@@ -3272,6 +3272,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'g') {
                     int width = 0;
                     int precision = 0;
+                    int exp_digits = -1;
                     bool has_dot = false;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
@@ -3280,6 +3281,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     if (dot != NULL) {
                         has_dot = true;
                         precision = atoi(dot + 1); // get digits after '.'
+                    }
+                    const char *exp_pos = strpbrk(value + 1, "eE");
+                    if (exp_pos != NULL) {
+                        exp_digits = atoi(exp_pos + 1);
+                        if (exp_digits < 1) exp_digits = 1;
+                        if (exp_digits > 8) exp_digits = 8;
                     }
                     char buffer[100];
                     char formatted[100];
@@ -3314,7 +3321,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             double final_val = double_val * scale;
                             char mantissa[64], exponent[16];
                             snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
-                            if (width > 0) {
+                            if (exp_digits > 0) {
+                                int exp_width = exp_digits + 1;
+                                // Keep width bounded so snprintf target size is provably safe.
+                                if (exp_width < 2) exp_width = 2;
+                                if (exp_width > 9) exp_width = 9;
+                                snprintf(exponent, sizeof(exponent), "E%+0*d", exp_width, exp);
+                            } else if (width > 0) {
                                 snprintf(exponent, sizeof(exponent), "E%+03d", exp);
                             } else {
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
@@ -3322,9 +3335,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
                         }
                         int len = strlen(formatted);
-                        if (width > len) {
-                            int padding = width - len;
-                            snprintf(buffer, sizeof(buffer), "%*s", width, formatted);
+                        int effective_width = width;
+                        // For Gw.d without explicit Ee, fixed-style output uses a reduced
+                        // field width to reserve room for a potential exponent form.
+                        if (exp_digits <= 0 && strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL && width > 4) {
+                            effective_width = width - 4;
+                        }
+                        if (effective_width > len) {
+                            snprintf(buffer, sizeof(buffer), "%*s", effective_width, formatted);
                         } else {
                             strcpy(buffer, formatted);
                         }
@@ -10783,21 +10801,51 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
     int64_t off = offset ? *offset : 0;
-    int64_t eff_len = len - off;
-    char *buf = (char*)internal_malloc(eff_len + 1);
-    if (!buf) return;
-    memcpy(buf, str + off, eff_len);
-    buf[eff_len] = '\0';
-    int rc;
-    if (offset) {
-        int skip = 0;
-        while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) skip++;
-        int n = 0;
-        rc = sscanf(buf + skip, "%d%n", i, &n);
-        *offset = off + skip + n;
-    } else {
-        rc = sscanf(buf, format, i);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int skip = 0;
+    int token_len = 0;
+
+    if (offset && _lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+        internal_free(buf);
+        return;
     }
+
+    while (buf[skip] && (buf[skip] == ' ' || buf[skip] == '\t')) {
+        skip++;
+    }
+    while (buf[skip + token_len] && buf[skip + token_len] != ' ' &&
+            buf[skip + token_len] != '\t' && buf[skip + token_len] != '\n' &&
+            buf[skip + token_len] != ',' && buf[skip + token_len] != '/') {
+        token_len++;
+    }
+
+    int rc = 0;
+    if (token_len > 0) {
+        char tok[16];
+        if (token_len < (int)sizeof(tok)) {
+            for (int j = 0; j < token_len; j++) {
+                tok[j] = (char)tolower((unsigned char)buf[skip + j]);
+            }
+            tok[token_len] = '\0';
+
+            if (strcmp(tok, "t") == 0 || strcmp(tok, "true") == 0 ||
+                    strcmp(tok, ".t.") == 0 || strcmp(tok, ".true.") == 0 ||
+                    strcmp(tok, ".true") == 0) {
+                *i = 1;
+                rc = 1;
+            } else if (strcmp(tok, "f") == 0 || strcmp(tok, "false") == 0 ||
+                    strcmp(tok, ".f.") == 0 || strcmp(tok, ".false.") == 0 ||
+                    strcmp(tok, ".false") == 0) {
+                *i = 0;
+                rc = 1;
+            }
+        }
+    }
+
+    if (offset) {
+        *offset = off + skip + token_len;
+    }
+    (void)format;
     internal_free(buf);
     if (rc != 1) {
         if (iostat) { *iostat = 5010; return; }
@@ -10957,7 +11005,7 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
     internal_free(buf);
 }
 
-LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr, int64_t elem_len) {
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char *arr, int64_t elem_len) {
     (void)format;
     const char *pos = str;
     const char *end = str + len;
@@ -10969,7 +11017,7 @@ LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *
         }
         if (pos >= end) break;
 
-        char *dest = arr[count];
+        char *dest = arr + count * elem_len;
         int64_t dest_pos = 0;
 
         if (*pos == '\'' || *pos == '"') {
