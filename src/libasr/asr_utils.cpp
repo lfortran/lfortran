@@ -3922,16 +3922,26 @@ ASR::asr_t* make_ArraySize_t_util(
         }
     }
     if( is_binop_expr(a_v) && for_type ) {
-        if( !ASR::is_a<ASR::ArrayBroadcast_t>(*extract_member_from_binop(a_v, 1)) &&
-            (ASR::is_a<ASR::Var_t>(*extract_member_from_binop(a_v, 1)) ||
-            ASR::is_a<ASR::ArraySection_t>(*extract_member_from_binop(a_v, 1))) ) {
-            return make_ArraySize_t_util(al, a_loc,  extract_member_from_binop(a_v, 1),
-                                         a_dim, a_type, a_value, for_type);
+        ASR::expr_t* lhs = extract_member_from_binop(a_v, 0);
+        ASR::expr_t* rhs = extract_member_from_binop(a_v, 1);
+        // ArrayBroadcast wraps a scalar broadcast to the shape of the other
+        // operand; take the size from the non-broadcast side.
+        if( ASR::is_a<ASR::ArrayBroadcast_t>(*rhs) ) {
+            return make_ArraySize_t_util(al, a_loc, lhs, a_dim, a_type, a_value, for_type);
+        } else if( ASR::is_a<ASR::ArrayBroadcast_t>(*lhs) ) {
+            return make_ArraySize_t_util(al, a_loc, rhs, a_dim, a_type, a_value, for_type);
+        } else if( ASR::is_a<ASR::Var_t>(*rhs) ||
+                   ASR::is_a<ASR::ArraySection_t>(*rhs) ) {
+            return make_ArraySize_t_util(al, a_loc, rhs, a_dim, a_type, a_value, for_type);
         } else {
-            return make_ArraySize_t_util(al, a_loc, extract_member_from_binop(a_v, 0), a_dim, a_type, a_value, for_type);
+            return make_ArraySize_t_util(al, a_loc, lhs, a_dim, a_type, a_value, for_type);
         }
     } else if( is_unaryop_expr(a_v) && for_type ) {
         return make_ArraySize_t_util(al, a_loc, extract_member_from_unaryop(a_v), a_dim, a_type, a_value, for_type);
+    } else if( ASR::is_a<ASR::Cast_t>(*a_v) && for_type ) {
+        // Cast preserves array shape; recurse into its argument.
+        return make_ArraySize_t_util(al, a_loc,
+            ASR::down_cast<ASR::Cast_t>(a_v)->m_arg, a_dim, a_type, a_value, for_type);
     } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
         ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
         return &(get_ArrayConstructor_size(al, array_constructor)->base);
