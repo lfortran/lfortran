@@ -9594,6 +9594,17 @@ public:
                        ASR::is_a<ASR::FunctionCall_t>(*x.m_value)) {
                 builder->CreateStore(llvm_value, llvm_target);
             } else {
+                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value)) {
+                    ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value);
+                    ASR::ttype_t* src_type = ASRUtils::expr_type(cast->m_arg);
+                    if (cast->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                        cast->m_new == ASR::array_physical_typeType::DescriptorArray &&
+                        (ASR::is_a<ASR::Allocatable_t>(*src_type) || ASR::is_a<ASR::Pointer_t>(*src_type)) &&
+                        ASR::is_a<ASR::Pointer_t>(*target_type)) {
+                        builder->CreateStore(llvm_value, llvm_target);
+                        return;
+                    }
+                }
                 bool is_value_data_only_array = (ASRUtils::is_array(value_type) && (
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::PointerArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::UnboundedPointerArray ||
@@ -12460,31 +12471,32 @@ public:
                     data_type->getPointerTo(),
                     arr_descr->get_pointer_to_data(arr_type, arg));
                 if (ASRUtils::is_struct(*m_type)) {
-                    // For struct types, return the pointer (deepcopy needs a pointer)
                     tmp = data_ptr;
                 } else {
                     tmp = llvm_utils->CreateLoad2(data_type, data_ptr);
                 }
             } else {
 
+            ASR::ttype_t* src_asr_type = ASRUtils::expr_type(m_arg);
+            bool is_src_allocatable_or_pointer = ASR::is_a<ASR::Allocatable_t>(*src_asr_type) ||
+                                                  ASR::is_a<ASR::Pointer_t>(*src_asr_type);
             llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
                 m_arg,
                 ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(m_type)),
                 module.get());
+
+            if (is_src_allocatable_or_pointer) {
+                tmp = builder->CreateBitCast(arg, target_desc_type->getPointerTo());
+            } else {
             llvm::Value *target_desc = arr_descr->create_descriptor_alloca(
                 target_desc_type,
                 "array_descriptor");
 
             llvm::Value* source_desc = arg;
-            // `reset_array_details()` expects `source_arr` to be indexed using the same
-            // descriptor type as the target. The only difference between the source and
-            // destination descriptor types here is the element pointer type, so a bitcast
-            // is safe for copying descriptor metadata (dims/offset/rank).
             llvm::Value* source_desc_as_target = builder->CreateBitCast(
                 source_desc, target_desc_type->getPointerTo());
 
-            ASR::ttype_t* src_asr_type = ASRUtils::expr_type(m_arg);
             ASR::ttype_t* dst_asr_type = m_type;
             ASR::ttype_t* src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(src_asr_type);
             ASR::ttype_t* dst_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(dst_asr_type);
@@ -12516,6 +12528,7 @@ public:
             } else {
                 tmp = target_desc;
             }
+            } // end non-allocatable path
             } // end else (rank >= 1)
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
@@ -25026,7 +25039,8 @@ public:
 
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
-            case ASR::array_physical_typeType::DescriptorArray: {
+            case ASR::array_physical_typeType::DescriptorArray:
+            case ASR::array_physical_typeType::AssumedRankArray: {
                 llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);

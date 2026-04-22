@@ -880,7 +880,8 @@ namespace Allocated {
                 loc);                                                           \
             return nullptr;
         }
-        if( !ASRUtils::is_allocatable(args.p[0]) ) {
+        if( !ASRUtils::is_allocatable(args.p[0]) &&
+                !ASRUtils::is_pointer(ASRUtils::expr_type(args.p[0])) ) {
             append_error(diag, "Intrinsic `allocated` can be called only on" \
                 " allocatable argument", loc);
             return nullptr;
