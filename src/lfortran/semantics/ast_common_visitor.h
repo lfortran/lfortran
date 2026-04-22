@@ -16126,6 +16126,35 @@ public:
                             diags.diagnostics.begin(), diags.diagnostics.end());
                         throw SemanticAbort();
                     }
+                } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
+                    ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(f2);
+                    ASR::symbol_t* type_decl = proc_var->m_type_declaration;
+                    if (type_decl) {
+                        ASR::symbol_t* actual_decl = ASRUtils::symbol_get_past_external(type_decl);
+                        if (ASR::is_a<ASR::Function_t>(*actual_decl)) {
+                            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(actual_decl);
+                            diag::Diagnostics diags;
+                            visit_kwargs(args, x.m_keywords, x.n_keywords,
+                                f->m_args, f->n_args, x.base.base.loc, f,
+                                diags, 0);
+                            if (diags.has_error()) {
+                                diag.diagnostics.insert(diag.diagnostics.end(),
+                                    diags.diagnostics.begin(), diags.diagnostics.end());
+                                throw SemanticAbort();
+                            }
+                            if (x.n_member >= 1) {
+                                args_with_mdt.n = 0;
+                                args_with_mdt.reserve(al, args.size() + 1);
+                                ASR::call_arg_t self_arg;
+                                self_arg.loc = v_expr->base.loc;
+                                self_arg.m_value = v_expr;
+                                args_with_mdt.push_back(al, self_arg);
+                                for (size_t i = 0; i < args.size(); i++) {
+                                    args_with_mdt.push_back(al, args[i]);
+                                }
+                            }
+                        }
+                    }
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
                     ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f2);
