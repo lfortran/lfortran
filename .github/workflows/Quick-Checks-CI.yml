@@ -408,3 +408,51 @@ jobs:
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
+
+  Liric:
+    name: LFortran CI (WITH_LIRIC, ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-ubuntu-latest
+
+      - name: Build with liric
+        shell: bash -e -l {0}
+        run: |
+          set -ex
+          bash ci/version.sh
+          python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
+          python src/libasr/asdl_cpp.py src/libasr/ASR.asdl src/libasr/asr.h
+          python src/libasr/wasm_instructions_visitor.py
+          python src/libasr/intrinsic_func_registry_util_gen.py
+          cd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && cd ../../..
+          cd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && cd ../../..
+          cd src/lfortran/parser && bison -Wall -d parser.yy && cd ../../..
+          python src/server/generator/generate_lsp_code.py \
+            --schema src/server/generator/metaModel.json \
+            --target-language c++ --output-dir src/server
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DWITH_LIRIC=yes \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          cmake --build build -j$(nproc)
+
+      - name: Run reference tests
+        shell: bash -e -l {0}
+        run: |
+          set -ex
+          cd tests
+          ./run_tests.py &> log || true
+          cat log
