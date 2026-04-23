@@ -1331,14 +1331,36 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             string_format_stmt->n_args = new_args.size();
                             break;
                         }
-                        if (x.n_args == 1) {
+                        {
+                            // Use DO loop to preserve trim() semantics.
+                            // When there are sibling args (n_args > 1), merge
+                            // them into the IDL values so each iteration writes
+                            // all values together.
+                            ASR::ImpliedDoLoop_t* idl_for_loop = implied_do_loop;
+                            if (x.n_args > 1) {
+                                Vec<ASR::expr_t*> merged_values;
+                                merged_values.reserve(al, x.n_args + implied_do_loop->n_values - 1);
+                                for (size_t j = 0; j < i; j++) {
+                                    merged_values.push_back(al, x.m_args[j]);
+                                }
+                                for (size_t j = 0; j < implied_do_loop->n_values; j++) {
+                                    merged_values.push_back(al, implied_do_loop->m_values[j]);
+                                }
+                                for (size_t j = i + 1; j < x.n_args; j++) {
+                                    merged_values.push_back(al, x.m_args[j]);
+                                }
+                                idl_for_loop = ASR::down_cast2<ASR::ImpliedDoLoop_t>(
+                                    ASR::make_ImpliedDoLoop_t(al, implied_do_loop->base.base.loc,
+                                        merged_values.p, merged_values.size(),
+                                        implied_do_loop->m_var,
+                                        implied_do_loop->m_start, implied_do_loop->m_end,
+                                        implied_do_loop->m_increment,
+                                        implied_do_loop->m_type, implied_do_loop->m_value));
+                            }
                             remove_original_statement = true;
-                            pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop, x.m_fmt));
+                            pass_result.push_back(al, create_do_loop_form_idl(idl_for_loop, x.m_fmt));
                             continue;
                         }
-                        // When there are sibling args, fall through to the
-                        // default ArrayConstructor path so that siblings are
-                        // preserved in the same StringFormat / write statement.
                     }
                     if ( (x.m_fmt == nullptr) &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
