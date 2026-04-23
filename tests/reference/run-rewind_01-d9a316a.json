@@ -1,0 +1,13 @@
+{
+    "basename": "run-rewind_01-d9a316a",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/rewind_01.f90",
+    "infile_hash": "e18702bf2e305618482aad30e8e0a704ec3b8b15d7f9f096755dce9d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-rewind_01-d9a316a.stderr",
+    "stderr_hash": "821e6128310433fddf97ee8ebf71d7841af89a838d1284e48df68ec4",
+    "returncode": 1
+}
