@@ -3924,7 +3924,8 @@ ASR::asr_t* make_ArraySize_t_util(
     if( is_binop_expr(a_v) && for_type ) {
         if( !ASR::is_a<ASR::ArrayBroadcast_t>(*extract_member_from_binop(a_v, 1)) &&
             (ASR::is_a<ASR::Var_t>(*extract_member_from_binop(a_v, 1)) ||
-            ASR::is_a<ASR::ArraySection_t>(*extract_member_from_binop(a_v, 1))) ) {
+            ASR::is_a<ASR::ArraySection_t>(*extract_member_from_binop(a_v, 1)) ||
+            ASR::is_a<ASR::Cast_t>(*extract_member_from_binop(a_v, 1))) ) {
             return make_ArraySize_t_util(al, a_loc,  extract_member_from_binop(a_v, 1),
                                          a_dim, a_type, a_value, for_type);
         } else {
@@ -3935,7 +3936,11 @@ ASR::asr_t* make_ArraySize_t_util(
     } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
         ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
         return &(get_ArrayConstructor_size(al, array_constructor)->base);
-    } else {
+    } else if(ASR::is_a<ASR::Cast_t>(*a_v)) { // Bypass ASR::Cast node
+        ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(a_v);
+        return make_ArraySize_t_util(al, a_loc, cast->m_arg, a_dim, a_type, a_value, for_type);
+    }
+     else {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = 0;
         if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
