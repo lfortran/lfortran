@@ -16045,6 +16045,41 @@ public:
                 v = v2;
             }
         }
+
+        // Handle the case where a local typed declaration (for example,
+        // `double precision :: f`) denotes an external function defined in
+        // an enclosing scope in the same source file.
+        if (v && !compiler_options.implicit_interface && ASR::is_a<ASR::Variable_t>(*v)) {
+            ASR::ttype_t* v_type = ASRUtils::symbol_type(v);
+            bool has_only_simple_call_args = true;
+            for (size_t i = 0; i < x.n_args; i++) {
+                has_only_simple_call_args = has_only_simple_call_args &&
+                    x.m_args[i].m_start == nullptr &&
+                    x.m_args[i].m_step == nullptr &&
+                    x.m_args[i].m_end != nullptr;
+            }
+            bool can_be_procedure_call = !ASRUtils::is_array(v_type) &&
+                x.n_subargs == 0 && has_only_simple_call_args;
+            if (can_be_procedure_call) {
+                SymbolTable* scope_it = current_scope->parent;
+                ASR::symbol_t* proc_sym = nullptr;
+                while (scope_it && proc_sym == nullptr) {
+                    proc_sym = scope_it->resolve_symbol("~" + var_name);
+                    if (!proc_sym) {
+                        proc_sym = scope_it->resolve_symbol(var_name);
+                    }
+                    scope_it = scope_it->parent;
+                }
+                if (proc_sym) {
+                    ASR::symbol_t* proc_sym_past_external = ASRUtils::symbol_get_past_external(proc_sym);
+                    if (ASR::is_a<ASR::Function_t>(*proc_sym_past_external) ||
+                        ASR::is_a<ASR::GenericProcedure_t>(*proc_sym_past_external)) {
+                        v = proc_sym;
+                    }
+                }
+            }
+        }
+
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
