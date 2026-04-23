@@ -664,11 +664,19 @@ ASR:
 Example of `ClassToStruct/ClassToClass`:
 
 ```fortran
+type :: base
+    integer :: x
+end type
+type, extends(base) :: derived
+    integer :: y
+end type
+
+class(base), allocatable :: var
 select type(var)
     type is (base)
-        print *, var%x
+        print *, var%x  ! ClassToStruct
     class is (derived)
-        print *, var%y
+        print *, var%y  ! ClassToClass
 end select
 ```
 
@@ -766,4 +774,31 @@ ASR:
         )]
     )
 ```
+
+LLVM types :
+```llvm
+%base_class = type <{ i32 (...)**, %base* }>
+%base = type { i32 }
+%derived_class = type <{ i32 (...)**, %derived* }>
+%derived = type { %base, i32 }
+```
+
+`ClassToStruct`:
+It will be used in `type is` cases. From above example we have var to cast from `class(base)` to `type(base)` in first select type block. So in `asr_to_llvm.cpp` in `visit_Cast` we will get `%base_class**` from `cast.m_arg`(i.e. `var`) and now we get destination llvm type using `cast.dest_struct` (i.e. `%base*`), so we unwrap `%base_class**` and then bitcast data member according to destination type. Here destination type will always be struct type (i.e. c_struct).
+```llvm
+%31 = load %source_class*, %source_class** %var, align 8
+%32 = getelementptr %source_class, %source_class* %31, i32 0, i32 1  ! get data pointer
+%33 = load %source*, %source** %32, align 8
+%34 = bitcast %source* %33 to %destination*
+```
+
+`ClassToClass`:
+It is similar as above, here just destination type will be class type. It will be used in `class is` cases where selector variable is class type and inside `class is` block also we need to cast it to specified class type. From above example, in second select type block we have to convert `%base_class**` to `%derived_class*`. Here we just load source variable and `BitCast` to destination type as both structure are same (i.e. `{vptr, data}`). 
+```llvm
+%65 = load %source_class*, %source_class** %var, align 8
+%66 = bitcast %source_class* %65 to %destination_class*
+```
+
+For DescriptorArray selector variable, we need to create a new temporary array descriptor of destination array type where its data pointer will be bitcasted data pointer (similar as above) of original variable. 
+
 ## See Also
