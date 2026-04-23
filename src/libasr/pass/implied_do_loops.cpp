@@ -1298,11 +1298,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             string_format_stmt->n_args = new_args.size();
                             break;
                         }
-                        // For internal file writes with string_trim, use concatenation
-                        // instead of individual writes (which would overwrite the buffer).
-                        remove_original_statement = true;
-                        pass_result.push_back(al, create_do_loop_concat_idl(implied_do_loop));
-                        continue;
+                        if (x.n_args == 1) {
+                            // For internal file writes with string_trim, use concatenation
+                            // instead of individual writes (which would overwrite the buffer).
+                            remove_original_statement = true;
+                            pass_result.push_back(al, create_do_loop_concat_idl(implied_do_loop));
+                            continue;
+                        }
+                        // When there are sibling args, fall through to the
+                        // default ArrayConstructor path so that siblings are
+                        // preserved in the same StringFormat / write statement.
                     }
                     if ( (x.m_fmt != nullptr) && !is_internal_file &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
@@ -1326,9 +1331,14 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             string_format_stmt->n_args = new_args.size();
                             break;
                         }
-                        remove_original_statement = true;
-                        pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop, x.m_fmt));
-                        continue;
+                        if (x.n_args == 1) {
+                            remove_original_statement = true;
+                            pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop, x.m_fmt));
+                            continue;
+                        }
+                        // When there are sibling args, fall through to the
+                        // default ArrayConstructor path so that siblings are
+                        // preserved in the same StringFormat / write statement.
                     }
                     if ( (x.m_fmt == nullptr) &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
