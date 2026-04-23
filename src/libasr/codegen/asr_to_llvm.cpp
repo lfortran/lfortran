@@ -4118,13 +4118,17 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
+        ASR::expr_t* m_v = x.m_v;
+        if (ASR::is_a<ASR::ArraySection_t>(*m_v)) {
+            m_v = ASR::down_cast<ASR::ArraySection_t>(m_v)->m_v;
+        }
+        ASR::ttype_t* x_mv_type = ASRUtils::expr_type(m_v);
         llvm::Value* array = nullptr;
         ASR::Variable_t *v = nullptr;
         bool is_intent_in = false;
         std::string array_name;
-        if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
-            v = ASRUtils::EXPR2VAR(x.m_v);
+        if( ASR::is_a<ASR::Var_t>(*m_v) ) {
+            v = ASRUtils::EXPR2VAR(m_v);
             array_name = v->m_name;
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             if (v->m_intent == ASRUtils::intent_in) {
@@ -4139,7 +4143,7 @@ public:
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
-            this->visit_expr(*x.m_v);
+            this->visit_expr(*m_v);
             ptr_loads = ptr_loads_copy;
             array = tmp;
             if (!array->getType()->isPointerTy()) {
@@ -4168,27 +4172,25 @@ public:
                 ASRUtils::type_get_past_pointer(x_mv_type));
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*x_mv_type_));
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x_mv_type_);
-            bool is_bindc_array = ASRUtils::expr_abi(x.m_v) == ASR::abiType::BindC;
+            bool is_bindc_array = ASRUtils::expr_abi(m_v) == ASR::abiType::BindC;
             if ( LLVM::is_llvm_pointer(*x_mv_type) ||
                ((is_bindc_array && !ASRUtils::is_fixed_size_array(m_dims, n_dims)) &&
-                ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) ) {
-                llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
+                ASR::is_a<ASR::StructInstanceMember_t>(*m_v)) ) {
+                llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
             } else if (array_t->m_physical_type == ASR::array_physical_typeType::PointerArray &&
                        !LLVM::is_llvm_pointer(*x_mv_type) &&
                        is_bindc_array &&
                        llvm::isa<llvm::GlobalVariable>(array)) {
-                // PointerArray global without Pointer/Allocatable wrapper (e.g. bind(C) globals):
-                // LLVM globals add a pointer level, so load to get data pointer
-                llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
+                llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type, array);
             }
             if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
-                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, x.m_v);
+                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
                     "Array '%s' is indexed but not allocated.",
-                    {LLVMUtils::RuntimeLabel("", {x.m_v->base.loc})},
+                    {LLVMUtils::RuntimeLabel("", {m_v->base.loc})},
                     infile,
                     location_manager,
                     LCompilers::create_global_string_ptr(context, *module, *builder, array_name));
@@ -4269,11 +4271,10 @@ public:
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
             bool is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(
                 ASRUtils::extract_type(x_mv_type));
-            ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
+            ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_v);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                // Use the array element *storage* type (e.g. logical arrays are i8-backed).
-                llvm::Type* type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
-                tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
+                llvm::Type* type = llvm_utils->get_el_type(m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(m_v), m_v, location_manager,
                                                     selector_type_decl,
                                                     true,
                                                     false,
@@ -4289,12 +4290,11 @@ public:
                     )
                 );
                 if (is_fixed_size) {
-                    type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type, module.get());
+                    type = llvm_utils->get_type_from_ttype_t_util(m_v, x_mv_type, module.get());
                 } else {
-                    // Use the array element *storage* type (e.g. logical arrays are i8-backed).
-                    type = llvm_utils->get_el_type(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+                    type = llvm_utils->get_el_type(m_v, ASRUtils::extract_type(x_mv_type), module.get());
                 }
-                tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v), x.m_v, location_manager,
+                tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(m_v), m_v, location_manager,
                                                     selector_type_decl,
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
@@ -4304,7 +4304,7 @@ public:
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
             current_der_type_name = get_type_key(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_v)));
+                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(m_v)));
         }
     }
 
