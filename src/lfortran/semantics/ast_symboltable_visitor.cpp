@@ -1402,6 +1402,17 @@ public:
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
+            if (current_procedure_abi_type == ASR::abiType::BindC && ASR::is_a<ASR::Variable_t>(*var)) {
+                ASR::Variable_t *var_sym = ASR::down_cast<ASR::Variable_t>(var);
+                if (var_sym->m_value_attr && var_sym->m_presence == ASR::presenceType::Optional) {
+                    diag.add(diag::Diagnostic(
+                        "Variable '" + arg_s + "' cannot have both the OPTIONAL and VALUE attribute"
+                        " because procedure '" + std::string(x.m_name) + "' is BIND(C)",
+                        diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {x.m_args[i].loc})}));
+                    if (compiler_options.continue_compilation) {continue;
+                    } else {throw SemanticAbort();}
+                }
+            }
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }

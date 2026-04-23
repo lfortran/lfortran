@@ -439,6 +439,16 @@ warning: Assuming implicit save attribute for variable declaration
 688 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
 
+semantic error: Variable 'a' cannot have both the OPTIONAL and VALUE attribute because procedure 'bindc_optional_value' is BIND(C)
+   --> tests/errors/continue_compilation_1.f90:691:5 - 694:18
+    |
+691 |        subroutine bindc_optional_value(a) bind(c)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+694 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |

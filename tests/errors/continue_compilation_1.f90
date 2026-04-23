@@ -688,4 +688,8 @@ program continue_compilation_1
         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
         if (abs(arr1)(1) /= 2471095) error stop
     end subroutine
+    subroutine bindc_optional_value(a) bind(c)
+        implicit none
+        integer, optional, value :: a
+    end subroutine
 end program
