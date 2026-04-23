@@ -1296,7 +1296,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             }
                             string_format_stmt->m_args = new_args.p;
                             string_format_stmt->n_args = new_args.size();
-                            break;
+                            i = i + expanded_values.size() - 1;
+                            continue;
                         }
                         if (x.n_args == 1) {
                             // For internal file writes with string_trim, use concatenation
@@ -1329,7 +1330,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             }
                             string_format_stmt->m_args = new_args.p;
                             string_format_stmt->n_args = new_args.size();
-                            break;
+                            i = i + expanded_values.size() - 1;
+                            continue;
                         }
                         {
                             // Use DO loop to preserve trim() semantics.
@@ -1391,7 +1393,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             }
                             string_format_stmt->m_args = new_args.p;
                             string_format_stmt->n_args = new_args.size();
-                            break;
+                            i = i + expanded_values.size() - 1;
+                            continue;
                         }
                     }
                     ASR::asr_t* array_constant = create_array_constant(x, value);

@@ -215,6 +215,17 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
                 ASR::array_physical_typeType::FixedSizeArray, true);
         }
         var_type = value_type;
+        // DeferredLength string variables must be allocatable or pointer.
+        // When the element type is a DeferredLength string, wrap with Allocatable.
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(var_type));
+        if (ASR::is_a<ASR::String_t>(*elem_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
+            if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength &&
+                    !ASRUtils::is_allocatable(var_type) && !ASRUtils::is_pointer(var_type)) {
+                var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
+            }
+        }
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
         if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required &&
