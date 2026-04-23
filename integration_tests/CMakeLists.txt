@@ -4070,6 +4070,7 @@ RUN(NAME struct_type_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME struct_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
