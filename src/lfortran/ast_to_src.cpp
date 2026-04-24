@@ -1,4 +1,5 @@
 #include <cctype>
+#include <unordered_set>
 #include <lfortran/ast_to_src.h>
 #include <libasr/string_utils.h>
 #include <libasr/bigint.h>
@@ -103,6 +104,109 @@ namespace {
 
 namespace AST {
 
+// Collects labels that are referenced as branch targets (GO TO targets,
+// ASSIGN targets, arithmetic-IF labels, FORMAT labels in I/O) within the
+// scope of a program unit (excluding nested CONTAINS subprograms, which
+// have their own label scope).
+class LabelRefCollector : public BaseWalkVisitor<LabelRefCollector> {
+public:
+    std::unordered_set<int64_t> refs;
+
+    static int64_t num_value(const expr_t *e) {
+        if (e && e->type == exprType::Num) {
+            return ((const Num_t*)e)->m_n;
+        }
+        return -1;
+    }
+    void add_if_num(const expr_t *e) {
+        int64_t n = num_value(e);
+        if (n >= 0) refs.insert(n);
+    }
+    void add_if_pos(int64_t n) { if (n > 0) refs.insert(n); }
+
+    static std::string lower(const char *s) {
+        std::string r;
+        if (!s) return r;
+        for (const char *p = s; *p; ++p) r.push_back(std::tolower((unsigned char)*p));
+        return r;
+    }
+    template <typename KW>
+    void scan_io_kwargs(KW *kwargs, size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            std::string k = lower(kwargs[i].m_arg);
+            if (k == "err" || k == "end" || k == "eor" || k == "fmt") {
+                add_if_num(kwargs[i].m_value);
+            }
+        }
+    }
+
+    void visit_GoTo(const GoTo_t &x) {
+        add_if_num(x.m_goto_label);
+        for (size_t i = 0; i < x.n_labels; i++) add_if_num(x.m_labels[i]);
+        BaseWalkVisitor<LabelRefCollector>::visit_GoTo(x);
+    }
+    void visit_Assign(const Assign_t &x) {
+        add_if_pos(x.m_assign_label);
+        BaseWalkVisitor<LabelRefCollector>::visit_Assign(x);
+    }
+    void visit_IfArithmetic(const IfArithmetic_t &x) {
+        add_if_pos(x.m_lt_label);
+        add_if_pos(x.m_eq_label);
+        add_if_pos(x.m_gt_label);
+        BaseWalkVisitor<LabelRefCollector>::visit_IfArithmetic(x);
+    }
+    void visit_Print(const Print_t &x) {
+        add_if_num(x.m_fmt);
+        BaseWalkVisitor<LabelRefCollector>::visit_Print(x);
+    }
+    void visit_Read(const Read_t &x) {
+        add_if_num(x.m_format);
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Read(x);
+    }
+    void visit_Write(const Write_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Write(x);
+    }
+    void visit_Open(const Open_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Open(x);
+    }
+    void visit_Close(const Close_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Close(x);
+    }
+    void visit_Inquire(const Inquire_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Inquire(x);
+    }
+    void visit_Backspace(const Backspace_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Backspace(x);
+    }
+    void visit_Rewind(const Rewind_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Rewind(x);
+    }
+    void visit_Endfile(const Endfile_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Endfile(x);
+    }
+    void visit_Flush(const Flush_t &x) {
+        scan_io_kwargs(x.m_kwargs, x.n_kwargs);
+        BaseWalkVisitor<LabelRefCollector>::visit_Flush(x);
+    }
+
+    // Do NOT descend into nested program units -- labels are scoped
+    // per program unit.
+    void visit_Program(const Program_t &) {}
+    void visit_Subroutine(const Subroutine_t &) {}
+    void visit_Function(const Function_t &) {}
+    void visit_Module(const Module_t &) {}
+    void visit_Submodule(const Submodule_t &) {}
+    void visit_BlockData(const BlockData_t &) {}
+};
+
 class ASTToSRCVisitor : public BaseVisitor<ASTToSRCVisitor>
 {
 public:
@@ -112,6 +216,11 @@ public:
     std::string indent;
     int indent_spaces;
     bool indent_unit;
+    // Labels referenced as branch targets within the current program unit.
+    // Populated lazily by format_unit_body() before printing the body, and
+    // saved/restored for nested CONTAINS subprograms (labels are scoped per
+    // program unit).
+    std::unordered_set<int64_t> label_refs;
     // The precedence of the last expression, using the table
     // 10.1 in the Fortran 2018 standard:
     int last_expr_precedence;
@@ -1014,6 +1123,18 @@ public:
     std::string format_unit_body(const T &x, bool indent_contains=false) {
         std::string r;
         if (indent_unit) inc_indent();
+        // Compute label references for this program unit (excluding nested
+        // CONTAINS subprograms, which have their own label scope). Save the
+        // previous set so nested visits can restore it on return.
+        std::unordered_set<int64_t> saved_label_refs = label_refs;
+        label_refs.clear();
+        {
+            LabelRefCollector c;
+            for (size_t i = 0; i < x.n_body; i++) {
+                c.visit_stmt(*x.m_body[i]);
+            }
+            label_refs = std::move(c.refs);
+        }
         for (size_t i=0; i<x.n_use; i++) {
             this->visit_unit_decl1(*x.m_use[i]);
             r.append(s);
@@ -1042,6 +1163,7 @@ public:
             if (indent_contains) dec_indent();
         }
         if (indent_unit) dec_indent();
+        label_refs = std::move(saved_label_refs);
         return r;
     }
 
@@ -2408,7 +2530,23 @@ public:
             r.append("\n");
         }
         inc_indent();
-        for (size_t i=0; i<x.n_body; i++) {
+        // Detect a trailing labeled CONTINUE that is a synthetic do-loop
+        // terminator (produced by the fixed-form tokenizer for the legacy
+        // `DO <label> ... <label> CONTINUE` idiom). If its label is not
+        // referenced anywhere in the enclosing program unit as a branch
+        // target, the statement is dead and is omitted from the output.
+        size_t body_n = x.n_body;
+        if (body_n > 0) {
+            const stmt_t *last = x.m_body[body_n - 1];
+            if (last->type == stmtType::Continue) {
+                const Continue_t *c = (const Continue_t*)last;
+                if (c->m_label > 0
+                        && label_refs.count(c->m_label) == 0) {
+                    body_n -= 1;
+                }
+            }
+        }
+        for (size_t i=0; i<body_n; i++) {
             this->visit_stmt(*x.m_body[i]);
             r.append(s);
         }

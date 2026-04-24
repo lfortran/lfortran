@@ -2948,6 +2948,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "fixed_form_continue_11223.f"
+ast = true
+ast_f90 = true
+
+[[test]]
 filename = "fixed_form2.f"
 ast = true
 

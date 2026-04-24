@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-fixed_form_continue_11223-552a7e7",
+    "cmd": "lfortran --fixed-form --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/fixed_form_continue_11223.f",
+    "infile_hash": "0b4894116bb5f1efe2c9fb3c1d8fc32110c3cc879c6dd2463cabd9e1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-fixed_form_continue_11223-552a7e7.stdout",
+    "stdout_hash": "751888a1d54da9cc62b4252d92dcdf6275376351b7d2a27088978c89",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

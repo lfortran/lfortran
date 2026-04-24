@@ -61,7 +61,6 @@ end if
 
 k = 2
 do i = 1, 10, k
-    100 continue
 end do
 
 end program doloop_04
