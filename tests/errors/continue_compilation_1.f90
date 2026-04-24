@@ -697,4 +697,10 @@ program continue_compilation_1
         print *, len(generic)
         print *, len(a)
     end subroutine print_len_non_char
+
+    subroutine sub_write_unit_bad_type()
+        implicit none
+        real :: r
+        write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
+    end subroutine sub_write_unit_bad_type
 end program
