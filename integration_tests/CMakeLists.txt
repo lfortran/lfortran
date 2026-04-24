@@ -1229,6 +1229,7 @@ RUN(NAME procedure_pointer_21 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_22 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_23 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_24 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_25 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -1993,6 +1994,7 @@ RUN(NAME interface_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME interface_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME interface_31 LABELS gfortran llvm)
 RUN(NAME interface_32 LABELS gfortran llvm EXTRAFILES interface_32_module.f90 EXTRA_ARGS --implicit-interface)
+RUN(NAME interface_33 LABELS gfortran llvm EXTRAFILES interface_33_sub.f90)
 
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
@@ -4276,6 +4278,7 @@ RUN(NAME allocatable_derived_array_01 LABELS gfortran llvm)
 RUN(NAME allocatable_component_assign_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_component_reshape_unallocated_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_component_unnamed_unallocated_01 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME allocatable_assign_zero_size_01 FAIL LABELS gfortran llvm GFORTRAN_ARGS -fcheck=bounds)
 RUN(NAME allocatable_oob_01 FAIL LABELS gfortran llvm NO_FAST GFORTRAN_ARGS -fcheck=bounds)
 
 RUN(NAME sync_all_01 LABELS llvm)

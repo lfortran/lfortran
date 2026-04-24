@@ -1113,7 +1113,7 @@ namespace LCompilers {
                 if (type_declaration != nullptr) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(type_declaration));
-                    type = get_function_type(*fn, module)->getPointerTo();
+                    type = get_function_type(*fn, module, /*for_indirect_callable=*/true)->getPointerTo();
                 } else {
                     // No type declaration available (e.g., procedure parameter
                     // of implicit interface). Create function type directly
@@ -1162,8 +1162,45 @@ namespace LCompilers {
         set_api = set_api_lp;
     }
 
-    std::vector<llvm::Type*> LLVMUtils::convert_args(const ASR::Function_t& x, llvm::Module* module) {
+    std::vector<llvm::Type*> LLVMUtils::convert_args(const ASR::Function_t& x, llvm::Module* module,
+            bool for_indirect_callable) {
         std::vector<llvm::Type*> args;
+        ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(x);
+        // Use standard Fortran ABI (i8* + hidden length) for character args
+        // only for user-written external functions: not in a module, not
+        // compiler-generated, not BindC, not Intrinsic.
+        bool is_compiler_generated = (x.m_name[0] == '_' && x.m_name[1] == 'l');
+        bool is_top_level = x.m_symtab->parent &&
+                            x.m_symtab->parent->asr_owner &&
+                            ASR::is_a<ASR::unit_t>(*x.m_symtab->parent->asr_owner);
+        // Check if any ancestor scope is a Module (excludes abstract
+        // interfaces and other functions declared inside modules)
+        bool in_module = false;
+        {
+            SymbolTable* s = x.m_symtab->parent;
+            while (s && s->asr_owner) {
+                if (ASR::is_a<ASR::symbol_t>(*s->asr_owner) &&
+                    ASR::is_a<ASR::Module_t>(
+                        *ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+                    in_module = true;
+                    break;
+                }
+                s = s->parent;
+            }
+        }
+        bool is_external_iface = (ftype->m_deftype == ASR::deftypeType::Interface &&
+                                   ftype->m_abi != ASR::abiType::Intrinsic &&
+                                   ftype->m_abi != ASR::abiType::BindC &&
+                                   !ftype->m_module &&
+                                   !is_compiler_generated &&
+                                   !in_module);
+        bool uses_standard_fortran_abi = !for_indirect_callable && (is_external_iface ||
+                                         (is_top_level &&
+                                          !ftype->m_module &&
+                                          ftype->m_abi != ASR::abiType::Intrinsic &&
+                                          ftype->m_abi != ASR::abiType::BindC &&
+                                          !is_compiler_generated));
+        int n_hidden_char_args = 0;
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
@@ -1175,18 +1212,18 @@ namespace LCompilers {
                 int n_dims = 0, a_kind = 4;
                 bool is_array_type = false;
                 ASR::ttype_t* arg_type_for_abi = arg->m_type;
-                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+                if (ftype->m_abi == ASR::abiType::BindC &&
                     ASRUtils::is_array(arg_type_for_abi)) {
                     arg_type_for_abi = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type_for_abi));
                 }
                 type_original = get_arg_type_from_ttype_t(x.m_args[i], arg_type_for_abi,
                     arg->m_type_declaration,
-                    ASRUtils::get_FunctionType(x)->m_abi,
+                    ftype->m_abi,
                     arg->m_abi, arg->m_storage, arg->m_value_attr,
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
-                if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC && is_array_type) {
+                if (ftype->m_abi == ASR::abiType::BindC && is_array_type) {
                     // For bind(c) array dummies (including implicit interfaces), handle
                     // based on the physical type specified in the ASR.
                     ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
@@ -1225,15 +1262,23 @@ namespace LCompilers {
                     m_h = get_hash((ASR::asr_t*)_func);
                 }
                 if( is_array_type && !LLVM::is_llvm_pointer(*arg->m_type) ) {
-                    if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Source ) {
+                    if( ftype->m_abi == ASR::abiType::Source ) {
                         llvm::Type* orig_type = type_original;
                         type = arr_api->get_argument_type(orig_type, m_h, arg->m_name, arr_arg_type_cache);
                         is_array_type = false;
-                    } else if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic &&
+                    } else if( ftype->m_abi == ASR::abiType::Intrinsic &&
                         fname2arg_type.find(m_name) != fname2arg_type.end()) {
                         type = fname2arg_type[m_name].second;
                         is_array_type = false;
                     }
+                }
+                if (uses_standard_fortran_abi && !is_array_type &&
+                    !ASRUtils::is_array(arg->m_type) &&
+                    !ASR::is_a<ASR::Allocatable_t>(*arg->m_type) &&
+                    !ASR::is_a<ASR::Pointer_t>(*arg->m_type) &&
+                    ASRUtils::is_character(*arg->m_type)) {
+                    type = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    n_hidden_char_args++;
                 }
                 args.push_back(type);
             } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
@@ -1244,16 +1289,20 @@ namespace LCompilers {
                 ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                     ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(
                     x.m_args[i])->m_v));
-                llvm::Type* type = get_function_type(*fn, module)->getPointerTo();
+                llvm::Type* type = get_function_type(*fn, module, /*for_indirect_callable=*/true)->getPointerTo();
                 args.push_back(type);
             } else {
                 throw CodeGenError("Argument type not implemented");
             }
         }
+        for (int i = 0; i < n_hidden_char_args; i++) {
+            args.push_back(llvm::Type::getInt64Ty(context));
+        }
         return args;
     }
 
-    llvm::FunctionType* LLVMUtils::get_function_type(const ASR::Function_t &x, llvm::Module* module) {
+    llvm::FunctionType* LLVMUtils::get_function_type(const ASR::Function_t &x, llvm::Module* module,
+            bool for_indirect_callable) {
         llvm::Type *return_type;
         if (x.m_return_var) {
             ASR::ttype_t *return_var_type0 = ASRUtils::EXPR2VAR(x.m_return_var)->m_type;
@@ -1294,7 +1343,7 @@ namespace LCompilers {
                         if (compiler_options.platform == Platform::Windows) {
                             // pass as subroutine
                             return_type = getComplexType(a_kind, true);
-                            std::vector<llvm::Type*> args = convert_args(x, module);
+                            std::vector<llvm::Type*> args = convert_args(x, module, for_indirect_callable);
                             args.insert(args.begin(), return_type);
                             llvm::FunctionType *function_type = llvm::FunctionType::get(
                                     llvm::Type::getVoidTy(context), args, false);
@@ -1426,7 +1475,7 @@ namespace LCompilers {
         } else {
             return_type = llvm::Type::getVoidTy(context);
         }
-        std::vector<llvm::Type*> args = convert_args(x, module);
+        std::vector<llvm::Type*> args = convert_args(x, module, for_indirect_callable);
         llvm::FunctionType *function_type = llvm::FunctionType::get(
                 return_type, args, false);
         return function_type;
@@ -1696,14 +1745,14 @@ namespace LCompilers {
                 if( type_declaration ) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(type_declaration));
-                    llvm_type = get_function_type(*fn, module)->getPointerTo();
+                    llvm_type = get_function_type(*fn, module, /*for_indirect_callable=*/true)->getPointerTo();
                 } else {
                     const ASR::Function_t* fn_from_expr = nullptr;
                     if (arg_expr) {
                         fn_from_expr = ASRUtils::get_function_from_expr(arg_expr);
                     }
                     if (fn_from_expr) {
-                        llvm_type = get_function_type(*fn_from_expr, module)->getPointerTo();
+                        llvm_type = get_function_type(*fn_from_expr, module, /*for_indirect_callable=*/true)->getPointerTo();
                     } else {
                         // For implicit interfaces / null procedure pointers, arg_expr
                         // can be null or not resolve to a concrete Function_t.

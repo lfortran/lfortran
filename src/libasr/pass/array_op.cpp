@@ -1767,11 +1767,58 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
+        // When the RHS is a simple allocatable array variable that may have
+        // zero size at runtime (e.g. a function returning allocate(r(0))),
+        // wrap the element-wise copy loop in a guard so we skip it entirely
+        // for zero-size RHS. Without this guard the loop iterates based on
+        // the LHS bounds and accesses out-of-bounds elements of the RHS.
+        bool needs_zero_size_guard = false;
+        ASR::expr_t* rhs_size_expr = nullptr;
+        ASR::ttype_t* value_type = ASRUtils::expr_type(xx.m_value);
+        if (ASRUtils::is_array(value_type) &&
+            ASRUtils::is_allocatable(value_type) &&
+            ASR::is_a<ASR::Var_t>(*xx.m_value)) {
+            needs_zero_size_guard = true;
+            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            ASRUtils::ExprStmtDuplicator dup(al);
+            ASR::expr_t* value_copy = dup.duplicate_expr(xx.m_value);
+            rhs_size_expr = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                al, loc, value_copy, nullptr, int_type, nullptr));
+        }
+
+        size_t pass_result_before = pass_result.size();
+
         Vec<ASR::expr_t**> fix_type_args;
         fix_type_args.reserve(al, 2);
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
         generate_loop(x, vars, fix_type_args, loc);
+
+        if (needs_zero_size_guard) {
+            // Extract the loop statements that generate_loop just added
+            Vec<ASR::stmt_t*> loop_body;
+            loop_body.reserve(al, pass_result.size() - pass_result_before);
+            for (size_t i = pass_result_before; i < pass_result.size(); i++) {
+                loop_body.push_back(al, pass_result[i]);
+            }
+            pass_result.n = pass_result_before;
+
+            // if (size(rhs) > 0) then <loop_body>
+            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            ASR::expr_t* zero = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+            ASR::ttype_t* log_type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, loc, 4));
+            ASR::expr_t* cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                al, loc, rhs_size_expr, ASR::cmpopType::Gt, zero,
+                log_type, nullptr));
+            ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                al, loc, nullptr, cond, loop_body.p, loop_body.size(),
+                nullptr, 0));
+            pass_result.push_back(al, if_stmt);
+        }
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
