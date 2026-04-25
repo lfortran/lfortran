@@ -328,8 +328,10 @@ public:
             args_for_return_var.push_back(al, arg_for_return_var);
         }
 
-        replace_FunctionParam_with_FunctionArgs(assignment_value, new_args);
-        new_body.push_back(al, b.Assignment(return_var, assignment_value));
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
+        replace_FunctionParam_with_FunctionArgs(assignment_value_copy, new_args);
+        new_body.push_back(al, b.Assignment(return_var, assignment_value_copy));
         ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.base.loc,
                     new_scope, s2c(al, new_function_name), current_function_dependencies.p, current_function_dependencies.n,
                     new_args.p, new_args.n,
@@ -445,10 +447,12 @@ public:
             args_for_return_var.push_back(al, arg_for_return_var);
         }
 
-        replace_FunctionParam_with_FunctionArgs(assignment_value, new_args);
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
+        replace_FunctionParam_with_FunctionArgs(assignment_value_copy, new_args);
         
-        collect_and_create_new_externalSymbols(assignment_value);
-        new_body.push_back(al, b.Assignment(return_var, assignment_value));
+        collect_and_create_new_externalSymbols(assignment_value_copy);
+        new_body.push_back(al, b.Assignment(return_var, assignment_value_copy));
         ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.loc,
                     new_scope, s2c(al, new_function_name), current_function_dependencies.p, current_function_dependencies.n,
                     new_args.p, new_args.n,

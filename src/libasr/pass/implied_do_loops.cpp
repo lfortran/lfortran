@@ -1279,18 +1279,100 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     }
                     if ( (x.m_fmt != nullptr) && is_internal_file &&
                          implied_do_loop_has_string_trim(implied_do_loop) ) {
-                        // For internal file writes with string_trim, use concatenation
-                        // instead of individual writes (which would overwrite the buffer).
-                        remove_original_statement = true;
-                        pass_result.push_back(al, create_do_loop_concat_idl(implied_do_loop));
-                        continue;
+                        // Try flat expansion first to preserve sibling args
+                        Vec<ASR::expr_t*> expanded_values;
+                        expanded_values.reserve(al, 16);
+                        if (expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
+                            Vec<ASR::expr_t*> new_args;
+                            new_args.reserve(al, x.n_args + expanded_values.size());
+                            for (size_t j = 0; j < i; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            for (size_t j = 0; j < expanded_values.size(); j++) {
+                                new_args.push_back(al, expanded_values.p[j]);
+                            }
+                            for (size_t j = i + 1; j < x.n_args; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            string_format_stmt->m_args = new_args.p;
+                            string_format_stmt->n_args = new_args.size();
+                            i = i + expanded_values.size() - 1;
+                            continue;
+                        }
+                        if (x.n_args == 1) {
+                            // For internal file writes with string_trim, use concatenation
+                            // instead of individual writes (which would overwrite the buffer).
+                            remove_original_statement = true;
+                            pass_result.push_back(al, create_do_loop_concat_idl(implied_do_loop));
+                            continue;
+                        }
+                        // When there are sibling args, fall through to the
+                        // default ArrayConstructor path so that siblings are
+                        // preserved in the same StringFormat / write statement.
                     }
                     if ( (x.m_fmt != nullptr) && !is_internal_file &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
                           implied_do_loop_has_string_trim(implied_do_loop)) ) {
-                        remove_original_statement = true;
-                        pass_result.push_back(al, create_do_loop_form_idl(implied_do_loop, x.m_fmt));
-                        continue;
+                        // Try flat expansion first to preserve sibling args
+                        Vec<ASR::expr_t*> expanded_values;
+                        expanded_values.reserve(al, 16);
+                        if (expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
+                            Vec<ASR::expr_t*> new_args;
+                            new_args.reserve(al, x.n_args + expanded_values.size());
+                            for (size_t j = 0; j < i; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            for (size_t j = 0; j < expanded_values.size(); j++) {
+                                new_args.push_back(al, expanded_values.p[j]);
+                            }
+                            for (size_t j = i + 1; j < x.n_args; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            string_format_stmt->m_args = new_args.p;
+                            string_format_stmt->n_args = new_args.size();
+                            i = i + expanded_values.size() - 1;
+                            continue;
+                        }
+                        {
+                            // Use DO loop to preserve trim() semantics.
+                            // When there are sibling args (n_args > 1), merge
+                            // non-IDL siblings into the IDL values so each
+                            // iteration writes all values together. Skip sibling
+                            // ImpliedDoLoops — they have their own bounds and
+                            // must produce independent DO loops (otherwise the
+                            // nested inner loop overwrites the shared loop
+                            // variable).
+                            ASR::ImpliedDoLoop_t* idl_for_loop = implied_do_loop;
+                            if (x.n_args > 1) {
+                                Vec<ASR::expr_t*> merged_values;
+                                merged_values.reserve(al, x.n_args + implied_do_loop->n_values - 1);
+                                for (size_t j = 0; j < i; j++) {
+                                    if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_args[j])) {
+                                        merged_values.push_back(al, x.m_args[j]);
+                                    }
+                                }
+                                for (size_t j = 0; j < implied_do_loop->n_values; j++) {
+                                    merged_values.push_back(al, implied_do_loop->m_values[j]);
+                                }
+                                for (size_t j = i + 1; j < x.n_args; j++) {
+                                    if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_args[j])) {
+                                        merged_values.push_back(al, x.m_args[j]);
+                                    }
+                                }
+                                if (merged_values.size() != implied_do_loop->n_values) {
+                                    idl_for_loop = ASR::down_cast2<ASR::ImpliedDoLoop_t>(
+                                        ASR::make_ImpliedDoLoop_t(al, implied_do_loop->base.base.loc,
+                                            merged_values.p, merged_values.size(),
+                                            implied_do_loop->m_var,
+                                            implied_do_loop->m_start, implied_do_loop->m_end,
+                                            implied_do_loop->m_increment,
+                                            implied_do_loop->m_type, implied_do_loop->m_value));
+                                }
+                            }
+                            remove_original_statement = true;
+                            pass_result.push_back(al, create_do_loop_form_idl(idl_for_loop, x.m_fmt));
+                            continue;
+                        }
                     }
                     if ( (x.m_fmt == nullptr) &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
@@ -1311,7 +1393,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             }
                             string_format_stmt->m_args = new_args.p;
                             string_format_stmt->n_args = new_args.size();
-                            break;
+                            i = i + expanded_values.size() - 1;
+                            continue;
                         }
                     }
                     ASR::asr_t* array_constant = create_array_constant(x, value);

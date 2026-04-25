@@ -1460,3 +1460,21 @@ semantic error: Expected logical expression in if statement, but recieved logica
     |
 689 |         if (abs(arr1)(1) /= 2471095) error stop
     |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
+
+semantic error: Character intrinsic 'len' with class(*) argument must be inside 'type is (character(len=*))' guard
+   --> tests/errors/continue_compilation_1.f90:697:22
+    |
+697 |         print *, len(generic)
+    |                      ^^^^^^^ invalid use of character intrinsic with polymorphic argument
+
+semantic error: Argument of 'len' intrinsic must be CHARACTER, found integer instead.
+   --> tests/errors/continue_compilation_1.f90:698:22
+    |
+698 |         print *, len(a)
+    |                      ^ 
+
+semantic error: `unit` must be of type Integer or Character
+   --> tests/errors/continue_compilation_1.f90:704:9
+    |
+704 |         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
