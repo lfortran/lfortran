@@ -39,6 +39,29 @@ run_test() {
   print_success "Success: $1"
 }
 
+# Assert that the current git HEAD matches the expected commit SHA.
+#
+# This is the analogue of a lockfile entry (cf. pixi.lock): a branch or tag
+# checkout gives us a human-readable reference, but upstream may move it. By
+# pinning the exact commit here we fail fast if upstream silently changes the
+# code we are testing against. If the assertion fails, investigate the
+# upstream change, then update the SHA after review.
+#
+# Usage:
+#   git checkout v3.1.0
+#   assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
+assert_git_commit() {
+  local expected="$1"
+  local label="${2:-$(basename "$PWD")}"
+  local actual
+  actual=$(git rev-parse HEAD)
+  if [ "$actual" != "$expected" ]; then
+    echo "ERROR [$label]: expected commit $expected but HEAD is $actual" >&2
+    echo "       (upstream branch/tag may have moved; update the pin after review)" >&2
+    exit 1
+  fi
+}
+
 time_section() {
   local LABEL="$1"
   local BLOCK="$2"
@@ -161,7 +184,7 @@ time_section "🧪 Testing splpak" '
   fpm --version
 
   git checkout lf-2
-  git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
+  assert_git_commit 460bd22f4ac716e5266412e8ed35ce07aa664f08
 
   git clean -dfx
   fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math" --verbose
@@ -211,7 +234,7 @@ time_section "🧪 Testing smart-pointers" '
   micromamba install -c conda-forge fpm
 
   git checkout -t origin/lf2
-  git checkout 95de5105c6a469b64feb39e999567f5e2fcdd033
+  assert_git_commit 95de5105c6a469b64feb39e999567f5e2fcdd033
   fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
@@ -227,7 +250,7 @@ time_section "🧪 Testing Formal" '
   micromamba install -c conda-forge fpm
 
   git checkout -t origin/lf1
-  git checkout 671ab24c3d639b1a2fedd27f727e96dadf404c5c
+  assert_git_commit 671ab24c3d639b1a2fedd27f727e96dadf404c5c
   fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
@@ -311,7 +334,7 @@ time_section "🧪 Testing M_CLI2" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-9
   micromamba install -c conda-forge fpm
-  git checkout 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
+  assert_git_commit 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
 
@@ -342,7 +365,7 @@ time_section "🧪 Compiling POT3D with fortran_mpi" '
   git clone https://github.com/parth121101/pot3d.git
   cd pot3d
   git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-  git checkout 380669edd3a5947985674a51e0d65482d6fe68b3
+  assert_git_commit 380669edd3a5947985674a51e0d65482d6fe68b3
 
   git clone https://github.com/lfortran/fortran_mpi
   cd fortran_mpi
@@ -382,7 +405,7 @@ time_section "🧪 Testing FPM" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout main
   micromamba install -c conda-forge fpm
-  git checkout d0f89957541bdcc354da8e11422f5efcf9fedd0e
+  assert_git_commit d0f89957541bdcc354da8e11422f5efcf9fedd0e
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
@@ -397,7 +420,7 @@ time_section "🧪 Testing Fortran-Primes" '
   git clone https://github.com/jinangshah21/fortran-primes.git
   cd fortran-primes
   git checkout -t origin/lf-3
-  git checkout 923b468f79eee1ff07b77d9def67249f4d2efa21
+  assert_git_commit 923b468f79eee1ff07b77d9def67249f4d2efa21
 
   print_subsection "Building and running Fortran-Primes"
   FC=$FC ./build_and_run.sh
@@ -414,7 +437,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
   cd numerical-methods-fortran
   git checkout -t origin/lf6
-  git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
+  assert_git_commit a252989e64b3f8d5d2f930dca18411c104ea85f8
 
   print_subsection "Building project"
   FC="$FC --no-array-bounds-checking --realloc-lhs-arrays" make
@@ -449,7 +472,7 @@ time_section "🧪 Compiling PRIMA" '
   git clone https://github.com/Pranavchiku/prima.git
   cd prima
   git checkout -t origin/lf-prima-12
-  git checkout e681eea9b3f27930c50cffd14dd566b39f01c642
+  assert_git_commit e681eea9b3f27930c50cffd14dd566b39f01c642
   git clean -dfx
 
   # OS-specific env
@@ -493,7 +516,7 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
   git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
   cd modern_minpack_02
   git checkout -t origin/w5
-  git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+  assert_git_commit fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
@@ -541,7 +564,7 @@ time_section "🧪 Testing fastGPT" '
 
     git clean -dfx
     git checkout -t origin/namelist
-    git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+    assert_git_commit d3eef520c1be8e2db98a3c2189740af1ae7c3e06
     curl -f -L -o model.dat \
         https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
     echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
@@ -568,7 +591,7 @@ time_section "🧪 Testing stdlib" '
     export PATH="$(pwd)/../../src/bin:$PATH"
 
     git checkout lf-21
-    git checkout 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
+    assert_git_commit 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
     micromamba install -c conda-forge fypp
 
     git clean -fdx
@@ -585,7 +608,7 @@ time_section "🧪 Testing SNAP" '
     cd SNAP
 
     git checkout lf11
-    git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
+    assert_git_commit 169a9216f2c922e94065a519efbb0a6c8b55149e
     cd ./src
     make -j8 FORTRAN=$FC FFLAGS= MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
@@ -600,7 +623,7 @@ time_section "🧪 Testing LAPACK" '
     cd lapack
     git fetch origin lf_07
     git checkout lf_07
-    git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+    assert_git_commit 9d9e48987ca109d46b92d515b59cb591fab9859a
     cd build
     ./build_lf.sh
     micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
