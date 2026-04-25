@@ -125,27 +125,20 @@ time_section "🧪 Testing caffeine" '
 
 
 time_section "🧪 Testing assert" '
-  git clone https://github.com/pranavchiku/assert.git
+  git clone -b main https://github.com/berkeleylab/assert.git
   cd assert
-  export PATH="$(pwd)/../src/bin:$PATH"
+
   micromamba install -c conda-forge fpm=0.12.0
 
-  # To debug https://github.com/lfortran/lfortran/issues/7732:
-  which fpm
-  realpath $(which fpm)
-  ls -l $(dirname $(realpath $(which fpm)))/../lib
-  ls -l $CONDA_PREFIX/lib
-  fpm --version
+  git checkout 3.1.0
 
-  git checkout -t origin/fix-test
-  git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
   fpm test --compiler=$FC --flag "--cpp"
 
   git clean -dfx
   print_subsection "Testing with assertions enabled"
-  fpm test --compiler=$FC --verbose --flag '--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS'
+  fpm test --compiler=$FC --verbose --flag "--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS"
 
   cd ../
   rm -rf assert
