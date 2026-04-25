@@ -2108,6 +2108,138 @@ public:
         return sub;
     }
 
+    std::string trim_omp_directive_part(const std::string &text) {
+        size_t b = text.find_first_not_of(" \t\r\n");
+        if (b == std::string::npos) {
+            return "";
+        }
+        size_t e = text.find_last_not_of(" \t\r\n");
+        return text.substr(b, e - b + 1);
+    }
+
+    std::string omp_directive_body(const std::string &text) {
+        std::string trimmed = trim_omp_directive_part(text);
+        std::string lower_text = LCompilers::to_lower(trimmed);
+        if (LCompilers::startswith(lower_text, "!$omp")) {
+            return trim_omp_directive_part(trimmed.substr(5));
+        }
+        return trimmed;
+    }
+
+    bool is_omp_threadprivate_directive(const std::string &text) {
+        const std::string directive = "threadprivate";
+        std::string trimmed = omp_directive_body(text);
+        std::string lower_text = LCompilers::to_lower(trimmed);
+        if (!LCompilers::startswith(lower_text, directive)) {
+            return false;
+        }
+        if (lower_text.size() == directive.size()) {
+            return true;
+        }
+        char next = lower_text[directive.size()];
+        return next == '(' || next == ' ' || next == '\t';
+    }
+
+    void parse_omp_threadprivate_vars(const std::string &text,
+            const Location &loc, std::vector<std::string> &names) {
+        const std::string directive = "threadprivate";
+        std::string trimmed = omp_directive_body(text);
+        size_t pos = directive.size();
+        while (pos < trimmed.size() &&
+                (trimmed[pos] == ' ' || trimmed[pos] == '\t')) {
+            pos++;
+        }
+        if (pos >= trimmed.size() || trimmed[pos] != '(') {
+            diag.add(Diagnostic(
+                "malformed `!$omp threadprivate(...)` directive: "
+                "variable list missing or empty",
+                Level::Error, Stage::Semantic, { Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        size_t lp = pos;
+        size_t rp = trimmed.rfind(')');
+        if (rp == std::string::npos || rp <= lp + 1) {
+            diag.add(Diagnostic(
+                "malformed `!$omp threadprivate(...)` directive: "
+                "variable list missing or empty",
+                Level::Error, Stage::Semantic, { Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        if (trim_omp_directive_part(trimmed.substr(rp + 1)) != "") {
+            diag.add(Diagnostic(
+                "malformed `!$omp threadprivate(...)` directive: "
+                "unexpected text after variable list",
+                Level::Error, Stage::Semantic, { Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        std::string inner = trimmed.substr(lp + 1, rp - lp - 1);
+        size_t start = 0;
+        while (start <= inner.size()) {
+            size_t comma = inner.find(',', start);
+            size_t len = (comma == std::string::npos)
+                ? std::string::npos : comma - start;
+            std::string name = inner.substr(start, len);
+            name = trim_omp_directive_part(name);
+            if (name == "") {
+                diag.add(Diagnostic(
+                    "malformed `!$omp threadprivate(...)` directive: "
+                    "empty variable name in list",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            if (name.find('/') != std::string::npos) {
+                diag.add(Diagnostic(
+                    "`!$omp threadprivate(...)` common blocks are not "
+                    "supported yet",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            names.push_back(LCompilers::to_lower(name));
+            if (comma == std::string::npos) break;
+            start = comma + 1;
+        }
+    }
+
+    void mark_omp_threadprivate_vars(const std::string &text, const Location &loc) {
+        std::vector<std::string> names;
+        parse_omp_threadprivate_vars(text, loc, names);
+        for (const std::string &name: names) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+            if (!sym) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "is not declared in this scope",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(sym);
+            if (!ASR::is_a<ASR::Variable_t>(*resolved)) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "is not a variable",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(resolved);
+            if (var->m_storage == ASR::storage_typeType::Parameter) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "cannot have the parameter attribute",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(resolved);
+            if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "must be a module variable",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            var->m_storage = ASR::storage_typeType::Threadprivate;
+        }
+    }
+
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
             const std::string &var_name, ASR::intentType intent, ASR::expr_t* value = nullptr) {
         ASR::ttype_t *type = nullptr;

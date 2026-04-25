@@ -5695,6 +5695,20 @@ public:
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python_symbol(x.m_type, x.m_type_declaration), x.base.base.loc);
         }
+        if (x.m_storage == ASR::storage_typeType::Threadprivate) {
+            // Emit the module-level global with thread-local storage so each
+            // OpenMP thread sees its own copy of the variable listed in
+            // `!$omp threadprivate(...)`. See issue #11132 for scope notes.
+            auto it = llvm_symtab.find(h);
+            if (it != llvm_symtab.end()) {
+                llvm::GlobalVariable *gv =
+                    llvm::dyn_cast<llvm::GlobalVariable>(it->second);
+                if (gv != nullptr) {
+                    gv->setThreadLocalMode(
+                        llvm::GlobalValue::GeneralDynamicTLSModel);
+                }
+            }
+        }
     }
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){

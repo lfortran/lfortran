@@ -2347,6 +2347,27 @@ public:
                 throw SemanticAbort();
             }
 
+        } else if (x.m_type == AST::OMPPragma) {
+            if (!compiler_options.openmp) {
+                // Sentinel outside --openmp is silenced at tokenizer level;
+                // if one reaches here without the flag, treat as a no-op.
+                return;
+            }
+            std::string text = x.m_text;
+            // Only the threadprivate declarative directive is meaningful in a
+            // specification part. Other OMP directives in this position are
+            // either data-environment directives we do not support yet or a
+            // user error; keep them rejected.
+            if (is_omp_threadprivate_directive(text)) {
+                mark_omp_threadprivate_vars(text, x.base.base.loc);
+                return;
+            }
+            diag.add(diag::Diagnostic(
+                "OpenMP directive `" + text + "` is not supported in a "
+                "specification part",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         } else {
             diag.add(diag::Diagnostic(
                 "The pragma type not supported yet",

@@ -8905,7 +8905,14 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::DistributeParallelDo, clauses.p, clauses.n, body.p, body.n)));
-            }else {
+            } else if (is_omp_threadprivate_directive(std::string(x.m_construct_name))) {
+                // Declarative directive appearing in an executable section
+                // (e.g. inside a subroutine before the first executable
+                // statement). Mark the referenced variables so the LLVM
+                // backend emits them with thread-local storage.
+                mark_omp_threadprivate_vars(std::string(x.m_construct_name), loc);
+                return;
+            } else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
                     +" is not supported yet",
