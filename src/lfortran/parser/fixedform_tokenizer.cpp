@@ -1672,7 +1672,14 @@ struct FixedFormRecursiveDescent {
             tokenize_line(cur);
             return true;
         }
-        lex_body_statement(cur);
+        unsigned char *prev = cur;
+        bool result = lex_body_statement(cur);
+        if (!result && cur == prev) {
+            // No progress was made (e.g. an unsupported statement like PAUSE).
+            // Abort the loop to avoid an infinite loop; the outer parser will
+            // emit an appropriate error.
+            return false;
+        }
         return true;
     }
 

@@ -1652,9 +1652,10 @@ public:
                     this->visit_expr(*kwarg.m_value);
                     a_unit = ASRUtils::EXPR(tmp);
                     ASR::ttype_t* a_unit_type = ASRUtils::expr_type(a_unit);
-                    if  (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_unit_type))) {
+                    if  (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_unit_type))
+                         && !ASRUtils::is_character(*a_unit_type)) {
                             diag.add(Diagnostic(
-                                "`unit` must be of type, Integer",
+                                "`unit` must be of type Integer or Character",
                                 Level::Error, Stage::Semantic, {
                                     Label("",{loc})
                                 }));

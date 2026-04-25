@@ -1706,6 +1706,7 @@ RUN(NAME intrinsics_450 LABELS llvm) # storage_size struct alignment
 RUN(NAME intrinsics_451 LABELS gfortran llvm) # findloc with character ExpressionLength
 RUN(NAME intrinsics_452 LABELS gfortran llvm) # findloc with Pointer-wrapped ExpressionLength
 RUN(NAME intrinsics_453 LABELS gfortran llvm) # Lgt intrinsic as while loop condition
+RUN(NAME intrinsics_454 LABELS gfortran llvm) # all/any with array section and whole array
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -2466,6 +2467,8 @@ RUN(NAME realloc_lhs_21 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_22 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_23 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
@@ -3169,6 +3172,11 @@ RUN(NAME implied_do_loops27 LABELS gfortran llvm)
 RUN(NAME implied_do_loops28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME implied_do_loops29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME implied_do_loops31 LABELS gfortran llvm)
+RUN(NAME implied_do_loops32 LABELS gfortran llvm)
+RUN(NAME implied_do_loops33 LABELS gfortran llvm)
+RUN(NAME implied_do_loops34 LABELS gfortran llvm)
+RUN(NAME implied_do_loops35 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
@@ -3377,6 +3385,7 @@ RUN(NAME write_23 LABELS gfortran llvm)
 RUN(NAME write_24 LABELS gfortran llvm)
 RUN(NAME write_25 LABELS gfortran llvm)
 RUN(NAME write_26 LABELS gfortran llvm)
+RUN(NAME write_27 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -4069,6 +4078,7 @@ RUN(NAME struct_type_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME struct_type_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
