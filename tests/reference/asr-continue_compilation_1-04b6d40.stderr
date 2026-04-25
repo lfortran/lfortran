@@ -1472,3 +1472,9 @@ semantic error: Argument of 'len' intrinsic must be CHARACTER, found integer ins
     |
 698 |         print *, len(a)
     |                      ^ 
+
+semantic error: `unit` must be of type Integer or Character
+   --> tests/errors/continue_compilation_1.f90:704:9
+    |
+704 |         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
