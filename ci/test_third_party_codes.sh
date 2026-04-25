@@ -237,10 +237,9 @@ time_section "🧪 Testing Formal" '
 time_section "🧪 Testing Julienne" '
   git clone https://github.com/BerkeleyLab/julienne.git
   cd julienne
-  export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout a75b5a831e303315304db52ec9dd70c9badc08cd
+  git checkout 3.6.2
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Julienne"
