@@ -2415,8 +2415,8 @@ public:
         dec_indent();
         r += indent;
         r += syn(gr::Repeat);
-        if (x.m_end_label != 0) {
-            r += std::to_string(x.m_end_label);
+        if (x.m_do_label != 0) {
+            r += std::to_string(x.m_do_label);
             r += " ";
         }
         r.append("end do");

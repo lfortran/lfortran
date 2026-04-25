@@ -7997,15 +7997,34 @@ public:
             do_in_pragma=true;
         }
         transform_stmts(body, x.n_body, x.m_body);
-        if (x.m_end_label != 0) {
-            // Legacy `DO <label> ... <label> CONTINUE` was rewritten by the
-            // tokenizer to `do ... <label> end do`. Append a GoToTarget at
-            // the end of the loop body so `GO TO <label>` (or any other
-            // branch reference to the label) resolves to a point inside the
-            // active DO range, preserving cycle semantics.
-            ASR::asr_t *gt = ASR::make_GoToTarget_t(al, x.base.base.loc,
-                x.m_end_label, s2c(al, std::to_string(x.m_end_label)));
-            body.push_back(al, ASR::down_cast<ASR::stmt_t>(gt));
+        if (x.m_do_label != 0) {
+            // Legacy `DO <label> ... <label> CONTINUE` (and the equivalent
+            // `DO ... <label> END DO`) are normalised at the AST level to
+            // a DoLoop carrying `do_label = <label>` with the trailing
+            // `<label> CONTINUE` dropped from the body. Append a GoToTarget
+            // at the end of the loop body so any `GO TO <label>` (or other
+            // branch reference to that label) resolves to a point inside
+            // the active DO range, preserving cycle semantics
+            // (F2018 §11.1.7.5).
+            //
+            // Skip this when the body already ends with a statement that
+            // carries `m_do_label` (e.g. legacy DO termination on a
+            // non-CONTINUE statement: `do 10 k=0,n / ... / 10 dy(k)=...`):
+            // `transform_stmts` already inserted a `GoToTarget(do_label)`
+            // before that labelled statement, so a second one here would
+            // re-define the same label.
+            bool already_targeted = false;
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (stmt_label(x.m_body[i]) == x.m_do_label) {
+                    already_targeted = true;
+                    break;
+                }
+            }
+            if (!already_targeted) {
+                ASR::asr_t *gt = ASR::make_GoToTarget_t(al, x.base.base.loc,
+                    x.m_do_label, s2c(al, std::to_string(x.m_do_label)));
+                body.push_back(al, ASR::down_cast<ASR::stmt_t>(gt));
+            }
         }
         if(pragma_in_block) {
             nesting_lvl_inside_pragma--;

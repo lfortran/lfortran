@@ -2052,19 +2052,50 @@ void add_ws_warning(const Location &loc,
 #define WARN_CHARACTERSTAR_EXPR(l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, -1)
 #define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 
-#define DO1(trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, end_label, \
+// Drop a trailing `<label> CONTINUE` from a DO-loop body when it is the
+// labelled terminator (its label equals the loop's `do_label`). The legacy
+// fixed-form `DO <label> ... <label> CONTINUE` and free-form `DO <label> ...
+// <label> CONTINUE` (where the `CONTINUE` line is matched as the loop's
+// terminator) are equivalent to the modern `DO ... <label> END DO` form.
+// We keep the AST shape minimal by representing both as the latter.
+//
+// `do_label != 0` carries the label that any `GO TO <label>` reference must
+// resolve to; AST->ASR appends a `GoToTarget` at the end of the loop body so
+// such branches still resolve inside the loop range and cycle the iteration
+// (F2018 §11.1.7.5).
+static inline void drop_trailing_matching_continue(
+        const LCompilers::Vec<LCompilers::LFortran::AST::ast_t*> &body, int64_t label) {
+    if (label == 0 || body.size() == 0) return;
+    LCompilers::LFortran::AST::ast_t *last = body.p[body.size() - 1];
+    if (last->type != LCompilers::LFortran::AST::astType::stmt) return;
+    LCompilers::LFortran::AST::stmt_t *st = (LCompilers::LFortran::AST::stmt_t*)last;
+    if (st->type != LCompilers::LFortran::AST::stmtType::Continue) return;
+    LCompilers::LFortran::AST::Continue_t *c =
+        (LCompilers::LFortran::AST::Continue_t*)last;
+    if (c->m_label == label) {
+        const_cast<LCompilers::Vec<LCompilers::LFortran::AST::ast_t*>&>(body).n--;
+    }
+}
+
+#define DO1(trivia, body, end_label, l) ( \
+        drop_trailing_matching_continue(body, end_label), \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
         nullptr, nullptr, nullptr, nullptr, \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr))
 
-#define DO2(i, a, b, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, end_label, \
+#define DO2(i, a, b, trivia, body, end_label, l) ( \
+        drop_trailing_matching_continue(body, end_label), \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
         name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))
-#define DO2_LABEL(label, i, a, b, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
-        label, end_label, name2char(i), EXPR(a), EXPR(b), nullptr, \
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)))
+#define DO2_LABEL(label, i, a, b, trivia, body, end_label, l) ( \
+        drop_trailing_matching_continue(body, label), \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, \
+        label, name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))); \
         if (label == 0) { \
             p.diag.add(LCompilers::diag::Diagnostic(  \
                 "Zero is not a valid statement label",   \
@@ -2072,20 +2103,24 @@ void add_ws_warning(const Location &loc,
             throw LCompilers::LFortran::parser_local::ParserAbort();  \
         }
 
-#define DO3_LABEL(label, i, a, b, c, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
-        label, end_label, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
+#define DO3_LABEL(label, i, a, b, c, trivia, body, end_label, l) ( \
+        drop_trailing_matching_continue(body, label), \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, \
+        label, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))); \
         if (label == 0) { \
             p.diag.add(LCompilers::diag::Diagnostic(  \
                 "Zero is not a valid statement label",   \
                 LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {l})}));  \
             throw LCompilers::LFortran::parser_local::ParserAbort();  \
         }
-#define DO3(i, a, b, c, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, end_label, \
+#define DO3(i, a, b, c, trivia, body, end_label, l) ( \
+        drop_trailing_matching_continue(body, end_label), \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
         name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))
+        /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)))
 
 #define DO_CONCURRENT1(h, loc, trivia, body, l) make_DoConcurrentLoop_t(p.m_a, l, 0, nullptr, \
         CONCURRENT_CONTROLS(h), h.size(), \

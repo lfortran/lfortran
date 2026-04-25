@@ -1397,7 +1397,7 @@ struct FixedFormRecursiveDescent {
                 // Drop the redundant CONTINUE keyword. The TK_LABEL pushed
                 // by eat_label() above already precedes the `end_do` we
                 // are about to push, so via `enddo : TK_LABEL KW_END_DO`
-                // it attaches as `m_end_label` on the DoLoop AST node and
+                // it attaches as `m_do_label` on the DoLoop AST node and
                 // is converted to an ASR GoToTarget at the end of the
                 // (innermost) loop body during AST->ASR. This preserves
                 // `GO TO <label>` cycle semantics.
