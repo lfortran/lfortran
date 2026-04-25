@@ -85,38 +85,43 @@ fi
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-if [[ "$(uname)" == "Darwin" ]]; then
 time_section "🧪 Testing caffeine" '
-  which lfortran
-  lfortran --version
+  git clone -b main https://github.com/BerkeleyLab/caffeine.git
+  cd caffeine
 
-  # Install pixi (needed to drive gasnet and caffeine builds)
-  if ! command -v pixi >/dev/null 2>&1; then
-    curl -fsSL https://pixi.sh/install.sh | bash
-    export PATH="$HOME/.pixi/bin:$PATH"
-  fi
-  pixi --version
+  micromamba install -c conda-forge fpm=0.12.0
 
-  # Build GASNet first (caffeine depends on it)
-  git clone -b build https://github.com/certik/gasnet.git
-  cd gasnet
-  git checkout 2949970115991c3eb71ba7c16edc87807d687e97
-  pixi install
-  pixi r build
-  pixi r install
-  cd ..
+  # To debug https://github.com/lfortran/lfortran/issues/7732:
+  which fpm
+  realpath $(which fpm)
+  ls -l $(dirname $(realpath $(which fpm)))/../lib
+  ls -l $CONDA_PREFIX/lib
+  fpm --version
+
+  export CC=clang
+  export CXX=clang++
+  echo PATH="$PATH"
+
+  for tool in ${FC} ${CC} ${CXX} fpm ; do
+    if command -v $tool > /dev/null 2>&1 ; then
+       ( echo ; set -x ; w=$(which $tool) ; ls -al $w ; ls -alhL $w ; $tool --version )
+    fi
+  done
+
+  # inject ISO_Fortran_binding.h into the C include path
+  export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
 
   # Now build and test caffeine with LFortran
-  git clone -b build4 https://github.com/certik/caffeine.git
-  cd caffeine
-  git checkout 50f6ae6
-  pixi r -e lfortran test
+  git checkout 0388cf70cd193214952d8be9a00e968c4c5061e2
+  export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
+  ./install.sh --yes --prefix=$PWD/inst --verbose
+  export CAF_IMAGES=4
+  ./run-fpm.sh test --verbose 
 
   print_success "Done with caffeine"
   cd ..
-  rm -rf caffeine gasnet
+  rm -rf caffeine
 '
-fi
 
 
 time_section "🧪 Testing assert" '
