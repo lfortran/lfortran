@@ -32,6 +32,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     a
@@ -73,8 +76,8 @@
                                     )]
                                     (Var 5 a)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             b:
@@ -125,6 +128,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     b
@@ -153,8 +159,8 @@
                                     )]
                                     (Var 3 b)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

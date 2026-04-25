@@ -227,6 +227,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -248,6 +251,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             c:
                                                 (Variable
@@ -274,6 +280,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     mytype
@@ -307,6 +316,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             mytype_instance:
                                 (Variable
@@ -431,6 +441,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     derived_types_41_mod

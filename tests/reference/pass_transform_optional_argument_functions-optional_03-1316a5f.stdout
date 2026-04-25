@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             __libasr_created_dummy_variable_1:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             __libasr_created_dummy_variable_2:
                                 (Variable
@@ -69,6 +75,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
@@ -92,6 +101,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             __libasr_created_variable_pointer_1:
                                 (Variable
@@ -115,6 +127,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             __libasr_created_variable_pointer_2:
                                 (Variable
@@ -138,6 +153,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             f1:
                                 (ExternalSymbol
@@ -171,6 +189,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             lfortran_tmp:
                                 (Variable
@@ -194,6 +215,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             lfortran_tmp1:
                                 (Variable
@@ -217,6 +241,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             my_sub:
                                 (ExternalSymbol
@@ -419,6 +446,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             r:
                                                 (Variable
@@ -442,6 +472,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -463,6 +496,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     f1
@@ -495,8 +531,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_sub:
@@ -524,6 +560,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     my_sub

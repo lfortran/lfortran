@@ -46,6 +46,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -72,6 +75,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             m:
                                                 (Variable
@@ -98,6 +104,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             r:
                                                 (Variable
@@ -119,6 +128,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     mergei32
@@ -160,8 +172,8 @@
                                     []
                                     (Var 3 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             merger32:
@@ -194,6 +206,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -220,6 +235,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             m:
                                                 (Variable
@@ -246,6 +264,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             r:
                                                 (Variable
@@ -267,6 +288,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     merger32
@@ -308,8 +332,8 @@
                                     []
                                     (Var 4 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             merger64:
@@ -342,6 +366,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -368,6 +395,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             m:
                                                 (Variable
@@ -394,6 +424,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             r:
                                                 (Variable
@@ -415,6 +448,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     merger64
@@ -456,8 +492,8 @@
                                     []
                                     (Var 5 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -498,6 +534,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             a2:
                                 (Variable
@@ -524,6 +563,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             b1:
                                 (Variable
@@ -550,6 +592,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             b2:
                                 (Variable
@@ -576,6 +621,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             m1:
                                 (Variable
@@ -602,6 +650,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             m2:
                                 (Variable
@@ -628,6 +679,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             mergegp:
                                 (ExternalSymbol

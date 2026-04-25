@@ -29,8 +29,8 @@
                     []
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             file_common_block_block_1:
@@ -63,6 +63,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -84,6 +87,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             h:
                                                 (Variable
@@ -105,6 +111,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     block_1
@@ -126,6 +135,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_1:
                                 (Variable
@@ -152,6 +162,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_block_1
@@ -191,6 +204,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             d:
                                                 (Variable
@@ -212,6 +228,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     block_2
@@ -232,6 +251,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_2:
                                 (Variable
@@ -258,6 +278,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_block_2
@@ -297,6 +320,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             g:
                                                 (Variable
@@ -318,6 +344,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     block_3
@@ -338,6 +367,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_3:
                                 (Variable
@@ -364,6 +394,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_block_3
@@ -403,6 +436,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     block_4
@@ -422,6 +458,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_4:
                                 (Variable
@@ -448,6 +485,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_block_4
@@ -487,6 +527,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             k:
                                                 (Variable
@@ -508,6 +551,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     block_5
@@ -528,6 +574,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_block_5:
                                 (Variable
@@ -554,6 +601,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_block_5

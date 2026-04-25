@@ -62,6 +62,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -96,6 +99,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     default_executable
@@ -180,8 +186,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             executable_config:
@@ -211,6 +217,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             name:
                                                 (Variable
@@ -234,6 +243,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             source_dir:
                                                 (Variable
@@ -257,6 +269,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     executable_config
@@ -286,6 +301,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_manifest_executable_modules_30
@@ -356,6 +372,9 @@
                                                     Default
                                                     (StructType
                                                         [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -375,9 +394,6 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
                                                         )]
                                                         []
                                                         .true.
@@ -393,6 +409,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             root:
                                                 (Variable
@@ -414,12 +433,18 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     package_defaults
                                     (FunctionType
                                         [(StructType
                                             [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -439,9 +464,6 @@
                                                     ())]
                                                     DescriptorArray
                                                 )
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
                                             )]
                                             []
                                             .true.
@@ -562,8 +584,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -635,6 +657,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             name:
                                                 (Variable
@@ -658,11 +683,17 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     package_config_t
                                     (StructType
                                         [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
                                             (Array
                                                 (StructType
                                                     [(Allocatable
@@ -682,9 +713,6 @@
                                                 ())]
                                                 DescriptorArray
                                             )
-                                        )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.
@@ -701,6 +729,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_manifest_package_modules_30

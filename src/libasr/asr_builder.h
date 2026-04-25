@@ -518,7 +518,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitAnd, right, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::And, right, logical, nullptr));
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::And, right, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
@@ -537,7 +537,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitOr, right, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Or, right, logical, nullptr));
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Or, right, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
@@ -556,7 +556,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left, ASR::binopType::BitXor, right, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Xor, right, logical, nullptr));
+                return EXPR(ASR::make_LogicalBinOp_t(al, loc, left, ASR::logicalbinopType::Xor, right, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
@@ -573,7 +573,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_IntegerBitNot_t(al, loc, x, type, nullptr));
             }
             case ASR::ttypeType::Logical: {
-                return EXPR(ASR::make_LogicalNot_t(al, loc, x, logical, nullptr));
+                return EXPR(ASR::make_LogicalNot_t(al, loc, x, type, nullptr));
             }
             default: {
                 throw LCompilersException("Expression type, " +
@@ -791,7 +791,7 @@ class ASRBuilder {
 
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
@@ -815,7 +815,7 @@ class ASRBuilder {
 
     ASR::expr_t *Lt(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
@@ -839,7 +839,7 @@ class ASRBuilder {
 
     ASR::expr_t *GtE(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
@@ -863,7 +863,7 @@ class ASRBuilder {
 
     ASR::expr_t *LtE(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
@@ -887,7 +887,7 @@ class ASRBuilder {
 
     ASR::expr_t *Eq(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
@@ -914,7 +914,7 @@ class ASRBuilder {
 
     ASR::expr_t *NotEq(ASR::expr_t *left, ASR::expr_t *right) {
         promote_integer_types(left, right);
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         switch(type->type){
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
@@ -1288,7 +1288,7 @@ class ASRBuilder {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types,
-                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types)),
@@ -1307,7 +1307,7 @@ class ASRBuilder {
         LCOMPILERS_ASSERT( (size_t)n_args == arg_types.size())
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
-                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
            return_type,
@@ -1332,10 +1332,11 @@ class ASRBuilder {
         SymbolTable* symTable = al.make_new<SymbolTable>(fn_symtab /*parent*/);
         Vec<ASR::expr_t*> parameters; parameters.reserve(al, parameter_types.size());
         for (size_t i = 0; i < parameter_types.size(); i++) {
+            bool is_value = !is_parameter_value.empty() && is_parameter_value[i];
             parameters.push_back(al, Variable(symTable,
                 parameter_names[i] + std::to_string(i), parameter_types[i],
-                ASR::intentType::InOut, nullptr, ASR::abiType::BindC,
-                is_parameter_value.empty() ? false : is_parameter_value[i]));
+                is_value ? ASR::intentType::In : ASR::intentType::InOut,
+                nullptr, ASR::abiType::BindC, is_value));
         }
         SetChar dep; dep.reserve(al, 1);
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);

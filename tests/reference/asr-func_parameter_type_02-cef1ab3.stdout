@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     f
@@ -76,8 +82,8 @@
                     )]
                     (Var 5 f)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             hinit853:
@@ -86,54 +92,14 @@
                         4
                         {
                             f:
-                                (Function
-                                    (SymbolTable
-                                        8
-                                        {
-                                            f_arg_0:
-                                                (Variable
-                                                    8
-                                                    f_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                ),
-                                            f_return_var_name:
-                                                (Variable
-                                                    8
-                                                    f_return_var_name
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )
-                                        })
+                                (Variable
+                                    4
                                     f
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
                                     (FunctionType
                                         [(Real 4)]
                                         (Real 4)
@@ -148,14 +114,19 @@
                                         []
                                         .false.
                                     )
-                                    []
-                                    [(Var 8 f_arg_0)]
-                                    []
-                                    (Var 8 f_return_var_name)
+                                    4 ~implicit_interface_f_8
+                                    Source
                                     Public
+                                    Required
+                                    .false.
                                     .false.
                                     .false.
                                     ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             hinit853:
                                 (Variable
@@ -177,11 +148,105 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
+                                ),
+                            ~implicit_interface_f_8:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            ~implicit_interface_f_8_arg_0:
+                                                (Variable
+                                                    8
+                                                    ~implicit_interface_f_8_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
+                                                ),
+                                            ~implicit_interface_f_8_return_var:
+                                                (Variable
+                                                    8
+                                                    ~implicit_interface_f_8_return_var
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
+                                                )
+                                        })
+                                    ~implicit_interface_f_8
+                                    (FunctionType
+                                        [(Real 4)]
+                                        (Real 4)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 8 ~implicit_interface_f_8_arg_0)]
+                                    []
+                                    (Var 8 ~implicit_interface_f_8_return_var)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     hinit853
                     (FunctionType
-                        [(Real 4)]
+                        [(FunctionType
+                            [(Real 4)]
+                            (Real 4)
+                            BindC
+                            Interface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                        )]
                         (Real 4)
                         Source
                         Implementation
@@ -215,8 +280,8 @@
                     )]
                     (Var 4 hinit853)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             main:
@@ -249,6 +314,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     f
@@ -316,6 +384,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     f
@@ -362,6 +433,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     sub
@@ -411,8 +485,8 @@
                     (Return)]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })

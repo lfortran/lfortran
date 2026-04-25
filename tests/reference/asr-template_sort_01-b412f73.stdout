@@ -7,16 +7,6 @@
                     (SymbolTable
                         18
                         {
-                            lt_my_type:
-                                (ExternalSymbol
-                                    18
-                                    lt_my_type
-                                    2 lt_my_type
-                                    template_sort_01_type
-                                    []
-                                    lt_my_type
-                                    Public
-                                ),
                             my_type:
                                 (ExternalSymbol
                                     18
@@ -99,6 +89,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             res:
                                                 (Variable
@@ -120,6 +113,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             rhs:
                                                 (Variable
@@ -141,6 +137,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     lt_integer
@@ -177,8 +176,8 @@
                                     )]
                                     (Var 13 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             lt_my_type:
@@ -189,7 +188,7 @@
                                     template_sort_01_type
                                     []
                                     lt_my_type
-                                    Public
+                                    Private
                                 ),
                             lt_real:
                                 (Function
@@ -216,6 +215,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             res:
                                                 (Variable
@@ -237,6 +239,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             rhs:
                                                 (Variable
@@ -258,6 +263,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     lt_real
@@ -294,8 +302,8 @@
                                     )]
                                     (Var 12 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_type:
@@ -340,6 +348,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -363,6 +374,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -386,6 +400,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     op_func
@@ -416,8 +433,8 @@
                                                     []
                                                     (Var 7 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -442,6 +459,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             u:
                                                 (Variable
@@ -465,6 +485,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             v:
                                                 (Variable
@@ -488,6 +511,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     op_r
@@ -522,6 +548,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             lt:
                                                 (Function
@@ -550,6 +579,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -571,6 +603,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -594,6 +629,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     lt
@@ -622,8 +660,8 @@
                                                     []
                                                     (Var 9 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             qs:
@@ -658,6 +696,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -679,6 +720,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -700,6 +744,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -721,6 +768,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -742,6 +792,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -765,6 +818,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     qs
@@ -1002,8 +1058,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             swp:
@@ -1033,6 +1089,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1056,6 +1115,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1079,6 +1141,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     swp
@@ -1127,8 +1192,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1153,6 +1218,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     qsort_t
@@ -1195,6 +1263,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1216,6 +1287,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1237,6 +1311,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     __asr_swp
@@ -1281,8 +1358,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __asr_swp1:
@@ -1310,6 +1387,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1331,6 +1411,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1352,6 +1435,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     __asr_swp1
@@ -1396,8 +1482,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __asr_swp2:
@@ -1430,6 +1516,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1456,6 +1545,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1482,6 +1574,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     __asr_swp2
@@ -1536,8 +1631,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             i:
@@ -1560,6 +1655,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             qsort_integer:
                                                 (Function
@@ -1591,6 +1689,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -1612,6 +1713,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1633,6 +1737,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -1654,6 +1761,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -1675,6 +1785,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -1696,6 +1809,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     qsort_integer
@@ -1915,8 +2031,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             qsort_my_type:
@@ -1954,6 +2070,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -1975,6 +2094,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1996,6 +2118,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -2017,6 +2142,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -2038,6 +2166,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -2064,6 +2195,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     qsort_my_type
@@ -2327,8 +2461,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             qsort_real:
@@ -2361,6 +2495,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -2382,6 +2519,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -2403,6 +2543,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -2424,6 +2567,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -2445,6 +2591,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -2466,6 +2615,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     qsort_real
@@ -2685,8 +2837,8 @@
                                                     )]
                                                     ()
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             xi:
@@ -2714,6 +2866,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             xm:
                                                 (Variable
@@ -2745,6 +2900,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             xr:
                                                 (Variable
@@ -2771,6 +2929,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     test_template
@@ -3028,6 +3189,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             res:
                                                 (Variable
@@ -3049,6 +3213,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             rhs:
                                                 (Variable
@@ -3075,6 +3242,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     lt_my_type
@@ -3131,8 +3301,8 @@
                                     )]
                                     (Var 4 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_type:
@@ -3160,6 +3330,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     my_type
@@ -3179,6 +3352,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     template_sort_01_type

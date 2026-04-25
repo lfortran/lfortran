@@ -36,9 +36,17 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Cosh)
         INTRINSIC_NAME_CASE(Tanh)
         INTRINSIC_NAME_CASE(Atan2)
+        INTRINSIC_NAME_CASE(Atan2d)
         INTRINSIC_NAME_CASE(Asinh)
         INTRINSIC_NAME_CASE(Acosh)
         INTRINSIC_NAME_CASE(Atanh)
+        INTRINSIC_NAME_CASE(Sinpi)
+        INTRINSIC_NAME_CASE(Cospi)
+        INTRINSIC_NAME_CASE(Tanpi)
+        INTRINSIC_NAME_CASE(Asinpi)
+        INTRINSIC_NAME_CASE(Acospi)
+        INTRINSIC_NAME_CASE(Atanpi)
+        INTRINSIC_NAME_CASE(Atan2pi)
         INTRINSIC_NAME_CASE(Erf)
         INTRINSIC_NAME_CASE(Erfc)
         INTRINSIC_NAME_CASE(ErfcScaled)
@@ -64,6 +72,9 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(CompilerVersion)
         INTRINSIC_NAME_CASE(CommandArgumentCount)
+        INTRINSIC_NAME_CASE(Rand)
+        INTRINSIC_NAME_CASE(ThisImage)
+        INTRINSIC_NAME_CASE(NumImages)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
         INTRINSIC_NAME_CASE(OutOfRange)
@@ -272,12 +283,28 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Tanh::instantiate_Tanh, &Tanh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2),
             {&Atan2::instantiate_Atan2, &Atan2::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2d),
+            {&Atan2d::instantiate_Atan2d, &Atan2d::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Asinh),
             {&Asinh::instantiate_Asinh, &Asinh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Acosh),
             {&Acosh::instantiate_Acosh, &Acosh::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Atanh),
             {&Atanh::instantiate_Atanh, &Atanh::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sinpi),
+            {&Sinpi::instantiate_Sinpi, &Sinpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cospi),
+            {&Cospi::instantiate_Cospi, &Cospi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tanpi),
+            {&Tanpi::instantiate_Tanpi, &Tanpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asinpi),
+            {&Asinpi::instantiate_Asinpi, &Asinpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Acospi),
+            {&Acospi::instantiate_Acospi, &Acospi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atanpi),
+            {&Atanpi::instantiate_Atanpi, &Atanpi::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2pi),
+            {&Atan2pi::instantiate_Atan2pi, &Atan2pi::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Log),
             {&Log::instantiate_Log, &Log::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Logical),
@@ -306,6 +333,12 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &CompilerVersion::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rand),
+            {&Rand::instantiate_Rand, &Rand::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+            {nullptr, &ThisImage::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
+            {nullptr, &NumImages::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -572,6 +605,12 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &SymbolicGetArgument::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
             {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rand),
+            {&Rand::instantiate_Rand, &Rand::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+            {nullptr, &ThisImage::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
+            {nullptr, &NumImages::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             {&Int::instantiate_Int, &Int::verify_args}},
         };
@@ -617,9 +656,17 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
                 {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
                 {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
+                {"atan2d", {&Atan2d::create_Atan2d, &Atan2d::eval_Atan2d}},
                 {"asinh", {&Asinh::create_Asinh, &Asinh::eval_Asinh}},
                 {"acosh", {&Acosh::create_Acosh, &Acosh::eval_Acosh}},
                 {"atanh", {&Atanh::create_Atanh, &Atanh::eval_Atanh}},
+                {"sinpi", {&Sinpi::create_Sinpi, &Sinpi::eval_Sinpi}},
+                {"cospi", {&Cospi::create_Cospi, &Cospi::eval_Cospi}},
+                {"tanpi", {&Tanpi::create_Tanpi, &Tanpi::eval_Tanpi}},
+                {"asinpi", {&Asinpi::create_Asinpi, &Asinpi::eval_Asinpi}},
+                {"acospi", {&Acospi::create_Acospi, &Acospi::eval_Acospi}},
+                {"atanpi", {&Atanpi::create_Atanpi, &Atanpi::eval_Atanpi}},
+                {"atan2pi", {&Atan2pi::create_Atan2pi, &Atan2pi::eval_Atan2pi}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
                 {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
                 {"dreal", {&Dreal::create_Dreal, &Dreal::eval_Dreal}},
@@ -634,6 +681,9 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"_lfortran_compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
                 {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
+                {"rand", {&Rand::create_Rand, nullptr}},
+                {"this_image", {&ThisImage::create_ThisImage, &ThisImage::eval_ThisImage}},
+                {"num_images", {&NumImages::create_NumImages, &NumImages::eval_NumImages}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},

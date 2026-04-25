@@ -22,6 +22,9 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
+                    0
                 )
         })
     [(Assignment

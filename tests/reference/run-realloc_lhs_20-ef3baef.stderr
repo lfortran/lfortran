@@ -1,0 +1,5 @@
+runtime error: Array 'b%arr' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+  --> tests/../integration_tests/realloc_lhs_20.f90:12:5
+   |
+12 |     b%arr = a%arr
+   |     ^^^^^ 'b%arr' not allocated here

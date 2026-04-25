@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             rp1d:
                                 (Struct
@@ -60,6 +63,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     rp1d
@@ -86,6 +92,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             sds:
                                 (Struct
@@ -129,6 +136,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     sds
@@ -165,6 +175,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     mod_struct_allocate
@@ -251,6 +262,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             sds:
                                 (ExternalSymbol

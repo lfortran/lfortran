@@ -2,11 +2,11 @@
     "basename": "llvm-bindc3-d064ff7",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/bindc3.f90",
-    "infile_hash": "d2305932b687641416dda5e45cb66123d72a7d2ca5449952e2379d3b",
+    "infile_hash": "5641a25203f2b4025ab042a931b5f7f5978dd812c10833abf34bfd73",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-bindc3-d064ff7.stdout",
-    "stdout_hash": "ee5b6635fe1154321948856ef813f50a15cbb16946d55ceb1799a47d",
+    "stdout_hash": "b1921503d30e4aa1baee1b5c9136ac723db34167790af4b84fccd2ca",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

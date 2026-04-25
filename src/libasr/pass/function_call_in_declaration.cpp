@@ -242,6 +242,9 @@ public:
             if (!exists_in_arginfo(arg_num, indices)) {
                 indices.push_back(info);
             }
+        } else if (is_a<ASR::StructInstanceMember_t>(*arg)) {
+            ASR::StructInstanceMember_t* struct_member = ASR::down_cast<ASR::StructInstanceMember_t>(arg);
+            helper_get_arg_indices_used(struct_member->m_v, indices);
         } else if (is_a<ASR::LogicalNot_t>(*arg)) {
             ASR::LogicalNot_t* not_expr = ASR::down_cast<ASR::LogicalNot_t>(arg);
             helper_get_arg_indices_used(not_expr->m_arg, indices);
@@ -325,8 +328,10 @@ public:
             args_for_return_var.push_back(al, arg_for_return_var);
         }
 
-        replace_FunctionParam_with_FunctionArgs(assignment_value, new_args);
-        new_body.push_back(al, b.Assignment(return_var, assignment_value));
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
+        replace_FunctionParam_with_FunctionArgs(assignment_value_copy, new_args);
+        new_body.push_back(al, b.Assignment(return_var, assignment_value_copy));
         ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.base.loc,
                     new_scope, s2c(al, new_function_name), current_function_dependencies.p, current_function_dependencies.n,
                     new_args.p, new_args.n,
@@ -442,10 +447,12 @@ public:
             args_for_return_var.push_back(al, arg_for_return_var);
         }
 
-        replace_FunctionParam_with_FunctionArgs(assignment_value, new_args);
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
+        replace_FunctionParam_with_FunctionArgs(assignment_value_copy, new_args);
         
-        collect_and_create_new_externalSymbols(assignment_value);
-        new_body.push_back(al, b.Assignment(return_var, assignment_value));
+        collect_and_create_new_externalSymbols(assignment_value_copy);
+        new_body.push_back(al, b.Assignment(return_var, assignment_value_copy));
         ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.loc,
                     new_scope, s2c(al, new_function_name), current_function_dependencies.p, current_function_dependencies.n,
                     new_args.p, new_args.n,
@@ -737,6 +744,10 @@ public:
             ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+                const ASR::ttype_t* current_type = (const ASR::ttype_t*)&x;
+                if (func->m_function_signature != current_type) {
+                    return;
+                }
             } else {
                 return;
             }

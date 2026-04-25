@@ -4,6 +4,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/containers.h>
 #include <map>
+#include <set>
 
 #include <libasr/pass/intrinsic_function_registry.h>
 
@@ -47,9 +48,11 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
-            for( size_t i = 0; i < x.n_args; i++ ) {
-                if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
-                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
+            size_t n = std::min(x.n_args, func_type->n_arg_types);
+            for( size_t i = 0; i < n; i++ ) {
+                if( x.m_args[i].m_value &&
+                    (ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
+                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i])) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
                         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v;
                         push_to_scopes_until_symbol_scope(sym);
@@ -60,9 +63,11 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
-            for( size_t i = 0; i < x.n_args; i++ ) {
-                if( ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
-                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i]) ) {
+            size_t n = std::min(x.n_args, func_type->n_arg_types);
+            for( size_t i = 0; i < n; i++ ) {
+                if( x.m_args[i].m_value &&
+                    (ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
+                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i])) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
                         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v;
                         push_to_scopes_until_symbol_scope(sym);
@@ -166,6 +171,7 @@ class PromoteAllocatableToNonAllocatable:
     public:
 
         std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var;
+        std::set<ASR::symbol_t*> promoted_symbols;
 
         PromoteAllocatableToNonAllocatable(Allocator& al_,
             std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var_):
@@ -223,6 +229,7 @@ class PromoteAllocatableToNonAllocatable:
                         }
                     alloc_variable->m_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
                     array_type, alloc_arg.m_dims, alloc_arg.n_dims);
+                    promoted_symbols.insert(ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);
                 } else if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ||
                            ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ) {
                     x_args.push_back(al, alloc_arg);
@@ -343,9 +350,12 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
         Allocator& al;
         FixArrayPhysicalCast replacer;
         bool remove_original_stmt;
+        const std::set<ASR::symbol_t*>& promoted_symbols;
 
-        FixArrayPhysicalCastVisitor(Allocator& al_):
-            al(al_), replacer(al_), remove_original_stmt(false) {}
+        FixArrayPhysicalCastVisitor(Allocator& al_,
+            const std::set<ASR::symbol_t*>& promoted_symbols_):
+            al(al_), replacer(al_), remove_original_stmt(false),
+            promoted_symbols(promoted_symbols_) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -374,6 +384,25 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
                     ASR::array_physical_typeType::DescriptorArray,
                     ASRUtils::duplicate_type(al, ASRUtils::expr_type(x.m_value),
                     nullptr, ASR::array_physical_typeType::DescriptorArray, true), nullptr));
+            } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(
+                    const_cast<ASR::expr_t*>(x.m_value));
+                ASR::ttype_t* base_type = ASRUtils::expr_type(as->m_v);
+                ASR::ttype_t* section_type = ASRUtils::expr_type(x.m_value);
+                bool base_was_promoted = ASR::is_a<ASR::Var_t>(*as->m_v) &&
+                    promoted_symbols.count(ASR::down_cast<ASR::Var_t>(as->m_v)->m_v) > 0;
+                if (base_was_promoted &&
+                    ASRUtils::is_fixed_size_array(base_type) &&
+                    ASRUtils::extract_physical_type(section_type) ==
+                        ASR::array_physical_typeType::DescriptorArray) {
+                    as->m_v = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, as->m_v->base.loc, as->m_v,
+                        ASRUtils::extract_physical_type(base_type),
+                        ASR::array_physical_typeType::DescriptorArray,
+                        ASRUtils::duplicate_type(al, base_type,
+                            nullptr, ASR::array_physical_typeType::DescriptorArray, true),
+                        nullptr));
+                }
             } else if( ASRUtils::is_fixed_size_array(
                         ASRUtils::expr_type(x.m_target)) ) {
                 remove_original_stmt = true;
@@ -433,7 +462,7 @@ void pass_promote_allocatable_to_nonallocatable(
     PromoteAllocatableToNonAllocatable promoter(al, scope2var);
     promoter.visit_TranslationUnit(unit);
     promoter.visit_TranslationUnit(unit);
-    FixArrayPhysicalCastVisitor fix_array_physical_cast(al);
+    FixArrayPhysicalCastVisitor fix_array_physical_cast(al, promoter.promoted_symbols);
     fix_array_physical_cast.visit_TranslationUnit(unit);
     FixMoveAssignment fix_move_assignment(al);
     fix_move_assignment.visit_TranslationUnit(unit);

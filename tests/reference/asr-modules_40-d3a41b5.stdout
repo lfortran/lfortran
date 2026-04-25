@@ -53,6 +53,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -84,6 +87,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -119,6 +125,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -140,6 +149,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     fill_stack
@@ -216,8 +228,8 @@
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             resize:
@@ -245,6 +257,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -280,6 +295,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     resize
@@ -318,8 +336,8 @@
                                                     []
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })
@@ -348,8 +366,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             tfc:
@@ -372,6 +390,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             toml_key:
                                 (Struct
@@ -400,6 +421,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     toml_key
@@ -421,6 +445,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_tokenizer:
                                 (Struct
@@ -456,6 +481,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     modules_40_tomlf_de_tokenizer

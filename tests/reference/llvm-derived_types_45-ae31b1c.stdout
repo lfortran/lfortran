@@ -1,7 +1,8 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
+target datalayout = "..."
 
-%myint = type { i32 }
+%derived_types_45_mod.myint = type { i32 }
 
 @0 = private unnamed_addr constant [4 x i8] c"ins\00", align 1
 @1 = private unnamed_addr constant [48 x i8] c"tests/../integration_tests/derived_types_45.f90\00", align 1
@@ -13,87 +14,90 @@ source_filename = "LFortran"
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
+  %2 = call i8* @_lfortran_get_default_allocator()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %ins = alloca %myint*, align 8
-  store %myint* null, %myint** %ins, align 8
-  %temp_struct_var__ = alloca %myint, align 8
-  %2 = getelementptr %myint, %myint* %temp_struct_var__, i32 0, i32 0
-  %3 = getelementptr %myint, %myint* %temp_struct_var__, i32 0, i32 0
-  store i32 44, i32* %3, align 4
-  %4 = load %myint*, %myint** %ins, align 8
-  %5 = icmp eq %myint* %4, null
-  br i1 %5, label %then, label %else
+  %ins = alloca %derived_types_45_mod.myint*, align 8
+  store %derived_types_45_mod.myint* null, %derived_types_45_mod.myint** %ins, align 8
+  %temp_struct_var__ = alloca %derived_types_45_mod.myint, align 8
+  %3 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
+  %4 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
+  store i32 44, i32* %4, align 4
+  %5 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %6 = icmp eq %derived_types_45_mod.myint* %5, null
+  br i1 %6, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %6 = call i8* @_lfortran_malloc(i64 4)
-  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 4, i1 false)
-  %7 = bitcast i8* %6 to %myint*
-  store %myint* %7, %myint** %ins, align 8
-  %8 = load %myint*, %myint** %ins, align 8
-  %9 = getelementptr %myint, %myint* %8, i32 0, i32 0
+  %7 = call i8* @_lfortran_get_default_allocator()
+  %8 = call i8* @_lfortran_malloc_alloc(i8* %7, i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %8, i8 0, i32 4, i1 false)
+  %9 = bitcast i8* %8 to %derived_types_45_mod.myint*
+  store %derived_types_45_mod.myint* %9, %derived_types_45_mod.myint** %ins, align 8
+  %10 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %11 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %10, i32 0, i32 0
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %10 = load %myint*, %myint** %ins, align 8
-  %11 = getelementptr %myint, %myint* %temp_struct_var__, i32 0, i32 0
-  %12 = load i32, i32* %11, align 4
-  %13 = getelementptr %myint, %myint* %10, i32 0, i32 0
+  %12 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %13 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %temp_struct_var__, i32 0, i32 0
+  %14 = load i32, i32* %13, align 4
+  %15 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %12, i32 0, i32 0
   br i1 true, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  store i32 %12, i32* %13, align 4
+  store i32 %14, i32* %15, align 4
   br label %ifcont3
 
 else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %14 = load %myint*, %myint** %ins, align 8
-  %15 = ptrtoint %myint* %14 to i64
-  %16 = icmp eq i64 %15, 0
-  br i1 %16, label %then4, label %ifcont5
+  %16 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  %17 = ptrtoint %derived_types_45_mod.myint* %16 to i64
+  %18 = icmp eq i64 %17, 0
+  br i1 %18, label %then4, label %ifcont5
 
 then4:                                            ; preds = %ifcont3
-  %17 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %18 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %19 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %18, i32 0, i32 0
-  %20 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 0
-  store i8* getelementptr inbounds ([48 x i8], [48 x i8]* @1, i32 0, i32 0), i8** %20, align 8
-  %21 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 1
-  store i32 15, i32* %21, align 4
-  %22 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 2
-  store i32 9, i32* %22, align 4
-  %23 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 3
+  %19 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %20 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %21 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %20, i32 0, i32 0
+  %22 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %21, i32 0, i32 0
+  store i8* getelementptr inbounds ([48 x i8], [48 x i8]* @1, i32 0, i32 0), i8** %22, align 8
+  %23 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %21, i32 0, i32 1
   store i32 15, i32* %23, align 4
-  %24 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 4
-  store i32 13, i32* %24, align 4
-  %25 = call i8* (i8*, ...) @_lcompilers_snprintf(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
-  %26 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %17, i32 0, i32 0
-  %27 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %18, i32 0, i32 0
-  %28 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 2
-  %29 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 0
-  store i1 true, i1* %29, align 1
-  %30 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 1
-  store i8* %25, i8** %30, align 8
-  store { i8*, i32, i32, i32, i32 }* %27, { i8*, i32, i32, i32, i32 }** %28, align 8
-  %31 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 3
-  store i32 1, i32* %31, align 4
-  %32 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %17, i32 0, i32 0
-  call void ({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 1, i8* getelementptr inbounds ([52 x i8], [52 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  %24 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %21, i32 0, i32 2
+  store i32 9, i32* %24, align 4
+  %25 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %21, i32 0, i32 3
+  store i32 15, i32* %25, align 4
+  %26 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %21, i32 0, i32 4
+  store i32 13, i32* %26, align 4
+  %27 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
+  %28 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %19, i32 0, i32 0
+  %29 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %20, i32 0, i32 0
+  %30 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %28, i32 0, i32 2
+  %31 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %28, i32 0, i32 0
+  store i1 true, i1* %31, align 1
+  %32 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %28, i32 0, i32 1
+  store i8* %27, i8** %32, align 8
+  store { i8*, i32, i32, i32, i32 }* %29, { i8*, i32, i32, i32, i32 }** %30, align 8
+  %33 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %28, i32 0, i32 3
+  store i32 1, i32* %33, align 4
+  %34 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %19, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %34, i32 1, i8* getelementptr inbounds ([52 x i8], [52 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 
 ifcont5:                                          ; preds = %ifcont3
-  %33 = getelementptr %myint, %myint* %14, i32 0, i32 0
-  %34 = load i32, i32* %33, align 4
-  %35 = icmp ne i32 %34, 44
-  br i1 %35, label %then6, label %else7
+  %35 = getelementptr %derived_types_45_mod.myint, %derived_types_45_mod.myint* %16, i32 0, i32 0
+  %36 = load i32, i32* %35, align 4
+  %37 = icmp ne i32 %36, 44
+  br i1 %37, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont5
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont8
 
@@ -101,7 +105,6 @@ else7:                                            ; preds = %ifcont5
   br label %ifcont8
 
 ifcont8:                                          ; preds = %else7, %then6
-  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont8
@@ -111,47 +114,49 @@ FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
   br label %Finalize_Variable_ins
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
-  %36 = load %myint*, %myint** %ins, align 8
-  %37 = icmp ne %myint* %36, null
-  br i1 %37, label %is_allocated.then, label %is_allocated.else
-
-is_allocated.then:                                ; preds = %Finalize_Variable_ins
-  %38 = getelementptr %myint, %myint* %36, i32 0, i32 0
-  %39 = icmp eq %myint* %36, null
-  br i1 %39, label %free_done, label %free_nonnull
-
-free_nonnull:                                     ; preds = %is_allocated.then
-  %40 = bitcast %myint* %36 to i8*
-  call void @_lfortran_free(i8* %40)
-  br label %free_done
-
-free_done:                                        ; preds = %free_nonnull, %is_allocated.then
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %Finalize_Variable_ins
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %free_done
+  %38 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
+  call void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %38)
+  call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lfortran_malloc(i64)
+declare i8* @_lfortran_malloc_alloc(i8*, i64)
+
+declare i8* @_lfortran_get_default_allocator()
 
 ; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
-declare i8* @_lcompilers_snprintf(i8*, ...)
+declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
 
-declare void @_lcompilers_runtime_error({ i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...)
+declare void @_lcompilers_runtime_error(i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...)
 
 declare void @exit(i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
-declare void @_lpython_free_argv()
+declare void @_lfortran_internal_alloc_finalize()
 
-declare void @_lfortran_free(i8*)
+define internal void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %0) {
+entry:
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = icmp ne %derived_types_45_mod.myint* %0, null
+  br i1 %2, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  %3 = bitcast %derived_types_45_mod.myint* %0 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %3)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+  ret void
+}
+
+declare void @_lfortran_free_alloc(i8*, i8*)
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

@@ -50,6 +50,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             string:
                                                 (Variable
@@ -71,6 +74,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string
@@ -101,7 +107,7 @@
                                     (Var 4 new)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             new_string_from_integer_int32:
@@ -136,6 +142,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -157,6 +166,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string_from_integer_int32
@@ -187,7 +199,7 @@
                                     (Var 5 new)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             new_string_from_integer_int64:
@@ -222,6 +234,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -243,6 +258,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string_from_integer_int64
@@ -273,7 +291,7 @@
                                     (Var 6 new)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             new_string_from_logical_lk:
@@ -308,6 +326,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -329,6 +350,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string_from_logical_lk
@@ -359,7 +383,7 @@
                                     (Var 7 new)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             string_type:
@@ -389,6 +413,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     string_type
@@ -410,6 +437,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             ~string_type:
                                 (GenericProcedure
@@ -466,6 +494,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             string:
                                                 (Variable
@@ -487,6 +518,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string
@@ -516,8 +550,8 @@
                                     []
                                     (Var 9 new)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_string_from_integer_int32:
@@ -552,6 +586,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -573,6 +610,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string_from_integer_int32
@@ -602,8 +642,8 @@
                                     []
                                     (Var 10 new)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_string_from_integer_int64:
@@ -638,6 +678,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -659,6 +702,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string_from_integer_int64
@@ -688,8 +734,8 @@
                                     []
                                     (Var 11 new)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_string_from_logical_lk:
@@ -724,6 +770,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             val:
                                                 (Variable
@@ -745,6 +794,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_string_from_logical_lk
@@ -774,8 +826,8 @@
                                     []
                                     (Var 12 new)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_type:
@@ -801,7 +853,7 @@
                         })
                     stdlib_string_type_constructor
                     derived_types_05_stdlib_string_type
-                    []
+                    [derived_types_05_stdlib_string_type]
                     .false.
                     .false.
                     .false.

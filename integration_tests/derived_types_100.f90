@@ -29,14 +29,16 @@ program derived_types_100
   use derived_types_100_mod
   implicit none
 
-  type(person), pointer :: x
+  type(person), pointer :: x, old_x
 
   allocate(x)
   x%name = "John Doe"
   allocate(x%scores(3))
   x%scores = [85, 92, 78]
 
+  old_x => x
   x => update_person(x)
+  deallocate(old_x)
 
  print *, x%name 
  print *, x%scores
@@ -44,5 +46,6 @@ program derived_types_100
  if ( x%name /=  "MODIFIED: John Doe") error stop "Test failed: name mismatch"
  if ( size(x%scores) /= 4 ) error stop "Test failed: scores size mismatch"
  if ( any(x%scores /= [85, 92, 78, 999]) ) error stop "Test failed: last score mismatch"
+ deallocate(x)
     
 end program derived_types_100

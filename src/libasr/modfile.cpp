@@ -136,6 +136,10 @@ std::string save_pycfile(const ASR::TranslationUnit_t &m, LCompilers::LocationMa
 
 inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
                                 LCompilers::LocationManager &lm, std::string& error_message) {
+    if (s.empty()) {
+        error_message = "Modfile is empty";
+        return false;
+    }
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryReader b(s);
 #else
@@ -236,8 +240,12 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> load_modfile(Allocator &al, const 
     if (!load_serialised_asr(s, asr_binary, lm, error_message)) {
         return ErrorMessage(error_message);
     }
-    // take offset as last second element of file_ends
-    uint32_t offset = lm.file_ends[lm.file_ends.size()-2];
+    // take offset as second-to-last element of file_ends (the offset
+    // before load_serialised_asr pushed its entry). When file_ends
+    // has fewer than 2 elements the modfile was loaded into a fresh
+    // LocationManager, so the base offset is 0.
+    uint32_t offset = lm.file_ends.size() >= 2
+        ? lm.file_ends[lm.file_ends.size()-2] : 0;
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, symtab, offset);
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
     return tu;

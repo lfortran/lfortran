@@ -114,8 +114,8 @@ c     module above.
 
       size_a = SIZE(a_2, DIM=1)
 
-c      a_5 = CMPLX(1)
+      a_5 = CMPLX(1)
       IF I .EQ. 10 THEN PRINT *, "Ten"
       CALL FUNC( 5, 6,
-
+      IF (i == ICHAR(x_2))) error stop
       END PROGRAM continue_compilation_ff

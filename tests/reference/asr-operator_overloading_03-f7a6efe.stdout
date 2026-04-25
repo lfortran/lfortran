@@ -33,6 +33,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
@@ -90,6 +93,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             ~gt:
                                 (ExternalSymbol
@@ -409,6 +415,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             log1:
                                                 (Variable
@@ -430,6 +439,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             log2:
                                                 (Variable
@@ -451,6 +463,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     greater_than_inverse
@@ -522,8 +537,8 @@
                                     )]
                                     (Var 3 greater_than_inverse)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             less_than_inverse:
@@ -551,6 +566,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             log1:
                                                 (Variable
@@ -572,6 +590,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             log2:
                                                 (Variable
@@ -593,6 +614,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     less_than_inverse
@@ -664,8 +688,8 @@
                                     )]
                                     (Var 4 less_than_inverse)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             less_than_overload_use:
@@ -693,6 +717,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             log1:
                                                 (Variable
@@ -714,6 +741,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             log2:
                                                 (Variable
@@ -735,6 +765,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     less_than_overload_use
@@ -780,8 +813,8 @@
                                     )]
                                     (Var 5 less_than_overload_use)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             ~gt:

@@ -150,8 +150,18 @@ jobs:
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             cd ./integration_tests
-            ./run_tests.py -b llvm --std=f23
-            ./run_tests.py -b llvm -f --std=f23 -nf16
+            case "$OSTYPE" in darwin*) J_FLAG="-j3";; *) J_FLAG="";; esac
+            ./run_tests.py -b llvm --std=f23 $J_FLAG
+            if [[ "$OSTYPE" != darwin* ]]; then
+                ./run_tests.py -b llvm -f --std=f23 -nf16 $J_FLAG
+            fi
+
+      - name: Test Metal GPU backend (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            cd ./integration_tests
+            ./run_tests.py -b metal -j3
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')

@@ -1213,14 +1213,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         } else {
             step = "1";
         }
-        src = "_lfortran_str_slice(" + arg + ", " + left + ", " + right + ", " + \
+        src = "_lfortran_str_slice_alloc(_lfortran_get_default_allocator(), " + arg + ", " + left + ", " + right + ", " + \
                     step + ", " + left_present + ", " + rig_present + ")";
     }
 
     void visit_StringChr(const ASR::StringChr_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
-        src = "_lfortran_str_chr(" + src + ")";
+        src = "_lfortran_str_chr_alloc(_lfortran_get_default_allocator(), " + src + ")";
     }
 
     void visit_StringOrd(const ASR::StringOrd_t& x) {
@@ -1239,7 +1239,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string s = src;
         self().visit_expr(*x.m_right);
         std::string n = src;
-        src = "_lfortran_strrepeat_c(" + s + ", " + n + ")";
+        src = "_lfortran_strrepeat_c_alloc(_lfortran_get_default_allocator(), " + s + ", " + n + ")";
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -2195,6 +2195,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
+            case (ASR::cast_kindType::LogicalToLogical) : {
+                // No conversion needed for logical-to-logical in C
+                break;
+            }
             case (ASR::cast_kindType::LogicalToString) : {
                 src = "(" + src + " ? \"True\" : \"False\")";
                 last_expr_precedence = 2;
@@ -2236,10 +2240,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_arg);
                     int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     switch (arg_kind) {
-                        case 1: src = "_lfortran_int_to_str1(" + src + ")"; break;
-                        case 2: src = "_lfortran_int_to_str2(" + src + ")"; break;
-                        case 4: src = "_lfortran_int_to_str4(" + src + ")"; break;
-                        case 8: src = "_lfortran_int_to_str8(" + src + ")"; break;
+                        case 1: src = "_lfortran_int_to_str1_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 2: src = "_lfortran_int_to_str2_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 4: src = "_lfortran_int_to_str4_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 8: src = "_lfortran_int_to_str8_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
                         default: throw CodeGenError("Cast IntegerToString: Unsupported Kind " + \
                                         std::to_string(arg_kind));
                     }
@@ -2264,8 +2268,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_arg);
                     int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                     switch (arg_kind) {
-                        case 4: src = "_lfortran_float_to_str4(" + src + ")"; break;
-                        case 8: src = "_lfortran_float_to_str8(" + src + ")"; break;
+                        case 4: src = "_lfortran_float_to_str4_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
+                        case 8: src = "_lfortran_float_to_str8_alloc(_lfortran_get_default_allocator(), " + src + ")"; break;
                         default: throw CodeGenError("Cast RealToString: Unsupported Kind " + \
                                         std::to_string(arg_kind));
                     }
@@ -2669,13 +2673,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(type)));
                 size_str += "*sizeof(" + ty + ")";
-                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc(" + size_str + ")";
+                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
                 out += ";\n";
                 out += indent + sym + "->is_allocated = true;\n";
             } else {
                 std::string ty = CUtils::get_c_type_from_ttype_t(type), size_str;
                 size_str = "sizeof(" + ty + ")";
-                out += indent + sym + " = (" + ty + "*) _lfortran_malloc(" + size_str + ")";
+                out += indent + sym + " = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
                 out += ";\n";
             }
         }
@@ -2894,6 +2898,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src = indent + "std::cerr << \"ERROR STOP\" << std::endl;\n";
         }
         src += indent + "exit(1);\n";
+    }
+
+    void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        src = indent + "// SYNC ALL\n";
+    }
+
+    void visit_SyncMemory(const ASR::SyncMemory_t & /* x */) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        src = indent + "// SYNC MEMORY\n";
     }
 
     void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &/*x*/) {

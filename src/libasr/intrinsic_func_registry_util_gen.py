@@ -135,6 +135,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Atan2d": [
+        {
+            "args": [("real", "real")],
+            "ret_type_arg_idx": 0
+        }
+    ],
     "Fix": [
         {
             "args": [("real",)],
@@ -180,7 +186,7 @@ intrinsic_funcs_args = {
     "Logical": [
         {
             "args": [("bool", )],
-            "ret_type_arg_idx": 0,
+            "return": "logical",
             "kind_arg": True
         }
     ],
@@ -377,6 +383,48 @@ intrinsic_funcs_args = {
     "Tand": [
         {
             "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Sinpi": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Cospi": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Tanpi": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Asinpi": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Acospi": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Atanpi": [
+        {
+            "args": [("real",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Atan2pi": [
+        {
+            "args": [("real", "real")],
             "ret_type_arg_idx": 0
         }
     ],

@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             f2:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     f
@@ -139,6 +145,9 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
+                    0
                 )
         })
     []

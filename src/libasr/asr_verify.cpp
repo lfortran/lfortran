@@ -540,6 +540,32 @@ public:
         function_dependencies = function_dependencies_copy;
     }
 
+    void visit_GpuKernelFunction(const GpuKernelFunction_t &x) {
+        SymbolTable *parent_symtab = current_symtab;
+        current_symtab = x.m_symtab;
+        require(x.m_symtab != nullptr,
+            "GpuKernelFunction::m_symtab cannot be nullptr");
+        require(x.m_symtab->parent == parent_symtab,
+            "GpuKernelFunction::m_symtab->parent is not the right parent");
+        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
+            "GpuKernelFunction::m_symtab::asr_owner must point to it");
+        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
+            "GpuKernelFunction::m_symtab->counter must be unique");
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        for (auto &a : x.m_symtab->get_scope()) {
+            LCOMPILERS_ASSERT(a.second);
+            this->visit_symbol(*a.second);
+        }
+        visit_ttype(*x.m_function_signature);
+        for (size_t i=0; i<x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+        }
+        for (size_t i=0; i<x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+        }
+        current_symtab = parent_symtab;
+    }
+
     template <typename T>
     void visit_UserDefinedType(const T &x) {
         SymbolTable *parent_symtab = current_symtab;
@@ -746,11 +772,14 @@ public:
                 x.m_intent != ASR::Local /*Input OR Output*/){
                 if(ASRUtils::is_string_only(x.m_type) && 
                     str->m_physical_type == CChar){ // Exclude array of strings
-                    require(str->m_len_kind == ASR::ExpressionLength, 
-                        "Cbind character variable that isn't local must have length kind \"ExpressionLength\"");
-                    int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
-                    require(len == 1,
-                        "Cbind character variable that isn't local must have length 1");
+                    if(str->m_len_kind != ASR::DeferredLength
+                            && str->m_len_kind != ASR::AssumedLength){
+                        require(str->m_len_kind == ASR::ExpressionLength, 
+                            "Cbind character variable that isn't local must have length kind \"ExpressionLength\"");
+                        int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
+                        require(len == 1,
+                            "Cbind character variable that isn't local must have length 1");
+                    }
                 }
             }
             if(str->m_physical_type == ASR::CChar){
@@ -791,6 +820,28 @@ public:
             require(x.m_type_declaration != nullptr,
                 "Variable " + std::string(x.m_name) + " of type StructType must have a type declaration.");
         }
+
+        // Verify pass_attr and self_argument consistency
+        bool is_proc_pointer = ASRUtils::is_symbol_procedure_variable(
+            const_cast<ASR::symbol_t*>(&x.base));
+        bool is_struct_member = is_struct;
+        if (x.m_pass_attr == ASR::pass_attrType::Pass ||
+            x.m_pass_attr == ASR::pass_attrType::NoPass) {
+            require(is_proc_pointer && is_struct_member,
+                "Variable '" + std::string(x.m_name) +
+                "' has Pass/NoPass but is not a procedure pointer component of a struct.");
+        }
+        if (x.m_pass_attr == ASR::pass_attrType::NotMethod) {
+            require(x.m_self_argument == nullptr,
+                "Variable '" + std::string(x.m_name) +
+                "' has pass_attr=NotMethod but self_argument is set.");
+        }
+        if (x.m_pass_attr == ASR::pass_attrType::NoPass) {
+            require(x.m_self_argument == nullptr,
+                "Variable '" + std::string(x.m_name) +
+                "' has pass_attr=NoPass but self_argument is set.");
+        }
+
         current_name = current_name_copy;
     }
 
@@ -815,6 +866,7 @@ public:
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
+            ASR::GpuKernelFunction_t* gkfm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -823,7 +875,8 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
@@ -836,6 +889,9 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
+                } else if( ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym) ) {
+                    gkfm = ASR::down_cast<ASR::GpuKernelFunction_t>(asr_owner_sym);
+                    asr_owner_name = gkfm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -849,11 +905,22 @@ public:
             require(is_valid_owner,
                 "ExternalSymbol::m_external '" + std::string(x.m_name) + "' is not in a module or struct type, owner: " +
                 x_m_module_name);
-            require(x_m_module_name == asr_owner_name,
+            // m_module_name can be either the direct owner or the
+            // top-level module when scope_names provides the path.
+            bool name_matches = (x_m_module_name == asr_owner_name);
+            if (!name_matches && m != nullptr && x.n_scope_names > 0) {
+                name_matches = (x_m_module_name == std::string(m->m_name));
+            }
+            require(name_matches,
                 "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
             ASR::symbol_t *s = nullptr;
             if( m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external)) ) {
+                s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+            } else if( m != nullptr && x.n_scope_names > 0
+                       && x_m_module_name == std::string(m->m_name) ) {
+                // m_module_name refers to the top-level module and
+                // scope_names encodes the path to the nested owner.
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
@@ -863,6 +930,8 @@ public:
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( gkfm ) {
+                s = gkfm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -1000,26 +1069,197 @@ public:
         handle_ArrayItemSection(x);
     }
 
+    // Get the Struct symbol from a dt expression (for method calls).
+    // Returns nullptr if the struct cannot be determined.
+    ASR::symbol_t* get_struct_from_dt_expr(ASR::expr_t* dt) {
+        ASR::ttype_t* dt_type = ASRUtils::expr_type(dt);
+        dt_type = ASRUtils::type_get_past_pointer(dt_type);
+        dt_type = ASRUtils::type_get_past_allocatable(dt_type);
+        if (ASR::is_a<ASR::Array_t>(*dt_type)) {
+            dt_type = ASR::down_cast<ASR::Array_t>(dt_type)->m_type;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*dt_type)) {
+            return nullptr;
+        }
+        // StructType doesn't directly reference the Struct symbol.
+        // Get it from the variable's type_declaration.
+        if (ASR::is_a<ASR::Var_t>(*dt)) {
+            ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(dt)->m_v;
+            v = ASRUtils::symbol_get_past_external(v);
+            if (ASR::is_a<ASR::Variable_t>(*v)) {
+                ASR::symbol_t* decl = ASR::down_cast<ASR::Variable_t>(v)->m_type_declaration;
+                if (decl) return ASRUtils::symbol_get_past_external(decl);
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*dt)) {
+            ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(dt);
+            ASR::symbol_t* m = ASRUtils::symbol_get_past_external(sim->m_m);
+            if (ASR::is_a<ASR::Variable_t>(*m)) {
+                ASR::symbol_t* decl = ASR::down_cast<ASR::Variable_t>(m)->m_type_declaration;
+                if (decl) return ASRUtils::symbol_get_past_external(decl);
+            }
+        }
+        return nullptr;
+    }
+
+    // Check if method_name exists in the struct's symtab (walking parent chain).
+    bool struct_has_member(ASR::Struct_t* struct_type, const std::string& method_name) {
+        ASR::Struct_t* current = struct_type;
+        while (current) {
+            if (current->m_symtab->get_symbol(method_name) != nullptr) {
+                return true;
+            }
+            if (current->m_parent) {
+                ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(current->m_parent);
+                if (ASR::is_a<ASR::Struct_t>(*parent)) {
+                    current = ASR::down_cast<ASR::Struct_t>(parent);
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        return false;
+    }
+
+    // Verify that the method being called is actually a member of the struct
+    // that dt points to.
+    template <typename T>
+    void verify_dt_member(const T& x) {
+        ASR::symbol_t* struct_sym = get_struct_from_dt_expr(x.m_dt);
+        if (!struct_sym) return;
+        if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) return;
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+        // Get the method name as it appears in the struct's symtab.
+        // x.m_name may be an ExternalSymbol; we need the original name
+        // in the struct's scope.
+        std::string method_name;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
+            ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+            method_name = ext->m_original_name;
+        } else {
+            method_name = ASRUtils::symbol_name(x.m_name);
+        }
+
+        require(struct_has_member(struct_type, method_name),
+            "Method '" + method_name + "' not found in struct '" +
+            std::string(struct_type->m_name) + "' (or its parents).");
+    }
+
     template <typename T>
     void verify_args(const T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        if( func_sym && ASR::is_a<ASR::Function_t>(*func_sym) ) {
+        bool is_method = (x.m_dt != nullptr);
+        bool nopass = false;
+        if (func_sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
+            ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
+            require(is_method,
+                "StructMethodDeclaration '" + std::string(method->m_name) +
+                "' called without dt (not as a method).");
+            if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
+                func = ASR::down_cast<ASR::Function_t>(method->m_proc);
+                nopass = method->m_is_nopass;
+            }
+        } else if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
             func = ASR::down_cast<ASR::Function_t>(func_sym);
+        } else if (func_sym && ASR::is_a<ASR::Variable_t>(*func_sym)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(func_sym);
+            if (is_method) {
+                require(var->m_pass_attr != ASR::pass_attrType::NotMethod,
+                    "Call with dt!=nullptr targets Variable '" +
+                    std::string(var->m_name) +
+                    "' with pass_attr=NotMethod.");
+                nopass = (var->m_pass_attr == ASR::pass_attrType::NoPass);
+            } else {
+                require(var->m_pass_attr == ASR::pass_attrType::NotMethod,
+                    "Variable '" + std::string(var->m_name) +
+                    "' with pass_attr=Pass/NoPass called without dt (not as a method).");
+            }
         }
 
-        if( func ) {
+        // Verify that a method call's target is actually a member of the
+        // struct that dt points to.
+        if (is_method && check_external) {
+            verify_dt_member(x);
+        }
+
+        // Verify self argument is explicit for method calls with PASS
+        if (is_method && !nopass && func) {
+            require(x.n_args > 0 && x.m_args[0].m_value != nullptr,
+                "Method call with PASS must have self as args[0].");
+        }
+
+        if (func) {
+            require(x.n_args <= func->n_args,
+                "More actual arguments than formal arguments in call. "
+                "call n_args=" + std::to_string(x.n_args) +
+                " func n_args=" + std::to_string(func->n_args) +
+                " func=" + std::string(func->m_name));
+
             for (size_t i = 0; i < x.n_args; i++) {
+                require(i < func->n_args,
+                    "More actual arguments than formal arguments in call.");
+                require(ASR::is_a<ASR::Var_t>(*func->m_args[i]),
+                    "Function argument must be a Var.");
                 ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
-                if (x.m_args[i].m_value == nullptr &&
-                    (ASR::is_a<ASR::Variable_t>(*arg_sym) &&
-                        ASR::down_cast<ASR::Variable_t>(arg_sym)->m_presence !=
-                        ASR::presenceType::Optional)) {
+                if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                    continue;
+                }
+                ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(arg_sym);
 
+                // Skip detailed checks for self argument (args[0] in method calls)
+                if (i == 0 && is_method && !nopass) {
+                    continue;
+                }
+
+                ASR::expr_t* passed_arg_expr = x.m_args[i].m_value;
+
+                if (passed_arg_expr == nullptr) {
+                    if (callee_param->m_presence != ASR::presenceType::Optional) {
                         require(false, "Required argument " +
-                                    std::string(ASRUtils::symbol_name(arg_sym)) +
+                                    std::string(callee_param->m_name) +
                                     " cannot be nullptr.");
+                    }
+                    continue;
+                }
 
+                if (check_external &&
+                    !ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type) &&
+                    (callee_param->m_intent == ASR::intentType::Out ||
+                     callee_param->m_intent == ASR::intentType::InOut)) {
+                    require_with_loc(ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr),
+                        "Non-variable expression in variable definition context "
+                        "(actual argument to INTENT = OUT/INOUT)",
+                        passed_arg_expr->base.loc);
+
+                    if (ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
+                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
+                        if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
+                            ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
+                            require_with_loc(
+                                passed_var->m_intent != ASR::intentType::In,
+                                "Argument `" + std::string(passed_var->m_name) +
+                                "` with intent(in) passed to a dummy argument with modifying intent",
+                                passed_arg_expr->base.loc
+                            );
+                        }
+                    }
+                }
+            }
+
+            for (size_t i = x.n_args; i < func->n_args; i++) {
+                require(ASR::is_a<ASR::Var_t>(*func->m_args[i]),
+                    "Function argument must be a Var.");
+                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                    ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                    if (callee_param->m_presence != ASR::presenceType::Optional) {
+                        require(false, "Required argument " +
+                                    std::string(callee_param->m_name) +
+                                    " cannot be nullptr.");
+                    }
                 }
             }
         }
@@ -1077,7 +1317,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but does not point to Function");
-                require(ASR::is_a<ASR::FunctionType_t>(*v->m_type),
+                require(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
             } else {
                 require(ASR::is_a<ASR::Function_t>(*s) ||
@@ -1206,7 +1446,7 @@ public:
         require(x.m_name,
             "FunctionCall::m_name must be present");
         variable_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
-        if (x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+        if (x.m_dt) {
             visit_expr(*x.m_dt);
         }
         ASR::symbol_t* asr_owner_sym = nullptr;
@@ -1256,7 +1496,7 @@ public:
         if (check_external) {
             require(ASR::is_a<ASR::Function_t>(*fn) ||
                     (ASR::is_a<ASR::Variable_t>(*fn) &&
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(fn)))) ||
                     ASR::is_a<ASR::StructMethodDeclaration_t>(*fn),
                 "FunctionCall::m_name must be a Function or Variable with FunctionType");
         }
@@ -1312,6 +1552,12 @@ public:
                     "Dimensions in ArrayPhysicalCast must be present if not inside a call",
                     x.loc);
         }
+        // Reset the flag before visiting dimension expressions so that
+        // nested types (e.g. the selector's allocatable array type
+        // referenced by ArrayBound/ArraySize nodes) are not subject
+        // to the ArrayPhysicalCast dimension check.
+        bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+        _inside_array_physical_cast_type = false;
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
@@ -1329,6 +1575,7 @@ public:
             }
             visit_expr(*x.m_length);
         }
+        _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
     }
 
     void visit_Array(const Array_t& x) {
@@ -1336,7 +1583,7 @@ public:
             "Allocatable cannot be inside array");
         visit_ttype(*x.m_type);
         if (x.m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-            require(x.n_dims == 0, "Assumed-rank arrays muust have 0 dimensions");
+            require(x.n_dims == 0, "Assumed-rank arrays must have 0 dimensions");
             return ;
         }
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
@@ -1385,9 +1632,10 @@ public:
     void visit_String(const String_t &x){
 /*General Check on the length*/ 
         if(x.m_len){
-            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
+            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_len)))),
                 "String length must be of type INTEGER,"
-                "found " + 
+                "found " +
                 ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length
@@ -1427,8 +1675,9 @@ public:
     }
     void visit_StringPhysicalCast(const StringPhysicalCast_t &x){
         require(x.m_type, "x.m_type cannot be nullptr");
-        require(ASR::is_a<ASR::String_t>(*x.m_type), "StringPhysicalCast should be of string type");
-        ASR::String_t* str = ASR::down_cast<ASR::String_t>(x.m_type);
+        ASR::ttype_t* cast_type = ASRUtils::type_get_past_allocatable(x.m_type);
+        require(ASR::is_a<ASR::String_t>(*cast_type), "StringPhysicalCast should be of string type");
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(cast_type);
         require(!str->m_len,
             "StringPhysicalCast return type shouldn't have length "
             "(Length should be implicit).")

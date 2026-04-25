@@ -37,7 +37,7 @@
             []
             []
             ()
-            (Logical .false.)
+            (Logical .false. ())
             Equal
             ())]
             (TriviaNode
@@ -179,7 +179,7 @@
                 [(Assignment
                     0
                     MATRIX_ERROR
-                    (Logical .true.)
+                    (Logical .true. ())
                     ()
                 )
                 (Return
@@ -275,7 +275,7 @@
                 [(Assignment
                     0
                     MATRIX_ERROR
-                    (Logical .true.)
+                    (Logical .true. ())
                     ()
                 )]
                 []

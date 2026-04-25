@@ -162,6 +162,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             e:
                                                 (Variable
@@ -183,6 +186,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             f:
                                                 (Variable
@@ -204,6 +210,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     b
@@ -225,6 +234,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_b:
                                 (Variable
@@ -251,6 +261,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_b
@@ -290,6 +303,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             z2:
                                                 (Variable
@@ -311,6 +327,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     blank#block
@@ -331,6 +350,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_blank#block:
                                 (Variable
@@ -357,6 +377,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_blank#block
@@ -396,6 +419,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             g:
                                                 (Variable
@@ -417,6 +443,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             h:
                                                 (Variable
@@ -438,6 +467,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             j:
                                                 (Variable
@@ -459,6 +491,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     c
@@ -481,6 +516,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_c:
                                 (Variable
@@ -507,6 +543,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_c
@@ -551,6 +590,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             b:
                                                 (Variable
@@ -572,6 +614,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             i:
                                                 (Variable
@@ -598,6 +643,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     sample
@@ -619,6 +667,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_sample:
                                 (Variable
@@ -645,6 +694,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     file_common_block_sample
@@ -699,6 +751,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             sample:
                                 (ExternalSymbol

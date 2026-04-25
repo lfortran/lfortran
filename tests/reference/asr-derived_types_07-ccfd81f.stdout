@@ -43,6 +43,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             message:
                                                 (Variable
@@ -64,6 +67,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -99,6 +105,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             unit:
                                                 (Variable
@@ -120,6 +129,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     final_logger
@@ -156,8 +168,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             logger_type:
@@ -191,6 +203,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             log_units:
                                                 (Variable
@@ -219,6 +234,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             max_width:
                                                 (Variable
@@ -240,6 +258,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     logger_type
@@ -262,7 +283,7 @@
                                     [add_blank_line
                                     log_units
                                     max_width]
-                                    []
+                                    [final_logger]
                                     Source
                                     Private
                                     .false.
@@ -270,6 +291,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     derived_types_07_stdlib_logger

@@ -53,6 +53,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -79,6 +82,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             unit:
                                                 (Variable
@@ -100,6 +106,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     add_log_file
@@ -131,7 +140,8 @@
                                     [(SubroutineCall
                                         4 1_logger_type_log_io_error
                                         ()
-                                        [((IntegerConstant 1 (Integer 4) Decimal))
+                                        [((Var 4 self))
+                                        ((IntegerConstant 1 (Integer 4) Decimal))
                                         ((Var 4 filename))
                                         ((Var 4 unit))]
                                         (Var 4 self)
@@ -139,8 +149,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             log_io_error:
@@ -168,6 +178,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             filename:
                                                 (Variable
@@ -189,6 +202,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -215,6 +231,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             unit:
                                                 (Variable
@@ -236,6 +255,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     log_io_error
@@ -269,8 +291,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             logger_type:
@@ -318,6 +340,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     kwargs_02_stdlib_logger

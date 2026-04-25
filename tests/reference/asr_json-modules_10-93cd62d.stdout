@@ -258,7 +258,10 @@
                                         "contiguous_attr": false,
                                         "bindc_name": [],
                                         "is_volatile": false,
-                                        "is_protected": false
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "corank": 0
                                     },
                                     "loc": {
                                         "first": 38,

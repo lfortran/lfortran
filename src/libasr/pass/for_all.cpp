@@ -28,13 +28,19 @@ public:
 
     void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
         Location loc = x.base.base.loc;
-        ASR::stmt_t *assign_stmt = x.m_assign_stmt;
+        Vec<ASR::do_loop_head_t> heads;
+        heads.reserve(al, 4);
+        heads.push_back(al, x.m_head);
+        // Unwrap nested ForAllSingle nodes (from multi-index forall)
+        ASR::stmt_t *inner = x.m_assign_stmt;
+        while (ASR::is_a<ASR::ForAllSingle_t>(*inner)) {
+            ASR::ForAllSingle_t &nested = *ASR::down_cast<ASR::ForAllSingle_t>(inner);
+            heads.push_back(al, nested.m_head);
+            inner = nested.m_assign_stmt;
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
-        body.push_back(al, assign_stmt);
-        Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
-        heads.reserve(al,1);
-        heads.push_back(al, x.m_head);
+        body.push_back(al, inner);
         ASR::stmt_t *stmt = ASRUtils::STMT(
             ASR::make_DoConcurrentLoop_t(al, loc, heads.p, heads.n, nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size())
         );

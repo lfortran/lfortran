@@ -70,11 +70,11 @@
                             get_temp_filename:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        21
                                         {
                                             c_tempfile:
                                                 (Variable
-                                                    20
+                                                    21
                                                     c_tempfile
                                                     []
                                                     Local
@@ -99,10 +99,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             f_string@f_string~genericprocedure:
                                                 (ExternalSymbol
-                                                    20
+                                                    21
                                                     f_string@f_string~genericprocedure
                                                     4 f_string~genericprocedure
                                                     fpm_strings
@@ -112,7 +115,7 @@
                                                 ),
                                             tempfile:
                                                 (Variable
-                                                    20
+                                                    21
                                                     tempfile
                                                     []
                                                     ReturnVar
@@ -132,6 +135,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     get_temp_filename
@@ -154,11 +160,11 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 20 tempfile)
+                                        (Var 21 tempfile)
                                         (FunctionCall
-                                            20 f_string@f_string~genericprocedure
+                                            21 f_string@f_string~genericprocedure
                                             2 f_string
-                                            [((Var 20 c_tempfile))]
+                                            [((Var 21 c_tempfile))]
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -169,20 +175,20 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 20 tempfile)
+                                    (Var 21 tempfile)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             list_files:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        20
                                         {
                                             dir_entry_c:
                                                 (Variable
-                                                    19
+                                                    20
                                                     dir_entry_c
                                                     []
                                                     Local
@@ -200,10 +206,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             dir_handle:
                                                 (Variable
-                                                    19
+                                                    20
                                                     dir_handle
                                                     []
                                                     Local
@@ -221,10 +230,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             f_string@f_string_cptr:
                                                 (ExternalSymbol
-                                                    19
+                                                    20
                                                     f_string@f_string_cptr
                                                     4 f_string_cptr
                                                     fpm_strings
@@ -234,7 +246,7 @@
                                                 ),
                                             string_fortran:
                                                 (Variable
-                                                    19
+                                                    20
                                                     string_fortran
                                                     []
                                                     Local
@@ -254,6 +266,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     list_files
@@ -283,7 +298,7 @@
                                             ()
                                             (LogicalNot
                                                 (PointerAssociated
-                                                    (Var 19 dir_entry_c)
+                                                    (Var 20 dir_entry_c)
                                                     ()
                                                     (Logical 4)
                                                     ()
@@ -295,11 +310,11 @@
                                                 ()
                                             )]
                                             [(Assignment
-                                                (Var 19 string_fortran)
+                                                (Var 20 string_fortran)
                                                 (FunctionCall
-                                                    19 f_string@f_string_cptr
+                                                    20 f_string@f_string_cptr
                                                     2 f_string
-                                                    [((Var 19 dir_entry_c))]
+                                                    [((Var 20 dir_entry_c))]
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
@@ -315,8 +330,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_t:
@@ -412,6 +427,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -433,6 +451,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 )
                                                         })
                                                     c_strlen
@@ -479,6 +500,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             lfortran_tmp:
                                                 (Variable
@@ -500,6 +524,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             s:
                                                 (Variable
@@ -523,6 +550,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     f_string_cptr
@@ -604,6 +634,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             n:
                                                 (Variable
@@ -625,6 +658,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             s:
                                                 (Variable
@@ -646,6 +682,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     f_string_cptr_n
@@ -674,8 +713,8 @@
                                     []
                                     (Var 8 s)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             f_string~genericprocedure:
@@ -708,6 +747,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             f_string:
                                                 (Variable
@@ -731,6 +773,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     f_string~genericprocedure
@@ -760,8 +805,8 @@
                                     []
                                     (Var 9 f_string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_t:
@@ -791,6 +836,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     string_t
@@ -812,6 +860,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_strings

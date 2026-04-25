@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             string:
                                 (Variable
@@ -50,6 +53,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     allocate_05
@@ -59,7 +65,7 @@
                         []
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()

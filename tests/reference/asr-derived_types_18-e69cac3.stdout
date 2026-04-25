@@ -82,6 +82,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             type_2:
                                 (Variable
@@ -108,6 +111,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     derived_types_10
@@ -228,6 +234,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     t_1
@@ -247,6 +256,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             t_2:
                                 (Struct
@@ -273,6 +283,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     t_2
@@ -292,6 +305,7 @@
                                     []
                                     ()
                                     2 t_1
+                                    []
                                 )
                         })
                     derived_types_18_module_1

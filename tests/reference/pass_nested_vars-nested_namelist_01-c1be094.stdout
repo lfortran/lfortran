@@ -12,7 +12,7 @@
                                     6
                                     i
                                     []
-                                    Unspecified
+                                    Local
                                     ()
                                     ()
                                     Default
@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             nml:
                                 (Namelist
@@ -40,7 +43,7 @@
                                     6
                                     x
                                     []
-                                    Unspecified
+                                    Local
                                     ()
                                     ()
                                     Default
@@ -55,6 +58,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     __lcompilers_created__nested_context__outer_
@@ -120,11 +126,14 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
-                                            i1:
+                                            i_nested_ctx:
                                                 (ExternalSymbol
                                                     3
-                                                    i1
+                                                    i_nested_ctx
                                                     6 i
                                                     __lcompilers_created__nested_context__outer_
                                                     []
@@ -156,6 +165,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    0
                                                                 ),
                                                             nml:
                                                                 (ExternalSymbol
@@ -198,11 +210,12 @@
                                                         .false.
                                                         4 nml
                                                         ()
+                                                        ()
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             nml:
@@ -232,11 +245,14 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
-                                            x1:
+                                            x_nested_ctx:
                                                 (ExternalSymbol
                                                     3
-                                                    x1
+                                                    x_nested_ctx
                                                     6 x
                                                     __lcompilers_created__nested_context__outer_
                                                     []
@@ -279,14 +295,14 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 i1)
+                                        (Var 3 i_nested_ctx)
                                         (Var 3 i)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 x1)
+                                        (Var 3 x_nested_ctx)
                                         (Var 3 x)
                                         ()
                                         .false.
@@ -301,22 +317,22 @@
                                     )
                                     (Assignment
                                         (Var 3 i)
-                                        (Var 3 i1)
+                                        (Var 3 i_nested_ctx)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
                                         (Var 3 x)
-                                        (Var 3 x1)
+                                        (Var 3 x_nested_ctx)
                                         ()
                                         .false.
                                         .false.
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

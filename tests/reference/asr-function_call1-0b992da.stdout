@@ -42,6 +42,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -68,6 +71,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -94,6 +100,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     eval_1d
@@ -147,8 +156,8 @@
                                     []
                                     (Var 4 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             eval_1d_prime:
@@ -196,6 +205,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -222,6 +234,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             x:
                                                 (Variable
@@ -248,6 +263,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     eval_1d_prime
@@ -303,7 +321,8 @@
                                         (FunctionCall
                                             5 1_softmax_eval_1d
                                             ()
-                                            [((ArrayPhysicalCast
+                                            [((Var 5 self))
+                                            ((ArrayPhysicalCast
                                                 (Var 5 x)
                                                 DescriptorArray
                                                 DescriptorArray
@@ -335,8 +354,8 @@
                                     )]
                                     (Var 5 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             softmax:
@@ -373,6 +392,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     module_function_call1

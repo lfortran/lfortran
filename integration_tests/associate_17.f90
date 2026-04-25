@@ -36,5 +36,6 @@ program associate_17
         print *, target % inmap
         if (target % inmap /= 42) error stop
     end associate
+    deallocate(map % inverse(1) % target)
 
 end program

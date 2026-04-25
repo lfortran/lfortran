@@ -763,6 +763,10 @@ filename = "../integration_tests/write_12.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/write_22.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/submodule_01.f90"
 ast = true
 
@@ -1564,6 +1568,14 @@ filename = "errors/allocate_01.f90"
 run = true
 
 [[test]]
+filename = "errors/allocate_02.f90"
+run = true
+
+[[test]]
+filename = "errors/allocate_03.f90"
+run = true
+
+[[test]]
 filename = "errors/allocated_04.f90"
 run = true
 
@@ -2028,7 +2040,15 @@ filename = "../integration_tests/format_58.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/format_66.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/print_09.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/print_12.f90"
 run = true
 
 [[test]]
@@ -3287,6 +3307,10 @@ filename = "errors/continue_compilation_3.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_coarrays.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_ff_1.f"
 fixed_form_cc_asr = true
 
@@ -3305,6 +3329,14 @@ continue_compilation = true
 [[test]]
 filename = "errors/mre_parameter.f90"
 continue_compilation = true
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_20.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_22.f90"
+run = true
 
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
@@ -3478,6 +3510,10 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_5.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_6.f"
 ast = true
 
 [[test]]
@@ -4248,6 +4284,7 @@ asr_implicit_typing = true
 filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
 enable_disable_implicit_argument_casting = true
+options = "--legacy-array-sections"
 
 [[test]]
 filename = "../integration_tests/valid_array_assignment_same_length_different_start.f90"
@@ -4268,6 +4305,7 @@ run_with_dbg = true
 [[test]]
 filename = "../integration_tests/legacy_array_sections_01.f90"
 llvm = true
+options = "--legacy-array-sections"
 
 [[test]]
 filename = "format2.f90"
@@ -4538,6 +4576,14 @@ asr = true
 
 [[test]]
 filename = "warnings/doloop_01.f90"
+asr = true
+
+[[test]]
+filename = "warnings/rand_01.f90"
+asr = true
+
+[[test]]
+filename = "warnings/sizeof_01.f90"
 asr = true
 
 [[test]]
@@ -5061,6 +5107,14 @@ run = true
 options = "--infer"
 
 [[test]]
+filename = "../integration_tests/allocatable_component_reshape_unallocated_01.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/allocatable_component_unnamed_unallocated_01.f90"
+run = true
+
+[[test]]
 filename = "infer_first_assignment_01.f90"
 asr = true
 options = "--infer"
@@ -5083,3 +5137,11 @@ run = true
 filename = "errors/continue_compilation_walrus.f90"
 semantics_only_cc = true
 options = "--infer"
+
+[[test]]
+filename = "../integration_tests/subroutines_21.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_107.f90"
+asr = true

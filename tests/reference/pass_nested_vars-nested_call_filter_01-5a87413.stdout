@@ -12,7 +12,7 @@
                                     7
                                     a
                                     []
-                                    Unspecified
+                                    Local
                                     ()
                                     ()
                                     Default
@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     __lcompilers_created__nested_context__outer_
@@ -76,6 +79,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             a1:
                                                 (ExternalSymbol
@@ -97,10 +103,10 @@
                                                     a
                                                     Public
                                                 ),
-                                            a3:
+                                            a_nested_ctx:
                                                 (ExternalSymbol
                                                     5
-                                                    a3
+                                                    a_nested_ctx
                                                     7 a
                                                     __lcompilers_created__nested_context__outer_
                                                     []
@@ -155,8 +161,8 @@
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })
@@ -185,7 +191,7 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 5 a3)
+                                        (Var 5 a_nested_ctx)
                                         (Var 5 a)
                                         ()
                                         .false.
@@ -200,7 +206,7 @@
                                     )
                                     (Assignment
                                         (Var 5 a)
-                                        (Var 5 a3)
+                                        (Var 5 a_nested_ctx)
                                         ()
                                         .false.
                                         .false.
@@ -214,8 +220,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -259,6 +265,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     modproc
@@ -293,8 +302,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

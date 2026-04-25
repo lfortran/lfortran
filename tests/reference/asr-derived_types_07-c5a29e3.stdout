@@ -72,6 +72,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             key:
                                                 (Variable
@@ -93,6 +96,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             ptr:
                                                 (Variable
@@ -123,6 +129,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -134,7 +143,8 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Allocatable
+                                                        [(Integer 4)
+                                                        (Allocatable
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -155,8 +165,7 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -171,12 +180,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     find
                                     (FunctionType
                                         [(StructType
-                                            [(Allocatable
+                                            [(Integer 4)
+                                            (Allocatable
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -197,8 +210,7 @@
                                                     ())]
                                                     DescriptorArray
                                                 )
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
@@ -320,7 +332,70 @@
                                                 (FunctionCall
                                                     13 1_toml_value_match_key
                                                     ()
-                                                    [((Var 13 key))]
+                                                    [((StructInstanceMember
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 13 self)
+                                                                13 1_toml_vector_lst
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                            )]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 13 i)
+                                                            ())]
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        13 1_toml_node_val
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        ()
+                                                    ))
+                                                    ((Var 13 key))]
                                                     (Logical 4)
                                                     ()
                                                     (StructInstanceMember
@@ -464,8 +539,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_vector:
@@ -513,6 +588,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -524,7 +602,8 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Allocatable
+                                                        [(Integer 4)
+                                                        (Allocatable
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -545,8 +624,7 @@
                                                                 ())]
                                                                 DescriptorArray
                                                             )
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .true.
                                                         .false.
@@ -561,12 +639,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     new_vector
                                     (FunctionType
                                         [(StructType
-                                            [(Allocatable
+                                            [(Integer 4)
+                                            (Allocatable
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -587,8 +669,7 @@
                                                     ())]
                                                     DescriptorArray
                                                 )
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .true.
                                             .false.
@@ -678,8 +759,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_node:
@@ -716,6 +797,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     toml_node
@@ -744,6 +828,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_value:
                                 (ExternalSymbol
@@ -801,6 +886,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             n:
                                                 (Variable
@@ -822,11 +910,15 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     toml_vector
                                     (StructType
-                                        [(Allocatable
+                                        [(Integer 4)
+                                        (Allocatable
                                             (Array
                                                 (StructType
                                                     [(Allocatable
@@ -847,8 +939,7 @@
                                                 ())]
                                                 DescriptorArray
                                             )
-                                        )
-                                        (Integer 4)]
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -864,6 +955,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     tomlf_structure_vector
@@ -930,6 +1022,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     destroy
@@ -1014,8 +1109,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_keyval:
@@ -1056,6 +1151,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     toml_keyval
@@ -1077,6 +1175,7 @@
                                     []
                                     ()
                                     6 toml_value
+                                    []
                                 ),
                             toml_value:
                                 (ExternalSymbol
@@ -1133,6 +1232,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     destroy
@@ -1201,6 +1303,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             match:
                                                 (Variable
@@ -1222,6 +1327,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             self:
                                                 (Variable
@@ -1250,6 +1358,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     match_key
@@ -1327,8 +1438,8 @@
                                     )]
                                     (Var 5 match)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_value:
@@ -1369,6 +1480,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             match_key:
                                                 (StructMethodDeclaration
@@ -1401,6 +1515,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     tomlf_type_value

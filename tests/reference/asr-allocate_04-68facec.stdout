@@ -38,6 +38,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             message:
                                 (Variable
@@ -61,6 +64,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             num:
                                 (Variable
@@ -82,6 +88,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             string:
                                 (Variable
@@ -105,6 +114,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     allocate_04
@@ -114,7 +126,7 @@
                         []
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()
@@ -124,7 +136,7 @@
                         []
                         (IntegerConstant 20 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()

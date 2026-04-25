@@ -52,6 +52,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     base
@@ -71,6 +74,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             base_target:
                                 (Variable
@@ -107,6 +111,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             bptr:
                                 (Variable
@@ -135,6 +142,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             child:
                                 (Struct
@@ -161,6 +171,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     child
@@ -180,6 +193,7 @@
                                     []
                                     ()
                                     2 base
+                                    []
                                 ),
                             child_target:
                                 (Variable
@@ -206,6 +220,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             perform_select_type:
                                 (Function
@@ -239,6 +256,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             ~select_type_block_:
                                                 (Block

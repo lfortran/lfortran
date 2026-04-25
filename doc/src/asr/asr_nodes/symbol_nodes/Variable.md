@@ -9,8 +9,11 @@ Variable is a **symbol** node representing a variable declaration.
 ```
 Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
     intent intent, expr? symbolic_value, expr? value, storage_type storage,
-    ttype type, symbol type_declaration,
-    abi abi, access access, presence presence, bool value_attr)
+    ttype type, symbol? type_declaration,
+    abi abi, access access, presence presence, bool value_attr,
+    bool target_attr, bool contiguous_attr, string? bindc_name,
+    bool is_volatile, bool is_protected,
+    pass_attr pass_attr, identifier? self_argument, int corank)
 ```
 
 ### Arguments
@@ -47,6 +50,37 @@ symbol that declares the type
 
 `value_attr` if true, this parameter has a `value` attribute set
 
+`target_attr` if true, this variable has the `target` attribute
+
+`contiguous_attr` if true, this variable has the `contiguous` attribute
+
+`bindc_name` optional C binding name from `bind(c, name="...")`
+
+`is_volatile` if true, this variable has the `volatile` attribute
+
+`is_protected` if true, this variable has the `protected` attribute
+
+`pass_attr` determines whether this variable is a procedure pointer component
+with pass/nopass semantics. A three-valued enum:
+- `NotMethod` — this is not a type-bound procedure pointer (default for all
+  regular variables, standalone procedure pointers, and non-procedure variables)
+- `Pass` — this is a procedure pointer component inside a derived type with
+  pass semantics: the object through which it is called is implicitly passed
+  as an argument at the position identified by `self_argument`
+- `NoPass` — this is a procedure pointer component inside a derived type with
+  nopass semantics: no object is passed implicitly
+
+`self_argument` only meaningful when `pass_attr` is `Pass`. Identifies which
+dummy argument of the procedure interface receives the passed object:
+- `nullptr` — the passed object goes to the first dummy argument (default)
+- a name (e.g. `"pt"`) — the passed object goes to the dummy argument with
+  that name, which may be at any position in the argument list
+
+`corank` the number of codimensions for coarray variables (0 for non-coarrays).
+When non-zero, indicates that this variable is a coarray and specifies how many
+coarray indices (image selectors) are required in `CoarrayRef` expressions to
+reference it across images. For example, `integer :: x[*]` has `corank=1`, while
+`integer :: y(10)[*,*]` has `corank=2`.
 
 ### Return values
 
@@ -55,7 +89,7 @@ None.
 ## Description
 
 A `Variable` node represents a declaration of any variable in the
-program. It contais information about the type, visibility, compile-time value,
+program. It contains information about the type, visibility, compile-time value,
 etc.
 
 The type of the variable can be any of the primitive types like integer,
@@ -67,9 +101,52 @@ classes, enums, and function pointers. Such types are not declared inline to the
 `Variable` node itself. In such cases, the `type_declaration` member of
 `Variable` points to the symbol containing the declaration of the type.
 
+### Procedure Pointer Components
+
+When a derived type declares a procedure pointer component, that component is
+represented as a `Variable` whose `type` is a `FunctionType` (possibly wrapped
+in a `Pointer`). The `pass_attr` and `self_argument` fields distinguish three
+cases:
+
+```fortran
+type :: mytype
+    ! NotMethod, self_argument=null: plain procedure pointer, no pass/nopass attribute
+    procedure(iface), pointer :: op => null()
+    ! NoPass, self_argument=null: explicitly no implicit self
+    procedure(iface), nopass, pointer :: action => null()
+    ! Pass, self_argument=null: self is passed as the first argument (default position)
+    procedure(iface), pass, pointer :: scale => null()
+    ! Pass, self_argument="self": self is passed at the position of dummy arg "self"
+    procedure(iface), pass(self), pointer :: combine => null()
+end type
+```
+
+For type-bound procedures declared with `contains` (not procedure pointer
+components), see [StructMethodDeclaration](StructMethodDeclaration.md).
+
+### Coarray Variables
+
+In Fortran, coarrays enable data access and communication across multiple images
+(processes/threads) in a parallel program. A coarray variable has codimensions
+declared with the `[...]` notation:
+
+```fortran
+integer :: scalar_coarray[*]      ! rank 0, corank 1
+integer :: array_coarray(10)[*]   ! rank 1, corank 1
+integer :: matrix[*,*]            ! rank 0, corank 2
+integer :: scalar_not_coarray         ! rank 0, corank 0
+integer :: array_not_coarray(10)      ! rank 1, corank 0
+```
+
+The `corank` field of a `Variable` node indicates how many codimensions the variable
+has. For non-coarray variables, `corank` is 0. When accessing coarray elements in
+expressions, the number of coindices in a `CoarrayRef` node must match the variable's
+`corank`.
+
 `Variable` represents declarations of variables. `Var` nodes represent instances
 of variables in code. To represent the use of a variable in an expression,
-employ the ASR `expr Var` node.
+employ the ASR `expr Var` node. To reference a coarray with explicit image
+selectors, use the `CoarrayRef` node.
 
 ## Examples
 
@@ -142,6 +219,55 @@ ASR:
 )
 
 ```
+
+## Coarray Example
+
+```fortran
+program coarray_test
+    implicit none
+    integer :: x[*]
+    x = 42
+    if (this_image() == 1) then
+        print *, x[2]  ! Access x on image 2
+    end if
+end program coarray_test
+```
+
+ASR (simplified):
+
+```fortran
+(Variable
+    2
+    x
+    Local
+    ()
+    ()
+    Default
+    (Integer 4 [])
+    Source
+    Public
+    Required
+    .false.
+    1              ! corank = 1 (this is a coarray with one codimension)
+)
+```
+
+In the assignment `x[2] = ...`, the coarray reference is represented as:
+
+```fortran
+(CoarrayRef
+    (Var 2 x)
+    [(array_index (left (IntegerConstant 2)) (right ()) (step ()))]
+    (Integer 4 [])
+    ()
+)
+```
+
+The `corank=1` in the Variable declaration matches the single coindex `[2]` in the
+`CoarrayRef` expression.
+
 ## See Also
 
-[Var](../expression_nodes/Var.md)
+[Var](../expression_nodes/Var.md),
+[CoarrayRef](../expression_nodes/CoarrayRef.md),
+[StructMethodDeclaration](StructMethodDeclaration.md)

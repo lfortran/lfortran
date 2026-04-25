@@ -72,6 +72,10 @@ set(SRC
     pass/insert_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/replace_with_compile_time_values.cpp
+    pass/gpu_offload.cpp
+
+    codegen/asr_to_metal.cpp
+    codegen/asr_to_cuda.cpp
 
     asr_verify.cpp
     asr_utils.cpp
@@ -144,3 +148,11 @@ if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
     target_link_libraries(lfortran_utils p::llvm)
 endif()
+
+# Copy Metal GPU runtime source to build directory so the
+# lfortran binary can find it at its expected relative path
+file(COPY
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_metal.m
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cuda.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_runtime.h
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/runtime)

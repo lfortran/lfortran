@@ -1,0 +1,5 @@
+warning: Change of value in conversion from 'real(8)' to 'real(4)'
+ --> tests/../integration_tests/class_01.f90:4:16
+  |
+4 |   real :: pi = 3.1415926535897931d0 ! Class-wide private constant
+  |                ^^^^^^^^^^^^^^^^^^^^ 

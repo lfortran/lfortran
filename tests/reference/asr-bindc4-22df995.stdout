@@ -27,6 +27,16 @@
                                     c_f_pointer
                                     Public
                                 ),
+                            c_intptr_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intptr_t
+                                    4 c_intptr_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intptr_t
+                                    Public
+                                ),
                             c_loc:
                                 (ExternalSymbol
                                     2
@@ -77,6 +87,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             j:
                                 (Variable
@@ -98,6 +111,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             newshape:
                                 (Variable
@@ -124,6 +140,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             queries:
                                 (Variable
@@ -145,6 +164,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             queries2:
                                 (Variable
@@ -172,6 +194,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             x:
                                 (Variable
@@ -202,6 +227,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             xv:
                                 (Variable
@@ -230,6 +258,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             y:
                                 (Variable
@@ -260,6 +291,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             yv:
                                 (Variable
@@ -288,6 +322,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     bindc4
@@ -397,26 +434,32 @@
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
-                                    (PointerToCPtr
-                                        (GetPointer
-                                            (ArrayItem
-                                                (Var 2 x)
-                                                [(()
-                                                (Var 2 i)
-                                                ())
-                                                (()
-                                                (Var 2 j)
-                                                ())]
-                                                (Integer 2)
-                                                ColMajor
+                                    (BitCast
+                                        (PointerToCPtr
+                                            (GetPointer
+                                                (ArrayItem
+                                                    (Var 2 x)
+                                                    [(()
+                                                    (Var 2 i)
+                                                    ())
+                                                    (()
+                                                    (Var 2 j)
+                                                    ())]
+                                                    (Integer 2)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Pointer
+                                                    (Integer 2)
+                                                )
                                                 ()
                                             )
-                                            (Pointer
-                                                (Integer 2)
-                                            )
+                                            (CPtr)
                                             ()
                                         )
-                                        (CPtr)
+                                        (IntegerConstant 0 (Integer 8) Decimal)
+                                        ()
+                                        (Integer 8)
                                         ()
                                     )]
                                     FormatFortran
@@ -439,12 +482,24 @@
                     (Print
                         (StringFormat
                             ()
-                            [(PointerToCPtr
-                                (Var 2 x)
-                                (CPtr)
+                            [(BitCast
+                                (PointerToCPtr
+                                    (Var 2 x)
+                                    (CPtr)
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
                                 ()
                             )
-                            (Var 2 queries)]
+                            (BitCast
+                                (Var 2 queries)
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
+                                ()
+                            )]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -493,26 +548,32 @@
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
-                                    (PointerToCPtr
-                                        (GetPointer
-                                            (ArrayItem
-                                                (Var 2 x)
-                                                [(()
-                                                (Var 2 i)
-                                                ())
-                                                (()
-                                                (Var 2 j)
-                                                ())]
-                                                (Integer 2)
-                                                ColMajor
+                                    (BitCast
+                                        (PointerToCPtr
+                                            (GetPointer
+                                                (ArrayItem
+                                                    (Var 2 x)
+                                                    [(()
+                                                    (Var 2 i)
+                                                    ())
+                                                    (()
+                                                    (Var 2 j)
+                                                    ())]
+                                                    (Integer 2)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Pointer
+                                                    (Integer 2)
+                                                )
                                                 ()
                                             )
-                                            (Pointer
-                                                (Integer 2)
-                                            )
+                                            (CPtr)
                                             ()
                                         )
-                                        (CPtr)
+                                        (IntegerConstant 0 (Integer 8) Decimal)
+                                        ()
+                                        (Integer 8)
                                         ()
                                     )]
                                     FormatFortran
@@ -545,12 +606,24 @@
                     (Print
                         (StringFormat
                             ()
-                            [(PointerToCPtr
-                                (Var 2 x)
-                                (CPtr)
+                            [(BitCast
+                                (PointerToCPtr
+                                    (Var 2 x)
+                                    (CPtr)
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
                                 ()
                             )
-                            (Var 2 queries)]
+                            (BitCast
+                                (Var 2 queries)
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                ()
+                                (Integer 8)
+                                ()
+                            )]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -599,26 +672,32 @@
                                     ()
                                     [(Var 2 i)
                                     (Var 2 j)
-                                    (PointerToCPtr
-                                        (GetPointer
-                                            (ArrayItem
-                                                (Var 2 x)
-                                                [(()
-                                                (Var 2 i)
-                                                ())
-                                                (()
-                                                (Var 2 j)
-                                                ())]
-                                                (Integer 2)
-                                                ColMajor
+                                    (BitCast
+                                        (PointerToCPtr
+                                            (GetPointer
+                                                (ArrayItem
+                                                    (Var 2 x)
+                                                    [(()
+                                                    (Var 2 i)
+                                                    ())
+                                                    (()
+                                                    (Var 2 j)
+                                                    ())]
+                                                    (Integer 2)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Pointer
+                                                    (Integer 2)
+                                                )
                                                 ()
                                             )
-                                            (Pointer
-                                                (Integer 2)
-                                            )
+                                            (CPtr)
                                             ()
                                         )
-                                        (CPtr)
+                                        (IntegerConstant 0 (Integer 8) Decimal)
+                                        ()
+                                        (Integer 8)
                                         ()
                                     )]
                                     FormatFortran

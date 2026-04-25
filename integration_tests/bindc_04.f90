@@ -16,8 +16,8 @@ real(c_float), pointer :: a(:)
 call c_f_pointer(data, tdata)
 
 call c_f_pointer(tdata%a, a, [5])
-print *, "Array address in fortran :", tdata%a
-print *, "c_loc(a) :", c_loc(a)
+print *, "Array address in fortran :", transfer(tdata%a, 0_c_intptr_t)
+print *, "c_loc(a) :", transfer(c_loc(a), 0_c_intptr_t)
 print *, sum(a)
 if (abs(sum(a) - 10.0) > 1.0e-8) error stop
 end subroutine
@@ -30,8 +30,8 @@ type(c_ptr), intent(in), value :: data
 real(c_float), pointer :: a(:)
 
 call c_f_pointer(data, a, [5])
-print *, "Array address in fortran b_func_fortran:", data
-print *, "c_loc(a) b_func_fortran:", c_loc(a)
+print *, "Array address in fortran b_func_fortran:", transfer(data, 0_c_intptr_t)
+print *, "c_loc(a) b_func_fortran:", transfer(c_loc(a), 0_c_intptr_t)
 print *, sum(a)
 if (abs(sum(a) - 10.0) > 1.0e-8) error stop
 end subroutine
@@ -76,5 +76,6 @@ tdata%n = 5
 call a_func(c_funloc(lcompilers_initialise_array))
 call b_func(c_funloc(b_func_fortran))
 call c_func(c_loc(a))
+deallocate(a)
 
 end program bindc_04

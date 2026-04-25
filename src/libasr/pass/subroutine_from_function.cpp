@@ -93,7 +93,11 @@ public:
             ASR::Variable_t* x_ptr = &const_cast<ASR::Variable_t&>(x);
             if(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))){
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration));
-                x_ptr->m_type = func->m_function_signature;
+                ASR::ttype_t* new_type = func->m_function_signature;
+                if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
+                    new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
+                }
+                x_ptr->m_type = new_type;
             }
         }
 
@@ -397,6 +401,24 @@ public :
 
         ASR::Function_t* func = ASRUtils::get_function(x->m_name);
         bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
+        // Elemental functions returning primitive scalars are not converted
+        // to subroutines, but the call expression type is an array (due to
+        // elemental expansion with array args). Extract the call into a
+        // temporary assignment so that the later array_op pass can expand
+        // it element-wise.
+        if (func && ASRUtils::is_elemental(x->m_name) && !was_converted
+                && PassUtils::is_aggregate_or_array_type(x->m_type)) {
+            ASR::expr_t* result_var = PassUtils::create_var(
+                result_counter++, "return_slot", x->base.base.loc,
+                create_type_for_return_slot_var(x->m_type), al,
+                current_scope, nullptr);
+            ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                al, x->base.base.loc, result_var,
+                ASRUtils::EXPR((ASR::asr_t*)x), nullptr, false, false));
+            *current_expr = result_var;
+            pass_result.push_back(al, assign);
+            return;
+        }
         if(PassUtils::is_non_primitive_return_type(x->m_type)
             || PassUtils::is_aggregate_or_array_type(x->m_type)){
 
@@ -506,9 +528,14 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
             if(!pass_result.empty()){  // Flush `pass_result`.
-                LCOMPILERS_ASSERT(parent_body != nullptr);
-                for(size_t i = 0; i < pass_result.size(); i++){
-                    parent_body->push_back(al, pass_result[i]);
+                if (parent_body != nullptr) {
+                    for(size_t i = 0; i < pass_result.size(); i++){
+                        parent_body->push_back(al, pass_result[i]);
+                    }
+                } else {
+                    for(size_t i = 0; i < pass_result.size(); i++){
+                        body.push_back(al, pass_result[i]);
+                    }
                 }
                 pass_result.n = 0;
             }
@@ -566,6 +593,18 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                 value = associate->m_value;
                 target = associate->m_target;
+                // When the target is a concrete type pointer (e.g., type(child), pointer)
+                // but the function returns a class pointer (e.g., class(child), pointer),
+                // we need a temp variable of the function's return type to receive
+                // the class descriptor, then associate the target with the temp's data.
+                ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(target));
+                ASR::ttype_t* value_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(value));
+                if (!ASRUtils::is_class_type(target_type) &&
+                    ASRUtils::is_class_type(value_type)) {
+                    use_temp_var_for_return = true;
+                }
             } else {
                 LCOMPILERS_ASSERT("Only Assignment_t and Associate_t allowed.");
             }
@@ -603,7 +642,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (this->expr_same(target, fc->m_args[i].m_value)) {
+                if (fc->m_args[i].m_value && this->expr_same(target, fc->m_args[i].m_value)) {
                     use_temp_var_for_return = true;
                 }
             }
@@ -615,8 +654,35 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             // Use a temp var for storing result if target is passed as input to the function, then assign the temp var to the target.
             if (use_temp_var_for_return) {
                 ASR::expr_t *result_var = nullptr;
+                // When the function returns a class pointer but the target is a concrete
+                // type pointer (Associate case), the temp must match the function's return
+                // type so it can hold the class descriptor.  Use the FunctionCall's type
+                // for the temp, but get the struct symbol from the target (both share the
+                // same underlying struct, the function's m_return_var was already cleared
+                // by the CreateFunctionFromSubroutine pass).
+                ASR::ttype_t* target_unwrapped = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(target));
+                ASR::ttype_t* value_unwrapped = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(value));
+                bool class_to_type_mismatch = !ASRUtils::is_class_type(target_unwrapped) &&
+                    ASRUtils::is_class_type(value_unwrapped);
 
-                if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
+                if (class_to_type_mismatch) {
+                    ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
+                    std::string var_name = current_scope->get_unique_name(
+                        "__libasr_created__subroutine_from_function_");
+                    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
+                    ASR::symbol_t* temp_sym = ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(
+                            al, target->base.loc, current_scope, s2c(al, var_name),
+                            nullptr, 0, ASR::intentType::Local,
+                            nullptr, nullptr, ASR::storage_typeType::Default,
+                            var_type, struct_sym, ASR::abiType::Source,
+                            ASR::accessType::Public, ASR::presenceType::Required, false));
+                    current_scope->add_symbol(var_name, temp_sym);
+                    result_var = ASRUtils::EXPR(ASR::make_Var_t(
+                        al, temp_sym->base.loc, temp_sym));
+                } else if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
                     result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 } else {
                     result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
@@ -680,10 +746,13 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 if (x.m_overloaded) {
                     // User-defined assignment(=) where the RHS is a function
-                    // call returning an aggregate type. The array_struct_temporary
-                    // pass has already created a temp for the function result
-                    // and wired the m_overloaded SubroutineCall to use it.
-                    // Just emit the overloaded call and drop this Assignment.
+                    // call returning an aggregate type.  Visit the overloaded
+                    // SubroutineCall so that any FunctionCall nodes in its
+                    // arguments are replaced with SubroutineCall + temp var
+                    // (the function was already converted to a subroutine in
+                    // Phase 1).  Then emit the overloaded call and drop the
+                    // Assignment.
+                    this->visit_stmt(*x.m_overloaded);
                     pass_result.push_back(al, x.m_overloaded);
                     remove_original_statement = true;
                     return;

@@ -39,6 +39,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             value2:
                                                 (Variable
@@ -67,6 +70,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             ~unlimited_polymorphic_type:
                                                 (Struct
@@ -92,6 +98,7 @@
                                                     []
                                                     ()
                                                     ()
+                                                    []
                                                 )
                                         })
                                     dict_item
@@ -127,6 +134,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fortuno_types

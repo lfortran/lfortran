@@ -72,6 +72,9 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
+                    0
                 )
         })
     []

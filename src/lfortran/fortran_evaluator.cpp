@@ -11,6 +11,7 @@
 #include <libasr/exception.h>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
+#include <libasr/asr_utils.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
@@ -43,7 +44,7 @@ FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
     compiler_options{compiler_options},
     al{1024*1024},
 #ifdef HAVE_LFORTRAN_LLVM
-    e{std::make_unique<LLVMEvaluator>()},
+    e{nullptr},
     eval_count{0},
 #endif
     symbol_table{nullptr}
@@ -51,6 +52,15 @@ FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
 }
 
 FortranEvaluator::~FortranEvaluator() = default;
+
+#ifdef HAVE_LFORTRAN_LLVM
+LLVMEvaluator &FortranEvaluator::get_llvm_evaluator() {
+    if (!e) {
+        e = std::make_unique<LLVMEvaluator>(compiler_options.target);
+    }
+    return *e;
+}
+#endif
 
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
     LocationManager lm;
@@ -127,40 +137,56 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     std::string return_type = m->get_return_type(run_fn);
 
+    // With full-width logical types, logicals are now i32/i64 in LLVM
+    // (same as integers). Check the ASR to distinguish logical from integer.
+    if (asr->m_symtab->get_symbol(run_fn) != nullptr) {
+        ASR::symbol_t *fn_sym = asr->m_symtab->get_symbol(run_fn);
+        if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+            if (fn->m_return_var) {
+                ASR::ttype_t *ret_type = ASRUtils::expr_type(fn->m_return_var);
+                if (ASRUtils::is_logical(*ret_type)) {
+                    return_type = "logical";
+                }
+            }
+        }
+    }
+
     // LLVM -> Machine code -> Execution
-    e->add_module(std::move(m));
+    LLVMEvaluator &e = get_llvm_evaluator();
+    e.add_module(std::move(m));
     if (return_type == "integer4") {
-        int32_t r = e->execfn<int32_t>(run_fn);
+        int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = e->execfn<int64_t>(run_fn);
+        int64_t r = e.execfn<int64_t>(run_fn);
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = e->execfn<float>(run_fn);
+        float r = e.execfn<float>(run_fn);
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = e->execfn<double>(run_fn);
+        double r = e.execfn<double>(run_fn);
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
-        std::complex<float> r = e->execfn<std::complex<float>>(run_fn);
+        std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
     } else if (return_type == "complex8") {
-        std::complex<double> r = e->execfn<std::complex<double>>(run_fn);
+        std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        bool r = e->execfn<bool>(run_fn);
+        int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
-        result.b = r;
+        result.b = (r != 0);
     } else if (return_type == "void") {
-        e->execfn<void>(run_fn);
+        e.execfn<void>(run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = EvalResult::none;
@@ -376,7 +402,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
-            e->get_context(), al, pass_manager,
+            get_llvm_evaluator().get_context(), al, pass_manager,
             compiler_options, run_fn, "", infile, lm);
     if (res.ok) {
         m = std::move(res.result);
@@ -387,7 +413,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 
     if (compiler_options.po.fast) {
         auto t1 = std::chrono::high_resolution_clock::now();
-        e->opt(*m->m_m);
+        get_llvm_evaluator().opt(*m->m_m);
         auto t2 = std::chrono::high_resolution_clock::now();
         if (compiler_options.po.time_report && time_opt) {
             *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -416,7 +442,7 @@ Result<std::string> FortranEvaluator::get_asm(
 #ifdef HAVE_LFORTRAN_LLVM
     Result<std::unique_ptr<LLVMModule>> res = get_llvm2(code, lm, lpm, diagnostics);
     if (res.ok) {
-        return e->get_asm(*res.result->m_m);
+        return get_llvm_evaluator().get_asm(*res.result->m_m);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;

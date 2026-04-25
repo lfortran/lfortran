@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             rp1d:
                                 (Struct
@@ -60,6 +63,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     rp1d
@@ -86,6 +92,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             sds:
                                 (Struct
@@ -117,6 +124,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             f:
                                                 (Variable
@@ -149,6 +159,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             hdf32:
                                                 (Variable
@@ -170,6 +183,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             ndim:
                                                 (Variable
@@ -191,6 +207,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             scales:
                                                 (Variable
@@ -229,30 +248,21 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 )
                                         })
                                     sds
                                     (StructType
-                                        [(Array
+                                        [(Integer 4)
+                                        (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
-                                        (Pointer
-                                            (Array
-                                                (Real 8)
-                                                [(()
-                                                ())
-                                                (()
-                                                ())
-                                                (()
-                                                ())]
-                                                DescriptorArray
-                                            )
-                                        )
                                         (Logical 4)
-                                        (Integer 4)
                                         (Array
                                             (StructType
                                                 [(Pointer
@@ -270,6 +280,18 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                        )
+                                        (Pointer
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                         )]
                                         []
                                         .true.
@@ -289,6 +311,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     module_nullify_03
@@ -343,26 +366,14 @@
                                     ()
                                     Default
                                     (StructType
-                                        [(Array
+                                        [(Integer 4)
+                                        (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
                                         )
-                                        (Pointer
-                                            (Array
-                                                (Real 8)
-                                                [(()
-                                                ())
-                                                (()
-                                                ())
-                                                (()
-                                                ())]
-                                                DescriptorArray
-                                            )
-                                        )
                                         (Logical 4)
-                                        (Integer 4)
                                         (Array
                                             (StructType
                                                 [(Pointer
@@ -380,6 +391,18 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                        )
+                                        (Pointer
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                                DescriptorArray
+                                            )
                                         )]
                                         []
                                         .true.
@@ -395,6 +418,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 ),
                             sds:
                                 (ExternalSymbol

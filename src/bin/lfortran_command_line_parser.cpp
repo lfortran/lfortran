@@ -108,9 +108,109 @@ namespace LCompilers::CommandLineInterface {
         std::exit(1);
     }
 
+    static void initialize_subcommands(LFortranCommandLineParser &parser) {
+        parser.fmt = parser.app.add_subcommand("fmt", "Format Fortran source files.");
+        parser.fmt->add_option("file", parser.opts.arg_fmt_file,
+            "Fortran source file to format")->required();
+        parser.fmt->add_flag("-i", parser.opts.arg_fmt_inplace,
+            "Modify <file> in-place (instead of writing to stdout)");
+        parser.fmt->add_option("--spaces", parser.opts.arg_fmt_indent,
+            "Number of spaces to use for indentation")->capture_default_str();
+        parser.fmt->add_flag("--indent-unit", parser.opts.arg_fmt_indent_unit,
+            "Indent contents of sub / fn / prog / mod");
+        parser.fmt->add_flag("--no-color", parser.opts.arg_fmt_no_color,
+            "Turn off color when writing to stdout");
+
+        parser.kernel = parser.app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
+        parser.kernel->add_option("-f", parser.opts.arg_kernel_f,
+            "The kernel connection file")->required();
+
+        parser.mod = parser.app.add_subcommand("mod", "Fortran mod file utilities.");
+        parser.mod->add_option("file", parser.opts.arg_mod_file,
+            "Mod file (*.mod)")->required();
+        parser.mod->add_flag("--show-asr", parser.opts.arg_mod_show_asr,
+            "Show ASR for the module");
+        parser.mod->add_flag("--no-color", parser.opts.arg_mod_no_color,
+            "Turn off colored ASR");
+
+        parser.pywrap = parser.app.add_subcommand("pywrap", "Python wrapper generator");
+        parser.pywrap->add_option("file", parser.opts.arg_pywrap_file,
+            "Fortran source file (*.f90)")->required();
+        parser.pywrap->add_option("--array-order", parser.opts.arg_pywrap_array_order,
+            "Select array order (c, f)")->capture_default_str();
+
+#ifdef WITH_LSP
+        parser.server = parser.languageServerInterface.prepare(parser.app);
+#endif
+        parser.app.require_subcommand(0, 1);
+    }
+
+    static bool try_fast_compile_only_parse(int argc, const char *const *argv,
+                                            LFortranCommandLineParser &parser) {
+        if (argv == nullptr || argc <= 1) {
+            return false;
+        }
+
+        LFortranCommandLineOpts fast_opts = parser.opts;
+        CompilerOptions &compiler_options = fast_opts.compiler_options;
+        int positional_count = 0;
+
+        for (int i = 1; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg == "-c") {
+                fast_opts.arg_c = true;
+                continue;
+            }
+            if (arg == "-g") {
+                compiler_options.emit_debug_info = true;
+                continue;
+            }
+            if (arg == "--time-report") {
+                compiler_options.time_report = true;
+                continue;
+            }
+            if (arg == "-o") {
+                if (i + 1 >= argc) {
+                    return false;
+                }
+                compiler_options.arg_o = argv[++i];
+                continue;
+            }
+            if (arg.rfind("-o", 0) == 0 && arg.size() > 2) {
+                compiler_options.arg_o = arg.substr(2);
+                continue;
+            }
+            if (!arg.empty() && arg[0] != '-') {
+                fast_opts.arg_files.push_back(arg);
+                positional_count++;
+                continue;
+            }
+            return false;
+        }
+
+        if (!fast_opts.arg_c || positional_count != 1) {
+            return false;
+        }
+
+        fast_opts.arg_file = fast_opts.arg_files[0];
+        compiler_options.use_colors = true;
+        compiler_options.use_runtime_colors = false;
+        compiler_options.indent = true;
+        compiler_options.prescan = true;
+        compiler_options.c_preprocessor = false;
+        compiler_options.infer_mode = false;
+        compiler_options.po.openmp = compiler_options.openmp;
+        parser.opts = std::move(fast_opts);
+        initialize_subcommands(parser);
+        return true;
+    }
+
     auto LFortranCommandLineParser::parse() -> void {
         CompilerOptions &compiler_options = opts.compiler_options;
         compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        if (try_fast_compile_only_parse(argc, argv, *this)) {
+            return;
+        }
 
         std::string group_warning_options = "Warning Options";
         std::string group_language_options = "Language Options";
@@ -128,7 +228,6 @@ namespace LCompilers::CommandLineInterface {
         bool disable_implicit_argument_casting = false;
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
-        bool old_classes = false;
         std::string fpe_traps_str;
 
         // Standard options compatible with gfortran, gcc or clang
@@ -209,7 +308,6 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
-        app.add_flag("--old-classes", old_classes, "Use the old design for OOPs (deprecated)")->group(group_output_debugging_options);
 
 
         // Pass and transformation-related flags
@@ -232,9 +330,11 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--linker-path", opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--print-targets", opts.print_targets, "Print the registered targets")->group(group_backend_codegen_options);
+        app.add_flag("--print-c-include-dir", opts.print_c_include_dir, "Print the directory containing ISO_Fortran_binding.h")->group(group_backend_codegen_options);
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
+        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal)")->capture_default_str()->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -261,11 +361,13 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
+        app.add_flag("--no-fast-math", compiler_options.po.no_fast_math, "Disable fast-math optimizations (preserve NaN/Inf semantics)")->group(group_miscellaneous_options);
         app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--disable-realloc-lhs-arrays", disable_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--descriptor-index-64", compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
+        app.add_flag("--detect-leaks", compiler_options.detect_leaks, "Print a memory leak report")->group(group_miscellaneous_options);
         app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--strict-array-bounds-checking", compiler_options.po.strict_bounds_checking, "Enables strict runtime array bounds checking: Array passed into subroutine must exactly match the expected size")->group(group_miscellaneous_options);
@@ -278,37 +380,8 @@ namespace LCompilers::CommandLineInterface {
         * Subcommands:
         */
 
-        // fmt
-        fmt = app.add_subcommand("fmt", "Format Fortran source files.");
-        fmt->add_option("file", opts.arg_fmt_file, "Fortran source file to format")->required();
-        fmt->add_flag("-i", opts.arg_fmt_inplace, "Modify <file> in-place (instead of writing to stdout)");
-        fmt->add_option("--spaces", opts.arg_fmt_indent, "Number of spaces to use for indentation")->capture_default_str();
-        fmt->add_flag("--indent-unit", opts.arg_fmt_indent_unit, "Indent contents of sub / fn / prog / mod");
-        fmt->add_flag("--no-color", opts.arg_fmt_no_color, "Turn off color when writing to stdout");
-
-        // kernel
-        kernel = app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
-        kernel->add_option("-f", opts.arg_kernel_f, "The kernel connection file")->required();
-
-        // mod
-        mod = app.add_subcommand("mod", "Fortran mod file utilities.");
-        mod->add_option("file", opts.arg_mod_file, "Mod file (*.mod)")->required();
-        mod->add_flag("--show-asr", opts.arg_mod_show_asr, "Show ASR for the module");
-        mod->add_flag("--no-color", opts.arg_mod_no_color, "Turn off colored ASR");
-
-        // pywrap
-        pywrap = app.add_subcommand("pywrap", "Python wrapper generator");
-        pywrap->add_option("file", opts.arg_pywrap_file, "Fortran source file (*.f90)")->required();
-        pywrap->add_option("--array-order", opts.arg_pywrap_array_order,
-                "Select array order (c, f)")->capture_default_str();
-
-        #ifdef WITH_LSP
-            // server
-            server = languageServerInterface.prepare(app);
-        #endif
-
+        initialize_subcommands(*this);
         app.get_formatter()->column_width(25);
-        app.require_subcommand(0, 1);
 
         std::string help_arg = find_help_category_arg(argc, argv, args);
         if (!help_arg.empty()) {
@@ -402,16 +475,24 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.realloc_lhs_arrays = false;
         }
 
-        if (old_classes) {
-            compiler_options.new_classes = false;
-        }
-
         compiler_options.use_colors = !opts.arg_no_color;
         compiler_options.use_runtime_colors = opts.arg_runtime_color;
         compiler_options.indent = !opts.arg_no_indent;
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options
         compiler_options.po.openmp = compiler_options.openmp;
+
+        // set gpu offloading in pass options
+        if (compiler_options.gpu_backend == "metal") {
+            compiler_options.po.gpu_offload_metal = true;
+        } else if (compiler_options.gpu_backend == "cuda") {
+            compiler_options.po.gpu_offload_cuda = true;
+        } else if (!compiler_options.gpu_backend.empty()) {
+            throw lc::LCompilersException(
+                "The GPU backend `" + compiler_options.gpu_backend
+                + "` is not supported; supported values: metal, cuda"
+            );
+        }
 
         for (auto &f_flag : opts.f_flags) {
             if (f_flag == "PIC") {

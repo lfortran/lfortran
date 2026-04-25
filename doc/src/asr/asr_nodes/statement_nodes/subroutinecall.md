@@ -16,7 +16,7 @@ SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt, boo
 `name` contains symbol name.
 `original_name` contains name present in program unit.
 `args` contains arguments passed to subroutine call.
-`dt` contains expression for variable name, array name, an aseterist e.t.c.
+`dt` is set if and only if this is a method call (i.e., a call through a derived type instance such as `obj%method(args)`). When `dt` is non-null, it holds the expression for the object whose method is being called. When `dt` is null, this is a regular subroutine call.
 `strict_bounds_checking` indicates if this SubroutineCall was a FunctionCall before getting converted by subroutine_from_function pass, if it was then we need to do strict_bounds_checking for the return argument.
 
 ### Return values

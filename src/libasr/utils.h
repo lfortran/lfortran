@@ -38,6 +38,7 @@ struct PassOptions {
     bool inline_external_symbol_calls = true; // for inline_function_calls pass
     int64_t unroll_factor = 32; // for loop_unroll pass
     bool fast = false; // is fast flag enabled.
+    bool no_fast_math = false; // disable fast-math optimizations (NaN, Inf, etc.)
     bool verbose = false; // For developer debugging
     bool dump_all_passes = false; // For developer debugging
     bool dump_fortran = false; // For developer debugging
@@ -66,6 +67,8 @@ struct PassOptions {
     bool c_skip_bindpy_pass = false;
     bool openmp = false;
     bool enable_gpu_offloading = false;
+    bool gpu_offload_metal = false;
+    bool gpu_offload_cuda = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
@@ -97,6 +100,9 @@ struct CompilerOptions {
     bool fast = false;
     bool openmp = false;
     bool target_offload_enabled = false;
+    std::string gpu_backend = "";
+    std::string gpu_metal_source = "";
+    std::string gpu_cuda_source = "";
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
@@ -143,6 +149,7 @@ struct CompilerOptions {
     bool legacy_array_sections = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
+    bool internal_alloc_check = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;
     bool time_report = false;
@@ -150,6 +157,7 @@ struct CompilerOptions {
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;
+    bool detect_leaks = false;
 
     CompilerOptions () : platform{get_platform()} {};
 };

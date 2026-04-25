@@ -14,11 +14,15 @@ program associate_22
 
    print*, associated( p_int_var, t_int_var )
    if ( associated( p_int_var, t_int_var ) ) error stop 
+   deallocate(p_int_var)
    nullify( p_int_var )
 
    allocate( p_base_var(0), t_base_var(0) )
 
    print*, associated( p_base_var, t_base_var )
    if ( associated( p_base_var, t_base_var ) ) error stop 
+   deallocate(p_base_var)
    nullify( p_base_var )
+   deallocate(t_int_var)
+   deallocate(t_base_var)
 end program

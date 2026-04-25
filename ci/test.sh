@@ -42,11 +42,8 @@ if [[ $WIN != "1" ]]; then
     # using debugging option i.e. `-x` causes incorrect assignment
     set +x
     if [[ $MACOS == "1" ]]; then
-        # we can't use $nproc, it overwhelms system resources on macOS
-        NPROC=2
-        # ideally, we should use something like below, but it raises
-        # error with shell
-        # NPROC=$(( $(NPROC) / 2))
+        # macOS ARM64 runners have 3 cores; higher parallelism overwhelms them
+        NPROC=3
     else
         # this works fine on Linux
         NPROC=$(nproc)
@@ -67,16 +64,25 @@ if [[ $WIN != "1" ]]; then
     ctest -L llvm -j${NPROC}
     cd ..
 
-    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit
-    ./run_tests.py -b llvm -sc
-    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f
-    if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
-        ./run_tests.py -b llvm llvmImplicit -f -nf16
-    else
-        ./run_tests.py -b llvm llvmImplicit -f
+    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}
+    if [[ $MACOS != "1" ]]; then
+        ./run_tests.py -b llvm -sc -j${NPROC}
+        ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC}
     fi
-    ./run_tests.py -b llvm_submodule
-    ./run_tests.py -b llvm_submodule -sc
+    if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
+        if [[ $MACOS != "1" ]]; then
+            ./run_tests.py -b llvm llvmImplicit -f -nf16 -j${NPROC}
+        fi
+    else
+        if [[ $MACOS != "1" ]]; then
+            ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
+        fi
+    fi
+    ./run_tests.py -b llvm_submodule -j${NPROC}
+    if [[ $MACOS != "1" ]]; then
+        ./run_tests.py -b llvm_submodule -sc -j${NPROC}
+    fi
+    ./run_tests.py -b llvm --detect-leaks
     cd ..
 
     pip install src/server/tests tests/server

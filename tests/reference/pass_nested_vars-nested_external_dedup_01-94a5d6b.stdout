@@ -12,7 +12,7 @@
                                     6
                                     a
                                     []
-                                    Unspecified
+                                    Local
                                     ()
                                     ()
                                     Default
@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    0
                                 )
                         })
                     __lcompilers_created__nested_context__outer_
@@ -66,6 +69,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
                                                 ),
                                             a1:
                                                 (ExternalSymbol
@@ -77,10 +83,10 @@
                                                     a
                                                     Public
                                                 ),
-                                            a2:
+                                            a_nested_ctx:
                                                 (ExternalSymbol
                                                     3
-                                                    a2
+                                                    a_nested_ctx
                                                     6 a
                                                     __lcompilers_created__nested_context__outer_
                                                     []
@@ -135,8 +141,8 @@
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             inner2:
@@ -187,8 +193,8 @@
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })
@@ -217,7 +223,7 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         (Var 3 a)
                                         ()
                                         .false.
@@ -232,13 +238,13 @@
                                     )
                                     (Assignment
                                         (Var 3 a)
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         (Var 3 a)
                                         ()
                                         .false.
@@ -253,15 +259,15 @@
                                     )
                                     (Assignment
                                         (Var 3 a)
-                                        (Var 3 a2)
+                                        (Var 3 a_nested_ctx)
                                         ()
                                         .false.
                                         .false.
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

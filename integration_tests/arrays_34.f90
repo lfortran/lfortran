@@ -5,6 +5,7 @@ program arrays_34
     call sub(x, 1)
     print *, x
     if( any(x /= 1) ) error stop
+    deallocate(x)
 
 contains
 
