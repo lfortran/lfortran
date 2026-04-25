@@ -1,0 +1,13 @@
+program p
+integer :: i, s
+s = 0
+do i = 1, 10
+    if (i == 3) then
+        go to 1
+    end if
+    s = s + i
+1 end do
+if (s /= 52) then
+    error stop
+end if
+end program p

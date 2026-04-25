@@ -1,12 +1,9 @@
 (TranslationUnit
     [(Program
-        do3
+        p
         ()
         []
-        [(ImplicitNone
-            []
-            ()
-        )]
+        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -23,7 +20,7 @@
             ()
             None
             ())
-            (j
+            (s
             []
             []
             ()
@@ -34,61 +31,56 @@
         )]
         [(Assignment
             0
-            j
+            s
             0
             ()
         )
         (DoLoop
             0
             ()
-            15
-            0
+            1
+            1
             i
             1
-            5
+            10
             ()
-            [(Assignment
+            [(If
                 0
-                j
-                (+ j i)
                 ()
-            )
-            (Continue
-                15
-                ()
-            )]
-            ()
-            (TriviaNode
+                (== i 3)
+                [(GoTo
+                    0
+                    ()
+                    1
+                    []
+                    ()
+                )]
                 []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
-        )
-        (Assignment
-            0
-            j
-            0
-            ()
-        )
-        (DoLoop
-            0
-            ()
-            20
-            0
-            i
-            1
-            6
-            2
-            [(Assignment
-                0
-                j
-                (+ j i)
+                ()
+                ()
                 ()
             )
-            (Continue
-                20
+            (Assignment
+                0
+                s
+                (+ s i)
                 ()
             )]
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (/= s 52)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
             ()
             ()
         )]

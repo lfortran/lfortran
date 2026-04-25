@@ -2052,17 +2052,17 @@ void add_ws_warning(const Location &loc,
 #define WARN_CHARACTERSTAR_EXPR(l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, -1)
 #define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 
-#define DO1(trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
+#define DO1(trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, end_label, \
         nullptr, nullptr, nullptr, nullptr, \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
 
-#define DO2(i, a, b, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
+#define DO2(i, a, b, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, end_label, \
         name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))
-#define DO2_LABEL(label, i, a, b, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
-        label, name2char(i), EXPR(a), EXPR(b), nullptr, \
+#define DO2_LABEL(label, i, a, b, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
+        label, end_label, name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
         if (label == 0) { \
@@ -2072,8 +2072,8 @@ void add_ws_warning(const Location &loc,
             throw LCompilers::LFortran::parser_local::ParserAbort();  \
         }
 
-#define DO3_LABEL(label, i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
-        label, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
+#define DO3_LABEL(label, i, a, b, c, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, \
+        label, end_label, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)); \
         if (label == 0) { \
@@ -2082,7 +2082,7 @@ void add_ws_warning(const Location &loc,
                 LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {l})}));  \
             throw LCompilers::LFortran::parser_local::ParserAbort();  \
         }
-#define DO3(i, a, b, c, trivia, body, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, \
+#define DO3(i, a, b, c, trivia, body, end_label, l) make_DoLoop_t(p.m_a, l, 0, nullptr, 0, end_label, \
         name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))

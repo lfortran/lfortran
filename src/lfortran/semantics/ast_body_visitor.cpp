@@ -7997,6 +7997,16 @@ public:
             do_in_pragma=true;
         }
         transform_stmts(body, x.n_body, x.m_body);
+        if (x.m_end_label != 0) {
+            // Legacy `DO <label> ... <label> CONTINUE` was rewritten by the
+            // tokenizer to `do ... <label> end do`. Append a GoToTarget at
+            // the end of the loop body so `GO TO <label>` (or any other
+            // branch reference to the label) resolves to a point inside the
+            // active DO range, preserving cycle semantics.
+            ASR::asr_t *gt = ASR::make_GoToTarget_t(al, x.base.base.loc,
+                x.m_end_label, s2c(al, std::to_string(x.m_end_label)));
+            body.push_back(al, ASR::down_cast<ASR::stmt_t>(gt));
+        }
         if(pragma_in_block) {
             nesting_lvl_inside_pragma--;
         }
