@@ -102,6 +102,7 @@ time_section "🧪 Testing caffeine" '
   export CXX=clang++
   echo PATH="$PATH"
 
+  # Output some toolchain information for debugging
   for tool in ${FC} ${CC} ${CXX} fpm ; do
     if command -v $tool > /dev/null 2>&1 ; then
        ( echo ; set -x ; w=$(which $tool) ; ls -al $w ; ls -alhL $w ; $tool --version )
@@ -130,7 +131,8 @@ time_section "🧪 Testing assert" '
 
   micromamba install -c conda-forge fpm=0.12.0
 
-  git checkout 3.1.0
+  # Release 3.1.0
+  git checkout 584fc171514172ff701df9b37f3229826a17e35d
 
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
@@ -239,7 +241,8 @@ time_section "🧪 Testing Julienne" '
   cd julienne
   micromamba install -c conda-forge fpm
 
-  git checkout 3.6.2
+  # Release 3.6.2
+  git checkout b29fe49efc4547b88cde59e19462956df9c3050a
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Julienne"
