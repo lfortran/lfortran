@@ -29,8 +29,6 @@ using LCompilers::diag::Diagnostic;
 
 namespace LCompilers::LFortran {
 
-static std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
-static std::map<std::string, int> assumed_rank_arrays;
 static int PDT_SENTINEL = 1000;
 
 template <typename T>
@@ -1604,10 +1602,17 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
 }
 
 
+struct CommonVisitorState {
+    std::map<std::string, std::vector<ASR::Variable_t*>> deferred_struct_vars;
+    std::map<std::string, int> assumed_rank_array_map;
+};
+
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
+    std::map<std::string, std::vector<ASR::Variable_t*>> &vars_with_deferred_struct_declaration;
+    std::map<std::string, int> &assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
         {AST::operatorType::Mul, "~mul"},
         {AST::operatorType::Add, "~add"},
@@ -2079,8 +2084,12 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        CommonVisitorState &visitor_state,
             LCompilers::LocationManager &lm
-    ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
+    ): diag{diagnostics},
+          vars_with_deferred_struct_declaration{visitor_state.deferred_struct_vars},
+          assumed_rank_arrays{visitor_state.assumed_rank_array_map},
+          al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash},
           common_variables_byte_offset{common_variables_byte_offset},

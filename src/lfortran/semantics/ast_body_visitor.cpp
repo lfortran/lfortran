@@ -43,7 +43,8 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
     }
 }
 
-class BodyVisitor : public CommonVisitor<BodyVisitor> {
+class BodyVisitor : private CommonVisitorState,
+                    public CommonVisitor<BodyVisitor> {
 private:
 
     // The Fortran standard allows the stop code to be a default integer,
@@ -105,13 +106,14 @@ public:
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm
-    ) : CommonVisitor(
+    ) : CommonVisitorState{},
+        CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
             common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-            data_structure, lm
+            data_structure, static_cast<CommonVisitorState&>(*this), lm
         ), asr{unit}, from_block{false} {}
 
     void mark_IO_side_effect() {
