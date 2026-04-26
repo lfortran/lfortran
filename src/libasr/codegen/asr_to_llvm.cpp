@@ -5110,7 +5110,18 @@ public:
             } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
                 ASR::ArrayConstant_t *arr_expr = ASR::down_cast<ASR::ArrayConstant_t>(value);
                 type = llvm_utils->get_type_from_ttype_t_util(value, arr_expr->m_type, module.get());
-                initializer = get_const_array(value, type->getArrayElementType());
+                if (type->isArrayTy()) {
+                    initializer = get_const_array(value, type->getArrayElementType());
+                } else if (ASRUtils::is_character(
+                               *ASRUtils::type_get_past_array(ASRUtils::expr_type(value)))) {
+                    llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
+                        llvm_utils->declare_constant_stringArray(al, arr_expr));
+                    if (gv && gv->hasInitializer()) {
+                        initializer = gv->getInitializer();
+                    }
+                } else {
+                    throw CodeGenError("Unsupported non-array type in struct ArrayConstant initializer");
+                }
             } else {
                 visit_expr_wrapper(value);
                 initializer = llvm::dyn_cast<llvm::Constant>(tmp);
