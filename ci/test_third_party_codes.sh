@@ -568,6 +568,8 @@ time_section "🧪 Testing fastGPT" '
 
     git clean -dfx
     git checkout -t origin/namelist
+    # The `namelist` branch mismatches the commit we need:
+    git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
     assert_git_commit d3eef520c1be8e2db98a3c2189740af1ae7c3e06
     curl -f -L -o model.dat \
         https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
