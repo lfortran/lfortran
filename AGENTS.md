@@ -111,8 +111,6 @@ only once, redirect to a log file and then examine the log file.
   - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes`
   - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f -nf16 &> log`
 - If builds fail with messages about missing debug info:
-  - Install LLVM tools so `llvm-dwarfdump` is available (e.g., `sudo pacman -S llvm`,
-    `apt install llvm`, or `conda install -c conda-forge llvm-tools`).
   - Rebuild with runtime stacktraces if needed:
     `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes -DWITH_UNWIND=ON`
   - More details: `integration_tests/run_tests.py &> log` (CLI flags and supported backends).
