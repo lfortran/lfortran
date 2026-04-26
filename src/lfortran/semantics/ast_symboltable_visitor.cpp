@@ -716,6 +716,7 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
 
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
@@ -2264,6 +2265,7 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create

@@ -1710,6 +1710,7 @@ RUN(NAME intrinsics_451 LABELS gfortran llvm) # findloc with character Expressio
 RUN(NAME intrinsics_452 LABELS gfortran llvm) # findloc with Pointer-wrapped ExpressionLength
 RUN(NAME intrinsics_453 LABELS gfortran llvm) # Lgt intrinsic as while loop condition
 RUN(NAME intrinsics_454 LABELS gfortran llvm) # all/any with array section and whole array
+RUN(NAME intrinsics_455 LABELS gfortran llvm) # intrinsic declaration scope isolation
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 

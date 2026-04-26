@@ -4508,18 +4508,22 @@ public:
         } else if (current_scope && current_scope->asr_owner) {
             explicit_intrinsic_procedures = explicit_intrinsic_procedures_mapping[get_hash(current_scope->asr_owner)];
         }
-        bool found = std::find(explicit_intrinsic_procedures.begin(), explicit_intrinsic_procedures.end(), sym) != explicit_intrinsic_procedures.end();
-        if (!found) {
-            for (const auto& entry : explicit_intrinsic_procedures_mapping) {
-                const std::vector<std::string>& procs = entry.second;
-                if (std::find(procs.begin(), procs.end(), sym) != procs.end()) {
-                    found = true;
-                    break;
+        if (std::find(explicit_intrinsic_procedures.begin(), explicit_intrinsic_procedures.end(), sym) != explicit_intrinsic_procedures.end()) {
+            return true;
+        }
+        SymbolTable* s = (scope ? scope : current_scope);
+        s = s->parent;
+        while (s && s->asr_owner) {
+            auto it = explicit_intrinsic_procedures_mapping.find(get_hash(s->asr_owner));
+            if (it != explicit_intrinsic_procedures_mapping.end()) {
+                const std::vector<std::string>& parent_procs = it->second;
+                if (std::find(parent_procs.begin(), parent_procs.end(), sym) != parent_procs.end()) {
+                    return true;
                 }
             }
+            s = s->parent;
         }
-        
-        return found;
+        return false;
     }
 
     void erase_from_external_mapping(std::string sym) {
