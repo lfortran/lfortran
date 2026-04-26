@@ -155,7 +155,8 @@ time_section "🧪 Testing assert" '
   micromamba install -c conda-forge fpm=0.12.0
 
   # Release 3.1.0
-  git checkout 584fc171514172ff701df9b37f3229826a17e35d
+ git checkout 3.1.0
+ assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
 
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
@@ -265,7 +266,8 @@ time_section "🧪 Testing Julienne" '
   micromamba install -c conda-forge fpm
 
   # Release 3.6.2
-  git checkout b29fe49efc4547b88cde59e19462956df9c3050a
+ git checkout 3.6.2
+ assert_git_commit b29fe49efc4547b88cde59e19462956df9c3050a
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Julienne"
