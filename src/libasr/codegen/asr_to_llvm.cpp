@@ -17005,15 +17005,66 @@ public:
                                     }
                                     size = builder->CreateIntCast(size, llvm::Type::getInt32Ty(context), true);
 
-                                    llvm::Function* fn = get_read_function(arr_type);
-                                    llvm::Value* stride_val = llvm::ConstantInt::get(
-                                        llvm::Type::getInt32Ty(context), 1);
-                                    if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
-                                        int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-                                        llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
-                                        builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
+                                    if (is_string) {
+                                        std::string str_read_func;
+                                        llvm::Value* fmt_val;
+                                        llvm::Type* elem_ptr_type;
+                                        if (ASR::is_a<ASR::Integer_t>(*elem_type)) {
+                                            int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                                            if (a_kind == 4) {
+                                                str_read_func = "_lfortran_string_read_i32_array";
+                                                elem_ptr_type = llvm::Type::getInt32Ty(context)->getPointerTo();
+                                            } else if (a_kind == 8) {
+                                                str_read_func = "_lfortran_string_read_i64_array";
+                                                elem_ptr_type = llvm::Type::getInt64Ty(context)->getPointerTo();
+                                            } else {
+                                                throw CodeGenError("internal read of integer(" + std::to_string(a_kind)
+                                                    + ") arrays via implied-do not yet supported");
+                                            }
+                                            fmt_val = a_kind == 4
+                                                ? LCompilers::create_global_string_ptr(context, *module, *builder, "%d")
+                                                : LCompilers::create_global_string_ptr(context, *module, *builder, "%ld");
+                                        } else if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+                                            int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                                            if (a_kind == 4) {
+                                                str_read_func = "_lfortran_string_read_f32_array";
+                                                elem_ptr_type = llvm::Type::getFloatTy(context)->getPointerTo();
+                                            } else if (a_kind == 8) {
+                                                str_read_func = "_lfortran_string_read_f64_array";
+                                                elem_ptr_type = llvm::Type::getDoubleTy(context)->getPointerTo();
+                                            } else {
+                                                throw CodeGenError("internal read of real(" + std::to_string(a_kind)
+                                                    + ") arrays via implied-do not yet supported");
+                                            }
+                                            fmt_val = a_kind == 4
+                                                ? LCompilers::create_global_string_ptr(context, *module, *builder, "%f")
+                                                : LCompilers::create_global_string_ptr(context, *module, *builder, "%lf");
+                                        } else {
+                                            throw CodeGenError("internal read of this array element type "
+                                                "via implied-do not yet supported");
+                                        }
+                                        llvm::Function* str_fn = module->getFunction(str_read_func);
+                                        if (!str_fn) {
+                                            llvm::FunctionType *ft = llvm::FunctionType::get(
+                                                llvm::Type::getVoidTy(context),
+                                                { character_type, llvm::Type::getInt64Ty(context),
+                                                  character_type, elem_ptr_type },
+                                                false);
+                                            str_fn = llvm::Function::Create(ft,
+                                                llvm::Function::ExternalLinkage, str_read_func, module.get());
+                                        }
+                                        builder->CreateCall(str_fn, {str_src_data, str_src_len, fmt_val, section_ptr});
                                     } else {
-                                        builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
+                                        llvm::Function* fn = get_read_function(arr_type);
+                                        llvm::Value* stride_val = llvm::ConstantInt::get(
+                                            llvm::Type::getInt32Ty(context), 1);
+                                        if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+                                            int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                                            llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
+                                            builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
+                                        } else {
+                                            builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
+                                        }
                                     }
                                     continue;
                                 }
@@ -17087,6 +17138,55 @@ public:
                                     std::vector<llvm::Value*> args = {str_src_data, str_src_len, fmt_val, arr_data, elem_len_llvm};
                                     builder->CreateCall(module->getOrInsertFunction(
                                             "_lfortran_string_read_str_array", str_arr_ft), args);
+                                } else if (is_string) {
+                                    std::string str_read_func;
+                                    llvm::Value* fmt_val;
+                                    llvm::Type* elem_ptr_type;
+                                    if (ASR::is_a<ASR::Integer_t>(*elem_type)) {
+                                        int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                                        if (a_kind == 4) {
+                                            str_read_func = "_lfortran_string_read_i32_array";
+                                            elem_ptr_type = llvm::Type::getInt32Ty(context)->getPointerTo();
+                                        } else if (a_kind == 8) {
+                                            str_read_func = "_lfortran_string_read_i64_array";
+                                            elem_ptr_type = llvm::Type::getInt64Ty(context)->getPointerTo();
+                                        } else {
+                                            throw CodeGenError("internal read of integer(" + std::to_string(a_kind)
+                                                + ") arrays via implied-do not yet supported");
+                                        }
+                                        fmt_val = a_kind == 4
+                                            ? LCompilers::create_global_string_ptr(context, *module, *builder, "%d")
+                                            : LCompilers::create_global_string_ptr(context, *module, *builder, "%ld");
+                                    } else if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+                                        int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                                        if (a_kind == 4) {
+                                            str_read_func = "_lfortran_string_read_f32_array";
+                                            elem_ptr_type = llvm::Type::getFloatTy(context)->getPointerTo();
+                                        } else if (a_kind == 8) {
+                                            str_read_func = "_lfortran_string_read_f64_array";
+                                            elem_ptr_type = llvm::Type::getDoubleTy(context)->getPointerTo();
+                                        } else {
+                                            throw CodeGenError("internal read of real(" + std::to_string(a_kind)
+                                                + ") arrays via implied-do not yet supported");
+                                        }
+                                        fmt_val = a_kind == 4
+                                            ? LCompilers::create_global_string_ptr(context, *module, *builder, "%f")
+                                            : LCompilers::create_global_string_ptr(context, *module, *builder, "%lf");
+                                    } else {
+                                        throw CodeGenError("internal read of this array element type "
+                                            "via implied-do not yet supported");
+                                    }
+                                    llvm::Function* str_fn = module->getFunction(str_read_func);
+                                    if (!str_fn) {
+                                        llvm::FunctionType *ft = llvm::FunctionType::get(
+                                            llvm::Type::getVoidTy(context),
+                                            { character_type, llvm::Type::getInt64Ty(context),
+                                              character_type, elem_ptr_type },
+                                            false);
+                                        str_fn = llvm::Function::Create(ft,
+                                            llvm::Function::ExternalLinkage, str_read_func, module.get());
+                                    }
+                                    builder->CreateCall(str_fn, {str_src_data, str_src_len, fmt_val, section_ptr});
                                 } else {
                                     llvm::Function* fn = get_read_function(arr_type);
                                     llvm::Value* stride_val = llvm::ConstantInt::get(
@@ -17163,17 +17263,17 @@ public:
                                     },
                                     false);
                             } else {
-                                // Numeric array
+                                // Numeric array: 4th param is element pointer (e.g. float*)
+                                ASR::ttype_t* arr_elem_type = ASRUtils::type_get_past_array(
+                                    ASRUtils::type_get_past_allocatable_pointer(type));
+                                llvm::Type* llvm_el_type = llvm_utils->get_type_from_ttype_t_util(
+                                    x.m_values[i], arr_elem_type, module.get());
                                 function_type = llvm::FunctionType::get(
                                     llvm::Type::getVoidTy(context),
                                     {   character_type /*src_data*/,
                                         llvm::Type::getInt64Ty(context)/*src_length*/,
                                         character_type,
-                                        llvm_utils->get_type_from_ttype_t_util(
-                                            x.m_values[i],
-                                            ASRUtils::type_get_past_allocatable_pointer(type),
-                                            module.get()
-                                        )->getPointerTo()
+                                        llvm_el_type->getPointerTo()
                                     },
                                     false);
                             }
@@ -17303,6 +17403,10 @@ public:
                             }
                             builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data, elem_len_llvm });
                         } else {
+                            llvm::Type* fn_param_type = fn->getFunctionType()->getParamType(3);
+                            if (arr_data->getType() != fn_param_type) {
+                                arr_data = builder->CreateBitCast(arr_data, fn_param_type);
+                            }
                             builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data });
                         }
                     } else {
