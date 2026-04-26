@@ -1,25 +1,15 @@
 program read_80
   implicit none
 
-  character(4) :: c1
-  real :: r1
-  integer :: i1
-  logical :: l1
+  character(10) :: cdata = '12 345 678'
+  complex :: c1, c2
 
-  open (42, status='scratch', form='formatted')
-  write (42,'(a)') "'ONE ',,3,F"
+  read (cdata, 100) c1,            c2
+100 format (bz,    2F5.2, bn, t1, 2F5.1)
 
-  rewind (42)
-  c1 = 'none'
-  r1 = 2.0
-  i1 = -42
-  l1 = .true.
-  read (42, *) c1, r1, i1, l1
+  if (abs (real  (c1) - 120.34) > 0.0001) error stop
+  if (abs (aimag (c1) - 506.78) > 0.0001) error stop
+  if (abs (real  (c2) - 123.4) > 0.0001) error stop
+  if (abs (aimag (c2) - 567.8) > 0.0001) error stop
 
-  if (c1 /= 'ONE ') error stop "c1 failed"
-  if (abs(r1 - 2.0) >= 0.0001) error stop "r1 (null) not preserved"
-  if (i1 /= 3) error stop "i1 failed"
-  if (l1) error stop "l1 failed"
-
-  close (42)
-end program
+end program read_80
