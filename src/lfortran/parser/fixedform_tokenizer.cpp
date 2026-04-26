@@ -1394,8 +1394,15 @@ struct FixedFormRecursiveDescent {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
             if (next_is(cur, "continue")) {
-                push_token_advance(cur, "continue");
-                tokenize_line(cur);
+                // Drop the redundant CONTINUE keyword. The TK_LABEL pushed
+                // by eat_label() above already precedes the `end_do` we
+                // are about to push, so via `enddo : TK_LABEL KW_END_DO`
+                // it attaches as `m_do_label` on the DoLoop AST node and
+                // is converted to an ASR GoToTarget at the end of the
+                // (innermost) loop body during AST->ASR. This preserves
+                // `GO TO <label>` cycle semantics.
+                next_line(cur);
+                t.cur = cur;
             } else {
                 // TODO: add a continue label
                 lex_body_statement(cur);
@@ -1413,8 +1420,9 @@ struct FixedFormRecursiveDescent {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
             if (next_is(cur, "continue")) {
-                push_token_advance(cur, "continue");
-                tokenize_line(cur);
+                // See note above; label attaches to innermost end_do.
+                next_line(cur);
+                t.cur = cur;
             } else {
                 // TODO: add a continue label
                 lex_body_statement(cur);
@@ -1429,8 +1437,9 @@ struct FixedFormRecursiveDescent {
         } else {
             // end one nesting of loop
             if (next_is(cur, "continue")) {
-                push_token_advance(cur, "continue");
-                tokenize_line(cur);
+                // See note above; label attaches to end_do.
+                next_line(cur);
+                t.cur = cur;
             } else {
                 // TODO: add a continue label
                 lex_body_statement(cur);
@@ -1539,10 +1548,12 @@ struct FixedFormRecursiveDescent {
     bool try_enddo_regular(unsigned char *&cur, int64_t continue_label) {
         if (next_is(cur, "enddo")) {
             // TODO: parse things correctly to distinguish enddo = 5;
-            if (continue_label != -1) {
-                push_token_no_advance(cur, "continue");
-                push_token_no_advance(cur, "\n");
-            }
+            // If a label preceded `end do` (`<label> end do`), the TK_LABEL
+            // was already pushed by eat_label() before this call. The
+            // grammar rule `enddo : TK_LABEL KW_END_DO` attaches it to the
+            // DoLoop AST node as `do_label`, so we just emit `end_do`
+            // directly here -- no synthetic `<label> continue` line.
+            (void)continue_label;
             push_token_no_advance(cur, "end_do");
             push_token_no_advance(cur, "\n");
             next_line(cur);

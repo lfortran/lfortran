@@ -382,6 +382,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 
 %type <vec_ast> intrinsic_type_spec_list
 %type <ast> union_type_decl
+%type <n> enddo
 
 // Nonterminal tokens
 
@@ -2132,15 +2133,15 @@ while_statement
 // sr-conflict (2x): "KW_DO sep" being either a do_statement or an expr
 do_statement
     : KW_DO sep statements enddo {
-            $$ = DO1(TRIVIA_AFTER($2, @$), $3, @$); }
+            $$ = DO1(TRIVIA_AFTER($2, @$), $3, $4, @$); }
     | KW_DO comma_opt id "=" expr "," expr sep statements enddo {
-            $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
+            $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, $10, @$); }
     | KW_DO comma_opt id "=" expr "," expr "," expr sep statements enddo {
-            $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, @$); }
+            $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, $12, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
-            $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
+            $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, $11, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
-            $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); }
+            $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, $13, @$); }
     | KW_DO comma_opt KW_CONCURRENT "(" concurrent_control_list ")"
         concurrent_locality_star sep statements enddo {
             $$ = DO_CONCURRENT1($5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
@@ -2229,10 +2230,10 @@ inout
     ;
 
 enddo
-    : KW_END_DO
-    | TK_LABEL KW_END_DO
-    | KW_ENDDO { WARN_ENDDO(@$); }
-    | TK_LABEL KW_ENDDO {}
+    : KW_END_DO              { $$ = 0; }
+    | TK_LABEL KW_END_DO     { $$ = $1; }
+    | KW_ENDDO               { $$ = 0; WARN_ENDDO(@$); }
+    | TK_LABEL KW_ENDDO      { $$ = $1; }
     ;
 
 endforall
