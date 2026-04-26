@@ -3097,13 +3097,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             result_len += 1;
                         } else {
                             int64_t width = atoi(value + 1);
-                            int64_t pad_len = (width > 1) ? (width - 1) : 0;
-                            if (pad_len > 0) {
-                                result = write_to_result_at_pos(al, result, &result_extent, result_len, &achar_val, 1);
-                                result_len += width;
-                            } else {
+                            if (width <= 1) {
                                 result = write_to_result_at_pos(al, result, &result_extent, result_len, &achar_val, 1);
                                 result_len += 1;
+                            } else {
+                                char *field = (char*)internal_malloc((size_t)width);
+                                memset(field, ' ', (size_t)width);
+                                field[width - 1] = achar_val;
+                                result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
+                                result_len += width;
+                                internal_free(field);
                             }
                         }
                         continue;
@@ -3128,22 +3131,20 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, arg, s_info.current_arg_info.current_string_len);
                         result_len += s_info.current_arg_info.current_string_len;
                     } else {
-                        // 'Aw' format with width - copy exactly w characters, preserving embedded nulls
+                        // 'Aw' format with width: right-justify if width > len, truncate leading part if width < len.
                         int64_t width = atoi(value + 1);
+                        if (width <= 0) continue;
                         int64_t src_len = s_info.current_arg_info.current_string_len;
                         int64_t copy_len = (width < src_len) ? width : src_len;
                         int64_t pad_len = (width > src_len) ? (width - src_len) : 0;
-                        // Reallocate result to fit new content
-                        result = (char*)ALLOCATOR_REALLOC(al, result, result_len + width + 1);
-                        // Right-justify: add leading spaces if padding needed
+                        char *field = (char*)internal_malloc((size_t)width);
                         if (pad_len > 0) {
-                            memset(result + result_len, ' ', pad_len);
+                            memset(field, ' ', (size_t)pad_len);
                         }
-                        // Copy the string content (preserves embedded nulls)
-                        memcpy(result + result_len + pad_len, arg, copy_len);
+                        memcpy(field + pad_len, arg, (size_t)copy_len);
+                        result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
                         result_len += width;
-                        result[result_len] = '\0';
-                        result_extent = result_len;
+                        internal_free(field);
                     }
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
