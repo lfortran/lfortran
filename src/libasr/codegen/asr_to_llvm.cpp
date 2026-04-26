@@ -13630,7 +13630,22 @@ public:
             llvm_goto_targets[x.m_id] = new_target;
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_id];
-        start_new_block(target);
+        if (target->getTerminator()) {
+            // The target block already has a terminator (e.g., shared DO loop
+            // terminator already processed by an inner loop). Continue in a
+            // fresh block to avoid inserting a second terminator.
+            llvm::BasicBlock *last_bb = builder->GetInsertBlock();
+            llvm::Function *fn = last_bb->getParent();
+            llvm::BasicBlock *cont = llvm::BasicBlock::Create(context,
+                "goto_target.cont");
+            llvm_fn_insert_bb(fn, cont);
+            if (last_bb->getTerminator() == nullptr) {
+                builder->CreateBr(cont);
+            }
+            builder->SetInsertPoint(cont);
+        } else {
+            start_new_block(target);
+        }
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
