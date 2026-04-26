@@ -16971,16 +16971,33 @@ public:
                                 // Convert size to i32
                                 size = builder->CreateIntCast(size, llvm::Type::getInt32Ty(context), true);
 
-                                // Call array read function
-                                llvm::Function* fn = get_read_function(arr_type);
-                                llvm::Value* stride_val = llvm::ConstantInt::get(
-                                    llvm::Type::getInt32Ty(context), 1);
-                                if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
-                                    int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-                                    llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
-                                    builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
+                                // Pointer-array string reads call the special API 
+                                // _lfortran_string_read_str_array so that passed input 
+                                // strings are copied into the target character array.
+                                if (is_string && ASR::is_a<ASR::String_t>(*elem_type)) {
+                                    llvm::Type* char_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+                                    llvm::FunctionType* str_arr_ft = llvm::FunctionType::get(
+                                        llvm::Type::getVoidTy(context),
+                                        { char_ptr_type, llvm::Type::getInt64Ty(context),
+                                          char_ptr_type, char_ptr_type, llvm::Type::getInt64Ty(context) }, false);
+                                    auto [arr_data, elem_len_llvm] = llvm_utils->get_string_length_data(
+                                        ASR::down_cast<ASR::String_t>(elem_type), section_ptr);
+                                    llvm::Value* fmt_val = LCompilers::create_global_string_ptr(
+                                        context, *module, *builder, "%s");
+                                    std::vector<llvm::Value*> args = {str_src_data, str_src_len, fmt_val, arr_data, elem_len_llvm};
+                                    builder->CreateCall(module->getOrInsertFunction(
+                                            "_lfortran_string_read_str_array", str_arr_ft), args);
                                 } else {
-                                    builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
+                                    llvm::Function* fn = get_read_function(arr_type);
+                                    llvm::Value* stride_val = llvm::ConstantInt::get(
+                                        llvm::Type::getInt32Ty(context), 1);
+                                    if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+                                        int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                                        llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
+                                        builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
+                                    } else {
+                                        builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
+                                    }
                                 }
                                 continue;
                             }
