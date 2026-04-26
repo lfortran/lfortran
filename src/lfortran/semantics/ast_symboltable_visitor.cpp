@@ -3093,6 +3093,10 @@ public:
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
+            // Store implicit_dictionary in implicit_mapping so that
+            // resolve_variable (called during common block processing)
+            // can find it for the current scope.
+            implicit_mapping[get_hash(current_scope->asr_owner)] = implicit_dictionary;
         } else {
             for (size_t i = 0; i < x.n_implicit; i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
