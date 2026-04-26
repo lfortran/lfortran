@@ -382,7 +382,7 @@ struct FixedFormRecursiveDescent {
     int64_t eat_label(unsigned char *&cur) {
         // consume label if it is available
         // for line beginnings
-        const int reserved_cols = 6;
+        const int reserved_cols = 5;
         std::string label;
         label.assign((char*)cur, reserved_cols);
         if (is_integer(label)) {
@@ -408,7 +408,7 @@ struct FixedFormRecursiveDescent {
     }
 
     void undo_label(unsigned char *&cur) {
-        cur -= 6;
+        cur -= 5;
         tokens.pop_back();
         stypes.pop_back();
         locations.pop_back();
