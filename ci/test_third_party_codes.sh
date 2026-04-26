@@ -85,44 +85,10 @@ fi
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-if [[ "$(uname)" == "Darwin" ]]; then
 time_section "🧪 Testing caffeine" '
-  which lfortran
-  lfortran --version
-
-  # Install pixi (needed to drive gasnet and caffeine builds)
-  if ! command -v pixi >/dev/null 2>&1; then
-    curl -fsSL https://pixi.sh/install.sh | bash
-    export PATH="$HOME/.pixi/bin:$PATH"
-  fi
-  pixi --version
-
-  # Build GASNet first (caffeine depends on it)
-  git clone -b build https://github.com/certik/gasnet.git
-  cd gasnet
-  git checkout 2949970115991c3eb71ba7c16edc87807d687e97
-  pixi install
-  pixi r build
-  pixi r install
-  cd ..
-
-  # Now build and test caffeine with LFortran
-  git clone -b build4 https://github.com/certik/caffeine.git
+  git clone -b main https://github.com/BerkeleyLab/caffeine.git
   cd caffeine
-  git checkout 50f6ae6
-  pixi r -e lfortran test
 
-  print_success "Done with caffeine"
-  cd ..
-  rm -rf caffeine gasnet
-'
-fi
-
-
-time_section "🧪 Testing assert" '
-  git clone https://github.com/pranavchiku/assert.git
-  cd assert
-  export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm=0.12.0
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
@@ -132,15 +98,49 @@ time_section "🧪 Testing assert" '
   ls -l $CONDA_PREFIX/lib
   fpm --version
 
-  git checkout -t origin/fix-test
-  git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
+  export CC=clang
+  export CXX=clang++
+  echo PATH="$PATH"
+
+  # Output some toolchain information for debugging
+  for tool in ${FC} ${CC} ${CXX} fpm ; do
+    if command -v $tool > /dev/null 2>&1 ; then
+       ( echo ; set -x ; w=$(which $tool) ; ls -al $w ; ls -alhL $w ; $tool --version )
+    fi
+  done
+
+  # inject ISO_Fortran_binding.h into the C include path
+  export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
+
+  # Now build and test caffeine with LFortran
+  git checkout 0388cf70cd193214952d8be9a00e968c4c5061e2
+  export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
+  ./install.sh --yes --prefix=$PWD/inst --verbose
+  export CAF_IMAGES=4
+  ./run-fpm.sh test --verbose 
+
+  print_success "Done with caffeine"
+  cd ..
+  rm -rf caffeine
+'
+
+
+time_section "🧪 Testing assert" '
+  git clone -b main https://github.com/berkeleylab/assert.git
+  cd assert
+
+  micromamba install -c conda-forge fpm=0.12.0
+
+  # Release 3.1.0
+  git checkout 584fc171514172ff701df9b37f3229826a17e35d
+
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
   fpm test --compiler=$FC --flag "--cpp"
 
   git clean -dfx
   print_subsection "Testing with assertions enabled"
-  fpm test --compiler=$FC --verbose --flag '--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS'
+  fpm test --compiler=$FC --verbose --flag "--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS"
 
   cd ../
   rm -rf assert
@@ -239,10 +239,10 @@ time_section "🧪 Testing Formal" '
 time_section "🧪 Testing Julienne" '
   git clone https://github.com/BerkeleyLab/julienne.git
   cd julienne
-  export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout a75b5a831e303315304db52ec9dd70c9badc08cd
+  # Release 3.6.2
+  git checkout b29fe49efc4547b88cde59e19462956df9c3050a
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Julienne"
