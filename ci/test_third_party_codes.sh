@@ -155,8 +155,8 @@ time_section "🧪 Testing assert" '
   micromamba install -c conda-forge fpm=0.12.0
 
   # Release 3.1.0
- git checkout 3.1.0
- assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
+  git checkout 3.1.0
+  assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
 
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
