@@ -474,6 +474,8 @@ time_section "🧪 Compiling PRIMA" '
   git clone https://github.com/Pranavchiku/prima.git
   cd prima
   git checkout -t origin/lf-prima-12
+  # The `lf-prima-12` has different commit than what we need:
+  git checkout e681eea9b3f27930c50cffd14dd566b39f01c642
   assert_git_commit e681eea9b3f27930c50cffd14dd566b39f01c642
   git clean -dfx
 
