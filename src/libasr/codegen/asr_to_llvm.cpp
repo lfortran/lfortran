@@ -9450,6 +9450,16 @@ public:
                     llvm::Value* const target_wrapper = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
                     builder->CreateMemCpy(target_wrapper, llvm::MaybeAlign(),
                                           data_ptr, llvm::MaybeAlign(), wrapper_size);
+                } else if (ASRUtils::is_unlimited_polymorphic_type(value_type)) {
+                    llvm::Value* data_field_ptr = llvm_utils->create_gep2(
+                        value_el_type, data_ptr, 1);
+                    llvm::Value* void_data = llvm_utils->CreateLoad2(
+                        llvm_utils->getIntType(1)->getPointerTo(), data_field_ptr);
+                    llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, ASRUtils::type_get_past_pointer(target_type), module.get());
+                    llvm::Value* cast_data = builder->CreateBitCast(
+                        void_data, target_struct_type->getPointerTo());
+                    builder->CreateStore(cast_data, llvm_target);
                 } else {
                     builder->CreateStore(data_ptr, llvm_target);
                 }
