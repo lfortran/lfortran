@@ -874,6 +874,11 @@ struct FixedFormRecursiveDescent {
         // Try parsing array indices, if any
         while (*end == '(') {
             end++;  // Move past '('
+            if (*end == ')') {
+                // Empty parentheses, e.g. zero-argument statement function
+                end++;  // Move past ')'
+                continue;
+            }
             if (!try_expr(end, true)) {
                 return false;  // Parsing failed, it’s not an assignment
             }
