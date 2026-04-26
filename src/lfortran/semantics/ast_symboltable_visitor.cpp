@@ -557,6 +557,8 @@ public:
         }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
         generic_procedures.clear();
         current_module_dependencies.reserve(al, 4);
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
@@ -716,7 +718,7 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
-        explicit_intrinsic_procedures.clear();
+        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
 
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
@@ -1215,6 +1217,8 @@ public:
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
+        std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -1578,7 +1582,7 @@ public:
         external_procedures_mapping[hash] = external_procedures;
         external_procedures.clear();
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
-        explicit_intrinsic_procedures.clear();
+        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
@@ -1716,6 +1720,8 @@ public:
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
+        std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
         std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
@@ -2265,7 +2271,7 @@ public:
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
-        explicit_intrinsic_procedures.clear();
+        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
             /*
                 This subroutine contains an entry function, create
