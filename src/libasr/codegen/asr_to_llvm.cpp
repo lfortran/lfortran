@@ -2724,14 +2724,13 @@ public:
                                     uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                                     if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
                                         llvm::Function* final_fn = llvm_symtab_fn[fh];
-                                        // Finalizers take type(T), not class(T). For class
-                                        // variables, load the concrete data pointer (field 1)
-                                        // from the class wrapper {vptr, data*}.
                                         llvm::Value* final_arg = tmp;
+                                        llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
                                         if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
                                             llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
-                                            llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
                                             final_arg = llvm_utils->CreateLoad2(expected_type, data_field);
+                                        } else if (final_arg->getType() != expected_type) {
+                                            final_arg = builder->CreateBitCast(final_arg, expected_type);
                                         }
                                         builder->CreateCall(final_fn, {final_arg});
                                     }

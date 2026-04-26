@@ -144,6 +144,11 @@ public:
         // Skip pointer targets
         if (ASRUtils::is_pointer(target_var->m_type)) return;
 
+        // Skip array targets: calling the scalar finalizer on the descriptor
+        // is a type mismatch. Element-level finalization for arrays is handled
+        // by the LLVM codegen finalization paths (free_array_structs, etc.).
+        if (ASRUtils::is_array(target_var->m_type)) return;
+
         bool is_alloc = ASRUtils::is_allocatable(target_var->m_type);
 
         ASR::ttype_t* t = ASRUtils::type_get_past_array(
