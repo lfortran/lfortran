@@ -405,9 +405,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/fortran-lang/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout main
   micromamba install -c conda-forge fpm
-  git checkout d0f89957541bdcc354da8e11422f5efcf9fedd0e
+  git checkout v0.13.0
+  assert_git_commit 90bb83a70e9bcf04d941fb43cca014ae1c0fc5ea
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
 
