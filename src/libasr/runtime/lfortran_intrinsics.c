@@ -9344,11 +9344,9 @@ static int parse_decimals(const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos)
 
 static bool read_and_parse_real_field(InputSource *inputSource, void* elem_ptr,
         int32_t type_code, int read_width, bool advance_no,
-        const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no,
-        int blank_mode, int scale_factor, int decimal_mode)
+        int blank_mode, int scale_factor, int decimal_mode, int decimal_places)
 {
-    int decimal_places = parse_decimals(fmt, fmt_len, fmt_pos);
     char* buffer = NULL;
     int field_len = 0;
     if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
@@ -9378,9 +9376,8 @@ static bool read_and_parse_real_field(InputSource *inputSource, void* elem_ptr,
 }
 
 static bool handle_read_real(InputSource *inputSource, va_list *args, int width, bool advance_no,
-        const fchar* fmt, int64_t fmt_len, int64_t *fmt_pos,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx, int blank_mode, int scale_factor, int decimal_mode,
-        ArrayReadCont *arr_cont)
+        ArrayReadCont *arr_cont, int decimal_places)
 {
     int read_width = (width > 0) ? width : 15;
     if (read_width < 0) read_width = 0;
@@ -9396,9 +9393,9 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         if (arr_cont->is_complex && arr_cont->reading_imag) {
             void* imag_ptr = (char*)elem_ptr + arr_cont->component_sz;
             if (!read_and_parse_real_field(inputSource, imag_ptr, arr_cont->elem_tc,
-                    read_width, advance_no, fmt, fmt_len, fmt_pos,
+                    read_width, advance_no,
                     iostat, chunk, consumed_newline, pad_no,
-                    blank_mode, scale_factor, decimal_mode)) {
+                    blank_mode, scale_factor, decimal_mode, decimal_places)) {
                 arr_cont->active = false;
                 return false;
             }
@@ -9407,9 +9404,9 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
             if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
         } else {
             if (!read_and_parse_real_field(inputSource, elem_ptr, arr_cont->elem_tc,
-                    read_width, advance_no, fmt, fmt_len, fmt_pos,
+                    read_width, advance_no,
                     iostat, chunk, consumed_newline, pad_no,
-                    blank_mode, scale_factor, decimal_mode)) {
+                    blank_mode, scale_factor, decimal_mode, decimal_places)) {
                 arr_cont->active = false;
                 return false;
             }
@@ -9449,9 +9446,9 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
 
         void* elem_ptr = data_ptr;
         if (!read_and_parse_real_field(inputSource, elem_ptr, component_tc,
-                read_width, advance_no, fmt, fmt_len, fmt_pos,
+                read_width, advance_no,
                 iostat, chunk, consumed_newline, pad_no,
-                blank_mode, scale_factor, decimal_mode)) {
+                blank_mode, scale_factor, decimal_mode, decimal_places)) {
             return false;
         }
         if (is_complex) {
@@ -9473,17 +9470,17 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (type_code == 7) type_code = 5;
 
     if (!read_and_parse_real_field(inputSource, real_ptr, type_code,
-            read_width, advance_no, fmt, fmt_len, fmt_pos,
+            read_width, advance_no,
             iostat, chunk, consumed_newline, pad_no,
-            blank_mode, scale_factor, decimal_mode)) {
+            blank_mode, scale_factor, decimal_mode, decimal_places)) {
         return false;
     }
     if (is_complex) {
         void* imag_ptr = (type_code == 4) ? (void*)((float*)real_ptr + 1) : (void*)((double*)real_ptr + 1);
         if (!read_and_parse_real_field(inputSource, imag_ptr, type_code,
-                read_width, advance_no, fmt, fmt_len, fmt_pos,
+                read_width, advance_no,
                 iostat, chunk, consumed_newline, pad_no,
-                blank_mode, scale_factor, decimal_mode)) {
+                blank_mode, scale_factor, decimal_mode, decimal_places)) {
             return false;
         }
     }
@@ -9857,6 +9854,13 @@ static void process_fmt_items_read(InputSource *inputSource,
                 fmt_pos++;
             }
         }
+        // For real descriptors, parse the decimal specifier (.d and optional
+        // exponent Ee/En) once per descriptor — not once per repeat — so that
+        // e.g. `2F5.2` applies decimals=2 to both items read in the rep loop.
+        int decimal_places = 0;
+        if (spec == 'F' || spec == 'E' || spec == 'D' || spec == 'G') {
+            decimal_places = parse_decimals(fmt, fmt_len, &fmt_pos);
+        }
         for (int rep = 0; rep < repeat_count; rep++)  {
             switch (spec) {
             case 'B':
@@ -9907,9 +9911,9 @@ static void process_fmt_items_read(InputSource *inputSource,
             case 'D':
             case 'G':
                 if (!handle_read_real(inputSource, args, width, advance_no,
-                        fmt, fmt_len, &fmt_pos, iostat, chunk,
+                        iostat, chunk,
                         consumed_newline, pad_no, arg_idx, *blank_mode, *scale_factor, decimal_mode,
-                        arr_cont)) {
+                        arr_cont, decimal_places)) {
                     return;
                 }
                 break;
