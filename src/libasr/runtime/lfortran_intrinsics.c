@@ -8718,7 +8718,8 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8726,21 +8727,59 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
     }
 
     if (unit_file_bin) {
-        if (stride == 1) {
-            if (fread(p, sizeof(struct _lfortran_complex_32), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read complex float array from binary file.\n");
+        if (access_id == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for complex float array.\n");
+                exit(1);
+            }
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(struct _lfortran_complex_32));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for complex float array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(struct _lfortran_complex_32), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read complex float array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    struct _lfortran_complex_32 val;
+                    if (fread(&val, sizeof(struct _lfortran_complex_32), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read complex float from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in complex float array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                struct _lfortran_complex_32 val;
-                if (fread(&val, sizeof(struct _lfortran_complex_32), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(struct _lfortran_complex_32), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read complex float from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read complex float array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    struct _lfortran_complex_32 val;
+                    if (fread(&val, sizeof(struct _lfortran_complex_32), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read complex float from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
@@ -8813,7 +8852,8 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8821,21 +8861,59 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
     }
 
     if (unit_file_bin) {
-        if (stride == 1) {
-            if (fread(p, sizeof(struct _lfortran_complex_64), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read complex double array from binary file.\n");
+        if (access_id == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for complex double array.\n");
+                exit(1);
+            }
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(struct _lfortran_complex_64));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for complex double array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(struct _lfortran_complex_64), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read complex double array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    struct _lfortran_complex_64 val;
+                    if (fread(&val, sizeof(struct _lfortran_complex_64), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read complex double from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in complex double array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                struct _lfortran_complex_64 val;
-                if (fread(&val, sizeof(struct _lfortran_complex_64), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(struct _lfortran_complex_64), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read complex double from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read complex double array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    struct _lfortran_complex_64 val;
+                    if (fread(&val, sizeof(struct _lfortran_complex_64), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read complex double from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
@@ -8911,7 +8989,8 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8919,21 +8998,59 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
     }
 
     if (unit_file_bin) {
-        if (stride == 1) {
-            if (fread(p, sizeof(float), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read float array from binary file.\n");
+        if (access_id == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for float array.\n");
+                exit(1);
+            }
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(float));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for float array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(float), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read float array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    float val;
+                    if (fread(&val, sizeof(float), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read float from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in float array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                float val;
-                if (fread(&val, sizeof(float), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(float), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read float from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read float array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    float val;
+                    if (fread(&val, sizeof(float), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read float from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
@@ -8984,7 +9101,8 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8992,21 +9110,59 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        if (stride == 1) {
-            if (fread(p, sizeof(double), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read double array from binary file.\n");
+        if (access_id == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for double array.\n");
+                exit(1);
+            }
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(double));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for double array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(double), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read double array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    double val;
+                    if (fread(&val, sizeof(double), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read double from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in double array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                double val;
-                if (fread(&val, sizeof(double), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(double), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read double from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read double array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    double val;
+                    if (fread(&val, sizeof(double), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read double from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
@@ -9038,12 +9194,14 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
     }
 
     bool unit_file_bin;
+    int access_id;
     FILE* filep;
     if (unit_num == -1) {
         filep = stdin;
         unit_file_bin = false;
+        access_id = -1;
     } else {
-        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
         if (!filep) {
             if (iostat) { *iostat = 1; return; }
             printf("No file found with given unit\n");
@@ -9053,12 +9211,39 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
 
     if (unit_file_bin) {
         size_t want = (size_t)(length * array_size);
-        size_t got = fread(p, sizeof(char), want, filep);
-        if (got != want) {
-            if (iostat) { *iostat = feof(filep) ? -1 : 1; }
-        }
-        if (got < want) {
-            memset(p + got, ' ', want - got);
+        if (access_id == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for char array.\n");
+                exit(1);
+            }
+            if (seq_unf_pending[unit_num] < (int32_t)want) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for char array.\n");
+                exit(1);
+            }
+            size_t got = fread(p, sizeof(char), want, filep);
+            if (got != want) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; }
+            }
+            if (got < want) {
+                memset(p + got, ' ', want - got);
+            }
+            seq_unf_pending[unit_num] -= (int32_t)want;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in char array read.\n");
+                exit(1);
+            }
+        } else {
+            size_t got = fread(p, sizeof(char), want, filep);
+            if (got != want) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; }
+            }
+            if (got < want) {
+                memset(p + got, ' ', want - got);
+            }
         }
     } else {
         char length_format[23];
