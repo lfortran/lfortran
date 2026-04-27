@@ -7559,42 +7559,59 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
     }
 
     if (unit_file_bin) {
-        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read record marker.\n");
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for int8 array.\n");
                 exit(1);
             }
-        }
-        if (stride == 1) {
-            if (fread(p, sizeof(int8_t), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int8_t array from binary file.\n");
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(int8_t));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for int8 array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(int8_t), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read int8_t array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int8_t val;
+                    if (fread(&val, sizeof(int8_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int8_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in int8 array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                int8_t val;
-                if (fread(&val, sizeof(int8_t), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(int8_t), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read int8_t from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read int8_t array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
-            }
-        }
-        if (access_id == 0) {
-            int32_t record_marker_end;
-            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
-                exit(1);
-            }
-            if (record_marker_end != record_marker_start) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Mismatched record markers in int8 array read.\n");
-                exit(1);
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int8_t val;
+                    if (fread(&val, sizeof(int8_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int8_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
@@ -7645,48 +7662,69 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
     }
 
     if (unit_file_bin) {
-        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read record marker.\n");
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for logical array.\n");
                 exit(1);
             }
-        }
-        // Binary: read raw bytes directly (same format as written)
-        if (stride == 1) {
-            if (fread(p, kind, array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
+            int32_t bytes_needed = (int32_t)(array_size * kind);
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for logical array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, kind, array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                char tmp[8];
+                if (kind > 8) {
+                    if (iostat) { *iostat = 1; return; }
+                    fprintf(stderr, "Error: Unsupported logical kind size %d in strided read.\n", kind);
+                    exit(1);
+                }
+                for (int i = 0; i < array_size; i++) {
+                    if (fread(tmp, kind, 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read logical from binary file.\n");
+                        exit(1);
+                    }
+                    memcpy((char*)p + (int64_t)i * (int64_t)stride * kind, tmp, kind);
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in logical array read.\n");
                 exit(1);
             }
         } else {
-            char tmp[8];
-            if (kind > 8) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Unsupported logical kind size %d in strided read.\n", kind);
-                exit(1);
-            }
-            for (int i = 0; i < array_size; i++) {
-                if (fread(tmp, kind, 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, kind, array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read logical from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
                     exit(1);
                 }
-                memcpy((char*)p + (int64_t)i * (int64_t)stride * kind, tmp, kind);
-            }
-        }
-        if (access_id == 0) {
-            int32_t record_marker_end;
-            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
-                exit(1);
-            }
-            if (record_marker_end != record_marker_start) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Mismatched record markers in logical array read.\n");
-                exit(1);
+            } else {
+                char tmp[8];
+                if (kind > 8) {
+                    if (iostat) { *iostat = 1; return; }
+                    fprintf(stderr, "Error: Unsupported logical kind size %d in strided read.\n", kind);
+                    exit(1);
+                }
+                for (int i = 0; i < array_size; i++) {
+                    if (fread(tmp, kind, 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read logical from binary file.\n");
+                        exit(1);
+                    }
+                    memcpy((char*)p + (int64_t)i * (int64_t)stride * kind, tmp, kind);
+                }
             }
         }
     } else {
@@ -7737,42 +7775,59 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read record marker.\n");
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for int16 array.\n");
                 exit(1);
             }
-        }
-        if (stride == 1) {
-            if (fread(p, sizeof(int16_t), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int16_t array from binary file.\n");
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(int16_t));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for int16 array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(int16_t), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read int16_t array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int16_t val;
+                    if (fread(&val, sizeof(int16_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in int16 array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                int16_t val;
-                if (fread(&val, sizeof(int16_t), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(int16_t), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read int16_t array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
-            }
-        }
-        if (access_id == 0) {
-            int32_t record_marker_end;
-            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
-                exit(1);
-            }
-            if (record_marker_end != record_marker_start) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Mismatched record markers in int16 array read.\n");
-                exit(1);
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int16_t val;
+                    if (fread(&val, sizeof(int16_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
@@ -7823,42 +7878,59 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read record marker.\n");
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for int32 array.\n");
                 exit(1);
             }
-        }
-        if (stride == 1) {
-            if (fread(p, sizeof(int32_t), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int32_t array from binary file.\n");
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(int32_t));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for int32 array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(int32_t), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read int32_t array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int32_t val;
+                    if (fread(&val, sizeof(int32_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in int32 array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                int32_t val;
-                if (fread(&val, sizeof(int32_t), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(int32_t), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read int32_t array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
-            }
-        }
-        if (access_id == 0) {
-            int32_t record_marker_end;
-            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
-                exit(1);
-            }
-            if (record_marker_end != record_marker_start) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Mismatched record markers in int32 array read.\n");
-                exit(1);
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int32_t val;
+                    if (fread(&val, sizeof(int32_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
@@ -7908,42 +7980,59 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        int32_t record_marker_start = 0;
         if (access_id == 0) {
-            if (fread(&record_marker_start, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read record marker.\n");
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for int64 array.\n");
                 exit(1);
             }
-        }
-        if (stride == 1) {
-            if (fread(p, sizeof(int64_t), array_size, filep) != (size_t)array_size) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int64_t array from binary file.\n");
+            int32_t bytes_needed = (int32_t)(array_size * sizeof(int64_t));
+            if (seq_unf_pending[unit_num] < bytes_needed) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for int64 array.\n");
+                exit(1);
+            }
+            if (stride == 1) {
+                if (fread(p, sizeof(int64_t), array_size, filep) != (size_t)array_size) {
+                    if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                    fprintf(stderr, "Error: Failed to read int64_t array from binary file.\n");
+                    exit(1);
+                }
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int64_t val;
+                    if (fread(&val, sizeof(int64_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
+            }
+            seq_unf_pending[unit_num] -= bytes_needed;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker in int64 array read.\n");
                 exit(1);
             }
         } else {
-            for (int i = 0; i < array_size; i++) {
-                int64_t val;
-                if (fread(&val, sizeof(int64_t), 1, filep) != 1) {
+            if (stride == 1) {
+                if (fread(p, sizeof(int64_t), array_size, filep) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
+                    fprintf(stderr, "Error: Failed to read int64_t array from binary file.\n");
                     exit(1);
                 }
-                p[(int64_t)i * (int64_t)stride] = val;
-            }
-        }
-        if (access_id == 0) {
-            int32_t record_marker_end;
-            if (fread(&record_marker_end, sizeof(int32_t), 1, filep) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read trailing record marker.\n");
-                exit(1);
-            }
-            if (record_marker_end != record_marker_start) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Mismatched record markers in int64 array read.\n");
-                exit(1);
+            } else {
+                for (int i = 0; i < array_size; i++) {
+                    int64_t val;
+                    if (fread(&val, sizeof(int64_t), 1, filep) != 1) {
+                        if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                        fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
+                        exit(1);
+                    }
+                    p[(int64_t)i * (int64_t)stride] = val;
+                }
             }
         }
     } else {
