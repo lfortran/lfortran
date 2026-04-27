@@ -6870,8 +6870,18 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if( filep == NULL ) {
-        printf("Specified UNIT %d in ENDFILE is not created or connected.\n", unit_num);
-        exit(1);
+        // Implicit open: ENDFILE on an unconnected unit opens "fort.<unit>"
+        char fort_filename[64];
+        snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
+        filep = fopen(fort_filename, "w+");
+        if (!filep) {
+            fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
+                fort_filename, unit_num);
+            exit(1);
+        }
+        char* fname = (char*)internal_malloc(strlen(fort_filename) + 1);
+        strcpy(fname, fort_filename);
+        store_unit_file(unit_num, fname, filep, false, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
     }
     fflush(filep);
     long pos = ftell(filep);
