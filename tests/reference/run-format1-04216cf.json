@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "run-format1-04216cf.stdout",
     "stdout_hash": "45a81d93d96bed6142fe3b31b13b2c088cb059e5618b478a86820529",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "run-format1-04216cf.stderr",
+    "stderr_hash": "9d80ccd4b5e5f548242762ed37856b4994c6dec78155c684d73b4fac",
     "returncode": 0
 }

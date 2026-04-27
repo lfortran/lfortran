@@ -1782,6 +1782,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 index = find_matching_parentheses(format, format_len, index);
                 *item_start = format_values_count;
                 format_values_2[format_values_count++] = substring(cformat, start, index);
+                index--;
                 break;
             case 't' :
                 // handle 'T', 'TL' & 'TR' editing see section 13.8.1.2 in 24-007.pdf
@@ -1847,6 +1848,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                         for (int i = 0; i < repeat; i++) {
                             format_values_2[format_values_count++] = substring(cformat, start, index);
                         }
+                        index--;
                     } else {
                         start = index;
                         while (isalpha(cformat[index])) index++; 
