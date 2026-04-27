@@ -3605,7 +3605,10 @@ public:
                 ret_val = CastingUtil::perform_casting(ret_val, int_type, al, x.base.base.loc);
                 ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
                     alt_ret_var, ret_val, nullptr, false, false));
-                current_body->push_back(al, assign);
+                tmp_vec.push_back(reinterpret_cast<ASR::asr_t*>(assign));
+                tmp_vec.push_back(ASR::make_Return_t(al, x.base.base.loc));
+                tmp = nullptr;
+                return;
             }
         }
         tmp = ASR::make_Return_t(al, x.base.base.loc);
@@ -5081,7 +5084,18 @@ public:
                             }
                         }
                     }
-                    stmt_vector.push_back(s);
+                    if (is_main_function && return_encountered && !entry_encountered) {
+                        after_return_stmt_entry_function.push_back(s);
+                    } else if (is_main_function && entry_encountered && return_encountered) {
+                        break;
+                    } else if (!is_main_function && return_encountered && is_last) {
+                        after_return_stmt_entry_function.push_back(s);
+                    } else {
+                        stmt_vector.push_back(s);
+                    }
+                    if (s->type == ASR::stmtType::Return) {
+                        return_encountered = true;
+                    }
                 }
                 this->tmp_vec.clear();
             }
