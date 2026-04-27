@@ -11,7 +11,7 @@ program read_73
 100 format (60A1)
 101 format (30a2)
 
-  open (42, file='fort.42', status='replace', form='formatted')
+  open (42, file='read_73.dat', status='replace', form='formatted')
   write (42, '(a)') s1
   write (42, '(a)') s2
 
