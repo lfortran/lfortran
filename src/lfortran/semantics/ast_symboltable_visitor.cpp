@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <cmath>
+#include <cstring>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -3222,6 +3223,60 @@ public:
         in_block_data = false;
         current_scope = old_scope;
 
+        // Build a mapping from common block member names to their equivalenced
+        // variables. This is needed to propagate DATA initialization from
+        // equivalenced variables to the struct members.
+        // equiv_to_common: maps common_member_name -> equivalenced_var_name
+        std::map<std::string, std::string> equiv_to_common;
+        // common_member_names: set of variable names that appear in COMMON blocks
+        std::set<std::string> common_member_names;
+        for (size_t i = 0; i < x.n_decl; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*x.m_decl[i])) continue;
+            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+            for (size_t j = 0; j < decl->n_attributes; j++) {
+                if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
+                    AST::AttrCommon_t* ac = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
+                    for (size_t k = 0; k < ac->n_blks; k++) {
+                        for (size_t m = 0; m < ac->m_blks[k].n_objects; m++) {
+                            std::string var_name = to_lower(ac->m_blks[k].m_objects[m].m_name);
+                            common_member_names.insert(var_name);
+                        }
+                    }
+                }
+            }
+        }
+        for (size_t i = 0; i < x.n_decl; i++) {
+            if (!is_equivalence_declaration(x.m_decl[i])) continue;
+            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+            for (size_t j = 0; j < decl->n_attributes; j++) {
+                if (!AST::is_a<AST::AttrEquivalence_t>(*decl->m_attributes[j])) continue;
+                AST::AttrEquivalence_t* eq = AST::down_cast<AST::AttrEquivalence_t>(decl->m_attributes[j]);
+                for (size_t ei = 0; ei < eq->n_args; ei++) {
+                    if (eq->m_args[ei].n_set_list < 2) continue;
+                    // Collect names in this equivalence set
+                    std::vector<std::string> names;
+                    for (int si = 0; si < (int)eq->m_args[ei].n_set_list; si++) {
+                        AST::expr_t* e = eq->m_args[ei].m_set_list[si];
+                        if (AST::is_a<AST::Name_t>(*e)) {
+                            names.push_back(to_lower(AST::down_cast<AST::Name_t>(e)->m_id));
+                        }
+                    }
+                    // Find common member and non-common variable
+                    std::string common_name, non_common_name;
+                    for (auto& nm : names) {
+                        if (common_member_names.count(nm)) {
+                            common_name = nm;
+                        } else {
+                            non_common_name = nm;
+                        }
+                    }
+                    if (!common_name.empty() && !non_common_name.empty()) {
+                        equiv_to_common[common_name] = non_common_name;
+                    }
+                }
+            }
+        }
+
         // Copy the constant values from Struct_t symbol to the instance, use StructConstant as the value of the instance variable
         // Loop through all declarations again, find all the common blocks's names and update the instance variable
         for (size_t i = 0; i < x.n_decl; i++) {
@@ -3264,9 +3319,75 @@ public:
                                     call_arg.m_value = expr;
                                     vals.push_back(al, call_arg);
                                 } else {
-                                    // If no compile time value in DataStmt initialize to zero when visiting StructConstant in backend
-                                    ASR::call_arg_t call_arg{};
-                                    vals.push_back(al, call_arg);
+                                    // Check if an equivalenced variable has a DATA value
+                                    // that should initialize this member
+                                    std::string member_name = struct_s->m_members[i];
+                                    ASR::expr_t* equiv_val = nullptr;
+                                    auto it = equiv_to_common.find(member_name);
+                                    if (it != equiv_to_common.end()) {
+                                        ASR::symbol_t* equiv_sym = current_scope->get_symbol(it->second);
+                                        if (equiv_sym && ASR::is_a<ASR::Variable_t>(*equiv_sym)) {
+                                            ASR::Variable_t* equiv_var = ASR::down_cast<ASR::Variable_t>(equiv_sym);
+                                            if (equiv_var->m_value) {
+                                                // Bit-reinterpret the value if types differ
+                                                ASR::ttype_t* member_type = var->m_type;
+                                                ASR::ttype_t* equiv_type = equiv_var->m_type;
+                                                if (ASRUtils::types_equal(member_type, equiv_type, nullptr, nullptr)) {
+                                                    equiv_val = equiv_var->m_value;
+                                                } else {
+                                                    // Different types: perform compile-time bit-reinterpretation
+                                                    // (e.g., integer 34 stored in real memory)
+                                                    ASR::expr_t* src_val = equiv_var->m_value;
+                                                    if (ASR::is_a<ASR::IntegerConstant_t>(*src_val) &&
+                                                        ASR::is_a<ASR::Real_t>(*member_type)) {
+                                                        int64_t int_val = ASR::down_cast<ASR::IntegerConstant_t>(src_val)->m_n;
+                                                        int member_kind = ASR::down_cast<ASR::Real_t>(member_type)->m_kind;
+                                                        if (member_kind == 4) {
+                                                            int32_t iv = (int32_t)int_val;
+                                                            float fv;
+                                                            std::memcpy(&fv, &iv, sizeof(float));
+                                                            equiv_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                                                                al, src_val->base.loc, fv, member_type));
+                                                        } else if (member_kind == 8) {
+                                                            double dv;
+                                                            std::memcpy(&dv, &int_val, sizeof(double));
+                                                            equiv_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                                                                al, src_val->base.loc, dv, member_type));
+                                                        }
+                                                    } else if (ASR::is_a<ASR::RealConstant_t>(*src_val) &&
+                                                               ASR::is_a<ASR::Integer_t>(*member_type)) {
+                                                        double real_val = ASR::down_cast<ASR::RealConstant_t>(src_val)->m_r;
+                                                        int member_kind = ASR::down_cast<ASR::Integer_t>(member_type)->m_kind;
+                                                        if (member_kind == 4) {
+                                                            float fv = (float)real_val;
+                                                            int32_t iv;
+                                                            std::memcpy(&iv, &fv, sizeof(int32_t));
+                                                            equiv_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                                                al, src_val->base.loc, iv, member_type));
+                                                        } else if (member_kind == 8) {
+                                                            int64_t iv;
+                                                            std::memcpy(&iv, &real_val, sizeof(int64_t));
+                                                            equiv_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                                                al, src_val->base.loc, iv, member_type));
+                                                        }
+                                                    } else {
+                                                        // Fallback: use the value as-is
+                                                        equiv_val = equiv_var->m_value;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (equiv_val) {
+                                        ASR::call_arg_t call_arg;
+                                        call_arg.loc = equiv_val->base.loc;
+                                        call_arg.m_value = equiv_val;
+                                        vals.push_back(al, call_arg);
+                                    } else {
+                                        // If no compile time value in DataStmt initialize to zero when visiting StructConstant in backend
+                                        ASR::call_arg_t call_arg{};
+                                        vals.push_back(al, call_arg);
+                                    }
                                 }
                             }
                             ASR::expr_t* structc = ASRUtils::EXPR(

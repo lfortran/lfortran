@@ -5715,7 +5715,6 @@ public:
                           ASR::Array_t* anchor_arr_saved = nullptr;
                           ASR::expr_t* anchor_var_ref_saved = nullptr;
                           ASR::expr_t* common_block_source = nullptr;
-                          ASR::ttype_t* common_block_source_type = nullptr;
                           for (int eq_idx = 0; eq_idx < n_set - 1; eq_idx++) {
                             AST::expr_t *eq1 = eq->m_args[i].m_set_list[eq_idx];
                             AST::expr_t *eq2 = anchor;
@@ -6375,25 +6374,21 @@ public:
                                         ASR::expr_t* source_expr;
                                         ASR::expr_t* pointer_expr;
                                         ASR::Variable_t* pointer_var;
-                                        ASR::ttype_t* source_type;
 
                                         if (eq1_is_common) {
                                             source_expr = asr_eq1;
                                             pointer_expr = asr_eq2;
                                             pointer_var = ASR::down_cast<ASR::Variable_t>(
                                                 ASR::down_cast<ASR::Var_t>(asr_eq2)->m_v);
-                                            source_type = arg_type1;
                                             // Track that the anchor was aliased to this
                                             // common block source so subsequent variables
                                             // in the same equivalence set can use it.
                                             common_block_source = asr_eq1;
-                                            common_block_source_type = arg_type1;
                                         } else if (eq2_is_common) {
                                             source_expr = asr_eq2;
                                             pointer_expr = asr_eq1;
                                             pointer_var = ASR::down_cast<ASR::Variable_t>(
                                                 ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
-                                            source_type = arg_type2;
                                         } else if (common_block_source != nullptr) {
                                             // The anchor was previously aliased to a
                                             // common block variable.  Point this variable
@@ -6402,7 +6397,6 @@ public:
                                             pointer_expr = asr_eq1;
                                             pointer_var = ASR::down_cast<ASR::Variable_t>(
                                                 ASR::down_cast<ASR::Var_t>(asr_eq1)->m_v);
-                                            source_type = common_block_source_type;
                                         } else {
                                             // Default: source=eq2, pointer=eq1.
                                             // If eq2 is already a source from a prior
@@ -6422,12 +6416,10 @@ public:
                                                 source_expr = asr_eq1;
                                                 pointer_expr = asr_eq2;
                                                 pointer_var = candidate_src;
-                                                source_type = arg_type1;
                                             } else {
                                                 source_expr = asr_eq2;
                                                 pointer_expr = asr_eq1;
                                                 pointer_var = candidate_ptr;
-                                                source_type = arg_type2;
                                             }
                                         }
 
@@ -6439,20 +6431,25 @@ public:
                                         ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(
                                             al, source_expr->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
 
+                                        // Use the pointer variable's own declared type
+                                        // (not the source type) so that EQUIVALENCE
+                                        // preserves the variable's original type semantics.
+                                        ASR::ttype_t* pointer_orig_type = pointer_var->m_type;
                                         ASR::ttype_t* type = nullptr;
-                                        if (ASR::is_a<ASR::Real_t>(*source_type)) {
-                                            int kind = ASR::down_cast<ASR::Real_t>(source_type)->m_kind;
+                                        if (ASR::is_a<ASR::Real_t>(*pointer_orig_type)) {
+                                            int kind = ASR::down_cast<ASR::Real_t>(pointer_orig_type)->m_kind;
                                             type = ASRUtils::TYPE(ASR::make_Real_t(al, pointer_expr->base.loc, kind));
-                                        } else if (ASR::is_a<ASR::Integer_t>(*source_type)) {
-                                            type = ASRUtils::TYPE(ASR::make_Integer_t(al, pointer_expr->base.loc, compiler_options.po.default_integer_kind));
-                                        } else if (ASR::is_a<ASR::Complex_t>(*source_type)) {
-                                            int kind = ASR::down_cast<ASR::Complex_t>(source_type)->m_kind;
+                                        } else if (ASR::is_a<ASR::Integer_t>(*pointer_orig_type)) {
+                                            type = ASRUtils::TYPE(ASR::make_Integer_t(al, pointer_expr->base.loc,
+                                                ASR::down_cast<ASR::Integer_t>(pointer_orig_type)->m_kind));
+                                        } else if (ASR::is_a<ASR::Complex_t>(*pointer_orig_type)) {
+                                            int kind = ASR::down_cast<ASR::Complex_t>(pointer_orig_type)->m_kind;
                                             type = ASRUtils::TYPE(ASR::make_Complex_t(al, pointer_expr->base.loc, kind));
-                                        } else if (ASR::is_a<ASR::Logical_t>(*source_type)) {
-                                            int kind = ASR::down_cast<ASR::Logical_t>(source_type)->m_kind;
+                                        } else if (ASR::is_a<ASR::Logical_t>(*pointer_orig_type)) {
+                                            int kind = ASR::down_cast<ASR::Logical_t>(pointer_orig_type)->m_kind;
                                             type = ASRUtils::TYPE(ASR::make_Logical_t(al, pointer_expr->base.loc, kind));
-                                        } else if (ASR::is_a<ASR::String_t>(*source_type)) {
-                                            type = source_type;
+                                        } else if (ASR::is_a<ASR::String_t>(*pointer_orig_type)) {
+                                            type = pointer_orig_type;
                                         } else {
                                             diag.semantic_warning_label(
                                                 "This equivalence statement is not implemented yet, for now we will ignore it",
