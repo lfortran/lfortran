@@ -1713,6 +1713,9 @@ public:
                             LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*block_call->m_m));
                             ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
                             for(size_t k=0; k < block->n_body; k++) {
+                                if (ASR::is_a<ASR::Associate_t>(*block->m_body[k])) {
+                                    continue;
+                                }
                                 visit_stmt(*block->m_body[k]);
                                 r += src;
                             }
