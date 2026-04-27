@@ -3324,9 +3324,23 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 format_double_fortran(formatted, double_val);
                             }
                         } else if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
+                            // G format F-mode: use F(w-n).(d-k) followed by n blanks
+                            // where n = e+2 (if e specified) or 4, and k is determined
+                            // by the magnitude range [10^(k-1), 10^k)
+                            // For zero, the standard defines k=1.
+                            int k = 1;
+                            if (double_val != 0.0) {
+                                k = (int)floor(log10(fabs(double_val))) + 1;
+                            }
+                            int dec_places = precision - k;
+                            if (dec_places < 0) dec_places = 0;
                             char format_spec[20];
-                            snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
+                            snprintf(format_spec, sizeof(format_spec), "%%.%df", dec_places);
                             snprintf(formatted, sizeof(formatted), format_spec, double_val);
+                            // Fortran F format always includes a decimal point
+                            if (dec_places == 0 && strchr(formatted, '.') == NULL) {
+                                strcat(formatted, ".");
+                            }
                         } else {
                             int exp = 0;
                             double abs_val = fabs(double_val);
@@ -3352,10 +3366,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         }
                         int len = strlen(formatted);
                         int effective_width = width;
-                        // For Gw.d without explicit Ee, fixed-style output uses a reduced
-                        // field width to reserve room for a potential exponent form.
-                        if (exp_digits <= 0 && strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL && width > 4) {
-                            effective_width = width - 4;
+                        // For G format F-mode, reduce effective width by n blanks
+                        // n = e+2 if explicit Ee, otherwise n = 4
+                        bool is_f_mode = (strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL);
+                        if (is_f_mode && width > 0) {
+                            int n_blanks = (exp_digits > 0) ? exp_digits + 2 : 4;
+                            if (width > n_blanks) {
+                                effective_width = width - n_blanks;
+                            }
                         }
                         if (effective_width > len) {
                             snprintf(buffer, sizeof(buffer), "%*s", effective_width, formatted);
