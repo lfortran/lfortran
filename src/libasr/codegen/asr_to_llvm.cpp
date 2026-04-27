@@ -5110,7 +5110,18 @@ public:
             } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
                 ASR::ArrayConstant_t *arr_expr = ASR::down_cast<ASR::ArrayConstant_t>(value);
                 type = llvm_utils->get_type_from_ttype_t_util(value, arr_expr->m_type, module.get());
-                initializer = get_const_array(value, type->getArrayElementType());
+                if (type->isArrayTy()) {
+                    initializer = get_const_array(value, type->getArrayElementType());
+                } else if (ASRUtils::is_character(
+                               *ASRUtils::type_get_past_array(ASRUtils::expr_type(value)))) {
+                    llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
+                        llvm_utils->declare_constant_stringArray(al, arr_expr));
+                    if (gv && gv->hasInitializer()) {
+                        initializer = gv->getInitializer();
+                    }
+                } else {
+                    throw CodeGenError("Unsupported non-array type in struct ArrayConstant initializer");
+                }
             } else {
                 visit_expr_wrapper(value);
                 initializer = llvm::dyn_cast<llvm::Constant>(tmp);
@@ -13630,7 +13641,22 @@ public:
             llvm_goto_targets[x.m_id] = new_target;
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_id];
-        start_new_block(target);
+        if (target->getTerminator()) {
+            // The target block already has a terminator (e.g., shared DO loop
+            // terminator already processed by an inner loop). Continue in a
+            // fresh block to avoid inserting a second terminator.
+            llvm::BasicBlock *last_bb = builder->GetInsertBlock();
+            llvm::Function *fn = last_bb->getParent();
+            llvm::BasicBlock *cont = llvm::BasicBlock::Create(context,
+                "goto_target.cont");
+            llvm_fn_insert_bb(fn, cont);
+            if (last_bb->getTerminator() == nullptr) {
+                builder->CreateBr(cont);
+            }
+            builder->SetInsertPoint(cont);
+        } else {
+            start_new_block(target);
+        }
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
@@ -17851,6 +17877,18 @@ public:
             llvm::Value* var_ptr = tmp;
             ptr_loads = ptr_loads_copy;
 
+            // For equivalenced variables (Pointer-typed Var), var_ptr is a
+            // pointer to the pointer. Load it to get the actual data address.
+            // Skip this for descriptor arrays (e.g., array section pointers)
+            // which are handled by push_descriptor_array_args.
+            if (ASR::is_a<ASR::Var_t>(*val_expr) &&
+                ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_array(expr_type_full)) &&
+                !(ASRUtils::is_array(expr_type_full) && !ASRUtils::is_fixed_size_array(expr_type_full))) {
+                llvm::Type* llvm_val_type = llvm_utils->get_type_from_ttype_t_util(
+                    val_expr, val_type, module.get());
+                var_ptr = llvm_utils->CreateLoad2(llvm_val_type->getPointerTo(), var_ptr);
+            }
+
             if (ASRUtils::is_array(expr_type_full) && ASRUtils::is_fixed_size_array(expr_type_full)) {
                 int64_t array_size = ASRUtils::get_fixed_size_of_array(expr_type_full);
                 ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(
@@ -19033,7 +19071,7 @@ public:
         llvm::Value* string_array_size = nullptr;
         if ( is_string ) {
             is_string_array_unit = ASRUtils::is_array(ASRUtils::expr_type(x.m_unit));
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_unit));
             runtime_func_name = "_lfortran_string_write";
             args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo()); // allocator
             args_type.push_back(character_type->getPointerTo());// str_holder
@@ -19078,8 +19116,24 @@ public:
                 unit = builder->CreateTrunc(unit, llvm::Type::getInt32Ty(context));
             }
         } else { // String Write
-            std::tie(unit, string_len) = llvm_utils->get_string_length_data(
-                ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+            if (is_string_array_unit &&
+                ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_unit))
+                    == ASR::array_physical_typeType::DescriptorArray) {
+                // For DescriptorArray (e.g. EQUIVALENCE), extract the data
+                // pointer from the array descriptor to get to string descriptors
+                ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
+                llvm::Type* arr_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_unit, ASRUtils::type_get_past_allocatable_pointer(unit_type),
+                    module.get());
+                llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                    llvm_utils->get_StringType(ASRUtils::extract_type(unit_type))->getPointerTo(),
+                    arr_descr->get_pointer_to_data(arr_desc_type, tmp));
+                std::tie(unit, string_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), str_desc, true, true);
+            } else {
+                std::tie(unit, string_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+            }
             if (is_string_array_unit) {
                 ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                 ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(

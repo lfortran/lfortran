@@ -4031,7 +4031,6 @@ public:
     }
 
     void mark_common_blocks_as_declared() {
-        constexpr char BLANK_COMMON_BLOCK[] = "blank#block";
         for(auto &it: common_block_dictionary) {
             if(it.second.first) {
                 // Validate deferred size checks for blocks re-declared in this scope
@@ -4039,15 +4038,10 @@ public:
                 if (deferred_it != common_block_deferred_size_check.end()) {
                     size_t canonical_size = deferred_it->second.first;
                     size_t current_size = common_block_byte_sizes[it.first];
-                    if (current_size != canonical_size && it.first != BLANK_COMMON_BLOCK) {
-                        diag.add(Diagnostic(
-                            "COMMON block storage size mismatch: this declaration has " +
-                            std::to_string(current_size) + " bytes but previous declaration has " +
-                            std::to_string(canonical_size) + " bytes",
-                            Level::Error, Stage::Semantic, {
-                                Label("", {deferred_it->second.second})
-                            }));
-                        throw SemanticAbort();
+                    if (current_size != canonical_size) {
+                        // Named COMMON blocks may have different sizes in
+                        // different scoping units. Use the maximum size.
+                        common_block_byte_sizes[it.first] = std::max(canonical_size, current_size);
                     }
                     common_block_deferred_size_check.erase(deferred_it);
                 }
@@ -4223,14 +4217,15 @@ public:
 		} else {
 		    /* The block has already been declared in a different program unit.
 		       COMMON blocks use storage association, so different layouts are
-		       allowed as long as the total byte size matches.
-		       Multiple COMMON statements may contribute to the same block,
-		       so defer size validation until all statements are processed. */
+		       allowed. If this declaration is larger, extend the struct
+		       with the extra variables so codegen can access them. */
 
 		    // Save canonical size for deferred validation (only on first encounter in this scope)
 		    if (common_block_deferred_size_check.find(common_block_name) == common_block_deferred_size_check.end()) {
 			    common_block_deferred_size_check[common_block_name] = {common_block_byte_sizes[common_block_name], x.base.base.loc};
 		    }
+
+		    size_t previous_size = common_block_byte_sizes[common_block_name];
 
 		    // Reset byte size and start accumulating for this scope
 		    common_block_byte_sizes[common_block_name] = 0;
@@ -4246,7 +4241,15 @@ public:
 			uint64_t hash = get_hash((ASR::asr_t*) var__);
 			common_variables_hash[hash] = common_block_struct_sym;
 			common_variables_byte_offset[hash] = byte_offset;
-			byte_offset += get_type_byte_size(var__->m_type);
+			size_t var_size = get_type_byte_size(var__->m_type);
+			// If this variable extends beyond the existing struct,
+			// add it so codegen can resolve it by offset.
+			if (byte_offset + var_size > previous_size) {
+			    if (struct_type->m_symtab->resolve_symbol(var__->m_name) == nullptr) {
+				add_sym_to_struct(var__, struct_type);
+			    }
+			}
+			byte_offset += var_size;
 		    }
 
 		    common_block_byte_sizes[common_block_name] = byte_offset;
@@ -4505,18 +4508,22 @@ public:
         } else if (current_scope && current_scope->asr_owner) {
             explicit_intrinsic_procedures = explicit_intrinsic_procedures_mapping[get_hash(current_scope->asr_owner)];
         }
-        bool found = std::find(explicit_intrinsic_procedures.begin(), explicit_intrinsic_procedures.end(), sym) != explicit_intrinsic_procedures.end();
-        if (!found) {
-            for (const auto& entry : explicit_intrinsic_procedures_mapping) {
-                const std::vector<std::string>& procs = entry.second;
-                if (std::find(procs.begin(), procs.end(), sym) != procs.end()) {
-                    found = true;
-                    break;
+        if (std::find(explicit_intrinsic_procedures.begin(), explicit_intrinsic_procedures.end(), sym) != explicit_intrinsic_procedures.end()) {
+            return true;
+        }
+        SymbolTable* s = (scope ? scope : current_scope);
+        s = s->parent;
+        while (s && s->asr_owner) {
+            auto it = explicit_intrinsic_procedures_mapping.find(get_hash(s->asr_owner));
+            if (it != explicit_intrinsic_procedures_mapping.end()) {
+                const std::vector<std::string>& parent_procs = it->second;
+                if (std::find(parent_procs.begin(), parent_procs.end(), sym) != parent_procs.end()) {
+                    return true;
                 }
             }
+            s = s->parent;
         }
-        
-        return found;
+        return false;
     }
 
     void erase_from_external_mapping(std::string sym) {

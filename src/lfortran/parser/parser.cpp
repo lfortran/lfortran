@@ -569,10 +569,14 @@ bool is_num(char c)
 void copy_label(std::string &out, const std::string &s, size_t &pos)
 {
     size_t col = 1;
-    while (pos < s.size() && s[pos] != '\n' && col <= 6) {
+    while (pos < s.size() && s[pos] != '\n' && col <= 5) {
         out += s[pos];
         pos++;
         col++;
+    }
+    // Skip column 6 (continuation indicator field)
+    if (pos < s.size() && s[pos] != '\n') {
+        pos++;
     }
 }
 
