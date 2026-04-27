@@ -3252,6 +3252,54 @@ public:
             }
             ASR::expr_t* expression_value = ASRUtils::expr_value(value);
             if (expression_value) {
+                // Set m_value on the variable so that BlockData
+                // (which reads m_value to build StructConstant) picks up
+                // the initializer instead of leaving it as zero.
+                // This must be done before make_ArrayBroadcast_t_util
+                // which modifies expression_value in place.
+                ASR::Variable_t* v2 = nullptr;
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                    ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
+                    v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+                } else if (ASR::is_a<ASR::Var_t>(*object)) {
+                    ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                    v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                }
+                if (v2 && !ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
+                    int size_of_array = ASRUtils::get_fixed_size_of_array(
+                        array_type->m_dims, array_type->n_dims);
+                    if (size_of_array > 0) {
+                        Vec<ASR::expr_t*> body;
+                        body.reserve(al, size_of_array);
+                        for (int idx = 0; idx < size_of_array; idx++) {
+                            body.push_back(al, expression_value);
+                        }
+                        Vec<ASR::dimension_t> dims;
+                        dims.reserve(al, 1);
+                        ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
+                        dim.loc = x.base.base.loc;
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, x.base.base.loc, 1, int_type));
+                        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, x.base.base.loc, size_of_array, int_type));
+                        dims.push_back(al, dim);
+                        ASR::ttype_t* arr_type = ASRUtils::duplicate_type(al, obj_type, &dims);
+                        ASR::expr_t* arr_const = ASRUtils::EXPR(
+                            ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc,
+                                body.p, body.size(), arr_type,
+                                ASR::arraystorageType::ColMajor));
+                        v2->m_value = arr_const;
+                        v2->m_symbolic_value = arr_const;
+                        SetChar var_deps_vec;
+                        var_deps_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, var_deps_vec,
+                            v2->m_type, v2->m_symbolic_value, v2->m_value);
+                        v2->m_dependencies = var_deps_vec.p;
+                        v2->n_dependencies = var_deps_vec.size();
+                    }
+                }
                 ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
                 ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
                                             object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
