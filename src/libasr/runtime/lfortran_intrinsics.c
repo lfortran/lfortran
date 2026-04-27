@@ -10285,13 +10285,40 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         unit_file_bin = is_unformatted;
         access_id = 0;  // sequential
     } else if(!is_write_and_open_format_match(unit_file_bin, format_data)){
-        if(iostat) {
-            *iostat = 5001;
-            return;
+        // Check if the unit was implicitly opened (by ENDFILE/REWIND) with
+        // a different format. Implicitly opened files use "fort.<unit>" naming.
+        // In that case, re-open with the correct format for this WRITE.
+        bool dummy_bin;
+        char* fname = get_file_name_from_unit(unit_num, &dummy_bin);
+        char fort_filename[64];
+        snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
+        if (fname != NULL && strcmp(fname, fort_filename) == 0) {
+            // Implicitly opened file — re-open with correct format
+            bool is_unformatted = (format_data[0] == '\0');
+            fclose(filep);
+            filep = fopen(fort_filename, is_unformatted ? "w+b" : "w+");
+            if (!filep) {
+                if (iostat) {
+                    *iostat = 5004;
+                    return;
+                } else {
+                    fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
+                        fort_filename, unit_num);
+                    exit(1);
+                }
+            }
+            store_unit_file(unit_num, NULL, filep, is_unformatted, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
+            unit_file_bin = is_unformatted;
+            access_id = 0;
         } else {
-            fprintf(stderr, "Runtime Error: Format mismatch between "
-                "OPEN statement and WRITE statement on unit %d.\n", unit_num);
-            exit(1);
+            if(iostat) {
+                *iostat = 5001;
+                return;
+            } else {
+                fprintf(stderr, "Runtime Error: Format mismatch between "
+                    "OPEN statement and WRITE statement on unit %d.\n", unit_num);
+                exit(1);
+            }
         }
     }
     if (unit_file_bin) { // Unformatted
