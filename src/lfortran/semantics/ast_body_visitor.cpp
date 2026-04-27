@@ -5752,12 +5752,19 @@ public:
                 }
             }
             if (ASR::is_a<ASR::Function_t>(*sym)){
-                diag.add(Diagnostic(
-                    "Assignment to subroutine is not allowed",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{target->base.loc})
-                    }));
-                throw SemanticAbort();
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+                if (fn->m_return_var != nullptr) {
+                    // Assigning to a function name (or ENTRY name inside a
+                    // FUNCTION) sets the return value.
+                    target = fn->m_return_var;
+                } else {
+                    diag.add(Diagnostic(
+                        "Assignment to subroutine is not allowed",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{target->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         if( ASRUtils::use_overloaded_assignment(target, value,
