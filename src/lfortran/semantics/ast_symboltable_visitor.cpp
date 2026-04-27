@@ -3214,10 +3214,12 @@ public:
         Vec<ASR::stmt_t*> block_data_body;
         block_data_body.reserve(al, x.n_body);
         current_body = &block_data_body;
+        in_block_data = true;
         // Visit DataStmt and set the constant values in the Struct_t symbol
         for (size_t i = 0; i < x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
+        in_block_data = false;
         current_scope = old_scope;
 
         // Copy the constant values from Struct_t symbol to the instance, use StructConstant as the value of the instance variable

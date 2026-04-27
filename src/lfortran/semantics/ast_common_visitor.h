@@ -1920,6 +1920,7 @@ public:
     SymbolTable *implicit_interface_parent_scope = nullptr;
     SymbolTable *statement_function_parent_scope = nullptr;
     ASR::Module_t *current_module = nullptr;
+    bool in_block_data = false;
     SetChar current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
@@ -3580,8 +3581,8 @@ public:
         ASR::symbol_t* loop_var_sym = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(implied_do_loop->m_var)->m_v);
 
-        //collect values when in top level module scope instead of runtime assignments for data stmts
-        bool top_level_module_scope = (current_module != nullptr && collected_values == nullptr);
+        //collect values when in top level module scope or block data instead of runtime assignments for data stmts
+        bool top_level_module_scope = ((current_module != nullptr || in_block_data) && collected_values == nullptr);
         Vec<ASR::expr_t*> local_collected_values;
         Vec<int64_t> local_collected_indices;
         if (top_level_module_scope) {
@@ -3597,12 +3598,16 @@ public:
             }
             if (ASR::is_a<ASR::ArrayItem_t>(*first_val)) {
                 ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(first_val);
+                ASR::symbol_t* sym = nullptr;
                 if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
-                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    sym = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
-                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                        target_variable = ASR::down_cast<ASR::Variable_t>(sym);
-                    }
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_item->m_v)) {
+                    sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(arr_item->m_v)->m_m);
+                }
+                if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+                    target_variable = ASR::down_cast<ASR::Variable_t>(sym);
                 }
             }
         }
