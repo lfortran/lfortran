@@ -845,6 +845,22 @@ public:
             }
         }
 
+        // Register duplicated common block variables in common_variables_hash
+        // so that the body visitor can resolve them to StructInstanceMember
+        for (auto& item: old_scope->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*(item.second))) {
+                uint64_t old_hash = get_hash((ASR::asr_t*) item.second);
+                if (common_variables_hash.find(old_hash) != common_variables_hash.end()) {
+                    ASR::symbol_t* new_sym = current_scope->get_symbol(item.first);
+                    if (new_sym) {
+                        uint64_t new_hash = get_hash((ASR::asr_t*) new_sym);
+                        common_variables_hash[new_hash] = common_variables_hash[old_hash];
+                        common_variables_byte_offset[new_hash] = common_variables_byte_offset[old_hash];
+                    }
+                }
+            }
+        }
+
         for (auto it: symbols_to_erase) {
             old_scope->erase_symbol(it);
         }
