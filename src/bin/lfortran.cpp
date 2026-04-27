@@ -1840,7 +1840,7 @@ int compile_to_binary_fortran(const std::string &infile,
         out << src.result;
     }
 
-    // Keep GFortran module files separate so they do not overwrite LFortran .mod files.
+    // Keep GFortran module files separate to avoid overwrite.
     std::filesystem::path out_path(outfile);
     std::filesystem::path out_dir = out_path.parent_path();
     if (out_dir.empty()) {
