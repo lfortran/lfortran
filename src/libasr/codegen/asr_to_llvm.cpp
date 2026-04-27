@@ -17374,7 +17374,7 @@ public:
     }
 
     void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
-            llvm::Value* elem_ptr) {
+        llvm::Value* elem_ptr, ASR::ttype_t* expr_type_full=nullptr) {
         constexpr int32_t kChar = 0;
         constexpr int32_t kLogical = 1;
         constexpr int32_t kInt32 = 2;
@@ -17413,6 +17413,16 @@ public:
             llvm::Type* llvm_complex_type = (complex_type->m_kind == 4)
                 ? static_cast<llvm::Type*>(complex_type_4)
                 : static_cast<llvm::Type*>(complex_type_8);
+            if (expr_type_full) {
+                ASR::ttype_t* wrapped = ASRUtils::type_get_past_array(expr_type_full);
+                if (ASR::is_a<ASR::Pointer_t>(*wrapped) || ASR::is_a<ASR::Allocatable_t>(*wrapped)) {
+                    elem_ptr = llvm_utils->CreateLoad2(llvm_complex_type->getPointerTo(), elem_ptr);
+                }
+            }
+            llvm::Type* expected_ptr_ty = llvm_complex_type->getPointerTo();
+            if (elem_ptr->getType() != expected_ptr_ty) {
+                elem_ptr = builder->CreateBitCast(elem_ptr, expected_ptr_ty);
+            }
             llvm::Value* re_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 0);
             llvm::Value* im_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 1);
             args.push_back(is_descriptor_array_false);
@@ -17868,7 +17878,7 @@ public:
                 arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
                             val_type, var_ptr, module.get(), args);
             } else {
-                add_formatted_read_arg(args, val_type, var_ptr);
+                add_formatted_read_arg(args, val_type, var_ptr, expr_type_full);
             }
         }
 
