@@ -2632,28 +2632,28 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
     switch (s_info->current_element_type){
         case INTEGER_64_TYPE:
-            sprintf(result, "%"PRId64, *(int64_t*)arg);
+            sprintf(result, "%20"PRId64, *(int64_t*)arg);
             break;
         case INTEGER_32_TYPE:
-            sprintf(result, "%d", *(int32_t*)arg);
+            sprintf(result, "%11d", *(int32_t*)arg);
             break;
         case INTEGER_16_TYPE:
-            sprintf(result, "%hi", *(int16_t*)arg);
+            sprintf(result, "%6hi", *(int16_t*)arg);
             break;
         case INTEGER_8_TYPE:
-            sprintf(result, "%hhi", *(int8_t*)arg);
+            sprintf(result, "%4hhi", *(int8_t*)arg);
             break;
         case UNSIGNED_INTEGER_64_TYPE:
-            sprintf(result, "%"PRIu64, *(uint64_t*)arg);
+            sprintf(result, "%20"PRIu64, *(uint64_t*)arg);
             break;
         case UNSIGNED_INTEGER_32_TYPE:
-            sprintf(result, "%u", *(uint32_t*)arg);
+            sprintf(result, "%11u", *(uint32_t*)arg);
             break;
         case UNSIGNED_INTEGER_16_TYPE:
-            sprintf(result, "%hu", *(uint16_t*)arg);
+            sprintf(result, "%6hu", *(uint16_t*)arg);
             break;
         case UNSIGNED_INTEGER_8_TYPE:
-            sprintf(result, "%hhu", *(uint8_t*)arg);
+            sprintf(result, "%4hhu", *(uint8_t*)arg);
             break;
         case FLOAT_64_TYPE:
             if(s_info->current_arg_info.is_complex){
