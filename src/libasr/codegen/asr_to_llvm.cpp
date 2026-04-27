@@ -17536,12 +17536,23 @@ public:
         ptr_loads = ptr_loads_copy;
 
         std::vector<llvm::Value *> single_args;
+        bool is_string_array = false;
         if (is_string) {
+            ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
+            is_string_array = ASRUtils::is_array(unit_type);
             llvm::Value *src_data, *src_len;
             std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(x.m_unit), unit_val);
             single_args.push_back(src_data);
             single_args.push_back(src_len);
+            if (is_string_array) {
+                ASR::dimension_t* dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(unit_type, dims);
+                LCOMPILERS_ASSERT(n_dims >= 1);
+                int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
+                single_args.push_back(llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val)));
+            }
         } else {
             single_args.push_back(unit_val);
         }
@@ -17601,12 +17612,22 @@ public:
             add_formatted_read_arg(single_args, val_type, var_ptr);
         }
 
-        std::string runtime_func_name = is_string ? "_lfortran_string_formatted_read"
-                                                  : "_lfortran_formatted_read";
+        std::string runtime_func_name;
+        if (is_string_array) {
+            runtime_func_name = "_lfortran_string_array_formatted_read";
+        } else if (is_string) {
+            runtime_func_name = "_lfortran_string_formatted_read";
+        } else {
+            runtime_func_name = "_lfortran_formatted_read";
+        }
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             std::vector<llvm::Type *> param_types;
-            if (is_string) {
+            if (is_string_array) {
+                param_types.push_back(character_type);
+                param_types.push_back(llvm::Type::getInt64Ty(context));
+                param_types.push_back(llvm::Type::getInt64Ty(context));
+            } else if (is_string) {
                 param_types.push_back(character_type);
                 param_types.push_back(llvm::Type::getInt64Ty(context));
             } else {
@@ -17846,12 +17867,24 @@ public:
 
         std::vector<llvm::Value*> args;
         args.reserve(8 + 3 * total_scalar_values);
+        bool is_string_array = false;
         if (is_string) {
+            ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
+            is_string_array = ASRUtils::is_array(unit_type);
             llvm::Value *src_data, *src_len;
             std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(x.m_unit), unit_val);
             args.push_back(src_data);
             args.push_back(src_len);
+            if (is_string_array) {
+                // For character arrays, pass the number of elements
+                ASR::dimension_t* dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(unit_type, dims);
+                LCOMPILERS_ASSERT(n_dims >= 1);
+                int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
+                args.push_back(llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val)));
+            }
         } else {
             args.push_back(unit_val);
         }
@@ -17937,7 +17970,29 @@ public:
         std::string runtime_func_name;
         llvm::Function *fn;
 
-        if (is_string) {
+        if (is_string_array) {
+            runtime_func_name = "_lfortran_string_array_formatted_read";
+            fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            character_type,                                  // data
+                            llvm::Type::getInt64Ty(context),                 // elem_len
+                            llvm::Type::getInt64Ty(context),                 // n_elems
+                llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
+                llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                character_type,                                  // advance
+                llvm::Type::getInt64Ty(context),                 // advance_length
+                character_type,                                  // fmt
+                llvm::Type::getInt64Ty(context),                 // fmt_len
+                llvm::Type::getInt32Ty(context),                 // no_of_args
+                character_type,                                  // pad_data
+                llvm::Type::getInt64Ty(context)                  // pad_len
+                }, true);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+            }
+        } else if (is_string) {
             runtime_func_name = "_lfortran_string_formatted_read";
             fn = module->getFunction(runtime_func_name);
             if (!fn) {

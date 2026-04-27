@@ -10062,11 +10062,11 @@ static void init_record_state(InputSource *inputSource)
             inputSource->record_length = inputSource->record_len;
         }
     } else if (inputSource->inputMethod == INPUT_STRING) {
-        // For strings, scan to find newline within the buffer
-        inputSource->record_length = inputSource->str.len;
-        for (size_t i = 0; i < inputSource->str.len; i++) {
+        // For strings, scan from current position to find newline or end of buffer
+        inputSource->record_length = inputSource->str.len - inputSource->str.pos;
+        for (size_t i = inputSource->str.pos; i < (size_t)inputSource->str.len; i++) {
             if (inputSource->str.buf[i] == '\n') {
-                inputSource->record_length = i;
+                inputSource->record_length = (long)(i - inputSource->str.pos);
                 break;
             }
         }
@@ -10152,6 +10152,9 @@ static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *c
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
         inputSource->record_start_pos = ftell(inputSource->file);
         init_record_state(inputSource);
+    } else if (inputSource->inputMethod == INPUT_STRING) {
+        inputSource->pos_in_record = 0;
+        init_record_state(inputSource);
     }
     *consumed_newline = false;
 }
@@ -10188,6 +10191,48 @@ LFORTRAN_API void _lfortran_string_formatted_read(
         no_of_args, &args, false, pad_no, decimal_mode);
     
     va_end(args);
+}
+
+LFORTRAN_API void _lfortran_string_array_formatted_read(
+    fchar* data, int64_t elem_len, int64_t n_elems,
+    int32_t* iostat, int32_t* chunk,
+    fchar* advance, int64_t advance_length,
+    fchar* fmt, int64_t fmt_len,
+    int32_t no_of_args,
+    char* pad, int64_t pad_len,
+    ...) {
+
+    // Build a newline-separated buffer from the character array elements.
+    // Each element is a fixed-length record; inserting '\n' between them
+    // lets existing record-boundary logic (/, format reversion) work as-is.
+    int64_t buf_len = n_elems * elem_len + (n_elems - 1);
+    fchar* buf = (fchar*)internal_malloc((size_t)buf_len + 1);
+    int64_t pos = 0;
+    for (int64_t i = 0; i < n_elems; i++) {
+        if (i > 0) {
+            buf[pos++] = '\n';
+        }
+        memcpy(buf + pos, data + i * elem_len, (size_t)elem_len);
+        pos += elem_len;
+    }
+    buf[buf_len] = '\0';
+
+    InputSource inputSource = {INPUT_STRING, .str = {buf, buf_len, 0}, .record_start_pos = 0, .pos_in_record = 0, .record_length = elem_len, .access_id = 0, .record_len = 0};
+
+    va_list args;
+    va_start(args, pad_len);
+
+    bool pad_no = false;
+    if (pad && pad_len > 0 && is_streql_NCS(pad, pad_len, "no", 2)) {
+        pad_no = true;
+    }
+    int decimal_mode = 0;
+    common_formatted_read(&inputSource, iostat, chunk,
+        advance, advance_length, fmt, fmt_len,
+        no_of_args, &args, false, pad_no, decimal_mode);
+
+    va_end(args);
+    internal_free(buf);
 }
 
 // Type codes for _lfortran_formatted_read:
@@ -10558,6 +10603,9 @@ static void common_formatted_read(InputSource *inputSource,
             }
             if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
                 inputSource->record_start_pos = ftell(inputSource->file);
+                init_record_state(inputSource);
+            } else if (inputSource->inputMethod == INPUT_STRING) {
+                inputSource->pos_in_record = 0;
                 init_record_state(inputSource);
             }
             first_cycle = false;
