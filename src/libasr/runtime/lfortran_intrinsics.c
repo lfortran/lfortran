@@ -3412,6 +3412,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
                             }
                             snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
+                            // Strip leading zero if result overflows field width
+                            // e.g., "0.85734E+08" (11 chars) -> ".85734E+08" (10 chars)
+                            if (width > 0 && (int)strlen(formatted) > width) {
+                                if (formatted[0] == '0' && formatted[1] == '.') {
+                                    memmove(formatted, formatted + 1, strlen(formatted));
+                                } else if (formatted[0] == '-' && formatted[1] == '0' && formatted[2] == '.') {
+                                    memmove(formatted + 1, formatted + 2, strlen(formatted) - 1);
+                                }
+                            }
                         }
                         int len = strlen(formatted);
                         int effective_width = width;
