@@ -3362,7 +3362,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         } else {
                             strcpy(buffer, formatted);
                         }
+                        // Pad with trailing blanks to fill full field width
+                        // (G format F-mode: number in width-4, then 4 blanks)
                         int64_t buf_len = strlen(buffer);
+                        if (width > 0 && buf_len < width) {
+                            for (int i = buf_len; i < width; i++) {
+                                buffer[i] = ' ';
+                            }
+                            buffer[width] = '\0';
+                            buf_len = width;
+                        }
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, buffer, buf_len);
                         result_len += buf_len;
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
