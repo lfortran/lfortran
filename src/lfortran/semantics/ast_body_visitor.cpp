@@ -4509,17 +4509,98 @@ public:
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         this->import_use_symbols(m, x);
     }
+    // Replace Var references to a COMMON variable inside dimension expressions
+    // with the corresponding COMMON block struct member access.
+    void replace_common_var_in_dims(ASR::dimension_t* dims, size_t n_dims,
+            std::set<ASR::symbol_t*>& common_syms, SymbolTable* scope) {
+        for (size_t i = 0; i < n_dims; i++) {
+            ASR::expr_t** exprs[] = {&dims[i].m_start, &dims[i].m_length};
+            for (ASR::expr_t** expr_ptr : exprs) {
+                if (*expr_ptr && ASR::is_a<ASR::Var_t>(**expr_ptr)) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(*expr_ptr)->m_v;
+                    if (common_syms.find(sym) != common_syms.end()) {
+                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                        ASR::asr_t* replacement = create_StructInstanceMember(*expr_ptr, var, scope);
+                        if (replacement) {
+                            *expr_ptr = ASRUtils::EXPR(replacement);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void replace_common_var_in_type(ASR::ttype_t* type,
+            std::set<ASR::symbol_t*>& common_syms, SymbolTable* scope) {
+        if (!type) return;
+        ASR::ttype_t* t = type;
+        // Unwrap Pointer/Allocatable to get to the Array
+        if (ASR::is_a<ASR::Pointer_t>(*t)) {
+            t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
+        } else if (ASR::is_a<ASR::Allocatable_t>(*t)) {
+            t = ASR::down_cast<ASR::Allocatable_t>(t)->m_type;
+        }
+        if (ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
+            replace_common_var_in_dims(arr->m_dims, arr->n_dims, common_syms, scope);
+        }
+    }
+
     void remove_common_variable_declarations(SymbolTable* current_scope) {
         // iterate over all symbols in symbol table and check if any of them is present in common_variables_hash
         // if yes, then remove it from scope
         std::map<std::string, ASR::symbol_t*> syms = current_scope->get_scope();
+
+        // Collect COMMON variable symbols that will be removed
+        std::set<ASR::symbol_t*> common_syms;
         for (auto it = syms.begin(); it != syms.end(); ++it) {
             if (ASR::is_a<ASR::Variable_t>(*(it->second))) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it->second);
                 uint64_t hash = get_hash((ASR::asr_t*) var);
                 if (common_variables_hash.find(hash) != common_variables_hash.end()) {
-                    current_scope->erase_symbol(it->first);
+                    common_syms.insert(it->second);
                 }
+            }
+        }
+
+        if (!common_syms.empty()) {
+            // Replace references to COMMON variables in dimension expressions
+            // of other variables' types before removing them from scope
+            for (auto it = syms.begin(); it != syms.end(); ++it) {
+                if (ASR::is_a<ASR::Variable_t>(*(it->second))) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it->second);
+                    if (common_syms.find(it->second) == common_syms.end()) {
+                        replace_common_var_in_type(var->m_type, common_syms, current_scope);
+                        // Recalculate variable dependencies after replacing
+                        // COMMON variable references
+                        SetChar deps_vec;
+                        deps_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(
+                            al, deps_vec, var->m_type, nullptr, var->m_value);
+                        var->m_dependencies = deps_vec.p;
+                        var->n_dependencies = deps_vec.n;
+                    }
+                }
+            }
+            // Also update FunctionType arg_types if this scope belongs to a Function
+            if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_scope->asr_owner)) {
+                ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+                ASR::FunctionType_t* ftype = ASR::down_cast<ASR::FunctionType_t>(
+                    func->m_function_signature);
+                for (size_t i = 0; i < ftype->n_arg_types; i++) {
+                    replace_common_var_in_type(ftype->m_arg_types[i], common_syms, current_scope);
+                }
+                if (ftype->m_return_var_type) {
+                    replace_common_var_in_type(ftype->m_return_var_type, common_syms, current_scope);
+                }
+            }
+        }
+
+        // Now remove the COMMON variables from scope
+        for (auto it = syms.begin(); it != syms.end(); ++it) {
+            if (common_syms.find(it->second) != common_syms.end()) {
+                current_scope->erase_symbol(it->first);
             }
         }
     }
