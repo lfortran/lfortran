@@ -4243,9 +4243,16 @@ public:
 			common_variables_hash[hash] = common_block_struct_sym;
 			common_variables_byte_offset[hash] = byte_offset;
 			byte_offset += get_type_byte_size(var_->m_type);
-			// add variable to struct
+			// add variable to struct only if it extends beyond the
+			// canonical size (avoids duplicate fields when a COMMON
+			// block is re-declared in a different program unit with
+			// different variable names at the same storage position)
             if (struct_type->m_symtab->resolve_symbol(var_->m_name) == nullptr) {
-                add_sym_to_struct(var_, struct_type);
+                auto deferred_it = common_block_deferred_size_check.find(common_block_name);
+                if (deferred_it == common_block_deferred_size_check.end() ||
+                    byte_offset > deferred_it->second.first) {
+                    add_sym_to_struct(var_, struct_type);
+                }
             }
 		    }
 		    // Update total byte size
