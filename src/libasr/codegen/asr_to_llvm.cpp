@@ -5548,8 +5548,29 @@ public:
                 }
                 llvm_symtab[h] = ptr;
             }
-            allocatable_struct_array_members_details.push_back(std::make_pair(
-                ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
+            // Skip queueing runtime initialization for module-scope struct
+            // globals that already have a static initializer from a
+            // StructConstant (e.g. COMMON block struct instances populated by
+            // BLOCK DATA).  Their string members already point at constant
+            // string globals; running the runtime init path would issue a
+            // malloc+strcpy that overwrites the static pointer and leaks under
+            // --detect-leaks (the corresponding finalize is also skipped for
+            // such variables; see not_finalizable_variable).
+            bool skip_runtime_struct_init = false;
+            if (x.m_symbolic_value != nullptr
+                    && x.m_parent_symtab != nullptr
+                    && x.m_parent_symtab->asr_owner != nullptr
+                    && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                    x.m_parent_symtab->asr_owner);
+                if (ASR::is_a<ASR::Module_t>(*owner)) {
+                    skip_runtime_struct_init = true;
+                }
+            }
+            if (!skip_runtime_struct_init) {
+                allocatable_struct_array_members_details.push_back(std::make_pair(
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
+            }
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {
             ASR::dimension_t* m_dims = nullptr;

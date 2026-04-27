@@ -2239,6 +2239,10 @@ class ASRToLLVMVisitor;
             // Module-scope non-allocatable, non-pointer string variables
             // (including arrays of strings) have their data in static global
             // buffers.  Attempting to free them crashes the leak detector.
+            // The same applies to module-scope struct variables that are
+            // statically initialized at compile time (e.g. COMMON block
+            // struct instances populated via BLOCK DATA): their character
+            // members point at constant string globals, not heap memory.
             {
                 ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
                     v->m_parent_symtab->asr_owner);
@@ -2247,6 +2251,10 @@ class ASRToLLVMVisitor;
                         && !ASRUtils::is_pointer(v->m_type)) {
                     ASR::ttype_t* base_t = ASRUtils::type_get_past_array(v->m_type);
                     if (ASR::is_a<ASR::String_t>(*base_t)) {
+                        return true;
+                    }
+                    if (ASR::is_a<ASR::StructType_t>(*base_t)
+                            && v->m_symbolic_value != nullptr) {
                         return true;
                     }
                 }
