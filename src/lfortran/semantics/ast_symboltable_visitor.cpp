@@ -3379,6 +3379,11 @@ public:
                                         }
                                     }
                                     if (equiv_val) {
+                                        // Set the value on the struct member variable
+                                        // so LLVM codegen knows it's initialized and
+                                        // won't overwrite with zeroinitializer.
+                                        var->m_value = equiv_val;
+                                        var->m_symbolic_value = equiv_val;
                                         ASR::call_arg_t call_arg;
                                         call_arg.loc = equiv_val->base.loc;
                                         call_arg.m_value = equiv_val;
