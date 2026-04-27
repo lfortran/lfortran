@@ -4511,21 +4511,37 @@ public:
     }
     // Replace Var references to a COMMON variable inside dimension expressions
     // with the corresponding COMMON block struct member access.
+    void replace_common_var_in_expr(ASR::expr_t** expr_ptr,
+            std::set<ASR::symbol_t*>& common_syms, SymbolTable* scope) {
+        if (!*expr_ptr) return;
+        if (ASR::is_a<ASR::Var_t>(**expr_ptr)) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(*expr_ptr)->m_v;
+            if (common_syms.find(sym) != common_syms.end()) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::asr_t* replacement = create_StructInstanceMember(*expr_ptr, var, scope);
+                if (replacement) {
+                    *expr_ptr = ASRUtils::EXPR(replacement);
+                }
+            }
+        } else if (ASR::is_a<ASR::IntegerBinOp_t>(**expr_ptr)) {
+            ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(*expr_ptr);
+            replace_common_var_in_expr(&binop->m_left, common_syms, scope);
+            replace_common_var_in_expr(&binop->m_right, common_syms, scope);
+        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(**expr_ptr)) {
+            ASR::IntegerUnaryMinus_t* unary = ASR::down_cast<ASR::IntegerUnaryMinus_t>(*expr_ptr);
+            replace_common_var_in_expr(&unary->m_arg, common_syms, scope);
+        } else if (ASR::is_a<ASR::Cast_t>(**expr_ptr)) {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(*expr_ptr);
+            replace_common_var_in_expr(&cast->m_arg, common_syms, scope);
+        }
+    }
+
     void replace_common_var_in_dims(ASR::dimension_t* dims, size_t n_dims,
             std::set<ASR::symbol_t*>& common_syms, SymbolTable* scope) {
         for (size_t i = 0; i < n_dims; i++) {
             ASR::expr_t** exprs[] = {&dims[i].m_start, &dims[i].m_length};
             for (ASR::expr_t** expr_ptr : exprs) {
-                if (*expr_ptr && ASR::is_a<ASR::Var_t>(**expr_ptr)) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(*expr_ptr)->m_v;
-                    if (common_syms.find(sym) != common_syms.end()) {
-                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                        ASR::asr_t* replacement = create_StructInstanceMember(*expr_ptr, var, scope);
-                        if (replacement) {
-                            *expr_ptr = ASRUtils::EXPR(replacement);
-                        }
-                    }
-                }
+                replace_common_var_in_expr(expr_ptr, common_syms, scope);
             }
         }
     }
