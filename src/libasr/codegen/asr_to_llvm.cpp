@@ -25290,6 +25290,19 @@ public:
             } else {
                 llvm::Value* fmt_data, *fmt_len;
                 std::tie(fmt_data, fmt_len) = get_string_data_and_length(x.m_fmt);
+                // When the format is a character array, the total format
+                // string is all elements concatenated (contiguous in memory).
+                // Multiply element length by total array size.
+                if (ASRUtils::is_array(ASRUtils::expr_type(x.m_fmt))) {
+                    ASR::expr_t* array_size_expr = ASRUtils::EXPR(
+                        ASR::make_ArraySize_t(al, x.m_fmt->base.loc, x.m_fmt,
+                        nullptr, ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, x.m_fmt->base.loc, 8)),
+                        ASRUtils::get_compile_time_array_size(al,
+                            ASRUtils::expr_type(x.m_fmt))));
+                    visit_expr(*array_size_expr);
+                    fmt_len = builder->CreateMul(fmt_len, tmp);
+                }
                 args.push_back(fmt_data);
                 args.push_back(fmt_len);
             }
