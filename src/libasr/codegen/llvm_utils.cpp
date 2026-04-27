@@ -3683,18 +3683,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             create_gep2(llvm_str_desc_type, dest_str_desc, 0));
                         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, str_len)),
                             create_gep2(llvm_str_desc_type, dest_str_desc, 1));
-                        // Copy dimension descriptors
-                        llvm::DataLayout data_layout(module->getDataLayout());
-                        llvm::Value* src_dim_ptr = arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, src, true);
-                        llvm::Value* dest_dim_ptr = arr_api->get_pointer_to_dimension_descriptor_array(llvm_array_type, dest, true);
-                        llvm::Value* n_dims = arr_api->get_rank(llvm_array_type, src, false);
-                        llvm::Type* dim_des = arr_api->get_dimension_descriptor_type(false);
-                        llvm::Value* total_dim_bytes = builder->CreateMul(
-                            builder->CreateSExtOrBitCast(n_dims, llvm::Type::getInt64Ty(context)),
-                            llvm::ConstantInt::get(context, llvm::APInt(64, data_layout.getTypeAllocSize(dim_des))));
-                        builder->CreateMemCpy(dest_dim_ptr, llvm::MaybeAlign(), src_dim_ptr, llvm::MaybeAlign(), total_dim_bytes);
-                        // Copy rank
-                        arr_api->set_rank(llvm_array_type, dest, n_dims);
+                        // Fill the array details for offset, rank, dim using existing function
+                        arr_api->fill_array_details(src_expr, src_expr, src, dest,
+                            alloc_type->m_type, alloc_type->m_type, module, true);
                     } else {
                         ensure_dest_array_descriptor();
                         deepcopy(src_expr, src, dest,
