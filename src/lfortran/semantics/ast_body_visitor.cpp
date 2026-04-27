@@ -3594,7 +3594,20 @@ public:
     }
 
     void visit_Return(const AST::Return_t& x) {
-        // TODO
+        if (x.m_value) {
+            // RETURN n — alternate return: assign n to __lfortran_alt_ret, then return
+            ASR::symbol_t *alt_ret_sym = current_scope->resolve_symbol("__lfortran_alt_ret");
+            if (alt_ret_sym) {
+                this->visit_expr(*x.m_value);
+                ASR::expr_t *ret_val = ASRUtils::EXPR(tmp);
+                ASR::expr_t *alt_ret_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, alt_ret_sym));
+                ASR::ttype_t *int_type = ASRUtils::expr_type(alt_ret_var);
+                ret_val = CastingUtil::perform_casting(ret_val, int_type, al, x.base.base.loc);
+                ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                    alt_ret_var, ret_val, nullptr, false, false));
+                current_body->push_back(al, assign);
+            }
+        }
         tmp = ASR::make_Return_t(al, x.base.base.loc);
     }
 
@@ -6827,7 +6840,66 @@ public:
 
         Vec<ASR::call_arg_t> args;
         bool nopass = false;
-        process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
+
+        // Collect alternate return labels and filter them from the args
+        std::vector<int64_t> alt_return_labels;
+        bool has_alt_returns = false;
+        std::string alt_ret_caller_name;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
+                alt_return_labels.push_back(x.m_args[i].m_label);
+                has_alt_returns = true;
+            }
+        }
+
+        if (has_alt_returns) {
+            // Build call args skipping alternate return positions
+            args.reserve(al, x.n_args);
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
+                    continue;
+                }
+                LCOMPILERS_ASSERT(x.m_args[i].m_end != nullptr);
+                this->visit_expr(*x.m_args[i].m_end);
+                ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+                ASR::call_arg_t call_arg;
+                call_arg.loc = expr->base.loc;
+                call_arg.m_value = expr;
+                args.push_back(al, call_arg);
+            }
+            // Add hidden alt-return variable as last arg
+            alt_ret_caller_name = current_scope->get_unique_name("__lfortran_alt_ret");
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                compiler_options.po.default_integer_kind));
+            ASR::symbol_t* alt_ret_local = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                x.base.base.loc, current_scope, s2c(al, alt_ret_caller_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                int_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                false));
+            current_scope->add_symbol(alt_ret_caller_name, alt_ret_local);
+            ASR::expr_t *alt_ret_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, alt_ret_local));
+            ASR::call_arg_t alt_call_arg;
+            alt_call_arg.loc = x.base.base.loc;
+            alt_call_arg.m_value = alt_ret_var;
+            args.push_back(al, alt_call_arg);
+
+            // Handle kwargs if any
+            ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
+            if (x.n_keywords > 0 && ASR::is_a<ASR::Function_t>(*f2)) {
+                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(f2);
+                diag::Diagnostics diags;
+                visit_kwargs(args, x.m_keywords, x.n_keywords,
+                             fn->m_args, fn->n_args, x.base.base.loc, fn,
+                             diags, x.n_member, false);
+                if (diags.has_error()) {
+                    diag.diagnostics.insert(diag.diagnostics.end(),
+                                            diags.diagnostics.begin(), diags.diagnostics.end());
+                    throw SemanticAbort();
+                }
+            }
+        } else {
+            process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
+        }
 
         // checking for intent mismatch   
         if (f) { 
@@ -7571,6 +7643,35 @@ public:
 
         if (cast_stmt != nullptr) {
             current_body->push_back(al, cast_stmt);
+        }
+
+        if (has_alt_returns) {
+            // Push the SubroutineCall to current_body and generate if-goto for alternate returns
+            ASR::stmt_t* call_stmt = ASRUtils::STMT(tmp);
+            current_body->push_back(al, call_stmt);
+            // Generate: if (alt_ret == 1) goto label1; if (alt_ret == 2) goto label2; ...
+            ASR::symbol_t* alt_ret_local = current_scope->get_symbol(alt_ret_caller_name);
+            ASR::expr_t *alt_ret_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, alt_ret_local));
+            ASR::ttype_t* int_type = ASRUtils::expr_type(alt_ret_var);
+            ASR::ttype_t* log_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+            for (size_t i = 0; i < alt_return_labels.size(); i++) {
+                ASR::expr_t *idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                    (int64_t)(i + 1), int_type));
+                ASR::expr_t *cmp = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, x.base.base.loc,
+                    alt_ret_var, ASR::cmpopType::Eq, idx, log_type, nullptr));
+                Vec<ASR::stmt_t*> if_body;
+                if_body.reserve(al, 1);
+                int64_t label = alt_return_labels[i];
+                ASR::stmt_t *go_to = ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc,
+                    label, s2c(al, std::to_string(label))));
+                if_body.push_back(al, go_to);
+                Vec<ASR::stmt_t*> else_body;
+                else_body.reserve(al, 0);
+                ASR::stmt_t *if_stmt = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc,
+                    nullptr, cmp, if_body.p, if_body.size(), else_body.p, else_body.size()));
+                current_body->push_back(al, if_stmt);
+            }
+            tmp = nullptr;
         }
     }
 

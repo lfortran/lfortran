@@ -3612,6 +3612,7 @@ RUN(NAME entry_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME entry_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME entry_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME entry_14 LABELS gfortran llvm)
+RUN(NAME entry_15 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

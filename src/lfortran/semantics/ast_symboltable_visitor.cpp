@@ -859,16 +859,25 @@ public:
             current_scope->add_symbol("entry__lcompilers", entry_lcompilers_sym);
         }
 
+        bool has_alternate_returns = false;
         for (auto it: vector_args) {
             char *arg = it.m_arg;
             if (arg) {
                 current_procedure_args.push_back(to_lower(arg));
             } else {
-                diag.add(diag::Diagnostic(
-                    "Alternate returns are not implemented yet",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {it.loc})}));
-                throw SemanticAbort();
+                has_alternate_returns = true;
+            }
+        }
+        if (has_alternate_returns) {
+            current_procedure_args.push_back("__lfortran_alt_ret");
+            if (current_scope->get_symbol("__lfortran_alt_ret") == nullptr) {
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+                ASR::symbol_t* alt_ret_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                    loc, current_scope, s2c(al, "__lfortran_alt_ret"), nullptr, 0,
+                    ASR::intentType::Out, nullptr, nullptr, ASR::storage_typeType::Default,
+                    int_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                    false));
+                current_scope->add_symbol("__lfortran_alt_ret", alt_ret_sym);
             }
         }
 
@@ -876,9 +885,18 @@ public:
         args.reserve(al, vector_args.size());
         for (auto it: vector_args) {
             char *arg = it.m_arg;
+            if (!arg) continue;
             std::string arg_s = to_lower(arg);
             if (current_scope->get_symbol(arg_s) == nullptr) {
-                if (compiler_options.implicit_typing) {
+                if (arg_s == "__lfortran_alt_ret") {
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
+                    ASR::symbol_t* alt_ret_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                        loc, current_scope, s2c(al, "__lfortran_alt_ret"), nullptr, 0,
+                        ASR::intentType::Out, nullptr, nullptr, ASR::storage_typeType::Default,
+                        int_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                        false));
+                    current_scope->add_symbol("__lfortran_alt_ret", alt_ret_sym);
+                } else if (compiler_options.implicit_typing) {
                     ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
                     if (t == nullptr) {
                         diag.add(diag::Diagnostic(
@@ -900,6 +918,14 @@ public:
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, it.loc,
                 var)));
+        }
+        if (has_alternate_returns) {
+            ASR::symbol_t *alt_var = current_scope->get_symbol("__lfortran_alt_ret");
+            if (alt_var == nullptr) {
+                // Already added via regular arg handling above
+            } else {
+                args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, alt_var)));
+            }
         }
 
         current_procedure_abi_type = ASR::abiType::Source;
@@ -998,21 +1024,46 @@ public:
     std::vector<AST::arg_t> perform_argument_mapping(const T& x, std::string sym_name) {
         // create master function
         std::vector<std::string> arg_names;
+        bool has_alt_returns = false;
         for(size_t i = 0; i < x.n_args; i++) {
-            arg_names.push_back(x.m_args[i].m_arg);
+            if (x.m_args[i].m_arg) {
+                arg_names.push_back(x.m_args[i].m_arg);
+            } else {
+                has_alt_returns = true;
+            }
         }
         for(auto &it: entry_functions[sym_name]) {
             for(auto &arg: entry_function_args[it.first]) {
-                arg_names.push_back(arg.m_arg);
+                if (arg.m_arg) {
+                    arg_names.push_back(arg.m_arg);
+                } else {
+                    has_alt_returns = true;
+                }
             }
         }
         std::set<std::string> s(arg_names.begin(), arg_names.end());
-        std::vector<std::string> arg_names_unique(s.begin(), s.end());arg_names_unique.insert(arg_names_unique.begin(), "entry__lcompilers");
+        std::vector<std::string> arg_names_unique(s.begin(), s.end());
+        if (has_alt_returns) {
+            arg_names_unique.push_back("__lfortran_alt_ret");
+        }
+        arg_names_unique.insert(arg_names_unique.begin(), "entry__lcompilers");
 
         for (size_t i = 0; i < x.n_args; i++){
             AST::arg_t arg = x.m_args[i];
+            if (!arg.m_arg) {
+                // Map alternate return to __lfortran_alt_ret
+                auto it = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string("__lfortran_alt_ret"));
+                if (it != arg_names_unique.end()) {
+                    int index = std::distance(arg_names_unique.begin(), it);
+                    if (entry_function_arguments_mapping.find(sym_name) == entry_function_arguments_mapping.end()) {
+                        entry_function_arguments_mapping[sym_name] = std::vector<int>();
+                    }
+                    entry_function_arguments_mapping[sym_name].push_back(index);
+                }
+                continue;
+            }
             // find index of arg in arg_names_unique
-            auto it = std::find(arg_names_unique.begin(), arg_names_unique.end(), arg.m_arg);
+            auto it = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string(arg.m_arg));
             if (it != arg_names_unique.end()) {
                 int index = std::distance(arg_names_unique.begin(), it);
                 if (entry_function_arguments_mapping.find(sym_name) == entry_function_arguments_mapping.end()) {
@@ -1023,8 +1074,20 @@ public:
         }
         for(auto &it: entry_functions[sym_name]) {
             for(auto &arg: entry_function_args[it.first]) {
+                if (!arg.m_arg) {
+                    // Map alternate return to __lfortran_alt_ret
+                    auto it2 = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string("__lfortran_alt_ret"));
+                    if (it2 != arg_names_unique.end()) {
+                        int index = std::distance(arg_names_unique.begin(), it2);
+                        if (entry_function_arguments_mapping.find(it.first) == entry_function_arguments_mapping.end()) {
+                            entry_function_arguments_mapping[it.first] = std::vector<int>();
+                        }
+                        entry_function_arguments_mapping[it.first].push_back(index);
+                    }
+                    continue;
+                }
                 // find index of arg in arg_names_unique
-                auto it2 = std::find(arg_names_unique.begin(), arg_names_unique.end(), arg.m_arg);
+                auto it2 = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string(arg.m_arg));
                 if (it2 != arg_names_unique.end()) {
                     int index = std::distance(arg_names_unique.begin(), it2);
                     if (entry_function_arguments_mapping.find(it.first) == entry_function_arguments_mapping.end()) {
@@ -1260,17 +1323,17 @@ public:
             current_procedure_args.clear();
         }
 
+        bool subroutine_has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             if (arg) {
                 current_procedure_args.push_back(to_lower(arg));
             } else {
-                diag.add(diag::Diagnostic(
-                    "Alternate returns are not implemented yet",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.m_args[i].loc})}));
-                throw SemanticAbort();
+                subroutine_has_alternate_returns = true;
             }
+        }
+        if (subroutine_has_alternate_returns) {
+            current_procedure_args.push_back("__lfortran_alt_ret");
         }
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
@@ -1379,8 +1442,13 @@ public:
         }
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
+        bool has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
+            if (!arg) {
+                has_alternate_returns = true;
+                continue;
+            }
             std::string arg_s = to_lower(arg);
             if (current_scope->get_symbol(arg_s) == nullptr) {
                 if (compiler_options.implicit_typing) {
@@ -1409,6 +1477,19 @@ public:
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
+        }
+        if (has_alternate_returns) {
+            if (current_scope->get_symbol("__lfortran_alt_ret") == nullptr) {
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                ASR::symbol_t* alt_ret_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                    x.base.base.loc, current_scope, s2c(al, "__lfortran_alt_ret"), nullptr, 0,
+                    ASR::intentType::Out, nullptr, nullptr, ASR::storage_typeType::Default,
+                    int_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                    false));
+                current_scope->add_symbol("__lfortran_alt_ret", alt_ret_sym);
+            }
+            ASR::symbol_t *alt_var = current_scope->get_symbol("__lfortran_alt_ret");
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, alt_var)));
         }
         if (assgnd_access.count(sym_name)) {
             s_access = assgnd_access[sym_name];
