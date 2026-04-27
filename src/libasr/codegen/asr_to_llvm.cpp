@@ -807,12 +807,26 @@ public:
         ptr_loads = 2;
         for( int r = 0; r < n_dims; r++ ) {
             ASR::dimension_t m_dim = m_dims[r];
-            LCOMPILERS_ASSERT(m_dim.m_start != nullptr);
-            visit_expr(*(m_dim.m_start));
-            llvm::Value* start = tmp;
-            LCOMPILERS_ASSERT(m_dim.m_length != nullptr);
-            load_array_size_deep_copy(m_dim.m_length);
-            llvm::Value* end = tmp;
+            llvm::Value* start = nullptr;
+            if (m_dim.m_start != nullptr) {
+                visit_expr(*(m_dim.m_start));
+                start = tmp;
+            } else {
+                // Assumed-size array — default start to 1
+                llvm::Type* idx_type = arr_descr->get_index_type();
+                unsigned idx_bits = idx_type->getIntegerBitWidth();
+                start = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
+            }
+            llvm::Value* end = nullptr;
+            if (m_dim.m_length != nullptr) {
+                load_array_size_deep_copy(m_dim.m_length);
+                end = tmp;
+            } else {
+                // Assumed-size array — length is unknown, use 0
+                llvm::Type* idx_type = arr_descr->get_index_type();
+                unsigned idx_bits = idx_type->getIntegerBitWidth();
+                end = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
+            }
             llvm_dims.push_back(std::make_pair(start, end));
         }
         ptr_loads = ptr_loads_copy;
@@ -4197,6 +4211,17 @@ public:
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             bool check_for_bounds = compiler_options.po.bounds_checking;
+            // Disable bounds checking for assumed-size arrays (null m_length
+            // dimensions) since the descriptor extent is set to 0 for
+            // unknown-size dimensions and would reject all valid accesses.
+            if (check_for_bounds) {
+                for (int idim = 0; idim < n_dims; idim++) {
+                    if (m_dims[idim].m_length == nullptr) {
+                        check_for_bounds = false;
+                        break;
+                    }
+                }
+            }
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
