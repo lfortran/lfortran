@@ -477,6 +477,12 @@ namespace LCompilers {
             llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, FIELD_OFFSET);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                                     offset_val);
+            // Ensure the descriptor's rank field is initialized. For module-level
+            // allocatable variables under separate compilation, the descriptor lives
+            // in .bss (zero-initialized) and the rank may otherwise remain 0, which
+            // breaks subsequent walks over the array's elements (e.g. nullifying
+            // allocatable components of every element).
+            set_rank(arr_type, arr, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
             llvm::Value* dim_des_val = get_pointer_to_dimension_descriptor_array(arr_type, arr);
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             for( int r = 0; r < n_dims; r++ ) {
