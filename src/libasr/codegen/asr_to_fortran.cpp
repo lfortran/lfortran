@@ -626,15 +626,6 @@ public:
         }
         r += ")";
         handle_line_truncation(r, 2);
-        if (type->m_abi == ASR::abiType::BindC) {
-            r += " bind(c";
-            if (type->m_bindc_name) {
-                r += ", name = \"";
-                r += type->m_bindc_name;
-                r += "\"";
-            }
-            r += ")";
-        }
         std::string return_var = "";
         if (x.m_return_var) {
             LCOMPILERS_ASSERT(is_a<ASR::Var_t>(*x.m_return_var));
@@ -643,6 +634,15 @@ public:
             if (strcmp(x.m_name, return_var.c_str())) {
                 r += " result(" + return_var + ")";
             }
+        }
+        if (type->m_abi == ASR::abiType::BindC) {
+            r += " bind(c";
+            if (type->m_bindc_name) {
+                r += ", name = \"";
+                r += type->m_bindc_name;
+                r += "\"";
+            }
+            r += ")";
         }
         handle_line_truncation(r, 2);
         r += "\n";
@@ -973,7 +973,9 @@ public:
             visit_expr(*x.m_symbolic_value);
             r += src;
         } else if (x.m_value && !ASR::is_a<ASR::ArrayReshape_t>(*x.m_symbolic_value)) {
-            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+            ASR::ttype_t *base_type_value = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
+            bool is_c_ptr = ASR::is_a<ASR::CPtr_t>(*base_type_value);
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) && !is_c_ptr) {
                 r += " => ";
             } else {
                 r += " = ";
@@ -2051,7 +2053,31 @@ public:
         src = r;
     }
 
-    // void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {}
+    void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {
+        std::string r = indent;
+        r += "call c_f_pointer(";
+        
+        visit_expr(*x.m_cptr);
+        r += src + ", ";
+        
+        visit_expr(*x.m_ptr);
+        r += src;
+        
+        if (x.m_shape) {
+            r += ", ";
+            visit_expr(*x.m_shape);
+            r += src;
+        }    
+            
+        if (x.m_lower_bounds) {
+            r += ", ";
+            visit_expr(*x.m_lower_bounds);
+            r += src;
+        }
+        
+        r += ")\n";
+        src = r;
+    }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
@@ -2975,7 +3001,9 @@ public:
         src = "c_loc(" + src + ")";
     }
 
-    // void visit_GetPointer(const ASR::GetPointer_t &x) {}
+    void visit_GetPointer(const ASR::GetPointer_t &x) {
+        visit_expr(*x.m_arg);
+    }
 
     void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {
         visit_expr(*x.m_a);
@@ -3026,8 +3054,11 @@ public:
     }
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
-        (void)x; // suppress unused warning
-        src = "null()";
+        if (ASR::is_a<ASR::CPtr_t>(*x.m_type)) {
+            src = "c_null_ptr";
+        } else {
+            src = "null()";
+        }
     }
 
     void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {
@@ -3037,7 +3068,9 @@ public:
         }
         visit_expr(*x.m_ptr);
         std::string ptr = src;
-        std::string r = "associated(" + ptr;
+        bool is_c_ptr = ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_ptr));
+        std::string func_name = is_c_ptr ? "c_associated" : "associated";
+        std::string r = func_name + "(" + ptr;
         if (x.m_tgt) {
             visit_expr(*x.m_tgt);
             std::string tgt = src;
