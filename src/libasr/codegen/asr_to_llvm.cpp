@@ -17862,8 +17862,11 @@ public:
 
             // For equivalenced variables (Pointer-typed Var), var_ptr is a
             // pointer to the pointer. Load it to get the actual data address.
+            // Skip this for descriptor arrays (e.g., array section pointers)
+            // which are handled by push_descriptor_array_args.
             if (ASR::is_a<ASR::Var_t>(*val_expr) &&
-                ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_array(expr_type_full))) {
+                ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_array(expr_type_full)) &&
+                !(ASRUtils::is_array(expr_type_full) && !ASRUtils::is_fixed_size_array(expr_type_full))) {
                 llvm::Type* llvm_val_type = llvm_utils->get_type_from_ttype_t_util(
                     val_expr, val_type, module.get());
                 var_ptr = llvm_utils->CreateLoad2(llvm_val_type->getPointerTo(), var_ptr);
