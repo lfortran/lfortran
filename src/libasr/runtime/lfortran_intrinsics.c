@@ -10262,22 +10262,13 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     }
 
-    if(!is_write_and_open_format_match(unit_file_bin, format_data)){
-        if(iostat) {
-            *iostat = 5001;
-            return;
-        } else {
-            fprintf(stderr, "Runtime Error: Format mismatch between "
-                "OPEN statement and WRITE statement on unit %d.\n", unit_num);
-            exit(1);
-        }
-    }
-    
     if (!filep) {
         // Implicit open: WRITE to an unconnected unit opens "fort.<unit>"
+        // The format (formatted vs unformatted) is determined by the WRITE statement.
+        bool is_unformatted = (format_data[0] == '\0');
         char fort_filename[64];
         snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
-        filep = fopen(fort_filename, "w+");
+        filep = fopen(fort_filename, is_unformatted ? "w+b" : "w+");
         if (!filep) {
             if (iostat) {
                 *iostat = 5004;
@@ -10290,7 +10281,18 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
         char* fname = (char*)internal_malloc(strlen(fort_filename) + 1);
         strcpy(fname, fort_filename);
-        store_unit_file(unit_num, fname, filep, false, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
+        store_unit_file(unit_num, fname, filep, is_unformatted, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
+        unit_file_bin = is_unformatted;
+        access_id = 0;  // sequential
+    } else if(!is_write_and_open_format_match(unit_file_bin, format_data)){
+        if(iostat) {
+            *iostat = 5001;
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: Format mismatch between "
+                "OPEN statement and WRITE statement on unit %d.\n", unit_num);
+            exit(1);
+        }
     }
     if (unit_file_bin) { // Unformatted
         if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
