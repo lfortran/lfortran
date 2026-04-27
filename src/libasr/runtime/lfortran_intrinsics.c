@@ -2964,8 +2964,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 continue;
             } else if (value[0] == '/') {
                 // Trim trailing blanks from the current record before newline
-                while (result_len > content_end && result[result_len - 1] == ' ') {
-                    result_len--;
+                if (result_len > content_end) {
+                    result_len = content_end;
                 }
                 result[result_len] = '\0';
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, "\n", 1);
@@ -3547,8 +3547,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
             }
             if (!array) {
                 // Trim trailing blanks from X/T positioning before record separator
-                while (result_len > content_end && result[result_len - 1] == ' ') {
-                    result_len--;
+                if (result_len > content_end) {
+                    result_len = content_end;
                 }
                 result[result_len] = '\0';
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, "\n", 1);
@@ -3569,8 +3569,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     free_serialization_info(&s_info);
 
     // Trim trailing blanks from X/T positioning in the final record
-    while (result_len > content_end && result[result_len - 1] == ' ') {
-        result_len--;
+    if (result_len > content_end) {
+        result_len = content_end;
     }
     result[result_len] = '\0';
     if (result_extent > result_len) result_extent = result_len;
