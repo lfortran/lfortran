@@ -4582,6 +4582,142 @@ public:
         tmp = nullptr;
     }
 
+    void sync_entry_function_arg_types(std::string parent_function_name,
+                                       std::string master_function_name) {
+        ASR::symbol_t* master_sym = current_scope->resolve_symbol(master_function_name);
+        ASR::Function_t* master_func = ASR::down_cast<ASR::Function_t>(master_sym);
+
+        // Collect all entry/wrapper function names (parent + entries)
+        std::vector<std::string> wrapper_names;
+        wrapper_names.push_back(parent_function_name);
+        for (auto &it: entry_functions[parent_function_name]) {
+            wrapper_names.push_back(it.first);
+        }
+
+        // Identify which master function args have FunctionType
+        std::map<size_t, std::string> func_type_args; // index -> arg name
+        for (size_t i = 1; i < master_func->n_args; i++) {
+            ASR::Var_t* master_var = ASR::down_cast<ASR::Var_t>(master_func->m_args[i]);
+            ASR::Variable_t* master_variable = ASR::down_cast<ASR::Variable_t>(master_var->m_v);
+            if (ASR::is_a<ASR::FunctionType_t>(*master_variable->m_type)) {
+                func_type_args[i] = ASRUtils::symbol_name(master_var->m_v);
+            }
+        }
+
+        if (func_type_args.empty()) return;
+
+        for (auto &wrapper_name: wrapper_names) {
+            ASR::symbol_t* wrapper_sym = current_scope->resolve_symbol(wrapper_name);
+            if (!wrapper_sym) continue;
+            ASR::Function_t* wrapper_func = ASR::down_cast<ASR::Function_t>(wrapper_sym);
+
+            // Step 1: Update variable types in wrapper scope
+            for (auto &[idx, arg_name]: func_type_args) {
+                ASR::Var_t* master_var = ASR::down_cast<ASR::Var_t>(master_func->m_args[idx]);
+                ASR::Variable_t* master_variable = ASR::down_cast<ASR::Variable_t>(master_var->m_v);
+
+                ASR::symbol_t* wrapper_arg_sym = wrapper_func->m_symtab->get_symbol(arg_name);
+                if (wrapper_arg_sym && ASR::is_a<ASR::Variable_t>(*wrapper_arg_sym)) {
+                    ASR::Variable_t* wrapper_var = ASR::down_cast<ASR::Variable_t>(wrapper_arg_sym);
+                    if (!ASR::is_a<ASR::FunctionType_t>(*wrapper_var->m_type)) {
+                        wrapper_var->m_type = master_variable->m_type;
+                        wrapper_var->m_type_declaration = master_variable->m_type_declaration;
+
+                        if (master_variable->m_type_declaration) {
+                            std::string iface_name = ASRUtils::symbol_name(master_variable->m_type_declaration);
+                            if (!wrapper_func->m_symtab->get_symbol(iface_name)) {
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(master_variable->m_type_declaration, wrapper_func->m_symtab);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Step 2: Update wrapper function signature arg types
+            ASR::FunctionType_t* wrapper_ftype = ASR::down_cast<ASR::FunctionType_t>(
+                wrapper_func->m_function_signature);
+            ASR::FunctionType_t* master_ftype = ASR::down_cast<ASR::FunctionType_t>(
+                master_func->m_function_signature);
+            for (size_t i = 0; i < wrapper_func->n_args; i++) {
+                ASR::Var_t* w_var = ASR::down_cast<ASR::Var_t>(wrapper_func->m_args[i]);
+                std::string w_arg_name = ASRUtils::symbol_name(w_var->m_v);
+                for (auto &[idx, arg_name]: func_type_args) {
+                    if (w_arg_name == arg_name && i < wrapper_ftype->n_arg_types) {
+                        if (idx - 1 < master_ftype->n_arg_types) {
+                            wrapper_ftype->m_arg_types[i] = master_ftype->m_arg_types[idx - 1];
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Step 3: Fix call arguments in wrapper body
+            // The wrapper body has a SubroutineCall (or assignment with FunctionCall)
+            // to the master function. Find it and fix the function-pointer args.
+            for (size_t si = 0; si < wrapper_func->n_body; si++) {
+                ASR::stmt_t* stmt = wrapper_func->m_body[si];
+                ASR::call_arg_t* call_args = nullptr;
+                size_t n_call_args = 0;
+
+                if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
+                    ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+                    if (call->m_name == master_sym) {
+                        call_args = call->m_args;
+                        n_call_args = call->n_args;
+                    }
+                } else if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                    ASR::Assignment_t* assign = ASR::down_cast<ASR::Assignment_t>(stmt);
+                    if (assign->m_value && ASR::is_a<ASR::FunctionCall_t>(*assign->m_value)) {
+                        ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(assign->m_value);
+                        if (call->m_name == master_sym) {
+                            call_args = call->m_args;
+                            n_call_args = call->n_args;
+                        }
+                    }
+                }
+
+                if (call_args && n_call_args > 0) {
+                    for (auto &[idx, arg_name]: func_type_args) {
+                        if (idx >= n_call_args) continue;
+                        ASR::expr_t* arg_value = call_args[idx].m_value;
+                        if (!arg_value) continue;
+                        // If the arg is not already a function-type Var, replace it
+                        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_value);
+                        if (ASR::is_a<ASR::FunctionType_t>(*arg_type)) continue;
+
+                        // Get or create the variable in wrapper scope
+                        ASR::symbol_t* var_sym = wrapper_func->m_symtab->get_symbol(arg_name);
+                        if (!var_sym) {
+                            ASR::Var_t* master_var = ASR::down_cast<ASR::Var_t>(master_func->m_args[idx]);
+                            ASR::Variable_t* master_variable = ASR::down_cast<ASR::Variable_t>(master_var->m_v);
+                            ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al,
+                                stmt->base.loc, wrapper_func->m_symtab,
+                                s2c(al, arg_name), nullptr, 0,
+                                ASR::intentType::Local, nullptr, nullptr,
+                                ASR::storage_typeType::Default,
+                                master_variable->m_type,
+                                master_variable->m_type_declaration,
+                                ASR::abiType::Source, ASR::accessType::Public,
+                                ASR::presenceType::Required, false);
+                            var_sym = ASR::down_cast<ASR::symbol_t>(var_asr);
+                            wrapper_func->m_symtab->add_or_overwrite_symbol(arg_name, var_sym);
+                            if (master_variable->m_type_declaration) {
+                                std::string iface_name = ASRUtils::symbol_name(master_variable->m_type_declaration);
+                                if (!wrapper_func->m_symtab->get_symbol(iface_name)) {
+                                    ASRUtils::SymbolDuplicator sd(al);
+                                    sd.duplicate_symbol(master_variable->m_type_declaration, wrapper_func->m_symtab);
+                                }
+                            }
+                        }
+                        call_args[idx].m_value = ASRUtils::EXPR(
+                            ASR::make_Var_t(al, stmt->base.loc, var_sym));
+                    }
+                }
+            }
+        }
+    }
+
     void add_subroutine_call(const Location& loc, std::string entry_function_name, std::string parent_function_name,
                             int label, bool is_function = false) {
         ASR::symbol_t* entry_function_sym = current_scope->resolve_symbol(entry_function_name);
@@ -4649,6 +4785,34 @@ public:
                         ASR::string_length_kindType::ExpressionLength,
                         ASR::string_physical_typeType::DescriptorString));
                     arg = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, ""), character_type));
+                } else if (ASR::is_a<ASR::FunctionType_t>(*raw_type)) {
+                    // For function pointer args not present in this entry/subroutine,
+                    // pass the variable from the scope (create if needed)
+                    ASR::Var_t* mvar = ASR::down_cast<ASR::Var_t>(master_function_arg);
+                    std::string sym_name = ASRUtils::symbol_name(mvar->m_v);
+                    ASR::symbol_t* sym = entry_function->m_symtab->resolve_symbol(sym_name);
+                    if (sym == nullptr) {
+                        // Create a variable of the correct FunctionType in the entry function scope
+                        ASR::Variable_t* master_var = ASR::down_cast<ASR::Variable_t>(mvar->m_v);
+                        ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, loc,
+                            entry_function->m_symtab, s2c(al, sym_name), nullptr, 0,
+                            ASR::intentType::Local, nullptr, nullptr,
+                            ASR::storage_typeType::Default, type,
+                            master_var->m_type_declaration,
+                            ASR::abiType::Source, ASR::accessType::Public,
+                            ASR::presenceType::Required, false);
+                        sym = ASR::down_cast<ASR::symbol_t>(var_asr);
+                        entry_function->m_symtab->add_or_overwrite_symbol(sym_name, sym);
+                        // Also duplicate the interface function symbol if needed
+                        if (master_var->m_type_declaration) {
+                            std::string iface_name = ASRUtils::symbol_name(master_var->m_type_declaration);
+                            if (!entry_function->m_symtab->get_symbol(iface_name)) {
+                                ASRUtils::SymbolDuplicator sd(al);
+                                sd.duplicate_symbol(master_var->m_type_declaration, entry_function->m_symtab);
+                            }
+                        }
+                    }
+                    arg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
                 } else {
                     diag.add(Diagnostic(
                         "Argument type not supported yet",
@@ -4987,6 +5151,9 @@ public:
             std::string master_function_name = to_lower(v->m_name) + "_main__lcompilers";
             populate_master_function(x, x.base.base.loc, master_function_name);
 
+            // Sync argument types from master function to entry functions
+            sync_entry_function_arg_types(v->m_name, master_function_name);
+
             current_scope = old_scope;
             tmp = nullptr;
             return;
@@ -5077,6 +5244,9 @@ public:
             // populate master function
             std::string master_function_name = to_lower(v->m_name) + "_main__lcompilers";
             populate_master_function(x, x.base.base.loc, master_function_name);
+
+            // Sync argument types from master function to entry functions
+            sync_entry_function_arg_types(v->m_name, master_function_name);
 
             current_scope = old_scope;
             tmp = nullptr;
