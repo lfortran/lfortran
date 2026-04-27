@@ -2751,10 +2751,12 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
     ASSERT(default_spacing_len == strlen(default_spacing));
     *result = ALLOCATOR_REALLOC(al, *result, result_capacity + 1 /*Null Character*/ );
     bool prev_is_char = false;
+    bool prev_is_logical = false;
 
     while(move_to_next_element(s_info, false)){
         bool curr_is_char = (s_info->current_element_type == CHAR_PTR_TYPE ||
                              s_info->current_element_type == STRING_DESCRIPTOR_TYPE);
+        bool curr_is_logical = is_logical_type(s_info->current_element_type);
         int size_to_allocate;
         if(curr_is_char &&
             *(char**)s_info->current_arg_info.current_arg != NULL){
@@ -2773,12 +2775,18 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
         }
         if(result_capacity != old_capacity){*result = (char*)ALLOCATOR_REALLOC(al, *result, result_capacity + 1);}
         if(result_size > 0 && !(prev_is_char && curr_is_char)){
-            strcpy((*result)+result_size, default_spacing);
-            result_size+=default_spacing_len;
+            if (prev_is_logical || curr_is_logical) {
+                (*result)[result_size] = ' ';
+                result_size += 1;
+            } else {
+                strcpy((*result)+result_size, default_spacing);
+                result_size += default_spacing_len;
+            }
         }
         int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size);
         result_size += printed_arg_size;
         prev_is_char = curr_is_char;
+        prev_is_logical = curr_is_logical;
     }
 
     (*result_size_ptr) = result_size;
