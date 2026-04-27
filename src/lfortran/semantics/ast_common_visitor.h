@@ -6298,6 +6298,27 @@ public:
                                             ASR::stmt_t *stmt = ASRUtils::STMT(c_f_pointer);
                                             data_structure[current_scope->counter].push_back(stmt);
 
+                                            // Fix chained equivalences: if a previously emitted
+                                            // CPtrToPointer uses GetPointer(pointer_var) as its
+                                            // source, redirect it to use our source instead.
+                                            // This handles chains like equivalence(a,b) +
+                                            // equivalence(b,c) so that a points to c directly.
+                                            for (auto& prev_stmt : data_structure[current_scope->counter]) {
+                                                if (!ASR::is_a<ASR::CPtrToPointer_t>(*prev_stmt)) continue;
+                                                auto* prev_ctp = ASR::down_cast<ASR::CPtrToPointer_t>(prev_stmt);
+                                                if (prev_ctp->m_ptr == pointer_expr) continue;
+                                                ASR::expr_t* prev_src = prev_ctp->m_cptr;
+                                                if (!ASR::is_a<ASR::PointerToCPtr_t>(*prev_src)) continue;
+                                                auto* prev_ptc = ASR::down_cast<ASR::PointerToCPtr_t>(prev_src);
+                                                if (!ASR::is_a<ASR::GetPointer_t>(*prev_ptc->m_arg)) continue;
+                                                auto* prev_gp = ASR::down_cast<ASR::GetPointer_t>(prev_ptc->m_arg);
+                                                if (!ASR::is_a<ASR::Var_t>(*prev_gp->m_arg)) continue;
+                                                ASR::symbol_t* prev_src_sym = ASR::down_cast<ASR::Var_t>(prev_gp->m_arg)->m_v;
+                                                if (prev_src_sym == (ASR::symbol_t*)pointer_var) {
+                                                    prev_ctp->m_cptr = ASRUtils::EXPR(pointer_to_cptr);
+                                                }
+                                            }
+
                                             if (ASR::is_a<ASR::Var_t>(*source_expr)) {
                                                 equiv_sources.insert(ASR::down_cast<ASR::Variable_t>(
                                                     ASR::down_cast<ASR::Var_t>(source_expr)->m_v));
