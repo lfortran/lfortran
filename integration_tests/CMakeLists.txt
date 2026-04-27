@@ -3651,6 +3651,7 @@ RUN(NAME entry_15 LABELS gfortran llvm)
 RUN(NAME entry_16 LABELS gfortran llvm)
 RUN(NAME entry_17 LABELS gfortran llvm)
 RUN(NAME entry_18 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
+RUN(NAME entry_19 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
