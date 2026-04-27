@@ -213,6 +213,9 @@ ifcont10:                                         ; preds = %merge_allocated7
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  %97 = load i32, i32* %i, align 4
+  %98 = add i32 %97, 1
+  store i32 %98, i32* %i, align 4
   br label %return
 
 return:                                           ; preds = %loop.end

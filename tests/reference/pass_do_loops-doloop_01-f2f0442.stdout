@@ -121,6 +121,19 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -221,6 +234,23 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4) Decimal)
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -308,6 +338,19 @@
                             .false.
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -409,6 +452,23 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -2 (Integer 4) Decimal)
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -497,6 +557,19 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -584,6 +657,19 @@
                             .false.
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -685,6 +771,23 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -3 (Integer 4) Decimal)
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -773,6 +876,19 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -872,6 +988,23 @@
                             .false.
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4) Decimal)
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -961,6 +1094,19 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -1060,6 +1206,23 @@
                             .false.
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4) Decimal)
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
