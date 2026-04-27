@@ -4588,11 +4588,13 @@ public:
                     if (common_syms.find(it->second) == common_syms.end()) {
                         replace_common_var_in_type(var->m_type, common_syms, current_scope);
                         // Recalculate variable dependencies after replacing
-                        // COMMON variable references
+                        // COMMON variable references. Pass m_symbolic_value so
+                        // that PARAMETER initializers (e.g. `parameter :: kdmax
+                        // = nmax+(nmax+1)/4`) keep their dependency on `nmax`.
                         SetChar deps_vec;
                         deps_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(
-                            al, deps_vec, var->m_type, nullptr, var->m_value);
+                            al, deps_vec, var->m_type, var->m_symbolic_value, var->m_value);
                         var->m_dependencies = deps_vec.p;
                         var->n_dependencies = deps_vec.n;
                     }
