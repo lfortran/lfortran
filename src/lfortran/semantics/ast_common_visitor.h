@@ -3015,6 +3015,7 @@ public:
             // byte offset range matching.
             std::string actual_member_name = target_var_name;
             ASR::symbol_t* struct_member_sym = struct_type->m_symtab->get_symbol(target_var_name);
+            size_t offset_within_member = 0;
             if (!struct_member_sym) {
                 // Name lookup failed - match by byte offset instead. Find the
                 // struct member whose storage range [offset, offset+size) contains
@@ -3038,6 +3039,7 @@ public:
                                 target_offset < current_offset + member_size) {
                                 actual_member_name = member_name_str;
                                 struct_member_sym = mem_sym;
+                                offset_within_member = target_offset - current_offset;
                                 break;
                             }
                             current_offset += member_size;
@@ -3058,6 +3060,40 @@ public:
             // Use local variable's type for COMMON block access. This preserves
             // the local view of the storage (e.g., integer array vs real array).
             // Codegen will detect type mismatch and use byte-offset + bitcast.
+            // Exception: when the target is at a non-zero offset within an array
+            // member, we use the member's type and add an ArrayItem to access
+            // the correct element.
+            ASR::Variable_t* mem_var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(struct_member_sym));
+            ASR::ttype_t* member_type = mem_var->m_type;
+
+            if (offset_within_member > 0 && ASR::is_a<ASR::Array_t>(*member_type)) {
+                // Target variable is at a non-zero offset within an array member.
+                // Create StructInstanceMember with the member's array type, then
+                // wrap with ArrayItem to index the correct element.
+                ASR::asr_t* struct_member = ASR::make_StructInstanceMember_t(
+                    al, target->base.loc, ASRUtils::EXPR(struct_var_),
+                    member_sym, member_type, nullptr);
+
+                ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(member_type)->m_type;
+                size_t elem_size = get_type_byte_size(elem_type);
+                int64_t index = static_cast<int64_t>(offset_within_member / elem_size) + 1;
+                ASR::expr_t* index_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, target->base.loc, index,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, target->base.loc, 4))));
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, 1);
+                ASR::array_index_t ai;
+                ai.loc = target->base.loc;
+                ai.m_left = nullptr;
+                ai.m_right = index_expr;
+                ai.m_step = nullptr;
+                args.push_back(al, ai);
+                return ASR::make_ArrayItem_t(al, target->base.loc,
+                    ASRUtils::EXPR(struct_member), args.p, args.size(),
+                    elem_type, ASR::arraystorageType::ColMajor, nullptr);
+            }
+
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
                 member_sym, target_var->m_type, nullptr);
 
