@@ -10576,7 +10576,7 @@ static void common_formatted_read(InputSource *inputSource,
 
 }
 
-LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values) {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         return;
@@ -10609,24 +10609,50 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
         } else if (ferror(fp)) {
             if (iostat) *iostat = 1;
         }
-    } else if (access_id == 0 && seq_unf_pending[unit_num] > 0) {
-        if (fseek(fp, (long)seq_unf_pending[unit_num], SEEK_CUR) != 0) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error skipping remaining record data in file.\n");
-            exit(1);
+    } else if (access_id == 0) {
+        if (no_values) {
+            // No values were read in this READ statement. We need to begin
+            // and skip the entire record (handles `read(10)` with empty iolist).
+            int rc = seq_unf_begin_record(unit_num, fp);
+            if (rc != 0) {
+                if (iostat) { *iostat = (rc == -1) ? -1 : 1; return; }
+                fprintf(stderr, "Error reading record marker in empty read.\n");
+                exit(1);
+            }
         }
-        int32_t end_marker = 0;
-        if (fread(&end_marker, sizeof(int32_t), 1, fp) != 1) {
-            if (iostat) { *iostat = feof(fp) ? -1 : 1; return; }
-            fprintf(stderr, "Error reading trailing record marker from file.\n");
-            exit(1);
+        if (seq_unf_pending[unit_num] > 0) {
+            if (fseek(fp, (long)seq_unf_pending[unit_num], SEEK_CUR) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error skipping remaining record data in file.\n");
+                exit(1);
+            }
+            int32_t end_marker = 0;
+            if (fread(&end_marker, sizeof(int32_t), 1, fp) != 1) {
+                if (iostat) { *iostat = feof(fp) ? -1 : 1; return; }
+                fprintf(stderr, "Error reading trailing record marker from file.\n");
+                exit(1);
+            }
+            if (end_marker != seq_unf_record_len[unit_num]) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Mismatched record markers while finalizing read.\n");
+                exit(1);
+            }
+            seq_unf_state_reset(unit_num);
+        } else if (no_values && seq_unf_record_len[unit_num] == 0) {
+            // Empty record (marker was 0): read trailing marker
+            int32_t end_marker = 0;
+            if (fread(&end_marker, sizeof(int32_t), 1, fp) != 1) {
+                if (iostat) { *iostat = feof(fp) ? -1 : 1; return; }
+                fprintf(stderr, "Error reading trailing record marker from file.\n");
+                exit(1);
+            }
+            if (end_marker != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Mismatched record markers while finalizing read.\n");
+                exit(1);
+            }
+            seq_unf_state_reset(unit_num);
         }
-        if (end_marker != seq_unf_record_len[unit_num]) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Mismatched record markers while finalizing read.\n");
-            exit(1);
-        }
-        seq_unf_state_reset(unit_num);
     }
 }
 

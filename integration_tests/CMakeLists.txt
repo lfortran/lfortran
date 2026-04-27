@@ -2835,6 +2835,7 @@ RUN(NAME file_64 LABELS gfortran llvm)
 RUN(NAME file_65 LABELS gfortran llvm)
 RUN(NAME file_66 LABELS gfortran llvm)
 RUN(NAME file_67 LABELS gfortran llvm)
+RUN(NAME file_68 LABELS gfortran llvm)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

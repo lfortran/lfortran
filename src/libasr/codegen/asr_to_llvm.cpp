@@ -17384,12 +17384,16 @@ public:
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {
                             llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)->getPointerTo()
+                            llvm::Type::getInt32Ty(context)->getPointerTo(),
+                            llvm::Type::getInt32Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             module.get());
             }
+            // no_values flag: 1 if no values were read, 0 otherwise
+            llvm::Value* no_values_flag = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), x.n_values == 0 ? 1 : 0);
             // When x.m_iostat is provided and values were read (n_values > 0),
             // only call empty_read if no error occurred during value reads.
             // When n_values == 0, no reads happened yet so call unconditionally.
@@ -17399,10 +17403,10 @@ public:
                 llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
                     iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
                 llvm_utils->create_if_else(iostat_is_zero, [&]() {
-                    builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+                    builder->CreateCall(fn, {unit_val, iostat_for_empty_read, no_values_flag});
                 }, [](){});
             } else {
-                builder->CreateCall(fn, {unit_val, iostat_for_empty_read});
+                builder->CreateCall(fn, {unit_val, iostat_for_empty_read, no_values_flag});
             }
             }
         }
