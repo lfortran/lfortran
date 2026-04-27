@@ -11502,7 +11502,12 @@ public:
                                     al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
                                 );
                             }
-                            cast_target_type = ASRUtils::TYPE(expected_array);
+                            // Sequence association: use empty dims to skip per-dimension
+                            // runtime checks. The actual section may have different
+                            // per-dimension sizes than the dummy (e.g., a(3:3,1:2) passed
+                            // to x(2,2)), but the contiguous storage is valid.
+                            cast_target_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
                         }
 
                         // For external/implicit-interface calls (ABI expects raw pointers), avoid
