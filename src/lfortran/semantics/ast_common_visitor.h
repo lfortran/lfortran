@@ -3832,11 +3832,87 @@ public:
             // x(2) / 2 /
             // We create an assignment node and insert into the current body.
             // i.e., x(2) = 2.
-            // Note: this will only work if the data statement is
-            // above the place where it is being used, otherwise it
-            // won't work correctly
-            // To fix that, we would have to iterate over data statements first
-            // but we can fix that later.
+            // Additionally, update the variable's m_value so that compile-time
+            // initialization (e.g. in BLOCK DATA) works correctly.
+            if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+                ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(object);
+                ASR::Variable_t* arr_var = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
+                    arr_var = ASR::down_cast<ASR::Variable_t>(
+                        ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_item->m_v)) {
+                    ASR::StructInstanceMember_t* mem = ASR::down_cast<ASR::StructInstanceMember_t>(arr_item->m_v);
+                    arr_var = ASR::down_cast<ASR::Variable_t>(
+                        ASRUtils::symbol_get_past_external(mem->m_m));
+                }
+                if (arr_var && ASRUtils::is_array(arr_var->m_type)
+                        && !ASR::is_a<ASR::Pointer_t>(*arr_var->m_type)) {
+                    ASR::ttype_t* arr_ttype = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(arr_var->m_type));
+                    int64_t total_size = ASRUtils::get_fixed_size_of_array(arr_ttype);
+                    if (total_size > 0) {
+                        ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(arr_ttype);
+                        // Compute flat (ColMajor) index
+                        int64_t flat = 0;
+                        int64_t stride = 1;
+                        bool idx_ok = (arr_t->n_dims == arr_item->n_args);
+                        for (size_t d = 0; d < arr_t->n_dims && idx_ok; d++) {
+                            int64_t idx_val = 0, start_val = 1, dim_size = 1;
+                            ASR::expr_t* idx_expr = arr_item->m_args[d].m_right;
+                            if (idx_expr) {
+                                ASR::expr_t* iv = ASRUtils::expr_value(idx_expr);
+                                if (!iv) iv = idx_expr;
+                                if (!ASRUtils::extract_value(iv, idx_val)) idx_ok = false;
+                            } else {
+                                idx_ok = false;
+                            }
+                            if (arr_t->m_dims[d].m_start) {
+                                ASR::expr_t* sv = ASRUtils::expr_value(arr_t->m_dims[d].m_start);
+                                if (sv) ASRUtils::extract_value(sv, start_val);
+                            }
+                            if (arr_t->m_dims[d].m_length) {
+                                ASR::expr_t* lv = ASRUtils::expr_value(arr_t->m_dims[d].m_length);
+                                if (lv) ASRUtils::extract_value(lv, dim_size);
+                            }
+                            flat += (idx_val - start_val) * stride;
+                            stride *= dim_size;
+                        }
+                        if (idx_ok && flat >= 0 && flat < total_size) {
+                            ASR::ttype_t* elem_type = arr_t->m_type;
+                            std::vector<ASR::expr_t*> slots(total_size, nullptr);
+                            // Preserve values from a prior DATA statement
+                            if (arr_var->m_value && ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
+                                ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(arr_var->m_value);
+                                int64_t prev_size = ASRUtils::get_fixed_size_of_array(prev->m_type);
+                                for (int64_t k = 0; k < prev_size && k < total_size; k++) {
+                                    slots[k] = ASRUtils::fetch_ArrayConstant_value(al, prev, (int)k);
+                                }
+                            }
+                            slots[flat] = symbolic_expr;
+                            Vec<ASR::expr_t*> full_values;
+                            full_values.reserve(al, (size_t)total_size);
+                            for (int64_t k = 0; k < total_size; k++) {
+                                if (slots[k] == nullptr) {
+                                    slots[k] = ASRUtils::get_constant_zero_with_given_type(al, elem_type);
+                                }
+                                full_values.push_back(al, slots[k]);
+                            }
+                            ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
+                                al, x.base.base.loc, full_values.p,
+                                full_values.size(), arr_var->m_type,
+                                ASR::arraystorageType::ColMajor);
+                            arr_var->m_value = ASRUtils::EXPR(arr_constructor);
+                            arr_var->m_symbolic_value = ASRUtils::EXPR(arr_constructor);
+                            SetChar var_deps_vec;
+                            var_deps_vec.reserve(al, 1);
+                            ASRUtils::collect_variable_dependencies(al, var_deps_vec, arr_var->m_type,
+                                arr_var->m_symbolic_value, arr_var->m_value);
+                            arr_var->m_dependencies = var_deps_vec.p;
+                            arr_var->n_dependencies = var_deps_vec.size();
+                        }
+                    }
+                }
+            }
         } else {
             diag.add(Diagnostic(
                 "The variable (object) type is not supported (only variables, character substrings and array items are supported so far)",
