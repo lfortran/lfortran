@@ -6828,8 +6828,8 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
     int access_id = -1;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if( filep == NULL ) {
-        printf("Specified UNIT %d in REWIND is not created or connected.\n", unit_num);
-        exit(1);
+        // Per Fortran standard, REWIND on a unit not connected has no effect
+        return;
     }
     if (access_id == 2) {
         if (iostat != NULL) {
@@ -10252,7 +10252,23 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     }
     
     if (!filep) {
-        filep = stdout;
+        // Implicit open: WRITE to an unconnected unit opens "fort.<unit>"
+        char fort_filename[64];
+        snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
+        filep = fopen(fort_filename, "w+");
+        if (!filep) {
+            if (iostat) {
+                *iostat = 5004;
+                return;
+            } else {
+                fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
+                    fort_filename, unit_num);
+                exit(1);
+            }
+        }
+        char* fname = (char*)internal_malloc(strlen(fort_filename) + 1);
+        strcpy(fname, fort_filename);
+        store_unit_file(unit_num, fname, filep, false, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
     }
     if (unit_file_bin) { // Unformatted
         if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
