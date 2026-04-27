@@ -19054,7 +19054,7 @@ public:
         llvm::Value* string_array_size = nullptr;
         if ( is_string ) {
             is_string_array_unit = ASRUtils::is_array(ASRUtils::expr_type(x.m_unit));
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_unit));
             runtime_func_name = "_lfortran_string_write";
             args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo()); // allocator
             args_type.push_back(character_type->getPointerTo());// str_holder
@@ -19099,8 +19099,24 @@ public:
                 unit = builder->CreateTrunc(unit, llvm::Type::getInt32Ty(context));
             }
         } else { // String Write
-            std::tie(unit, string_len) = llvm_utils->get_string_length_data(
-                ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+            if (is_string_array_unit &&
+                ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_unit))
+                    == ASR::array_physical_typeType::DescriptorArray) {
+                // For DescriptorArray (e.g. EQUIVALENCE), extract the data
+                // pointer from the array descriptor to get to string descriptors
+                ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
+                llvm::Type* arr_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_unit, ASRUtils::type_get_past_allocatable_pointer(unit_type),
+                    module.get());
+                llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                    llvm_utils->get_StringType(ASRUtils::extract_type(unit_type))->getPointerTo(),
+                    arr_descr->get_pointer_to_data(arr_desc_type, tmp));
+                std::tie(unit, string_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), str_desc, true, true);
+            } else {
+                std::tie(unit, string_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+            }
             if (is_string_array_unit) {
                 ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                 ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
