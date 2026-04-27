@@ -914,6 +914,9 @@ RUN(NAME arrays_120 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_121 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_122 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_123 LABELS gfortran llvm)
+RUN(NAME arrays_124 LABELS gfortran llvm)
+RUN(NAME arrays_125 LABELS gfortran llvm_submodule EXTRAFILES arrays_125b.f90 arrays_125c.f90 arrays_125d.f90 EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME arrays_126 LABELS gfortran llvm)
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1943,6 +1946,8 @@ RUN(NAME select_type_46 LABELS gfortran llvm)
 RUN(NAME select_type_47 LABELS gfortran llvm)
 RUN(NAME select_type_48 LABELS gfortran llvm)
 RUN(NAME select_type_49 LABELS gfortran llvm)
+RUN(NAME select_type_50 LABELS gfortran llvm)
+RUN(NAME select_type_poly_01 LABELS gfortran llvm)
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2353,6 +2358,7 @@ RUN(NAME derived_types_134 LABELS gfortran llvm EXTRAFILES derived_types_134_mod
 RUN(NAME derived_types_135 LABELS gfortran llvm)
 RUN(NAME derived_types_136 LABELS gfortran llvm)
 RUN(NAME derived_types_137 LABELS gfortran llvm)
+RUN(NAME derived_types_138 LABELS gfortran llvm)
 RUN(NAME derived_types_apply_clip_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 
@@ -2810,6 +2816,7 @@ RUN(NAME file_60 LABELS gfortran llvm)
 RUN(NAME file_61 LABELS gfortran llvm)
 RUN(NAME file_62 LABELS gfortran llvm)
 RUN(NAME file_63 LABELS gfortran llvm)
+RUN(NAME file_64 LABELS gfortran llvm)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3362,6 +3369,7 @@ RUN(NAME read_80 LABELS gfortran llvm)
 
 RUN(NAME read_81 LABELS gfortran llvm)
 RUN(NAME read_82 LABELS gfortran llvm)
+RUN(NAME read_83 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

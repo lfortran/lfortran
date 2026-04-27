@@ -1071,6 +1071,7 @@ class ASRToLLVMVisitor;
                         uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                         if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                             llvm::Function* final_fn = llvm_symtab_fn_[fh];
+                            llvm::Type* expected_param_type = final_fn->getFunctionType()->getParamType(0);
                             ASR::ttype_t* v_type_past = ASRUtils::type_get_past_allocatable(type);
                             if (ASR::is_a<ASR::Array_t>(*v_type_past)) {
                                 // Variable is an array but the final subroutine
@@ -1096,11 +1097,19 @@ class ASRToLLVMVisitor;
                                     auto* idx = builder_->CreateLoad(iter_type, iter);
                                     auto* elem = llvm_utils_->create_ptr_gep2(
                                         elem_llvm_type, data_ptr, idx);
-                                    builder_->CreateCall(final_fn, {elem});
+                                    llvm::Value* cast_elem = elem;
+                                    if (elem->getType() != expected_param_type) {
+                                        cast_elem = builder_->CreateBitCast(elem, expected_param_type);
+                                    }
+                                    builder_->CreateCall(final_fn, {cast_elem});
                                 };
                                 llvm_utils_->create_loop("Final_array_elems", cond_fn, body_fn);
                             } else {
-                                builder_->CreateCall(final_fn, {ptr});
+                                llvm::Value* cast_ptr = ptr;
+                                if (ptr->getType() != expected_param_type) {
+                                    cast_ptr = builder_->CreateBitCast(ptr, expected_param_type);
+                                }
+                                builder_->CreateCall(final_fn, {cast_ptr});
                             }
                         }
                     }
@@ -1387,7 +1396,7 @@ class ASRToLLVMVisitor;
             verify(ptr, get_llvm_type(t, struct_sym)->getPointerTo());
             const std::string cache_key = get_type_key(t, struct_sym);
             if(is_cached(cache_key)){
-                builder_->CreateCall(type_finalizer_cache_[cache_key], {ptr});
+                call_cached_finalizer(cache_key, {ptr});
                 return;
             }
             const auto checkPoint_BB = 

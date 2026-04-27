@@ -592,6 +592,36 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
     }
 
+    void visit_Associate(const ASR::Associate_t& x) {
+        bool skip_rhs = false;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+                ASR::is_a<ASR::Var_t>(*x.m_value)) {
+            ASR::symbol_t* value_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
+            if (ASR::is_a<ASR::Function_t>(*value_sym) &&
+                    v.proc2newproc.find(value_sym) != v.proc2newproc.end()) {
+                ASR::StructInstanceMember_t* sim =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(sim->m_m));
+                ASR::symbol_t* lhs_iface = ASRUtils::symbol_get_past_external(
+                    member_var->m_type_declaration);
+                if (v.proc2newproc.find(lhs_iface) == v.proc2newproc.end()) {
+                    skip_rhs = true;
+                }
+            }
+        }
+        if (skip_rhs) {
+            ASR::expr_t** current_expr_copy = this->current_expr;
+            this->current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
+            this->call_replacer();
+            this->current_expr = current_expr_copy;
+            if (x.m_target) this->visit_expr(*x.m_target);
+        } else {
+            ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_Associate(x);
+        }
+    }
+
     void update_procedure_variable_type_declarations(SymbolTable* symtab) {
         for (auto it: symtab->get_scope()) {
             if ( ASR::is_a<ASR::Variable_t>(*it.second) &&
@@ -1235,6 +1265,28 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_FunctionCall(x);
             visit_Call(x);
+        }
+
+        void visit_Associate(const ASR::Associate_t& x) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+                    ASR::is_a<ASR::Var_t>(*x.m_value)) {
+                ASR::symbol_t* value_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
+                if (ASR::is_a<ASR::Function_t>(*value_sym) &&
+                        v.proc2newproc.find(value_sym) != v.proc2newproc.end()) {
+                    ASR::StructInstanceMember_t* sim =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
+                    ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(
+                        ASRUtils::symbol_get_past_external(sim->m_m));
+                    ASR::symbol_t* lhs_iface = ASRUtils::symbol_get_past_external(
+                        member_var->m_type_declaration);
+                    if (v.proc2newproc.find(lhs_iface) == v.proc2newproc.end()) {
+                        not_to_be_erased.insert(value_sym);
+                        return;
+                    }
+                }
+            }
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Associate(x);
         }
 
         void visit_Variable(const ASR::Variable_t &x) {

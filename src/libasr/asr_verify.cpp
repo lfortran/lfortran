@@ -1512,9 +1512,12 @@ public:
     }
 
     void visit_StructType(const StructType_t& x) {
+        bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+        _inside_array_physical_cast_type = false;
         for (size_t i = 0; i < x.n_data_member_types; i++) {
             visit_ttype(*x.m_data_member_types[i]);
         }
+        _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
     }
 
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
