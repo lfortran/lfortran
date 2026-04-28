@@ -2982,7 +2982,22 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 internal_free(inner_value);
                 internal_free(unescaped_value);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
-                result_len += 1;
+                // Advance position by 1 without overwriting any existing
+                // content. Only grow the buffer (padding with spaces) when
+                // the new position is beyond the current extent, so that
+                // a subsequent result[result_len] = '\0' or trim read at
+                // result[result_len - 1] never accesses memory past the
+                // allocation when X is the last descriptor.
+                int64_t new_pos = result_len + 1;
+                if (new_pos > result_extent) {
+                    result = (char*)ALLOCATOR_REALLOC(al, result,
+                        (new_pos + 1) * sizeof(char));
+                    memset(result + result_extent, ' ',
+                        (size_t)(new_pos - result_extent));
+                    result_extent = new_pos;
+                    result[result_extent] = '\0';
+                }
+                result_len = new_pos;
             } else if (tolower(value[0]) == 's') {
                 is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
