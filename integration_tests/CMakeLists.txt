@@ -3260,6 +3260,7 @@ RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackA
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
 RUN(NAME nested_vars_03 LABELS gfortran llvm)
 RUN(NAME nested_vars_04 LABELS gfortran llvm)
+RUN(NAME nested_vars_05 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
