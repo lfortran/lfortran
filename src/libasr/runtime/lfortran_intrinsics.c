@@ -1334,6 +1334,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         strcat(formatted_value, "+");
     }
 
+    bool rounding_carry = false;
     if (scale <= 0) {
         strcat(formatted_value, "0.");
         for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
@@ -1344,9 +1345,13 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         if (digits + scale < strlen(val_str) && val != 0) {
             if (digits + scale - zeros <= 15) {
                 val_str[15] = '\0';
+                int expected_len = digits + scale + zeros;
                 long double scaled = (long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale));
                 long long t = round_scaled_value(scaled, rounding_mode, is_negative);
                 sprintf(val_str, "%lld", t);
+                if (expected_len > 0 && (int)strlen(val_str) > expected_len) {
+                    rounding_carry = true;
+                }
                 int index = zeros;
                 while(index--) strcat(formatted_value, "0");
             } else {
@@ -1357,6 +1362,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                         int d = (val_str[k] - '0') + carry;
                         val_str[k] = (d % 10) + '0';
                         carry = d / 10;
+                    }
+                    if (carry) {
+                        rounding_carry = true;
                     }
                 }
                 val_str[digits + scale] = '\0';
@@ -1399,6 +1407,40 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // formatted_value = "  1.12"
         internal_free(new_str);
         internal_free(temp);
+    }
+
+    // Adjust exponent when rounding caused a carry in the mantissa
+    if (rounding_carry) {
+        exponent_value++;
+        if (width_digits == 0) {
+            sprintf(exponent, "%+02d", exponent_value);
+        } else {
+            int exp_width = exp + 1;
+            if (exp_width > 10) exp_width = 10;
+            snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+        }
+        // Recalculate spaces if exponent length changed
+        int new_exp_length = strlen(exponent);
+        if (new_exp_length != exp_length) {
+            int space_diff = exp_length - new_exp_length;
+            // Rebuild formatted_value with adjusted spacing
+            formatted_value[0] = '\0';
+            int new_spaces = spaces + space_diff;
+            for (int i = 0; i < new_spaces; i++) {
+                strcat(formatted_value, " ");
+            }
+            if (sign_width == 1) {
+                strcat(formatted_value, "-");
+            } else if (sign_plus_exist) {
+                strcat(formatted_value, "+");
+            }
+            strcat(formatted_value, "0.");
+            for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
+                strcat(formatted_value, "0");
+            }
+            strncat(formatted_value, val_str, digits);
+            exp_length = new_exp_length;
+        }
     }
 
     // Add 'E' unless dropped for 3+ digit exponents (when no explicit Ee given)
