@@ -4230,6 +4230,7 @@ RUN(NAME formatted_read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME formatted_read_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME formatted_read_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME formatted_read_05 LABELS gfortran llvm)
+RUN(NAME formatted_read_06 LABELS gfortran llvm)
 
 RUN(NAME format_before_read_01 LABELS gfortran llvm)
 

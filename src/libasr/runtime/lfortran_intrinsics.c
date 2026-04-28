@@ -9475,6 +9475,47 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
     internal_free(processed);
 }
 
+// Parse buffer as a base-`base` non-negative integer (for B/O/Z formatted read).
+// base must be 2, 8, or 16. Treats blanks per blank_mode (BN: ignore, BZ: zero).
+static void parse_boz_from_buffer(char* buffer, int field_len,
+        void* int_ptr, int32_t type_code, int base, int blank_mode, bool* error)
+{
+    char* processed = (char*)internal_malloc(field_len + 1);
+    int j = 0;
+    for (int i = 0; i < field_len; i++) {
+        if (buffer[i] == ' ') {
+            if (blank_mode == 1) processed[j++] = '0';
+        } else {
+            processed[j++] = buffer[i];
+        }
+    }
+    processed[j] = '\0';
+    if (j == 0) {
+        // All-blank field reads as zero per Fortran standard.
+        if (type_code == 2) *((int32_t*)int_ptr) = 0;
+        else *((int64_t*)int_ptr) = 0;
+        internal_free(processed);
+        return;
+    }
+    // Validate digits for the given base.
+    for (int i = 0; processed[i] != '\0'; i++) {
+        unsigned char c = (unsigned char)processed[i];
+        int digit;
+        if (c >= '0' && c <= '9') digit = c - '0';
+        else if (c >= 'a' && c <= 'f') digit = 10 + (c - 'a');
+        else if (c >= 'A' && c <= 'F') digit = 10 + (c - 'A');
+        else { internal_free(processed); *error = true; return; }
+        if (digit >= base) { internal_free(processed); *error = true; return; }
+    }
+    uint64_t uval = (uint64_t)strtoull(processed, NULL, base);
+    if (type_code == 2) {
+        *((int32_t*)int_ptr) = (int32_t)uval;
+    } else {
+        *((int64_t*)int_ptr) = (int64_t)uval;
+    }
+    internal_free(processed);
+}
+
 static void parse_real_from_buffer(char* buffer, int field_len,
         void* real_ptr, int32_t type_code, int scale_factor, int decimal_places)
 {
@@ -9872,6 +9913,87 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
     }
     bool parse_error = false;
     parse_integer_from_buffer(buffer, field_len, int_ptr, type_code, blank_mode, &parse_error);
+
+    internal_free(buffer);
+    if (parse_error) { if (iostat) *iostat = 5010; return false; }
+    return true;
+}
+
+// Handle B/O/Z (binary/octal/hex) integer descriptors on read.
+// `base` is 2, 8, or 16.
+static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx,
+        int blank_mode, int base, ArrayReadCont *arr_cont)
+{
+    if (arr_cont->active) {
+        if (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3) {
+            if (iostat) *iostat = 5010;
+            arr_cont->active = false;
+            return false;
+        }
+        int read_width = (width > 0) ? width : 10;
+        int32_t i = arr_cont->current_idx;
+        void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
+        char* buffer = NULL; int field_len = 0;
+        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                        consumed_newline, &buffer, &field_len, pad_no)) {
+            arr_cont->active = false;
+            return false;
+        }
+        bool parse_error = false;
+        parse_boz_from_buffer(buffer, field_len, elem_ptr, arr_cont->elem_tc, base, blank_mode, &parse_error);
+        internal_free(buffer);
+        if (parse_error) { if (iostat) *iostat = 5010; arr_cont->active = false; return false; }
+        arr_cont->current_idx++;
+        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+        return true;
+    }
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        int32_t elem_tc  = va_arg(*args, int32_t);
+        void*   data_ptr = va_arg(*args, void*);
+        int32_t n_elems  = va_arg(*args, int32_t);
+        int32_t stride   = va_arg(*args, int32_t);
+        (*arg_idx)++;
+        size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
+        arr_cont->data_ptr = data_ptr;
+        arr_cont->elem_tc = elem_tc;
+        arr_cont->n_elems = n_elems;
+        arr_cont->stride = stride;
+        arr_cont->current_idx = 0;
+        arr_cont->is_complex = false;
+        arr_cont->component_sz = esz;
+        arr_cont->elem_sz = esz;
+        int read_width = (width > 0) ? width : 10;
+        void* elem_ptr = data_ptr;
+        char* buffer = NULL; int field_len = 0;
+        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                        consumed_newline, &buffer, &field_len, pad_no)) {
+            return false;
+        }
+        bool parse_error = false;
+        parse_boz_from_buffer(buffer, field_len, elem_ptr, elem_tc, base, blank_mode, &parse_error);
+        internal_free(buffer);
+        if (parse_error) { if (iostat) *iostat = 5010; return false; }
+        arr_cont->current_idx = 1;
+        arr_cont->active = (n_elems > 1);
+        return true;
+    }
+    int32_t type_code = va_arg(*args, int32_t);
+    void* int_ptr = va_arg(*args, void*);
+    (*arg_idx)++;
+
+    int read_width = (width > 0) ? width : 10;
+    if (read_width < 0) read_width = 0;
+
+    char* buffer = NULL;
+    int field_len = 0;
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+            consumed_newline, &buffer, &field_len, pad_no)) {
+        return false;
+    }
+    bool parse_error = false;
+    parse_boz_from_buffer(buffer, field_len, int_ptr, type_code, base, blank_mode, &parse_error);
 
     internal_free(buffer);
     if (parse_error) { if (iostat) *iostat = 5010; return false; }
@@ -10466,7 +10588,15 @@ static void process_fmt_items_read(InputSource *inputSource,
         for (int rep = 0; rep < repeat_count; rep++)  {
             switch (spec) {
             case 'B':
-                // Check for BN or BZ
+                // Bw: binary integer descriptor on read; otherwise BN/BZ blank mode
+                if (width > 0) {
+                    if (!handle_read_BOZ(inputSource, args, width, advance_no,
+                            iostat, chunk, consumed_newline, pad_no, arg_idx,
+                            *blank_mode, 2, arr_cont)) {
+                        return;
+                    }
+                    break;
+                }
                 if (fmt_pos < fmt_len) {
                     char next = toupper(fmt[fmt_pos]);
                     if (next == 'N') {
@@ -10476,6 +10606,20 @@ static void process_fmt_items_read(InputSource *inputSource,
                         *blank_mode = 1;  // BZ: blank zero
                         fmt_pos++;
                     }
+                }
+                break;
+            case 'O':
+                if (!handle_read_BOZ(inputSource, args, width, advance_no,
+                        iostat, chunk, consumed_newline, pad_no, arg_idx,
+                        *blank_mode, 8, arr_cont)) {
+                    return;
+                }
+                break;
+            case 'Z':
+                if (!handle_read_BOZ(inputSource, args, width, advance_no,
+                        iostat, chunk, consumed_newline, pad_no, arg_idx,
+                        *blank_mode, 16, arr_cont)) {
+                    return;
                 }
                 break;
             case 'T':
