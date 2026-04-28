@@ -213,9 +213,6 @@ ifcont10:                                         ; preds = %merge_allocated7
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %99 = load i32, i32* %i, align 4
-  %100 = add i32 %99, 1
-  store i32 %100, i32* %i, align 4
   br label %return
 
 return:                                           ; preds = %loop.end
@@ -225,8 +222,8 @@ FINALIZE_SYMTABLE_allocate_02:                    ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_allocate_02
-  %101 = load %array.1*, %array.1** %arr, align 8
-  call void @finalize_allocatable__Array_1_i32(%array.1* %101)
+  %99 = load %array.1*, %array.1** %arr, align 8
+  call void @finalize_allocatable__Array_1_i32(%array.1* %99)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }

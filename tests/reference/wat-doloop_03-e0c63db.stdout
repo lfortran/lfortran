@@ -47,10 +47,6 @@
                 i32.const 2
                 i32.eq
                 if
-                    local.get 0
-                    i32.const 1
-                    i32.sub
-                    local.set 0
                     br 1
                 else
                 end
@@ -58,10 +54,6 @@
             else
             end
         end
-        local.get 0
-        i32.const 1
-        i32.add
-        local.set 0
         local.get 1
         i32.const 3
         i32.ne
@@ -107,10 +99,6 @@
                 i32.const 2
                 i32.eq
                 if
-                    local.get 0
-                    i32.const 1
-                    i32.sub
-                    local.set 0
                     br 1
                 else
                 end
@@ -122,10 +110,6 @@
             else
             end
         end
-        local.get 0
-        i32.const 1
-        i32.add
-        local.set 0
         local.get 1
         i32.const 1
         i32.ne
@@ -182,10 +166,6 @@
             else
             end
         end
-        local.get 0
-        i32.const 1
-        i32.add
-        local.set 0
         local.get 1
         i32.const 53
         i32.ne

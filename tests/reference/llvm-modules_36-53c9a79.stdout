@@ -118,17 +118,14 @@ ifcont:                                           ; preds = %loop.body
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %43 = load i32, i32* %__1_i, align 4
-  %44 = add i32 %43, 1
-  store i32 %44, i32* %__1_i, align 4
   br label %return
 
 return:                                           ; preds = %loop.end
   br label %FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0
 
 FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0: ; preds = %return
-  %45 = load i32, i32* %_lcompilers_Any_4_1_0, align 4
-  ret i32 %45
+  %43 = load i32, i32* %_lcompilers_Any_4_1_0, align 4
+  ret i32 %43
 }
 
 define void @__module_modules_36_fpm_main_01_cmd_run(%modules_36_fpm_main_01.fpm_run_settings_class* %settings, i32* %test) {
@@ -369,73 +366,70 @@ ifcont21:                                         ; preds = %ifcont19
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %98 = load i32, i32* %__libasr_index_0_, align 4
-  %99 = add i32 %98, 1
-  store i32 %99, i32* %__libasr_index_0_, align 4
   br i1 false, label %then22, label %ifcont23
 
 then22:                                           ; preds = %loop.end
-  %100 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %101 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %102 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %101, i32 0, i32 0
-  %103 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %102, i32 0, i32 0
-  store i8* getelementptr inbounds ([42 x i8], [42 x i8]* @15, i32 0, i32 0), i8** %103, align 8
-  %104 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %102, i32 0, i32 1
+  %98 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %99 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %100 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %99, i32 0, i32 0
+  %101 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %100, i32 0, i32 0
+  store i8* getelementptr inbounds ([42 x i8], [42 x i8]* @15, i32 0, i32 0), i8** %101, align 8
+  %102 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %100, i32 0, i32 1
+  store i32 24, i32* %102, align 4
+  %103 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %100, i32 0, i32 2
+  store i32 14, i32* %103, align 4
+  %104 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %100, i32 0, i32 3
   store i32 24, i32* %104, align 4
-  %105 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %102, i32 0, i32 2
-  store i32 14, i32* %105, align 4
-  %106 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %102, i32 0, i32 3
-  store i32 24, i32* %106, align 4
-  %107 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %102, i32 0, i32 4
-  store i32 23, i32* %107, align 4
-  %108 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %0, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @16, i32 0, i32 0))
-  %109 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %100, i32 0, i32 0
-  %110 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %101, i32 0, i32 0
-  %111 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %109, i32 0, i32 2
-  %112 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %109, i32 0, i32 0
-  store i1 true, i1* %112, align 1
-  %113 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %109, i32 0, i32 1
-  store i8* %108, i8** %113, align 8
-  store { i8*, i32, i32, i32, i32 }* %110, { i8*, i32, i32, i32, i32 }** %111, align 8
-  %114 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %109, i32 0, i32 3
-  store i32 1, i32* %114, align 4
-  %115 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %100, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %0, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %115, i32 1, i8* getelementptr inbounds ([143 x i8], [143 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([35 x i8], [35 x i8]* @14, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
+  %105 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %100, i32 0, i32 4
+  store i32 23, i32* %105, align 4
+  %106 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %0, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @16, i32 0, i32 0))
+  %107 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %98, i32 0, i32 0
+  %108 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %99, i32 0, i32 0
+  %109 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %107, i32 0, i32 2
+  %110 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %107, i32 0, i32 0
+  store i1 true, i1* %110, align 1
+  %111 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %107, i32 0, i32 1
+  store i8* %106, i8** %111, align 8
+  store { i8*, i32, i32, i32, i32 }* %108, { i8*, i32, i32, i32, i32 }** %109, align 8
+  %112 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %107, i32 0, i32 3
+  store i32 1, i32* %112, align 4
+  %113 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %98, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %0, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %113, i32 1, i8* getelementptr inbounds ([143 x i8], [143 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([35 x i8], [35 x i8]* @14, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
   call void @exit(i32 1)
   unreachable
 
 ifcont23:                                         ; preds = %loop.end
-  %116 = getelementptr [2 x i32], [2 x i32]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 0
+  %114 = getelementptr [2 x i32], [2 x i32]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 0
   store i32 2, i32* %call_arg_value, align 4
-  %117 = call i32 @_lcompilers_Any_4_1_0_logical____0(i32* %116, i32* %call_arg_value)
-  store i32 %117, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
-  %118 = load i32, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
-  %119 = load i32, i32* %toomany, align 4
-  %120 = load i32, i32* %test, align 4
-  %121 = xor i32 %120, 1
-  %122 = and i32 %119, %121
-  %123 = load i32, i32* %toomany, align 4
-  %124 = getelementptr %modules_36_fpm_main_01.fpm_run_settings_class, %modules_36_fpm_main_01.fpm_run_settings_class* %settings, i32 0, i32 1
-  %125 = load %modules_36_fpm_main_01.fpm_run_settings*, %modules_36_fpm_main_01.fpm_run_settings** %124, align 8
-  %126 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %125, i32 0, i32 3
-  %127 = getelementptr %string_descriptor, %string_descriptor* %126, i32 0, i32 0
-  %128 = load i8*, i8** %127, align 8
-  %129 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %130 = call i32 @str_compare(i8* %128, i64 6, i8* %129, i64 0)
-  %131 = icmp ne i32 %130, 0
-  %132 = zext i1 %131 to i32
-  %133 = and i32 %123, %132
-  %134 = or i32 %122, %133
-  %135 = getelementptr %modules_36_fpm_main_01.fpm_run_settings_class, %modules_36_fpm_main_01.fpm_run_settings_class* %settings, i32 0, i32 1
-  %136 = load %modules_36_fpm_main_01.fpm_run_settings*, %modules_36_fpm_main_01.fpm_run_settings** %135, align 8
-  %137 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %136, i32 0, i32 0
-  %138 = getelementptr %modules_36_fpm_main_01.fpm_build_settings, %modules_36_fpm_main_01.fpm_build_settings* %137, i32 0, i32 0
-  %139 = load i32, i32* %138, align 4
-  %140 = xor i32 %139, 1
-  %141 = and i32 %134, %140
-  %142 = or i32 %118, %141
-  %143 = icmp ne i32 %142, 0
-  br i1 %143, label %then24, label %else25
+  %115 = call i32 @_lcompilers_Any_4_1_0_logical____0(i32* %114, i32* %call_arg_value)
+  store i32 %115, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
+  %116 = load i32, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
+  %117 = load i32, i32* %toomany, align 4
+  %118 = load i32, i32* %test, align 4
+  %119 = xor i32 %118, 1
+  %120 = and i32 %117, %119
+  %121 = load i32, i32* %toomany, align 4
+  %122 = getelementptr %modules_36_fpm_main_01.fpm_run_settings_class, %modules_36_fpm_main_01.fpm_run_settings_class* %settings, i32 0, i32 1
+  %123 = load %modules_36_fpm_main_01.fpm_run_settings*, %modules_36_fpm_main_01.fpm_run_settings** %122, align 8
+  %124 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %123, i32 0, i32 3
+  %125 = getelementptr %string_descriptor, %string_descriptor* %124, i32 0, i32 0
+  %126 = load i8*, i8** %125, align 8
+  %127 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %128 = call i32 @str_compare(i8* %126, i64 6, i8* %127, i64 0)
+  %129 = icmp ne i32 %128, 0
+  %130 = zext i1 %129 to i32
+  %131 = and i32 %121, %130
+  %132 = or i32 %120, %131
+  %133 = getelementptr %modules_36_fpm_main_01.fpm_run_settings_class, %modules_36_fpm_main_01.fpm_run_settings_class* %settings, i32 0, i32 1
+  %134 = load %modules_36_fpm_main_01.fpm_run_settings*, %modules_36_fpm_main_01.fpm_run_settings** %133, align 8
+  %135 = getelementptr %modules_36_fpm_main_01.fpm_run_settings, %modules_36_fpm_main_01.fpm_run_settings* %134, i32 0, i32 0
+  %136 = getelementptr %modules_36_fpm_main_01.fpm_build_settings, %modules_36_fpm_main_01.fpm_build_settings* %135, i32 0, i32 0
+  %137 = load i32, i32* %136, align 4
+  %138 = xor i32 %137, 1
+  %139 = and i32 %132, %138
+  %140 = or i32 %116, %139
+  %141 = icmp ne i32 %140, 0
+  br i1 %141, label %then24, label %else25
 
 then24:                                           ; preds = %ifcont23
   br label %ifcont26
