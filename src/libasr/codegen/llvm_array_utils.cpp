@@ -632,16 +632,19 @@ namespace LCompilers {
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
                 llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE);
-                llvm::Value* stride = this->get_stride(
-                    this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                llvm::Value* source_dim_des = this->get_pointer_to_dimension_descriptor(
+                    source_dim_des_arr,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, r)));
+                llvm::Value* stride = this->get_stride(source_dim_des);
                 builder->CreateStore(stride, s_val);
                 llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
-                llvm::Value* dim_size = this->get_dimension_size(
-                   this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                // Preserve the source descriptor's lower bound; previously this
+                // hardcoded 1, which silently dropped explicit lower bounds when
+                // an assumed-shape array was forwarded through a chain of calls.
+                llvm::Value* lower_bound = this->get_lower_bound(source_dim_des);
+                builder->CreateStore(lower_bound, l_val);
+                llvm::Value* dim_size = this->get_dimension_size(source_dim_des);
                 builder->CreateStore(dim_size, dim_size_ptr);
             }
         }
