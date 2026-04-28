@@ -2360,6 +2360,7 @@ RUN(NAME derived_types_134 LABELS gfortran llvm EXTRAFILES derived_types_134_mod
 RUN(NAME derived_types_135 LABELS gfortran llvm)
 RUN(NAME derived_types_136 LABELS gfortran llvm)
 RUN(NAME derived_types_137 LABELS gfortran llvm)
+RUN(NAME derived_types_138 LABELS gfortran llvm)
 RUN(NAME derived_types_apply_clip_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 
