@@ -2681,6 +2681,15 @@ static void format_double_fortran(char* result, double val) {
 // For F-format (no exponent): right-justify in (total_width - e_trail),
 // then append e_trail trailing blanks.
 // For E-format (contains 'E'): right-justify in total_width.
+static void pad_complex_field(char* result, int total_width) {
+    int len = (int)strlen(result);
+    if (len < total_width) {
+        memmove(result + total_width - len, result, len);
+        memset(result, ' ', total_width - len);
+    }
+    result[total_width > len ? total_width : len] = '\0';
+}
+
 static void pad_real_field(char* result, int total_width, int e_trail) {
     int len = (int)strlen(result);
     bool is_e = (strchr(result, 'E') != NULL || strchr(result, 'e') != NULL);
@@ -2739,6 +2748,7 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 format_double_fortran(real_str, real);
                 format_double_fortran(imag_str, imag);
                 sprintf(result, "(%s,%s)", real_str, imag_str);
+                pad_complex_field(result, 2*25 + 3);
             } else {
                 format_double_fortran(result, *(double*)arg);
                 pad_real_field(result, 25, 5);
@@ -2753,6 +2763,7 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 format_float_fortran(real_str, real);
                 format_float_fortran(imag_str, imag);
                 sprintf(result, "(%s,%s)", real_str, imag_str);
+                pad_complex_field(result, 2*16 + 3);
             } else {
                 format_float_fortran(result, *(float*)arg);
                 pad_real_field(result, 16, 4);
