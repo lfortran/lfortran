@@ -16530,6 +16530,68 @@ public:
         return fn;
     }
 
+    void emit_string_read_loop(ASR::ttype_t* elem_type, llvm::Type* llvm_elem_type,
+            llvm::Value* section_ptr, llvm::Value* size,
+            llvm::Value* str_src_data, llvm::Value* str_src_len,
+            llvm::Value* iostat, llvm::Value* str_offset,
+            ASR::expr_t* value_expr) {
+        std::string rt_name = "_lfortran_string_read_" +
+            ASRUtils::type_to_str_python_expr(elem_type, value_expr);
+        llvm::Function* str_fn = module->getFunction(rt_name);
+        if (!str_fn) {
+            llvm::FunctionType *ft = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context),
+                { character_type,
+                  llvm::Type::getInt64Ty(context),
+                  character_type,
+                  llvm_elem_type->getPointerTo(),
+                  llvm::Type::getInt32Ty(context)->getPointerTo(),
+                  llvm::Type::getInt64Ty(context)->getPointerTo()
+                }, false);
+            str_fn = llvm::Function::Create(ft,
+                llvm::Function::ExternalLinkage, rt_name, module.get());
+        }
+        llvm::Value* fmt = nullptr;
+        if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+            int a_kind = ASR::down_cast<ASR::Real_t>(elem_type)->m_kind;
+            fmt = a_kind == 4 ?
+                LCompilers::create_global_string_ptr(context, *module, *builder, "%f") :
+                LCompilers::create_global_string_ptr(context, *module, *builder, "%lf");
+        } else if (ASR::is_a<ASR::Integer_t>(*elem_type)) {
+            int a_kind = ASR::down_cast<ASR::Integer_t>(elem_type)->m_kind;
+            fmt = a_kind == 4 ?
+                LCompilers::create_global_string_ptr(context, *module, *builder, "%d") :
+                LCompilers::create_global_string_ptr(context, *module, *builder, "%ld");
+        } else if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+            fmt = LCompilers::create_global_string_ptr(context, *module, *builder, "%d");
+        } else if (ASR::is_a<ASR::Complex_t>(*elem_type)) {
+            int a_kind = ASR::down_cast<ASR::Complex_t>(elem_type)->m_kind;
+            fmt = a_kind == 4 ?
+                LCompilers::create_global_string_ptr(context, *module, *builder, " (%f,%f)") :
+                LCompilers::create_global_string_ptr(context, *module, *builder, " (%lf,%lf)");
+        }
+        llvm::Function* parent_fn = builder->GetInsertBlock()->getParent();
+        llvm::Value* idx = llvm_utils->CreateAlloca(*builder,
+            llvm::Type::getInt32Ty(context), nullptr, "str_read_idx");
+        builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), idx);
+        llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "str_idl.cond", parent_fn);
+        llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "str_idl.body", parent_fn);
+        llvm::BasicBlock* loop_end = llvm::BasicBlock::Create(context, "str_idl.end", parent_fn);
+        builder->CreateBr(loop_cond);
+        builder->SetInsertPoint(loop_cond);
+        llvm::Value* cur_idx = builder->CreateLoad(llvm::Type::getInt32Ty(context), idx);
+        llvm::Value* cond = builder->CreateICmpSLT(cur_idx, size);
+        builder->CreateCondBr(cond, loop_body, loop_end);
+        builder->SetInsertPoint(loop_body);
+        llvm::Value* elem_ptr = llvm_utils->create_ptr_gep2(llvm_elem_type, section_ptr, cur_idx);
+        builder->CreateCall(str_fn, {str_src_data, str_src_len, fmt, elem_ptr, iostat, str_offset});
+        llvm::Value* next_idx = builder->CreateAdd(cur_idx,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+        builder->CreateStore(next_idx, idx);
+        builder->CreateBr(loop_cond);
+        builder->SetInsertPoint(loop_end);
+    }
+
     void generate_read_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
             llvm::Value* unit_val, llvm::Value* iostat) {
         ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
@@ -16987,15 +17049,21 @@ public:
                                     }
                                     size = builder->CreateIntCast(size, llvm::Type::getInt32Ty(context), true);
 
-                                    llvm::Function* fn = get_read_function(arr_type);
-                                    llvm::Value* stride_val = llvm::ConstantInt::get(
-                                        llvm::Type::getInt32Ty(context), 1);
-                                    if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
-                                        int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-                                        llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
-                                        builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
+                                    if (is_string) {
+                                        emit_string_read_loop(elem_type, llvm_elem_type,
+                                            section_ptr, size, str_src_data, str_src_len,
+                                            iostat, str_offset, idl->m_values[0]);
                                     } else {
-                                        builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
+                                        llvm::Function* fn = get_read_function(arr_type);
+                                        llvm::Value* stride_val = llvm::ConstantInt::get(
+                                            llvm::Type::getInt32Ty(context), 1);
+                                        if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+                                            int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                                            llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
+                                            builder->CreateCall(fn, {section_ptr, size, kind_val, stride_val, unit_val, iostat});
+                                        } else {
+                                            builder->CreateCall(fn, {section_ptr, size, stride_val, unit_val, iostat});
+                                        }
                                     }
                                     continue;
                                 }
@@ -17018,7 +17086,11 @@ public:
                                         data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), arr_ptr);
                                     }
                                 } else {
-                                    data_ptr = arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr);
+                                    if (ASRUtils::is_allocatable(arr_type) || ASRUtils::is_pointer(arr_type)) {
+                                        arr_ptr = llvm_utils->CreateLoad2(llvm_arr_type->getPointerTo(), arr_ptr);
+                                    }
+                                    data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(),
+                                        arr_descr->get_pointer_to_data(llvm_arr_type, arr_ptr));
                                 }
 
                                 // Compute pointer to start element (1-based indexing)
@@ -17026,9 +17098,7 @@ public:
                                 llvm::Value* start_idx = tmp;
                                 llvm::Value* offset = builder->CreateSub(start_idx,
                                     llvm::ConstantInt::get(start_idx->getType(), 1));
-                                llvm::Value* section_ptr = is_pointer_array ?
-                                    llvm_utils->create_ptr_gep2(llvm_elem_type, data_ptr, offset) :
-                                    llvm_utils->create_gep2(llvm_elem_type, data_ptr, offset);
+                                llvm::Value* section_ptr = llvm_utils->create_ptr_gep2(llvm_elem_type, data_ptr, offset);
 
                                 // Compute size: (end - start) / inc + 1
                                 this->visit_expr_wrapper(idl->m_end, true);
@@ -17065,6 +17135,10 @@ public:
                                     std::vector<llvm::Value*> args = {str_src_data, str_src_len, fmt_val, arr_data, elem_len_llvm};
                                     builder->CreateCall(module->getOrInsertFunction(
                                             "_lfortran_string_read_str_array", str_arr_ft), args);
+                                } else if (is_string) {
+                                    emit_string_read_loop(elem_type, llvm_elem_type,
+                                        section_ptr, size, str_src_data, str_src_len,
+                                        iostat, str_offset, idl->m_values[0]);
                                 } else {
                                     llvm::Function* fn = get_read_function(arr_type);
                                     llvm::Value* stride_val = llvm::ConstantInt::get(
