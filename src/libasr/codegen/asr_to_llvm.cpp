@@ -11226,7 +11226,31 @@ public:
 
         llvm::Value *target, *value;
         uint32_t h;
-        if( x.m_target->type == ASR::exprType::ArrayItem ||
+        if( x.m_target->type == ASR::exprType::ArrayPhysicalCast ) {
+            ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_target);
+            ASR::ttype_t* src_asr_type = ASRUtils::expr_type(apc->m_arg);
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2 - LLVM::is_llvm_pointer(*src_asr_type);
+            this->visit_expr_wrapper(apc->m_arg, false);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* arg = tmp;
+            if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                !ASRUtils::is_array(apc->m_type)) {
+                llvm::Type* data_type = llvm_utils->get_el_type(
+                    apc->m_arg, ASRUtils::extract_type(src_asr_type), module.get());
+                llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(apc->m_arg,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(src_asr_type)),
+                    module.get());
+                target = llvm_utils->CreateLoad2(data_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(arr_type, arg));
+            } else {
+                is_assignment_target = true;
+                this->visit_expr(*apc->m_arg);
+                is_assignment_target = false;
+                target = tmp;
+            }
+        } else if( x.m_target->type == ASR::exprType::ArrayItem ||
             x.m_target->type == ASR::exprType::StringItem ||
             x.m_target->type == ASR::exprType::StringSection ||
             x.m_target->type == ASR::exprType::ArraySection ||
