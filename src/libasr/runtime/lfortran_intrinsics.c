@@ -3454,10 +3454,18 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             if (abs_val > 0.0) {
                                 exp = (int)floor(log10(abs_val)) + 1;
                             }
-                            double scale = pow(10.0, -exp);
-                            double final_val = double_val * scale;
+                            // Apply Fortran scale factor (kP): shift
+                            // mantissa digits and adjust exponent
+                            exp -= scale;
+                            int adjusted_precision = precision;
+                            if (scale > 1 && scale <= precision + 1) {
+                                adjusted_precision = precision - scale + 1;
+                            }
+                            if (adjusted_precision < 0) adjusted_precision = 0;
+                            double norm = pow(10.0, -exp);
+                            double final_val = double_val * norm;
                             char mantissa[64], exponent[16];
-                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
+                            snprintf(mantissa, sizeof(mantissa), "%.*f", adjusted_precision, final_val);
                             if (exp_digits > 0) {
                                 int exp_width = exp_digits + 1;
                                 // Keep width bounded so snprintf target size is provably safe.
