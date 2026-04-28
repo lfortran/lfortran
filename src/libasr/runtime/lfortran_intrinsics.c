@@ -2714,24 +2714,26 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
 }
 
 void strip_outer_parenthesis(const char* str, int len, char* output) {
-    if (len >= 2 && str[0] == '(' && str[len - 1] == ')') {
+    if (len >= 2 && str[0] == '(') {
         int nest = 0;
         int i;
-        // Check balance: if the outermost '(' is properly closed by the last character
+        // Locate the ')' matching the outermost '('. Any characters past that
+        // closing ')' are silently ignored (matches behavior of other compilers
+        // such as flang/gfortran for `print "(a)xx"` etc.).
         for (i = 0; i < len; i++) {
             if (str[i] == '(') {
                 nest++;
             } else if (str[i] == ')') {
                 nest--;
-                // If the nesting level reaches 0 before the end, the outermost ')' isn't at len-1
                 if (nest == 0) {
                     break;
                 }
             }
         }
-        
+
         if (nest == 0) {
-            // Copy the string without outer parentheses
+            // Copy the string without outer parentheses (and drop any trailing
+            // characters beyond the matching ')').
             memmove(output, output + 1, len);
             output[i - 1] = '\0';
         } else {
