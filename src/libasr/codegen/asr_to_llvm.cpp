@@ -8744,6 +8744,17 @@ public:
         llvm::Value* base_data_ptr = nullptr;
 
         if (base_ptype == ASR::array_physical_typeType::DescriptorArray) {
+            // If sim->m_v is itself a struct member access of an
+            // allocatable/pointer array (e.g. v%n where n is allocatable),
+            // the visited value is a pointer-to-pointer-to-descriptor
+            // because the array descriptor for an allocatable struct
+            // component is stored as a pointer inside the parent struct.
+            // Dereference once so base_array_desc is %descriptor*.
+            if (LLVM::is_llvm_pointer(*base_type) &&
+                ASR::is_a<ASR::StructInstanceMember_t>(*sim->m_v)) {
+                base_array_desc = llvm_utils->CreateLoad2(
+                    base_array_llvm_type->getPointerTo(), base_array_desc);
+            }
             base_data_ptr = arr_descr->get_pointer_to_data(
                 sim->m_v, base_struct_array_type, base_array_desc, module.get());
             base_data_ptr = llvm_utils->CreateLoad2(struct_llvm_type->getPointerTo(), base_data_ptr);
