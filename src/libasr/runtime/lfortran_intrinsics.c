@@ -2795,10 +2795,6 @@ static inline int64_t get_current_record_start(int64_t result_len, const char* r
     return i + 1;
 }
 
-static inline int64_t get_current_record_column(int64_t result_len, const char* result) {
-    return result_len - get_current_record_start(result_len, result) + 1;
-}
-
 static inline char* write_to_result_at_pos(lfortran_allocator_t* al,
         char* dest, int64_t* used_len, int64_t pos,
         const char* src, int64_t src_len) {
@@ -2994,8 +2990,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     // handle "TL" format specifier - move position left
                     int tab_left_pos = atoi(value + 2);
                     if (tab_left_pos > 0) {
-                        int64_t record_start = get_current_record_start(result_extent, result);
-                        int64_t current_col = get_current_record_column(result_len, result);
+                        // For cases with both TR and TL, for example, (TR5, TL3, A)
+                        // The issue is TR moves the cursor right, but it doesn't write spaces 
+                        // into buffer yet. Buffer is empty or has garbage values. 
+                        // So, instead of buffer, use current cursor value to know current column value
+                        int64_t search_pos = result_len > result_extent ? result_extent : result_len;
+                        int64_t record_start = get_current_record_start(search_pos, result);
+                        int64_t current_col = result_len - record_start + 1;
                         int64_t target_col = current_col - tab_left_pos;
                         if (target_col < 1) target_col = 1;
                         result_len = record_start + (target_col - 1);
