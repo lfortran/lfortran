@@ -3019,26 +3019,50 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                        (tolower(value[1]) == 'n' || tolower(value[1]) == 'z')) {
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
-                    // handle "TL" format specifier - move position left
+                    // handle "TL" format specifier - move position left.
+                    // Clamp the backward record-start scan to result_extent so
+                    // we never read uninitialized memory past the buffer when
+                    // a prior positional advance left result_len > result_extent.
                     int tab_left_pos = atoi(value + 2);
                     if (tab_left_pos > 0) {
-                        int64_t record_start = get_current_record_start(result_extent, result);
-                        int64_t current_col = get_current_record_column(result_len, result);
+                        int64_t search_pos = result_len > result_extent ? result_extent : result_len;
+                        int64_t record_start = get_current_record_start(search_pos, result);
+                        int64_t current_col = result_len - record_start + 1;
                         int64_t target_col = current_col - tab_left_pos;
                         if (target_col < 1) target_col = 1;
                         result_len = record_start + (target_col - 1);
                     }
                 } else if (tolower(value[1]) == 'r') {
-                    // handle "TR" format specifier - move cursor right
+                    // handle "TR" format specifier - move cursor right.
+                    // Grow the buffer (padding with spaces) so result_extent
+                    // stays in sync with result_len; otherwise subsequent
+                    // record-start scans may read uninitialized memory.
                     int spaces_needed = atoi(value + 2);
                     if (spaces_needed > 0) {
-                        result_len += spaces_needed;
+                        int64_t new_pos = result_len + spaces_needed;
+                        if (new_pos > result_extent) {
+                            result = (char*)ALLOCATOR_REALLOC(al, result,
+                                (new_pos + 1) * sizeof(char));
+                            memset(result + result_extent, ' ',
+                                (size_t)(new_pos - result_extent));
+                            result_extent = new_pos;
+                            result[result_extent] = '\0';
+                        }
+                        result_len = new_pos;
                     }
                 } else {
                     int tab_position = atoi(value + 1);
                     int64_t search_pos = result_len > result_extent ? result_extent : result_len;
                     int64_t record_start = get_current_record_start(search_pos, result);
                     int64_t target_len = record_start + (tab_position - 1);
+                    if (target_len > result_extent) {
+                        result = (char*)ALLOCATOR_REALLOC(al, result,
+                            (target_len + 1) * sizeof(char));
+                        memset(result + result_extent, ' ',
+                            (size_t)(target_len - result_extent));
+                        result_extent = target_len;
+                        result[result_extent] = '\0';
+                    }
                     result_len = target_len;
                 }
             } else {
