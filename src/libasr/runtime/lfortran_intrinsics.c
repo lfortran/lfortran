@@ -2676,6 +2676,32 @@ static void format_double_fortran(char* result, double val) {
     sprintf(result, format_str, val);
 }
 
+// Pad a formatted real number to a fixed-width field matching Fortran
+// list-directed G descriptor output (e.g., G16.8E2 for real*4).
+// For F-format (no exponent): right-justify in (total_width - e_trail),
+// then append e_trail trailing blanks.
+// For E-format (contains 'E'): right-justify in total_width.
+static void pad_real_field(char* result, int total_width, int e_trail) {
+    int len = (int)strlen(result);
+    bool is_e = (strchr(result, 'E') != NULL || strchr(result, 'e') != NULL);
+    if (is_e) {
+        if (len < total_width) {
+            memmove(result + total_width - len, result, len);
+            memset(result, ' ', total_width - len);
+        }
+        result[total_width > len ? total_width : len] = '\0';
+    } else {
+        int f_width = total_width - e_trail;
+        if (len < f_width) {
+            memmove(result + f_width - len, result, len);
+            memset(result, ' ', f_width - len);
+            len = f_width;
+        }
+        memset(result + len, ' ', e_trail);
+        result[len + e_trail] = '\0';
+    }
+}
+
 // Returns the length of the string that is printed inside result
 int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
@@ -2715,6 +2741,7 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 sprintf(result, "(%s,%s)", real_str, imag_str);
             } else {
                 format_double_fortran(result, *(double*)arg);
+                pad_real_field(result, 25, 5);
             }
             break;
         case FLOAT_32_TYPE:
@@ -2728,6 +2755,7 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 sprintf(result, "(%s,%s)", real_str, imag_str);
             } else {
                 format_float_fortran(result, *(float*)arg);
+                pad_real_field(result, 16, 4);
             }
             break;
         case LOGICAL_8_TYPE:
@@ -2795,8 +2823,8 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
 void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
-    const int default_spacing_len = 4;
-    const char* default_spacing = "    ";
+    const int default_spacing_len = 1;
+    const char* default_spacing = " ";
     ASSERT(default_spacing_len == strlen(default_spacing));
     *result = ALLOCATOR_REALLOC(al, *result, result_capacity + 1 /*Null Character*/ );
     bool prev_is_char = false;
