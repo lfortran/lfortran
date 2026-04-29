@@ -7546,13 +7546,44 @@ public:
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                         !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
                         llvm_arg.getType()->isPointerTy()) {
-                        llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
-                            nullptr, arg->m_type, module.get());
-                        llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
-                        llvm::Value* local_copy = builder->CreateAlloca(
-                            val_type, nullptr, std::string(arg->m_name) + "_value");
-                        builder->CreateStore(loaded, local_copy);
-                        llvm_sym = local_copy;
+                        if (ASRUtils::is_array(arg->m_type)) {
+                            // Array dummy with VALUE attribute: copy the caller's
+                            // data into a local buffer so callee modifications do
+                            // not affect the caller. Currently support fixed-size
+                            // PointerArray (explicit-shape) arguments.
+                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_allocatable_pointer(arg->m_type));
+                            if (array_t->m_physical_type == ASR::array_physical_typeType::PointerArray
+                                && ASRUtils::is_fixed_size_array(array_t->m_dims, array_t->n_dims)) {
+                                llvm::Type* el_type = llvm_utils->get_el_type(
+                                    nullptr, array_t->m_type, module.get());
+                                int64_t size = ASRUtils::get_fixed_size_of_array(
+                                    array_t->m_dims, array_t->n_dims);
+                                llvm::Type* arr_type = llvm::ArrayType::get(el_type, size);
+                                llvm::Value* local_copy_arr = builder->CreateAlloca(
+                                    arr_type, nullptr, std::string(arg->m_name) + "_value");
+                                uint64_t el_size = module->getDataLayout()
+                                    .getTypeAllocSize(el_type);
+                                uint64_t total_bytes = el_size * (uint64_t)size;
+                                builder->CreateMemCpy(
+                                    local_copy_arr, llvm::MaybeAlign(),
+                                    llvm_sym, llvm::MaybeAlign(),
+                                    total_bytes);
+                                llvm::Value* zero = llvm::ConstantInt::get(
+                                    context, llvm::APInt(32, 0));
+                                llvm::Value* data_ptr = llvm_utils->CreateInBoundsGEP2(
+                                    arr_type, local_copy_arr, {zero, zero});
+                                llvm_sym = data_ptr;
+                            }
+                        } else {
+                            llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
+                                nullptr, arg->m_type, module.get());
+                            llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
+                            llvm::Value* local_copy = builder->CreateAlloca(
+                                val_type, nullptr, std::string(arg->m_name) + "_value");
+                            builder->CreateStore(loaded, local_copy);
+                            llvm_sym = local_copy;
+                        }
                     }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
