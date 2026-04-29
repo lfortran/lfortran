@@ -1578,7 +1578,8 @@ namespace LCompilers {
         // Move the data pointer from dest to src
         // And set the src's data pointer to null to prevent double deallocation
         void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-            llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
+            llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type,
+            bool reset_lower_bound) {
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
             llvm::Value* src_data_ptr = this->get_pointer_to_data(src_ty, src);
@@ -1633,10 +1634,15 @@ namespace LCompilers {
             // LHS receives a value via move-allocation from a temporary that
             // holds the result of a function returning an allocatable array,
             // the resulting bounds in the LHS must have lower bound 1 in
-            // every dimension. The extent and stride are preserved from the
-            // source.
-            llvm::Value* dest_lb = llvm_utils->create_gep2(dim_des, dest_dim_val, DIM_LOWER_BOUND);
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 1)), dest_lb);
+            // every dimension. The extent and stride are preserved.
+            //
+            // For `move_alloc`, however, the lower bounds of the source must
+            // be preserved on the destination. The caller passes
+            // `reset_lower_bound=false` in that case.
+            if (reset_lower_bound) {
+                llvm::Value* dest_lb = llvm_utils->create_gep2(dim_des, dest_dim_val, DIM_LOWER_BOUND);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 1)), dest_lb);
+            }
             r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             builder->CreateStore(r_val, r);
             builder->CreateBr(loophead);

@@ -727,8 +727,12 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     assignment->m_value = target;
 
                     if (value_and_target_allocatable_array) {
-                        // We are using a temporary so make this assignment a move assignment
+                        // We are using a temporary so make this assignment a move assignment.
+                        // We also set m_realloc_lhs to signal the LLVM backend that the
+                        // destination's lower bounds must be reset to 1 (intrinsic-assignment
+                        // semantics for an allocatable LHS receiving a function result).
                         assignment->m_move_allocation = true;
+                        assignment->m_realloc_lhs = true;
                     }
                 } else {
                     ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);

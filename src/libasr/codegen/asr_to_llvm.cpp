@@ -11875,7 +11875,14 @@ public:
                 llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                         ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
                 if (x.m_move_allocation) {
-                    arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
+                    // For `move_alloc`, the lower bounds of the source must be
+                    // preserved. For move-assignments synthesized by the
+                    // subroutine_from_function pass (function returning an
+                    // allocatable), Fortran intrinsic-assignment semantics
+                    // require the destination's lower bound to be reset to 1
+                    // in every dimension; that pass therefore also sets
+                    // m_realloc_lhs=true to distinguish the two cases.
+                    arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, x.m_realloc_lhs);
                 } else if (ASRUtils::is_pointer(target_type)) {
                     // Pointer targets may be associated with non-contiguous
                     // array sections (e.g. output(seq, 1:4) in a 3x4 array has
