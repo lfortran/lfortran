@@ -3823,6 +3823,32 @@ public:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                 ASRUtils::expr_type(value), ASRUtils::expr_type(object), diag);
         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
+        // Pad/trim a character string constant initializer to match the
+        // declared length of the target variable. Without this, a DATA
+        // statement like `character*6 a; data a /'ABCDE'/` would store a
+        // length-5 StringConstant as the variable's m_value, and when packed
+        // into a COMMON block (BLOCK DATA) StructConstant the layout would
+        // bleed bytes from the next member.
+        if (expression_value && ASR::is_a<ASR::StringConstant_t>(*expression_value)) {
+            ASR::ttype_t* obj_t_pure = ASRUtils::extract_type(obj_type);
+            ASR::ttype_t* val_t_pure = ASRUtils::extract_type(
+                ASRUtils::expr_type(expression_value));
+            if (ASR::is_a<ASR::String_t>(*obj_t_pure) &&
+                    ASR::is_a<ASR::String_t>(*val_t_pure)) {
+                ASR::String_t* obj_str_t = ASR::down_cast<ASR::String_t>(obj_t_pure);
+                ASR::String_t* val_str_t = ASR::down_cast<ASR::String_t>(val_t_pure);
+                int64_t lhs_len = 0, rhs_len = 0;
+                if (obj_str_t->m_len && val_str_t->m_len &&
+                        ASRUtils::extract_value(obj_str_t->m_len, lhs_len) &&
+                        ASRUtils::extract_value(val_str_t->m_len, rhs_len) &&
+                        lhs_len != rhs_len) {
+                    expression_value = adjust_character_length(
+                        expression_value, lhs_len, rhs_len,
+                        expression_value->base.loc, al);
+                    value = expression_value;
+                }
+            }
+        }
         ASR::expr_t* symbolic_expr = expression_value;
         bool is_symbolic_value = false;
         if (!expression_value) {
