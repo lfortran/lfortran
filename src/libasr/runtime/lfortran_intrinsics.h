@@ -367,7 +367,7 @@ LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat, int64_t *offset);
-LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat);
+LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values);
 LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);

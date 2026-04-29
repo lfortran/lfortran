@@ -660,12 +660,26 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (!x.m_unit || !ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit)) ||
             !ASRUtils::is_array(ASRUtils::expr_type(x.m_unit))) return;
         if (x.n_values == 0 || !ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) return;
-        
+
         ASR::StringFormat_t* fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
         if (fmt->n_args == 0) return;
         ASR::expr_t* val_arg = fmt->m_args[0];
         bool is_do_loop = ASR::is_a<ASR::ImpliedDoLoop_t>(*val_arg);
         if (!is_do_loop && !ASRUtils::is_array(ASRUtils::expr_type(val_arg))) return;
+
+        // For formatted writes with plain array values whose format contains
+        // a slash (/), skip the per-element loop transformation. The slash
+        // means "advance to next record" (next array element in internal
+        // write). Splitting into per-element writes breaks this because each
+        // call only has one value, so the slash is never reached. The LLVM
+        // codegen handles this correctly via is_string_array_unit and
+        // _lfortran_string_write's newline-based record splitting.
+        if (x.m_is_formatted && !is_do_loop && fmt->m_fmt &&
+            ASR::is_a<ASR::StringConstant_t>(*fmt->m_fmt)) {
+            ASR::StringConstant_t* fmt_str =
+                ASR::down_cast<ASR::StringConstant_t>(fmt->m_fmt);
+            if (strchr(fmt_str->m_s, '/') != nullptr) return;
+        }
 
         const Location& loc = x.base.base.loc;
         int ikind = get_index_kind();

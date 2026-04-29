@@ -3,7 +3,7 @@ program read_77
 
   integer :: i, i1, i2, idata(4)
 
-  open (42, file='fort.42', status='replace', form='formatted')
+  open (42, file='read_77.dat', status='replace', form='formatted')
   write (42, '(a)') '1234567890'
   write (42, '(a)') ' 12345'
   rewind (42)

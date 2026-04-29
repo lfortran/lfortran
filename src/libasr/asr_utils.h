@@ -2584,6 +2584,16 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
         case ASR::ttypeType::Logical: {
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, false, asr_type));
         }
+        case ASR::ttypeType::String: {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(asr_type);
+            int64_t len = 1;
+            if (str_type->m_len) {
+                ASRUtils::extract_value(str_type->m_len, len);
+            }
+            std::string blank(len, ' ');
+            return ASRUtils::EXPR(ASR::make_StringConstant_t(al, asr_type->base.loc,
+                s2c(al, blank), asr_type));
+        }
         default: {
             throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }

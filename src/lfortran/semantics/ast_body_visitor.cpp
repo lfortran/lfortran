@@ -3605,7 +3605,10 @@ public:
                 ret_val = CastingUtil::perform_casting(ret_val, int_type, al, x.base.base.loc);
                 ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
                     alt_ret_var, ret_val, nullptr, false, false));
-                current_body->push_back(al, assign);
+                tmp_vec.push_back(reinterpret_cast<ASR::asr_t*>(assign));
+                tmp_vec.push_back(ASR::make_Return_t(al, x.base.base.loc));
+                tmp = nullptr;
+                return;
             }
         }
         tmp = ASR::make_Return_t(al, x.base.base.loc);
@@ -4921,25 +4924,38 @@ public:
                     throw SemanticAbort();
                 }
                 if (ASRUtils::is_array(type)) {
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-                    ASR::dimension_t dim; dim.loc = loc; dim.m_start = nullptr; dim.m_length = nullptr;
-                    dims.push_back(al, dim);
-                    ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc,
-                                            raw_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
-                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, type->base.loc, arr_type));
-                    // create a variable of type: type
                     std::string sym_name = "";
                     if (ASR::is_a<ASR::Var_t>(*master_function_arg)) {
                         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(master_function_arg);
                         sym_name = ASRUtils::symbol_name(var->m_v);
                     }
-                    ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, master_function_arg->base.loc,
-                                            entry_function->m_symtab, s2c(al,sym_name), nullptr, 0, ASR::intentType::Local,
-                                            nullptr, nullptr, ASR::storage_typeType::Default, type, ASRUtils::get_struct_sym_from_struct_expr(master_function_arg), ASR::abiType::Source,
-                                            ASR::accessType::Public, ASR::presenceType::Required, false);
-                    ASR::symbol_t* var_sym = ASR::down_cast<ASR::symbol_t>(var_asr);
-                    entry_function->m_symtab->add_or_overwrite_symbol(sym_name, var_sym);
-                    arg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, var_sym));
+                    ASR::Array_t* master_arr = ASR::down_cast<ASR::Array_t>(
+                        ASRUtils::type_get_past_allocatable_pointer(type));
+                    if (master_arr->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                        // Use the same FixedSizeArray type as the master function
+                        // to avoid ArrayPhysicalCast and spurious allocation checks
+                        ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, master_function_arg->base.loc,
+                                                entry_function->m_symtab, s2c(al, sym_name), nullptr, 0, ASR::intentType::Local,
+                                                nullptr, nullptr, ASR::storage_typeType::Default, type, ASRUtils::get_struct_sym_from_struct_expr(master_function_arg), ASR::abiType::Source,
+                                                ASR::accessType::Public, ASR::presenceType::Required, false);
+                        ASR::symbol_t* var_sym = ASR::down_cast<ASR::symbol_t>(var_asr);
+                        entry_function->m_symtab->add_or_overwrite_symbol(sym_name, var_sym);
+                        arg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, var_sym));
+                    } else {
+                        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+                        ASR::dimension_t dim; dim.loc = loc; dim.m_start = nullptr; dim.m_length = nullptr;
+                        dims.push_back(al, dim);
+                        ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc,
+                                                raw_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+                        type = ASRUtils::TYPE(ASR::make_Pointer_t(al, type->base.loc, arr_type));
+                        ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, master_function_arg->base.loc,
+                                                entry_function->m_symtab, s2c(al, sym_name), nullptr, 0, ASR::intentType::Local,
+                                                nullptr, nullptr, ASR::storage_typeType::Default, type, ASRUtils::get_struct_sym_from_struct_expr(master_function_arg), ASR::abiType::Source,
+                                                ASR::accessType::Public, ASR::presenceType::Required, false);
+                        ASR::symbol_t* var_sym = ASR::down_cast<ASR::symbol_t>(var_asr);
+                        entry_function->m_symtab->add_or_overwrite_symbol(sym_name, var_sym);
+                        arg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, var_sym));
+                    }
                 }
             }
             ASR::call_arg_t call_arg; call_arg.loc = loc; call_arg.m_value = arg; args.push_back(al, call_arg);
@@ -5068,7 +5084,18 @@ public:
                             }
                         }
                     }
-                    stmt_vector.push_back(s);
+                    if (is_main_function && return_encountered && !entry_encountered) {
+                        after_return_stmt_entry_function.push_back(s);
+                    } else if (is_main_function && entry_encountered && return_encountered) {
+                        break;
+                    } else if (!is_main_function && return_encountered && is_last) {
+                        after_return_stmt_entry_function.push_back(s);
+                    } else {
+                        stmt_vector.push_back(s);
+                    }
+                    if (s->type == ASR::stmtType::Return) {
+                        return_encountered = true;
+                    }
                 }
                 this->tmp_vec.clear();
             }
