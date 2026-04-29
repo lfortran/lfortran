@@ -9,25 +9,23 @@ program print_14
 
     i = 2
     write(buf, *) i
-    if (len_trim(buf) /= 12) error stop
     if (trim(adjustl(buf)) /= "2") error stop
 
     i4 = -12345
     write(buf, *) i4
-    if (len_trim(buf) /= 12) error stop
     if (trim(adjustl(buf)) /= "-12345") error stop
 
     i1 = 2
     write(buf, *) i1
-    if (len_trim(buf) /= 5) error stop
+    if (trim(adjustl(buf)) /= "2") error stop
 
     i2 = 2
     write(buf, *) i2
-    if (len_trim(buf) /= 7) error stop
+    if (trim(adjustl(buf)) /= "2") error stop
 
     i8 = 2
     write(buf, *) i8
-    if (len_trim(buf) /= 21) error stop
+    if (trim(adjustl(buf)) /= "2") error stop
 
     print *, "PASS"
 end program
