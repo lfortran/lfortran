@@ -2846,6 +2846,7 @@ RUN(NAME file_67 LABELS gfortran llvm)
 RUN(NAME file_68 LABELS gfortran llvm)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME file_close_02 LABELS gfortran llvm)
 
 RUN(NAME file_open_01 LABELS llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME file_open_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

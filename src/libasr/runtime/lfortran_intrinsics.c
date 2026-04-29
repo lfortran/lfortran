@@ -12093,13 +12093,21 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
 
     bool delete_requested = false;
     if (status && status_len > 0) {
-        // Compare to "delete" without assuming null-termination
+        // Compare to "delete" case-insensitively without assuming null-termination
         const char delete_str[] = "delete";
         const int64_t delete_len = sizeof(delete_str) - 1;
 
-        if (status_len == delete_len &&
-            strncmp(status, delete_str, delete_len) == 0) {
-            delete_requested = true;
+        if (status_len == delete_len) {
+            bool match = true;
+            for (int64_t i = 0; i < delete_len; i++) {
+                if (tolower((unsigned char)status[i]) != delete_str[i]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                delete_requested = true;
+            }
         }
     }
 
