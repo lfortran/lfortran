@@ -958,9 +958,14 @@ public:
 
         // Allow any variable that is either external, is not defined in this scope,
         // or is not a function argument (e.g., COMMON variables used as dimension bounds)
-        // to pass FunctionType verification
-        if (is_a<ASR::Variable_t>(*s) && (is_a<ASR::ExternalSymbol_t>(*x.m_v) ||
-            (_is_return_type_string && !current_symtab->get_symbol(x_mv_name)))) {
+        // to pass FunctionType verification.
+        // When check_external is false (e.g. during modfile deserialization),
+        // s is not dereferenced past ExternalSymbol, so we must also accept
+        // ExternalSymbol directly — its target cannot be verified yet.
+        if (is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
+            non_global_symbol_visited = false;
+        } else if (is_a<ASR::Variable_t>(*s) &&
+            (_is_return_type_string && !current_symtab->get_symbol(x_mv_name))) {
             non_global_symbol_visited = false;
         } else if (is_a<ASR::Variable_t>(*s) && current_symtab &&
                    ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) &&
