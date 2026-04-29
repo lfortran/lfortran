@@ -1,35 +1,40 @@
 program write_38
-! Test list-directed output field width for real values.
+! Test list-directed output for real values in a portable way.
 !
-! The leading record blank is processor-dependent, so we strip any
-! leading blanks via adjustl and check the remaining content (which
-! includes the field's internal/trailing pad).
+! The exact field width and number of fractional digits emitted by
+! list-directed WRITE(*,*) for reals is processor-dependent (GFortran/
+! LFortran use Gw.dEe-style fixed widths; Flang uses minimal widths).
+! The portable, standard-mandated property is that list-directed output
+! is itself valid list-directed input, so we round-trip values via an
+! internal read and verify them within tolerance.
 implicit none
-real :: x
-real(8) :: d
-character(len=100) :: line, t
+real :: x, y
+real(8) :: d, e
+character(len=100) :: line
 
 x = 2.5
 write(line, *) x
-t = adjustl(line)
-if (t(1:14) /= '2.50000000    ') error stop
+y = 0.0
+read(line, *) y
+if (abs(y - x) > 1.0e-6) error stop
 
 d = 2.5d0
 write(line, *) d
-t = adjustl(line)
-if (t(1:23) /= '2.5000000000000000     ') error stop
+e = 0.0d0
+read(line, *) e
+if (abs(e - d) > 1.0d-14) error stop
 
-! Test zero
 x = 0.0
 write(line, *) x
-t = adjustl(line)
-if (t(1:14) /= '0.00000000    ') error stop
+y = 1.0
+read(line, *) y
+if (y /= 0.0) error stop
 
-! Test E-format (small value)
 x = 0.05
 write(line, *) x
-t = adjustl(line)
-if (t(1:14) /= '5.00000007E-02') error stop
+y = 0.0
+read(line, *) y
+if (abs(y - x) > 1.0e-6) error stop
 
 print *, "All list-directed real formatting tests passed."
 end program

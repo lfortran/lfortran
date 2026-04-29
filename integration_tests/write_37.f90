@@ -1,36 +1,37 @@
 program write_37
-! Test list-directed output spacing for integers.
+! Test list-directed output for integers in a portable way.
 !
-! The leading record blank is processor-dependent, so each assertion
-! accepts either the with-blank length N or the without-blank length N-1.
+! The exact output spacing (leading record blank, field width, inter-value
+! separator) is processor-dependent: GFortran/LFortran use a 12-char field
+! per integer, Flang uses a minimal width. The portable, standard-mandated
+! property is that list-directed output is itself valid list-directed input,
+! so we round-trip values via an internal read.
 implicit none
-integer :: i, n
+integer :: i, j, k
 character(len=100) :: line
 
-! Two integers: leading blank + 11-char field + 1-space sep + 11-char field = 24
-! Without leading blank: 23
 write(line, *) 1, 2
-n = len_trim(line)
-if (n /= 24 .and. n /= 23) error stop
+i = 0; j = 0
+read(line, *) i, j
+if (i /= 1 .or. j /= 2) error stop
 
-! Three integers: leading blank + 11 + 1 + 11 + 1 + 11 = 36 (or 35 without blank)
 write(line, *) 1, 2, 3
-n = len_trim(line)
-if (n /= 36 .and. n /= 35) error stop
+i = 0; j = 0; k = 0
+read(line, *) i, j, k
+if (i /= 1 .or. j /= 2 .or. k /= 3) error stop
 
-! Single integer: leading blank + 11-char field = 12 (or 11 without blank)
 write(line, *) 42
-n = len_trim(line)
-if (n /= 12 .and. n /= 11) error stop
-
-! Negative integers: same widths
-write(line, *) -1, -2
-n = len_trim(line)
-if (n /= 24 .and. n /= 23) error stop
-
-! Verify values via internal read
 i = 0
+read(line, *) i
+if (i /= 42) error stop
+
+write(line, *) -1, -2
+i = 0; j = 0
+read(line, *) i, j
+if (i /= -1 .or. j /= -2) error stop
+
 write(line, *) 12345
+i = 0
 read(line, *) i
 if (i /= 12345) error stop
 
