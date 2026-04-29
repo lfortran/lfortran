@@ -1417,7 +1417,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         } else {
             int exp_width = exp + 1;
             if (exp_width > 10) exp_width = 10;
-            snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+            if (exp_width < 1) exp_width = 1;
+            int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+            if (len < 0 || len >= (int)sizeof(exponent)) {
+                goto overflow;
+            }
         }
         // Recalculate spaces if exponent length changed
         int new_exp_length = strlen(exponent);
