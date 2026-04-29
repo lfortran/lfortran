@@ -5589,6 +5589,13 @@ public:
                 ASRUtils::type_get_past_allocatable(x.m_type)),
                 module.get(), x.m_abi);
             if (ASRUtils::is_array(x.m_type)) {  // memorize arrays only.
+                // For array pointers/allocatables, an init from null() is a
+                // bare element-pointer constant whose LLVM type doesn't match
+                // the pointer-to-descriptor global type; drop it and let the
+                // companion-descriptor path below run instead.
+                if (init_value && init_value->getType() != x_ptr) {
+                    init_value = nullptr;
+                }
                 allocatable_array_details.push_back(
                     { ASRUtils::EXPR(ASR::make_Var_t(
                           al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
