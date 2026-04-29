@@ -1000,6 +1000,10 @@ class ASRToLLVMVisitor;
         :   llvm_utils_(llvm_utils), builder_(builder), al_(al), asr_to_llvm_visitor_(asr_to_llvm_visitor),
             llvm_symtab_fn_(llvm_symtab_fn){}
 
+        void finalize_variable_at_program_exit(ASR::Variable_t* const v){
+            finalize_variable(v, true);
+        }
+
     private:
 
 
@@ -1023,8 +1027,8 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_variable(ASR::Variable_t* const v){
-            if(not_finalizable_variable(v)) return;
+        void finalize_variable(ASR::Variable_t* const v, bool at_program_exit=false){
+            if(not_finalizable_variable(v, at_program_exit)) return;
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
@@ -2177,7 +2181,7 @@ class ASRToLLVMVisitor;
         }
 
         /// Check if the nature of the variable can't be finalized
-        static bool not_finalizable_variable(ASR::Variable_t* const v){
+        static bool not_finalizable_variable(ASR::Variable_t* const v, bool at_program_exit=false){
             /* TODO :: Handle non local + `Value` attribute. */
             if (v->m_intent != ASR::Local) {
                 // Most non-local variables are not owned by this scope and must
@@ -2228,6 +2232,15 @@ class ASRToLLVMVisitor;
                 // (Plain save strings have static data and must NOT be freed.)
                 ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
                     v->m_parent_symtab->asr_owner);
+                if (at_program_exit) {
+                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+                    if (!ASRUtils::is_allocatable(v->m_type)
+                            && !ASRUtils::is_pointer(v->m_type)
+                            && ASR::is_a<ASR::String_t>(*t)) {
+                        return true;
+                    }
+                    return false;
+                }
                 if (ASR::is_a<ASR::Program_t>(*owner)) {
                     ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
                     if (ASR::is_a<ASR::StructType_t>(*t)) {

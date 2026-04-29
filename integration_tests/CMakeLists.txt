@@ -3627,6 +3627,10 @@ RUN(NAME save_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME save_12 LABELS gfortran llvmImplicit)
 RUN(NAME save_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_14 LABELS gfortran llvm)
+RUN(NAME save_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME save_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME save_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME save_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
