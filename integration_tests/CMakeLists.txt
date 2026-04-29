@@ -3434,6 +3434,7 @@ RUN(NAME iso_c_binding_05 LABELS gfortran llvm)
 RUN(NAME array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME array_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME array_04 LABELS gfortran llvm)
 
 RUN(NAME do_loop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
