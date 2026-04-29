@@ -25438,10 +25438,20 @@ public:
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
                 llvm::Value* res = nullptr;
+                // Per Fortran 2018 (16.9.109/16.9.197), if dimension DIM has zero
+                // extent, LBOUND returns 1 and UBOUND returns 0 regardless of the
+                // array's declared bounds.
+                llvm::Value* dim_size = arr_descr->get_dimension_size(dim_des_val, dim_val, true);
+                llvm::Value* is_zero_extent = builder->CreateICmpEQ(dim_size,
+                    llvm::ConstantInt::get(dim_size->getType(), 0));
                 if( x.m_bound == ASR::arrayboundType::LBound ) {
-                    res = arr_descr->get_lower_bound(dim_struct);
+                    llvm::Value* lb = arr_descr->get_lower_bound(dim_struct);
+                    res = builder->CreateSelect(is_zero_extent,
+                        llvm::ConstantInt::get(lb->getType(), 1), lb);
                 } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                    res = arr_descr->get_upper_bound(dim_struct);
+                    llvm::Value* ub = arr_descr->get_upper_bound(dim_struct);
+                    res = builder->CreateSelect(is_zero_extent,
+                        llvm::ConstantInt::get(ub->getType(), 0), ub);
                 }
                 // Cast to match the declared return type of the ArrayBound node
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
@@ -25532,10 +25542,19 @@ public:
                     dim_val = builder->CreateSub(dim_val, const_1);
                     llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
                     llvm::Value* res = nullptr;
+                    // Per Fortran 2018 (16.9.109/16.9.197), if dimension DIM has
+                    // zero extent, LBOUND returns 1 and UBOUND returns 0.
+                    llvm::Value* dim_size = arr_descr->get_dimension_size(dim_des_val, dim_val, true);
+                    llvm::Value* is_zero_extent = builder->CreateICmpEQ(dim_size,
+                        llvm::ConstantInt::get(dim_size->getType(), 0));
                     if( x.m_bound == ASR::arrayboundType::LBound ) {
-                        res = arr_descr->get_lower_bound(dim_struct);
+                        llvm::Value* lb = arr_descr->get_lower_bound(dim_struct);
+                        res = builder->CreateSelect(is_zero_extent,
+                            llvm::ConstantInt::get(lb->getType(), 1), lb);
                     } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                        res = arr_descr->get_upper_bound(dim_struct);
+                        llvm::Value* ub = arr_descr->get_upper_bound(dim_struct);
+                        res = builder->CreateSelect(is_zero_extent,
+                            llvm::ConstantInt::get(ub->getType(), 0), ub);
                     }
                     // Cast to match the declared return type of the ArrayBound node
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
