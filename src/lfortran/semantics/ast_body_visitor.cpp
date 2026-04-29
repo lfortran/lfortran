@@ -6378,6 +6378,73 @@ public:
                 ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, target->base.loc, nullptr, if_test_expr, if_body.p, if_body.n, nullptr, 0));
                 current_body->push_back(al, if_stmt);
             }
+            // F2003 allocate-on-assignment for unlimited polymorphic
+            // (class(*), allocatable) array targets. Insert an Allocate
+            // before the assignment that takes the dynamic type and shape
+            // from the RHS, so the LHS is properly allocated as the
+            // intrinsic/derived type of the RHS. Only handle non-polymorphic
+            // RHS here; polymorphic RHS would need its own runtime handling.
+            {
+                ASR::ttype_t* tgt_t = ASRUtils::expr_type(target);
+                ASR::ttype_t* val_t = ASRUtils::expr_type(value);
+                if (compiler_options.po.realloc_lhs_arrays &&
+                    current_body != nullptr &&
+                    ASRUtils::is_allocatable(tgt_t) &&
+                    ASRUtils::is_array(tgt_t) &&
+                    ASRUtils::is_unlimited_polymorphic_type(target) &&
+                    ASRUtils::is_array(val_t) &&
+                    !ASRUtils::is_unlimited_polymorphic_type(value) &&
+                    !ASRUtils::is_class_type(ASRUtils::extract_type(val_t))) {
+                    Location loc = x.base.base.loc;
+                    ASR::ttype_t* val_elem_type = ASRUtils::duplicate_type(
+                        al, ASRUtils::extract_type(val_t));
+                    size_t target_rank = ASRUtils::extract_n_dims_from_ttype(tgt_t);
+                    Vec<ASR::dimension_t> alloc_dims;
+                    alloc_dims.reserve(al, target_rank);
+                    ASR::ttype_t* idx_t = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                    for (size_t i = 0; i < target_rank; i++) {
+                        ASR::dimension_t d;
+                        d.loc = loc;
+                        ASR::expr_t* dim_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, i + 1, idx_t));
+                        d.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, loc, 1, idx_t));
+                        d.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, value, dim_idx, idx_t, nullptr));
+                        alloc_dims.push_back(al, d);
+                    }
+                    ASR::alloc_arg_t alloc_arg;
+                    alloc_arg.loc = loc;
+                    alloc_arg.m_a = target;
+                    alloc_arg.m_dims = alloc_dims.p;
+                    alloc_arg.n_dims = alloc_dims.n;
+                    alloc_arg.m_len_expr = nullptr;
+                    alloc_arg.m_sym_subclass = nullptr;
+                    alloc_arg.m_type = val_elem_type;
+                    Vec<ASR::alloc_arg_t> alloc_args;
+                    alloc_args.reserve(al, 1);
+                    alloc_args.push_back(al, alloc_arg);
+                    ASR::stmt_t* alloc_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
+                        al, loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
+                    Vec<ASR::stmt_t*> if_body;
+                    if_body.reserve(al, 1);
+                    if_body.push_back(al, alloc_stmt);
+                    Vec<ASR::expr_t*> allocated_args;
+                    allocated_args.reserve(al, 1);
+                    allocated_args.push_back(al, target);
+                    ASR::expr_t* allocated_expr = ASRUtils::EXPR(
+                        ASR::make_IntrinsicImpureFunction_t(al, loc,
+                            static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                            allocated_args.p, allocated_args.n, 0,
+                            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                    ASR::expr_t* if_test = ASRUtils::EXPR(ASR::make_LogicalNot_t(
+                        al, loc, allocated_expr,
+                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                    ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                        al, loc, nullptr, if_test, if_body.p, if_body.n, nullptr, 0));
+                    current_body->push_back(al, if_stmt);
+                }
+            }
         }
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
