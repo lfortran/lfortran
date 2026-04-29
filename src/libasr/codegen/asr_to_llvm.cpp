@@ -9599,8 +9599,67 @@ public:
                 llvm_value = builder->CreateBitCast(
                     llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
                 builder->CreateStore(llvm_value, llvm_target);
+            } else if (!is_target_class && is_value_class &&
+                       ASRUtils::is_array(ASRUtils::type_get_past_pointer(target_type)) &&
+                       ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value)) {
+                ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value);
+                if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                    apc->m_new == ASR::array_physical_typeType::DescriptorArray) {
+                    ASR::ttype_t* src_asr_type = ASRUtils::expr_type(apc->m_arg);
+                    ASR::ttype_t* dst_asr_type = ASRUtils::type_get_past_pointer(target_type);
+                    ASR::ttype_t* src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(src_asr_type);
+                    ASR::ttype_t* dst_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(dst_asr_type);
+
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2 - LLVM::is_llvm_pointer(*src_asr_type);
+                    this->visit_expr_wrapper(apc->m_arg, false);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* source_desc = tmp;
+
+                    llvm::Type* src_el_type = llvm_utils->get_el_type(
+                        apc->m_arg, ASRUtils::extract_type(src_arr_asr_type), module.get());
+                    llvm::Type* dst_el_type = llvm_utils->get_el_type(
+                        x.m_target, ASRUtils::extract_type(dst_arr_asr_type), module.get());
+
+                    llvm::Type* target_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, dst_arr_asr_type, module.get());
+                    llvm::Value* target_desc = arr_descr->create_descriptor_alloca(
+                        target_desc_type, "select_type_desc");
+
+                    llvm::Value* source_desc_as_target = builder->CreateBitCast(
+                        source_desc, target_desc_type->getPointerTo());
+
+                    llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(
+                        src_el_type->getPointerTo(),
+                        arr_descr->get_pointer_to_data(apc->m_arg, src_asr_type, source_desc, module.get()));
+                    llvm::Value* src_offset = arr_descr->get_offset(target_desc_type, source_desc_as_target);
+                    llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(
+                        src_el_type, src_data_ptr, src_offset);
+
+                    llvm::Value* dst_first_el_ptr = builder->CreateBitCast(
+                        src_first_el_ptr, dst_el_type->getPointerTo());
+
+                    builder->CreateStore(dst_first_el_ptr,
+                        arr_descr->get_pointer_to_data(target_desc_type, target_desc));
+
+                    int desc_n_dims = ASRUtils::extract_n_dims_from_ttype(dst_asr_type);
+                    if (desc_n_dims == 0) {
+                        desc_n_dims = ASRUtils::extract_n_dims_from_ttype(src_asr_type);
+                    }
+                    arr_descr->reset_array_details(target_desc_type, target_desc,
+                        target_desc_type, source_desc_as_target, desc_n_dims);
+
+                    builder->CreateStore(target_desc, llvm_target);
+                } else {
+                    throw CodeGenError("Unsupported ArrayPhysicalCast in Associate with class value and non-class array target");
+                }
             } else if (!is_target_class && is_value_class) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                if (!llvm_value->getType()->isPointerTy()) {
+                    llvm::Value* temp = llvm_utils->CreateAlloca(*builder, llvm_value->getType());
+                    builder->CreateStore(llvm_value, temp);
+                    llvm_value = temp;
+                }
                 llvm::Value* val_data_ptr = llvm_utils->create_gep2(llvm_value_type, llvm_value, 1);
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))));
