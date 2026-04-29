@@ -612,6 +612,30 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
+            "#" whitespace? "warning" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
+                if (!branch_enabled) continue;
+                std::string msg = token(t1, t2);
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                diagnostics.add(diag::Diagnostic(
+                    "#warning " + msg, diag::Level::Warning,
+                    diag::Stage::CPreprocessor,
+                    { diag::Label("", {loc}) }));
+                interval_end_type_0(lm, output.size(), cur-string_start);
+                continue;
+            }
+            "#" whitespace? "error" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
+                if (!branch_enabled) continue;
+                std::string msg = token(t1, t2);
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                throw PreprocessorError(diag::Diagnostic(
+                    "#error " + msg, diag::Level::Error,
+                    diag::Stage::CPreprocessor,
+                    { diag::Label("", {loc}) }));
+            }
             "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]* newline {
                 if (!branch_enabled) continue;
                 std::string filename = token(t1, t2);
@@ -996,6 +1020,8 @@ void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenTy
             end { type = CPPTokenType::TK_EOF; return; }
             newline { type = CPPTokenType::TK_EOF; return; }
             whitespace { continue; }
+            "//" [^\n\x00]* { continue; }
+            "/*" ([^*\x00] | "*"[^/\x00])* "*/" { continue; }
             "\\" whitespace? newline { continue; }
             "+" { type = CPPTokenType::TK_PLUS; return; }
             "-" { type = CPPTokenType::TK_MINUS; return; }
