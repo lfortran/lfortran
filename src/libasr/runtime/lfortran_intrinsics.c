@@ -1334,6 +1334,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         strcat(formatted_value, "+");
     }
 
+    bool rounding_carry = false;
     if (scale <= 0) {
         strcat(formatted_value, "0.");
         for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
@@ -1344,9 +1345,13 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         if (digits + scale < strlen(val_str) && val != 0) {
             if (digits + scale - zeros <= 15) {
                 val_str[15] = '\0';
+                int expected_len = digits + scale + zeros;
                 long double scaled = (long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale));
                 long long t = round_scaled_value(scaled, rounding_mode, is_negative);
                 sprintf(val_str, "%lld", t);
+                if (expected_len > 0 && (int)strlen(val_str) > expected_len) {
+                    rounding_carry = true;
+                }
                 int index = zeros;
                 while(index--) strcat(formatted_value, "0");
             } else {
@@ -1357,6 +1362,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                         int d = (val_str[k] - '0') + carry;
                         val_str[k] = (d % 10) + '0';
                         carry = d / 10;
+                    }
+                    if (carry) {
+                        rounding_carry = true;
                     }
                 }
                 val_str[digits + scale] = '\0';
@@ -1399,6 +1407,44 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         // formatted_value = "  1.12"
         internal_free(new_str);
         internal_free(temp);
+    }
+
+    // Adjust exponent when rounding caused a carry in the mantissa
+    if (rounding_carry) {
+        exponent_value++;
+        if (width_digits == 0) {
+            sprintf(exponent, "%+02d", exponent_value);
+        } else {
+            int exp_width = exp + 1;
+            if (exp_width > 10) exp_width = 10;
+            if (exp_width < 1) exp_width = 1;
+            int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+            if (len < 0 || len >= (int)sizeof(exponent)) {
+                goto overflow;
+            }
+        }
+        // Recalculate spaces if exponent length changed
+        int new_exp_length = strlen(exponent);
+        if (new_exp_length != exp_length) {
+            int space_diff = exp_length - new_exp_length;
+            // Rebuild formatted_value with adjusted spacing
+            formatted_value[0] = '\0';
+            int new_spaces = spaces + space_diff;
+            for (int i = 0; i < new_spaces; i++) {
+                strcat(formatted_value, " ");
+            }
+            if (sign_width == 1) {
+                strcat(formatted_value, "-");
+            } else if (sign_plus_exist) {
+                strcat(formatted_value, "+");
+            }
+            strcat(formatted_value, "0.");
+            for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
+                strcat(formatted_value, "0");
+            }
+            strncat(formatted_value, val_str, digits);
+            exp_length = new_exp_length;
+        }
     }
 
     // Add 'E' unless dropped for 3+ digit exponents (when no explicit Ee given)
@@ -1899,6 +1945,13 @@ typedef enum primitive_types{
 static inline bool is_logical_type(Primitive_Types t) {
     return t == LOGICAL_8_TYPE || t == LOGICAL_16_TYPE ||
            t == LOGICAL_32_TYPE || t == LOGICAL_64_TYPE;
+}
+
+static inline bool is_integer_type(Primitive_Types t) {
+    return t == INTEGER_8_TYPE || t == INTEGER_16_TYPE ||
+           t == INTEGER_32_TYPE || t == INTEGER_64_TYPE ||
+           t == UNSIGNED_INTEGER_8_TYPE || t == UNSIGNED_INTEGER_16_TYPE ||
+           t == UNSIGNED_INTEGER_32_TYPE || t == UNSIGNED_INTEGER_64_TYPE;
 }
 
 static inline bool logical_value_from_ptr(void *arg, Primitive_Types t) {
@@ -2627,33 +2680,68 @@ static void format_double_fortran(char* result, double val) {
     sprintf(result, format_str, val);
 }
 
+// Pad a formatted real number to a fixed-width field matching Fortran
+// list-directed G descriptor output (e.g., G16.8E2 for real*4).
+// For F-format (no exponent): right-justify in (total_width - e_trail),
+// then append e_trail trailing blanks.
+// For E-format (contains 'E'): right-justify in total_width.
+static void pad_complex_field(char* result, int total_width) {
+    int len = (int)strlen(result);
+    if (len < total_width) {
+        memmove(result + total_width - len, result, len);
+        memset(result, ' ', total_width - len);
+    }
+    result[total_width > len ? total_width : len] = '\0';
+}
+
+static void pad_real_field(char* result, int total_width, int e_trail) {
+    int len = (int)strlen(result);
+    bool is_e = (strchr(result, 'E') != NULL || strchr(result, 'e') != NULL);
+    if (is_e) {
+        if (len < total_width) {
+            memmove(result + total_width - len, result, len);
+            memset(result, ' ', total_width - len);
+        }
+        result[total_width > len ? total_width : len] = '\0';
+    } else {
+        int f_width = total_width - e_trail;
+        if (len < f_width) {
+            memmove(result + f_width - len, result, len);
+            memset(result, ' ', f_width - len);
+            len = f_width;
+        }
+        memset(result + len, ' ', e_trail);
+        result[len + e_trail] = '\0';
+    }
+}
+
 // Returns the length of the string that is printed inside result
 int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
     switch (s_info->current_element_type){
         case INTEGER_64_TYPE:
-            sprintf(result, "%"PRId64, *(int64_t*)arg);
+            sprintf(result, "%20"PRId64, *(int64_t*)arg);
             break;
         case INTEGER_32_TYPE:
-            sprintf(result, "%d", *(int32_t*)arg);
+            sprintf(result, "%11d", *(int32_t*)arg);
             break;
         case INTEGER_16_TYPE:
-            sprintf(result, "%hi", *(int16_t*)arg);
+            sprintf(result, "%6hi", *(int16_t*)arg);
             break;
         case INTEGER_8_TYPE:
-            sprintf(result, "%hhi", *(int8_t*)arg);
+            sprintf(result, "%4hhi", *(int8_t*)arg);
             break;
         case UNSIGNED_INTEGER_64_TYPE:
-            sprintf(result, "%"PRIu64, *(uint64_t*)arg);
+            sprintf(result, "%20"PRIu64, *(uint64_t*)arg);
             break;
         case UNSIGNED_INTEGER_32_TYPE:
-            sprintf(result, "%u", *(uint32_t*)arg);
+            sprintf(result, "%11u", *(uint32_t*)arg);
             break;
         case UNSIGNED_INTEGER_16_TYPE:
-            sprintf(result, "%hu", *(uint16_t*)arg);
+            sprintf(result, "%6hu", *(uint16_t*)arg);
             break;
         case UNSIGNED_INTEGER_8_TYPE:
-            sprintf(result, "%hhu", *(uint8_t*)arg);
+            sprintf(result, "%4hhu", *(uint8_t*)arg);
             break;
         case FLOAT_64_TYPE:
             if(s_info->current_arg_info.is_complex){
@@ -2664,8 +2752,10 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 format_double_fortran(real_str, real);
                 format_double_fortran(imag_str, imag);
                 sprintf(result, "(%s,%s)", real_str, imag_str);
+                pad_complex_field(result, 2*25 + 3);
             } else {
                 format_double_fortran(result, *(double*)arg);
+                pad_real_field(result, 25, 5);
             }
             break;
         case FLOAT_32_TYPE:
@@ -2677,8 +2767,10 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 format_float_fortran(real_str, real);
                 format_float_fortran(imag_str, imag);
                 sprintf(result, "(%s,%s)", real_str, imag_str);
+                pad_complex_field(result, 2*16 + 3);
             } else {
                 format_float_fortran(result, *(float*)arg);
+                pad_real_field(result, 16, 4);
             }
             break;
         case LOGICAL_8_TYPE:
@@ -2746,15 +2838,19 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
 void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
-    const int default_spacing_len = 4;
-    const char* default_spacing = "    ";
+    const int default_spacing_len = 1;
+    const char* default_spacing = " ";
     ASSERT(default_spacing_len == strlen(default_spacing));
     *result = ALLOCATOR_REALLOC(al, *result, result_capacity + 1 /*Null Character*/ );
     bool prev_is_char = false;
+    bool prev_is_logical = false;
+    bool prev_is_integer = false;
 
     while(move_to_next_element(s_info, false)){
         bool curr_is_char = (s_info->current_element_type == CHAR_PTR_TYPE ||
                              s_info->current_element_type == STRING_DESCRIPTOR_TYPE);
+        bool curr_is_logical = is_logical_type(s_info->current_element_type);
+        bool curr_is_integer = is_integer_type(s_info->current_element_type);
         int size_to_allocate;
         if(curr_is_char &&
             *(char**)s_info->current_arg_info.current_arg != NULL){
@@ -2773,12 +2869,22 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
         }
         if(result_capacity != old_capacity){*result = (char*)ALLOCATOR_REALLOC(al, *result, result_capacity + 1);}
         if(result_size > 0 && !(prev_is_char && curr_is_char)){
-            strcpy((*result)+result_size, default_spacing);
-            result_size+=default_spacing_len;
+            if (prev_is_logical || curr_is_logical) {
+                (*result)[result_size] = ' ';
+                result_size += 1;
+            } else if (prev_is_integer && curr_is_integer) {
+                (*result)[result_size] = ' ';
+                result_size += 1;
+            } else {
+                strcpy((*result)+result_size, default_spacing);
+                result_size += default_spacing_len;
+            }
         }
         int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size);
         result_size += printed_arg_size;
         prev_is_char = curr_is_char;
+        prev_is_logical = curr_is_logical;
+        prev_is_integer = curr_is_integer;
     }
 
     (*result_size_ptr) = result_size;
@@ -2955,9 +3061,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 if (!move_to_next_element(&s_info, true)) break;
                 continue;
             } else if (value[0] == '/') {
-                // Trim trailing blanks from the current record before newline
-                while (result_len > content_end && result[result_len - 1] == ' ') {
-                    result_len--;
+                // Trim trailing blanks from the current record before newline.
+                // Also ensure we don't lose content when cursor is behind high-water mark (after TL).
+                if (result_len > content_end) {
+                    result_len = content_end;
+                } else if (result_len < content_end) {
+                    result_len = content_end;
                 }
                 result[result_len] = '\0';
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, "\n", 1);
@@ -2980,7 +3089,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 char* unescaped_value = unescape_quoted_literal(inner_value, strlen(inner_value), quote_char, &val_len);
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, unescaped_value, val_len);
                 result_len += val_len;
-                content_end = result_len;
+                if (result_len > content_end) content_end = result_len;
                 internal_free(inner_value);
                 internal_free(unescaped_value);
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
@@ -3163,7 +3272,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 internal_free(field);
                             }
                         }
-                        content_end = result_len;
+                        if (result_len > content_end) content_end = result_len;
                         continue;
                     }
 
@@ -3177,7 +3286,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
                         result_len += temp_len;
                         internal_free(temp_buf);
-                        content_end = result_len;
+                        if (result_len > content_end) content_end = result_len;
                         continue;
                     }
                     char* arg = *(char**)s_info.current_arg_info.current_arg;
@@ -3388,10 +3497,18 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             if (abs_val > 0.0) {
                                 exp = (int)floor(log10(abs_val)) + 1;
                             }
-                            double scale = pow(10.0, -exp);
-                            double final_val = double_val * scale;
+                            // Apply Fortran scale factor (kP): shift
+                            // mantissa digits and adjust exponent
+                            exp -= scale;
+                            int adjusted_precision = precision;
+                            if (scale > 1 && scale <= precision + 1) {
+                                adjusted_precision = precision - scale + 1;
+                            }
+                            if (adjusted_precision < 0) adjusted_precision = 0;
+                            double norm = pow(10.0, -exp);
+                            double final_val = double_val * norm;
                             char mantissa[64], exponent[16];
-                            snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
+                            snprintf(mantissa, sizeof(mantissa), "%.*f", adjusted_precision, final_val);
                             if (exp_digits > 0) {
                                 int exp_width = exp_digits + 1;
                                 // Keep width bounded so snprintf target size is provably safe.
@@ -3404,6 +3521,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
                             }
                             snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
+                            // Strip leading zero if result overflows field width
+                            // e.g., "0.85734E+08" (11 chars) -> ".85734E+08" (10 chars)
+                            if (width > 0 && (int)strlen(formatted) > width) {
+                                if (formatted[0] == '0' && formatted[1] == '.') {
+                                    memmove(formatted, formatted + 1, strlen(formatted));
+                                } else if (formatted[0] == '-' && formatted[1] == '0' && formatted[2] == '.') {
+                                    memmove(formatted + 1, formatted + 2, strlen(formatted) - 1);
+                                }
+                            }
                         }
                         int len = strlen(formatted);
                         int effective_width = width;
@@ -3513,7 +3639,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (strlen(value) != 0) {
                     printf("Printing support is not available for %s format.\n",value);
                 }
-                content_end = result_len;
+                if (result_len > content_end) content_end = result_len;
             }
         }
         if(BreakWhileLoop) break;
@@ -3529,9 +3655,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 break;
             }
             if (!array) {
-                // Trim trailing blanks from X/T positioning before record separator
-                while (result_len > content_end && result[result_len - 1] == ' ') {
-                    result_len--;
+                // Trim trailing blanks from X/T positioning before record separator.
+                // Also ensure we don't lose content when cursor is behind high-water mark (after TL).
+                if (result_len > content_end) {
+                    result_len = content_end;
+                } else if (result_len < content_end) {
+                    result_len = content_end;
                 }
                 result[result_len] = '\0';
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, "\n", 1);
@@ -3551,9 +3680,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     internal_free(format_values);
     free_serialization_info(&s_info);
 
-    // Trim trailing blanks from X/T positioning in the final record
-    while (result_len > content_end && result[result_len - 1] == ' ') {
-        result_len--;
+    // Trim trailing blanks from X/T positioning in the final record.
+    // Skip trimming when result is an error message (starts with '\b').
+    if (result_len > 0 && result[0] != '\b') {
+        if (result_len > content_end) {
+            result_len = content_end;
+        } else if (result_len < content_end) {
+            // After TL, the cursor may be behind the high-water mark;
+            // ensure we output everything up to content_end.
+            result_len = content_end;
+        }
     }
     result[result_len] = '\0';
     if (result_extent > result_len) result_extent = result_len;
