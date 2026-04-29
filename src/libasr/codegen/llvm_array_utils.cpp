@@ -1629,6 +1629,14 @@ namespace LCompilers {
                                     src_dim_val, llvm::MaybeAlign(),
                                     llvm::ConstantInt::get(
                                     context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+            // Per Fortran intrinsic-assignment semantics, when an allocatable
+            // LHS receives a value via move-allocation from a temporary that
+            // holds the result of a function returning an allocatable array,
+            // the resulting bounds in the LHS must have lower bound 1 in
+            // every dimension. The extent and stride are preserved from the
+            // source.
+            llvm::Value* dest_lb = llvm_utils->create_gep2(dim_des, dest_dim_val, DIM_LOWER_BOUND);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 1)), dest_lb);
             r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             builder->CreateStore(r_val, r);
             builder->CreateBr(loophead);
