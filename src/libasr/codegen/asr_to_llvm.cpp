@@ -8934,10 +8934,43 @@ public:
             if (idx.m_left != nullptr) {
                 visit_expr_wrapper(idx.m_left, true);
                 lbs.push_back(al, tmp);
-                
-                if (idx.m_right != nullptr) {
+
+                // Detect a buggy/unsupplied upper bound that resolves to a
+                // bound of the target pointer itself (which is unassociated
+                // at this point). In that case (e.g. `p(lb:) => a`), derive
+                // the upper bound from the value's size in that dimension:
+                // ub = lb + size(value, dim) - 1.
+                bool right_refers_to_target = false;
+                if (idx.m_right != nullptr && ASR::is_a<ASR::ArrayBound_t>(*idx.m_right)) {
+                    ASR::ArrayBound_t* ab = ASR::down_cast<ASR::ArrayBound_t>(idx.m_right);
+                    if (ASR::is_a<ASR::Var_t>(*ab->m_v) &&
+                        ASR::is_a<ASR::Var_t>(*target_section->m_v) &&
+                        ASR::down_cast<ASR::Var_t>(ab->m_v)->m_v ==
+                            ASR::down_cast<ASR::Var_t>(target_section->m_v)->m_v) {
+                        right_refers_to_target = true;
+                    }
+                }
+
+                if (idx.m_right != nullptr && !right_refers_to_target) {
                     visit_expr_wrapper(idx.m_right, true);
                     ubs.push_back(al, tmp);
+                } else if (right_refers_to_target) {
+                    // Compute ub = lb + size(value, dim) - 1 using ASR ArraySize.
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::expr_t* dim_expr = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                            (int64_t)(i + 1), int_type));
+                    ASR::expr_t* size_expr = ASRUtils::EXPR(
+                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
+                            dim_expr, int_type, nullptr));
+                    visit_expr_wrapper(size_expr, true);
+                    llvm::Value* size_val = builder->CreateSExtOrTrunc(
+                        tmp, lbs.p[i]->getType());
+                    llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
+                    llvm::Value* ub_val = builder->CreateSub(
+                        builder->CreateAdd(lbs.p[i], size_val), one);
+                    ubs.push_back(al, ub_val);
                 } else {
                     // Use left as both bounds for single element
                     ubs.push_back(al, lbs.p[i]);
@@ -9061,9 +9094,48 @@ public:
             value_data = value_desc;
         }
         
-        // Store data pointer in descriptor
-        builder->CreateStore(value_data, arr_descr->get_pointer_to_data(
-            target_type_llvm, new_desc));
+        // Store data pointer in descriptor. If the target is an unlimited
+        // polymorphic array (class(*)), the descriptor's data field is a
+        // pointer to a class wrapper struct (vtable + data pointer).
+        // Allocate (or reuse) a wrapper, set its vtable based on the value's
+        // type, store the value's data pointer in the wrapper's data field,
+        // and store the wrapper pointer in the descriptor's data field.
+        llvm::Value* target_data_field = arr_descr->get_pointer_to_data(
+            target_type_llvm, new_desc);
+        ASR::ttype_t* target_elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(target_ptr_type));
+        bool target_is_unlimited_poly =
+            ASRUtils::is_unlimited_polymorphic_type(target_elem_type);
+        if (target_is_unlimited_poly) {
+            llvm::Type* wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                target_section->m_v, target_elem_type, module.get());
+            llvm::Value* wrapper_size = SizeOfTypeUtil(target_section->m_v,
+                target_elem_type, llvm_utils->getIntType(4),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+            llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                target_section->m_v, wrapper_llvm_type, wrapper_size);
+            // Store vtable for value's intrinsic element type into wrapper
+            // (vtable keys are scalar; strip array wrappers from value_type).
+            ASR::ttype_t* value_elem_type = ASRUtils::extract_type(value_type);
+            struct_api->store_intrinsic_type_vptr(value_elem_type,
+                ASRUtils::extract_kind_from_ttype_t(value_elem_type),
+                wrapper_ptr, module.get());
+            // Store value's data pointer (as i8*) into wrapper's data field.
+            llvm::Value* wrapper_data_field = llvm_utils->create_gep2(
+                wrapper_llvm_type, wrapper_ptr, 1);
+            llvm::Value* value_data_i8 = builder->CreateBitCast(
+                value_data, llvm_utils->i8_ptr);
+            builder->CreateStore(value_data_i8, wrapper_data_field);
+            // Store wrapper pointer in descriptor's data field.
+            builder->CreateStore(wrapper_ptr, target_data_field);
+        } else {
+            llvm::Type* target_data_field_elem_type =
+                target_data_field->getType()->getPointerElementType();
+            if (value_data->getType() != target_data_field_elem_type) {
+                value_data = builder->CreateBitCast(value_data, target_data_field_elem_type);
+            }
+            builder->CreateStore(value_data, target_data_field);
+        }
         
         // Set offset to 0
         llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
