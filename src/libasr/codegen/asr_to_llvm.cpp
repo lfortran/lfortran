@@ -8531,6 +8531,15 @@ public:
         visit_expr_wrapper(x.m_ptr, false);
         ptr = tmp;
         if(ASRUtils::is_character(*p_type)){ // String OR array of strings
+            if (ASRUtils::is_array_of_strings(p_type) &&
+                LLVM::is_llvm_pointer(*p_type)) {
+                // For pointer/allocatable arrays of strings the storage is a
+                // pointer to the array descriptor pointer; load once so that
+                // get_stringArray_data sees `array_descriptor*`.
+                llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_ptr, p_type, module.get());
+                ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+            }
             ptr = ASRUtils::is_array_of_strings(p_type) ?
                 llvm_utils->get_stringArray_data(p_type, ptr) :
                 llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
