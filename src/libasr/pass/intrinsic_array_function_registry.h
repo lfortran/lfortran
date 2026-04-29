@@ -1979,8 +1979,7 @@ namespace Shape {
                 new_args[0].m_value);
         } else {
             fill_func_arg("source", ASRUtils::duplicate_type_with_empty_dims(al,
-                ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(arg_types[0]))));
+                ASRUtils::type_get_past_pointer(arg_types[0])));
         }
         ASR::expr_t* result = nullptr;
         result = declare(fn_name, return_type, Out);
