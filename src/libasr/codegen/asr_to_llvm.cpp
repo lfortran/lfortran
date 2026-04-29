@@ -1839,6 +1839,81 @@ public:
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
     }
 
+    ASR::expr_t* peel_allocation_target_expr(ASR::expr_t* expr) {
+        while (expr != nullptr) {
+            if (ASR::is_a<ASR::Cast_t>(*expr)) {
+                expr = ASR::down_cast<ASR::Cast_t>(expr)->m_arg;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+                expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+                expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+                expr = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+            } else {
+                break;
+            }
+        }
+        return expr;
+    }
+
+    bool is_save_allocation_target(ASR::expr_t* expr) {
+        if (!compiler_options.detect_leaks) {
+            return false;
+        }
+        ASR::Variable_t* root_var =
+            ASRUtils::expr_to_variable_or_null(peel_allocation_target_expr(expr));
+        return root_var != nullptr
+            && root_var->m_storage == ASR::storage_typeType::Save;
+    }
+
+    llvm::Function* get_dbg_mark_leakable_fn() {
+        std::string func_name = "_lfortran_dbg_mark_leakable";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), { llvm_utils->i8_ptr }, false);
+            fn = llvm::Function::Create(function_type,
+                llvm::Function::ExternalLinkage, func_name, module.get());
+        }
+        return fn;
+    }
+
+    void mark_allocation_as_leakable(llvm::Value* allocated_ptr) {
+        if (!compiler_options.detect_leaks || allocated_ptr == nullptr ||
+                !allocated_ptr->getType()->isPointerTy()) {
+            return;
+        }
+        builder->CreateCall(get_dbg_mark_leakable_fn(), {
+            builder->CreateBitCast(allocated_ptr, llvm_utils->i8_ptr)
+        });
+    }
+
+    void maybe_mark_save_allocation_leakable(ASR::expr_t* target_expr,
+            llvm::Value* allocated_ptr) {
+        if (!is_save_allocation_target(target_expr)) {
+            return;
+        }
+        mark_allocation_as_leakable(allocated_ptr);
+    }
+
+    void maybe_mark_save_array_allocation_leakable(ASR::expr_t* target_expr,
+            ASR::ttype_t* array_type, llvm::Type* desc_type, llvm::Value* desc_ptr_addr,
+            llvm::Type* llvm_data_type) {
+        if (!is_save_allocation_target(target_expr)) {
+            return;
+        }
+        llvm::Value* desc = llvm_utils->CreateLoad2(desc_type->getPointerTo(), desc_ptr_addr);
+        llvm::Value* allocated_ptr = nullptr;
+        if (ASRUtils::is_array_of_strings(array_type)) {
+            allocated_ptr = llvm_utils->get_stringArray_data(array_type, desc, false);
+        } else {
+            allocated_ptr = llvm_utils->CreateLoad2(
+                llvm_data_type->getPointerTo(),
+                arr_descr->get_pointer_to_data(desc_type, desc));
+        }
+        mark_allocation_as_leakable(allocated_ptr);
+    }
+
     template <typename T>
     void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc, ASR::expr_t* m_source = nullptr) {
         for( size_t i = 0; i < x.n_args; i++ ) {
@@ -1868,6 +1943,9 @@ public:
                         amount_to_allocate = nullptr;
                     }
                     llvm_utils->allocate_allocatable_string(str, x_arr, amount_to_allocate);
+                    if (is_save_allocation_target(tmp_expr)) {
+                        mark_allocation_as_leakable(llvm_utils->get_string_data(str, x_arr));
+                    }
                 } else if(ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
@@ -1900,6 +1978,7 @@ public:
                     builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                     builder->CreateStore(builder->CreateBitCast(
                         malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
+                    maybe_mark_save_allocation_leakable(tmp_expr, malloc_ptr);
                 } else if (ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type)) {
                     ASR::ttype_t* source_expr_type = nullptr;
                     ASR::ttype_t* source_underlying_type = nullptr;
@@ -1959,6 +2038,7 @@ public:
 
                         llvm::Value* target_struct_i8 = llvm_utils->CreateLoad2(
                             llvm_utils->i8_ptr, target_addr_as_i8pp);
+                        maybe_mark_save_allocation_leakable(tmp_expr, target_struct_i8);
                         llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(
                             curr_arg.m_a, curr_arg_m_a_type, module.get());
                         llvm::Value* target_struct = builder->CreateBitCast(
@@ -2005,6 +2085,7 @@ public:
                         llvm::Value* bitcasted_malloc_ptr = builder->CreateBitCast(
                                             malloc_ptr, llvm_arg_type->getPointerTo());
                         builder->CreateStore(bitcasted_malloc_ptr, x_arr);
+                        maybe_mark_save_allocation_leakable(tmp_expr, malloc_ptr);
 
                         x_arr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
 
@@ -2060,6 +2141,7 @@ public:
                             context, *module, *builder, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                                     malloc_size, llvm::MaybeAlign());
+                        maybe_mark_save_allocation_leakable(tmp_expr, malloc_ptr);
                         if(ASRUtils::is_string_only(dest_asr_type)) { // String type has a state to be cloned.
                             // NOTE : dest_asr_type == source_type (They both refelect the type the class will be)
                             this->visit_expr_load_wrapper(m_source, 0);
@@ -2088,6 +2170,7 @@ public:
                                 context, *module, *builder, wrapper_size);
                             builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                                 wrapper_size, llvm::MaybeAlign());
+                            maybe_mark_save_allocation_leakable(tmp_expr, wrapper_ptr);
                             wrapper_ptr = builder->CreateBitCast(wrapper_ptr, src_struct_type_);
                             builder->CreateStore(wrapper_ptr, x_arr);
                             
@@ -2161,6 +2244,7 @@ public:
                             builder->CreateMemSet(char_data,
                                 llvm::ConstantInt::get(context, llvm::APInt(8, 32)),
                                 str_len, llvm::MaybeAlign());
+                            maybe_mark_save_allocation_leakable(tmp_expr, char_data);
                             llvm::Value* str_desc = builder->CreateBitCast(
                                 malloc_ptr, llvm_utils->string_descriptor->getPointerTo());
                             builder->CreateStore(char_data,
@@ -2252,12 +2336,14 @@ public:
 
                             if (is_struct_member || is_dummy_arg) {
                                 ptr_ = arr_descr->allocate_descriptor_on_heap(type);
+                                maybe_mark_save_allocation_leakable(tmp_expr, ptr_);
                                 if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
                                     llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
                                         tmp_expr, ASRUtils::extract_type(array_type), module.get());
                                     llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(
                                         llvm_str_desc_type);
                                     builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type, ptr_));
+                                    maybe_mark_save_allocation_leakable(tmp_expr, str_desc);
                                 }
                             } else {
                                 ptr_ = arr_descr->create_descriptor_alloca(type);
@@ -2275,6 +2361,10 @@ public:
                     llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
                         tmp_expr, ASRUtils::extract_type(array_type), module.get());
                     llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
+                    llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                        llvm_str_desc_type->getPointerTo(),
+                        arr_descr->get_pointer_to_data(type, desc_ptr));
+                    maybe_mark_save_allocation_leakable(tmp_expr, str_desc);
                 }
                 // Check if this is a mold-based allocation for unlimited polymorphic arrays.
                 // When the mold is also unlimited polymorphic (class(*)),
@@ -2295,6 +2385,8 @@ public:
                                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
                                         curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr, 
                                         curr_arg.m_sym_subclass, realloc, effective_alloc_type);
+                maybe_mark_save_array_allocation_leakable(tmp_expr, array_type, type,
+                    (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val, llvm_data_type);
                 if (is_mold_unlimited_poly) {
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(
                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a));
