@@ -744,7 +744,19 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     if (ASRUtils::is_allocatable(array_type)) {
                         length = ASRUtils::get_size(array, i + 1, al_);
                     } else {
-                        length = PassUtils::get_bound(array, i + 1, "ubound", al_, index_kind);
+                        // Pass the extent (ubound - lbound + 1), not the
+                        // upper bound. The callee stores this value as the
+                        // dimension's extent in its descriptor; using ubound
+                        // would corrupt the upper bound for arrays with
+                        // non-default lower bounds.
+                        ASR::expr_t* ub = PassUtils::get_bound(array, i + 1, "ubound", al_, index_kind);
+                        ASR::expr_t* lb = PassUtils::get_bound(array, i + 1, "lbound", al_, index_kind);
+                        ASR::ttype_t* int_t = ASRUtils::TYPE(ASR::make_Integer_t(al_, array->base.loc, index_kind));
+                        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al_, array->base.loc, 1, int_t));
+                        ASR::expr_t* ub_minus_lb = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al_, array->base.loc,
+                            ub, ASR::binopType::Sub, lb, int_t, nullptr));
+                        length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al_, array->base.loc,
+                            ub_minus_lb, ASR::binopType::Add, one, int_t, nullptr));
                     }
                 }
                 if ( ASRUtils::is_integer(*ASRUtils::expr_type(length)) ) {
