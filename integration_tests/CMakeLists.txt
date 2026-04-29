@@ -2355,20 +2355,7 @@ RUN(NAME derived_types_120 LABELS gfortran llvm)
 RUN(NAME derived_types_121 LABELS gfortran llvm
         EXTRAFILES derived_types_121_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME derived_types_122 LABELS gfortran llvm)
-# Test requires -g which needs WITH_RUNTIME_STACKTRACE=yes in the LFortran build.
-# Probe whether lfortran supports -g before registering.
-if (LFORTRAN_BACKEND STREQUAL "llvm")
-    execute_process(
-        COMMAND lfortran -g -c ${CMAKE_CURRENT_SOURCE_DIR}/derived_types_123.f90
-                -o ${CMAKE_CURRENT_BINARY_DIR}/_probe_g.o
-        RESULT_VARIABLE _g_result
-        OUTPUT_QUIET ERROR_QUIET)
-    if (_g_result EQUAL 0)
-        RUN(NAME derived_types_123 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
-    endif()
-else()
-    RUN(NAME derived_types_123 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
-endif()
+RUN(NAME derived_types_123 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
 RUN(NAME derived_types_124 LABELS gfortran llvm)
 RUN(NAME derived_types_125 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME derived_types_126 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
