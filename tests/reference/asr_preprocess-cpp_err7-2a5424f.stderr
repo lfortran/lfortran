@@ -1,0 +1,5 @@
+C preprocessor error: #error This branch must trigger a #error
+ --> tests/errors/cpp_err7.f90:5:1
+  |
+5 | #error This branch must trigger a #error
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

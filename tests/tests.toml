@@ -439,6 +439,14 @@ filename = "errors/cpp_err6.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/cpp_err7.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "warnings/cpp_warn1.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "errors/template_error_01a.f90"
 asr = true
 
@@ -625,6 +633,10 @@ asr_preprocess = true
 
 [[test]]
 filename = "preprocessor22.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "preprocessor23.f90"
 asr_preprocess = true
 
 [[test]]

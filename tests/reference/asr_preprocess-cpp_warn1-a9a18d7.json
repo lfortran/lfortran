@@ -1,0 +1,13 @@
+{
+    "basename": "asr_preprocess-cpp_warn1-a9a18d7",
+    "cmd": "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/cpp_warn1.f90",
+    "infile_hash": "0b5e38cc267f52f9afb8d3ff3e1bb57a361322e415874451f12d352f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_preprocess-cpp_warn1-a9a18d7.stdout",
+    "stdout_hash": "e3ca0040e4ff01359ea4ecfcc55b61ed5ffd5b2e605f24fa1c1b3225",
+    "stderr": "asr_preprocess-cpp_warn1-a9a18d7.stderr",
+    "stderr_hash": "779571c0b5d3ef12300b2fe09e8be931c6964efb3ef89f362ee63ad6",
+    "returncode": 0
+}

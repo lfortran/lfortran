@@ -513,7 +513,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 newline {
+            "#" whitespace? "if" whitespace? @t1 [^\n\x00]* @t2 newline {
                 ConditionalDirective if_directive;
                 if_directive.active = branch_enabled;
                 if_directive.type = DirectiveType::If;
@@ -564,7 +564,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
+            "#" whitespace? "elif" whitespace? @t1 [^\n\x00]* @t2 newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;

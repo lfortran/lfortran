@@ -1,0 +1,58 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            preprocessor23:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    0
+                                )
+                        })
+                    preprocessor23
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (IntegerConstant 5 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)
