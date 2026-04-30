@@ -7,6 +7,10 @@ contains
         p = -1
         p(-2) = 7
     end subroutine
+
+    subroutine finalize()
+        deallocate(p)
+    end subroutine
 end module
 
 program global_array_pointer_02
@@ -18,4 +22,5 @@ program global_array_pointer_02
     if (p(-2) /= 7) error stop "v"
     if (p(0) /= -1) error stop "v0"
     print *, "PASS"
+    call finalize()
 end program
