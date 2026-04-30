@@ -5589,6 +5589,13 @@ public:
                 ASRUtils::type_get_past_allocatable(x.m_type)),
                 module.get(), x.m_abi);
             if (ASRUtils::is_array(x.m_type)) {  // memorize arrays only.
+                // For array pointers/allocatables, an init from null() is a
+                // bare element-pointer constant whose LLVM type doesn't match
+                // the pointer-to-descriptor global type; drop it and let the
+                // companion-descriptor path below run instead.
+                if (init_value && init_value->getType() != x_ptr) {
+                    init_value = nullptr;
+                }
                 allocatable_array_details.push_back(
                     { ASRUtils::EXPR(ASR::make_Var_t(
                           al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
@@ -7538,6 +7545,7 @@ public:
                     if (arg->m_value_attr &&
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                         !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
+                        !ASRUtils::is_array(arg->m_type) &&
                         llvm_arg.getType()->isPointerTy()) {
                         llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
                             nullptr, arg->m_type, module.get());
@@ -7571,6 +7579,82 @@ public:
                 }
             }
             asr_arg_idx++;
+        }
+
+        // Second pass: handle array dummy arguments with VALUE attribute.
+        // We deferred this to after all arguments have been registered in
+        // llvm_symtab, so that variable-size dimension lengths (e.g. another
+        // dummy argument) can be evaluated. This emits a local buffer and
+        // memcpy of the caller's data so callee modifications do not affect
+        // the caller. Supports both fixed-size and runtime-size PointerArray
+        // (explicit-shape) arguments.
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(sym);
+            if (!arg->m_value_attr) continue;
+            if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) continue;
+            if (ASR::is_a<ASR::CPtr_t>(*arg->m_type)) continue;
+            if (!ASRUtils::is_array(arg->m_type)) continue;
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(arg->m_type));
+            if (array_t->m_physical_type != ASR::array_physical_typeType::PointerArray) continue;
+            uint32_t h = get_hash((ASR::asr_t*)arg);
+            if (llvm_symtab.find(h) == llvm_symtab.end()) continue;
+            llvm::Value* current_ptr = llvm_symtab[h];
+            if (!current_ptr->getType()->isPointerTy()) continue;
+            llvm::Type* el_type = llvm_utils->get_el_type(
+                nullptr, array_t->m_type, module.get());
+            uint64_t el_size_bytes = module->getDataLayout().getTypeAllocSize(el_type);
+            std::string name = std::string(arg->m_name) + "_value";
+            if (ASRUtils::is_fixed_size_array(array_t->m_dims, array_t->n_dims)) {
+                int64_t size = ASRUtils::get_fixed_size_of_array(
+                    array_t->m_dims, array_t->n_dims);
+                llvm::Type* arr_type = llvm::ArrayType::get(el_type, size);
+                llvm::Value* local_copy_arr = builder->CreateAlloca(
+                    arr_type, nullptr, name);
+                uint64_t total_bytes = el_size_bytes * (uint64_t)size;
+                builder->CreateMemCpy(
+                    local_copy_arr, llvm::MaybeAlign(),
+                    current_ptr, llvm::MaybeAlign(),
+                    total_bytes);
+                llvm::Value* zero = llvm::ConstantInt::get(
+                    context, llvm::APInt(32, 0));
+                llvm::Value* data_ptr = llvm_utils->CreateInBoundsGEP2(
+                    arr_type, local_copy_arr, {zero, zero});
+                llvm_symtab[h] = data_ptr;
+            } else {
+                // Runtime-size array: compute total element count from m_dims.
+                llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                llvm::Value* num_elements = llvm::ConstantInt::get(i64_ty, 1);
+                int64_t ptr_loads_copy = ptr_loads;
+                for (size_t d = 0; d < array_t->n_dims; d++) {
+                    ASR::expr_t* m_length = array_t->m_dims[d].m_length;
+                    if (m_length == nullptr) {
+                        num_elements = nullptr;
+                        break;
+                    }
+                    ptr_loads = 2 - !LLVM::is_llvm_pointer(
+                        *ASRUtils::expr_type(m_length));
+                    this->visit_expr_wrapper(m_length, true);
+                    llvm::Value* dim_len = tmp;
+                    dim_len = builder->CreateSExtOrTrunc(dim_len, i64_ty);
+                    num_elements = builder->CreateMul(num_elements, dim_len);
+                }
+                ptr_loads = ptr_loads_copy;
+                if (num_elements == nullptr) continue;
+                llvm::Value* local_copy = builder->CreateAlloca(
+                    el_type, num_elements, name);
+                llvm::Value* total_bytes = builder->CreateMul(
+                    num_elements,
+                    llvm::ConstantInt::get(i64_ty, el_size_bytes));
+                builder->CreateMemCpy(
+                    local_copy, llvm::MaybeAlign(),
+                    current_ptr, llvm::MaybeAlign(),
+                    total_bytes);
+                llvm_symtab[h] = local_copy;
+            }
         }
     }
 
@@ -8524,6 +8608,15 @@ public:
         visit_expr_wrapper(x.m_ptr, false);
         ptr = tmp;
         if(ASRUtils::is_character(*p_type)){ // String OR array of strings
+            if (ASRUtils::is_array_of_strings(p_type) &&
+                LLVM::is_llvm_pointer(*p_type)) {
+                // For pointer/allocatable arrays of strings the storage is a
+                // pointer to the array descriptor pointer; load once so that
+                // get_stringArray_data sees `array_descriptor*`.
+                llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_ptr, p_type, module.get());
+                ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+            }
             ptr = ASRUtils::is_array_of_strings(p_type) ?
                 llvm_utils->get_stringArray_data(p_type, ptr) :
                 llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
@@ -8927,10 +9020,43 @@ public:
             if (idx.m_left != nullptr) {
                 visit_expr_wrapper(idx.m_left, true);
                 lbs.push_back(al, tmp);
-                
-                if (idx.m_right != nullptr) {
+
+                // Detect a buggy/unsupplied upper bound that resolves to a
+                // bound of the target pointer itself (which is unassociated
+                // at this point). In that case (e.g. `p(lb:) => a`), derive
+                // the upper bound from the value's size in that dimension:
+                // ub = lb + size(value, dim) - 1.
+                bool right_refers_to_target = false;
+                if (idx.m_right != nullptr && ASR::is_a<ASR::ArrayBound_t>(*idx.m_right)) {
+                    ASR::ArrayBound_t* ab = ASR::down_cast<ASR::ArrayBound_t>(idx.m_right);
+                    if (ASR::is_a<ASR::Var_t>(*ab->m_v) &&
+                        ASR::is_a<ASR::Var_t>(*target_section->m_v) &&
+                        ASR::down_cast<ASR::Var_t>(ab->m_v)->m_v ==
+                            ASR::down_cast<ASR::Var_t>(target_section->m_v)->m_v) {
+                        right_refers_to_target = true;
+                    }
+                }
+
+                if (idx.m_right != nullptr && !right_refers_to_target) {
                     visit_expr_wrapper(idx.m_right, true);
                     ubs.push_back(al, tmp);
+                } else if (right_refers_to_target) {
+                    // Compute ub = lb + size(value, dim) - 1 using ASR ArraySize.
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::expr_t* dim_expr = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                            (int64_t)(i + 1), int_type));
+                    ASR::expr_t* size_expr = ASRUtils::EXPR(
+                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
+                            dim_expr, int_type, nullptr));
+                    visit_expr_wrapper(size_expr, true);
+                    llvm::Value* size_val = builder->CreateSExtOrTrunc(
+                        tmp, lbs.p[i]->getType());
+                    llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
+                    llvm::Value* ub_val = builder->CreateSub(
+                        builder->CreateAdd(lbs.p[i], size_val), one);
+                    ubs.push_back(al, ub_val);
                 } else {
                     // Use left as both bounds for single element
                     ubs.push_back(al, lbs.p[i]);
@@ -9054,9 +9180,48 @@ public:
             value_data = value_desc;
         }
         
-        // Store data pointer in descriptor
-        builder->CreateStore(value_data, arr_descr->get_pointer_to_data(
-            target_type_llvm, new_desc));
+        // Store data pointer in descriptor. If the target is an unlimited
+        // polymorphic array (class(*)), the descriptor's data field is a
+        // pointer to a class wrapper struct (vtable + data pointer).
+        // Allocate (or reuse) a wrapper, set its vtable based on the value's
+        // type, store the value's data pointer in the wrapper's data field,
+        // and store the wrapper pointer in the descriptor's data field.
+        llvm::Value* target_data_field = arr_descr->get_pointer_to_data(
+            target_type_llvm, new_desc);
+        ASR::ttype_t* target_elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(target_ptr_type));
+        bool target_is_unlimited_poly =
+            ASRUtils::is_unlimited_polymorphic_type(target_elem_type);
+        if (target_is_unlimited_poly) {
+            llvm::Type* wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                target_section->m_v, target_elem_type, module.get());
+            llvm::Value* wrapper_size = SizeOfTypeUtil(target_section->m_v,
+                target_elem_type, llvm_utils->getIntType(4),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+            llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
+                target_section->m_v, wrapper_llvm_type, wrapper_size);
+            // Store vtable for value's intrinsic element type into wrapper
+            // (vtable keys are scalar; strip array wrappers from value_type).
+            ASR::ttype_t* value_elem_type = ASRUtils::extract_type(value_type);
+            struct_api->store_intrinsic_type_vptr(value_elem_type,
+                ASRUtils::extract_kind_from_ttype_t(value_elem_type),
+                wrapper_ptr, module.get());
+            // Store value's data pointer (as i8*) into wrapper's data field.
+            llvm::Value* wrapper_data_field = llvm_utils->create_gep2(
+                wrapper_llvm_type, wrapper_ptr, 1);
+            llvm::Value* value_data_i8 = builder->CreateBitCast(
+                value_data, llvm_utils->i8_ptr);
+            builder->CreateStore(value_data_i8, wrapper_data_field);
+            // Store wrapper pointer in descriptor's data field.
+            builder->CreateStore(wrapper_ptr, target_data_field);
+        } else {
+            llvm::Type* target_data_field_elem_type =
+                llvm::cast<llvm::StructType>(target_type_llvm)->getElementType(0);
+            if (value_data->getType() != target_data_field_elem_type) {
+                value_data = builder->CreateBitCast(value_data, target_data_field_elem_type);
+            }
+            builder->CreateStore(value_data, target_data_field);
+        }
         
         // Set offset to 0
         llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
@@ -11756,7 +11921,14 @@ public:
                 llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                         ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
                 if (x.m_move_allocation) {
-                    arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type);
+                    // For `move_alloc`, the lower bounds of the source must be
+                    // preserved. For move-assignments synthesized by the
+                    // subroutine_from_function pass (function returning an
+                    // allocatable), Fortran intrinsic-assignment semantics
+                    // require the destination's lower bound to be reset to 1
+                    // in every dimension; that pass therefore also sets
+                    // m_realloc_lhs=true to distinguish the two cases.
+                    arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, x.m_realloc_lhs);
                 } else if (ASRUtils::is_pointer(target_type)) {
                     // Pointer targets may be associated with non-contiguous
                     // array sections (e.g. output(seq, 1:4) in a 3x4 array has
@@ -25323,12 +25495,17 @@ public:
             if (m_dims[req_dim].m_start) {
                 ASRUtils::extract_value(m_dims[req_dim].m_start, lbound);
             }
-            if( x.m_bound == ASR::arrayboundType::LBound ) {
-                bound_value = lbound;
-            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                size_t length;
+            size_t length = 0;
+            bool has_length = m_dims[req_dim].m_length != nullptr &&
                 ASRUtils::extract_value(m_dims[req_dim].m_length, length);
-                bound_value = length + lbound - 1;
+            // Per Fortran 2018 (16.9.109/16.9.197), if dimension DIM has zero
+            // extent, LBOUND returns 1 and UBOUND returns 0 regardless of
+            // the array's declared bounds.
+            if( x.m_bound == ASR::arrayboundType::LBound ) {
+                bound_value = (has_length && length == 0) ? 1 : lbound;
+            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                LCOMPILERS_ASSERT(has_length);
+                bound_value = (length == 0) ? 0 : length + lbound - 1;
             } else {
                 LCOMPILERS_ASSERT(false);
             }
@@ -25359,10 +25536,20 @@ public:
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
                 llvm::Value* res = nullptr;
+                // Per Fortran 2018 (16.9.109/16.9.197), if dimension DIM has zero
+                // extent, LBOUND returns 1 and UBOUND returns 0 regardless of the
+                // array's declared bounds.
+                llvm::Value* dim_size = arr_descr->get_dimension_size(dim_des_val, dim_val, true);
+                llvm::Value* is_zero_extent = builder->CreateICmpEQ(dim_size,
+                    llvm::ConstantInt::get(dim_size->getType(), 0));
                 if( x.m_bound == ASR::arrayboundType::LBound ) {
-                    res = arr_descr->get_lower_bound(dim_struct);
+                    llvm::Value* lb = arr_descr->get_lower_bound(dim_struct);
+                    res = builder->CreateSelect(is_zero_extent,
+                        llvm::ConstantInt::get(lb->getType(), 1), lb);
                 } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                    res = arr_descr->get_upper_bound(dim_struct);
+                    llvm::Value* ub = arr_descr->get_upper_bound(dim_struct);
+                    res = builder->CreateSelect(is_zero_extent,
+                        llvm::ConstantInt::get(ub->getType(), 0), ub);
                 }
                 // Cast to match the declared return type of the ArrayBound node
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
@@ -25393,6 +25580,14 @@ public:
                     builder->CreateCondBr(cond, thenBB, elseBB);
                     builder->SetInsertPoint(thenBB);
                     {
+                        // Per Fortran 2018 (16.9.109/16.9.197), if dimension
+                        // DIM has zero extent, LBOUND returns 1 and UBOUND
+                        // returns 0 regardless of the array's declared bounds.
+                        llvm::Value *length = nullptr;
+                        if (m_dims[i].m_length) {
+                            load_array_size_deep_copy(m_dims[i].m_length);
+                            length = tmp;
+                        }
                         if( x.m_bound == ASR::arrayboundType::LBound ) {
                             llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
@@ -25401,23 +25596,34 @@ public:
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);
                             }
-                            builder->CreateStore(builder->CreateSExtOrTrunc(lbound, target_type), target);
+                            llvm::Value *res = builder->CreateSExtOrTrunc(lbound, target_type);
+                            if (length) {
+                                llvm::Value *length_cast = builder->CreateSExtOrTrunc(length, target_type);
+                                llvm::Value *is_zero = builder->CreateICmpEQ(
+                                    length_cast, llvm::ConstantInt::get(target_type, 0));
+                                res = builder->CreateSelect(is_zero,
+                                    llvm::ConstantInt::get(target_type, 1), res);
+                            }
+                            builder->CreateStore(res, target);
                         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                            llvm::Value *lbound = nullptr, *length = nullptr;
+                            llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
                                 this->visit_expr_wrapper(m_dims[i].m_start, true);
                                 lbound = tmp;
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);
                             }
-                            if (m_dims[i].m_length) {
-                                load_array_size_deep_copy(m_dims[i].m_length);
-                                length = tmp;
+                            if (length) {
                                 unsigned target_bit_width = target_type->getIntegerBitWidth();
-                                builder->CreateStore(
-                                    builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
-                                          llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1))),
-                                    target);
+                                llvm::Value *ub = builder->CreateSub(
+                                    builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
+                                    llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1)));
+                                llvm::Value *length_cast = builder->CreateSExtOrTrunc(length, target_type);
+                                llvm::Value *is_zero = builder->CreateICmpEQ(
+                                    length_cast, llvm::ConstantInt::get(target_type, 0));
+                                ub = builder->CreateSelect(is_zero,
+                                    llvm::ConstantInt::get(target_type, 0), ub);
+                                builder->CreateStore(ub, target);
                             } else {
                                 // Assumed-size array: last dimension has no length
                                 builder->CreateStore(builder->CreateSExtOrTrunc(lbound, target_type), target);
@@ -25453,10 +25659,19 @@ public:
                     dim_val = builder->CreateSub(dim_val, const_1);
                     llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
                     llvm::Value* res = nullptr;
+                    // Per Fortran 2018 (16.9.109/16.9.197), if dimension DIM has
+                    // zero extent, LBOUND returns 1 and UBOUND returns 0.
+                    llvm::Value* dim_size = arr_descr->get_dimension_size(dim_des_val, dim_val, true);
+                    llvm::Value* is_zero_extent = builder->CreateICmpEQ(dim_size,
+                        llvm::ConstantInt::get(dim_size->getType(), 0));
                     if( x.m_bound == ASR::arrayboundType::LBound ) {
-                        res = arr_descr->get_lower_bound(dim_struct);
+                        llvm::Value* lb = arr_descr->get_lower_bound(dim_struct);
+                        res = builder->CreateSelect(is_zero_extent,
+                            llvm::ConstantInt::get(lb->getType(), 1), lb);
                     } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                        res = arr_descr->get_upper_bound(dim_struct);
+                        llvm::Value* ub = arr_descr->get_upper_bound(dim_struct);
+                        res = builder->CreateSelect(is_zero_extent,
+                            llvm::ConstantInt::get(ub->getType(), 0), ub);
                     }
                     // Cast to match the declared return type of the ArrayBound node
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,

@@ -12618,13 +12618,21 @@ public:
                 ASR::expr_t* v_Var_start = ASRUtils::expr_value(v_Var_dims[const_dim].m_start);
                 ASR::expr_t* v_Var_length = ASRUtils::expr_value(v_Var_dims[const_dim].m_length);
                 if( bound == ASR::arrayboundType::LBound &&
-                    ASRUtils::is_value_constant(v_Var_start) ) {
+                    ASRUtils::is_value_constant(v_Var_start) &&
+                    ASRUtils::is_value_constant(v_Var_length) ) {
                     int64_t const_lbound = -1;
                     if( !ASRUtils::extract_value(v_Var_start, const_lbound) ) {
                         LCOMPILERS_ASSERT(false);
                     }
+                    int64_t const_length = -1;
+                    if( !ASRUtils::extract_value(v_Var_length, const_length) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    // Per Fortran 2018 (16.9.109), if DIM has zero extent,
+                    // LBOUND returns 1 regardless of the declared bounds.
+                    int64_t lb_val = (const_length == 0) ? 1 : const_lbound;
                     bound_value = make_ConstantWithType(make_IntegerConstant_t,
-                                    const_lbound, type, x.base.base.loc);
+                                    lb_val, type, x.base.base.loc);
                 } else if( bound == ASR::arrayboundType::UBound &&
                 ASRUtils::is_value_constant(v_Var_start) &&
                 ASRUtils::is_value_constant(v_Var_length) ) {
@@ -12636,8 +12644,11 @@ public:
                     if( !ASRUtils::extract_value(v_Var_length, const_length) ) {
                         LCOMPILERS_ASSERT(false);
                     }
+                    // Per Fortran 2018 (16.9.197), if DIM has zero extent,
+                    // UBOUND returns 0 regardless of the declared bounds.
+                    int64_t ub_val = (const_length == 0) ? 0 : const_lbound + const_length - 1;
                     bound_value = make_ConstantWithType(make_IntegerConstant_t,
-                                    const_lbound + const_length - 1, type, x.base.base.loc);
+                                    ub_val, type, x.base.base.loc);
                 }
             }
         }
