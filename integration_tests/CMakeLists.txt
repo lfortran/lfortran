@@ -1743,6 +1743,7 @@ RUN(NAME intrinsics_456 LABELS gfortran llvm) # move_alloc preserves lower bound
 RUN(NAME intrinsics_457 LABELS gfortran llvm) # storage_size with character components
 RUN(NAME c_loc_descriptor_string_01 LABELS gfortran llvm) # c_loc warning on derived type with character component
 RUN(NAME bindc_inline_char_01 LABELS gfortran llvm) # bind(C) struct character members use inline [len x i8] layout
+RUN(NAME bindc_inline_char_02 LABELS gfortran llvm) # bind(C) struct character members use inline [len x i8] layout
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
