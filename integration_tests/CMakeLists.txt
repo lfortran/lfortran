@@ -1741,6 +1741,7 @@ RUN(NAME intrinsics_454 LABELS gfortran llvm) # all/any with array section and w
 RUN(NAME intrinsics_455 LABELS gfortran llvm) # intrinsic declaration scope isolation
 RUN(NAME intrinsics_456 LABELS gfortran llvm) # move_alloc preserves lower bounds
 RUN(NAME intrinsics_457 LABELS gfortran llvm) # storage_size with character components
+RUN(NAME c_loc_descriptor_string_01 LABELS gfortran llvm) # c_loc warning on derived type with character component
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 

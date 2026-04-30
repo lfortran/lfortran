@@ -15109,11 +15109,42 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
+    static bool struct_has_descriptor_string_member(ASR::ttype_t* type) {
+        type = ASRUtils::type_get_past_array(
+                   ASRUtils::type_get_past_allocatable(
+                       ASRUtils::type_get_past_pointer(type)));
+        if (!ASR::is_a<ASR::StructType_t>(*type)) return false;
+        ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
+        for (size_t i = 0; i < st->n_data_member_types; i++) {
+            ASR::ttype_t* mt = ASRUtils::type_get_past_array(
+                                   ASRUtils::type_get_past_allocatable(
+                                       ASRUtils::type_get_past_pointer(
+                                           st->m_data_member_types[i])));
+            if (ASR::is_a<ASR::String_t>(*mt)) return true;
+            if (ASR::is_a<ASR::StructType_t>(*mt) &&
+                struct_has_descriptor_string_member(mt)) return true;
+        }
+        return false;
+    }
+
     ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
+        ASR::ttype_t* v_type = ASRUtils::expr_type(v_Var);
+        if (struct_has_descriptor_string_member(v_type)) {
+            diag.semantic_warning_label(
+                "c_loc() on a non-bind(C) derived type containing a "
+                "character component is not portable",
+                {x.base.base.loc},
+                "LFortran represents fixed-length character components as a "
+                "descriptor (pointer + length); the in-memory layout differs "
+                "from the standard inline layout used by gfortran/flang. "
+                "Code that relies on this layout (e.g. memcpy via storage_size, "
+                "raw bytewise transfer) will not behave portably."
+            );
+        }
         if( !ASR::is_a<ASR::GetPointer_t>(*v_Var) &&
             !ASRUtils::is_pointer(ASRUtils::expr_type(v_Var)) ) {
             ASR::ttype_t* ptr_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc,
