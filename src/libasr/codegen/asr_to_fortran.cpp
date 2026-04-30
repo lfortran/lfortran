@@ -350,6 +350,10 @@ public:
             LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item)
                 != nullptr);
             ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Module_t>(*mod) &&
+                    ASR::down_cast<ASR::Module_t>(mod)->m_loaded_from_mod) {
+                continue;
+            }
             visit_symbol(*mod);
             r += src;
             r += "\n";
@@ -475,6 +479,9 @@ public:
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::GenericProcedure_t>(*item.second)) {
+                if (!item.first.empty() && item.first[0] == '~') {
+                    continue;
+                }
                 visit_symbol(*item.second);
                 r += src;
 
@@ -563,6 +570,11 @@ public:
         current_pass_self_args.clear();
         SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
             (ASR::symbol_t*) &x);
+        std::string current_module_name;
+        if (parent_symtab && parent_symtab->asr_owner &&
+                is_a<ASR::Module_t>(*(ASR::symbol_t*)parent_symtab->asr_owner)) {
+            current_module_name = ASRUtils::symbol_name((ASR::symbol_t*)parent_symtab->asr_owner);
+        }
         if (parent_symtab) {
             for (auto &item : parent_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Struct_t>(*item.second)) {
@@ -650,6 +662,17 @@ public:
         inc_indent();
         {
             std::string variable_declaration;
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                    if (!current_module_name.empty() &&
+                            current_module_name == std::string(ext->m_module_name)) {
+                        continue;
+                    }
+                    visit_symbol(*item.second);
+                    r += src;
+                }
+            }
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
             for (auto &item : var_order) {
                 if (is_return_var_declared && item == return_var) continue;
@@ -763,6 +786,10 @@ public:
     }
 
     void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
+        if (x.m_name[0] == '~') {
+            src.clear();
+            return;
+        }
         std::string r = indent;
         r += "interface ";
         r.append(x.m_name);
@@ -791,7 +818,9 @@ public:
         src.clear();
         // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
         if (std::string(x.m_name).find('@') != std::string::npos ||
-            std::string(x.m_original_name).find('@') != std::string::npos) {
+            std::string(x.m_original_name).find('@') != std::string::npos ||
+            (x.m_name && x.m_name[0] == '~') ||
+            (x.m_original_name && x.m_original_name[0] == '~')) {
             return;
         }
         auto append_import_name = [&](std::string &out) {
@@ -812,8 +841,10 @@ public:
             src += "use";
             src += ", intrinsic :: ";
             src += "iso_c_binding";
-            src += ", only: ";
-            append_import_name(src);
+            if (std::strcmp(x.m_name, x.m_original_name) != 0) {
+                src += ", only: ";
+                append_import_name(src);
+            }
             src += "\n";
             return;
         }
@@ -824,8 +855,10 @@ public:
             src += "use";
             src += ", intrinsic :: ";
             src += "iso_fortran_env";
-            src += ", only: ";
-            append_import_name(src);
+            if (std::strcmp(x.m_name, x.m_original_name) != 0) {
+                src += ", only: ";
+                append_import_name(src);
+            }
             src += "\n";
             return;
         }
@@ -1764,13 +1797,17 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         std::string r = indent;
         r += "call ";
+        bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         if (x.m_dt) {
             visit_expr(*x.m_dt);
             r += src + "%";
         }
-        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+        if (is_method) {
+            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+        } else {
+            r += ASRUtils::symbol_name(x.m_name);
+        }
         r += "(";
-        bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         size_t start_idx = is_method ? 1 : 0;
         for (size_t i = start_idx; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
@@ -2156,11 +2193,16 @@ public:
         if (x.m_original_name) {
             r += ASRUtils::symbol_name(x.m_original_name);
         } else {
+            bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
             if (x.m_dt) {
                 visit_expr(*x.m_dt);
                 r += src + "%";
             }
-            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+            if (is_method) {
+                r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+            } else {
+                r += ASRUtils::symbol_name(x.m_name);
+            }
         }
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);

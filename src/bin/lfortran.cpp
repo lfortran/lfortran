@@ -1823,6 +1823,25 @@ int compile_to_binary_fortran(const std::string &infile,
     std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
+    // Save LFortran .mod files first so later compilations can resolve USEd modules.
+    {
+        LCompilers::LocationManager asr_lm;
+        LCompilers::diag::Diagnostics asr_diagnostics;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        asr_lm.files.push_back(fl);
+        asr_lm.file_ends.push_back(input.size());
+        LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> asr =
+            fe.get_asr2(input, asr_lm, asr_diagnostics);
+        std::cerr << asr_diagnostics.render(asr_lm, compiler_options);
+        if (!asr.ok) {
+            LCOMPILERS_ASSERT(asr_diagnostics.has_error())
+            return 1;
+        }
+        asr_diagnostics.diagnostics.clear();
+        int err = save_mod_files(*asr.result, compiler_options, asr_lm);
+        if (err) return err;
+    }
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
     {
@@ -1845,8 +1864,31 @@ int compile_to_binary_fortran(const std::string &infile,
         out << src.result;
     }
 
-    std::string cmd = "gfortran -fno-backtrace -o " + outfile + " -c " + in_file;
+    // Keep GFortran module files separate to avoid overwrite.
+    std::filesystem::path out_path(outfile);
+    std::filesystem::path out_dir = out_path.parent_path();
+    if (out_dir.empty()) {
+        out_dir = std::filesystem::current_path();
+    }
+    std::filesystem::path gfortran_mod_dir = out_dir / ".gfortran_modules";
+    std::error_code ec;
+    std::filesystem::create_directories(gfortran_mod_dir, ec);
+    if (ec) {
+        std::cout << "Unable to create module directory '" + gfortran_mod_dir.string()
+            + "': " + ec.message() << std::endl;
+        return 11;
+    }
+    std::string out_abs = std::filesystem::absolute(outfile).string();
+    std::string in_abs = std::filesystem::absolute(in_file).string();
+    std::filesystem::path original_dir = std::filesystem::current_path();
+    std::filesystem::current_path(gfortran_mod_dir, ec);
+    if (ec) {
+        std::cout << "Unable to enter module directory: " << ec.message() << std::endl;
+        return 11;
+    }
+    std::string cmd = "gfortran -fno-backtrace -J . -I . -o \"" + out_abs + "\" -c \"" + in_abs + "\"";
     int err = system(cmd.c_str());
+    std::filesystem::current_path(original_dir, ec);
     if (err) {
         std::cout << "The command '" + cmd + "' failed." << std::endl;
         return 11;
