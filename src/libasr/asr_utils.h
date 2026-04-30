@@ -3175,9 +3175,16 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
     } else if (ASR::is_a<ASR::CPtr_t>(*type)) {
         return {8, 8};
     } else if (ASR::is_a<ASR::String_t>(*type)) {
-        int64_t kind = ASR::down_cast<ASR::String_t>(type)->m_kind;
-        if (kind > 0) return {kind, 1};
-        return {-1, -1};
+        ASR::String_t* st = ASR::down_cast<ASR::String_t>(type);
+        int64_t kind = st->m_kind;
+        if (kind <= 0) return {-1, -1};
+        int64_t len = 1;
+        if (st->m_len == nullptr ||
+            !ASRUtils::extract_value(st->m_len, len)) {
+            return {-1, -1};
+        }
+        if (len < 0) return {-1, -1};
+        return {kind * len, 1};
     } else if (ASR::is_a<ASR::StructType_t>(*type)) {
         ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
         int64_t offset = 0;

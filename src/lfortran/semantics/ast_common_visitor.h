@@ -14135,17 +14135,6 @@ public:
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                     int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
-                    // For character types: mold_bytes = kind * length
-                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
-                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
-                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
-                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
-                            mold_bytes = mold_bytes * str_len;
-                        } else {
-                            mold_bytes = -1; // Runtime-sized string
-                        }
-                    }
                     if( mold_bytes > 0 ) {
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                     }
@@ -14154,17 +14143,6 @@ public:
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                     int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
-                    // For character types: mold_bytes = kind * length
-                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
-                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
-                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
-                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
-                            mold_bytes = mold_bytes * str_len;
-                        } else {
-                            mold_bytes = -1;
-                        }
-                    }
                     if( mold_bytes > 0 ) {
                         // Calculate: ceiling(src_len_expr / mold_bytes)
                         // = (src_len_expr + mold_bytes - 1) / mold_bytes
