@@ -3545,7 +3545,26 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 effective_width = width - n_blanks;
                             }
                         }
-                        if (effective_width > len) {
+                        if (exp_digits > 0 && strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL && width > 0) {
+                            // For Gw.dEe fixed-style output, reserve the exponent field as
+                            // trailing blanks (same visible layout as compilers like gfortran).
+                            int reserved_exp = exp_digits + 2; // 'E' + sign + e digits
+                            int core_width = width - reserved_exp;
+                            if (core_width > len) {
+                                snprintf(buffer, sizeof(buffer), "%*s", core_width, formatted);
+                            } else {
+                                strcpy(buffer, formatted);
+                            }
+                            int cur_len = strlen(buffer);
+                            int pad_len = width - cur_len;
+                            if (pad_len > 0) {
+                                if (cur_len + pad_len >= (int)sizeof(buffer)) {
+                                    pad_len = (int)sizeof(buffer) - cur_len - 1;
+                                }
+                                memset(buffer + cur_len, ' ', pad_len);
+                                buffer[cur_len + pad_len] = '\0';
+                            }
+                        } else if (effective_width > len) {
                             snprintf(buffer, sizeof(buffer), "%*s", effective_width, formatted);
                         } else {
                             strcpy(buffer, formatted);
