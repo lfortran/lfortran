@@ -1358,3 +1358,20 @@ TEST_CASE("FortranEvaluator 10 trig functions") {
     */
 }
 #endif
+
+TEST_CASE("FortranEvaluator kind parameter from global symtab") {
+    // Regression test: declaring a parameter `dp = kind(1.0d0)` and then
+    // using it in a subsequent declaration `real(dp) :: x(5)` previously
+    // crashed in interactive mode because extract_kind() unconditionally
+    // down-casted the global symtab's asr_owner (a TranslationUnit_t) to
+    // ASR::symbol_t.
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer, parameter :: dp = kind(1.0d0)");
+    CHECK(r.ok);
+    r = e.evaluate2("real(dp) :: x(5)");
+    CHECK(r.ok);
+}

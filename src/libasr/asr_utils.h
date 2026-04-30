@@ -4195,7 +4195,8 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
             ASR::Variable_t* kind_variable = ASR::down_cast<ASR::Variable_t>(
                     symbol_get_past_external(kind_var->m_v));
             bool is_parent_enum = false;
-            if (kind_variable->m_parent_symtab->asr_owner != nullptr) {
+            if (kind_variable->m_parent_symtab->asr_owner != nullptr &&
+                    ASR::is_a<ASR::symbol_t>(*kind_variable->m_parent_symtab->asr_owner)) {
                 ASR::symbol_t *s = ASR::down_cast<ASR::symbol_t>(
                     kind_variable->m_parent_symtab->asr_owner);
                 is_parent_enum = ASR::is_a<ASR::Enum_t>(*s);
