@@ -496,7 +496,7 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
-            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC);
+            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC) || der_type->m_is_sequence;
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));

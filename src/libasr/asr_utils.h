@@ -5335,7 +5335,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
         ASR::asr_t* dtype = ASR::make_Struct_t(al, struct_sym->base.loc,
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
-            ASR::accessType::Public, false, true, nullptr, 0,
+            ASR::accessType::Public, false, true, false, nullptr, 0,
             nullptr, nullptr, nullptr, 0);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
@@ -6198,6 +6198,7 @@ class SymbolDuplicator {
             struct_type_t->m_members, struct_type_t->n_members,
             struct_type_t->m_member_functions, struct_type_t->n_member_functions, struct_type_t->m_abi,
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
+            struct_type_t->m_is_sequence,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent,
             struct_type_t->m_kind_params, struct_type_t->n_kind_params));

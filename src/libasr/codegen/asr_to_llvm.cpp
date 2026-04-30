@@ -910,7 +910,8 @@ public:
                     member_var->m_parent_symtab->asr_owner);
                 struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
                 if (ASR::is_a<ASR::Struct_t>(*struct_sym) &&
-                    ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi == ASR::abiType::BindC) {
+                    (ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi == ASR::abiType::BindC ||
+                     ASR::down_cast<ASR::Struct_t>(struct_sym)->m_is_sequence)) {
                     ASR::ttype_t* mem_type = sim->m_type;
                     if (!ASR::is_a<ASR::Pointer_t>(*mem_type) &&
                         !ASR::is_a<ASR::Allocatable_t>(*mem_type)) {
@@ -6474,7 +6475,8 @@ public:
                     allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     // Skip string descriptor setup for bind(C) struct non-pointer character members
-                    bool is_bindc = (struct_type_t->m_abi == ASR::abiType::BindC);
+                    bool is_bindc = (struct_type_t->m_abi == ASR::abiType::BindC) ||
+                                    struct_type_t->m_is_sequence;
                     ASR::Variable_t* v_sym = ASR::down_cast<ASR::Variable_t>(sym);
                     bool is_direct_char = is_bindc &&
                         !ASR::is_a<ASR::Pointer_t>(*v_sym->m_type) &&
@@ -11665,7 +11667,8 @@ public:
                     member_var->m_parent_symtab->asr_owner);
                 struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
                 if (ASR::is_a<ASR::Struct_t>(*struct_sym) &&
-                    ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi == ASR::abiType::BindC) {
+                    (ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi == ASR::abiType::BindC ||
+                     ASR::down_cast<ASR::Struct_t>(struct_sym)->m_is_sequence)) {
                     ASR::ttype_t* mem_type = sim->m_type;
                     is_bindc_char_member = !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
                         !ASR::is_a<ASR::Allocatable_t>(*mem_type);
@@ -25986,8 +25989,9 @@ public:
                         member_var->m_parent_symtab->asr_owner);
                     struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
                     if (ASR::is_a<ASR::Struct_t>(*struct_sym) &&
-                        ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi
-                            == ASR::abiType::BindC &&
+                        (ASR::down_cast<ASR::Struct_t>(struct_sym)->m_abi
+                            == ASR::abiType::BindC ||
+                         ASR::down_cast<ASR::Struct_t>(struct_sym)->m_is_sequence) &&
                         !ASR::is_a<ASR::Pointer_t>(*sim->m_type) &&
                         !ASR::is_a<ASR::Allocatable_t>(*sim->m_type)) {
                         ASR::String_t* str_ty = ASR::down_cast<ASR::String_t>(

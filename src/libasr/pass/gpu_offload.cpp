@@ -851,6 +851,7 @@ public:
             nullptr, 0,
             orig_struct->m_abi, orig_struct->m_access,
             orig_struct->m_is_packed, orig_struct->m_is_abstract,
+            orig_struct->m_is_sequence,
             nullptr, 0, nullptr, nullptr, nullptr, 0);
         ASR::symbol_t *kernel_struct = down_cast<ASR::symbol_t>(new_struct);
         kernel_scope->add_symbol(struct_name, kernel_struct);

@@ -4259,7 +4259,7 @@ public:
             ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_Struct_t(
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
-                nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
+                nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, false,
                 nullptr, 0, nullptr, nullptr, nullptr, 0));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -8571,6 +8571,7 @@ public:
             new_data_member_names.p, new_data_member_names.size(),
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
+            pdt_struct->m_is_sequence,
             nullptr, 0, nullptr, new_parent, nullptr, 0);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -9086,7 +9087,7 @@ public:
                         current_scope = al.make_new<SymbolTable>(parent_scope);
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
-                                                        nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                        nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
                                                         nullptr, 0, nullptr, nullptr, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
@@ -9380,7 +9381,7 @@ public:
                     current_scope = al.make_new<SymbolTable>(parent_scope);
                     ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                     s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
-                                                    nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                    nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
                                                     nullptr, 0, nullptr, nullptr, nullptr, 0);
                     ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                     ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
@@ -15119,8 +15120,10 @@ public:
             ASRUtils::get_struct_sym_from_struct_expr(expr));
         if (struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
             ASR::Struct_t* st_sym = ASR::down_cast<ASR::Struct_t>(struct_sym);
-            // bind(C) types must be C-interoperable, so c_loc is allowed.
+            // bind(C) and SEQUENCE types have a defined storage layout,
+            // so c_loc is allowed.
             if (st_sym->m_abi == ASR::abiType::BindC) return false;
+            if (st_sym->m_is_sequence) return false;
         }
         ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
         for (size_t i = 0; i < st->n_data_member_types; i++) {
