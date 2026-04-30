@@ -17630,7 +17630,8 @@ public:
                             }
                             llvm::Value* data_ptr = arr_data;
                             if (data_ptr->getType()->isPointerTy() &&
-                                data_ptr->getType()->getPointerElementType()->isStructTy()) {
+                                llvm::cast<llvm::PointerType>(data_ptr->getType())
+                                    ->getElementType()->isStructTy()) {
                                 llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
                                     x.m_values[i],
                                     ASRUtils::type_get_past_allocatable_pointer(type),
@@ -17639,8 +17640,10 @@ public:
                                 data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
                             }
                             if (data_ptr->getType()->isPointerTy() &&
-                                data_ptr->getType()->getPointerElementType()->isArrayTy()) {
-                                llvm::Type* array_elem_type = data_ptr->getType()->getPointerElementType();
+                                llvm::cast<llvm::PointerType>(data_ptr->getType())
+                                    ->getElementType()->isArrayTy()) {
+                                llvm::Type* array_elem_type = llvm::cast<llvm::PointerType>(
+                                    data_ptr->getType())->getElementType();
                                 data_ptr = builder->CreateGEP(array_elem_type, data_ptr,
                                     { llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                                       llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0) });
