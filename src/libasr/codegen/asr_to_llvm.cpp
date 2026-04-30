@@ -17629,22 +17629,21 @@ public:
                                     array_size, llvm::Type::getInt32Ty(context), true);
                             }
                             llvm::Value* data_ptr = arr_data;
-                            if (data_ptr->getType()->isPointerTy() &&
-                                llvm::cast<llvm::PointerType>(data_ptr->getType())
-                                    ->getElementType()->isStructTy()) {
+                            ASR::Array_t* arr_tp = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_allocatable_pointer(type));
+                            if (arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                                 llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
                                     x.m_values[i],
                                     ASRUtils::type_get_past_allocatable_pointer(type),
                                     module.get());
                                 data_ptr = arr_descr->get_pointer_to_data(arr_type, arr_desc);
                                 data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
-                            }
-                            if (data_ptr->getType()->isPointerTy() &&
-                                llvm::cast<llvm::PointerType>(data_ptr->getType())
-                                    ->getElementType()->isArrayTy()) {
-                                llvm::Type* array_elem_type = llvm::cast<llvm::PointerType>(
-                                    data_ptr->getType())->getElementType();
-                                data_ptr = builder->CreateGEP(array_elem_type, data_ptr,
+                            } else if (arr_tp->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                                llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
+                                    x.m_values[i],
+                                    ASRUtils::type_get_past_allocatable_pointer(type),
+                                    module.get());
+                                data_ptr = builder->CreateGEP(arr_type, data_ptr,
                                     { llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                                       llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0) });
                             }
