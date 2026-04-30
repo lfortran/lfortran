@@ -5,7 +5,8 @@ program bindc_inline_char_01
   use iso_c_binding, only: c_ptr, c_loc, c_size_t
   implicit none
 
-  type, bind(c) :: object_t
+  type :: object_t
+    sequence
     integer :: i
     character(len=5) :: actor
     integer :: j
