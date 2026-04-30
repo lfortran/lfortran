@@ -212,6 +212,17 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
             std::string new_name = std::string(x->m_name) + suffix;
+            // In interactive mode the global symbol table persists across
+            // evaluations and the pass may run multiple times. If the
+            // generated procedure already exists in the current scope from
+            // a previous run, skip re-processing this function (which would
+            // trip add_symbol's uniqueness assertion). Call sites in the
+            // freshly translated AST will be rewritten by the call-site
+            // replacer using existing proc2newproc state populated below
+            // for newly inserted procedures only.
+            if (current_scope->get_symbol(new_name) != nullptr) {
+                return nullptr;
+            }
             if( ASR::is_a<ASR::Function_t>( *((ASR::symbol_t*) x) ) ) {
                 ASR::FunctionType_t* x_func_type = ASRUtils::get_FunctionType(x);
                 std::string new_bindc_name = "";

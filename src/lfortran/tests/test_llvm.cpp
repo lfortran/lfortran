@@ -1358,3 +1358,46 @@ TEST_CASE("FortranEvaluator 10 trig functions") {
     */
 }
 #endif
+
+TEST_CASE("FortranEvaluator kind parameter from global symtab") {
+    // Regression test: declaring a parameter `dp = kind(1.0d0)` and then
+    // using it in a subsequent declaration `real(dp) :: x(5)` previously
+    // crashed in interactive mode because extract_kind() unconditionally
+    // down-casted the global symtab's asr_owner (a TranslationUnit_t) to
+    // ASR::symbol_t.
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer, parameter :: dp = kind(1.0d0)");
+    CHECK(r.ok);
+    r = e.evaluate2("real(dp) :: x(5)");
+    CHECK(r.ok);
+}
+
+TEST_CASE("FortranEvaluator pass_array_by_data on global random_number") {
+    // Regression test: in interactive mode the global symbol table persists
+    // across evaluate2 calls, and the pass_array_by_data pass would re-add
+    // the same generated procedure name on each subsequent evaluation,
+    // tripping the SymbolTable::add_symbol assertion.
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer, parameter :: n = 10**7");
+    CHECK(r.ok);
+    r = e.evaluate2("integer, parameter :: dp = kind(1.0d0)");
+    CHECK(r.ok);
+    r = e.evaluate2("real(kind=dp) :: x(n)");
+    CHECK(r.ok);
+    r = e.evaluate2("call random_number(x)");
+    CHECK(r.ok);
+    r = e.evaluate2("call random_number(x)");
+    CHECK(r.ok);
+    r = e.evaluate2("print*,sum(x)/size(x)");
+    CHECK(r.ok);
+    r = e.evaluate2("print*,sum(x)/size(x)");
+    CHECK(r.ok);
+}
