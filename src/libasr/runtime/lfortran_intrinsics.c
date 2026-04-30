@@ -2716,32 +2716,39 @@ static void pad_real_field(char* result, int total_width, int e_trail) {
 }
 
 // Returns the length of the string that is printed inside result
+//
+// Used for list-directed (`print *, ...` / `write(*,*) ...`) output. Each
+// value is emitted with Flang-style minimal width: no fixed Gw.d field
+// padding, no leading whitespace. The single explicit leading space that
+// some users expect is opt-in via `--print-leading-space` (injected at the
+// semantics layer) and is not produced here. Items are separated by a
+// single space in `default_formatting`.
 int64_t print_into_string(Serialization_Info* s_info,  char* result){
     void* arg = s_info->current_arg_info.current_arg;
     switch (s_info->current_element_type){
         case INTEGER_64_TYPE:
-            sprintf(result, "%20"PRId64, *(int64_t*)arg);
+            sprintf(result, "%"PRId64, *(int64_t*)arg);
             break;
         case INTEGER_32_TYPE:
-            sprintf(result, "%11d", *(int32_t*)arg);
+            sprintf(result, "%"PRId32, *(int32_t*)arg);
             break;
         case INTEGER_16_TYPE:
-            sprintf(result, "%6hi", *(int16_t*)arg);
+            sprintf(result, "%hi", *(int16_t*)arg);
             break;
         case INTEGER_8_TYPE:
-            sprintf(result, "%4hhi", *(int8_t*)arg);
+            sprintf(result, "%hhi", *(int8_t*)arg);
             break;
         case UNSIGNED_INTEGER_64_TYPE:
-            sprintf(result, "%20"PRIu64, *(uint64_t*)arg);
+            sprintf(result, "%"PRIu64, *(uint64_t*)arg);
             break;
         case UNSIGNED_INTEGER_32_TYPE:
-            sprintf(result, "%11u", *(uint32_t*)arg);
+            sprintf(result, "%"PRIu32, *(uint32_t*)arg);
             break;
         case UNSIGNED_INTEGER_16_TYPE:
-            sprintf(result, "%6hu", *(uint16_t*)arg);
+            sprintf(result, "%hu", *(uint16_t*)arg);
             break;
         case UNSIGNED_INTEGER_8_TYPE:
-            sprintf(result, "%4hhu", *(uint8_t*)arg);
+            sprintf(result, "%hhu", *(uint8_t*)arg);
             break;
         case FLOAT_64_TYPE:
             if(s_info->current_arg_info.is_complex){
@@ -2752,10 +2759,8 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 format_double_fortran(real_str, real);
                 format_double_fortran(imag_str, imag);
                 sprintf(result, "(%s,%s)", real_str, imag_str);
-                pad_complex_field(result, 2*25 + 3);
             } else {
                 format_double_fortran(result, *(double*)arg);
-                pad_real_field(result, 25, 5);
             }
             break;
         case FLOAT_32_TYPE:
@@ -2767,10 +2772,8 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
                 format_float_fortran(real_str, real);
                 format_float_fortran(imag_str, imag);
                 sprintf(result, "(%s,%s)", real_str, imag_str);
-                pad_complex_field(result, 2*16 + 3);
             } else {
                 format_float_fortran(result, *(float*)arg);
-                pad_real_field(result, 16, 4);
             }
             break;
         case LOGICAL_8_TYPE:
