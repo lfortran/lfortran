@@ -4259,7 +4259,7 @@ public:
             ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_Struct_t(
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
-                nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
+                nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, false,
                 nullptr, 0, nullptr, nullptr, nullptr, 0));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -8571,6 +8571,7 @@ public:
             new_data_member_names.p, new_data_member_names.size(),
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
+            pdt_struct->m_is_sequence,
             nullptr, 0, nullptr, new_parent, nullptr, 0);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -9086,7 +9087,7 @@ public:
                         current_scope = al.make_new<SymbolTable>(parent_scope);
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
-                                                        nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                        nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
                                                         nullptr, 0, nullptr, nullptr, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
@@ -9380,7 +9381,7 @@ public:
                     current_scope = al.make_new<SymbolTable>(parent_scope);
                     ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                     s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
-                                                    nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                    nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
                                                     nullptr, 0, nullptr, nullptr, nullptr, 0);
                     ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                     ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
@@ -14135,17 +14136,6 @@ public:
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                     int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
-                    // For character types: mold_bytes = kind * length
-                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
-                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
-                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
-                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
-                            mold_bytes = mold_bytes * str_len;
-                        } else {
-                            mold_bytes = -1; // Runtime-sized string
-                        }
-                    }
                     if( mold_bytes > 0 ) {
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                     }
@@ -14154,17 +14144,6 @@ public:
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                     int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
-                    // For character types: mold_bytes = kind * length
-                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
-                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
-                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
-                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
-                            mold_bytes = mold_bytes * str_len;
-                        } else {
-                            mold_bytes = -1;
-                        }
-                    }
                     if( mold_bytes > 0 ) {
                         // Calculate: ceiling(src_len_expr / mold_bytes)
                         // = (src_len_expr + mold_bytes - 1) / mold_bytes
@@ -15131,11 +15110,49 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
+    bool struct_has_descriptor_string_member(ASR::expr_t* expr) {
+        ASR::ttype_t* type = ASRUtils::expr_type(expr);
+        type = ASRUtils::type_get_past_array(
+                   ASRUtils::type_get_past_allocatable(
+                       ASRUtils::type_get_past_pointer(type)));
+        if (!ASR::is_a<ASR::StructType_t>(*type)) return false;
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(expr));
+        if (struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            ASR::Struct_t* st_sym = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            // bind(C) and SEQUENCE types have a defined storage layout,
+            // so c_loc is allowed.
+            if (st_sym->m_abi == ASR::abiType::BindC) return false;
+            if (st_sym->m_is_sequence) return false;
+        }
+        ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
+        for (size_t i = 0; i < st->n_data_member_types; i++) {
+            ASR::ttype_t* mt = ASRUtils::type_get_past_array(
+                                   ASRUtils::type_get_past_allocatable(
+                                       ASRUtils::type_get_past_pointer(
+                                           st->m_data_member_types[i])));
+            if (ASR::is_a<ASR::String_t>(*mt)) return true;
+        }
+        return false;
+    }
+
     ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
+        if (struct_has_descriptor_string_member(v_Var)) {
+            diag.semantic_warning_label(
+                "c_loc() on a non-bind(C) derived type containing a "
+                "character component is not portable",
+                {x.base.base.loc},
+                "LFortran represents fixed-length character components as a "
+                "descriptor (pointer + length); the in-memory layout differs "
+                "from the standard inline layout used by gfortran/flang. "
+                "Code that relies on this layout (e.g. memcpy via storage_size, "
+                "raw bytewise transfer) will not behave portably."
+            );
+        }
         if( !ASR::is_a<ASR::GetPointer_t>(*v_Var) &&
             !ASRUtils::is_pointer(ASRUtils::expr_type(v_Var)) ) {
             ASR::ttype_t* ptr_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc,

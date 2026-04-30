@@ -1740,6 +1740,10 @@ RUN(NAME intrinsics_453 LABELS gfortran llvm) # Lgt intrinsic as while loop cond
 RUN(NAME intrinsics_454 LABELS gfortran llvm) # all/any with array section and whole array
 RUN(NAME intrinsics_455 LABELS gfortran llvm) # intrinsic declaration scope isolation
 RUN(NAME intrinsics_456 LABELS gfortran llvm) # move_alloc preserves lower bounds
+RUN(NAME intrinsics_457 LABELS gfortran llvm) # storage_size with character components
+RUN(NAME c_loc_descriptor_string_01 LABELS gfortran llvm) # c_loc warning on derived type with character component
+RUN(NAME bindc_inline_char_01 LABELS gfortran llvm) # sequence struct character members use inline [len x i8] layout
+RUN(NAME bindc_inline_char_02 LABELS llvm) # bind(C) struct character members use inline [len x i8] layout
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 

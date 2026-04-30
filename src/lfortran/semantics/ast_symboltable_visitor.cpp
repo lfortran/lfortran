@@ -2674,6 +2674,22 @@ public:
                 }
             }
 
+            // Detect SEQUENCE attribute among declarations.
+            bool is_sequence = false;
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
+                AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+                if (decl.m_vartype != nullptr) continue;
+                for (size_t j = 0; j < decl.n_attributes; j++) {
+                    if (AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[j])) {
+                        AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(decl.m_attributes[j]);
+                        if (sa->m_attr == AST::simple_attributeType::AttrSequence) {
+                            is_sequence = true;
+                        }
+                    }
+                }
+            }
+
             // Create a preliminary Struct_t and add it to the parent scope
             // so that recursive self-references (e.g., type(recursive_t(k))
             // inside recursive_t) can resolve during member processing.
@@ -2683,6 +2699,7 @@ public:
                 nullptr, 0,
                 nullptr, 0,
                 is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
+                is_sequence,
                 nullptr, 0, nullptr, parent_sym,
                 kind_params.p, kind_params.size());
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -2765,11 +2782,27 @@ public:
                 struct_dependencies.push_back(al, aggregate_type_name);
             }
         }
+        bool is_sequence = false;
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
+            AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+            if (decl.m_vartype != nullptr) continue;
+            for (size_t j = 0; j < decl.n_attributes; j++) {
+                if (AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[j])) {
+                    AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(decl.m_attributes[j]);
+                    if (sa->m_attr == AST::simple_attributeType::AttrSequence) {
+                        is_sequence = true;
+                    }
+                }
+            }
+        }
         tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             final_proc_names.p, final_proc_names.size(),
-            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym,
+            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
+            is_sequence,
+            nullptr, 0, nullptr, parent_sym,
             nullptr, 0);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
