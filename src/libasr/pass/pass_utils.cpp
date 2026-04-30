@@ -827,6 +827,45 @@ namespace LCompilers {
             }, nullptr);
         }
 
+        ASR::stmt_t* create_do_loop_helper_eoshift_fill(Allocator &al, const Location &loc,
+                    std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* res_var,
+                    ASR::expr_t* boundary, ASR::expr_t* array, ASR::expr_t* res,
+                    int curr_idx, int shifting_dim) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if ( do_loop_variables.size() == 0 ) {
+                return b.Assignment(b.ArrayItem_01(res, {res_var}), boundary);
+            }
+            if (shifting_dim == 0) shifting_dim = 1;
+            int rank = (int)do_loop_variables.size() + 1;
+            int actual_dim = -1;
+            int count = 0;
+            for(int i=1; i<=rank; i++) {
+                if(i == shifting_dim) continue;
+                if(count == curr_idx) {
+                    actual_dim = i;
+                    break;
+                }
+                count++;
+            }
+
+            if (curr_idx == (int)do_loop_variables.size() - 1) {
+                std::vector<ASR::expr_t*> res_vars(rank);
+                res_vars[shifting_dim - 1] = res_var;
+                int k = 0;
+                for(int i=0; i<rank; i++) {
+                    if (i == shifting_dim - 1) continue;
+                    res_vars[i] = do_loop_variables[k];
+                    k++;
+                }
+                return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, actual_dim), b.GetUBound(array, actual_dim), {
+                    b.Assignment(b.ArrayItem_01(res, res_vars), boundary),
+                }, nullptr);
+            }
+            return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, actual_dim), b.GetUBound(array, actual_dim), {
+                create_do_loop_helper_eoshift_fill(al, loc, do_loop_variables, res_var, boundary, array, res, curr_idx + 1, shifting_dim)
+            }, nullptr);
+        }
+
         ASR::stmt_t* create_do_loop_helper_random_number(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
                     ASR::symbol_t* s, ASR::expr_t* arr, ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx) {
             ASRUtils::ASRBuilder b(al, loc);

@@ -127,6 +127,11 @@ namespace LCompilers {
             ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx,
             int shifting_dim = 0);
 
+        ASR::stmt_t* create_do_loop_helper_eoshift_fill(Allocator &al, const Location &loc,
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* res_var,
+            ASR::expr_t* boundary, ASR::expr_t* array, ASR::expr_t* res, int curr_idx,
+            int shifting_dim = 0);
+
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res,
             int curr_idx);
