@@ -214,6 +214,37 @@ private:
             return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(v->m_v));
         }
 
+        if (ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+            ASR::IntegerConstant_t* i = ASR::down_cast<ASR::IntegerConstant_t>(expr);
+            return std::to_string(i->m_n);
+        }
+
+        if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+            std::string base_name = get_expr_name_for_runtime_message(array_item->m_v);
+            if (base_name.empty()) {
+                return "";
+            }
+
+            std::string result = base_name + "(";
+            for (size_t i = 0; i < array_item->n_args; i++) {
+                ASR::array_index_t& idx = array_item->m_args[i];
+                if (idx.m_left != nullptr || idx.m_right == nullptr || idx.m_step != nullptr) {
+                    return "";
+                }
+                std::string index_name = get_expr_name_for_runtime_message(idx.m_right);
+                if (index_name.empty()) {
+                    return "";
+                }
+                if (i > 0) {
+                    result += ", ";
+                }
+                result += index_name;
+            }
+            result += ")";
+            return result;
+        }
+
         if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
             ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
             std::string base_name = get_expr_name_for_runtime_message(sim->m_v);
