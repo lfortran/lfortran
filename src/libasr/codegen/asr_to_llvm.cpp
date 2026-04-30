@@ -25495,12 +25495,17 @@ public:
             if (m_dims[req_dim].m_start) {
                 ASRUtils::extract_value(m_dims[req_dim].m_start, lbound);
             }
-            if( x.m_bound == ASR::arrayboundType::LBound ) {
-                bound_value = lbound;
-            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                size_t length;
+            size_t length = 0;
+            bool has_length = m_dims[req_dim].m_length != nullptr &&
                 ASRUtils::extract_value(m_dims[req_dim].m_length, length);
-                bound_value = length + lbound - 1;
+            // Per Fortran 2018 (16.9.109/16.9.197), if dimension DIM has zero
+            // extent, LBOUND returns 1 and UBOUND returns 0 regardless of
+            // the array's declared bounds.
+            if( x.m_bound == ASR::arrayboundType::LBound ) {
+                bound_value = (has_length && length == 0) ? 1 : lbound;
+            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                LCOMPILERS_ASSERT(has_length);
+                bound_value = (length == 0) ? 0 : length + lbound - 1;
             } else {
                 LCOMPILERS_ASSERT(false);
             }
@@ -25575,6 +25580,14 @@ public:
                     builder->CreateCondBr(cond, thenBB, elseBB);
                     builder->SetInsertPoint(thenBB);
                     {
+                        // Per Fortran 2018 (16.9.109/16.9.197), if dimension
+                        // DIM has zero extent, LBOUND returns 1 and UBOUND
+                        // returns 0 regardless of the array's declared bounds.
+                        llvm::Value *length = nullptr;
+                        if (m_dims[i].m_length) {
+                            load_array_size_deep_copy(m_dims[i].m_length);
+                            length = tmp;
+                        }
                         if( x.m_bound == ASR::arrayboundType::LBound ) {
                             llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
@@ -25583,23 +25596,34 @@ public:
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);
                             }
-                            builder->CreateStore(builder->CreateSExtOrTrunc(lbound, target_type), target);
+                            llvm::Value *res = builder->CreateSExtOrTrunc(lbound, target_type);
+                            if (length) {
+                                llvm::Value *length_cast = builder->CreateSExtOrTrunc(length, target_type);
+                                llvm::Value *is_zero = builder->CreateICmpEQ(
+                                    length_cast, llvm::ConstantInt::get(target_type, 0));
+                                res = builder->CreateSelect(is_zero,
+                                    llvm::ConstantInt::get(target_type, 1), res);
+                            }
+                            builder->CreateStore(res, target);
                         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-                            llvm::Value *lbound = nullptr, *length = nullptr;
+                            llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
                                 this->visit_expr_wrapper(m_dims[i].m_start, true);
                                 lbound = tmp;
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);
                             }
-                            if (m_dims[i].m_length) {
-                                load_array_size_deep_copy(m_dims[i].m_length);
-                                length = tmp;
+                            if (length) {
                                 unsigned target_bit_width = target_type->getIntegerBitWidth();
-                                builder->CreateStore(
-                                    builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
-                                          llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1))),
-                                    target);
+                                llvm::Value *ub = builder->CreateSub(
+                                    builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
+                                    llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1)));
+                                llvm::Value *length_cast = builder->CreateSExtOrTrunc(length, target_type);
+                                llvm::Value *is_zero = builder->CreateICmpEQ(
+                                    length_cast, llvm::ConstantInt::get(target_type, 0));
+                                ub = builder->CreateSelect(is_zero,
+                                    llvm::ConstantInt::get(target_type, 0), ub);
+                                builder->CreateStore(ub, target);
                             } else {
                                 // Assumed-size array: last dimension has no length
                                 builder->CreateStore(builder->CreateSExtOrTrunc(lbound, target_type), target);
