@@ -15109,11 +15109,19 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name);
     }
 
-    static bool struct_has_descriptor_string_member(ASR::ttype_t* type) {
+    bool struct_has_descriptor_string_member(ASR::expr_t* expr) {
+        ASR::ttype_t* type = ASRUtils::expr_type(expr);
         type = ASRUtils::type_get_past_array(
                    ASRUtils::type_get_past_allocatable(
                        ASRUtils::type_get_past_pointer(type)));
         if (!ASR::is_a<ASR::StructType_t>(*type)) return false;
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(expr));
+        if (struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            ASR::Struct_t* st_sym = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            // bind(C) types must be C-interoperable, so c_loc is allowed.
+            if (st_sym->m_abi == ASR::abiType::BindC) return false;
+        }
         ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
         for (size_t i = 0; i < st->n_data_member_types; i++) {
             ASR::ttype_t* mt = ASRUtils::type_get_past_array(
@@ -15121,8 +15129,6 @@ public:
                                        ASRUtils::type_get_past_pointer(
                                            st->m_data_member_types[i])));
             if (ASR::is_a<ASR::String_t>(*mt)) return true;
-            if (ASR::is_a<ASR::StructType_t>(*mt) &&
-                struct_has_descriptor_string_member(mt)) return true;
         }
         return false;
     }
@@ -15132,8 +15138,7 @@ public:
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
-        ASR::ttype_t* v_type = ASRUtils::expr_type(v_Var);
-        if (struct_has_descriptor_string_member(v_type)) {
+        if (struct_has_descriptor_string_member(v_Var)) {
             diag.semantic_warning_label(
                 "c_loc() on a non-bind(C) derived type containing a "
                 "character component is not portable",

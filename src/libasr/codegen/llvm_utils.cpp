@@ -501,14 +501,22 @@ namespace LCompilers {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
                 llvm::Type* llvm_mem_type;
-                // bind(C) struct: non-pointer, non-allocatable character maps to i8
+                // bind(C) struct: non-pointer, non-allocatable character maps to inline [len x i8]
                 ASR::ttype_t* mem_type = member->m_type;
                 bool is_direct_char = is_bindc &&
                     !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
                     !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
                     ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
                 if (is_direct_char) {
-                    llvm_mem_type = llvm::Type::getInt8Ty(context);
+                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::type_get_past_array(mem_type));
+                    int64_t slen = 1;
+                    if (s->m_len) {
+                        ASRUtils::extract_value(s->m_len, slen);
+                    }
+                    if (slen < 1) slen = 1;
+                    llvm_mem_type = llvm::ArrayType::get(
+                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
