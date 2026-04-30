@@ -7545,45 +7545,15 @@ public:
                     if (arg->m_value_attr &&
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                         !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
+                        !ASRUtils::is_array(arg->m_type) &&
                         llvm_arg.getType()->isPointerTy()) {
-                        if (ASRUtils::is_array(arg->m_type)) {
-                            // Array dummy with VALUE attribute: copy the caller's
-                            // data into a local buffer so callee modifications do
-                            // not affect the caller. Currently support fixed-size
-                            // PointerArray (explicit-shape) arguments.
-                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
-                                ASRUtils::type_get_past_allocatable_pointer(arg->m_type));
-                            if (array_t->m_physical_type == ASR::array_physical_typeType::PointerArray
-                                && ASRUtils::is_fixed_size_array(array_t->m_dims, array_t->n_dims)) {
-                                llvm::Type* el_type = llvm_utils->get_el_type(
-                                    nullptr, array_t->m_type, module.get());
-                                int64_t size = ASRUtils::get_fixed_size_of_array(
-                                    array_t->m_dims, array_t->n_dims);
-                                llvm::Type* arr_type = llvm::ArrayType::get(el_type, size);
-                                llvm::Value* local_copy_arr = builder->CreateAlloca(
-                                    arr_type, nullptr, std::string(arg->m_name) + "_value");
-                                uint64_t el_size = module->getDataLayout()
-                                    .getTypeAllocSize(el_type);
-                                uint64_t total_bytes = el_size * (uint64_t)size;
-                                builder->CreateMemCpy(
-                                    local_copy_arr, llvm::MaybeAlign(),
-                                    llvm_sym, llvm::MaybeAlign(),
-                                    total_bytes);
-                                llvm::Value* zero = llvm::ConstantInt::get(
-                                    context, llvm::APInt(32, 0));
-                                llvm::Value* data_ptr = llvm_utils->CreateInBoundsGEP2(
-                                    arr_type, local_copy_arr, {zero, zero});
-                                llvm_sym = data_ptr;
-                            }
-                        } else {
-                            llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
-                                nullptr, arg->m_type, module.get());
-                            llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
-                            llvm::Value* local_copy = builder->CreateAlloca(
-                                val_type, nullptr, std::string(arg->m_name) + "_value");
-                            builder->CreateStore(loaded, local_copy);
-                            llvm_sym = local_copy;
-                        }
+                        llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
+                            nullptr, arg->m_type, module.get());
+                        llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
+                        llvm::Value* local_copy = builder->CreateAlloca(
+                            val_type, nullptr, std::string(arg->m_name) + "_value");
+                        builder->CreateStore(loaded, local_copy);
+                        llvm_sym = local_copy;
                     }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     std::string arg_s = arg->m_name;
@@ -7609,6 +7579,82 @@ public:
                 }
             }
             asr_arg_idx++;
+        }
+
+        // Second pass: handle array dummy arguments with VALUE attribute.
+        // We deferred this to after all arguments have been registered in
+        // llvm_symtab, so that variable-size dimension lengths (e.g. another
+        // dummy argument) can be evaluated. This emits a local buffer and
+        // memcpy of the caller's data so callee modifications do not affect
+        // the caller. Supports both fixed-size and runtime-size PointerArray
+        // (explicit-shape) arguments.
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(sym);
+            if (!arg->m_value_attr) continue;
+            if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) continue;
+            if (ASR::is_a<ASR::CPtr_t>(*arg->m_type)) continue;
+            if (!ASRUtils::is_array(arg->m_type)) continue;
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(arg->m_type));
+            if (array_t->m_physical_type != ASR::array_physical_typeType::PointerArray) continue;
+            uint32_t h = get_hash((ASR::asr_t*)arg);
+            if (llvm_symtab.find(h) == llvm_symtab.end()) continue;
+            llvm::Value* current_ptr = llvm_symtab[h];
+            if (!current_ptr->getType()->isPointerTy()) continue;
+            llvm::Type* el_type = llvm_utils->get_el_type(
+                nullptr, array_t->m_type, module.get());
+            uint64_t el_size_bytes = module->getDataLayout().getTypeAllocSize(el_type);
+            std::string name = std::string(arg->m_name) + "_value";
+            if (ASRUtils::is_fixed_size_array(array_t->m_dims, array_t->n_dims)) {
+                int64_t size = ASRUtils::get_fixed_size_of_array(
+                    array_t->m_dims, array_t->n_dims);
+                llvm::Type* arr_type = llvm::ArrayType::get(el_type, size);
+                llvm::Value* local_copy_arr = builder->CreateAlloca(
+                    arr_type, nullptr, name);
+                uint64_t total_bytes = el_size_bytes * (uint64_t)size;
+                builder->CreateMemCpy(
+                    local_copy_arr, llvm::MaybeAlign(),
+                    current_ptr, llvm::MaybeAlign(),
+                    total_bytes);
+                llvm::Value* zero = llvm::ConstantInt::get(
+                    context, llvm::APInt(32, 0));
+                llvm::Value* data_ptr = llvm_utils->CreateInBoundsGEP2(
+                    arr_type, local_copy_arr, {zero, zero});
+                llvm_symtab[h] = data_ptr;
+            } else {
+                // Runtime-size array: compute total element count from m_dims.
+                llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                llvm::Value* num_elements = llvm::ConstantInt::get(i64_ty, 1);
+                int64_t ptr_loads_copy = ptr_loads;
+                for (size_t d = 0; d < array_t->n_dims; d++) {
+                    ASR::expr_t* m_length = array_t->m_dims[d].m_length;
+                    if (m_length == nullptr) {
+                        num_elements = nullptr;
+                        break;
+                    }
+                    ptr_loads = 2 - !LLVM::is_llvm_pointer(
+                        *ASRUtils::expr_type(m_length));
+                    this->visit_expr_wrapper(m_length, true);
+                    llvm::Value* dim_len = tmp;
+                    dim_len = builder->CreateSExtOrTrunc(dim_len, i64_ty);
+                    num_elements = builder->CreateMul(num_elements, dim_len);
+                }
+                ptr_loads = ptr_loads_copy;
+                if (num_elements == nullptr) continue;
+                llvm::Value* local_copy = builder->CreateAlloca(
+                    el_type, num_elements, name);
+                llvm::Value* total_bytes = builder->CreateMul(
+                    num_elements,
+                    llvm::ConstantInt::get(i64_ty, el_size_bytes));
+                builder->CreateMemCpy(
+                    local_copy, llvm::MaybeAlign(),
+                    current_ptr, llvm::MaybeAlign(),
+                    total_bytes);
+                llvm_symtab[h] = local_copy;
+            }
         }
     }
 

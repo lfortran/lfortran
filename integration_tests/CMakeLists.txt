@@ -475,6 +475,7 @@ RUN(NAME symbol_table_jloop_01 LABELS gfortran llvm)
 
 RUN(NAME value_attribute_01 LABELS gfortran llvm)
 RUN(NAME value_attribute_02 LABELS gfortran llvm)
+RUN(NAME value_attribute_03 LABELS gfortran llvm)
 RUN(NAME volatile_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
