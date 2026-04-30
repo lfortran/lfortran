@@ -1,0 +1,5 @@
+warning: #warning This branch must emit a #warning
+ --> tests/warnings/cpp_warn1.f90:9:5
+  |
+9 | x = 5
+  |     ^ 
