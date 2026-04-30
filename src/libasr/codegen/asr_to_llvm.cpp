@@ -9170,7 +9170,7 @@ public:
             builder->CreateStore(wrapper_ptr, target_data_field);
         } else {
             llvm::Type* target_data_field_elem_type =
-                target_data_field->getType()->getPointerElementType();
+                llvm::cast<llvm::StructType>(target_type_llvm)->getElementType(0);
             if (value_data->getType() != target_data_field_elem_type) {
                 value_data = builder->CreateBitCast(value_data, target_data_field_elem_type);
             }
