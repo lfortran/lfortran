@@ -17610,7 +17610,44 @@ public:
                             }
                             builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data, elem_len_llvm });
                         } else {
-                            builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data });
+                            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+                                ASRUtils::type_get_past_allocatable_pointer(type));
+                            llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                                x.m_values[i], elem_type, module.get());
+                            llvm::Value* array_size = nullptr;
+                            if (ASRUtils::is_fixed_size_array(type)) {
+                                int64_t fixed_size = ASRUtils::get_fixed_size_of_array(type);
+                                array_size = llvm::ConstantInt::get(
+                                    llvm::Type::getInt32Ty(context), fixed_size);
+                            } else {
+                                llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
+                                    x.m_values[i],
+                                    ASRUtils::type_get_past_allocatable_pointer(type),
+                                    module.get());
+                                array_size = arr_descr->get_array_size(arr_type, arr_desc, nullptr, 4);
+                                array_size = builder->CreateIntCast(
+                                    array_size, llvm::Type::getInt32Ty(context), true);
+                            }
+                            llvm::Value* data_ptr = arr_data;
+                            if (data_ptr->getType()->isPointerTy() &&
+                                data_ptr->getType()->getPointerElementType()->isStructTy()) {
+                                llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
+                                    x.m_values[i],
+                                    ASRUtils::type_get_past_allocatable_pointer(type),
+                                    module.get());
+                                data_ptr = arr_descr->get_pointer_to_data(arr_type, arr_desc);
+                                data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr);
+                            }
+                            if (data_ptr->getType()->isPointerTy() &&
+                                data_ptr->getType()->getPointerElementType()->isArrayTy()) {
+                                llvm::Type* array_elem_type = data_ptr->getType()->getPointerElementType();
+                                data_ptr = builder->CreateGEP(array_elem_type, data_ptr,
+                                    { llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                                      llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0) });
+                            }
+                            emit_string_read_loop(elem_type, llvm_elem_type,
+                                data_ptr, array_size, str_src_data, str_src_len,
+                                iostat, str_offset, x.m_values[i]);
                         }
                     } else {
                         if (ASR::is_a<ASR::Allocatable_t>(*type) ||
