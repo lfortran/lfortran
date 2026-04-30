@@ -11474,6 +11474,7 @@ public:
 
         llvm::Value *target, *value;
         uint32_t h;
+        ASR::expr_t* target_expr_for_type = x.m_target;
         if( x.m_target->type == ASR::exprType::ArrayPhysicalCast ) {
             ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_target);
             ASR::ttype_t* src_asr_type = ASRUtils::expr_type(apc->m_arg);
@@ -11497,6 +11498,9 @@ public:
                 this->visit_expr(*apc->m_arg);
                 is_assignment_target = false;
                 target = tmp;
+                if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray) {
+                    target_expr_for_type = apc->m_arg;
+                }
             }
         } else if( x.m_target->type == ASR::exprType::ArrayItem ||
             x.m_target->type == ASR::exprType::StringItem ||
@@ -11916,8 +11920,9 @@ public:
                     llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
                     target = llvm_utils->CreateLoad2(ptr_load_type->getPointerTo(), target);
                 }
-                llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
-                        ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
+                ASR::ttype_t* target_llvm_type_asr = ASRUtils::expr_type(target_expr_for_type);
+                llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(target_expr_for_type,
+                        ASRUtils::type_get_past_allocatable_pointer(target_llvm_type_asr), module.get());
                 llvm::Type* source_array_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                         ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
                 if (x.m_move_allocation) {
