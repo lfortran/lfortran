@@ -3300,6 +3300,7 @@ RUN(NAME array_section_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_23 LABELS gfortran llvm)
 RUN(NAME array_section_24 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME array_section_25 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --legacy-array-sections)
+RUN(NAME array_section_26 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)

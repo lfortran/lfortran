@@ -7971,7 +7971,8 @@ public:
                 ASRUtils::symbol_get_past_external(sym.second));
             if( !(symbol_intent == ASRUtils::intent_in ||
                  symbol_intent == ASRUtils::intent_inout ||
-                 symbol_intent == ASRUtils::intent_out) ) {
+                 symbol_intent == ASRUtils::intent_out ||
+                 symbol_intent == ASRUtils::intent_unspecified) ) {
                 continue;
             }
             ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym.second);
