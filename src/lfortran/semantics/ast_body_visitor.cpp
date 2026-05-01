@@ -4130,7 +4130,14 @@ public:
                         ASRUtils::EXPR(ASR::make_Var_t(al, type_stmt_name->base.base.loc, assoc_sym)) :
                         m_selector;
                     ASR::expr_t* casted_selector_tsn = m_selector;
-                    if (!ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
+                    bool selector_is_unlimited_poly = ASRUtils::is_unlimited_polymorphic_type(m_selector);
+                    bool unlimited_poly_needs_cast_to_struct =
+                        selector_is_unlimited_poly &&
+                        ASR::is_a<ASR::Pointer_t>(*assoc_variable->m_type) &&
+                        !ASRUtils::is_array(assoc_variable->m_type) &&
+                        ASR::is_a<ASR::StructType_t>(
+                            *ASRUtils::type_get_past_pointer(assoc_variable->m_type));
+                    if (!selector_is_unlimited_poly || unlimited_poly_needs_cast_to_struct) {
                         casted_selector_tsn = ASRUtils::EXPR(ASR::make_Cast_t(al,
                             type_stmt_name->base.base.loc, m_selector, ASR::cast_kindType::ClassToStruct,
                             assoc_variable->m_type, nullptr, dest_expr_tsn));
