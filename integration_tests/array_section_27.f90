@@ -20,4 +20,5 @@ program array_section_27
    if (abs(obj%arr(2,1) - 2.222d0) > 1.0d-12) error stop
    if (abs(obj%arr(1,2)) > 1.0d-12) error stop
    if (abs(obj%arr(2,2)) > 1.0d-12) error stop
+   deallocate(obj%arr)
 end program array_section_27
