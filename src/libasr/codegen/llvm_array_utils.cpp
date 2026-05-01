@@ -2014,6 +2014,10 @@ namespace LCompilers {
             int32_t type_code_val = 2;
             if (ASR::is_a<ASR::Integer_t>(*val_type)){
                 type_code_val = (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind <= 4) ? 2 : 3;
+            } else if (ASR::is_a<ASR::String_t>(*val_type)) {
+                type_code_val = 0;
+            } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+                type_code_val = 1;
             } else if (ASR::is_a<ASR::Real_t>(*val_type)){
                 type_code_val = (ASR::down_cast<ASR::Real_t>(val_type)->m_kind == 4) ? 4 : 5;
             } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
