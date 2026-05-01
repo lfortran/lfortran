@@ -3,7 +3,9 @@ implicit none
 integer, parameter :: dp = kind(1.0d0)
 real(kind=dp) :: xread(4)
 integer :: i, ierr, nread_, max_read_
-character(len=*), parameter :: text = "1.5 2.5 3.5"
+character(len=*), parameter :: text_param = "1.5 2.5 3.5"
+character(len=len(text_param)) :: text
+text = text_param
 
 max_read_ = 4
 nread_ = 0
