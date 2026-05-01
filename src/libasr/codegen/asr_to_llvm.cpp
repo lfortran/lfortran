@@ -17473,7 +17473,9 @@ public:
                                             x.m_values[i],
                                             ASRUtils::type_get_past_allocatable_pointer(type),
                                             module.get()
-                                        )->getPointerTo()
+                                        )->getPointerTo(),
+                                        llvm::Type::getInt64Ty(context) /*array_size*/,
+                                        llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/
                                     },
                                     false);
                             }
@@ -17567,7 +17569,8 @@ public:
                                 }
                             }
                         }
-                        if (x.m_iostat) {
+                        if (x.m_iostat && ASRUtils::is_array_of_strings(type)) {
+                            // String array runtime does not return iostat; assume success.
                             int ptr_copy = ptr_loads;
                             ptr_loads = 0;
 
@@ -17603,7 +17606,19 @@ public:
                             }
                             builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data, elem_len_llvm });
                         } else {
-                            builder->CreateCall(fn, { str_src_data, str_src_len, fmt, arr_data });
+                            // Compute array size to detect EOF (fewer values than requested).
+                            ASR::ttype_t *type32_local = ASRUtils::TYPE(
+                                ASR::make_Integer_t(al, x.base.base.loc, 4));
+                            ASR::ArraySize_t* array_size_node =
+                                ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(
+                                    al, x.base.base.loc, x.m_values[i],
+                                    nullptr, type32_local, nullptr));
+                            visit_ArraySize(*array_size_node);
+                            llvm::Value* arr_size_i64 = builder->CreateIntCast(
+                                tmp, llvm::Type::getInt64Ty(context), true);
+                            tmp = nullptr;
+                            builder->CreateCall(fn, { str_src_data, str_src_len, fmt,
+                                arr_data, arr_size_i64, iostat });
                         }
                     } else {
                         if (ASR::is_a<ASR::Allocatable_t>(*type) ||
