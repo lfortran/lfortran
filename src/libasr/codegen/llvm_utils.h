@@ -2171,7 +2171,10 @@ class ASRToLLVMVisitor;
         llvm::Type* get_llvm_type(ASR::ttype_t* type, ASR::Struct_t* struct_sym){
             // TODO : Uncomment line below
             // LCOMPILERS_ASSERT(!(ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type)) ^ (struct_sym != nullptr)))
-            static auto const dummy_var_symbol = ASRUtils::EXPR(ASR::make_Var_t(al_, type->base.loc, nullptr));
+            // Note: must not be `static` — across separate-compilation units
+            // the Allocator backing this expression is destroyed between
+            // compilations, leaving a dangling pointer for subsequent calls.
+            auto const dummy_var_symbol = ASRUtils::EXPR(ASR::make_Var_t(al_, type->base.loc, nullptr));
             ASR::down_cast<ASR::Var_t>(dummy_var_symbol)->m_v = (ASR::symbol_t*)struct_sym;
             return llvm_utils_->get_type_from_ttype_t_util(dummy_var_symbol, type, llvm_utils_->module);
         }
