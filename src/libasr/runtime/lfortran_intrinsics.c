@@ -7706,16 +7706,11 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
         }
         
         if (c == ',') {
-            while ((c = fgetc(filep)) != EOF && isspace(c)) {
-            }
-            if (c == EOF) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Invalid logical input from file (EOF).\n");
-                exit(1);
-            }
+            // Null field: two consecutive separators mean "keep current value"
+            return;
         }
         
-        if (c == ',' || c == '/') {
+        if (c == '/') {
             ungetc(c, filep);
             return;
         }
