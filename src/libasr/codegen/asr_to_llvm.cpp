@@ -4174,6 +4174,14 @@ public:
                 ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) ) {
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
+            } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_v) &&
+                       array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(x.m_v);
+                ASR::ttype_t* base_type = ASRUtils::expr_type(as->m_v);
+                if (LLVM::is_llvm_pointer(*base_type)) {
+                    llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
+                    array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
+                }
             } else if (array_t->m_physical_type == ASR::array_physical_typeType::PointerArray &&
                        !LLVM::is_llvm_pointer(*x_mv_type) &&
                        is_bindc_array &&
