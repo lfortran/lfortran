@@ -3346,6 +3346,7 @@ RUN(NAME finalization_02 LABELS gfortran llvm)
 RUN(NAME finalization_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_04 LABELS gfortran llvm)
 RUN(NAME finalization_05 LABELS gfortran llvm)
+RUN(NAME finalization_06 LABELS gfortran llvm)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)
@@ -3435,10 +3436,9 @@ RUN(NAME read_85 LABELS gfortran llvm)
 RUN(NAME read_86 LABELS gfortran llvm)
 RUN(NAME read_87 LABELS gfortran llvm)
 RUN(NAME read_88 LABELS gfortran llvm)
-
 RUN(NAME read_89 LABELS gfortran llvm)
-
 RUN(NAME read_90 LABELS gfortran llvm fortran)
+RUN(NAME read_91 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
