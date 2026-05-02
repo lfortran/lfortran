@@ -25069,6 +25069,21 @@ public:
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         tmp = builder->CreateCall(fnTy, fn, args);
+
+        if (func->m_return_var) {
+            ASR::ttype_t *return_var_type0 = EXPR2VAR(func->m_return_var)->m_type;
+            if (is_a<ASR::Complex_t>(*return_var_type0)) {
+                int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+                if (a_kind == 4) {
+                    llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+                    llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
+                    builder->CreateStore(tmp, p_fx2);
+                    tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
+                    tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
+                }
+            }
+        }
+
         return;
     }
 
