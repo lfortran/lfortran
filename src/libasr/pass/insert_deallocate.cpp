@@ -145,6 +145,7 @@ public:
         if (ASRUtils::is_pointer(target_var->m_type)) return;
 
         bool is_alloc = ASRUtils::is_allocatable(target_var->m_type);
+        if (ASRUtils::is_array(target_var->m_type)) return;
 
         ASR::ttype_t* t = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_allocatable(target_var->m_type));
