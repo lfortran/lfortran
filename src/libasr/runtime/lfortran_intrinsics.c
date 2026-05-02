@@ -5748,8 +5748,15 @@ void remove_from_unit_to_file(int32_t unit_num) {
 }
 
 static void _lfortran_close_all_units(void) {
+    const char *scratch_prefix = "_lfortran_generated_file";
+    const size_t scratch_prefix_len = 24; // strlen("_lfortran_generated_file")
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].filename != NULL) {
+            // Delete scratch files at normal program termination
+            if (strncmp(unit_to_file[i].filename, scratch_prefix,
+                        scratch_prefix_len) == 0) {
+                remove(unit_to_file[i].filename);
+            }
             internal_free(unit_to_file[i].filename);
             unit_to_file[i].filename = NULL;
         }
