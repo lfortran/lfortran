@@ -1,3 +1,4 @@
+#include "libasr/asr.h"
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
@@ -789,7 +790,7 @@ public:
             if(str->m_len_kind == ASR::AssumedLength && 
                 x.m_storage !=ASR::Parameter &&
                 !ASRUtils::is_pointer(x.m_type) /*Tolerate pointer*/){
-                require(x.m_intent != ASR::Local && x.m_intent != ASR::ReturnVar,
+                require(x.m_intent != ASR::Local,
                     "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT).");
             }
         }
