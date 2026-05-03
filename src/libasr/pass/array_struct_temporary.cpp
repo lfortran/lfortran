@@ -1863,6 +1863,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_IntegerCompare(x);
     }
 
+    void visit_StringCompare(const ASR::StringCompare_t& x) {
+        ASR::StringCompare_t& xx = const_cast<ASR::StringCompare_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "string_compare", binop, ASR::exprType::StringCompare) ) {
+            return ;
+        }
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_StringCompare(x);
+    }
+
     template <typename T>
     void visit_TypeConstructor(const T& x, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
