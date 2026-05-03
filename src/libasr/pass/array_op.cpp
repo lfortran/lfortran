@@ -1705,7 +1705,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         if (bounds_checking && 
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
-            ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            ASRUtils::get_expr_size_expr(x.m_target) != nullptr) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
             ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
