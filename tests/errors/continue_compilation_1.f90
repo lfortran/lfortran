@@ -648,7 +648,10 @@ program continue_compilation_1
     a(1) = .true.
     derived_cls = base_var
     call print_len_non_char("  Hello World  ")
-
+    !do_nonint
+    do, adwf = 1.1, 2.4, 0.5
+        print *, adwf
+    end do
 
 
 
