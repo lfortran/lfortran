@@ -786,6 +786,12 @@ public:
                 require(x.m_intent != ASR::Local,
                     "CChar-string-physical type shouldn't be used with local variables");
             }
+            if(str->m_len_kind == ASR::AssumedLength && 
+                x.m_storage !=ASR::Parameter &&
+                !ASRUtils::is_pointer(x.m_type) /*Tolerate pointer*/){
+                require(x.m_intent != ASR::Local && x.m_intent != ASR::ReturnVar,
+                    "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT).");
+            }
         }
         if (x.m_symbolic_value)
             visit_expr(*x.m_symbolic_value);

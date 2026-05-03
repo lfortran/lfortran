@@ -142,6 +142,30 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
 
     return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
 }
+/**
+ * 1) AssumedLength strings cannot be used as temporaries, hence use to DeferredLength
+ * 2) Any DeferredLength string must be allocatable. 
+ */
+inline ASR::ttype_t* normalize_string_temporary_type(
+    Allocator& al, const Location& loc, ASR::ttype_t* var_type) {
+    if (!ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(var_type))) {
+        return var_type;
+    }
+    
+    ASR::ttype_t* type_duplicated = ASRUtils::duplicate_type(al, var_type);
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type_duplicated));
+    if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+        str_type->m_len = nullptr;
+        str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
+    }
+    if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength &&
+            !ASRUtils::is_allocatable(type_duplicated) &&
+            !ASRUtils::is_pointer(type_duplicated)) {
+        type_duplicated = ASRUtils::TYPE(
+            ASRUtils::make_Allocatable_t_util(al, loc, type_duplicated));
+    }
+    return type_duplicated;
+}
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
@@ -215,17 +239,6 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
                 ASR::array_physical_typeType::FixedSizeArray, true);
         }
         var_type = value_type;
-        // DeferredLength string variables must be allocatable or pointer.
-        // When the element type is a DeferredLength string, wrap with Allocatable.
-        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable_pointer(var_type));
-        if (ASR::is_a<ASR::String_t>(*elem_type)) {
-            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
-            if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength &&
-                    !ASRUtils::is_allocatable(var_type) && !ASRUtils::is_pointer(var_type)) {
-                var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
-            }
-        }
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
         if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required &&
@@ -239,6 +252,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
             var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
         }
     }
+    var_type = normalize_string_temporary_type(al, value->base.loc, var_type);
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
     if (is_compile_time) {
@@ -595,6 +609,9 @@ bool set_allocation_size(
                 allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
                     al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
                 allocate_dims.push_back(al, allocate_dim);
+            }
+            if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                len_allocte_expr = ASRUtils::ASRBuilder(al, loc).StringLen(array_item_t->m_v);
             }
             break;
         }
