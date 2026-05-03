@@ -2289,11 +2289,16 @@ public:
                 // fill_malloc_array_details creates a zeroed wrapper.
                 ASR::ttype_t* effective_alloc_type = is_mold_unlimited_poly
                     ? nullptr : curr_arg.m_type;
+                ASR::expr_t* string_len_to_allocate = curr_arg.m_len_expr;
+                if (!string_len_to_allocate && ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
+                    ASR::String_t* str_type = ASRUtils::get_string_type(ASRUtils::type_get_past_array(array_type));
+                    string_len_to_allocate = str_type->m_len;
+                }
                 fill_malloc_array_details((x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val,
                                         type, llvm_data_type,
                                         expr_type(x.m_args[i].m_a),
                                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
-                                        curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr, 
+                                        curr_arg.m_dims, curr_arg.n_dims, string_len_to_allocate,
                                         curr_arg.m_sym_subclass, realloc, effective_alloc_type);
                 if (is_mold_unlimited_poly) {
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(
