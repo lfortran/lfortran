@@ -14300,22 +14300,20 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr(*x.m_target);
+        this->visit_expr_load_wrapper(x.m_target,
+            LLVM::is_llvm_pointer(*expr_type(x.m_target)) ? 2 : 1,
+            true);
         llvm::Value* target = tmp;
 
-        this->visit_expr(*x.m_source);
+        this->visit_expr_load_wrapper(x.m_source,
+            LLVM::is_llvm_pointer(*expr_type(x.m_source)) ? 2 : 1,
+            true);
         llvm::Value* source = tmp;
 
         llvm::Type *type;
         int a_kind;
         a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
         type = llvm_utils->getFPType(a_kind);
-        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_target))) {
-            target = llvm_utils->CreateLoad2(type, target);
-        }
-        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_source))) {
-            source = llvm_utils->CreateLoad2(type, source);
-        }
         llvm::Value *ftarget = target;
         llvm::Value *fsource = source;
         if (ftarget->getType() != type) {
