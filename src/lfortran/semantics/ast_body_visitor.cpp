@@ -8398,16 +8398,28 @@ public:
             const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
             var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var))));
         }
+        if (var) {
+            ASR::ttype_t* var_type = ASRUtils::expr_type(var);
+            if (!ASR::is_a<ASR::Integer_t>(*var_type)) {
+                diag.add(Diagnostic(
+                    "DO loop control variable must be integer",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {var->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         if (x.m_start) {
             visit_expr(*x.m_start);
             start = ASRUtils::EXPR(tmp);
             type = ASRUtils::expr_type(start);
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
-                diag.semantic_warning_label(
+                diag.add(Diagnostic(
                     "Start expression in DO loop must be integer",
-                    {start->base.loc},
-                    ""
-                );
+                    Level::Error, Stage::Semantic, {
+                        Label("", {start->base.loc})
+                    }));
+                throw SemanticAbort();
             }
             cast_as_loop_var(&start);
         }
@@ -8416,11 +8428,12 @@ public:
             end = ASRUtils::EXPR(tmp);
             type = ASRUtils::expr_type(end);
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
-                diag.semantic_warning_label(
+                diag.add(Diagnostic(
                     "End expression in DO loop must be integer",
-                    {end->base.loc},
-                    ""
-                );
+                    Level::Error, Stage::Semantic, {
+                        Label("", {end->base.loc})
+                    }));
+                throw SemanticAbort();
             }
             cast_as_loop_var(&end);
         }
@@ -8443,11 +8456,12 @@ public:
             } else {
                 type = ASRUtils::expr_type(increment);
                 if (!ASR::is_a<ASR::Integer_t>(*type)) {
-                    diag.semantic_warning_label(
+                    diag.add(Diagnostic(
                         "Step expression (increment) in DO loop must be integer",
-                        {increment->base.loc},
-                        ""
-                    );
+                        Level::Error, Stage::Semantic, {
+                            Label("", {increment->base.loc})
+                        }));
+                    throw SemanticAbort();
                 }
             }
             cast_as_loop_var(&increment);
