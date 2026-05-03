@@ -16850,7 +16850,11 @@ public:
     }
 
     void generate_read_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
-            llvm::Value* unit_val, llvm::Value* iostat) {
+            llvm::Value* unit_val, llvm::Value* iostat,
+            bool is_string = false,
+            llvm::Value* str_src_data = nullptr,
+            llvm::Value* str_src_len = nullptr,
+            llvm::Value* str_offset = nullptr) {
         ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
             ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
 
@@ -16892,7 +16896,8 @@ public:
 
         if (idl->n_values == 1 && ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])) {
             ASR::ImpliedDoLoop_t* inner_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[0]);
-            generate_read_implied_do_loop(inner_idl, unit_val, iostat);
+            generate_read_implied_do_loop(inner_idl, unit_val, iostat,
+                is_string, str_src_data, str_src_len, str_offset);
         } else {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -16901,20 +16906,30 @@ public:
             ptr_loads = ptr_loads_copy;
 
             ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
-            llvm::Function* read_fn = get_read_function(elem_type);
-            llvm::Value* read_elem_ptr = elem_ptr;
-            if (ASRUtils::is_logical(*elem_type)) {
-                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
-                    llvm::Type::getInt1Ty(context));
-                builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
-                int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-                llvm::Value* loaded = llvm_utils->CreateLoad2(
-                    llvm::Type::getInt1Ty(context), tmp_bool);
-                llvm::Value* widened = builder->CreateZExt(loaded,
-                    llvm_utils->getIntType(kind));
-                builder->CreateStore(widened, elem_ptr);
+            if (is_string) {
+                llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                    idl->m_values[0], elem_type, module.get());
+                llvm::Value* size_one = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), 1);
+                emit_string_read_loop(elem_type, llvm_elem_type,
+                    elem_ptr, size_one, str_src_data, str_src_len,
+                    iostat, str_offset, idl->m_values[0]);
             } else {
-                builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
+                llvm::Function* read_fn = get_read_function(elem_type);
+                llvm::Value* read_elem_ptr = elem_ptr;
+                if (ASRUtils::is_logical(*elem_type)) {
+                    llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                        llvm::Type::getInt1Ty(context));
+                    builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                    int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                    llvm::Value* loaded = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt1Ty(context), tmp_bool);
+                    llvm::Value* widened = builder->CreateZExt(loaded,
+                        llvm_utils->getIntType(kind));
+                    builder->CreateStore(widened, elem_ptr);
+                } else {
+                    builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
+                }
             }
         }
 
@@ -17414,12 +17429,15 @@ public:
                     }
                     // General case: generate a loop to read elements one by one
                     // This handles multi-dimensional arrays like (a(i,j), j=1,n)
+                    // and struct member references like (s%spec(j)%num, j=1,n).
                     {
                         bool can_handle = (idl->n_values == 1 &&
                             (ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0]) ||
-                             ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])));
+                             ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0]) ||
+                             ASR::is_a<ASR::StructInstanceMember_t>(*idl->m_values[0])));
                         if (can_handle) {
-                            generate_read_implied_do_loop(idl, unit_val, iostat);
+                            generate_read_implied_do_loop(idl, unit_val, iostat,
+                                is_string, str_src_data, str_src_len, str_offset);
                             continue;
                         }
                     }
