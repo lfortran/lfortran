@@ -478,6 +478,8 @@ static void _lfortran_internal_free_tracked(void *ptr,
 
 #endif /* LFORTRAN_INTERNAL_ALLOC_CHECK */
 
+const char *scratch_prefix = "_lfortran_generated_file";
+
 static void _lfortran_close_all_units(void);
 
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
@@ -5748,8 +5750,7 @@ void remove_from_unit_to_file(int32_t unit_num) {
 }
 
 static void _lfortran_close_all_units(void) {
-    const char *scratch_prefix = "_lfortran_generated_file";
-    const size_t scratch_prefix_len = 24; // strlen("_lfortran_generated_file")
+    const size_t scratch_prefix_len = strlen(scratch_prefix);
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].filename != NULL) {
             // Delete scratch files at normal program termination
@@ -5929,12 +5930,12 @@ _lfortran_open(int32_t unit_num,
     
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
-        char *prefix = "_lfortran_generated_file", *format = "txt";
+        char *format = "txt";
         char unique_id[ID_LEN + 1];
         get_unique_ID(unique_id);
-        int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
+        int length = ID_LEN + strlen(scratch_prefix) + strlen(format) + 3;
         f_name = (char*) internal_malloc(length);
-        snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
+        snprintf(f_name, length, "%s_%s.%s", scratch_prefix, unique_id, format);
         f_name_len = strlen(f_name);
         ini_file = false;
     }
@@ -12117,12 +12118,11 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     // TODO: Support other `status` specifiers
     char *file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
 
-    const char *scratch_file = "_lfortran_generated_file";
-    const int64_t scratch_file_len = sizeof("_lfortran_generated_file") - 1; // exclude '\0'
+    const int64_t scratch_file_len = strlen(scratch_prefix) - 1; // exclude '\0'
 
     // file_name can be NULL for pre-connected units (stdin/stdout/stderr)
     bool is_temp_file = (file_name != NULL) &&
-        (strncmp(file_name, scratch_file, scratch_file_len) == 0);
+        (strncmp(file_name, scratch_prefix, scratch_file_len) == 0);
 
     bool delete_requested = false;
     if (status && status_len > 0) {
