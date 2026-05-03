@@ -6014,7 +6014,7 @@ public:
                                                     nullptr, nullptr, ASR::storage_typeType::Default, storage_array_type, nullptr,
                                                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                                                     false, false, false, nullptr, false, false,
-                                                    ASR::pass_attrType::NotMethod, nullptr, 0);
+                                                    ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false);
 
                                                 current_scope->add_symbol(storage_name, ASR::down_cast<ASR::symbol_t>(storage_var));
 
@@ -7177,6 +7177,7 @@ public:
                             variable_added_to_symtab = symbol_variable;
                             if (corank > 0) {
                                 symbol_variable->m_corank = corank;
+                                symbol_variable->m_is_coarray = true;
                             }
                         } else {
                             // Compute pass_attr for procedure pointer components in structs
@@ -7198,7 +7199,7 @@ public:
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr, target_attr, contig_attr, bindc_name, is_volatile,
-                                is_protected, pass_attr, self_argument, corank
+                                is_protected, pass_attr, self_argument, corank, nullptr, 0, corank > 0
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
@@ -18523,7 +18524,8 @@ public:
                     ASR::storage_typeType::Default, arg_type_arr[i], nullptr,
                     ASR::abiType::BindC, ASR::accessType::Public,
                     ASR::presenceType::Required, false, false, false, nullptr,
-                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0));
+                    false, false, ASR::pass_attrType::NotMethod, nullptr,
+                    0, nullptr, 0, false));
             fn_scope->add_symbol(arg_name, arg_sym);
             args.push_back(al, ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, arg_sym)));
@@ -18538,7 +18540,8 @@ public:
                     ASR::storage_typeType::Default, return_type, nullptr,
                     ASR::abiType::BindC, ASR::accessType::Public,
                     ASR::presenceType::Required, false, false, false, nullptr,
-                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0));
+                    false, false, ASR::pass_attrType::NotMethod, nullptr,
+                    0, nullptr, 0, false));
             fn_scope->add_symbol(rv_name, rv_sym);
             return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, rv_sym));
         }

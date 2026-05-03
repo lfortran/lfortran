@@ -36,6 +36,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i_value:
                                 (Variable
@@ -60,6 +62,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             l_value:
                                 (Variable
@@ -90,6 +94,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             r_value:
                                 (Variable
@@ -126,6 +132,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             str:
                                 (GenericProcedure
@@ -167,6 +175,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             str_scalar:
                                                 (Variable
@@ -191,6 +201,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             ~unlimited_polymorphic_type:
                                                 (Struct

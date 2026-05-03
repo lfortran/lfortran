@@ -134,6 +134,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i4_to_c4:
                                 (Variable
@@ -204,6 +206,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i4_to_c8:
                                 (Variable
@@ -274,6 +278,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i4_to_i1:
                                 (Variable
@@ -344,6 +350,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i4_to_r4:
                                 (Variable
@@ -414,6 +422,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i4_to_r8:
                                 (Variable
@@ -484,6 +494,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             r4_to_c4:
                                 (Variable
@@ -554,6 +566,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             r4_to_c8:
                                 (Variable
@@ -624,6 +638,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     cast_node_m_value

@@ -261,7 +261,9 @@
                                         "is_protected": false,
                                         "pass_attr": "NotMethod",
                                         "self_argument": [],
-                                        "corank": 0
+                                        "corank": 0,
+                                        "codims": [],
+                                        "is_coarray": false
                                     },
                                     "loc": {
                                         "first": 38,
