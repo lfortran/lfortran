@@ -9610,6 +9610,29 @@ public:
                 llvm::Value* const target_wrapper = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
                 builder->CreateMemCpy(target_wrapper, llvm::MaybeAlign(),
                                       wrapper_ptr, llvm::MaybeAlign(), wrapper_size);
+            } else if (!is_target_class &&
+                       ASR::is_a<ASR::Pointer_t>(*target_type) &&
+                       ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(target_type)) &&
+                       !ASRUtils::is_array(target_type) &&
+                       ASRUtils::is_array(value_type) &&
+                       ASRUtils::is_class_type(ASRUtils::extract_type(value_type)) &&
+                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::AssumedRankArray) {
+                llvm::Type* const array_desc_type = llvm_utils->arr_api->
+                    get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
+                        llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
+                llvm::Value* value_data_ptr = llvm_utils->create_gep2(array_desc_type, llvm_value, 0);
+                llvm::Type* value_el_type = llvm_utils->get_el_type(
+                    x.m_value, ASRUtils::extract_type(value_type), module.get());
+                llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(
+                    value_el_type->getPointerTo(), value_data_ptr);
+                // Class wrapper layout is { vptr, data* }; load the data field.
+                llvm::Value* data_field_ptr = llvm_utils->create_gep2(value_el_type, wrapper_ptr, 1);
+                llvm::Value* data_i8_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_field_ptr);
+                llvm::Type* target_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, ASRUtils::type_get_past_pointer(target_type), module.get());
+                llvm::Value* casted_data = builder->CreateBitCast(
+                    data_i8_ptr, target_struct_llvm_type->getPointerTo());
+                builder->CreateStore(casted_data, llvm_target);
             } else if ((is_target_class || is_value_class) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(value_type)) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(target_type))) {
@@ -17572,10 +17595,18 @@ public:
                                     arr_data = llvm_utils->CreateLoad2(
                                         el_type->getPointerTo(), arr_data);
                                 }
-                                llvm::Type* fn_param_type = fn->getFunctionType()->getParamType(3);
-                                if (arr_data->getType() != fn_param_type) {
-                                    arr_data = builder->CreateBitCast(arr_data, fn_param_type);
-                                }
+                            }
+                            // The runtime entry takes a flat element pointer.
+                            // For FixedSizeArray the variable's address is
+                            // already a `[N x T]*`, which the LLVM verifier
+                            // rejects against the cached function signature.
+                            // Bitcast to the declared parameter type so the
+                            // call matches regardless of physical layout.
+                            llvm::Type* fn_param_type =
+                                fn->getFunctionType()->getParamType(3);
+                            if (arr_data->getType() != fn_param_type) {
+                                arr_data = builder->CreateBitCast(
+                                    arr_data, fn_param_type);
                             }
                         }
                         if (x.m_iostat && ASRUtils::is_array_of_strings(type)) {
