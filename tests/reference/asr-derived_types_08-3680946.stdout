@@ -47,10 +47,10 @@
                                     filled
                                     Public
                                 ),
-                            1_shape_initialize_subrout:
+                            1_shape_initialize:
                                 (ExternalSymbol
                                     6
-                                    1_shape_initialize_subrout
+                                    1_shape_initialize
                                     3 initialize
                                     shape
                                     []
@@ -173,7 +173,7 @@
                     derived_types_08
                     [shape_mod]
                     [(SubroutineCall
-                        6 1_shape_initialize_subrout
+                        6 1_shape_initialize
                         ()
                         [((Var 6 shp))
                         ((IntegerConstant 1 (Integer 4) Decimal))
@@ -187,7 +187,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_shape_initialize_subrout
+                        6 1_shape_initialize
                         ()
                         [((Var 6 rect))
                         ((IntegerConstant 2 (Integer 4) Decimal))

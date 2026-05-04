@@ -289,10 +289,10 @@
                     (SymbolTable
                         7
                         {
-                            1_open_hashmap_type_map_open_entry:
+                            1_open_hashmap_type_map_entry:
                                 (ExternalSymbol
                                     7
-                                    1_open_hashmap_type_map_open_entry
+                                    1_open_hashmap_type_map_entry
                                     3 map_entry
                                     open_hashmap_type
                                     []
@@ -366,7 +366,7 @@
                     submodule_04
                     [mod_submodule_04]
                     [(SubroutineCall
-                        7 1_open_hashmap_type_map_open_entry
+                        7 1_open_hashmap_type_map_entry
                         ()
                         [((Var 7 map))
                         ((Var 7 key))]
