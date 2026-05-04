@@ -587,6 +587,51 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                             ASR::make_Array_t(
                                 al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type));
                 }
+                if (ASRUtils::is_assumed_rank_array(func_arg_j->m_type) &&
+                    !ASRUtils::is_allocatable(func_arg_j->m_type)) {
+                    ASR::ttype_t* arg_no_alloc = ASRUtils::type_get_past_allocatable_pointer(arg_expr_type);
+                    ASR::ttype_t* elem_type = ASRUtils::duplicate_type(
+                        al, ASRUtils::extract_type(arg_no_alloc));
+                    if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                        ASR::String_t* str = ASR::down_cast<ASR::String_t>(elem_type);
+                        if (str->m_len_kind != ASR::ExpressionLength ||
+                                str->m_len == nullptr) {
+                            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                                ASR::make_Integer_t(al, elem_type->base.loc, 4));
+                            ASR::expr_t* one = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, elem_type->base.loc, 1, int_type));
+                            str->m_len_kind = ASR::ExpressionLength;
+                            str->m_len = one;
+                        }
+                    }
+                    if (ASRUtils::is_array(arg_no_alloc)) {
+                        size_t n_dims_actual = ASRUtils::extract_n_dims_from_ttype(arg_no_alloc);
+                        Vec<ASR::dimension_t> dims;
+                        dims.reserve(al, n_dims_actual);
+                        for (size_t d = 0; d < n_dims_actual; d++) {
+                            ASR::dimension_t dim;
+                            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                                ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
+                            ASR::expr_t* one = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
+                            dim.loc = dummy_variable_type->base.loc;
+                            dim.m_start = one;
+                            dim.m_length = one;
+                            dims.push_back(al, dim);
+                        }
+                        ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
+                        if (ASRUtils::is_string_only(elem_type) ||
+                                ASRUtils::is_class_type(elem_type)) {
+                            phy_type = ASR::array_physical_typeType::PointerArray;
+                        }
+                        dummy_variable_type = ASRUtils::TYPE(
+                            ASR::make_Array_t(al, dummy_variable_type->base.loc,
+                                elem_type, dims.p, n_dims_actual, phy_type));
+                    } else {
+                        // Scalar actual argument
+                        dummy_variable_type = elem_type;
+                    }
+                }
                 std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                 ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
                     x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
