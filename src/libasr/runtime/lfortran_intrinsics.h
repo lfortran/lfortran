@@ -365,8 +365,11 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char *arr, int64_t elem_len);
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset);
+LFORTRAN_API void _lfortran_string_read_bool_array(char *str, int64_t len, char *format, int32_t *arr, int64_t array_size, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat, int64_t *offset);
+LFORTRAN_API void _lfortran_string_read_c32_array(char *str, int64_t len, char *format, struct _lfortran_complex_32 *arr, int64_t array_size, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat, int64_t *offset);
+LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *format, struct _lfortran_complex_64 *arr, int64_t array_size, int32_t *iostat);
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values);
 LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
