@@ -1858,6 +1858,15 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 last_was_descriptor = true;
                 comma_seen = false;
                 break;
+            case 'x' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
+                format_values_2[format_values_count++] = substring(cformat, index, index+1);
+                last_was_descriptor = true;
+                comma_seen = false;
+                break;
             case 'r':  // Rounding mode: RU, RD, RN, RZ
                 if (last_was_descriptor && !comma_seen) {
                     fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
