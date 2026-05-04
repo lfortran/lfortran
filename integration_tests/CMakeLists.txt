@@ -474,6 +474,8 @@ RUN(NAME use_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME use_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME symbol_table_jloop_01 LABELS gfortran llvm)
 
+RUN(NAME shadow_same_symbol LABELS gfortran llvm llvm_wasm)
+
 RUN(NAME value_attribute_01 LABELS gfortran llvm)
 RUN(NAME value_attribute_02 LABELS llvm)
 RUN(NAME value_attribute_03 LABELS llvm)
