@@ -216,10 +216,10 @@
                                     (SymbolTable
                                         12
                                         {
-                                            1_toml_date_date_to_string:
+                                            1_toml_date_to_string:
                                                 (ExternalSymbol
                                                     12
-                                                    1_toml_date_date_to_string
+                                                    1_toml_date_to_string
                                                     8 to_string
                                                     toml_date
                                                     []
@@ -246,10 +246,10 @@
                                                     time
                                                     Public
                                                 ),
-                                            1_toml_time_time_to_string:
+                                            1_toml_time_to_string:
                                                 (ExternalSymbol
                                                     12
-                                                    1_toml_time_time_to_string
+                                                    1_toml_time_to_string
                                                     10 to_string
                                                     toml_time
                                                     []
@@ -448,7 +448,7 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            12 1_toml_date_date_to_string
+                                            12 1_toml_date_to_string
                                             ()
                                             [((Var 12 lhs))
                                             ((StructInstanceMember
@@ -513,7 +513,7 @@
                                                 ()
                                             )
                                             [(SubroutineCall
-                                                12 1_toml_time_time_to_string
+                                                12 1_toml_time_to_string
                                                 ()
                                                 [((Var 12 temporary))
                                                 ((StructInstanceMember

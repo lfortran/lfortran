@@ -2131,6 +2131,7 @@ RUN(NAME operator_overloading_35 LABELS gfortran llvm EXTRAFILES
     operator_overloading_35_mod.f90)
 RUN(NAME operator_overloading_36 LABELS gfortran llvm_submodule EXTRAFILES
     operator_overloading_36_mod_base.f90 operator_overloading_36_mod_base_sub.f90)
+RUN(NAME operator_overloading_37 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
