@@ -1,0 +1,13 @@
+{
+    "basename": "run-real_constant-657d457",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/real_constant.f90",
+    "infile_hash": "0a117f38eec0aa0d43938806196004b95dfd299f0221b4f8854d45ab",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-real_constant-657d457.stdout",
+    "stdout_hash": "8c3107bb50efe6b036601596065ab3939c0ec61f6a3dd81827c91fca",
+    "stderr": "run-real_constant-657d457.stderr",
+    "stderr_hash": "0b41c5ab511a1c6980fd53afaea15768e3ef3df6b7877cb003f69882",
+    "returncode": 0
+}
