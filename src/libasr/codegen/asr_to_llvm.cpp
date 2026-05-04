@@ -23387,6 +23387,28 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
             
         bool is_unlimited_polymorphic = ASRUtils::is_unlimited_polymorphic_type(arg);
+        if (ASRUtils::is_array(arg_type) && !ASRUtils::is_array(dest_type) &&
+                LLVM::is_llvm_pointer(*dest_type) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(dest_type))) {
+            ASR::ttype_t* src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(arg_type);
+            llvm::Type* src_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                arg, src_arr_asr_type, module.get());
+            llvm::Type* src_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                arg, ASRUtils::extract_type(arg_type), module.get());
+            if (LLVM::is_llvm_pointer(*arg_type)) {
+                class_value = llvm_utils->CreateLoad2(src_arr_type->getPointerTo(), class_value);
+            }
+            llvm::Value* wrapper_ptr_ptr = arr_descr->get_pointer_to_data(src_arr_type, class_value);
+            llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(
+                src_elem_type->getPointerTo(), wrapper_ptr_ptr);
+            // Class wrapper layout is { vptr, data* }; GEP and load the data field.
+            llvm::Value* data_field_ptr = llvm_utils->create_gep2(src_elem_type, wrapper_ptr, 1);
+            llvm::Value* data_i8_ptr = llvm_utils->CreateLoad2(
+                llvm_utils->i8_ptr, data_field_ptr);
+            llvm::Type* dest_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                dest_arg, ASRUtils::type_get_past_pointer(dest_type), module.get());
+            return builder->CreateBitCast(data_i8_ptr, dest_struct_llvm_type->getPointerTo());
+        }
         // Handle arrays
         if (ASRUtils::is_array(arg_type) &&
                 ASRUtils::extract_physical_type(arg_type) == ASR::DescriptorArray) {
