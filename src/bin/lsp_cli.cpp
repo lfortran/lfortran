@@ -115,6 +115,14 @@ namespace LCompilers {
         test_output.SetArray();
 
         for (auto symbol : symbol_lists) {
+            // ExternalSymbol entries are compiler artifacts (mirror of
+            // `use`-imported symbols and synthetic member-access lookups).
+            // They should not appear in the document outline (see
+            // lfortran/lfortran-vscode-client#39). They remain in the
+            // underlying symbol list so completion can still reach them.
+            if (symbol.symbol_type == ASR::symbolType::ExternalSymbol) {
+                continue;
+            }
             uint32_t start_character = symbol.first_column;
             uint32_t start_line = symbol.first_line;
             uint32_t end_character = symbol.last_column;
