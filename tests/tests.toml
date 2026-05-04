@@ -5168,3 +5168,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/read_83.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/real_constant.f90"
+run = true
