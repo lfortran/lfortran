@@ -1,18 +1,19 @@
-module a
+module shadow_a
 use, intrinsic :: ISO_FORTRAN_ENV, only: int64
 implicit none
-end module a
+end module shadow_a
 
-module b
-use a
+module shadow_b
+use shadow_a
 use, intrinsic :: ISO_FORTRAN_ENV, only: int64
 implicit none
-end module b
+end module shadow_b
 
-program c
-use b
+program shadow_same_symbol
+use shadow_b
 implicit none
-!no warnign should be there
+
+! no warning should be there
+
 print *, "test passed"
-end program c
-
+end program shadow_same_symbol
