@@ -382,6 +382,38 @@ public:
         }
         return result;
     }
+    /**
+     * Searches for a struct (derived type) containing a specific member
+     * across all loaded modules.  Mirrors enum_in_symtab exactly, but
+     * for Struct symbols rather than Enum symbols.
+     */
+    ASR::symbol_t* struct_in_symtab(SymbolTable *symtab,
+                                    const std::string &struct_name,
+                                    const std::string &member_name) {
+        for (auto &sym : symtab->get_scope()) {
+            if (ASR::is_a<ASR::Module_t>(*sym.second)) {
+                ASR::symbol_t* struct_sym = ASR::down_cast<ASR::Module_t>(
+                    sym.second)->m_symtab->get_symbol(struct_name);
+                if (struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                    ASR::Struct_t* s = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                    if (s->m_symtab->get_symbol(member_name)) {
+                        return struct_sym;
+                    }
+                }
+            }
+        }
+        return nullptr;
+    }
+    ASR::symbol_t* struct_in_module(const std::string &struct_name,
+                                    const std::string &member_name) {
+        ASR::symbol_t* result = struct_in_symtab(global_symtab,
+            struct_name, member_name);
+        if (!result && external_symtab != global_symtab) {
+            result = struct_in_symtab(external_symtab,
+                struct_name, member_name);
+        }
+        return result;
+    }
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
         if (x.m_external != nullptr) {
             // Nothing to do, the external symbol is already resolved
@@ -471,6 +503,18 @@ public:
             xx.m_external = enum_->m_symtab->get_symbol(x.m_original_name);;
             if(!xx.m_external) { 
                 throw LCompilersException("Enumerator variable : '"+ original_name +"' not found, but enum symtab found.");
+            }
+        } else if (ASR::symbol_t* struct_sym = struct_in_module(module_name, original_name)) {
+            ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            symbol_t *sym = st->m_symtab->find_scoped_symbol(
+                original_name, x.n_scope_names, x.m_scope_names);
+            if (sym) {
+                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
+                xx.m_external = sym;
+            } else {
+                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
+                    + original_name + "' was not found in the struct '"
+                    + module_name + "' (but the struct was found)");
             }
         } else {
             if( attempt <= 1 ) {
