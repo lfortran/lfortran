@@ -3425,7 +3425,10 @@ RUN(NAME read_84 LABELS gfortran llvm)
 RUN(NAME read_85 LABELS gfortran llvm)
 RUN(NAME read_86 LABELS gfortran llvm)
 RUN(NAME read_87 LABELS gfortran llvm)
+
 RUN(NAME read_89 LABELS gfortran llvm)
+
+RUN(NAME read_90 LABELS gfortran llvm fortran)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3715,6 +3718,7 @@ RUN(NAME character_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS -
 RUN(NAME character_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_26 LABELS gfortran llvm)
 RUN(NAME character_27 LABELS gfortran llvm)
+RUN(NAME character_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

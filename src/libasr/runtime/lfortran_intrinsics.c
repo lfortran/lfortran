@@ -12023,6 +12023,126 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
+LFORTRAN_API void _lfortran_string_read_bool_array(char *str, int64_t len, char *format, int32_t *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    const char *pos = str;
+    const char *end = str + len;
+    int64_t count = 0;
+    while (pos < end && count < array_size) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if ((pos >= end) || (*pos == '/')) {
+            break;
+        }
+        const char *tok_start = pos;
+        while (pos < end && *pos != ' ' && *pos != '\t' && *pos != '\n' &&
+                *pos != ',' && *pos != '/') {
+            pos++;
+        }
+        int token_len = (int)(pos - tok_start);
+        int32_t value = 0;
+        int ok = 0;
+        if (token_len > 0 && token_len < 16) {
+            char tok[16];
+            for (int j = 0; j < token_len; j++) {
+                tok[j] = (char)tolower((unsigned char)tok_start[j]);
+            }
+            tok[token_len] = '\0';
+            if (strcmp(tok, "t") == 0 || strcmp(tok, "true") == 0 ||
+                    strcmp(tok, ".t.") == 0 || strcmp(tok, ".true.") == 0 ||
+                    strcmp(tok, ".true") == 0) {
+                value = 1;
+                ok = 1;
+            } else if (strcmp(tok, "f") == 0 || strcmp(tok, "false") == 0 ||
+                    strcmp(tok, ".f.") == 0 || strcmp(tok, ".false.") == 0 ||
+                    strcmp(tok, ".false") == 0) {
+                value = 0;
+                ok = 1;
+            }
+        }
+        if (!ok) {
+            break;
+        }
+        arr[count++] = value;
+    }
+    if (iostat) {
+        *iostat = (count < array_size) ? -1 : 0;
+    }
+}
+
+LFORTRAN_API void _lfortran_string_read_c32_array(char *str, int64_t len, char *format,
+        struct _lfortran_complex_32 *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    int64_t off = 0;
+    int64_t count = 0;
+    const char *end = str + len;
+    while (count < array_size && off < len) {
+        const char *peek = str + off;
+        while (peek < end && (isspace((unsigned char)*peek) || *peek == ',')) {
+            peek++;
+        }
+        if ((peek >= end) || (*peek == '/')) {
+            break;
+        }
+        char *buf = to_c_string((const fchar*)(str + off), len - off);
+        _lfortran_replace_d_exponent(buf);
+        int skip = 0;
+        while (buf[skip]
+                && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) {
+            skip++;
+        }
+        int n = 0;
+        int rc = sscanf(buf + skip, " (%f,%f)%n",
+                &arr[count].re, &arr[count].im, &n);
+        internal_free(buf);
+        if (rc != 2) {
+            break;
+        }
+        off += skip + n;
+        count++;
+    }
+    if (iostat) {
+        *iostat = (count < array_size) ? -1 : 0;
+    }
+}
+
+LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *format,
+        struct _lfortran_complex_64 *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    int64_t off = 0;
+    int64_t count = 0;
+    const char *end = str + len;
+    while (count < array_size && off < len) {
+        const char *peek = str + off;
+        while (peek < end && (isspace((unsigned char)*peek) || *peek == ',')) {
+            peek++;
+        }
+        if ((peek >= end) || (*peek == '/')) {
+            break;
+        }
+        char *buf = to_c_string((const fchar*)(str + off), len - off);
+        _lfortran_replace_d_exponent(buf);
+        int skip = 0;
+        while (buf[skip]
+                && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) {
+            skip++;
+        }
+        int n = 0;
+        int rc = sscanf(buf + skip, " (%lf,%lf)%n",
+                &arr[count].re, &arr[count].im, &n);
+        internal_free(buf);
+        if (rc != 2) {
+            break;
+        }
+        off += skip + n;
+        count++;
+    }
+    if (iostat) {
+        *iostat = (count < array_size) ? -1 : 0;
+    }
+}
+
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char *arr, int64_t elem_len) {
     (void)format;
     const char *pos = str;
