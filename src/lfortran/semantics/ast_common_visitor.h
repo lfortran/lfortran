@@ -6667,6 +6667,8 @@ public:
                 bool is_volatile = false;
                 bool is_protected = false;
                 int64_t corank = 0;
+                Vec<ASR::codimension_t> codims;
+                codims.reserve(al, 0);
                 AST::AttrType_t *sym_type = nullptr;
 
                 if (AST::is_a<AST::AttrType_t>(*x.m_vartype))
@@ -6950,6 +6952,27 @@ public:
                             AST::AttrCodimension_t *ac =
                                 AST::down_cast<AST::AttrCodimension_t>(a);
                             corank = ac->n_codim;
+                            codims.reserve(al, ac->n_codim);
+                            for (size_t c = 0; c < ac->n_codim; c++) {
+                                AST::codimension_t &ast_codim = ac->m_codim[c];
+                                ASR::codimension_t asr_codim;
+                                asr_codim.loc = ast_codim.loc;
+                                asr_codim.m_start = nullptr;
+                                asr_codim.m_end = nullptr;
+                                if (ast_codim.m_start) {
+                                    this->visit_expr(*ast_codim.m_start);
+                                    asr_codim.m_start = ASRUtils::EXPR(tmp);
+                                }
+                                if (ast_codim.m_end) {
+                                    this->visit_expr(*ast_codim.m_end);
+                                    asr_codim.m_end = ASRUtils::EXPR(tmp);
+                                }
+                                asr_codim.m_end_star = ast_codim.m_end_star ==
+                                    AST::codimension_typeType::CodimensionStar
+                                    ? ASR::codimension_typeType::CodimensionStar
+                                    : ASR::codimension_typeType::CodimensionExpr;
+                                codims.push_back(al, asr_codim);
+                            }
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute type not implemented yet",
@@ -7055,6 +7078,27 @@ public:
                 // Corank from var_sym codimension (e.g., integer :: x[*])
                 if (s.n_codim > 0) {
                     corank = s.n_codim;
+                    codims.reserve(al, s.n_codim);
+                    for (size_t c = 0; c < s.n_codim; c++) {
+                        AST::codimension_t &ast_codim = s.m_codim[c];
+                        ASR::codimension_t asr_codim;
+                        asr_codim.loc = ast_codim.loc;
+                        asr_codim.m_start = nullptr;
+                        asr_codim.m_end = nullptr;
+                        if (ast_codim.m_start) {
+                            this->visit_expr(*ast_codim.m_start);
+                            asr_codim.m_start = ASRUtils::EXPR(tmp);
+                        }
+                        if (ast_codim.m_end) {
+                            this->visit_expr(*ast_codim.m_end);
+                            asr_codim.m_end = ASRUtils::EXPR(tmp);
+                        }
+                        asr_codim.m_end_star = ast_codim.m_end_star ==
+                            AST::codimension_typeType::CodimensionStar
+                            ? ASR::codimension_typeType::CodimensionStar
+                            : ASR::codimension_typeType::CodimensionExpr;
+                        codims.push_back(al, asr_codim);
+                    }
                 }
                 if (!is_argument && !is_allocatable && !is_pointer
                         && !is_dimension_star && dims.size() > 0) {
@@ -7178,6 +7222,8 @@ public:
                             if (corank > 0) {
                                 symbol_variable->m_corank = corank;
                                 symbol_variable->m_is_coarray = true;
+                                symbol_variable->m_codims = codims.p;
+                                symbol_variable->n_codims = codims.n;
                             }
                         } else {
                             // Compute pass_attr for procedure pointer components in structs
@@ -7199,7 +7245,7 @@ public:
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr, target_attr, contig_attr, bindc_name, is_volatile,
-                                is_protected, pass_attr, self_argument, corank, nullptr, 0, corank > 0
+                                is_protected, pass_attr, self_argument, corank, codims.p, codims.n, corank > 0
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
@@ -16588,6 +16634,56 @@ public:
         }
     }
 
+    // Helper function to validate codimension bounds for coarray references
+    void validate_coarray_bounds(ASR::Variable_t* var, const std::string& name,
+                                  const Vec<ASR::array_index_t>& coindices) {
+        if (!var || var->n_codims == 0) {
+            return;
+        }
+        size_t n = std::min(var->n_codims, coindices.n);
+        for (size_t i = 0; i < n; i++) {
+            ASR::codimension_t &codim = var->m_codims[i];
+            if (codim.m_end_star == ASR::codimension_typeType::CodimensionStar) {
+                continue;
+            }
+            ASR::expr_t* idx = coindices[i].m_left;
+            if (!idx) {
+                continue;
+            }
+            ASR::expr_t* idx_val = ASRUtils::expr_value(idx);
+            if (!idx_val || !ASR::is_a<ASR::IntegerConstant_t>(*idx_val)) {
+                continue;
+            }
+            int64_t idx_n = ASR::down_cast<ASR::IntegerConstant_t>(idx_val)->m_n;
+            int64_t lb = 1;
+            int64_t ub = 0;
+            if (codim.m_start) {
+                ASR::expr_t* lb_val = ASRUtils::expr_value(codim.m_start);
+                if (!lb_val || !ASR::is_a<ASR::IntegerConstant_t>(*lb_val)) {
+                    continue;
+                }
+                lb = ASR::down_cast<ASR::IntegerConstant_t>(lb_val)->m_n;
+            }
+            if (codim.m_end) {
+                ASR::expr_t* ub_val = ASRUtils::expr_value(codim.m_end);
+                if (!ub_val || !ASR::is_a<ASR::IntegerConstant_t>(*ub_val)) {
+                    continue;
+                }
+                ub = ASR::down_cast<ASR::IntegerConstant_t>(ub_val)->m_n;
+            } else {
+                continue;
+            }
+            if (idx_n < lb || idx_n > ub) {
+                diag.add(Diagnostic(
+                    "Coarray '" + name + "' coindex " + std::to_string(i + 1) +
+                    " is out of bounds: " + std::to_string(idx_n) +
+                    " not in [" + std::to_string(lb) + ", " + std::to_string(ub) + "]",
+                    Level::Error, Stage::Semantic, {Label("", {coindices[i].loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     // Handle CoarrayRef: In single-image mode, x[i] resolves to just x,
     // and x(i,j)[k] resolves to x(i,j). Cosubscripts are ignored.
     void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
@@ -16646,6 +16742,12 @@ public:
 
             // Semantic check: number of coindices must match corank
             int64_t var_corank = ASRUtils::symbol_corank(f2);
+            ASR::Variable_t* var = ASR::is_a<ASR::Variable_t>(*f2)
+                ? ASR::down_cast<ASR::Variable_t>(f2)
+                : nullptr;
+            if (var && var->n_codims > 0) {
+                var_corank = var->n_codims;
+            }
             if (var_corank > 0 && (int64_t)coindices.n != var_corank) {
                 diag.add(Diagnostic(
                     "Coarray '" + to_lower(x.m_member[x.n_member - 1].m_name) +
@@ -16654,6 +16756,7 @@ public:
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
+            validate_coarray_bounds(var, to_lower(x.m_member[x.n_member - 1].m_name), coindices);
 
             ASR::expr_t *base = nullptr;
             if (x.n_args > 0) {
@@ -16691,6 +16794,12 @@ public:
 
             // Semantic check: number of coindices must match corank
             int64_t var_corank = ASRUtils::symbol_corank(f2);
+            ASR::Variable_t* var = ASR::is_a<ASR::Variable_t>(*f2)
+                ? ASR::down_cast<ASR::Variable_t>(f2)
+                : nullptr;
+            if (var && var->n_codims > 0) {
+                var_corank = var->n_codims;
+            }
             if (var_corank > 0 && (int64_t)coindices.n != var_corank) {
                 diag.add(Diagnostic(
                     "Coarray '" + var_name + "' has corank " +
@@ -16699,6 +16808,7 @@ public:
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
+            validate_coarray_bounds(var, var_name, coindices);
 
             if (x.n_args > 0) {
                 // x(i,j)[k]

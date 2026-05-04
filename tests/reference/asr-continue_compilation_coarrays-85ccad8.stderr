@@ -33,3 +33,9 @@ semantic error: Coarray coindices do not support step notation (e.g., [i:j:k])
    |
 23 |     a = z[1:5:2]
    |         ^^^^^^^^ 
+
+semantic error: Coarray 'cod' coindex 1 is out of bounds: 5 not in [1, 4]
+  --> tests/errors/continue_compilation_coarrays.f90:26:13
+   |
+26 |     print *,cod[5]
+   |             ^^^^^^ 
