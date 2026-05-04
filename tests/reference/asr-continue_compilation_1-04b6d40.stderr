@@ -1478,3 +1478,9 @@ semantic error: `unit` must be of type Integer or Character
     |
 704 |         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_1.f90:710:9
+    |
+710 |         x = [character(len=3) :: "aa", "bb", "aa"]
+    |         ^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (integer[:] and string[:])
