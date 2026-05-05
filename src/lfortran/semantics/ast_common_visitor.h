@@ -2171,16 +2171,22 @@ public:
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
         if (compiler_options.implicit_typing) {
             if (!in_Subroutine) {
-                if (implicit_mapping.size() != 0) {
-                    implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                if (implicit_mapping.size() != 0 && current_scope->asr_owner) {
+                    auto it = implicit_mapping.find(get_hash(current_scope->asr_owner));
+                    if (it != implicit_mapping.end()) {
+                        implicit_dictionary = it->second;
+                    }
                     if (implicit_dictionary.size() == 0 && current_scope->parent
                             && current_scope->parent->asr_owner) {
                         implicit_dictionary = implicit_mapping[get_hash(
                             current_scope->parent->asr_owner)];
                     }
-                    if (implicit_dictionary.size() == 0 && is_implicit_interface) {
-                        implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
                     }
+                    if (implicit_dictionary.size() == 0 && is_implicit_interface
+                            && implicit_interface_parent_scope->asr_owner
+                            && implicit_mapping.find(get_hash(implicit_interface_parent_scope->asr_owner))
+                                != implicit_mapping.end()) {
+                        implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
                 }
             }
         }
@@ -2683,7 +2689,8 @@ public:
 		} else {
 		    intent = ASRUtils::intent_local;
 		}
-		get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
+		ASR::ttype_t* typ = implicit_dictionary.at(std::string(1,sym[0]));
+		get_sym = declare_implicit_variable2(s.loc, sym, intent, typ);
 	    } else {
 		if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
 	            ASR::intentType intent;
