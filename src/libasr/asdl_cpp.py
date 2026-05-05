@@ -1128,11 +1128,13 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_ttype = []
         self.duplicate_case_stmt = []
         self.duplicate_type_stmt = []
+        self.duplicate_rank_stmt = []
         self.is_stmt = False
         self.is_expr = False
         self.is_ttype = False
         self.is_case_stmt = False
         self.is_type_stmt = False
+        self.is_rank_stmt = False
         self.is_product = False
         super(ExprStmtDuplicatorVisitor, self).__init__(stream, data)
 
@@ -1187,6 +1189,13 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_type_stmt.append(("", 0))
         self.duplicate_type_stmt.append(("    switch(x->type) {", 1))
 
+        self.duplicate_rank_stmt.append(("    ASR::rank_stmt_t* duplicate_rank_stmt(ASR::rank_stmt_t* x) {", 0))
+        self.duplicate_rank_stmt.append(("    if( !x ) {", 1))
+        self.duplicate_rank_stmt.append(("    return nullptr;", 2))
+        self.duplicate_rank_stmt.append(("    }", 1))
+        self.duplicate_rank_stmt.append(("", 0))
+        self.duplicate_rank_stmt.append(("    switch(x->type) {", 1))
+
         super(ExprStmtDuplicatorVisitor, self).visitModule(mod)
         self.duplicate_stmt.append(("    default: {", 2))
         self.duplicate_stmt.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
@@ -1228,6 +1237,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_type_stmt.append(("    return nullptr;", 1))
         self.duplicate_type_stmt.append(("    }", 0))
 
+        self.duplicate_rank_stmt.append(("    default: {", 2))
+        self.duplicate_rank_stmt.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " rank statement is not supported yet.");', 3))
+        self.duplicate_rank_stmt.append(("    }", 2))
+        self.duplicate_rank_stmt.append(("    }", 1))
+        self.duplicate_rank_stmt.append(("", 0))
+        self.duplicate_rank_stmt.append(("    return nullptr;", 1))
+        self.duplicate_rank_stmt.append(("    }", 0))
+
         for line, level in self.duplicate_stmt:
             self.emit(line, level=level)
         self.emit("")
@@ -1240,6 +1257,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         for line, level in self.duplicate_case_stmt:
             self.emit(line, level=level)
         for line, level in self.duplicate_type_stmt:
+            self.emit(line, level=level)
+        for line, level in self.duplicate_rank_stmt:
             self.emit(line, level=level)
         self.emit("")
         self.emit("};")
@@ -1255,7 +1274,9 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.is_ttype = args[0] == "ttype"
         self.is_case_stmt = args[0] == 'case_stmt'
         self.is_type_stmt = args[0] == 'type_stmt'
-        if self.is_stmt or self.is_expr or self.is_case_stmt or self.is_type_stmt or self.is_ttype:
+        self.is_rank_stmt = args[0] == 'rank_stmt'
+        if (self.is_stmt or self.is_expr or self.is_case_stmt or
+                self.is_type_stmt or self.is_rank_stmt or self.is_ttype):
             for tp in sum.types:
                 self.visit(tp, *args)
 
@@ -1310,6 +1331,10 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             self.duplicate_type_stmt.append(("    case ASR::type_stmtType::%s: {" % name, 2))
             self.duplicate_type_stmt.append(("    return down_cast<ASR::type_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
             self.duplicate_type_stmt.append(("    }", 2))
+        elif self.is_rank_stmt:
+            self.duplicate_rank_stmt.append(("    case ASR::rank_stmtType::%s: {" % name, 2))
+            self.duplicate_rank_stmt.append(("    return down_cast<ASR::rank_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_rank_stmt.append(("    }", 2))
         self.emit("}", 1)
         self.emit("")
 
@@ -1324,6 +1349,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "alloc_arg" or
             field.type == "case_stmt" or
             field.type == "type_stmt" or
+            field.type == "rank_stmt" or
             field.type == "ttype" or
             field.type == "dimension"):
             level = 2
