@@ -95,6 +95,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     bar_a
@@ -144,6 +146,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     bar_b
@@ -193,6 +197,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     bar_c
@@ -247,6 +253,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             foo_a:
                                 (Struct
@@ -281,6 +289,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     foo_a
@@ -340,6 +350,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     foo_b
@@ -399,6 +411,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     foo_c

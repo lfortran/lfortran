@@ -1537,7 +1537,7 @@ public:
                 nullptr, ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false, 
                 false, false, nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr, 0));
+                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
                 current_scope->add_symbol(fmt_string_name, fmt_string_sym);
                 ASR::expr_t* fmt_string_var = ASRUtils::EXPR(ASR::make_Var_t(
                     al, a_fmt->base.loc, fmt_string_sym));
@@ -1559,7 +1559,7 @@ public:
                     current_scope, s2c(al, loop_var), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, int_type, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false, false, false, nullptr,
-                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0));
+                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
                 current_scope->add_symbol(loop_var, loop_var_sym);
                 ASR::expr_t* loop_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, a_fmt->base.loc, loop_var_sym));
 
@@ -7830,7 +7830,7 @@ public:
                                                     nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                     nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                    ASR::pass_attrType::NotMethod, nullptr, 0));
+                                                    ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
                                             passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                             new_args.push_back(al, ASRUtils::EXPR(
                                                 ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -7950,7 +7950,7 @@ public:
                                             nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                             nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                             ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                            ASR::pass_attrType::NotMethod, nullptr, 0));
+                                            ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
                                     param_func->m_symtab->add_symbol(arg_name, arg_sym);
                                     new_args.push_back(al, ASRUtils::EXPR(
                                         ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -7982,7 +7982,7 @@ public:
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                 nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                ASR::pass_attrType::NotMethod, nullptr, 0));
+                                                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                         new_args.push_back(al, ASRUtils::EXPR(
                                             ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -9562,7 +9562,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                 nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                ASR::pass_attrType::NotMethod, nullptr, 0));
+                                                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                         new_args.push_back(al, ASRUtils::EXPR(
                                             ASR::make_Var_t(al, call->base.base.loc, arg_sym)));

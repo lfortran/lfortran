@@ -30,6 +30,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -54,6 +56,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     f
@@ -127,6 +131,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             hinit853:
                                 (Variable
@@ -151,6 +157,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             ~implicit_interface_f_8:
                                 (Function
@@ -180,6 +188,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             ~implicit_interface_f_8_return_var:
                                                 (Variable
@@ -204,6 +214,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     ~implicit_interface_f_8
@@ -317,6 +329,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     f
@@ -387,6 +401,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     f
@@ -436,6 +452,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     sub

@@ -32,6 +32,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             p2:
                                 (Variable
@@ -58,6 +60,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -82,6 +86,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             t2:
                                 (Variable
@@ -106,6 +112,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     nullify_02

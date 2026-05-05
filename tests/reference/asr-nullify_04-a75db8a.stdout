@@ -42,6 +42,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     scaled_data_structure
@@ -128,6 +130,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             s2:
                                 (Variable
@@ -164,6 +168,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             scaled_data_structure:
                                 (ExternalSymbol

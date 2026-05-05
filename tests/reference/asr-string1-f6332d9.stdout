@@ -79,6 +79,8 @@
                                                                     NotMethod
                                                                     ()
                                                                     0
+                                                                    []
+                                                                    .false.
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -103,6 +105,8 @@
                                                                     NotMethod
                                                                     ()
                                                                     0
+                                                                    []
+                                                                    .false.
                                                                 )
                                                         })
                                                     c_strlen
@@ -152,6 +156,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             lfortran_tmp:
                                                 (Variable
@@ -176,6 +182,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -202,6 +210,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     f_string_cptr
@@ -286,6 +296,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -310,6 +322,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -334,6 +348,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     f_string_cptr_n
@@ -399,6 +415,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             f_string:
                                                 (Variable
@@ -425,6 +443,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     f_string~genericprocedure
@@ -488,6 +508,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     string_t

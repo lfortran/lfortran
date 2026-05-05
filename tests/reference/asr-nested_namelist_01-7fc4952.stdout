@@ -61,6 +61,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             inner:
                                                 (Function
@@ -90,6 +92,8 @@
                                                                     NotMethod
                                                                     ()
                                                                     0
+                                                                    []
+                                                                    .false.
                                                                 )
                                                         })
                                                     inner
@@ -160,6 +164,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     outer

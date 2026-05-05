@@ -30,6 +30,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     f
@@ -98,6 +100,8 @@
                     NotMethod
                     ()
                     0
+                    []
+                    .false.
                 )
         })
     []

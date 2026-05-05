@@ -35,6 +35,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -68,6 +70,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i4:
                                 (Variable
@@ -92,6 +96,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             i8:
                                 (Variable
@@ -116,6 +122,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             w4:
                                 (Variable
@@ -140,6 +148,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             w8:
                                 (Variable
@@ -164,6 +174,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     int_03

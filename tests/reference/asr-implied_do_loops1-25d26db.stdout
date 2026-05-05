@@ -89,6 +89,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -113,6 +115,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             s:
                                 (Function

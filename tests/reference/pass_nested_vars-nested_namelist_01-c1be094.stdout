@@ -30,6 +30,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             nml:
                                 (Namelist
@@ -61,6 +63,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     __lcompilers_created__nested_context__outer_
@@ -129,6 +133,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             i_nested_ctx:
                                                 (ExternalSymbol
@@ -168,6 +174,8 @@
                                                                     NotMethod
                                                                     ()
                                                                     0
+                                                                    []
+                                                                    .false.
                                                                 ),
                                                             nml:
                                                                 (ExternalSymbol
@@ -248,6 +256,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             x_nested_ctx:
                                                 (ExternalSymbol

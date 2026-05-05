@@ -36,6 +36,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             bf1:
                                 (Variable
@@ -66,6 +68,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             c1:
                                 (Variable
@@ -115,6 +119,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             td:
                                 (Variable
@@ -139,6 +145,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -163,6 +171,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             xx90:
                                 (Variable
@@ -193,6 +203,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             xx95:
                                 (Variable
@@ -223,6 +235,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -253,6 +267,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -283,6 +299,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     data_12_module

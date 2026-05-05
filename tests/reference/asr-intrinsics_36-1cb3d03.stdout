@@ -45,6 +45,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             empty:
                                 (Variable
@@ -84,6 +86,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             simple:
                                 (Variable
@@ -123,6 +127,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             space_at_end:
                                 (Variable
@@ -162,6 +168,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             space_at_start:
                                 (Variable
@@ -201,6 +209,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             space_in_between:
                                 (Variable
@@ -240,6 +250,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             spaces_with_symbols:
                                 (Variable
@@ -279,6 +291,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     intrinsics_36

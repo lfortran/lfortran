@@ -203,6 +203,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     arrblock
@@ -290,6 +292,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     file_common_block_arrblock
@@ -332,6 +336,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             myzero:
                                                 (Variable
@@ -356,6 +362,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     myblock
@@ -426,6 +434,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     file_common_block_myblock
@@ -463,6 +473,8 @@
                     NotMethod
                     ()
                     0
+                    []
+                    .false.
                 ),
             myblock:
                 (ExternalSymbol
@@ -497,6 +509,8 @@
                     NotMethod
                     ()
                     0
+                    []
+                    .false.
                 ),
             myzero:
                 (Variable
@@ -521,6 +535,8 @@
                     NotMethod
                     ()
                     0
+                    []
+                    .false.
                 ),
             struct_instance_arrblock:
                 (ExternalSymbol

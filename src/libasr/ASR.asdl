@@ -22,7 +22,7 @@ symbol
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
                string? bindc_name, bool is_volatile, bool is_protected, pass_attr pass_attr, identifier? self_argument,
-               int corank)
+               int corank, codimension* codims, bool is_coarray)
     | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
@@ -243,6 +243,8 @@ presence = Required | Optional
 pass_attr = NotMethod | Pass | NoPass
 abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | ExternalUndefined | Intrinsic
 dimension = (expr? start, expr? length)
+codimension = (expr? start, expr? end, codimension_type end_star)
+codimension_type = CodimensionExpr | CodimensionStar
 alloc_arg = (expr a, dimension* dims, expr? len_expr, symbol? sym_subclass, ttype? type)
 attribute = Attribute(identifier name, attribute_arg *args)
 attribute_arg = (identifier arg)

@@ -13,7 +13,8 @@ Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
     abi abi, access access, presence presence, bool value_attr,
     bool target_attr, bool contiguous_attr, string? bindc_name,
     bool is_volatile, bool is_protected,
-    pass_attr pass_attr, identifier? self_argument, int corank)
+    pass_attr pass_attr, identifier? self_argument,
+    int corank, codimension* codims, bool is_coarray)
 ```
 
 ### Arguments
@@ -77,6 +78,17 @@ dummy argument of the procedure interface receives the passed object:
   that name, which may be at any position in the argument list
 
 `corank` the number of codimensions for coarray variables (0 for non-coarrays).
+When non-zero, indicates that this variable is a coarray and specifies how many
+coarray indices (image selectors) are required in `CoarrayRef` expressions to
+reference it across images.
+
+`codims` optional codimension bounds for coarray variables. Each entry follows
+the same structure as a `dimension` (start and length). When omitted, the
+coarray is treated as having deferred/unknown codimension bounds.
+
+`is_coarray` if true, this variable is marked as a coarray declaration. This is
+typically true when `corank > 0`.
+
 When non-zero, indicates that this variable is a coarray and specifies how many
 coarray indices (image selectors) are required in `CoarrayRef` expressions to
 reference it across images. For example, `integer :: x[*]` has `corank=1`, while

@@ -32,6 +32,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             file_scope_flag:
                                 (ExternalSymbol
@@ -86,6 +88,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             os_valid:
                                 (Variable
@@ -110,6 +114,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             profile_config_t:
                                 (ExternalSymbol
@@ -146,6 +152,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             profiles:
                                 (Variable
@@ -214,6 +222,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             profindex:
                                 (Variable
@@ -238,6 +248,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     modules_45
@@ -347,6 +359,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             compiler_name:
                                                 (Variable
@@ -373,6 +387,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -399,6 +415,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             err_message:
                                                 (Variable
@@ -425,6 +443,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             file_flags:
                                                 (Variable
@@ -451,6 +471,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -477,6 +499,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -513,6 +537,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -539,6 +565,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             ifile:
                                                 (Variable
@@ -563,6 +591,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             ikey:
                                                 (Variable
@@ -587,6 +617,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             is_valid:
                                                 (Variable
@@ -611,6 +643,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             key_name:
                                                 (Variable
@@ -637,6 +671,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -663,6 +699,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -687,6 +725,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             os_valid:
                                                 (Variable
@@ -711,6 +751,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -737,6 +779,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             profiles:
                                                 (Variable
@@ -805,6 +849,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             profindex:
                                                 (Variable
@@ -829,6 +875,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -853,6 +901,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     get_flags
@@ -1081,6 +1131,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1105,6 +1157,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1129,6 +1183,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -1163,6 +1219,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1187,6 +1245,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1211,6 +1271,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1235,6 +1297,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1259,6 +1323,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             profile:
                                                 (Variable
@@ -1320,6 +1386,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1344,6 +1412,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     new_profile
@@ -1463,6 +1533,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1489,6 +1561,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1515,6 +1589,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -1551,6 +1627,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1577,6 +1655,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1601,6 +1681,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1627,6 +1709,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1651,6 +1735,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1677,6 +1763,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     profile_config_t

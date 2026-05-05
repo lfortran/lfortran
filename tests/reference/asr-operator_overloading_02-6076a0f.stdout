@@ -40,6 +40,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             ~assign:
                                 (ExternalSymbol
@@ -146,6 +148,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -170,6 +174,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     logical_gets_integer
@@ -238,6 +244,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             logical_gets_integer:
                                                 (ExternalSymbol
@@ -272,6 +280,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     logical_gets_integer_use

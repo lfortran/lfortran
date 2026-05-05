@@ -30,6 +30,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             lfortran_iomsg:
                                 (Variable
@@ -54,6 +56,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -78,6 +82,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             msg:
                                 (Variable
@@ -108,6 +114,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -137,6 +145,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             q:
                                 (Variable
@@ -166,6 +176,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -190,6 +202,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             u_ptr:
                                 (Variable
@@ -216,6 +230,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -245,6 +261,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -274,6 +292,8 @@
                                     NotMethod
                                     ()
                                     0
+                                    []
+                                    .false.
                                 )
                         })
                     open_close_read_write

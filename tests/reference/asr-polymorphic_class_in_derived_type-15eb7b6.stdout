@@ -42,6 +42,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             value2:
                                                 (Variable
@@ -73,6 +75,8 @@
                                                     NotMethod
                                                     ()
                                                     0
+                                                    []
+                                                    .false.
                                                 ),
                                             ~unlimited_polymorphic_type:
                                                 (Struct
