@@ -703,4 +703,10 @@ program continue_compilation_1
         real :: r
         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
     end subroutine sub_write_unit_bad_type
+
+    subroutine sub_array_constant_character_to_integer()
+        implicit none
+        integer :: x(3)
+        x = [character(len=3) :: "aa", "bb", "aa"]
+    end subroutine sub_array_constant_character_to_integer
 end program

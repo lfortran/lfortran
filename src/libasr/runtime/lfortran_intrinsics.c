@@ -478,6 +478,8 @@ static void _lfortran_internal_free_tracked(void *ptr,
 
 #endif /* LFORTRAN_INTERNAL_ALLOC_CHECK */
 
+const char *scratch_prefix = "_lfortran_generated_file";
+
 static void _lfortran_close_all_units(void);
 
 LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
@@ -1853,6 +1855,15 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 }
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 index--;
+                last_was_descriptor = true;
+                comma_seen = false;
+                break;
+            case 'x' :
+                if (last_was_descriptor && !comma_seen) {
+                    fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                    exit(1);
+                }
+                format_values_2[format_values_count++] = substring(cformat, index, index+1);
                 last_was_descriptor = true;
                 comma_seen = false;
                 break;
@@ -5748,8 +5759,14 @@ void remove_from_unit_to_file(int32_t unit_num) {
 }
 
 static void _lfortran_close_all_units(void) {
+    const size_t scratch_prefix_len = strlen(scratch_prefix);
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].filename != NULL) {
+            // Delete scratch files at normal program termination
+            if (strncmp(unit_to_file[i].filename, scratch_prefix,
+                        scratch_prefix_len) == 0) {
+                remove(unit_to_file[i].filename);
+            }
             internal_free(unit_to_file[i].filename);
             unit_to_file[i].filename = NULL;
         }
@@ -5922,12 +5939,12 @@ _lfortran_open(int32_t unit_num,
     
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
-        char *prefix = "_lfortran_generated_file", *format = "txt";
+        char *format = "txt";
         char unique_id[ID_LEN + 1];
         get_unique_ID(unique_id);
-        int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
+        int length = ID_LEN + strlen(scratch_prefix) + strlen(format) + 3;
         f_name = (char*) internal_malloc(length);
-        snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
+        snprintf(f_name, length, "%s_%s.%s", scratch_prefix, unique_id, format);
         f_name_len = strlen(f_name);
         ini_file = false;
     }
@@ -7706,16 +7723,11 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
         }
         
         if (c == ',') {
-            while ((c = fgetc(filep)) != EOF && isspace(c)) {
-            }
-            if (c == EOF) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Invalid logical input from file (EOF).\n");
-                exit(1);
-            }
+            // Null field: two consecutive separators mean "keep current value"
+            return;
         }
         
-        if (c == ',' || c == '/') {
+        if (c == '/') {
             ungetc(c, filep);
             return;
         }
@@ -12021,6 +12033,126 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
+LFORTRAN_API void _lfortran_string_read_bool_array(char *str, int64_t len, char *format, int32_t *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    const char *pos = str;
+    const char *end = str + len;
+    int64_t count = 0;
+    while (pos < end && count < array_size) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if ((pos >= end) || (*pos == '/')) {
+            break;
+        }
+        const char *tok_start = pos;
+        while (pos < end && *pos != ' ' && *pos != '\t' && *pos != '\n' &&
+                *pos != ',' && *pos != '/') {
+            pos++;
+        }
+        int token_len = (int)(pos - tok_start);
+        int32_t value = 0;
+        int ok = 0;
+        if (token_len > 0 && token_len < 16) {
+            char tok[16];
+            for (int j = 0; j < token_len; j++) {
+                tok[j] = (char)tolower((unsigned char)tok_start[j]);
+            }
+            tok[token_len] = '\0';
+            if (strcmp(tok, "t") == 0 || strcmp(tok, "true") == 0 ||
+                    strcmp(tok, ".t.") == 0 || strcmp(tok, ".true.") == 0 ||
+                    strcmp(tok, ".true") == 0) {
+                value = 1;
+                ok = 1;
+            } else if (strcmp(tok, "f") == 0 || strcmp(tok, "false") == 0 ||
+                    strcmp(tok, ".f.") == 0 || strcmp(tok, ".false.") == 0 ||
+                    strcmp(tok, ".false") == 0) {
+                value = 0;
+                ok = 1;
+            }
+        }
+        if (!ok) {
+            break;
+        }
+        arr[count++] = value;
+    }
+    if (iostat) {
+        *iostat = (count < array_size) ? -1 : 0;
+    }
+}
+
+LFORTRAN_API void _lfortran_string_read_c32_array(char *str, int64_t len, char *format,
+        struct _lfortran_complex_32 *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    int64_t off = 0;
+    int64_t count = 0;
+    const char *end = str + len;
+    while (count < array_size && off < len) {
+        const char *peek = str + off;
+        while (peek < end && (isspace((unsigned char)*peek) || *peek == ',')) {
+            peek++;
+        }
+        if ((peek >= end) || (*peek == '/')) {
+            break;
+        }
+        char *buf = to_c_string((const fchar*)(str + off), len - off);
+        _lfortran_replace_d_exponent(buf);
+        int skip = 0;
+        while (buf[skip]
+                && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) {
+            skip++;
+        }
+        int n = 0;
+        int rc = sscanf(buf + skip, " (%f,%f)%n",
+                &arr[count].re, &arr[count].im, &n);
+        internal_free(buf);
+        if (rc != 2) {
+            break;
+        }
+        off += skip + n;
+        count++;
+    }
+    if (iostat) {
+        *iostat = (count < array_size) ? -1 : 0;
+    }
+}
+
+LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *format,
+        struct _lfortran_complex_64 *arr, int64_t array_size, int32_t *iostat) {
+    (void)format;
+    int64_t off = 0;
+    int64_t count = 0;
+    const char *end = str + len;
+    while (count < array_size && off < len) {
+        const char *peek = str + off;
+        while (peek < end && (isspace((unsigned char)*peek) || *peek == ',')) {
+            peek++;
+        }
+        if ((peek >= end) || (*peek == '/')) {
+            break;
+        }
+        char *buf = to_c_string((const fchar*)(str + off), len - off);
+        _lfortran_replace_d_exponent(buf);
+        int skip = 0;
+        while (buf[skip]
+                && (buf[skip] == ' ' || buf[skip] == '\t' || buf[skip] == ',')) {
+            skip++;
+        }
+        int n = 0;
+        int rc = sscanf(buf + skip, " (%lf,%lf)%n",
+                &arr[count].re, &arr[count].im, &n);
+        internal_free(buf);
+        if (rc != 2) {
+            break;
+        }
+        off += skip + n;
+        count++;
+    }
+    if (iostat) {
+        *iostat = (count < array_size) ? -1 : 0;
+    }
+}
+
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char *arr, int64_t elem_len) {
     (void)format;
     const char *pos = str;
@@ -12110,12 +12242,11 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     // TODO: Support other `status` specifiers
     char *file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
 
-    const char *scratch_file = "_lfortran_generated_file";
-    const int64_t scratch_file_len = sizeof("_lfortran_generated_file") - 1; // exclude '\0'
+    const int64_t scratch_file_len = strlen(scratch_prefix) - 1; // exclude '\0'
 
     // file_name can be NULL for pre-connected units (stdin/stdout/stderr)
     bool is_temp_file = (file_name != NULL) &&
-        (strncmp(file_name, scratch_file, scratch_file_len) == 0);
+        (strncmp(file_name, scratch_prefix, scratch_file_len) == 0);
 
     bool delete_requested = false;
     if (status && status_len > 0) {
