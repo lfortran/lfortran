@@ -34,10 +34,10 @@ target datalayout = "..."
 @21 = private unnamed_addr constant [118 x i8] c"Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
 @_Name_fpm_build_settings = private unnamed_addr constant [19 x i8] c"fpm_build_settings\00", align 1
 @_Type_Info_fpm_build_settings = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([19 x i8], [19 x i8]* @_Name_fpm_build_settings, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_fpm_build_settings = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_build_settings_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
+@_VTable_fpm_build_settings = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__modules_36_fpm_main_01.fpm_build_settings_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
 @_Name_fpm_run_settings = private unnamed_addr constant [17 x i8] c"fpm_run_settings\00", align 1
 @_Type_Info_fpm_run_settings = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_Name_fpm_run_settings, i32 0, i32 0), i8* inttoptr (i64 56 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_fpm_build_settings to i8*) }, align 8
-@_VTable_fpm_run_settings = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
+@_VTable_fpm_run_settings = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__modules_36_fpm_main_01.fpm_run_settings_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
 
 define i32 @_lcompilers_Any_4_1_0_logical____0(i32* %mask, i32* %__1mask) {
 .entry:
@@ -506,7 +506,7 @@ FINALIZE_SYMTABLE_modules_36:                     ; preds = %return
   br label %Finalize_Variable_settings
 
 Finalize_Variable_settings:                       ; preds = %FINALIZE_SYMTABLE_modules_36
-  call void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %settings)
+  call void @finalize_StructType__modules_36_fpm_main_01.fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %settings)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -556,7 +556,7 @@ entry:
   ret void
 }
 
-define internal void @finalize_StructType__fpm_build_settings_of_modules_36_fpm_main_01_for_UPoly(i8* %0) {
+define internal void @finalize_StructType__modules_36_fpm_main_01.fpm_build_settings_of_modules_36_fpm_main_01_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_build_settings*
   ret void
@@ -696,14 +696,14 @@ entry:
   ret void
 }
 
-define internal void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01_for_UPoly(i8* %0) {
+define internal void @finalize_StructType__modules_36_fpm_main_01.fpm_run_settings_of_modules_36_fpm_main_01_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_run_settings*
-  call void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %1)
+  call void @finalize_StructType__modules_36_fpm_main_01.fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %1)
   ret void
 }
 
-define internal void @finalize_StructType__fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %0) {
+define internal void @finalize_StructType__modules_36_fpm_main_01.fpm_run_settings_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings* %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   br label %"Finalize_struct_fpm_run_settings's_name_member"

@@ -9,7 +9,7 @@ target datalayout = "..."
 @__module_class_circle2_pi = global float 0x400921FB60000000
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
 @_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_circle = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_class_circle2_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle2_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_of_class_circle2_for_UPoly to i8*), i8* bitcast (float (%class_circle2.circle_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%class_circle2.circle_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_class_circle2_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle2_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__class_circle2.circle_of_class_circle2_for_UPoly to i8*), i8* bitcast (float (%class_circle2.circle_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%class_circle2.circle_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [25 x i8] c"S-DESC-12,R4,S-DESC-8,R4\00", align 1
 @string_const_data = private constant [12 x i8] c"Circle: r = "
@@ -149,7 +149,7 @@ entry:
   ret void
 }
 
-define internal void @finalize_StructType__circle_of_class_circle2_for_UPoly(i8* %0) {
+define internal void @finalize_StructType__class_circle2.circle_of_class_circle2_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %class_circle2.circle*
   ret void
