@@ -1432,6 +1432,41 @@ namespace LCompilers {
         return function_type;
     }
 
+    llvm::Value* LLVMUtils::complex_function_return_abi_to_internal(llvm::Value* tmp,
+            ASR::ttype_t* return_var_type0) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*return_var_type0));
+        int a_kind = ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+        if (a_kind != 4) {
+            return tmp;
+        }
+        if (compiler_options.platform == Platform::Windows) {
+            // tmp is i64, have to convert to {float, float}
+            // i64
+            llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
+            // Convert i64 to i64*
+            llvm::AllocaInst *p_fx2 = CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
+            builder->CreateStore(tmp, p_fx2);
+            // Convert i64* to {float,float}* using bitcast
+            tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
+            // Convert {float,float}* to {float,float}
+            tmp = CreateLoad2(complex_type_4, tmp);
+        } else if (compiler_options.platform == Platform::macOS_ARM) {
+            // pass - already {float, float}
+        } else {
+            // tmp is <2 x float>, convert to {float, float}
+            // <2 x float>
+            llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+            // Convert <2 x float> to <2 x float>*
+            llvm::AllocaInst *p_fx2 = CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
+            builder->CreateStore(tmp, p_fx2);
+            // Convert <2 x float>* to {float,float}* using bitcast
+            tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
+            // Convert {float,float}* to {float,float}
+            tmp = CreateLoad2(complex_type_4, tmp);
+        }
+        return tmp;
+    }
+
     std::vector<llvm::Type*> LLVMUtils::convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x) {
         std::vector<llvm::Type*> args;
         for (size_t i=0; i < x->n_arg_types; i++) {

@@ -802,6 +802,11 @@ class ASRToLLVMVisitor;
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
+            // Convert complex return value from platform ABI to internal representation
+            // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.
+            llvm::Value* complex_function_return_abi_to_internal(llvm::Value* abi_val,
+                ASR::ttype_t* return_var_type0);
+
             std::vector<llvm::Type*> convert_args(const ASR::Function_t &x, llvm::Module* module);
 
             std::vector<llvm::Type*> convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x);
