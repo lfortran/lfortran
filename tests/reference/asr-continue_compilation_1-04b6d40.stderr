@@ -1443,6 +1443,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 649 |     derived_cls = base_var
     |     ^^^^^^^^^^^   ^^^^^^^^ type mismatch (derived and base)
 
+semantic error: Subroutine `sub_abs_array_index` called as a function
+   --> tests/errors/continue_compilation_1.f90:651:14
+    |
+651 |     print *, sub_abs_array_index()
+    |              ^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: No matching `operator(-)` found for this operand type
    --> tests/errors/continue_compilation_1.f90:662:18
     |
