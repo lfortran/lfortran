@@ -6208,6 +6208,17 @@ public:
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg,
                                                 ASRUtils::expr_type(arg),
                                                 ASRUtils::type_get_past_allocatable(target_type), diag);
+                        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(arg),
+                                ASRUtils::type_get_past_array(target_type), arg, target)) {
+                            std::string ltype = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(target), nullptr);
+                            std::string rtype = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(value), nullptr);
+                            diag.semantic_error_label(
+                                "Type mismatch in assignment, the types must be compatible",
+                                {target->base.loc, value->base.loc},
+                                "type mismatch (" + ltype + " and " + rtype + ")"
+                            );
+                            throw SemanticAbort();
+                        }
                         // ASRUtils::set_ArrayConstant_value(ac, arg, i);
                         args.push_back(al, arg);
                     }

@@ -604,10 +604,10 @@
                                                     map
                                                     Public
                                                 ),
-                                            1_omap_map_omap_i_at_rc:
+                                            1_omap_map_at_rc:
                                                 (ExternalSymbol
                                                     11
-                                                    1_omap_map_omap_i_at_rc
+                                                    1_omap_map_at_rc
                                                     8 at_rc
                                                     omap_map
                                                     []
@@ -873,7 +873,7 @@
                                     (Associate
                                         (Var 11 tmp)
                                         (FunctionCall
-                                            11 1_omap_map_omap_i_at_rc
+                                            11 1_omap_map_at_rc
                                             ()
                                             [((StructInstanceMember
                                                 (Var 11 this)
@@ -1292,10 +1292,10 @@
                                     insert
                                     Private
                                 ),
-                            1_integer32complex32orderedmap_omap_insert_key_value:
+                            1_integer32complex32orderedmap_insert_key_value:
                                 (ExternalSymbol
                                     12
-                                    1_integer32complex32orderedmap_omap_insert_key_value
+                                    1_integer32complex32orderedmap_insert_key_value
                                     9 insert_key_value
                                     integer32complex32orderedmap
                                     []
@@ -1879,7 +1879,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        12 1_integer32complex32orderedmap_omap_insert_key_value
+                        12 1_integer32complex32orderedmap_insert_key_value
                         12 1_insert
                         [((Var 12 my_map))
                         ((Var 12 key))

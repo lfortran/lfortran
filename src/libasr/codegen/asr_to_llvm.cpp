@@ -2289,11 +2289,16 @@ public:
                 // fill_malloc_array_details creates a zeroed wrapper.
                 ASR::ttype_t* effective_alloc_type = is_mold_unlimited_poly
                     ? nullptr : curr_arg.m_type;
+                ASR::expr_t* string_len_to_allocate = curr_arg.m_len_expr;
+                if (!string_len_to_allocate && ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
+                    ASR::String_t* str_type = ASRUtils::get_string_type(ASRUtils::type_get_past_array(array_type));
+                    string_len_to_allocate = str_type->m_len;
+                }
                 fill_malloc_array_details((x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val,
                                         type, llvm_data_type,
                                         expr_type(x.m_args[i].m_a),
                                         ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
-                                        curr_arg.m_dims, curr_arg.n_dims, curr_arg.m_len_expr, 
+                                        curr_arg.m_dims, curr_arg.n_dims, string_len_to_allocate,
                                         curr_arg.m_sym_subclass, realloc, effective_alloc_type);
                 if (is_mold_unlimited_poly) {
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(
@@ -4174,6 +4179,14 @@ public:
                 ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) ) {
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
+            } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_v) &&
+                       array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(x.m_v);
+                ASR::ttype_t* base_type = ASRUtils::expr_type(as->m_v);
+                if (LLVM::is_llvm_pointer(*base_type)) {
+                    llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
+                    array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
+                }
             } else if (array_t->m_physical_type == ASR::array_physical_typeType::PointerArray &&
                        !LLVM::is_llvm_pointer(*x_mv_type) &&
                        is_bindc_array &&
@@ -14287,22 +14300,20 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr(*x.m_target);
+        this->visit_expr_load_wrapper(x.m_target,
+            LLVM::is_llvm_pointer(*expr_type(x.m_target)) ? 2 : 1,
+            true);
         llvm::Value* target = tmp;
 
-        this->visit_expr(*x.m_source);
+        this->visit_expr_load_wrapper(x.m_source,
+            LLVM::is_llvm_pointer(*expr_type(x.m_source)) ? 2 : 1,
+            true);
         llvm::Value* source = tmp;
 
         llvm::Type *type;
         int a_kind;
         a_kind = down_cast<ASR::Real_t>(ASRUtils::type_get_past_pointer(x.m_type))->m_kind;
         type = llvm_utils->getFPType(a_kind);
-        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_target))) {
-            target = llvm_utils->CreateLoad2(type, target);
-        }
-        if (ASR::is_a<ASR::ArrayItem_t>(*(x.m_source))) {
-            source = llvm_utils->CreateLoad2(type, source);
-        }
         llvm::Value *ftarget = target;
         llvm::Value *fsource = source;
         if (ftarget->getType() != type) {
@@ -16842,7 +16853,11 @@ public:
     }
 
     void generate_read_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
-            llvm::Value* unit_val, llvm::Value* iostat) {
+            llvm::Value* unit_val, llvm::Value* iostat,
+            bool is_string = false,
+            llvm::Value* str_src_data = nullptr,
+            llvm::Value* str_src_len = nullptr,
+            llvm::Value* str_offset = nullptr) {
         ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
             ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
 
@@ -16884,7 +16899,8 @@ public:
 
         if (idl->n_values == 1 && ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])) {
             ASR::ImpliedDoLoop_t* inner_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[0]);
-            generate_read_implied_do_loop(inner_idl, unit_val, iostat);
+            generate_read_implied_do_loop(inner_idl, unit_val, iostat,
+                is_string, str_src_data, str_src_len, str_offset);
         } else {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -16893,20 +16909,30 @@ public:
             ptr_loads = ptr_loads_copy;
 
             ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[0]);
-            llvm::Function* read_fn = get_read_function(elem_type);
-            llvm::Value* read_elem_ptr = elem_ptr;
-            if (ASRUtils::is_logical(*elem_type)) {
-                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
-                    llvm::Type::getInt1Ty(context));
-                builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
-                int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-                llvm::Value* loaded = llvm_utils->CreateLoad2(
-                    llvm::Type::getInt1Ty(context), tmp_bool);
-                llvm::Value* widened = builder->CreateZExt(loaded,
-                    llvm_utils->getIntType(kind));
-                builder->CreateStore(widened, elem_ptr);
+            if (is_string) {
+                llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                    idl->m_values[0], elem_type, module.get());
+                llvm::Value* size_one = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), 1);
+                emit_string_read_loop(elem_type, llvm_elem_type,
+                    elem_ptr, size_one, str_src_data, str_src_len,
+                    iostat, str_offset, idl->m_values[0]);
             } else {
-                builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
+                llvm::Function* read_fn = get_read_function(elem_type);
+                llvm::Value* read_elem_ptr = elem_ptr;
+                if (ASRUtils::is_logical(*elem_type)) {
+                    llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                        llvm::Type::getInt1Ty(context));
+                    builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                    int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                    llvm::Value* loaded = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt1Ty(context), tmp_bool);
+                    llvm::Value* widened = builder->CreateZExt(loaded,
+                        llvm_utils->getIntType(kind));
+                    builder->CreateStore(widened, elem_ptr);
+                } else {
+                    builder->CreateCall(read_fn, {read_elem_ptr, unit_val, iostat});
+                }
             }
         }
 
@@ -17406,12 +17432,15 @@ public:
                     }
                     // General case: generate a loop to read elements one by one
                     // This handles multi-dimensional arrays like (a(i,j), j=1,n)
+                    // and struct member references like (s%spec(j)%num, j=1,n).
                     {
                         bool can_handle = (idl->n_values == 1 &&
                             (ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0]) ||
-                             ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0])));
+                             ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[0]) ||
+                             ASR::is_a<ASR::StructInstanceMember_t>(*idl->m_values[0])));
                         if (can_handle) {
-                            generate_read_implied_do_loop(idl, unit_val, iostat);
+                            generate_read_implied_do_loop(idl, unit_val, iostat,
+                                is_string, str_src_data, str_src_len, str_offset);
                             continue;
                         }
                     }
@@ -17725,11 +17754,18 @@ public:
                             // but the Fortran logical variable is wider (i8/i16/i32/i64).
                             // Use a temporary i1 alloca, call the function,
                             // then widen and store back.
-                            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
-                                llvm::Type::getInt1Ty(context));
-                            builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
+                            // Initialize tmp_bool with the current value so that null
+                            // fields in list-directed I/O preserve the existing value.
                             int kind = ASRUtils::extract_kind_from_ttype_t(
                                 ASRUtils::type_get_past_allocatable_pointer(val_type));
+                            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                                llvm::Type::getInt1Ty(context));
+                            llvm::Value* cur_val = llvm_utils->CreateLoad2(
+                                llvm_utils->getIntType(kind), var_to_read_into);
+                            llvm::Value* cur_bool = builder->CreateTrunc(cur_val,
+                                llvm::Type::getInt1Ty(context));
+                            builder->CreateStore(cur_bool, tmp_bool);
+                            builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
                             llvm::Value* loaded = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt1Ty(context), tmp_bool);
                             llvm::Value* widened = builder->CreateZExt(loaded,
