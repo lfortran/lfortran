@@ -11860,13 +11860,6 @@ public:
                             ASRUtils::get_FunctionType(func)->m_return_var_type,
                             &new_dims);
         } else {
-            if (func->m_return_var == nullptr) {
-                diag.add(diag::Diagnostic(
-                    "Subroutine `" + std::string(func->m_name) + "` cannot be used as a function or expression",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {loc})}));
-                throw SemanticAbort();
-            }
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             return_type = handle_return_type(return_type, loc, args, func);
         }
@@ -16136,8 +16129,8 @@ public:
             }
         }
         // if v is a function which has null pointer return type, give error
-        if (ASR::is_a<ASR::Function_t>(*v)){
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
+        if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v))){
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
             if (func->m_return_var == nullptr){
                 diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
