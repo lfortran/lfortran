@@ -6,7 +6,7 @@ target datalayout = "..."
 %module_call_subroutine_without_type_01.mytype = type { float }
 %string_descriptor = type <{ i8*, i64 }>
 
-@__module___lcompilers_created__nested_context__get_i__self = global %module_call_subroutine_without_type_01.mytype_class* null
+@__module___lcompilers_created__nested_context__get_i_of_module_call_subroutine_without_type_01_self = global %module_call_subroutine_without_type_01.mytype_class* null
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [12 x i8] c"S-DESC-4,R4\00", align 1
 @string_const_data = private constant [4 x i8] c"r = "
@@ -33,11 +33,11 @@ define void @__module_module_call_subroutine_without_type_01_get_i(%module_call_
   br i1 %0, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store %module_call_subroutine_without_type_01.mytype_class* null, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  store %module_call_subroutine_without_type_01.mytype_class* null, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i_of_module_call_subroutine_without_type_01_self, align 8
   br label %ifcont3
 
 else:                                             ; preds = %.entry
-  %1 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %1 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i_of_module_call_subroutine_without_type_01_self, align 8
   %2 = icmp eq %module_call_subroutine_without_type_01.mytype_class* %1, null
   br i1 %2, label %then1, label %else2
 
@@ -46,14 +46,14 @@ then1:                                            ; preds = %else
   %4 = call i8* @_lfortran_malloc_alloc(i8* %3, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %4, i8 0, i32 16, i1 false)
   %5 = bitcast i8* %4 to %module_call_subroutine_without_type_01.mytype_class*
-  store %module_call_subroutine_without_type_01.mytype_class* %5, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  store %module_call_subroutine_without_type_01.mytype_class* %5, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i_of_module_call_subroutine_without_type_01_self, align 8
   br label %ifcont
 
 else2:                                            ; preds = %else
   br label %ifcont
 
 ifcont:                                           ; preds = %else2, %then1
-  %6 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %6 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i_of_module_call_subroutine_without_type_01_self, align 8
   %7 = bitcast %module_call_subroutine_without_type_01.mytype_class* %6 to i8*
   %8 = bitcast %module_call_subroutine_without_type_01.mytype_class* %self to i8*
   call void @llvm.memcpy.p0i8.p0i8.i32(i8* %7, i8* %8, i32 16, i1 false)
@@ -75,7 +75,7 @@ define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = alloca i64, align 8
-  %2 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %2 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i_of_module_call_subroutine_without_type_01_self, align 8
   %3 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %2, i32 0, i32 1
   %4 = load %module_call_subroutine_without_type_01.mytype*, %module_call_subroutine_without_type_01.mytype** %3, align 8
   %5 = getelementptr %module_call_subroutine_without_type_01.mytype, %module_call_subroutine_without_type_01.mytype* %4, i32 0, i32 0
@@ -102,7 +102,7 @@ free_nonnull:                                     ; preds = %.entry
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %.entry
-  %18 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %18 = load %module_call_subroutine_without_type_01.mytype_class*, %module_call_subroutine_without_type_01.mytype_class** @__module___lcompilers_created__nested_context__get_i_of_module_call_subroutine_without_type_01_self, align 8
   %19 = getelementptr %module_call_subroutine_without_type_01.mytype_class, %module_call_subroutine_without_type_01.mytype_class* %18, i32 0, i32 1
   %20 = load %module_call_subroutine_without_type_01.mytype*, %module_call_subroutine_without_type_01.mytype** %19, align 8
   %21 = getelementptr %module_call_subroutine_without_type_01.mytype, %module_call_subroutine_without_type_01.mytype* %20, i32 0, i32 0
