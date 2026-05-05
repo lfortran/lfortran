@@ -489,7 +489,7 @@ class PRIFInterface {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-                if (!var->m_is_coarray && var->m_corank <= 0) continue;
+                if (!var->m_is_coarray && var->n_codims == 0) continue;
                 std::string vname = var->m_name;
                 // Create companion handle variable
                 std::string hname = vname + "__coarray_handle";
@@ -693,6 +693,18 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
 };
 
 class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
+    private:
+        // Check whether a SymbolTable contains any coarray variables.
+        static bool scope_has_coarrays(SymbolTable *scope) {
+            for (auto &item : scope->get_scope()) {
+                ASR::symbol_t *sym = item.second;
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (var->m_is_coarray || var->n_codims > 0) return true;
+            }
+            return false;
+        }
+
     public:
         Allocator &al;
         PRIFInterface &prif;
@@ -701,32 +713,43 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
 
         void visit_Program(const ASR::Program_t &x) {
             ASR::Program_t &xx = const_cast<ASR::Program_t &>(x);
+
+            bool has_coarrays = scope_has_coarrays(xx.m_symtab);
+
             Vec<ASR::stmt_t*> new_body;
             new_body.reserve(al, xx.n_body + 16);
             Location loc = xx.base.base.loc;
-            // Insert prif_init() call first — exit_code is optional (absent)
-            ASR::symbol_t *init_sub = prif.get_or_create_prif_init_sub(loc);
-            Vec<ASR::call_arg_t> init_args; init_args.reserve(al, 1);
-            ASR::call_arg_t ec_arg; ec_arg.loc = loc; ec_arg.m_value = nullptr;
-            init_args.push_back(al, ec_arg);
-            new_body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
-                al, loc, init_sub, nullptr, init_args.p, init_args.n, nullptr, false)));
-            // Then allocate coarrays
+
+            if (has_coarrays) {
+                // Insert prif_init() call first — exit_code is optional (absent)
+                ASR::symbol_t *init_sub = prif.get_or_create_prif_init_sub(loc);
+                Vec<ASR::call_arg_t> init_args; init_args.reserve(al, 1);
+                ASR::call_arg_t ec_arg; ec_arg.loc = loc; ec_arg.m_value = nullptr;
+                init_args.push_back(al, ec_arg);
+                new_body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                    al, loc, init_sub, nullptr, init_args.p, init_args.n, nullptr, false)));
+            }
+
+            // Allocate coarrays (init_coarrays_in_scope skips non-coarray vars internally)
             prif.init_coarrays_in_scope(xx.m_symtab, loc,
                 new_body, xx.m_body, xx.n_body);
-            // Append prif_stop() at the end
-            ASR::symbol_t *stop_sub = prif.get_or_create_prif_stop_sub(loc);
-            Vec<ASR::call_arg_t> stop_args; stop_args.reserve(al, 3);
-            ASR::call_arg_t quiet_arg; quiet_arg.loc = loc;
-            quiet_arg.m_value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-                al, loc, false, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1))));
-            ASR::call_arg_t sci_arg; sci_arg.loc = loc; sci_arg.m_value = nullptr;
-            ASR::call_arg_t scc_arg; scc_arg.loc = loc; scc_arg.m_value = nullptr;
-            stop_args.push_back(al, quiet_arg);
-            stop_args.push_back(al, sci_arg);
-            stop_args.push_back(al, scc_arg);
-            new_body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
-                al, loc, stop_sub, nullptr, stop_args.p, stop_args.n, nullptr, false)));
+
+            if (has_coarrays) {
+                // Append prif_stop() at the end
+                ASR::symbol_t *stop_sub = prif.get_or_create_prif_stop_sub(loc);
+                Vec<ASR::call_arg_t> stop_args; stop_args.reserve(al, 3);
+                ASR::call_arg_t quiet_arg; quiet_arg.loc = loc;
+                quiet_arg.m_value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+                    al, loc, false, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1))));
+                ASR::call_arg_t sci_arg; sci_arg.loc = loc; sci_arg.m_value = nullptr;
+                ASR::call_arg_t scc_arg; scc_arg.loc = loc; scc_arg.m_value = nullptr;
+                stop_args.push_back(al, quiet_arg);
+                stop_args.push_back(al, sci_arg);
+                stop_args.push_back(al, scc_arg);
+                new_body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                    al, loc, stop_sub, nullptr, stop_args.p, stop_args.n, nullptr, false)));
+            }
+
             xx.m_body = new_body.p;
             xx.n_body = new_body.n;
             for (auto &item : xx.m_symtab->get_scope()) {
@@ -736,6 +759,13 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
 
         void visit_Function(const ASR::Function_t &x) {
             ASR::Function_t &xx = const_cast<ASR::Function_t &>(x);
+            if (!scope_has_coarrays(xx.m_symtab)) {
+                // No coarray variables in this function; skip lowering
+                for (auto &item : xx.m_symtab->get_scope()) {
+                    visit_symbol(*item.second);
+                }
+                return;
+            }
             Vec<ASR::stmt_t*> new_body;
             new_body.reserve(al, xx.n_body + 16);
             prif.init_coarrays_in_scope(xx.m_symtab, xx.base.base.loc,
@@ -750,6 +780,32 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
 
 void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &) {
+    // Quick check: skip the entire pass if no coarrays exist anywhere
+    bool has_coarrays = false;
+    for (auto &item : unit.m_symtab->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_is_coarray || var->n_codims > 0) {
+                has_coarrays = true;
+                break;
+            }
+        } else if (ASR::is_a<ASR::Program_t>(*sym)) {
+            SymbolTable *scope = ASR::down_cast<ASR::Program_t>(sym)->m_symtab;
+            for (auto &s : scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*s.second)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s.second);
+                    if (v->m_is_coarray || v->n_codims > 0) {
+                        has_coarrays = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (has_coarrays) break;
+    }
+    if (!has_coarrays) return;
+
     PRIFInterface prif(al, unit);
     // Phase 1: Create companion vars and allocation calls for coarrays
     CoarrayInitVisitor init_v(al, prif);
