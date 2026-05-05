@@ -235,11 +235,11 @@ semantic error: Syntax error in CHARACTER declaration: using only 'len' keyword 
 249 |     character(1, len=20) :: str_c_4
     |     ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
-   --> tests/errors/continue_compilation_1.f90:250:34
+semantic error: Allocatable array 'z_01' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_1.f90:250:5
     |
-250 |     character(:), allocatable :: x(2)
-    |                                  ^^^^ 
+250 |     character(:), allocatable :: z_01(2)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Expecting a scalar integer or parameter annotated integer variable 
    --> tests/errors/continue_compilation_1.f90:252:26
@@ -438,6 +438,18 @@ warning: Assuming implicit save attribute for variable declaration
     |
 688 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_1.f90:714:9
+    |
+714 |         integer,allocatable  :: x(3)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Pointer array 'y' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_1.f90:715:9
+    |
+715 |         integer,pointer  :: y(3)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9

@@ -6697,24 +6697,6 @@ public:
                     }
                 }
 
-                if (is_char_type && sym_type->n_kind == ASR::string_length_kindType::DeferredLength &&  is_allocatable) {
-                    bool has_fixed_shape = false;
-                    for (size_t d = 0; d < s.n_dim; d++) {
-                        if (s.m_dim[d].m_end != nullptr && s.m_dim[d].m_end_star == 0) {
-                            has_fixed_shape = true;
-                            break;
-                        }
-                    }
-                    if (has_fixed_shape && s.n_dim > 0) {
-                        diag.add(Diagnostic(
-                            "Allocatable array '" + std::string(x.m_syms[0].m_name)
-                            + "' must have a deferred shape or assumed rank",
-                            Level::Error,Stage::Semantic,{ 
-                                Label("", { s.loc }) 
-                            }));
-                        throw SemanticAbort();
-                    }
-                }
                 if (assgnd_access.count(sym)) {
                     s_access = assgnd_access[sym];
                 }
@@ -8249,6 +8231,31 @@ public:
         }
         _declaring_variable = false;
     }
+    
+    /* Make sure an allocatable-array OR pointer-array (non-assumed dim array) has empty dimensions (deferred) */ 
+    void ensure_deferred_shape_for_allocatable_or_pointer_array(ASR::ttype_t* type, const std::string& sym) {
+        LCOMPILERS_ASSERT(type)
+        if (ASRUtils::is_array_t(type) && ASRUtils::is_allocatable_or_pointer(type)) {
+            ASR::Array_t* const array_type = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(type));
+            if (array_type->m_physical_type == ASR::AssumedRankArray) return;
+            for (size_t i = 0; i < array_type->n_dims; i++) {
+                std::string const attr_name = ASRUtils::is_allocatable(type) ? 
+                                                "Allocatable" : "Pointer";
+                if (array_type->m_dims[i].m_start != nullptr ||
+                    array_type->m_dims[i].m_length != nullptr) {
+                    diag.add(Diagnostic(
+                        std::string(attr_name) + " array '" + sym +
+                        "' must have a deferred shape or assumed rank",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {type->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+        }
+
+    }
 
     void visit_BlockData(const AST::BlockData_t&/*x*/) {
 
@@ -9597,11 +9604,13 @@ public:
                 }));
             throw SemanticAbort();
         }
-
+        
         if( is_allocatable ) {
-            type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
-                ASRUtils::type_get_past_allocatable(type)));
+            type = ASRUtils::TYPE(
+                ASR::make_Allocatable_t(
+                    al, loc, ASRUtils::type_get_past_allocatable(type)));
         }
+        ensure_deferred_shape_for_allocatable_or_pointer_array(type, sym);
 
         return type;
     }
