@@ -12,13 +12,13 @@ target datalayout = "..."
 
 @_Name_shape = private unnamed_addr constant [6 x i8] c"shape\00", align 1
 @_Type_Info_shape = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_shape, i32 0, i32 0), i8* null, i8* null }, align 8
-@_VTable_shape = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_shape to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_shape to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_shape to i8*), i8* bitcast (void (i8*)* @finalize_StructType__shape_of_select_type_13_module_for_UPoly to i8*), i8* null] }, align 8
+@_VTable_shape = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_shape to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_shape to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_shape to i8*), i8* bitcast (void (i8*)* @finalize_StructType__select_type_13_module.shape_of_select_type_13_module_for_UPoly to i8*), i8* null] }, align 8
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
 @_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_shape to i8*) }, align 8
-@_VTable_circle = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_of_select_type_13_module_for_UPoly to i8*), i8* bitcast (float (%select_type_13_module.circle_class*)* @__module_select_type_13_module_circle_area to i8*)] }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__select_type_13_module.circle_of_select_type_13_module_for_UPoly to i8*), i8* bitcast (float (%select_type_13_module.circle_class*)* @__module_select_type_13_module_circle_area to i8*)] }, align 8
 @_Name_rectangle = private unnamed_addr constant [10 x i8] c"rectangle\00", align 1
 @_Type_Info_rectangle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_rectangle, i32 0, i32 0), i8* inttoptr (i64 8 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_shape to i8*) }, align 8
-@_VTable_rectangle = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_rectangle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__rectangle_of_select_type_13_module_for_UPoly to i8*), i8* bitcast (float (%select_type_13_module.rectangle_class*)* @__module_select_type_13_module_rectangle_area to i8*)] }, align 8
+@_VTable_rectangle = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_rectangle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__select_type_13_module.rectangle_of_select_type_13_module_for_UPoly to i8*), i8* bitcast (float (%select_type_13_module.rectangle_class*)* @__module_select_type_13_module_rectangle_area to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [20 x i8] c"Matched as rectangle"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([20 x i8], [20 x i8]* @string_const_data, i32 0, i32 0), i64 20 }>
@@ -884,12 +884,12 @@ FINALIZE_SYMTABLE_select_type_13:                 ; preds = %return
 
 Finalize_Variable_s1:                             ; preds = %FINALIZE_SYMTABLE_select_type_13
   %358 = load %select_type_13_module.shape_class*, %select_type_13_module.shape_class** %s1, align 8
-  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %358)
+  call void @finalize_allocatable__StructType_Class__select_type_13_module.shape_of_select_type_13_module(%select_type_13_module.shape_class* %358)
   br label %Finalize_Variable_s2
 
 Finalize_Variable_s2:                             ; preds = %Finalize_Variable_s1
   %359 = load %select_type_13_module.shape_class*, %select_type_13_module.shape_class** %s2, align 8
-  call void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %359)
+  call void @finalize_allocatable__StructType_Class__select_type_13_module.shape_of_select_type_13_module(%select_type_13_module.shape_class* %359)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -929,7 +929,7 @@ entry:
   ret void
 }
 
-define internal void @finalize_StructType__shape_of_select_type_13_module_for_UPoly(i8* %0) {
+define internal void @finalize_StructType__select_type_13_module.shape_of_select_type_13_module_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %select_type_13_module.shape*
   ret void
@@ -978,7 +978,7 @@ entry:
   ret void
 }
 
-define internal void @finalize_StructType__circle_of_select_type_13_module_for_UPoly(i8* %0) {
+define internal void @finalize_StructType__select_type_13_module.circle_of_select_type_13_module_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %select_type_13_module.circle*
   ret void
@@ -1041,7 +1041,7 @@ entry:
   ret void
 }
 
-define internal void @finalize_StructType__rectangle_of_select_type_13_module_for_UPoly(i8* %0) {
+define internal void @finalize_StructType__select_type_13_module.rectangle_of_select_type_13_module_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %select_type_13_module.rectangle*
   ret void
@@ -1071,14 +1071,14 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-define internal void @finalize_allocatable__StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %0) {
+define internal void @finalize_allocatable__StructType_Class__select_type_13_module.shape_of_select_type_13_module(%select_type_13_module.shape_class* %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = icmp ne %select_type_13_module.shape_class* %0, null
   br i1 %2, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
-  call void @finalize_StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %0)
+  call void @finalize_StructType_Class__select_type_13_module.shape_of_select_type_13_module(%select_type_13_module.shape_class* %0)
   %3 = getelementptr %select_type_13_module.shape_class, %select_type_13_module.shape_class* %0, i32 0, i32 1
   %4 = load %select_type_13_module.shape*, %select_type_13_module.shape** %3, align 8
   %5 = icmp ne %select_type_13_module.shape* %4, null
@@ -1104,7 +1104,7 @@ is_allocated.ifcont3:                             ; preds = %is_allocated.else2,
   ret void
 }
 
-define internal void @finalize_StructType_Class__shape_of_select_type_13_module(%select_type_13_module.shape_class* %0) {
+define internal void @finalize_StructType_Class__select_type_13_module.shape_of_select_type_13_module(%select_type_13_module.shape_class* %0) {
 entry:
   %1 = getelementptr %select_type_13_module.shape_class, %select_type_13_module.shape_class* %0, i32 0, i32 0
   %2 = load i32 (...)**, i32 (...)*** %1, align 8

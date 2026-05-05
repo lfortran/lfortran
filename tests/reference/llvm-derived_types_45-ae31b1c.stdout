@@ -115,7 +115,7 @@ FINALIZE_SYMTABLE_derived_types_45:               ; preds = %return
 
 Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_derived_types_45
   %38 = load %derived_types_45_mod.myint*, %derived_types_45_mod.myint** %ins, align 8
-  call void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %38)
+  call void @finalize_allocatable__StructType__derived_types_45_mod.myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %38)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -139,7 +139,7 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-define internal void @finalize_allocatable__StructType__myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %0) {
+define internal void @finalize_allocatable__StructType__derived_types_45_mod.myint_of_derived_types_45_mod(%derived_types_45_mod.myint* %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = icmp ne %derived_types_45_mod.myint* %0, null
