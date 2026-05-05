@@ -10617,12 +10617,40 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                 llvm::Function::ExternalLinkage, func_name, module);
                                         }
 
-                                        // Create class descriptors for dest and src
-                                        llvm::Value* dest_class = create_class_view(mem_struct_t, dest_member);
-                                        llvm::Value* src_class = create_class_view(mem_struct_t, src_member);
+                                        ASR::Variable_t* fn_lhs_var = ASRUtils::EXPR2VAR(func_t->m_args[0]);
+                                        ASR::ttype_t* fn_lhs_type = ASRUtils::type_get_past_array(
+                                            ASRUtils::type_get_past_allocatable(
+                                                ASRUtils::type_get_past_pointer(fn_lhs_var->m_type)));
+                                        bool fn_lhs_is_class = ASRUtils::is_class_type(fn_lhs_type);
+
+                                        ASR::Variable_t* fn_rhs_var = ASRUtils::EXPR2VAR(func_t->m_args[1]);
+                                        ASR::ttype_t* fn_rhs_type = ASRUtils::type_get_past_array(
+                                            ASRUtils::type_get_past_allocatable(
+                                                ASRUtils::type_get_past_pointer(fn_rhs_var->m_type)));
+                                        bool fn_rhs_is_class = ASRUtils::is_class_type(fn_rhs_type);
+
+                                        bool member_is_class = ASRUtils::is_class_type(
+                                            ASRUtils::extract_type(member_type));
+
+                                        llvm::Type* mem_class_llvm = llvm_utils->getClassType(mem_struct_t);
+                                        llvm::Type* mem_struct_llvm = llvm_utils->get_type_from_ttype_t_util(
+                                            ASRUtils::symbol_type(mem_struct), mem_struct, module);
+
+                                        auto adjust_arg = [&](llvm::Value* v, bool fn_arg_is_class) -> llvm::Value* {
+                                            if (member_is_class && !fn_arg_is_class) {
+                                                llvm::Value* gep = llvm_utils->create_gep2(mem_class_llvm, v, 1);
+                                                return llvm_utils->CreateLoad2(mem_struct_llvm->getPointerTo(), gep);
+                                            } else if (!member_is_class && fn_arg_is_class) {
+                                                return create_class_view(mem_struct_t, v);
+                                            }
+                                            return v;
+                                        };
+
+                                        llvm::Value* dest_arg = adjust_arg(dest_member, fn_lhs_is_class);
+                                        llvm::Value* src_arg = adjust_arg(src_member, fn_rhs_is_class);
 
                                         // Call defined assignment: assign(lhs=dest, rhs=src)
-                                        builder->CreateCall(assign_fn, {dest_class, src_class});
+                                        builder->CreateCall(assign_fn, {dest_arg, src_arg});
                                         return;
                                     }
                                 }
