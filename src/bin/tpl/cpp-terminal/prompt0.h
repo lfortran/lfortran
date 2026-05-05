@@ -140,6 +140,10 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
             }
         } else {
             switch (key) {
+                case CTRL_KEY('l'):
+                    std::cout<< "\x1b[2J" << move_cursor(1,1) << std::flush;
+                    row = 1;
+                    break;
                 case Key::BACKSPACE:
                     if (m.cursor_col > 1) {
                         std::string before = m.lines[m.cursor_row-1].substr(0,
