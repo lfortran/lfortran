@@ -1,4 +1,5 @@
 program test
   integer :: x[*]
-  print *,x[1]
+  x = 42
+  print *, x[2]
 end program
