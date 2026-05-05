@@ -11,7 +11,7 @@ integer, parameter :: int64 = 8
 integer, parameter :: real16 = -1     ! F2023: half-precision (not supported)
 integer, parameter :: real32 = 4
 integer, parameter :: real64 = 8
-integer, parameter :: real128 = -1
+integer, parameter :: real128 = 16
 
 ! Kind type parameters for logicals (F2023)
 integer, parameter :: logical8 = 1
@@ -26,7 +26,7 @@ integer, parameter :: error_unit = 0
 
 ! Kind arrays (F2008/F2018)
 integer, parameter :: integer_kinds(4) = [1, 2, 4, 8]
-integer, parameter :: real_kinds(2) = [4, 8]
+integer, parameter :: real_kinds(3) = [4, 8, 16]
 integer, parameter :: character_kinds(1) = [1]
 integer, parameter :: logical_kinds(4) = [1, 2, 4, 8]
 
