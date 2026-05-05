@@ -16,8 +16,8 @@ program iso_fortran_env_03
     ! real16 == -1 means not supported, which is valid
     if (real16 /= -1 .and. real16 <= 0) error stop
 
-    ! real128 (quad-precision, may not be supported)
-    if (real128 /= -1 .and. real128 <= 0) error stop
+    ! real128 (quad-precision, kind=16)
+    if (real128 /= 16) error stop
 
     ! F2018: Atomic kinds
     if (atomic_int_kind <= 0) error stop
