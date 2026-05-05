@@ -140,6 +140,11 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
             }
         } else {
             switch (key) {
+                case CTRL_KEY('u'):
+                    m.lines[m.cursor_row-1] = 
+                            m.lines[m.cursor_row-1].substr(m.cursor_col-1);
+                    m.cursor_col = 1;
+                    break;
                 case Key::BACKSPACE:
                     if (m.cursor_col > 1) {
                         std::string before = m.lines[m.cursor_row-1].substr(0,
