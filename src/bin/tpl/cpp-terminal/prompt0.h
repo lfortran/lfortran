@@ -124,7 +124,7 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
         key = term.read_key();
         if (  (key >= 'a' && key <= 'z') ||
               (key >= 'A' && key <= 'Z') ||
-              (!iscntrl(key) && key < 128)  ) {
+              (key >= 32 && key < 128 && !iscntrl(key)) ) {
             std::string before = m.lines[m.cursor_row-1].substr(0,
                     m.cursor_col-1);
             std::string newchar; newchar.push_back(key);
