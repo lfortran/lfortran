@@ -7,6 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <set>
+#include <string>
 
 namespace LCompilers {
 
@@ -476,7 +477,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             // a new module.
             current_scope = al.make_new<SymbolTable>(current_scope_copy);
             std::string module_name = "__lcompilers_created__nested_context__" + std::string(
-                                    ASRUtils::symbol_name(it.first)) + "_";
+                                    ASRUtils::symbol_name(it.first)) + "_"; 
+            module_name += (([it]()
+            { 
+                auto sym = ASRUtils::get_asr_owner(it.first); 
+                return sym? std::string("of_") + ASRUtils::symbol_name(sym) : std::string();
+            }))(); // FunctionName + containing-module name
+            
             bool is_any_variable_externally_defined = false;
             std::map<ASR::symbol_t*, std::string> sym_to_name;
             module_name = current_scope->get_unique_name(module_name, false);

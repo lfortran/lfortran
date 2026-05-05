@@ -2755,6 +2755,7 @@ RUN(NAME nested_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --re
 RUN(NAME nested_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_25 LABELS gfortran llvm)
+RUN(NAME nested_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
