@@ -153,7 +153,7 @@ def test_backend(backend, std, test_pattern=None):
     if backend not in SUPPORTED_BACKENDS:
         raise Exception(f"Unsupported Backend: {backend}\n")
     if std not in SUPPORTED_STANDARDS:
-        raise Exception(f"Unsupported Backend: {std}\n")
+        raise Exception(f"Unsupported Standard: {std}\n")
 
     run_test(backend, std, test_pattern)
 
@@ -163,7 +163,7 @@ def check_module_names():
     mod = re.compile(
         r'(?im)^\s*(?:module|submodule)\b\s*(?:\([^)]+\))?\s*(?!\bprocedure\b)(\w+)'
     )
-    files = glob("*.f90")
+    files = glob("**/*.f90", recursive=True)
     module_names = []
     file_names = []
     for file in files:
@@ -190,7 +190,7 @@ def get_args():
                 help="Test the requested backends (%s)" % \
                         ", ".join(SUPPORTED_BACKENDS))
     parser.add_argument("--std", type=str, default="lf",
-                help="Run tests with the requested Fortran standard: ".join(SUPPORTED_STANDARDS))
+                help="Run tests with the requested Fortran standard: " + ", ".join(SUPPORTED_STANDARDS))
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
     parser.add_argument("--detect-leaks", dest="detect_leaks", action='store_true',
@@ -217,15 +217,15 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, fast_tests, detect_leaks_tests, std_f23_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads, verbose
+    global NO_OF_THREADS, fast_tests, detect_leaks_tests, nofast_llvm16, separate_compilation, use_ninja, user_specified_threads, verbose
     local_lfortran = os.path.join(LFORTRAN_PATH, "lfortran")
     if os.path.isfile(local_lfortran):
         os.environ["PATH"] = LFORTRAN_PATH + os.pathsep + os.environ["PATH"]
 
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
-    # delete previously created directories (if any)
-    for backend in SUPPORTED_BACKENDS:
+    
+    for backend in args.backends:
         run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
 
     if args.no_of_threads:
