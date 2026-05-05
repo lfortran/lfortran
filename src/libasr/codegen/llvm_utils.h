@@ -1063,6 +1063,12 @@ class ASRToLLVMVisitor;
             if (struct_sym != nullptr
                     && !ASRUtils::is_allocatable(type)
                     && struct_sym->n_member_functions > 0) {
+                ASR::ttype_t* v_type_past =
+                    ASRUtils::type_get_past_allocatable_pointer(type);
+                if (ASRUtils::is_pointer(type)) {
+                    finalize(ptr, type, struct_sym, in_struct);
+                    return;
+                }
                 for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
                     std::string final_proc_name = struct_sym->m_member_functions[fi];
                     ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
@@ -1071,7 +1077,6 @@ class ASRToLLVMVisitor;
                         uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                         if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                             llvm::Function* final_fn = llvm_symtab_fn_[fh];
-                            ASR::ttype_t* v_type_past = ASRUtils::type_get_past_allocatable(type);
                             if (ASR::is_a<ASR::Array_t>(*v_type_past)) {
                                 // Variable is an array but the final subroutine
                                 // takes a scalar — call it element-by-element.

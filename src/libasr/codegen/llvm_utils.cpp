@@ -9395,8 +9395,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* data_mem = nullptr;
         if (realloc) {
             llvm::Value* existing_data_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
-            llvm::Type* base_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
-            llvm::Value* existing_data = builder->CreateLoad(base_struct_type->getPointerTo(), existing_data_ptr);
+            llvm::Type* existing_load_type = ASRUtils::is_unlimited_polymorphic_type(class_symbol)
+                ? llvm_utils->i8_ptr
+                : llvm_utils->getStructType(class_symbol, llvm_utils->module)->getPointerTo();
+            llvm::Value* existing_data = builder->CreateLoad(existing_load_type, existing_data_ptr);
             data_mem = LLVM::lfortran_realloc(context, *llvm_utils->module, *builder, existing_data, total_bytes_to_alloc);
         } else {
             data_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder, total_bytes_to_alloc);
@@ -9404,11 +9406,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         builder->CreateMemSet(data_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
             total_bytes_to_alloc, llvm::MaybeAlign());
         
-        // Step 3: Store the data pointer in the wrapper's data field (index 1)
-        // Bitcast to base struct type since wrapper expects that type
-        llvm::Type* const base_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
         llvm::Value* data_field_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
-        llvm::Value* bitcasted_data = builder->CreateBitCast(data_mem, base_struct_type->getPointerTo());
+        llvm::Value* bitcasted_data = data_mem;
+        if (!ASRUtils::is_unlimited_polymorphic_type(class_symbol)) {
+            llvm::Type* const base_struct_type = llvm_utils->getStructType(
+                class_symbol, llvm_utils->module);
+            bitcasted_data = builder->CreateBitCast(
+                data_mem, base_struct_type->getPointerTo());
+        }
         builder->CreateStore(bitcasted_data, data_field_ptr);
         
         // Step 4: Store vptr for the allocated subclass type (or fall back to class_symbol)
