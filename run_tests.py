@@ -283,6 +283,26 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
+    if ast_cpp:
+        run_test(
+            filename,
+            "ast_cpp",
+            "lfortran --show-ast-cpp --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if ast_cpp_hip:
+        run_test(
+            filename,
+            "ast_cpp_hip",
+            "lfortran --show-ast-cpp-hip --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
     if lookup_name:
         run_test(
             filename,
@@ -406,7 +426,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         if filename.endswith(".f"):
             run_test(
                 filename,
-                "asr",
+                "asr_implicit_interface_and_typing",
                 "lfortran --fixed-form --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -415,7 +435,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         else:
             run_test(
                 filename,
-                "asr",
+                "asr_implicit_interface_and_typing",
                 "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -424,7 +444,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_use_loop_variable_after_loop:
         run_test(
             filename,
-            "asr",
+            "asr_use_loop_variable_after_loop",
             "lfortran --show-asr --use-loop-variable-after-loop --no-color {infile} -o {outfile}",
             filename,
             update_reference,
@@ -434,7 +454,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_implicit_argument_casting:
         run_test(
             filename,
-            "asr",
+            "asr_implicit_argument_casting",
             "lfortran --show-asr --implicit-argument-casting --no-color {infile} -o {outfile}",
             filename,
             update_reference,
@@ -455,7 +475,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if semantics_only_cc:
-        run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
+        run_test(filename, "semantics_only_cc", "lfortran --semantics-only --continue-compilation --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
@@ -477,14 +497,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 if not os.path.exists(modfile):
                     run_cmd("lfortran -c {}".format(extrafile_))
         if not skip_test:
-            run_test(filename, "asr", "lfortran --show-document-symbols --no-color {infile}",
+            run_test(filename, "document_symbols", "lfortran --show-document-symbols --no-color {infile}",
                 filename,
                 update_reference,
                 verify_hash,
                 extra_args)
 
     if show_errors:
-        run_test(filename, "asr", "lfortran --show-errors --continue-compilation --no-color {infile}",
+        run_test(filename, "show_errors", "lfortran --show-errors --continue-compilation --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
@@ -498,7 +518,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if show_asr_with_cc:
-        run_test(filename, "asr", "lfortran --continue-compilation --show-asr --no-color {infile}",
+        run_test(filename, "show_asr_with_cc", "lfortran --continue-compilation --show-asr --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
@@ -517,7 +537,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if fixed_form_cc_asr:
         run_test(
                 filename,
-                "asr",
+                "fixed_form_cc_asr",
                 "lfortran --fixed-form --continue-compilation --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -527,7 +547,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_implicit_typing:
         run_test(
             filename,
-            "asr",
+            "asr_implicit_typing",
             "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
             filename,
             update_reference,
@@ -537,20 +557,21 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_disable_implicit_typing:
         if no_llvm:
             log.info(f"{filename} * llvm   SKIPPED as requested")
-        run_test(
-            filename,
-            "asr",
-            "lfortran --std=f23 --show-asr --disable-implicit-typing --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        else:
+            run_test(
+                filename,
+                "asr_disable_implicit_typing",
+                "lfortran --std=f23 --show-asr --disable-implicit-typing --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if asr_implicit_interface:
         if filename.endswith(".f"):
             run_test(
                 filename,
-                "asr",
+                "asr_implicit_interface",
                 "lfortran --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -559,7 +580,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         else:
             run_test(
                 filename,
-                "asr",
+                "asr_implicit_interface",
                 "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
