@@ -14,4 +14,11 @@ program implicit_typing_10
     if (any(b /= [1.0, 2.0, 3.0, 4.0, 5.0])) error stop 2
     c = func(2, 3)
     if (c /= 6) error stop 3
+
+    block
+        d = 10
+        if (d /= 10) error stop 4
+        e = func(4, 5)
+        if (e /= 20) error stop 5
+    end block
 end program implicit_typing_10
