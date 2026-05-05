@@ -2181,12 +2181,12 @@ public:
                         implicit_dictionary = implicit_mapping[get_hash(
                             current_scope->parent->asr_owner)];
                     }
-                }
-                if (implicit_dictionary.size() == 0 && is_implicit_interface
-                        && implicit_interface_parent_scope->asr_owner
-                        && implicit_mapping.find(get_hash(implicit_interface_parent_scope->asr_owner))
-                               != implicit_mapping.end()) {
-                    implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
+                    }
+                    if (implicit_dictionary.size() == 0 && is_implicit_interface
+                            && implicit_interface_parent_scope->asr_owner
+                            && implicit_mapping.find(get_hash(implicit_interface_parent_scope->asr_owner))
+                                != implicit_mapping.end()) {
+                        implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
                 }
             }
         }
