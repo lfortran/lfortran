@@ -1,5 +1,0 @@
-warning: Real constant overflows its kind (4)
- --> tests/../integration_tests/real_constant.f90:2:13
-  |
-2 |     print*, 9.99e+99
-  |             ^^^^^^^^ 

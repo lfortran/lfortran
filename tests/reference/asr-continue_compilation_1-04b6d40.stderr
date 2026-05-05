@@ -1443,6 +1443,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 649 |     derived_cls = base_var
     |     ^^^^^^^^^^^   ^^^^^^^^ type mismatch (derived and base)
 
+warning: Real constant overflows its kind (4)
+   --> tests/errors/continue_compilation_1.f90:651:13
+    |
+651 |     print*, 9.99e+99
+    |             ^^^^^^^^ 
+
 semantic error: No matching `operator(-)` found for this operand type
    --> tests/errors/continue_compilation_1.f90:662:18
     |
