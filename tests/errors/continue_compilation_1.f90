@@ -648,7 +648,7 @@ program continue_compilation_1
     a(1) = .true.
     derived_cls = base_var
     call print_len_non_char("  Hello World  ")
-
+    print*, 9.99e+99
 
 
 

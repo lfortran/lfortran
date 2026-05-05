@@ -18389,6 +18389,11 @@ public:
             throw SemanticAbort();
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
+        if (std::isinf(r)) {
+            diag.add(Diagnostic(
+                "Real constant overflows its kind (" + std::to_string(r_kind) + ")",
+                Level::Warning, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
     }
 
