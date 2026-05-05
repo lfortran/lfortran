@@ -11860,6 +11860,13 @@ public:
                             ASRUtils::get_FunctionType(func)->m_return_var_type,
                             &new_dims);
         } else {
+            if (func->m_return_var == nullptr) {
+                diag.add(diag::Diagnostic(
+                    "Subroutine `" + std::string(func->m_name) + "` cannot be used as a function or expression",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             return_type = handle_return_type(return_type, loc, args, func);
         }
