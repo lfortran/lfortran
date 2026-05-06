@@ -19378,7 +19378,67 @@ public:
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if( x.m_overloaded ) {
+            // DTIO: set child I/O mode to suppress record terminators in
+            // child writes, call the user-defined I/O subroutine, then
+            // clear child mode and write the parent record terminator.
+            llvm::Value *unit_val;
+            if (x.m_unit == nullptr) {
+                unit_val = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, 6, true));
+            } else {
+                this->visit_expr_wrapper(x.m_unit, true);
+                unit_val = tmp;
+                if (unit_val->getType()->isIntegerTy() &&
+                    unit_val->getType()->getIntegerBitWidth() > 32) {
+                    unit_val = builder->CreateTrunc(
+                        unit_val, llvm::Type::getInt32Ty(context));
+                }
+            }
+
+            // _lfortran_set_child_io(unit, 1)
+            {
+                std::string func_name = "_lfortran_set_child_io";
+                llvm::Function *fn = module->getFunction(func_name);
+                if (!fn) {
+                    llvm::FunctionType *ft = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context),
+                        {llvm::Type::getInt32Ty(context),
+                         llvm::Type::getInt32Ty(context)}, false);
+                    fn = llvm::Function::Create(ft,
+                        llvm::Function::ExternalLinkage, func_name,
+                        module.get());
+                }
+                llvm::Value *one = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, 1, true));
+                builder->CreateCall(fn, {unit_val, one});
+            }
+
             this->visit_stmt(*x.m_overloaded);
+
+            // _lfortran_set_child_io(unit, 0)
+            {
+                std::string func_name = "_lfortran_set_child_io";
+                llvm::Function *fn = module->getFunction(func_name);
+                llvm::Value *zero = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, 0, true));
+                builder->CreateCall(fn, {unit_val, zero});
+            }
+
+            // Write parent record terminator
+            {
+                std::string func_name = "_lfortran_file_write_newline";
+                llvm::Function *fn = module->getFunction(func_name);
+                if (!fn) {
+                    llvm::FunctionType *ft = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context),
+                        {llvm::Type::getInt32Ty(context)}, false);
+                    fn = llvm::Function::Create(ft,
+                        llvm::Function::ExternalLinkage, func_name,
+                        module.get());
+                }
+                builder->CreateCall(fn, {unit_val});
+            }
+
             return ;
         }
 

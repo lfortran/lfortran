@@ -144,6 +144,11 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     std::cout<< "\x1b[2J" << move_cursor(1,1) << std::flush;
                     row = 1;
                     break;
+                case CTRL_KEY('u'):
+                    m.lines[m.cursor_row-1] = 
+                            m.lines[m.cursor_row-1].substr(m.cursor_col-1);
+                    m.cursor_col = 1;
+                    break;
                 case Key::BACKSPACE:
                     if (m.cursor_col > 1) {
                         std::string before = m.lines[m.cursor_row-1].substr(0,
