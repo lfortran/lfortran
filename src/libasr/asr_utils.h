@@ -91,7 +91,20 @@ static inline std::string extract_real(const char *s) {
     std::string x = s;
     x = replace(x, "d", "e");
     x = replace(x, "D", "E");
+    // Fortran quad-precision exponent letter (e.g. 1.5q10 == 1.5e10 in real(16))
+    x = replace(x, "q", "e");
+    x = replace(x, "Q", "E");
     return x;
+}
+
+/
+static inline std::string extract_real_16_str(const char *s) {
+    std::string r = extract_real(s);         // normalise d/D/q/Q → e/E
+    auto pos = r.rfind('_');
+    if (pos != std::string::npos) {
+        r = r.substr(0, pos);
+    }
+    return r;
 }
 
 static inline double extract_real_4(const char *s) {
@@ -102,6 +115,16 @@ static inline double extract_real_4(const char *s) {
 
 static inline double extract_real_8(const char *s) {
     std::string r_str = ASRUtils::extract_real(s);
+    return std::strtod(r_str.c_str(), nullptr);
+}
+
+static inline double extract_real_16(const char *s) {
+    // NOTE: ASR::RealConstant_t currently stores m_r as a C double, so this
+    // function is only used for constant-folding paths that read back m_r.
+    // For full precision at codegen time, use extract_real_16_str() and pass
+    // the result directly to llvm::APFloat(IEEEquad, StringRef).
+    // (tracked: lfortran issue #3468)
+    std::string r_str = extract_real(s);
     return std::strtod(r_str.c_str(), nullptr);
 }
 
@@ -2582,7 +2605,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 0, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, nullptr, asr_type));
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 0.0, 0.0, asr_type));
@@ -2615,7 +2638,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 1, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, nullptr, asr_type));
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 0.0, asr_type));
@@ -2656,7 +2679,7 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
                 default:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, nullptr, asr_type));
         }
         default: {
             throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
@@ -2689,7 +2712,7 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
                 default:
                     throw LCompilersException("get_maximum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, nullptr, asr_type));
         }
         default: {
             throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
@@ -4185,6 +4208,10 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
         if (*p == 'd' || *p == 'D') {
             // Double precision
             return 8;
+        }
+        if (*p == 'q' || *p == 'Q') {
+            // Quad precision (real(16))
+            return 16;
         }
         p++;
     }
@@ -7316,9 +7343,9 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         case ASR::ttypeType::Real: {
             switch (kind) {
                 case 4: value = EXPR(ASR::make_RealConstant_t(al, loc,
-                                    ((float*)data)[i], type)); break;
+                                    ((float*)data)[i], nullptr, type)); break;
                 case 8: value = EXPR(ASR::make_RealConstant_t(al, loc,
-                                    ((double*)data)[i], type)); break;
+                                    ((double*)data)[i], nullptr, type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }
@@ -8508,7 +8535,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
             if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
                 args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
+                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r, nullptr,
                     ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
