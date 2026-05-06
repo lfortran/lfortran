@@ -49,6 +49,214 @@ typedef enum {
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
 
+/* ---- Platform detection ---- */
+#if LFORTRAN_HAVE_REAL128
+
+typedef __float128 lf_float128;
+
+static inline lf_float128 lf_f128_from_double(double d) {
+    return (__float128)d;
+}
+static inline double lf_f128_to_double(lf_float128 v) {
+    return (double)v;
+}
+static inline int lf_f128_isnan(lf_float128 v) {
+    return isnanq(v);
+}
+static inline int lf_f128_isinf(lf_float128 v) {
+    return isinfq(v);
+}
+static inline int lf_f128_signbit(lf_float128 v) {
+    uint64_t hi;
+    memcpy(&hi, (const char*)&v + 8, 8);
+    return (int)(hi >> 63);
+}
+static inline int lf_f128_cmp(lf_float128 a, lf_float128 b) {
+    if (isnanq(a) || isnanq(b)) return 1; /* unordered: treated as > */
+    return (a > b) - (a < b);  /* -1, 0, or +1 */
+}
+static inline int lf_f128_eq(lf_float128 a, lf_float128 b) {
+    if (isnanq(a) || isnanq(b)) return 0;
+    return a == b;
+}
+
+#  if defined(__ELF__)
+#    define LF_TF2_ATTR __attribute__((weak))
+#  else
+#    define LF_TF2_ATTR
+#  endif
+
+LF_TF2_ATTR int __eqtf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_eq(a, b) ? 0 : 1;
+}
+LF_TF2_ATTR int __netf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_eq(a, b) ? 0 : 1; /* LLVM checks result != 0 for "not equal" */
+}
+LF_TF2_ATTR int __lttf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b); /* returns -1 if a<b, 0 if equal, +1 if a>b or NaN */
+}
+LF_TF2_ATTR int __letf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b); /* LLVM checks result <= 0 */
+}
+LF_TF2_ATTR int __gttf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b); /* LLVM checks result > 0 */
+}
+LF_TF2_ATTR int __getf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b); /* LLVM checks result >= 0 */
+}
+LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) {
+    return (isnanq(a) || isnanq(b)) ? 1 : 0;
+}
+
+#else  /* !LFORTRAN_HAVE_REAL128 — macOS, Windows, WASM */
+
+typedef struct {
+    uint8_t bytes[16]; /* raw IEEE 754 binary128 bits, little-endian */
+} lf_float128;
+
+static inline lf_float128 lf_f128_from_double(double d) {
+    lf_float128 result;
+    memset(result.bytes, 0, 16);
+
+    uint64_t dbits;
+    memcpy(&dbits, &d, 8);
+
+    uint64_t sign     = (dbits >> 63) & 0x1;
+    uint64_t d_exp    = (dbits >> 52) & 0x7FF;
+    uint64_t d_mant   = dbits & 0x000FFFFFFFFFFFFFULL;
+
+    if (d_exp == 0x7FF) {
+        /* Inf or NaN: set quad exponent to all-ones */
+        uint64_t q_exp = 0x7FFF;
+        uint64_t hi = (sign << 63) | (q_exp << 48) | (d_mant >> 4);
+        uint64_t lo = d_mant << 60; /* remaining 4 mantissa bits */
+        memcpy(result.bytes,     &lo, 8);
+        memcpy(result.bytes + 8, &hi, 8);
+        return result;
+    }
+    if (d_exp == 0) {
+        /* Zero or subnormal double -> zero quad (subnormals not yet handled) */
+        if (d_mant == 0) {
+            uint64_t hi = (sign << 63);
+            memcpy(result.bytes + 8, &hi, 8);
+        }
+        return result;
+    }
+
+    uint64_t q_exp = d_exp - 1023 + 16383; /* re-bias */
+    uint64_t hi = (sign << 63) | (q_exp << 48) | (d_mant >> 4);
+    uint64_t lo = d_mant << 60;
+    memcpy(result.bytes,     &lo, 8);
+    memcpy(result.bytes + 8, &hi, 8);
+    return result;
+}
+
+static inline double lf_f128_to_double(lf_float128 v) {
+
+    uint64_t hi, lo;
+    memcpy(&lo, v.bytes,     8);
+    memcpy(&hi, v.bytes + 8, 8);
+
+    uint64_t sign  = (hi >> 63) & 0x1;
+    uint64_t q_exp = (hi >> 48) & 0x7FFF;
+    uint64_t q_mant_hi = hi & 0x0000FFFFFFFFFFFFULL; /* top 48 frac bits */
+    /* Bottom 4 mantissa bits live in the top 4 bits of lo */
+    uint64_t q_mant_lo4 = lo >> 60;
+
+    if (q_exp == 0x7FFF) {
+        /* Inf / NaN */
+        uint64_t d_mant = (q_mant_hi << 4) | q_mant_lo4;
+        uint64_t dbits = (sign << 63) | (0x7FFULL << 52) | (d_mant & 0x000FFFFFFFFFFFFFULL);
+        double result;
+        memcpy(&result, &dbits, 8);
+        return result;
+    }
+    if (q_exp == 0) {
+        return sign ? -0.0 : 0.0;
+    }
+
+    int64_t exp_val = (int64_t)q_exp - 16383 + 1023;
+    if (exp_val <= 0) return sign ? -0.0 : 0.0;   /* underflow -> zero */
+    if (exp_val >= 0x7FF) {
+        /* Overflow -> infinity */
+        uint64_t dbits = (sign << 63) | (0x7FFULL << 52);
+        double result;
+        memcpy(&result, &dbits, 8);
+        return result;
+    }
+
+    uint64_t d_mant = (q_mant_hi << 4) | q_mant_lo4;
+    uint64_t dbits = (sign << 63) | ((uint64_t)exp_val << 52) | (d_mant & 0x000FFFFFFFFFFFFFULL);
+    double result;
+    memcpy(&result, &dbits, 8);
+    return result;
+}
+
+static inline int lf_f128_isnan(lf_float128 v) {
+    uint64_t hi;
+    memcpy(&hi, v.bytes + 8, 8);
+    uint64_t exp  = (hi >> 48) & 0x7FFF;
+    uint64_t mant = hi & 0x0000FFFFFFFFFFFFULL;
+    uint64_t lo;
+    memcpy(&lo, v.bytes, 8);
+    return (exp == 0x7FFF) && (mant != 0 || lo != 0);
+}
+
+static inline int lf_f128_isinf(lf_float128 v) {
+    uint64_t hi;
+    memcpy(&hi, v.bytes + 8, 8);
+    uint64_t exp  = (hi >> 48) & 0x7FFF;
+    uint64_t mant = hi & 0x0000FFFFFFFFFFFFULL;
+    uint64_t lo;
+    memcpy(&lo, v.bytes, 8);
+    return (exp == 0x7FFF) && (mant == 0) && (lo == 0);
+}
+
+static inline int lf_f128_signbit(lf_float128 v) {
+    uint64_t hi;
+    memcpy(&hi, v.bytes + 8, 8);
+    return (int)(hi >> 63);
+}
+
+/* Three-way compare using double precision (valid while ASR stores doubles) */
+static inline int lf_f128_cmp(lf_float128 a, lf_float128 b) {
+    if (lf_f128_isnan(a) || lf_f128_isnan(b)) return 1; /* unordered: treated as > */
+    double da = lf_f128_to_double(a);
+    double db = lf_f128_to_double(b);
+    return (da > db) - (da < db);  /* -1, 0, or +1 */
+}
+
+static inline int lf_f128_eq(lf_float128 a, lf_float128 b) {
+    if (lf_f128_isnan(a) || lf_f128_isnan(b)) return 0;
+    double da = lf_f128_to_double(a);
+    double db = lf_f128_to_double(b);
+    return da == db;
+}
+
+int __eqtf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_eq(a, b) ? 0 : 1;
+}
+int __netf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_eq(a, b) ? 0 : 1; /* LLVM checks result != 0 for "not equal" */
+}
+int __lttf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b);
+}
+int __letf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b);
+}
+int __gttf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b);
+}
+int __getf2(lf_float128 a, lf_float128 b) {
+    return lf_f128_cmp(a, b);
+}
+int __unordtf2(lf_float128 a, lf_float128 b) {
+    return (lf_f128_isnan(a) || lf_f128_isnan(b)) ? 1 : 0;
+}
+
+#endif /* LFORTRAN_HAVE_REAL128 */
+
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
 /* ----------------------------------------------------- */
@@ -1951,6 +2159,7 @@ typedef enum primitive_types{
     LOGICAL_32_TYPE = 15,
     LOGICAL_16_TYPE = 16,
     LOGICAL_64_TYPE = 17,
+    FLOAT_128_TYPE = 18,
 } Primitive_Types;
 
 static inline bool is_logical_type(Primitive_Types t) {
@@ -1990,6 +2199,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
+        case FLOAT_128_TYPE:
             return 'f';
             break;
         case CHAR_PTR_TYPE:
@@ -2103,6 +2313,47 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             memcpy(&tmp, arg_ptr, sizeof(double));
             raw = tmp;
             break;
+        }
+        case FLOAT_128_TYPE: {
+            /* fp128 hex: handle separately .
+             * Build the full 32-hex-digit string directly from the 16 raw bytes. */
+            byte_count = 16;
+            unsigned char fp128_bytes[16];
+            memcpy(fp128_bytes, arg_ptr, 16);
+            int total_hex = 32;
+            char *hex_full = (char*)internal_malloc((total_hex + 1) * sizeof(char));
+            for (int _b = 15; _b >= 0; _b--) {
+                snprintf(hex_full + (15 - _b) * 2, 3, "%02X", fp128_bytes[_b]);
+            }
+            hex_full[total_hex] = '\0';
+            /* strip leading zeros, respect min_digits and width */
+            int _s = 0;
+            while (_s < total_hex - 1 && hex_full[_s] == '0') _s++;
+            int _dlen = total_hex - _s;
+            if (_dlen < 1) _dlen = 1;
+            if (min_digits < 1) min_digits = 1;
+            int _olen = _dlen > min_digits ? _dlen : min_digits;
+            char *_out = (char*)internal_malloc((_olen + (width > 0 ? width : 0) + 2) * sizeof(char));
+            int _lz = _olen - _dlen;
+            for (int _i = 0; _i < _lz; _i++) _out[_i] = '0';
+            memcpy(_out + _lz, hex_full + _s, _dlen);
+            _out[_olen] = '\0';
+            internal_free(hex_full);
+            if (width > 0 && _olen > width) {
+                char *stars = (char*)internal_malloc((width + 1) * sizeof(char));
+                memset(stars, '*', width);
+                stars[width] = '\0';
+                *result = stars;
+            } else if (width > _olen) {
+                char *padded = (char*)internal_malloc((width + 1) * sizeof(char));
+                memset(padded, ' ', width - _olen);
+                memcpy(padded + (width - _olen), _out, _olen + 1);
+                internal_free(_out);
+                *result = padded;
+            } else {
+                *result = _out;
+            }
+            return; /* early return: skip the generic uint64 path below */
         }
         default:
             fprintf(stderr, "Unsupported type for Z edit descriptor\n");
@@ -2417,7 +2668,8 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(char*) + sizeof(int64_t)/*String Descriptor*/,
         sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
-        sizeof(int64_t)/*LOGICAL_64*/};
+        sizeof(int64_t)/*LOGICAL_64*/,
+        16/*FLOAT_128: 16 bytes = 128 bits*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -2489,6 +2741,18 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
     case 'R':
         switch (s_info->serialization_string[s_info->current_stop++])
         {
+        case '1':
+            /* Must be R16 -- consume the '6' */
+            if (s_info->serialization_string[s_info->current_stop] == '6') {
+                s_info->current_stop++;
+                *PrimitiveType = FLOAT_128_TYPE;
+            } else {
+                fprintf(stderr, "RunTime - compiler internal error"
+                    " : Unidentified Print Types Serialization --> %s\n",
+                        s_info->serialization_string);
+                exit(1);
+            }
+            break;
         case '8':
             *PrimitiveType = FLOAT_64_TYPE;
             break;
@@ -2496,7 +2760,7 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             *PrimitiveType = FLOAT_32_TYPE;
             break;
         default:
-            fprintf(stderr, "RunTime - compiler" 
+            fprintf(stderr, "RunTime - compiler"
             "internal error : Unidentified Print Types Serialization --> %s\n",
                     s_info->serialization_string);
             exit(1);
@@ -2655,6 +2919,45 @@ static void format_float_fortran(char* result, float val) {
     sprintf(result, format_str, val);
 }
 
+static void format_double_fortran(char* result, double val);
+
+/* Format a quad-precision value for Fortran list-directed output.
+ *
+ * On Linux (LFORTRAN_HAVE_REAL128): uses quadmath_snprintf with a %.33Qe
+ * format, giving all 34 significant decimal digits of IEEE 754 binary128.
+ *
+ * On macOS/Windows (!LFORTRAN_HAVE_REAL128): lf_float128 is our 16-byte
+ * software type.  While ASR still stores constants as double the value in
+ * the struct is just a widened double, so we fall back to format_double_fortran
+ * via lf_f128_to_double().
+ */
+static void format_float128_fortran(char* result, lf_float128 val) {
+#if LFORTRAN_HAVE_REAL128
+    char buf[64];
+    int n = quadmath_snprintf(buf, sizeof(buf), "%.33Qe", val);
+    if (n < 0 || n >= (int)sizeof(buf)) {
+        format_double_fortran(result, (double)val);
+        return;
+    }
+    char* e_pos = strchr(buf, 'e');
+    if (!e_pos) e_pos = strchr(buf, 'E');
+    if (e_pos) {
+        char sign = e_pos[1];
+        int exp_val = atoi(e_pos + 2);
+        /* Print exponent with at least 3 digits and correct sign */
+        int written = (int)(e_pos - buf);
+        sprintf(result, "%.*sE%c%03d", written, buf,
+                (sign == '-' ? '-' : '+'),
+                (exp_val < 0 ? -exp_val : exp_val));
+    } else {
+        strcpy(result, buf);
+    }
+#else
+    /* Software path: best double approximation */
+    format_double_fortran(result, lf_f128_to_double(val));
+#endif
+}
+
 static void format_double_fortran(char* result, double val) {
     if (isnan(val)) {
         sprintf(result, "NaN");
@@ -2811,6 +3114,34 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
         case CPTR_VOID_PTR_TYPE:
             sprintf(result, "%p",*(void**)arg);
             break;
+        case FLOAT_128_TYPE: {
+            lf_float128 val128;
+            memcpy(&val128, arg, 16);
+            if (s_info->current_arg_info.is_complex) {
+                char real_str[256], imag_str[256];
+#if LFORTRAN_HAVE_REAL128
+                format_float128_fortran(real_str, val128);
+#else
+                format_double_fortran(real_str, lf_f128_to_double(val128));
+#endif
+                move_to_next_element(s_info, false);
+                lf_float128 imag128;
+                memcpy(&imag128, s_info->current_arg_info.current_arg, 16);
+#if LFORTRAN_HAVE_REAL128
+                format_float128_fortran(imag_str, imag128);
+#else
+                format_double_fortran(imag_str, lf_f128_to_double(imag128));
+#endif
+                sprintf(result, "(%s,%s)", real_str, imag_str);
+            } else {
+#if LFORTRAN_HAVE_REAL128
+                format_float128_fortran(result, val128);
+#else
+                format_double_fortran(result, lf_f128_to_double(val128));
+#endif
+            }
+            break;
+        }
         default :
             fprintf(stderr, "Unknown type");
             exit(1);
@@ -3247,6 +3578,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     case  FLOAT_32_TYPE:
                         double_val = (double)*(float*)s_info.current_arg_info.current_arg; 
                         break;
+                    case FLOAT_128_TYPE: {
+                        lf_float128 q128;
+                        memcpy(&q128, s_info.current_arg_info.current_arg, 16);
+                        double_val = lf_f128_to_double(q128);
+                        break;
+                    }
                     case CHAR_PTR_TYPE:
                     case STRING_DESCRIPTOR_TYPE:
                         char_val = *(char**)s_info.current_arg_info.current_arg;
