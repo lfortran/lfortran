@@ -2133,6 +2133,7 @@ RUN(NAME operator_overloading_35 LABELS gfortran llvm EXTRAFILES
 RUN(NAME operator_overloading_36 LABELS gfortran llvm_submodule EXTRAFILES
     operator_overloading_36_mod_base.f90 operator_overloading_36_mod_base_sub.f90)
 RUN(NAME operator_overloading_37 LABELS gfortran llvm)
+RUN(NAME operator_overloading_38 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2394,6 +2395,7 @@ RUN(NAME derived_types_135 LABELS gfortran llvm)
 RUN(NAME derived_types_136 LABELS gfortran llvm)
 RUN(NAME derived_types_137 LABELS gfortran llvm)
 RUN(NAME derived_types_138 LABELS gfortran llvm)
+RUN(NAME derived_types_139 LABELS gfortran llvm)
 RUN(NAME derived_types_apply_clip_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 
@@ -2492,6 +2494,7 @@ RUN(NAME allocate_66 LABELS gfortran llvm)
 RUN(NAME allocate_67 LABELS gfortran llvm)
 RUN(NAME allocate_68 LABELS gfortran llvm)
 RUN(NAME allocate_69 LABELS gfortran llvm)
+RUN(NAME allocate_70 LABELS gfortran llvm)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
@@ -3039,6 +3042,7 @@ RUN(NAME class_144 LABELS gfortran llvm)
 RUN(NAME class_145 LABELS gfortran llvm)
 RUN(NAME class_146 LABELS gfortran llvm)
 RUN(NAME class_147 LABELS gfortran llvm)
+RUN(NAME class_148 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -3341,6 +3345,7 @@ RUN(NAME finalization_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_02 LABELS gfortran llvm)
 RUN(NAME finalization_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_04 LABELS gfortran llvm)
+RUN(NAME finalization_05 LABELS gfortran llvm)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)
@@ -3845,6 +3850,7 @@ RUN(NAME optional_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME optional_09 LABELS gfortran llvm)
 RUN(NAME optional_10 LABELS gfortran llvm)
 RUN(NAME optional_11 LABELS gfortran llvm)
+RUN(NAME optional_12 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
