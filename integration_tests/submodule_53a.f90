@@ -1,13 +1,11 @@
 program submodule_53a
   use submodule_53_mod
   implicit none
-  type(array_type) :: c
-  real, dimension(2,3) :: input, output
-
-  input = 1.0
-  output = 0.0
-  call setup(c)
-  call c%get_partial_left_val(input, output)
-  if (any(output /= input)) error stop "mismatch"
-  print *, "PASSED"
-end program submodule_53a
+  type(t) :: c
+  real :: a(3), b(3)
+  a = 1.0
+  b = 0.0
+  c%p => impl
+  call c%p(a, b)
+  if (any(b /= a)) error stop
+end program
