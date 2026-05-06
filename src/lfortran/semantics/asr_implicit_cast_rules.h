@@ -214,7 +214,7 @@ public:
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
                     double rval = static_cast<double>(i->m_n);
                     value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                                                                 rval, dest_type2);
+                                                                 rval, nullptr, dest_type2);
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                     ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -270,7 +270,7 @@ public:
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                     double rval = r->m_r;
                     value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                        rval, dest_type2);
+                        rval, nullptr, dest_type2);
               } else {
                   LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                   ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -357,7 +357,7 @@ public:
                   ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
                   double rval = r->m_re;
                   value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                      rval, dest_type2);
+                      rval, nullptr, dest_type2);
                 } else {
                   value = nullptr;
                 }

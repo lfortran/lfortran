@@ -433,12 +433,12 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         float result = 0.0;
                         result += find_sum(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     } else {
                         double result = 0.0;
                         result += find_sum(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     }
                 } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
                     if (kind == 4) {
@@ -499,12 +499,12 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         float result = 1.0;
                         result = find_product(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     } else {
                         double result = 1.0;
                         result = find_product(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     }
                 } else if (ASR::is_a<ASR::ComplexConstant_t>(*args_value0)) {
                     if (ASRUtils::extract_kind_from_ttype_t(t) == 4) {
@@ -594,12 +594,12 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         float result = std::numeric_limits<float>::max();
                         result = find_minval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     } else {
                         double result = std::numeric_limits<double>::max();
                         result = find_minval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     }
                 }
             }
@@ -624,12 +624,12 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         float result = std::numeric_limits<float>::min();
                         result = find_maxval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     } else {
                         double result = std::numeric_limits<double>::min();
                         result = find_maxval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
-                            loc, result, t));
+                            loc, result, nullptr, t));
                     }
                 }
             }
@@ -4400,7 +4400,7 @@ namespace FindLoc {
         if (is_real(*array_type) && is_integer(*value_type)){
             if (ASR::is_a<ASR::IntegerConstant_t>(*value)){
                 ASR::IntegerConstant_t *value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
-                value = EXPR(ASR::make_RealConstant_t(al, loc, value_int->m_n,
+                value = EXPR(ASR::make_RealConstant_t(al, loc, value_int->m_n, nullptr,
                 ASRUtils::TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(value_type)))));
             } else{
                 value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::IntegerToReal,
@@ -5511,13 +5511,13 @@ namespace Norm2 {
                 for (size_t i = 0; i < size; i++) {
                     norm += ((float*)(arr->m_data))[i] * ((float*)(arr->m_data))[i];
                 }
-                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), return_type));
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), nullptr, return_type));
             } else {
                 double norm = 0.0;
                 for (size_t i = 0; i < size; i++) {
                     norm += ((double*)(arr->m_data))[i] * ((double*)(arr->m_data))[i];
                 }
-                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), return_type));
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), nullptr, return_type));
             }
         }
         return nullptr;
@@ -5822,7 +5822,7 @@ namespace Pack {
                 evaluate_Pack(a, b, c, res);
                 std::vector<ASR::expr_t*> values;
                 for (auto it: res) {
-                    values.push_back(EXPR(ASR::make_RealConstant_t(al, loc, it, real32)));
+                    values.push_back(EXPR(ASR::make_RealConstant_t(al, loc, it, nullptr, real32)));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
             } else if (kind == 8) {
@@ -5834,7 +5834,7 @@ namespace Pack {
                 evaluate_Pack(a, b, c, res);
                 std::vector<ASR::expr_t*> values;
                 for (auto it: res) {
-                    values.push_back(EXPR(ASR::make_RealConstant_t(al, loc, it, real64)));
+                    values.push_back(EXPR(ASR::make_RealConstant_t(al, loc, it, nullptr, real64)));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
             } else {
@@ -6226,10 +6226,10 @@ namespace Unpack {
                 Vec<ASR::expr_t*> values; values.reserve(al, b.size());
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[k], real32)));
+                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[k], nullptr, real32)));
                         k++;
                     } else {
-                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, c[i], real32)));
+                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, c[i], nullptr, real32)));
                     }
                 }
 
@@ -6241,10 +6241,10 @@ namespace Unpack {
                 Vec<ASR::expr_t*> values; values.reserve(al, b.size());
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[k], real64)));
+                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, a[k], nullptr, real64)));
                         k++;
                     } else {
-                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, c[i], real64)));
+                        values.push_back(al, EXPR(ASR::make_RealConstant_t(al, loc, c[i], nullptr, real64)));
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
@@ -6568,12 +6568,12 @@ namespace DotProduct {
                 std::vector<float> a(dim), b(dim);
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 float result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0f);
-                return make_ConstantWithType(make_RealConstant_t, result, return_type, loc);
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, result, nullptr, return_type));
             } else if (kind == 8) {
                 std::vector<double> a(dim), b(dim);
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 double result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
-                return make_ConstantWithType(make_RealConstant_t, result, return_type, loc);
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, result, nullptr, return_type));
             } else {
                 append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
                 return nullptr;
@@ -6739,7 +6739,7 @@ namespace DotProduct {
                 b.Assignment(result, b.Add(result, EXPR(ASR::make_ComplexBinOp_t(al, loc, func_call_conjg, ASR::binopType::Mul, b.ArrayItem_01(args[1], {i}), return_type, nullptr))))
             }, nullptr));
         } else if (is_real(*return_type)) {
-            body.push_back(al, b.Assignment(result, make_ConstantWithType(make_RealConstant_t, 0.0, return_type, loc)));
+            body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, 0.0, nullptr, return_type))));
             body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.r2r_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0])))))
             }, nullptr));

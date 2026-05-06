@@ -97,7 +97,7 @@ static inline std::string extract_real(const char *s) {
     return x;
 }
 
-/
+
 static inline std::string extract_real_16_str(const char *s) {
     std::string r = extract_real(s);         // normalise d/D/q/Q → e/E
     auto pos = r.rfind('_');

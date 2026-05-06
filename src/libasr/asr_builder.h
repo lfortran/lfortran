@@ -296,15 +296,15 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* f_t(double x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_RealConstant_t(al, loc, x, t));
+        return EXPR(ASR::make_RealConstant_t(al, loc, x, nullptr, t));
     }
 
     inline ASR::expr_t* f32(double x) {
-        return EXPR(ASR::make_RealConstant_t(al, loc, x, real32));
+        return EXPR(ASR::make_RealConstant_t(al, loc, x, nullptr, real32));
     }
 
     inline ASR::expr_t* f64(double x) {
-        return EXPR(ASR::make_RealConstant_t(al, loc, x, real64));
+        return EXPR(ASR::make_RealConstant_t(al, loc, x, nullptr, real64));
     }
 
     inline ASR::expr_t* f_neg(ASR::expr_t* x, ASR::ttype_t* t) {
@@ -662,7 +662,7 @@ class ASRBuilder {
                 if( ASRUtils::extract_value(left, left_value) &&
                     ASRUtils::extract_value(right, right_value) ) {
                     double mul_value = left_value * right_value;
-                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, mul_value, type));
+                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, mul_value, nullptr, type));
                 }
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Mul, right, type, value));

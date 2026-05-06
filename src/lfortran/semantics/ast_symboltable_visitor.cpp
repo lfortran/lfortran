@@ -3363,12 +3363,12 @@ public:
                                                             float fv;
                                                             std::memcpy(&fv, &iv, sizeof(float));
                                                             equiv_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
-                                                                al, src_val->base.loc, fv, member_type));
+                                                                al, src_val->base.loc, fv, nullptr, member_type));
                                                         } else if (member_kind == 8) {
                                                             double dv;
                                                             std::memcpy(&dv, &int_val, sizeof(double));
                                                             equiv_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
-                                                                al, src_val->base.loc, dv, member_type));
+                                                                al, src_val->base.loc, dv, nullptr, member_type));
                                                         }
                                                     } else if (ASR::is_a<ASR::RealConstant_t>(*src_val) &&
                                                                ASR::is_a<ASR::Integer_t>(*member_type)) {

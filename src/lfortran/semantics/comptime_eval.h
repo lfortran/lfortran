@@ -165,7 +165,7 @@ struct IntrinsicProcedures {
         if (ASR::is_a<ASR::Real_t>(*t)) {
             double rv = ASR::down_cast<ASR::RealConstant_t>(trig_arg)->m_r;
             double val = trig_double(rv);
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, nullptr, t));
         } else if (ASR::is_a<ASR::Complex_t>(*t)) {
             if (trig_complex_double) {
                 double re = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_re;
@@ -207,7 +207,7 @@ struct IntrinsicProcedures {
             double rv1 = ASR::down_cast<ASR::RealConstant_t>(trig_arg1)->m_r;
             double rv2 = ASR::down_cast<ASR::RealConstant_t>(trig_arg2)->m_r;
             double val = eval2_double(rv1, rv2);
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t1));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, nullptr, t1));
         } else {
             diag.add(diag::Diagnostic(
                 "Arguments for this intrinsic function must be Real",
@@ -238,7 +238,7 @@ struct IntrinsicProcedures {
             double rv1 = ASR::down_cast<ASR::RealConstant_t>(trig_arg1)->m_r;
             double rv2 = ASR::down_cast<ASR::RealConstant_t>(trig_arg2)->m_r;
             double val = eval2_double(rv1, rv2);
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t1));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, nullptr, t1));
         } else if (ASR::is_a<ASR::Integer_t>(*t1) && ASR::is_a<ASR::Integer_t>(*t2)) {
             int64_t rv1 = ASR::down_cast<ASR::IntegerConstant_t>(trig_arg1)->m_n;
             int64_t rv2 = ASR::down_cast<ASR::IntegerConstant_t>(trig_arg2)->m_n;
