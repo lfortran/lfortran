@@ -426,7 +426,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         if filename.endswith(".f"):
             run_test(
                 filename,
-                "asr_implicit_interface_and_typing",
+                "asr",
                 "lfortran --fixed-form --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -435,7 +435,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         else:
             run_test(
                 filename,
-                "asr_implicit_interface_and_typing",
+                "asr",
                 "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -444,7 +444,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_use_loop_variable_after_loop:
         run_test(
             filename,
-            "asr_use_loop_variable_after_loop",
+            "asr",
             "lfortran --show-asr --use-loop-variable-after-loop --no-color {infile} -o {outfile}",
             filename,
             update_reference,
@@ -454,7 +454,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_implicit_argument_casting:
         run_test(
             filename,
-            "asr_implicit_argument_casting",
+            "asr",
             "lfortran --show-asr --implicit-argument-casting --no-color {infile} -o {outfile}",
             filename,
             update_reference,
@@ -475,7 +475,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if semantics_only_cc:
-        run_test(filename, "semantics_only_cc", "lfortran --semantics-only --continue-compilation --no-color {infile}",
+        run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
@@ -518,7 +518,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if show_asr_with_cc:
-        run_test(filename, "show_asr_with_cc", "lfortran --continue-compilation --show-asr --no-color {infile}",
+        run_test(filename, "asr", "lfortran --continue-compilation --show-asr --no-color {infile}",
             filename,
             update_reference,
             verify_hash,
@@ -537,7 +537,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if fixed_form_cc_asr:
         run_test(
                 filename,
-                "fixed_form_cc_asr",
+                "asr",
                 "lfortran --fixed-form --continue-compilation --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -547,7 +547,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_implicit_typing:
         run_test(
             filename,
-            "asr_implicit_typing",
+            "asr",
             "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
             filename,
             update_reference,
@@ -571,7 +571,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         if filename.endswith(".f"):
             run_test(
                 filename,
-                "asr_implicit_interface",
+                "asr",
                 "lfortran --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
@@ -580,7 +580,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         else:
             run_test(
                 filename,
-                "asr_implicit_interface",
+                "asr",
                 "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
