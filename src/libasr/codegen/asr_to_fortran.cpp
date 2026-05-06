@@ -1772,10 +1772,13 @@ public:
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         size_t start_idx = is_method ? 1 : 0;
+        bool first_arg = true;
         for (size_t i = start_idx; i < x.n_args; i ++) {
+            if (!x.m_args[i].m_value) continue;
+            if (!first_arg) r += ", ";
             visit_expr(*x.m_args[i].m_value);
             r += src;
-            if (i < x.n_args-1) r += ", ";
+            first_arg = false;
         }
 
         r += ")";
@@ -2907,6 +2910,14 @@ public:
         r += "%";
         r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
         src = r;
+    }
+    
+    void visit_CoarrayRef(const ASR::CoarrayRef_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_expr(*x.m_var);
     }
 
     // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}
