@@ -1,0 +1,828 @@
+#!/bin/bash
+set -ex  # Exit immediately on any error
+
+# Default to gfortran if FC is not set
+: "${FC:=gfortran}"
+: "${LFORTRAN_LAPACK_TEST_MODE:=full}"
+LAPACK_TEST_MODE="$LFORTRAN_LAPACK_TEST_MODE"
+
+# Color definitions for pretty output
+GREEN='\033[0;32m'
+BLUE='\033[1;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Helper functions for logging
+print_usage() {
+  cat <<EOF
+Usage: $0 [--lapack-mode <smoke|full>]
+EOF
+}
+
+print_section() {
+  echo -e "\n${BLUE}==============================="
+  echo -e "$1"
+  echo -e "===============================${NC}\n"
+}
+
+print_subsection() {
+  echo -e "${YELLOW}→ $1${NC}"
+}
+
+print_success() {
+  echo -e "${GREEN}✔ $1${NC}"
+}
+
+run_test() {
+  print_subsection "Running: $1"
+  ./$1
+  print_success "Success: $1"
+}
+
+# Assert that the current git HEAD matches the expected commit SHA.
+#
+# This is the analogue of a lockfile entry (cf. pixi.lock): a branch or tag
+# checkout gives us a human-readable reference, but upstream may move it. By
+# pinning the exact commit here we fail fast if upstream silently changes the
+# code we are testing against. If the assertion fails, investigate the
+# upstream change, then update the SHA after review.
+#
+# Usage:
+#   git checkout v3.1.0
+#   assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
+assert_git_commit() {
+  local expected="$1"
+  local label="${2:-$(basename "$PWD")}"
+  local actual
+  actual=$(git rev-parse HEAD)
+  if [ "$actual" != "$expected" ]; then
+    echo "ERROR [$label]: expected commit $expected but HEAD is $actual" >&2
+    echo "       (upstream branch/tag may have moved; update the pin after review)" >&2
+    exit 1
+  fi
+}
+
+time_section() {
+  local LABEL="$1"
+  local BLOCK="$2"
+  local START=$(date +%s)
+  print_section "$LABEL"
+  eval "$BLOCK"
+  local END=$(date +%s)
+  print_subsection "⏱ Duration: $((END - START)) seconds"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lapack-mode)
+      if [[ $# -lt 2 ]]; then
+        echo "ERROR: --lapack-mode requires a value"
+        print_usage
+        exit 1
+      fi
+      LAPACK_TEST_MODE="$2"
+      shift 2
+      ;;
+    --lapack-mode=*)
+      LAPACK_TEST_MODE="${1#*=}"
+      shift
+      ;;
+    -h|--help)
+      print_usage
+      exit 0
+      ;;
+    *)
+      echo "ERROR: unknown option: $1"
+      print_usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "$LAPACK_TEST_MODE" != "smoke" && "$LAPACK_TEST_MODE" != "full" ]]; then
+  echo "ERROR: invalid LAPACK test mode '$LAPACK_TEST_MODE' (expected 'smoke' or 'full')"
+  exit 1
+fi
+
+# Setup a temporary workspace
+TMP_DIR=$(mktemp -d)
+cd "$TMP_DIR"
+
+time_section "🧪 Testing caffeine" '
+  git clone -b main https://github.com/BerkeleyLab/caffeine.git
+  cd caffeine
+
+  micromamba install -c conda-forge fpm=0.12.0
+
+  # To debug https://github.com/lfortran/lfortran/issues/7732:
+  which fpm
+  realpath $(which fpm)
+  ls -l $(dirname $(realpath $(which fpm)))/../lib
+  ls -l $CONDA_PREFIX/lib
+  fpm --version
+
+  export CC=clang
+  export CXX=clang++
+  echo PATH="$PATH"
+
+  # Output some toolchain information for debugging
+  for tool in ${FC} ${CC} ${CXX} fpm ; do
+    if command -v $tool > /dev/null 2>&1 ; then
+       ( echo ; set -x ; w=$(which $tool) ; ls -al $w ; ls -alhL $w ; $tool --version )
+    fi
+  done
+
+  # inject ISO_Fortran_binding.h into the C include path
+  export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
+
+  # Now build and test caffeine with LFortran
+  git checkout 0388cf70cd193214952d8be9a00e968c4c5061e2
+  export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
+  ./install.sh --yes --prefix=$PWD/inst --verbose
+  export CAF_IMAGES=4
+  ./run-fpm.sh test --verbose 
+
+  print_success "Done with caffeine"
+  cd ..
+  rm -rf caffeine
+'
+
+
+time_section "🧪 Testing assert" '
+  git clone -b main https://github.com/berkeleylab/assert.git
+  cd assert
+
+  micromamba install -c conda-forge fpm=0.12.0
+
+  # Release 3.1.0
+  git checkout 3.1.0
+  assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
+
+  git clean -dfx
+  fpm build --compiler=$FC --flag "--cpp" --verbose
+  fpm test --compiler=$FC --flag "--cpp"
+
+  git clean -dfx
+  print_subsection "Testing with assertions enabled"
+  fpm test --compiler=$FC --verbose --flag "--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS"
+
+  cd ../
+  rm -rf assert
+'
+
+
+time_section "🧪 Testing splpak" '
+  git clone https://github.com/Pranavchiku/splpak.git
+  cd splpak
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  # To debug https://github.com/lfortran/lfortran/issues/7732:
+  which fpm
+  realpath $(which fpm)
+  ls -l $(dirname $(realpath $(which fpm)))/../lib
+  ls -l $CONDA_PREFIX/lib
+  fpm --version
+
+  git checkout lf-2
+  assert_git_commit 460bd22f4ac716e5266412e8ed35ce07aa664f08
+
+  git clean -dfx
+  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math" --verbose
+  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math"
+
+  cd ../
+  rm -rf splpak
+'
+
+time_section "🧪 Testing neural-fortran" '
+  git clone https://github.com/modern-fortran/neural-fortran
+  cd neural-fortran
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 5e4940ff2850c9b039f8dd77982715bced8f3ce5
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with neural-fortran"
+  cd ..
+'
+
+time_section "🧪 Testing Fiats" '
+  git clone https://github.com/BerkeleyLab/fiats
+  cd fiats
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  if [[ "$(uname)" == "Darwin" ]]; then
+    rm -rf build
+    git fetch https://github.com/certik/fiats lf1
+    git checkout f5d91ae48c01297a7fb183957654a73721ad4520
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal"
+  fi
+
+  print_success "Done with Fiats"
+  cd ..
+'
+
+time_section "🧪 Testing smart-pointers" '
+  git clone https://github.com/certik/smart-pointers.git
+  cd smart-pointers
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout -t origin/lf2
+  assert_git_commit 95de5105c6a469b64feb39e999567f5e2fcdd033
+  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with smart-pointers"
+  cd ..
+'
+
+time_section "🧪 Testing Formal" '
+  git clone https://github.com/certik/formal.git
+  cd formal
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout -t origin/lf1
+  assert_git_commit 671ab24c3d639b1a2fedd27f727e96dadf404c5c
+  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  rm -rf build
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with Formal"
+  cd ..
+'
+
+time_section "🧪 Testing Julienne" '
+  git clone https://github.com/BerkeleyLab/julienne.git
+  cd julienne
+  micromamba install -c conda-forge fpm
+
+  # Release 3.6.2
+  git checkout 3.6.2
+  assert_git_commit b29fe49efc4547b88cde59e19462956df9c3050a
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+
+  print_success "Done with Julienne"
+  cd ..
+'
+
+time_section "🧪 Testing fortran-regex" '
+  git clone https://github.com/perazz/fortran-regex.git
+  cd fortran-regex
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
+  fpm --compiler=$FC build
+  fpm --compiler=$FC test
+
+  print_success "Done with fortran-regex"
+  cd ..
+'
+
+time_section "🧪 Testing fortran-shlex" '
+  git clone https://github.com/perazz/fortran-shlex.git
+  cd fortran-shlex
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout e20b6f86c82e33fae78b54b074bab5369efde6a3
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
+
+  print_success "Done with fortran-shlex"
+  cd ..
+'
+
+time_section "🧪 Testing toml-f" '
+  git clone https://github.com/toml-f/toml-f.git
+  cd toml-f
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 27abd768e79c7c790ffa58fe5ccfb105ba00883d
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
+
+  print_success "Done with toml-f"
+  cd ..
+'
+
+time_section "🧪 Testing jonquil" '
+  git clone https://github.com/jinangshah21/jonquil.git
+  cd jonquil
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-7
+  micromamba install -c conda-forge fpm
+
+  git checkout 8aad5a901810bd669e851eead633c0df2bb7b423
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+
+  print_success "Done with jonquil"
+  cd ..
+'
+
+time_section "🧪 Testing M_CLI2" '
+  git clone https://github.com/jinangshah21/M_CLI2.git
+  cd M_CLI2
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-9
+  micromamba install -c conda-forge fpm
+  assert_git_commit 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
+
+  print_success "Done with M_CLI2"
+  cd ..
+'
+
+if [[ "$(uname)" != "Darwin" ]]; then
+
+time_section "🧪 Testing fortran_mpi" '
+  git clone https://github.com/lfortran/fortran_mpi.git
+  cd fortran_mpi
+  export PATH="$(pwd)/../src/bin:$PATH"
+
+  export OMPI_MCA_btl_tcp_if_include=lo0
+
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+
+  git clean -fdx
+  cd tests/
+  FC="$FC --cpp" ./run_tests.sh
+  print_success "Done with fortran_mpi"
+  cd ../../
+  rm -rf fortran_mpi
+'
+
+time_section "🧪 Compiling POT3D with fortran_mpi" '
+  git clone https://github.com/parth121101/pot3d.git
+  cd pot3d
+  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
+  assert_git_commit 380669edd3a5947985674a51e0d65482d6fe68b3
+
+  git clone https://github.com/lfortran/fortran_mpi
+  cd fortran_mpi
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  cp src/mpi.f90 ../src/
+  cp src/mpi_c_bindings.f90 ../src/
+  cp src/mpi_constants.c ../src/
+  cd ..
+
+  print_subsection "Building with default flags (compile-only)"
+  cd src
+  if [[ "$(uname)" == "Linux" ]]; then
+    CC=gcc
+  else
+    CC=clang
+  fi
+  $CC -I$CONDA_PREFIX/include -c mpi_constants.c
+  $FC --cpp -DOPEN_MPI=yes -c mpi_c_bindings.f90
+  $FC --cpp -DOPEN_MPI=yes -c mpi.f90
+  $FC --cpp -DOPEN_MPI=yes -c psi_io.f90 --no-style-suggestions --no-warnings
+  $FC --cpp -DOPEN_MPI=yes -c --implicit-interface pot3d.F90 --no-style-suggestions --no-warnings
+  $FC --cpp -DOPEN_MPI=yes mpi_constants.o mpi_c_bindings.o mpi.o psi_io.o pot3d.o -o pot3d -L$CONDA_PREFIX/lib -lmpi -Wl,-rpath,$CONDA_PREFIX/lib
+  cd ..
+
+  print_success "Done with POT3D (compile-only)"
+  cd ..
+  rm -rf pot3d
+'
+
+
+##########################
+# Section 2: FPM
+##########################
+time_section "🧪 Testing FPM" '
+  git clone -b v0.13.0 --depth 1 https://github.com/fortran-lang/fpm.git
+  cd fpm
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+  git checkout v0.13.0
+  assert_git_commit 90bb83a70e9bcf04d941fb43cca014ae1c0fc5ea
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+
+  print_success "Done with FPM"
+  cd ..
+'
+
+##########################
+# Section 3: Fortran-Primes
+##########################
+time_section "🧪 Testing Fortran-Primes" '
+  git clone https://github.com/jinangshah21/fortran-primes.git
+  cd fortran-primes
+  git checkout -t origin/lf-3
+  assert_git_commit 923b468f79eee1ff07b77d9def67249f4d2efa21
+
+  print_subsection "Building and running Fortran-Primes"
+  FC=$FC ./build_and_run.sh
+
+  print_success "Done with Fortran-Primes"
+  cd ..
+  rm -rf fortran-primes
+'
+
+########################################
+# Section 4: Numerical Methods Fortran #
+########################################
+time_section "🧪 Testing Numerical Methods Fortran" '
+  git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
+  cd numerical-methods-fortran
+  git checkout -t origin/lf6
+  assert_git_commit a252989e64b3f8d5d2f930dca18411c104ea85f8
+
+  print_subsection "Building project"
+  FC="$FC --no-array-bounds-checking --realloc-lhs-arrays" make
+
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
+  print_success "Done with Numerical Methods Fortran"
+
+  cd ..
+  rm -rf numerical-methods-fortran
+'
+
+#######################
+# Section 5: PRIMA    #
+#######################
+time_section "🧪 Compiling PRIMA" '
+  git clone https://github.com/Pranavchiku/prima.git
+  cd prima
+  git checkout -t origin/lf-prima-12
+  # The `lf-prima-12` has different commit than what we need:
+  git checkout e681eea9b3f27930c50cffd14dd566b39f01c642
+  assert_git_commit e681eea9b3f27930c50cffd14dd566b39f01c642
+  git clean -dfx
+
+  # OS-specific env
+  if [[ "$RUNNER_OS" == "macos-latest" ]]; then
+    export LFORTRAN_RUNNER_OS="macos"
+  elif [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+    export LFORTRAN_RUNNER_OS="linux"
+  fi
+
+  print_subsection "Building PRIMA (compile-only)"
+  FC="$FC --cpp" cmake -S . -B build \
+    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+    -DCMAKE_Fortran_FLAGS="" \
+    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
+    -DCMAKE_MACOSX_RPATH=OFF \
+    -DCMAKE_SKIP_INSTALL_RPATH=ON \
+    -DCMAKE_SKIP_RPATH=ON
+
+  cmake --build build --target install
+
+  print_success "Done with PRIMA"
+  cd ..
+'
+
+##########################
+# Section 7: Modern Minpack
+##########################
+time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
+  git clone https://github.com/fortran-lang/minpack modern_minpack_01
+  cd modern_minpack_01
+  git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
+
+  $FC ./src/minpack.f90 -c --legacy-array-sections
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections
+'
+
+time_section "🧪 Testing Modern Minpack (Result Check)" '
+  git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
+  cd modern_minpack_02
+  git checkout -t origin/w5
+  assert_git_commit fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
+
+  $FC ./src/minpack.f90 -c --legacy-array-sections
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections
+'
+
+##########################
+# Section 8: dftatom
+##########################
+time_section "🧪 Testing dftatom" '
+  git clone https://github.com/certik/dftatom.git
+  cd dftatom
+  git checkout 9b678177f67e350b8a32e08cb61f51e6e708e87a
+
+  make -f Makefile.manual F90=$FC F90FLAGS=-I../../src
+  make -f Makefile.manual quicktest
+'
+
+##########################
+# Section 8.1: featom (build-only)
+##########################
+time_section "🧪 Building featom (build-only)" '
+  git clone https://github.com/atomic-solvers/featom
+  cd featom
+  git checkout 87872a3266ceeee61a7244e6ecd134dc3bda790f
+  micromamba install -c conda-forge fpm libblas liblapack
+  export LIBRARY_PATH="$CONDA_PREFIX/lib:${LIBRARY_PATH:-}"
+  # Build-only smoke test for now; runtime tests can be added later.
+  FPM_FFLAGS="--cpp --realloc-lhs-arrays --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
+
+  print_success "Done with featom (build-only)"
+  cd ..
+  rm -rf featom
+'
+
+
+##########################
+# Section 9: fastGPT
+##########################
+time_section "🧪 Testing fastGPT" '
+    git clone https://github.com/certik/fastGPT.git
+    cd fastGPT
+
+    git clean -dfx
+    git checkout -t origin/namelist
+    # The `namelist` branch mismatches the commit we need:
+    git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+    assert_git_commit d3eef520c1be8e2db98a3c2189740af1ae7c3e06
+    curl -f -L -o model.dat \
+        https://github.com/certik/fastGPT/releases/download/v1.0.0/model_fastgpt_124M_v1.dat
+    echo "11f6f018794924986b2fdccfbe8294233bb5e8ba28d40ae971dec3adbdc81ad7  model.dat" | shasum -a 256 --check
+
+    mkdir lf
+    cd lf
+    FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+    make VERBOSE=1
+    ln -s ../model.dat .
+    ./gpt2
+    ./test_basic_input
+    ./test_more_inputs
+    cd ..
+
+    rm -rf fastGPT/
+'
+
+##########################
+# Section 10: stdlib
+##########################
+time_section "🧪 Testing stdlib" '
+    git clone https://github.com/czgdp1807/stdlib.git
+    cd stdlib
+    export PATH="$(pwd)/../../src/bin:$PATH"
+
+    git checkout lf-21
+    assert_git_commit 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
+    micromamba install -c conda-forge fypp
+
+    git clean -fdx
+    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays"
+    make -j8
+    ctest
+'
+
+##########################
+# Section 11: SNAP
+##########################
+time_section "🧪 Testing SNAP" '
+    git clone https://github.com/certik/SNAP.git
+    cd SNAP
+
+    git checkout lf11
+    assert_git_commit 169a9216f2c922e94065a519efbb0a6c8b55149e
+    cd ./src
+    make -j8 FORTRAN=$FC FFLAGS= MPI=no OPENMP=no
+    ./gsnap ../qasnap/sample/inp out
+'
+##########################
+# Section 13: LAPACK
+##########################
+time_section "🧪 Testing LAPACK" '
+    micromamba install -y -n lf cmake=3.31.2 # bump-up CMAKE
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone https://github.com/gxyd/lapack.git
+    cd lapack
+    git fetch origin lf_07
+    git checkout lf_07
+    assert_git_commit 9d9e48987ca109d46b92d515b59cb591fab9859a
+    cd build
+    ./build_lf.sh
+    micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
+'
+
+
+##########################
+# Section 14: Reference-LAPACK Full Test Suite (32-bit and 64-bit integers)
+##########################
+time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
+    print_subsection "LAPACK test mode: ${LAPACK_TEST_MODE}"
+    export PATH="$(pwd)/../src/bin:$PATH"
+    git clone --depth 1 --branch v3.12.1 https://github.com/Reference-LAPACK/lapack.git lapack-testing
+    cd lapack-testing
+
+    # Patch to skip FortranCInterface_VERIFY (requires mixed Fortran/C linking)
+    sed -i "/FortranCInterface_VERIFY/d" LAPACKE/include/CMakeLists.txt
+
+    # Patch dgd.in to use custom seed that avoids FMA-sensitive ill-conditioned matrix
+    # See: https://github.com/Reference-LAPACK/lapack/issues/1186
+    sed -i "s/^0                 Code to interpret the seed$/2                 Code to interpret the seed\n1234 5678 9012 3456/" TESTING/dgd.in
+
+    # CMake < 3.31 needs CMAKE_Fortran_PREPROCESS_SOURCE for LFortran
+    CMAKE_VERSION=$(cmake --version | head -1 | grep -oE "[0-9]+\.[0-9]+")
+    TOOLCHAIN_OPT=""
+    if [ "$(printf "%s\n3.31" "$CMAKE_VERSION" | sort -V | head -1)" != "3.31" ]; then
+        echo "set(CMAKE_Fortran_PREPROCESS_SOURCE \"<CMAKE_Fortran_COMPILER> -E <SOURCE> > <PREPROCESSED_SOURCE>\")" > lfortran.cmake
+        TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=lfortran.cmake"
+    fi
+
+    # Helper function to run a single LAPACK test and check results
+    run_lapack_test() {
+        local TEST_EXE="$1"
+        local INPUT_FILE="$2"
+        local TEST_NAME="$3"
+
+        print_subsection "Running $TEST_NAME"
+        set +e
+        timeout 300 ./bin/$TEST_EXE < ../TESTING/$INPUT_FILE 2>&1 | tee ${TEST_EXE}_${INPUT_FILE%.in}.out
+        exit_code=$?
+        set -e
+
+        if [ "$exit_code" -ne 0 ] && [ "$exit_code" -ne 124 ]; then
+            echo "ERROR: $TEST_NAME exited with code $exit_code"
+            exit 1
+        fi
+
+        if grep -qE "failed to pass the threshold" ${TEST_EXE}_${INPUT_FILE%.in}.out; then
+            echo "ERROR: threshold failures in $TEST_NAME"
+            grep "failed to pass the threshold" ${TEST_EXE}_${INPUT_FILE%.in}.out | head -20
+            exit 1
+        fi
+
+        if grep -E "[1-9][0-9]* error messages recorded" ${TEST_EXE}_${INPUT_FILE%.in}.out; then
+            echo "ERROR: error messages recorded in $TEST_NAME"
+            exit 1
+        fi
+
+        print_success "$TEST_NAME passed"
+    }
+
+    # Function to run the full LAPACK test suite
+    run_lapack_full_test_suite() {
+        local MODE="$1"  # empty or "(ILP64)"
+
+        # === LINEAR EQUATION TESTS ===
+        print_section "Linear Equation Tests ${MODE}"
+        run_lapack_test xlintsts stest.in "Single Real Linear Equations ${MODE}"
+        run_lapack_test xlintstd dtest.in "Double Real Linear Equations ${MODE}"
+        run_lapack_test xlintstc ctest.in "Single Complex Linear Equations ${MODE}"
+        run_lapack_test xlintstz ztest.in "Double Complex Linear Equations ${MODE}"
+        run_lapack_test xlintstrfs stest_rfp.in "Single Real RFP Linear Equations ${MODE}"
+        run_lapack_test xlintstrfd dtest_rfp.in "Double Real RFP Linear Equations ${MODE}"
+        run_lapack_test xlintstrfc ctest_rfp.in "Single Complex RFP Linear Equations ${MODE}"
+        run_lapack_test xlintstrfz ztest_rfp.in "Double Complex RFP Linear Equations ${MODE}"
+
+        # === MIXED PRECISION LINEAR EQUATION TESTS ===
+        print_section "Mixed Precision Linear Equation Tests ${MODE}"
+        run_lapack_test xlintstds dstest.in "Double-Single Mixed Precision ${MODE}"
+        run_lapack_test xlintstzc zctest.in "Double-Single Complex Mixed Precision ${MODE}"
+
+        # === EIGENVALUE TESTS ===
+        print_section "Eigenvalue Tests ${MODE}"
+
+        # Single Real Eigenvalue Tests
+        for input in nep sep se2 svd sec sed sgg sgd ssb ssg sbal sbak sgbal sgbak sbb glm gqr gsv csd lse sdmd; do
+            if [ -f "../TESTING/${input}.in" ]; then
+                run_lapack_test xeigtsts ${input}.in "Single Real Eigenvalue: ${input} ${MODE}"
+            fi
+        done
+
+        # Double Real Eigenvalue Tests
+        for input in nep sep se2 svd dec ded dgg dgd dsb dsg dbal dbak dgbal dgbak dbb glm gqr gsv csd lse ddmd; do
+            if [ -f "../TESTING/${input}.in" ]; then
+                run_lapack_test xeigtstd ${input}.in "Double Real Eigenvalue: ${input} ${MODE}"
+            fi
+        done
+
+        # Single Complex Eigenvalue Tests
+        for input in nep sep se2 svd cec ced cgg cgd csb csg cbal cbak cgbal cgbak cbb glm gqr gsv csd lse cdmd; do
+            if [ -f "../TESTING/${input}.in" ]; then
+                run_lapack_test xeigtstc ${input}.in "Single Complex Eigenvalue: ${input} ${MODE}"
+            fi
+        done
+
+        # Double Complex Eigenvalue Tests
+        for input in nep sep se2 svd zec zed zgg zgd zsb zsg zbal zbak zgbal zgbak zbb glm gqr gsv csd lse zdmd; do
+            if [ -f "../TESTING/${input}.in" ]; then
+                run_lapack_test xeigtstz ${input}.in "Double Complex Eigenvalue: ${input} ${MODE}"
+            fi
+        done
+
+        print_success "All LAPACK tests passed ${MODE}"
+    }
+
+    # Function to run a reduced smoke test suite
+    run_lapack_smoke_test_suite() {
+        local MODE="$1"  # empty or "(ILP64)"
+
+        print_section "LAPACK Smoke Tests ${MODE}"
+        run_lapack_test xlintsts stest.in "Smoke Single Real Linear Equations ${MODE}"
+        run_lapack_test xlintstd dtest.in "Smoke Double Real Linear Equations ${MODE}"
+        run_lapack_test xlintstz ztest.in "Smoke Double Complex Linear Equations ${MODE}"
+        if [ -f "../TESTING/nep.in" ]; then
+            run_lapack_test xeigtstd nep.in "Smoke Double Real Eigenvalue: nep ${MODE}"
+        fi
+        print_success "LAPACK smoke tests passed ${MODE}"
+    }
+
+    run_lapack_selected_test_suite() {
+        local MODE="$1"
+        if [ "$LAPACK_TEST_MODE" = "smoke" ]; then
+            run_lapack_smoke_test_suite "$MODE"
+        else
+            run_lapack_full_test_suite "$MODE"
+        fi
+    }
+
+    # =======================================================================
+    # Build and test with 32-bit integers (standard mode)
+    # =======================================================================
+    print_section "Building LAPACK with 32-bit integers"
+    cmake -S . -B build -G Ninja \
+      $TOOLCHAIN_OPT \
+      -DCMAKE_Fortran_COMPILER=lfortran \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_INDEX64=OFF \
+      -DBUILD_INDEX64_EXT_API=OFF \
+      -DBUILD_COMPLEX=ON \
+      -DBUILD_COMPLEX16=ON \
+      -DBUILD_TESTING=ON
+
+    cmake --build build -j8
+    cd build
+    run_lapack_selected_test_suite ""
+    cd ..
+
+    # =======================================================================
+    # Build and test with 64-bit integers (ILP64 mode)
+    # =======================================================================
+    if [ "$LAPACK_TEST_MODE" = "full" ]; then
+        print_section "Building LAPACK with 64-bit integers (ILP64)"
+        rm -rf build
+        cmake -S . -B build -G Ninja \
+          $TOOLCHAIN_OPT \
+          -DCMAKE_Fortran_COMPILER=lfortran \
+          -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop -fdefault-integer-8" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_INDEX64=ON \
+          -DBUILD_INDEX64_EXT_API=OFF \
+          -DBUILD_COMPLEX=ON \
+          -DBUILD_COMPLEX16=ON \
+          -DBUILD_TESTING=ON
+
+        cmake --build build -j8
+        cd build
+        run_lapack_selected_test_suite "(ILP64)"
+        cd ..
+    else
+        print_section "Skipping ILP64 LAPACK build in smoke mode"
+    fi
+
+    cd ..
+'
+
+fi
+
+##################################
+# Final Summary and Cleanup
+##################################
+print_section "✅ All Third Party Code Tests Completed Successfully"
+
+# Optional cleanup
+# cd ../..
+# rm -rf "$TMP_DIR"

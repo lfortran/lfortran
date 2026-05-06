@@ -283,25 +283,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
         
-    if ast_cpp:
-        run_test(
-            filename,
-            "ast_cpp",
-            "lfortran --show-ast-cpp --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
-
-    if ast_cpp_hip:
-        run_test(
-            filename,
-            "ast_cpp_hip",
-            "lfortran --show-ast-cpp-hip --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
         if lookup_name:
             run_test(
             filename,
@@ -389,7 +370,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     break
 
                 if len(extrafile_) > 0:
-                    extrafile_ = os.path.normpath(os.path.join("tests", extrafile_))
+                    extrafile_ = os.path.join("tests", extrafile_)
                     modfile = extrafile_[:-4] + ".mod"
                     if not os.path.exists(modfile):
                         run_cmd("lfortran -c {}".format(extrafile_))
@@ -491,7 +472,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 break
 
             if len(extrafile_) > 0:
-                extrafile_ = os.path.normpath(os.path.join("tests", extrafile_))
+                extrafile_ = os.path.join("tests", extrafile_)
                 modfile = extrafile_[:-4] + ".mod"
                 if not os.path.exists(modfile):
                     run_cmd("lfortran -c {}".format(extrafile_))
@@ -556,16 +537,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     if asr_disable_implicit_typing:
         if no_llvm:
             log.info(f"{filename} * llvm   SKIPPED as requested")
-        else:
-            run_test(
-                filename,
-                "asr_disable_implicit_typing",
-                "lfortran --std=f23 --show-asr --disable-implicit-typing --no-color {infile} -o {outfile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
-
+        run_test(
+            filename,
+            "asr",
+            "lfortran --std=f23 --show-asr --disable-implicit-typing --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+        
     if asr_implicit_interface:
         if filename.endswith(".f"):
             run_test(

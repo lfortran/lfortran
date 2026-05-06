@@ -1,5 +1,0 @@
-semantic error: shape array passed to c_f_pointer must be of rank 1 but given rank is 2
- --> tests/errors/c_f_pointer_02.f90:6:34
-  |
-6 |     call c_f_pointer(queries, x, shape)
-  |                                  ^^^^^ 

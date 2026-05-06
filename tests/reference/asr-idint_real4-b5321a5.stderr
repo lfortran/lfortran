@@ -1,5 +1,0 @@
-semantic error: first argument of `idint` must have kind equal to 8
- --> tests/errors/idint_real4.f90:2:14
-  |
-2 |     print *, idint(4.5)
-  |              ^^^^^^^^^^ 
