@@ -3178,22 +3178,6 @@ def main(argv):
         fp.write(FOOT % subs)
     finally:
         fp.close()
-    if is_asr:
-        for filename in generated_files:
-            text = filename.read_text(encoding="utf-8")
-            text = text.replace("m_m_r", "m_r")
-            text = text.replace("m_m_n", "m_n")
-            text = text.replace("m_m_type", "m_type")
-            text = text.replace("a_m_r", "a_r")
-            text = text.replace("a_m_n", "a_n")
-            text = text.replace("a_m_type", "a_type")
-            text = text.replace("self().write_string(x.m_n);",
-                    "self().write_string(x.m_n ? x.m_n : \"\");")
-            text = text.replace('std::string(x.m_n)',
-                    'std::string(x.m_n ? x.m_n : "")')
-            text = text.replace('str_escape_c(x.m_n)',
-                    'str_escape_c(x.m_n ? x.m_n : "")')
-            filename.write_text(text, encoding="utf-8")
 
 
 if __name__ == "__main__":
