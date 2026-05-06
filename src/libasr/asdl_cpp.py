@@ -3139,6 +3139,7 @@ def main(argv):
     else:
         subs["lcompiler"] = "lfortran"
     is_asr = (mod.name.upper() == "ASR")
+    generated_files = [Path(out_file)]
     fp = open(out_file, "w", encoding="utf-8")
     try:
         fp.write(HEAD % subs)
@@ -3156,6 +3157,7 @@ def main(argv):
             filename = "base"
             full_filename = asr_path.with_name(
                     f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+            generated_files.append(full_filename)
             with open(full_filename, "w", encoding="utf-8") as f:
                 f.write(HEAD_BASE_VISITOR % subs)
                 for Visitor in asr_base_visitor:
@@ -3167,6 +3169,7 @@ def main(argv):
             for filename, Visitor in asr_visitor_files:
                 full_filename = asr_path.with_name(
                         f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+                generated_files.append(full_filename)
                 with open(full_filename, "w", encoding="utf-8") as f:
                     f.write(HEAD_VISITOR % subs)
                     Visitor(f, data).visit(mod)
@@ -3175,6 +3178,22 @@ def main(argv):
         fp.write(FOOT % subs)
     finally:
         fp.close()
+    if is_asr:
+        for filename in generated_files:
+            text = filename.read_text(encoding="utf-8")
+            text = text.replace("m_m_r", "m_r")
+            text = text.replace("m_m_n", "m_n")
+            text = text.replace("m_m_type", "m_type")
+            text = text.replace("a_m_r", "a_r")
+            text = text.replace("a_m_n", "a_n")
+            text = text.replace("a_m_type", "a_type")
+            text = text.replace("self().write_string(x.m_n);",
+                    "self().write_string(x.m_n ? x.m_n : \"\");")
+            text = text.replace('std::string(x.m_n)',
+                    'std::string(x.m_n ? x.m_n : "")')
+            text = text.replace('str_escape_c(x.m_n)',
+                    'str_escape_c(x.m_n ? x.m_n : "")')
+            filename.write_text(text, encoding="utf-8")
 
 
 if __name__ == "__main__":
