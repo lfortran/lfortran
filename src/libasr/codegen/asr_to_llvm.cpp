@@ -13912,6 +13912,20 @@ public:
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_cycle");
         start_new_block(bb);
     }
+    void safe_transition_to_block(llvm::BasicBlock *target) {
+        if (target->getTerminator()) {
+            llvm::BasicBlock *last_bb = builder->GetInsertBlock();
+            llvm::Function *fn = last_bb->getParent();
+            llvm::BasicBlock *cont = llvm::BasicBlock::Create(context, "goto_target.cont");
+            llvm_fn_insert_bb(fn, cont);
+            if (last_bb->getTerminator() == nullptr) {
+                builder->CreateBr(cont);
+            }
+            builder->SetInsertPoint(cont);
+        } else {
+            start_new_block(target);
+        }
+    }
 
     void visit_Return(const ASR::Return_t & /* x */) {
         builder->CreateBr(proc_return);
@@ -13921,7 +13935,6 @@ public:
 
     void visit_GoTo(const ASR::GoTo_t &x) {
         if (llvm_goto_targets.find(x.m_target_id) == llvm_goto_targets.end()) {
-            // If the target does not exist yet, create it
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
             llvm_goto_targets[x.m_target_id] = new_target;
         }
@@ -13933,27 +13946,11 @@ public:
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
         if (llvm_goto_targets.find(x.m_id) == llvm_goto_targets.end()) {
-            // If the target does not exist yet, create it
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
             llvm_goto_targets[x.m_id] = new_target;
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_id];
-        if (target->getTerminator()) {
-            // The target block already has a terminator (e.g., shared DO loop
-            // terminator already processed by an inner loop). Continue in a
-            // fresh block to avoid inserting a second terminator.
-            llvm::BasicBlock *last_bb = builder->GetInsertBlock();
-            llvm::Function *fn = last_bb->getParent();
-            llvm::BasicBlock *cont = llvm::BasicBlock::Create(context,
-                "goto_target.cont");
-            llvm_fn_insert_bb(fn, cont);
-            if (last_bb->getTerminator() == nullptr) {
-                builder->CreateBr(cont);
-            }
-            builder->SetInsertPoint(cont);
-        } else {
-            start_new_block(target);
-        }
+        safe_transition_to_block(target);
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
@@ -13997,9 +13994,6 @@ public:
                 comp_res,
                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
         } else if (ASRUtils::is_logical(*x.m_type)) {
-            // Use direct iW bitwise ops for logical types.
-            // Operands may be i1 (from comparisons) or iW (from variables).
-            // Unify to the wider type before the bitwise op.
             if (left_val->getType() != right_val->getType()) {
                 unsigned lw = left_val->getType()->getIntegerBitWidth();
                 unsigned rw = right_val->getType()->getIntegerBitWidth();
@@ -25635,7 +25629,6 @@ public:
 
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
-            case ASR::array_physical_typeType::AssumedRankArray:
             case ASR::array_physical_typeType::DescriptorArray: {
                 llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
