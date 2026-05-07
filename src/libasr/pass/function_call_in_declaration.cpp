@@ -276,6 +276,7 @@ public:
 
         ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
+        collect_and_create_new_externalSymbols(assignment_value_copy);
         replace_FunctionParam_with_FunctionArgs(assignment_value_copy, new_args);
         new_body.push_back(al, b.Assignment(return_var, assignment_value_copy));
         ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.base.loc,

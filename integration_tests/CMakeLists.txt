@@ -688,6 +688,7 @@ RUN(NAME functions_56 LABELS gfortran llvm EXTRAFILES functions_56_mod.f90 EXTRA
 RUN(NAME functions_57 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME functions_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME functions_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME common_01 LABELS gfortran)
 
