@@ -122,11 +122,11 @@ extern "C++" template <typename T> struct FlexibleArray : T {
  * codegen folds the offset into base_addr so C callers never see it.
  *
  * LLVM IR struct (internal):
- * { ptr, i64, i32, i8, i8, i8, i8, i64, [rank x {i64,i64,i64}] }
- * ^^^  offset kept internally
+ *   { ptr, i64, i32, i8, i8, i8, i8, i64, [rank x {i64,i64,i64}] }
+ *                                         ^^^  offset kept internally
  *
  * C struct (this header):
- * { ptr, i64, i32, u8, i8, u8, u8, [rank x {i64,i64,i64}] }
+ *   { ptr, i64, i32, u8, i8, u8, u8, [rank x {i64,i64,i64}] }
  */
 typedef struct CFI_cdesc_t {
     _CFI_CDESC_T_HEADER
