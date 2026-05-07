@@ -32,7 +32,6 @@ def run_cmd(cmd, cwd=None):
         exit(1)
 
 def run_test(backend, std, test_pattern=None):
-    # CHANGED: Added -p to prevent crashing and to preserve contents
     run_cmd(f"mkdir -p {BASE_DIR}/test-{backend}")
     
     if std == "f23":
@@ -194,7 +193,6 @@ def get_args():
     parser.add_argument("--std", type=str, default="lf",
                 help="Run tests with the requested Fortran standard: ".join(SUPPORTED_STANDARDS))
     
-    # CHANGED: Added the clean argument
     parser.add_argument("--clean", action='store_true',
                 help="Wipe the build cache for the requested backends before testing")
                 
@@ -232,7 +230,6 @@ def main():
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
     
-    # CHANGED: Wrapped the destructive loop in an if statement and scoped it to args.backends
     if args.clean:
         for backend in args.backends:
             run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
