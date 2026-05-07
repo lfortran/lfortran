@@ -6,9 +6,9 @@ target datalayout = "..."
 %array.1.1 = type { %string_descriptor*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
 %array.1.0 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
-%array.1 = type { %finalize_02.tt*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
-%finalize_02.tt = type { float, %finalize_02.t }
-%finalize_02.t = type { i32 }
+%array.1 = type { %tt.4*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
+%tt.4 = type { float, %t.3 }
+%t.3 = type { i32 }
 
 @deep_0 = internal global i32 0
 
@@ -55,7 +55,7 @@ define void @ss(i32* %nang) {
   %8 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 3
   store i8 1, i8* %8, align 1
   %9 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 0
-  store %finalize_02.tt* null, %finalize_02.tt** %9, align 8
+  store %tt.4* null, %tt.4** %9, align 8
   store %array.1* %arr_desc, %array.1** %arr_01, align 8
   %arr_02 = alloca %array.1.0*, align 8
   store %array.1.0* null, %array.1.0** %arr_02, align 8
@@ -256,8 +256,8 @@ entry:
   %2 = alloca i32, align 4
   %3 = alloca i64, align 8
   %4 = getelementptr %array.1, %array.1* %0, i32 0, i32 0
-  %5 = load %finalize_02.tt*, %finalize_02.tt** %4, align 8
-  %6 = icmp ne %finalize_02.tt* %5, null
+  %5 = load %tt.4*, %tt.4** %4, align 8
+  %6 = icmp ne %tt.4* %5, null
   br i1 %6, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
@@ -292,19 +292,19 @@ loop.body:                                        ; preds = %loop.head
 
 loop.end:                                         ; preds = %loop.head
   %21 = load i64, i64* %3, align 8
-  call void @finalize_array_data_StructType__tt_4(%finalize_02.tt* %5, i64 %21)
+  call void @finalize_array_data_StructType__tt_4(%tt.4* %5, i64 %21)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
   br label %is_allocated.ifcont
 
 is_allocated.ifcont:                              ; preds = %is_allocated.else, %loop.end
-  %22 = ptrtoint %finalize_02.tt* %5 to i64
+  %22 = ptrtoint %tt.4* %5 to i64
   %23 = icmp ne i64 %22, 0
   br i1 %23, label %then, label %else
 
 then:                                             ; preds = %is_allocated.ifcont
-  %24 = bitcast %finalize_02.tt* %5 to i8*
+  %24 = bitcast %tt.4* %5 to i8*
   call void @_lfortran_free_alloc(i8* %1, i8* %24)
   br label %ifcont
 
@@ -315,7 +315,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define internal void @finalize_array_data_StructType__tt_4(%finalize_02.tt* %0, i64 %1) {
+define internal void @finalize_array_data_StructType__tt_4(%tt.4* %0, i64 %1) {
 entry:
   %arrSize_iter = alloca i64, align 8
   store i64 -1, i64* %arrSize_iter, align 8
@@ -330,7 +330,7 @@ Finalize_array_of_structs.head:                   ; preds = %Finalize_array_of_s
 
 Finalize_array_of_structs.body:                   ; preds = %Finalize_array_of_structs.head
   %5 = load i64, i64* %arrSize_iter, align 8
-  %6 = getelementptr inbounds %finalize_02.tt, %finalize_02.tt* %0, i64 %5
+  %6 = getelementptr inbounds %tt.4, %tt.4* %0, i64 %5
   br label %Finalize_array_of_structs.head
 
 Finalize_array_of_structs.end:                    ; preds = %Finalize_array_of_structs.head

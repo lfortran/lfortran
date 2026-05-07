@@ -40,50 +40,27 @@ class ASRToLLVMVisitor;
         return (uint64_t)node;
     }
 
-    // Returns a scope-qualified key for a Struct_t, for use in name2dertype
-    // and related maps. E.g., struct "object_t" inside module "mod_a" becomes
-    // "mod_a.object_t", preventing collisions between same-named types in
-    // different modules. Unlimited polymorphic types (starting with "~") are
-    // global sentinels and are never qualified.
-    inline std::string get_type_key(ASR::Struct_t* struct_type) {
-        std::string name = struct_type->m_name;
-        // Skip qualification for internal sentinel types like ~unlimited_polymorphic_type
-        if (!name.empty() && name[0] == '~') {
-            return name;
-        }
-        if (struct_type->m_symtab && struct_type->m_symtab->parent &&
-                struct_type->m_symtab->parent->asr_owner &&
-                ASR::is_a<ASR::symbol_t>(*struct_type->m_symtab->parent->asr_owner)) {
-            ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
-                struct_type->m_symtab->parent->asr_owner);
-            name = std::string(ASRUtils::symbol_name(parent_sym)) + "." + name;
-        }
-        return name;
-    }
 
-    // Returns a scope-qualified key for a Union_t.
-    inline std::string get_type_key(ASR::Union_t* union_type) {
-        std::string name = union_type->m_name;
-        if (union_type->m_symtab && union_type->m_symtab->parent &&
-                union_type->m_symtab->parent->asr_owner &&
-                ASR::is_a<ASR::symbol_t>(*union_type->m_symtab->parent->asr_owner)) {
-            ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
-                union_type->m_symtab->parent->asr_owner);
-            name = std::string(ASRUtils::symbol_name(parent_sym)) + "." + name;
-        }
-        return name;
-    }
-
-    // Returns a scope-qualified key for a symbol_t* that may be Struct or Union.
-    // Resolves ExternalSymbol automatically.
+    // Return symbolName
+    // Adds unqiue symtab ID for Struct and Union
     inline std::string get_type_key(ASR::symbol_t* sym) {
         sym = ASRUtils::symbol_get_past_external(sym);
-        if (ASR::is_a<ASR::Struct_t>(*sym)) {
-            return get_type_key(ASR::down_cast<ASR::Struct_t>(sym));
-        } else if (ASR::is_a<ASR::Union_t>(*sym)) {
-            return get_type_key(ASR::down_cast<ASR::Union_t>(sym));
+        std::string name = ASRUtils::symbol_name(sym);
+        if (!name.empty() && name[0] == '~') return name; // global sentinels for UPoly 
+
+        if(ASR::is_a<ASR::Struct_t>(*sym) || ASR::is_a<ASR::Union_t>(*sym)){
+            ASR::Module_t* mod = ASRUtils::get_sym_module(sym);
+            if(mod) {
+                name = ASRUtils::symbol_name(&mod->base) + 
+                        std::string(".") + name;
+            }
+            name += "." + ASRUtils::symbol_symtab(sym)->get_counter();
         }
-        return std::string(ASRUtils::symbol_name(sym));
+
+        return name;
+    }
+    inline std::string get_type_key(ASR::Struct_t* sym){
+        return get_type_key(&sym->base);
     }
 
     namespace {
