@@ -1,4 +1,3 @@
-#include "libasr/asr.h"
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
