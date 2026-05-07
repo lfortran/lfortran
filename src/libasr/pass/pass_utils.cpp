@@ -1460,7 +1460,8 @@ namespace LCompilers {
                 // increment expressions to temporary variables so they are not
                 // re-evaluated each iteration.
                 if (current_scope && b &&
-                        !ASR::is_a<ASR::IntegerConstant_t>(*b)) {
+                        !ASR::is_a<ASR::IntegerConstant_t>(*b) &&
+                        !ASR::is_a<ASR::RealConstant_t>(*b)) {
                     std::string name = current_scope->get_unique_name("__do_loop_end");
                     ASR::stmt_t* assign;
                     b = create_auxiliary_variable_for_expr(b, name, al,
@@ -1469,6 +1470,7 @@ namespace LCompilers {
                 }
                 if (current_scope && c &&
                         !ASR::is_a<ASR::IntegerConstant_t>(*c) &&
+                        !ASR::is_a<ASR::RealConstant_t>(*c) &&
                         !(ASR::is_a<ASR::IntegerUnaryMinus_t>(*c) &&
                           ASR::is_a<ASR::IntegerConstant_t>(
                             *ASR::down_cast<ASR::IntegerUnaryMinus_t>(c)->m_arg))) {
@@ -1481,7 +1483,70 @@ namespace LCompilers {
 
                 ASR::cmpopType cmp_op;
 
-                if( comp == -1 ) {
+                bool is_real_loop = ASRUtils::is_real(*ASRUtils::expr_type(loop_var));
+                if (is_real_loop) {
+                    ASR::expr_t *target = loop_var;
+                    int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
+                    ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
+                    ASR::ttype_t *log_type  = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+                    ASR::expr_t *real_zero = ASRUtils::EXPR( ASR::make_RealConstant_t(al, loc, 0.0, real_type));
+
+                    loop_init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target, a, nullptr, false, false));
+
+                    inc_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc, target,
+                            ASR::binopType::Add, c, real_type, nullptr)),
+                        nullptr, false, false));
+
+                    if (use_loop_variable_after_loop) {
+                        stmt_add_c_after_loop = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                            al, loc, target,
+                            ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc, target,ASR::binopType::Add, c, real_type, nullptr)),
+                            nullptr, false, false));
+                    }
+
+                    ASR::expr_t *c_gt_zero = ASRUtils::EXPR(ASR::make_RealCompare_t(
+                        al, loc, c, ASR::cmpopType::Gt, real_zero, log_type, nullptr));
+                    ASR::expr_t *var_le_b   = ASRUtils::EXPR(ASR::make_RealCompare_t(
+                        al, loc, target, ASR::cmpopType::LtE, b, log_type, nullptr));
+                    ASR::expr_t *c_lt_zero  = ASRUtils::EXPR(ASR::make_RealCompare_t(
+                        al, loc, c, ASR::cmpopType::Lt, real_zero, log_type, nullptr));
+                    ASR::expr_t *var_ge_b   = ASRUtils::EXPR(ASR::make_RealCompare_t(
+                        al, loc, target, ASR::cmpopType::GtE, b, log_type, nullptr));
+
+                    ASR::expr_t *pos_branch = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(
+                        al, loc, c_gt_zero, ASR::logicalbinopType::And, var_le_b,
+                        log_type, nullptr));
+                    ASR::expr_t *neg_branch = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(
+                        al, loc, c_lt_zero, ASR::logicalbinopType::And, var_ge_b,
+                        log_type, nullptr));
+                    cond = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(
+                        al, loc, pos_branch, ASR::logicalbinopType::Or, neg_branch,
+                        log_type, nullptr));
+
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, loop.n_body + 1);
+                    for (size_t i = 0; i < loop.n_body; i++) {
+                        body.push_back(al, loop.m_body[i]);
+                    }
+                    body.push_back(al, inc_stmt);
+
+                    ASR::stmt_t *while_loop_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(
+                        al, loc, loop.m_name, cond, body.p, body.size(),
+                        loop.m_orelse, loop.n_orelse));
+
+                    Vec<ASR::stmt_t*> result;
+                    result.reserve(al, 2 + pre_loop_stmts.size());
+                    for (size_t i = 0; i < pre_loop_stmts.size(); i++) {
+                        result.push_back(al, pre_loop_stmts[i]);
+                    }
+                    result.push_back(al, loop_init_stmt);
+                    result.push_back(al, while_loop_stmt);
+                    if (stmt_add_c_after_loop && use_loop_variable_after_loop) {
+                        result.push_back(al, stmt_add_c_after_loop);
+                    }
+                    return result;
+
+                } else if( comp == -1 ) {
                     int increment;
                     bool not_constant_inc = false;
                     if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
