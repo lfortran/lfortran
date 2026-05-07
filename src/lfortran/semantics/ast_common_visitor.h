@@ -18761,6 +18761,25 @@ public:
             LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
             this->visit_expr(*ast_list[i].m_end);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            if (ASR::is_a<ASR::Var_t>(*expr) &&
+                    ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+                std::string var_name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v);
+                auto it = assumed_rank_arrays.find(var_name);
+                if (it != assumed_rank_arrays.end()) {
+                    size_t rank = it->second;
+                    ASR::ttype_t* elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(expr));
+                    ASR::ttype_t* new_type =
+                        ASRUtils::create_array_type_with_empty_dims(
+                            al, rank, elem_type);
+                    expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, expr->base.loc, expr,
+                        ASR::array_physical_typeType::AssumedRankArray,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        new_type, nullptr));
+                }
+            }
             ASR::call_arg_t call_arg;
             call_arg.loc = expr->base.loc;
             call_arg.m_value = expr;
