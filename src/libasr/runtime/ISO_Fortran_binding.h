@@ -88,6 +88,19 @@ typedef struct CFI_dim_t {
     CFI_index_t sm;          /* stride multiplier in bytes */
 } CFI_dim_t;
 
+#ifdef __cplusplus
+namespace cfi_internal {
+/* C++ does not support flexible array members.  This template emulates one
+ * by inheriting from CFI_dim_t and providing array-style access. */
+extern "C++" template <typename T> struct FlexibleArray : T {
+    T &operator[](int index) { return *(this + index); }
+    const T &operator[](int index) const { return *(this + index); }
+    operator T *() { return this; }
+    operator const T *() const { return this; }
+};
+} /* namespace cfi_internal */
+#endif
+
 /*
  * Descriptor header members — factored into a macro so that both
  * CFI_cdesc_t and CFI_CDESC_T(rank) share the identical prefix.
@@ -107,23 +120,42 @@ typedef struct CFI_dim_t {
  * This is the standard CFI_cdesc_t without the internal `offset` field
  * that LFortran keeps in its LLVM IR struct.  At bind(C) boundaries the
  * codegen folds the offset into base_addr so C callers never see it.
+ *
+ * LLVM IR struct (internal):
+ * { ptr, i64, i32, i8, i8, i8, i8, i64, [rank x {i64,i64,i64}] }
+ * ^^^  offset kept internally
+ *
+ * C struct (this header):
+ * { ptr, i64, i32, u8, i8, u8, u8, [rank x {i64,i64,i64}] }
  */
 typedef struct CFI_cdesc_t {
     _CFI_CDESC_T_HEADER
 #ifdef __cplusplus
-    CFI_dim_t dim[0]; /* compiler extension for C++ */
+    cfi_internal::FlexibleArray<CFI_dim_t> dim;
 #else
-    CFI_dim_t dim[];  /* flexible array member (C99) */
+    CFI_dim_t dim[]; /* flexible array member (C99) */
 #endif
 } CFI_cdesc_t;
 
 /* 18.5.4 — Storage macro for stack-allocated descriptors of a given rank.
- * Both C and C++ use an anonymous struct to guarantee identical sizes. */
+ * Provides enough trailing storage for `_RANK` dimension descriptors. */
+#ifdef __cplusplus
+namespace cfi_internal {
+extern "C++" template <int r> struct CdescStorage : public CFI_cdesc_t {
+    static_assert(r > 1 && r <= CFI_MAX_RANK, "CFI_INVALID_RANK");
+    CFI_dim_t dim[r - 1];
+};
+extern "C++" template <> struct CdescStorage<1> : public CFI_cdesc_t {};
+extern "C++" template <> struct CdescStorage<0> : public CFI_cdesc_t {};
+} /* namespace cfi_internal */
+#define CFI_CDESC_T(_RANK) cfi_internal::CdescStorage<_RANK>
+#else
 #define CFI_CDESC_T(_RANK) \
     struct { \
         _CFI_CDESC_T_HEADER \
         CFI_dim_t dim[_RANK]; \
     }
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -131,7 +163,9 @@ extern "C" {
 
 /*
  * CFI allocation helpers — defined in lfortran_intrinsics.c.
- * These route through the tracked allocator when --detect-leaks is active.
+ * These route through the tracked allocator when --detect-leaks is active,
+ * so allocations made by CFI_allocate and freed by CFI_deallocate (or vice
+ * versa with Fortran allocate/deallocate) stay in sync with the leak tracker.
  */
 extern void* _lfortran_cfi_calloc(size_t nmemb, size_t size);
 extern void  _lfortran_cfi_free(void* ptr);
@@ -153,9 +187,7 @@ static inline int CFI_allocate(CFI_cdesc_t *desc,
         desc->attribute != CFI_attribute_pointer)
         return CFI_INVALID_ATTRIBUTE;
 
-    if (elem_len > 0 && desc->type == CFI_type_char) {
-        desc->elem_len = (int64_t)elem_len;
-    }
+    if (elem_len > 0 && desc->type == CFI_type_char) desc->elem_len = (int64_t)elem_len;
 
     size_t total = (size_t)desc->elem_len;
     for (int i = 0; i < desc->rank; i++) {
@@ -379,9 +411,8 @@ static inline int CFI_section(CFI_cdesc_t *result,
 
         if (rd < res_rank) {
             if (st == 0) {
-                continue; 
+                continue;
             }
-
             CFI_index_t ext;
             if (st > 0) {
                 ext = (ub - lb + st) / st;
