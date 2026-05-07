@@ -25635,6 +25635,7 @@ public:
 
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
+            case ASR::array_physical_typeType::AssumedRankArray:
             case ASR::array_physical_typeType::DescriptorArray: {
                 llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
