@@ -1852,7 +1852,7 @@ namespace LCompilers {
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
-    llvm::AllocaInst* LLVMUtils::builder->CreateAlloca(llvm::Type* type,
+    llvm::AllocaInst* LLVMUtils::CreateEntryBlockAlloca(llvm::Type* type,
             llvm::Value* size, std::string Name, bool
 #if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
@@ -2644,7 +2644,7 @@ namespace LCompilers {
                 dest_str_type, dest, true, true);
         }
 
-        if (src_str_type->m_physical_type == ASR::CChar) {
+        if (src_str_type->m_physical_type == ASR::CChar) {g
             rhs_data = builder->CreateLoad(character_type, src);
             llvm::Value* rhs_len_val = builder->CreateCall(
                 module->getOrInsertFunction("strlen",
