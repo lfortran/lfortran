@@ -45,6 +45,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
@@ -5955,6 +5956,27 @@ public:
         finish_module_init_function_prototype(x);
 
         visit_procedures(x);
+
+        if (compiler_options.detect_leaks) {
+            llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+            
+            std::string fin_name = "_lfortran_module_finalize_" + std::string(x.m_name);
+            llvm::FunctionType *fin_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+            llvm::Function *fin_func = llvm::Function::Create(fin_type,
+                    llvm::Function::ExternalLinkage, fin_name, module.get());
+
+            llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, ".entry", fin_func);
+            builder->SetInsertPoint(fin_bb);
+
+            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+            builder->CreateRetVoid();
+
+            
+            llvm::appendToGlobalDtors(*module, fin_func, 100);
+
+            if (saved_bb) builder->SetInsertPoint(saved_bb);
+            else builder->ClearInsertionPoint();
+        }
         mangle_prefix = "";
         current_scope = current_scope_copy;
     }
@@ -6136,17 +6158,6 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
-        // Free globals if detecting leaks is ON, to print clean report
-        if(compiler_options.detect_leaks){
-            SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
-            for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
-                auto &sym = name_sym_pair.second;
-                if(ASR::is_a<ASR::Module_t>(*sym)){
-                    llvm_symtab_finalizer.finalize_symtab(
-                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
-                }
-            }
-        }
         free_heap_fixed_size_arrays();
         {
             llvm::Function *fn_finalize = module->getFunction(
@@ -6168,7 +6179,8 @@ public:
                 fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "dbg_report", module.get());
             }
-            builder->CreateCall(fn, {});
+            
+            llvm::appendToGlobalDtors(*module, fn, 65535);
         }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
