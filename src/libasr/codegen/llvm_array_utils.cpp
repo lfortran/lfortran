@@ -155,7 +155,7 @@ namespace LCompilers {
                 llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(nullptr, ASRUtils::get_contained_type(asr_arg_type), llvm_utils->module);
                 return llvm_utils->CreateLoad2(t, get_pointer_to_data(nullptr, ASRUtils::get_contained_type(asr_arg_type), tmp, llvm_utils->module));
             }
-            llvm::Value* arg_struct = llvm_utils->CreateEntryBlockAlloca(*builder, arg_type);
+            llvm::Value* arg_struct = llvm_utils->CreateEntryBlockAlloca( arg_type);
             llvm::Value* first_ele_ptr = nullptr;
             std::string asr_arg_type_code = ASRUtils::get_type_code(ASRUtils::get_contained_type(asr_arg_type), false, false);
             llvm::Type* element_type = llvm_utils->get_type_from_ttype_t_util(
@@ -404,7 +404,7 @@ namespace LCompilers {
                 return ;
             }
 
-            llvm::Value* llvm_size = llvm_utils->CreateEntryBlockAlloca(*builder, index_type);
+            llvm::Value* llvm_size = llvm_utils->CreateEntryBlockAlloca( index_type);
             builder->CreateStore(prod, llvm_size);
             llvm::Value* first_ptr = get_pointer_to_data(arr_ty, arr);
             llvm::Value* arr_first = nullptr;
@@ -420,7 +420,7 @@ namespace LCompilers {
                 arr_first = builder->CreateBitCast(
                     arr_first_i8, llvm_data_type->getPointerTo());
             } else {
-                arr_first = llvm_utils->CreateEntryBlockAlloca(*builder,
+                arr_first = llvm_utils->CreateEntryBlockAlloca(
                     llvm_data_type, llvm_utils->CreateLoad2(index_type, llvm_size));
             }
             builder->CreateStore(arr_first, first_ptr);
@@ -448,7 +448,7 @@ namespace LCompilers {
             llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
             llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
             llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
-            llvm::Value* r = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_utils->getIntType(4));
+            llvm::Value* r = llvm_utils->CreateEntryBlockAlloca( llvm_utils->getIntType(4));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             llvm_utils->start_new_block(loophead);
             llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), source_rank);
@@ -1037,7 +1037,7 @@ namespace LCompilers {
                                 llvm_utils->create_gep2(type, full_array, 1));
                             llvm::Value* element_ptr = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
                             // Allocate temp wrapper on stack, fill with vptr + element ptr
-                            llvm::Value* temp_wrapper = llvm_utils->CreateEntryBlockAlloca(*builder, type);
+                            llvm::Value* temp_wrapper = llvm_utils->CreateEntryBlockAlloca( type);
                             builder->CreateStore(vptr, builder->CreateBitCast(
                                 temp_wrapper, llvm_utils->vptr_type->getPointerTo()));
                             builder->CreateStore(element_ptr,
@@ -1069,7 +1069,7 @@ namespace LCompilers {
                                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(data_field_type, data_field_ptr);
 
                                 // Allocate temp wrapper on stack
-                                llvm::Value* temp_wrapper = llvm_utils->CreateEntryBlockAlloca(*builder, class_type);
+                                llvm::Value* temp_wrapper = llvm_utils->CreateEntryBlockAlloca( class_type);
 
                                 // Store vptr in field 0 (same for both cases)
                                 builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
@@ -1269,7 +1269,7 @@ namespace LCompilers {
             llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(result_type, reshaped);
-            llvm::Value* arr_first = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_data_type, num_elements);
+            llvm::Value* arr_first = llvm_utils->CreateEntryBlockAlloca( llvm_data_type, num_elements);
             builder->CreateStore(arr_first, first_ptr);
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(arr_type, array);
@@ -1372,14 +1372,14 @@ namespace LCompilers {
                         this->get_pointer_to_data(shape_type, shape));
                 }
                 this->set_rank(result_type, reshaped, n_dims);
-                llvm::Value* prod = llvm_utils->CreateEntryBlockAlloca(*builder, index_type);
+                llvm::Value* prod = llvm_utils->CreateEntryBlockAlloca( index_type);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), prod);
                 llvm::Value* dim_des_val = get_pointer_to_dimension_descriptor_array(result_type, reshaped);
                 llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
                 llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
                 llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
-                llvm::Value* r = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_utils->getIntType(4));
+                llvm::Value* r = llvm_utils->CreateEntryBlockAlloca( llvm_utils->getIntType(4));
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
                 // head
                 llvm_utils->start_new_block(loophead);
@@ -1451,7 +1451,7 @@ namespace LCompilers {
                     llvm::BasicBlock *order_loop_body = llvm::BasicBlock::Create(context, "reshape_order.body");
                     llvm::BasicBlock *order_loop_end = llvm::BasicBlock::Create(context, "reshape_order.end");
 
-                    llvm::Value* idx = llvm_utils->CreateEntryBlockAlloca(*builder, index_type);
+                    llvm::Value* idx = llvm_utils->CreateEntryBlockAlloca( index_type);
                     builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), idx);
 
                     llvm_utils->start_new_block(order_loop_head);
@@ -1527,7 +1527,7 @@ namespace LCompilers {
             llvm::Type* llvm_data_type = llvm_utils->get_el_type(
                 array_expr, ASRUtils::extract_type(asr_data_type), module);
             if( reserve_memory ) {
-                llvm::Value* arr_first = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_data_type, num_elements);
+                llvm::Value* arr_first = llvm_utils->CreateEntryBlockAlloca( llvm_data_type, num_elements);
                 builder->CreateStore(arr_first, first_ptr);
             }
 
@@ -1548,7 +1548,7 @@ namespace LCompilers {
             llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
             // Loop to copy `dimension_descriptor` from src to dest
-            llvm::Value* r = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_utils->getIntType(4));
+            llvm::Value* r = llvm_utils->CreateEntryBlockAlloca( llvm_utils->getIntType(4));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             // head
             llvm_utils->start_new_block(loophead);
@@ -1614,7 +1614,7 @@ namespace LCompilers {
             llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
             // Loop to copy `dimension_descriptor` from src to dest
-            llvm::Value* r = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_utils->getIntType(4));
+            llvm::Value* r = llvm_utils->CreateEntryBlockAlloca( llvm_utils->getIntType(4));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             // head
             llvm_utils->start_new_block(loophead);
@@ -1701,7 +1701,7 @@ namespace LCompilers {
                 data_buffer_i8, elem_type->getPointerTo());
             llvm::Value* src_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), this->get_pointer_to_data(source_llvm_type, source_desc));
             // Single flat loop over all elements
-            llvm::Value* iter_ptr = builder->CreateEntryBlockAlloca(index_type, nullptr, "copy_iter");
+            llvm::Value* iter_ptr = llvm_utils->CreateEntryBlockAlloca(index_type, nullptr, "copy_iter");
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), iter_ptr);
             llvm_utils->create_loop("copy_array",
                 [&]() {
@@ -1764,7 +1764,7 @@ namespace LCompilers {
             llvm::Value* dest_data = get_pointer_to_data(dest_llvm_type, dest_desc);
             dest_data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), dest_data);
 
-            llvm::Value* iter_ptr = builder->CreateEntryBlockAlloca(
+            llvm::Value* iter_ptr = llvm_utils->CreateEntryBlockAlloca(
                 index_type, nullptr, "strided_copy_iter");
             builder->CreateStore(
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),

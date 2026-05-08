@@ -2269,7 +2269,7 @@ namespace LCompilers {
         } else {
             throw LCompilersException("Unhandled string physical type");
         }
-        llvm::Value *s_alloc = builder->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context), builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
+        llvm::Value *s_alloc = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context), builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
         builder->CreateStore(s_alloc, str_data);
         builder->CreateStore(convert_kind(len, llvm::Type::getInt64Ty(context)), str_len);
     }
@@ -2556,7 +2556,7 @@ namespace LCompilers {
             convert_kind(str_len   , llvm::Type::getInt64Ty(context)));
 
         llvm::Value* allocated_mem{};
-        allocated_mem = builder->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context), whole_memory_needed);
+        allocated_mem = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context), whole_memory_needed);
         builder->CreateStore(allocated_mem, get_string_data(str_type, str, true));
     }
 
@@ -2656,7 +2656,7 @@ namespace LCompilers {
 
         if (dest_str_type->m_physical_type == ASR::CChar) {
             lhs_data = dest;
-            lhs_len = builder->CreateEntryBlockAlloca(
+            lhs_len = llvm_utils->CreateEntryBlockAlloca(
                 llvm::Type::getInt64Ty(context), nullptr, "cchar_len");
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
@@ -3070,7 +3070,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type* const res_type = llvm::Type::getInt1Ty(context);
         llvm::Type* const i64_t = llvm::Type::getInt64Ty(context);
         llvm::Type* const i8_t = llvm::Type::getInt8Ty(context);
-        llvm::Value* const is_matching_strings = builder->CreateEntryBlockAlloca(res_type, nullptr, "is_matching_strings");
+        llvm::Value* const is_matching_strings = llvm_utils->CreateEntryBlockAlloca(res_type, nullptr, "is_matching_strings");
         builder->CreateStore(llvm::ConstantInt::get(res_type, true), is_matching_strings);
 
 
@@ -3089,7 +3089,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
             start_new_block(elseBB);
             { // else (while loop)
-                llvm::Value* i = builder->CreateEntryBlockAlloca(i64_t, nullptr, "i");
+                llvm::Value* i = llvm_utils->CreateEntryBlockAlloca(i64_t, nullptr, "i");
                 builder->CreateStore(llvm::ConstantInt::get(i64_t, llvm::APInt(64, 0)), i);
 
                 llvm::BasicBlock* loop_head = llvm::BasicBlock::Create(context, "loop.head");
@@ -4649,7 +4649,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 get_pointer_to_keymask(
                     dict_type->m_key_type, dict_type->m_value_type, dict));
 
-            auto* iter = builder->CreateEntryBlockAlloca(i32_type, nullptr, "free_sc_i");
+            auto* iter = llvm_utils->CreateEntryBlockAlloca(i32_type, nullptr, "free_sc_i");
             builder->CreateStore(
                 llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
 
@@ -4690,7 +4690,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             llvm_utils->lfortran_free(data_ptr);
                         }
                         // Walk chain nodes and free their string data
-                        auto* chain_itr_var = builder->CreateEntryBlockAlloca(
+                        auto* chain_itr_var = llvm_utils->CreateEntryBlockAlloca(
                             llvm_utils->character_type, nullptr, "free_chain_itr");
                         builder->CreateStore(
                             llvm_utils->CreateLoad2(llvm_utils->character_type,
@@ -9379,7 +9379,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     
     llvm::Value* LLVMStruct::create_class_view(ASR::Struct_t* const class_symbol,
             llvm::Value* const viewed_struct, llvm::Value* vptr){
-        llvm::Value* const allocated_class_structure = builder->CreateEntryBlockAlloca(llvm_utils->getClassType(class_symbol));
+        llvm::Value* const allocated_class_structure = llvm_utils->CreateEntryBlockAlloca(llvm_utils->getClassType(class_symbol));
         if (vptr) {
             if (vptr->getType() != llvm_utils->vptr_type) {
                 vptr = builder->CreateBitCast(vptr, llvm_utils->vptr_type);
@@ -10108,7 +10108,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         uint64_t dim_des_size = data_layout.getTypeAllocSize(dim_des);
         unsigned index_bit_width = llvm_utils->arr_api->get_index_type()->getIntegerBitWidth();
 
-        llvm::Value* r = llvm_utils->CreateEntryBlockAlloca(*builder, i32_ty);
+        llvm::Value* r = llvm_utils->CreateEntryBlockAlloca( i32_ty);
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
         llvm_utils->create_loop("copy_dim_desc", [&]() {
             return builder->CreateICmpSLT(
@@ -10240,7 +10240,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
                 // Loop: copy each data element using byte offsets
-                llvm::Value* ui = llvm_utils->CreateEntryBlockAlloca(*builder, i64_ty);
+                llvm::Value* ui = llvm_utils->CreateEntryBlockAlloca( i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("upoly_deepcopy", [&]() {
                     return builder->CreateICmpSLT(
@@ -10311,7 +10311,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
                 // Loop: copy each element using byte offsets
-                llvm::Value* ui = llvm_utils->CreateEntryBlockAlloca(*builder, i64_ty);
+                llvm::Value* ui = llvm_utils->CreateEntryBlockAlloca( i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("class_deepcopy", [&]() {
                     return builder->CreateICmpSLT(
@@ -10348,7 +10348,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.body");
             llvm::BasicBlock *loopEnd  = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.end");
 
-            llvm::Value* i = llvm_utils->CreateEntryBlockAlloca(*builder, index_type);
+            llvm::Value* i = llvm_utils->CreateEntryBlockAlloca( index_type);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), i);
 
             // head
@@ -10499,7 +10499,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         // extractvalue yields the pointer value itself.
                         // deepcopy(Pointer) expects a pointer-to-pointer,
                         // so store into a temporary alloca.
-                        llvm::Value* tmp = builder->CreateEntryBlockAlloca(src_member->getType());
+                        llvm::Value* tmp = llvm_utils->CreateEntryBlockAlloca(src_member->getType());
                         builder->CreateStore(src_member, tmp);
                         src_member = tmp;
                     }

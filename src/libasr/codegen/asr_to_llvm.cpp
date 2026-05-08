@@ -840,7 +840,7 @@ public:
                     arr_first = builder->CreateBitCast(
                         arr_first_i8, llvm_data_type->getPointerTo());
                 } else {
-                    arr_first = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_data_type, prod);
+                    arr_first = llvm_utils->CreateEntryBlockAlloca( llvm_data_type, prod);
                     builder->CreateStore(arr_first, arr);
                 }
             }
@@ -1095,7 +1095,7 @@ public:
                     llvm_utils->create_gep2(string_descriptor, tmp, 0));
             }
             case ASR::CChar:{
-                llvm::Value* char_ptr = builder->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context));
+                llvm::Value* char_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context));
                 return builder->CreateStore(tmp, char_ptr);
             }
             default:
@@ -1431,9 +1431,9 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
-        llvm::AllocaInst *pleft_arg = llvm_utils->CreateEntryBlockAlloca(*builder, character_type);
+        llvm::AllocaInst *pleft_arg = llvm_utils->CreateEntryBlockAlloca( character_type);
         builder->CreateStore(left_arg, pleft_arg);
-        llvm::AllocaInst *presult = llvm_utils->CreateEntryBlockAlloca(*builder, character_type);
+        llvm::AllocaInst *presult = llvm_utils->CreateEntryBlockAlloca( character_type);
         std::vector<llvm::Value*> args = {allocator, pleft_arg, right_arg, presult};
         builder->CreateCall(fn, args);
         return llvm_utils->CreateLoad2(character_type, presult);
@@ -1683,7 +1683,7 @@ public:
 
     llvm::Value *nested_struct_rd(std::vector<llvm::Value*> vals,
             llvm::StructType* rd) {
-        llvm::AllocaInst *pres = llvm_utils->CreateEntryBlockAlloca(*builder, rd);
+        llvm::AllocaInst *pres = llvm_utils->CreateEntryBlockAlloca( rd);
         llvm::Value *pim = llvm_utils->CreateGEP2(rd, pres, vals);
         llvm::Type* elem_type = rd->getStructElementType(vals.size() - 1);
         return llvm_utils->CreateLoad2(elem_type, pim);
@@ -1703,7 +1703,7 @@ public:
     llvm::Value* lfortran_intrinsic(llvm::Function *fn, llvm::Value* pa, int a_kind)
     {
         llvm::Type *presult_type = llvm_utils->getFPType(a_kind);
-        llvm::AllocaInst *presult = llvm_utils->CreateEntryBlockAlloca(*builder, presult_type);
+        llvm::AllocaInst *presult = llvm_utils->CreateEntryBlockAlloca( presult_type);
         llvm::Value* a = llvm_utils->CreateLoad2(presult_type, pa);
         std::vector<llvm::Value*> args = {a, presult};
         builder->CreateCall(fn, args);
@@ -2654,7 +2654,7 @@ public:
                     llvm::ConstantInt::get(context, llvm::APInt(32, dt_idx))};
                 if (dt->getType() != name2dertype[curr_struct]->getPointerTo()) {
                     llvm::Value* dt_val = dt;
-                    llvm::Value* alloca_tmp = builder->CreateEntryBlockAlloca(name2dertype[curr_struct]);
+                    llvm::Value* alloca_tmp = llvm_utils->CreateEntryBlockAlloca(name2dertype[curr_struct]);
                     builder->CreateStore(dt_val, alloca_tmp);
                     dt = alloca_tmp;
                 }
@@ -2751,7 +2751,7 @@ public:
                                 auto const inner_struct = llvm_utils->CreateLoad2(llvm_utils->getStructType(struct_sym, module.get(), true), llvm_utils->create_gep2(llvm_data_type, tmp, 1));
                                 llvm_utils->lfortran_free(inner_struct);
                             }
-                            llvm::AllocaInst *arg_tmp = llvm_utils->CreateEntryBlockAlloca(*builder, character_type);
+                            llvm::AllocaInst *arg_tmp = llvm_utils->CreateEntryBlockAlloca( character_type);
                             builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
                             std::vector<llvm::Value*> args = {allocator, llvm_utils->CreateLoad2(character_type, arg_tmp)};
                             builder->CreateCall(free_fn, args);
@@ -2825,7 +2825,7 @@ public:
             type_size = ASRUtils::extract_kind_from_ttype_t(list_type->m_type);
         }
         llvm::Type* const_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
-        llvm::Value* const_list = llvm_utils->CreateEntryBlockAlloca(*builder, const_list_type, nullptr, "const_list");
+        llvm::Value* const_list = llvm_utils->CreateEntryBlockAlloca( const_list_type, nullptr, "const_list");
         list_api->list_init(type_code, const_list, module.get(), x.n_args, x.n_args);
         for( size_t i = 0; i < x.n_args; i++ ) {
             visit_expr_load_wrapper(
@@ -2841,7 +2841,7 @@ public:
 
     void visit_DictConstant(const ASR::DictConstant_t& x) {
         llvm::Type* const_dict_type = llvm_utils->get_dict_type(const_cast<ASR::expr_t*>(&x.base), x.m_type, module.get());
-        llvm::Value* const_dict = llvm_utils->CreateEntryBlockAlloca(*builder, const_dict_type, nullptr, "const_dict");
+        llvm::Value* const_dict = llvm_utils->CreateEntryBlockAlloca( const_dict_type, nullptr, "const_dict");
         ASR::Dict_t* x_dict = ASR::down_cast<ASR::Dict_t>(x.m_type);
         llvm_utils->set_dict_api(x_dict);
         llvm_utils->dict_api->dict_init(x_dict, const_dict, module.get(), x.n_keys);
@@ -2864,7 +2864,7 @@ public:
 
     void visit_SetConstant(const ASR::SetConstant_t& x) {
         llvm::Type* const_set_type = llvm_utils->get_set_type(const_cast<ASR::expr_t*>(&x.base), x.m_type, module.get());
-        llvm::Value* const_set = llvm_utils->CreateEntryBlockAlloca(*builder, const_set_type, nullptr, "const_set");
+        llvm::Value* const_set = llvm_utils->CreateEntryBlockAlloca( const_set_type, nullptr, "const_set");
         ASR::Set_t* x_set = ASR::down_cast<ASR::Set_t>(x.m_type);
         llvm_utils->set_set_api(x_set);
         std::string el_type_code = ASRUtils::get_type_code(x_set->m_type);
@@ -2898,7 +2898,7 @@ public:
                 is_list, m_dims, n_dims, a_kind, module.get()));
         }
         llvm::Type* const_tuple_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
-        llvm::Value* const_tuple = llvm_utils->CreateEntryBlockAlloca(*builder, const_tuple_type, nullptr, "const_tuple");
+        llvm::Value* const_tuple = llvm_utils->CreateEntryBlockAlloca( const_tuple_type, nullptr, "const_tuple");
         std::vector<llvm::Value*> init_values;
         int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_elements; i++ ) {
@@ -3108,7 +3108,7 @@ public:
         llvm::Value *key = tmp;
         if (x.m_default) {
             llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(x.m_a, dict_type->m_value_type, module.get());
-            llvm::Value *def_value_ptr = llvm_utils->CreateEntryBlockAlloca(*builder, val_type);
+            llvm::Value *def_value_ptr = llvm_utils->CreateEntryBlockAlloca( val_type);
             ptr_loads = !LLVM::is_llvm_struct(dict_type->m_value_type);
             this->visit_expr_wrapper(x.m_default, true);
             ptr_loads = ptr_loads_copy;
@@ -3524,7 +3524,7 @@ public:
             type_size = ASRUtils::extract_kind_from_ttype_t(el_type);
         }
         llvm::Type* el_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
-        llvm::Value* el_list = llvm_utils->CreateEntryBlockAlloca(*builder, el_list_type, nullptr, key_or_value == 0 ?
+        llvm::Value* el_list = llvm_utils->CreateEntryBlockAlloca( el_list_type, nullptr, key_or_value == 0 ?
                                                     "keys_list" : "values_list");
         list_api->list_init(type_code, el_list, module.get(), 0, 0);
 
@@ -3978,7 +3978,7 @@ public:
             type_size = ASRUtils::extract_kind_from_ttype_t(list_type->m_type);
         }
         llvm::Type* repeat_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
-        llvm::Value* repeat_list = llvm_utils->CreateEntryBlockAlloca(*builder, repeat_list_type, nullptr, "repeat_list");
+        llvm::Value* repeat_list = llvm_utils->CreateEntryBlockAlloca( repeat_list_type, nullptr, "repeat_list");
         llvm::Value* left_len = list_api->len_using_type(repeat_list_type, left);
         llvm::Value* capacity = builder->CreateMul(left_len, right);
         list_api->list_init(type_code, repeat_list, module.get(), capacity, capacity);
@@ -4100,7 +4100,7 @@ public:
             v_type.push_back(al, tuple_type_right->m_type[i]);
         }
         llvm::Type* concat_tuple_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
-        llvm::Value* concat_tuple = llvm_utils->CreateEntryBlockAlloca(*builder, concat_tuple_type, nullptr, "concat_tuple");
+        llvm::Value* concat_tuple = llvm_utils->CreateEntryBlockAlloca( concat_tuple_type, nullptr, "concat_tuple");
         ASR::Tuple_t* tuple_type = (ASR::Tuple_t*)(ASR::make_Tuple_t(
                                     al, x.base.base.loc, v_type.p, v_type.n));
         tuple_api->concat(x.m_left, left, right, tuple_type_left, tuple_type_right, concat_tuple,
@@ -4149,7 +4149,7 @@ public:
             array = tmp;
             if (!array->getType()->isPointerTy()) {
                 llvm::Value* val = array;
-                llvm::AllocaInst* alloc = llvm_utils->CreateEntryBlockAlloca(*builder, val->getType());
+                llvm::AllocaInst* alloc = llvm_utils->CreateEntryBlockAlloca( val->getType());
                 builder->CreateStore(val, alloc);
                 array = alloc;
             }
@@ -4361,7 +4361,7 @@ public:
             llvm::Value *step = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             llvm::Value *present = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
             llvm::Value *p = lfortran_str_slice(str_data, str_len, idx1, idx2, step, present, present);
-            tmp = llvm_utils->CreateEntryBlockAlloca(*builder, character_type);
+            tmp = llvm_utils->CreateEntryBlockAlloca( character_type);
             builder->CreateStore(p, tmp);
         } else {
             tmp = array;
@@ -4643,7 +4643,7 @@ public:
                         llvm_utils->get_stringArray_whole_size(ASRUtils::expr_type(x.m_array))
                     );
                 } else {
-                    llvm::Value* type_alloca = builder->CreateEntryBlockAlloca(type_of_array, llvm_arr_size);
+                    llvm::Value* type_alloca = llvm_utils->CreateEntryBlockAlloca(type_of_array, llvm_arr_size);
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t data_size = data_layout.getTypeAllocSize(type_of_array);
                     llvm::Value* total_bytes = builder->CreateMul(llvm_arr_size,
@@ -5969,7 +5969,7 @@ public:
         builder->SetInsertPoint(BB);
         std::vector<llvm::Value *> args;
         args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
-        args.push_back(llvm_utils->CreateEntryBlockAlloca(*builder, character_type));
+        args.push_back(llvm_utils->CreateEntryBlockAlloca( character_type));
         builder->CreateCall(module->getFunction("main"), args);
         builder->CreateRet(nullptr);
     }
@@ -6679,7 +6679,7 @@ public:
                                                 std::string(struct_type_t->m_name));
         }
         llvm::Type* vtab_type = type2vtabtype[struct_type_sym];
-        llvm::Value* vtab_obj = llvm_utils->CreateEntryBlockAlloca(*builder, vtab_type);
+        llvm::Value* vtab_obj = llvm_utils->CreateEntryBlockAlloca( vtab_type);
         llvm::Value* struct_type_hash_ptr = llvm_utils->create_gep2(vtab_type, vtab_obj, 0);
         llvm::Value* struct_type_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
             llvm::APInt(64, get_class_hash(struct_type_sym)));
@@ -7204,7 +7204,7 @@ public:
                                     ASR::array_physical_typeType::DescriptorArray) {
                             ptr = arr_descr->create_descriptor_alloca(type_, v->m_name);
                         } else {
-                            ptr = llvm_utils->CreateEntryBlockAlloca(*builder, type_, array_size,
+                            ptr = llvm_utils->CreateEntryBlockAlloca( type_, array_size,
                                 v->m_name, is_llvm_ptr);
                         }
 #else
@@ -7214,7 +7214,7 @@ public:
                                     ASR::array_physical_typeType::DescriptorArray) {
                             ptr = arr_descr->create_descriptor_alloca(type, v->m_name);
                         } else {
-                            ptr = llvm_utils->CreateEntryBlockAlloca(*builder, type, array_size, v->m_name);
+                            ptr = llvm_utils->CreateEntryBlockAlloca( type, array_size, v->m_name);
                         }
 #endif
                     }
@@ -7525,7 +7525,7 @@ public:
                         ASRUtils::is_array(arg->m_type) &&
                         (ASRUtils::is_allocatable(arg->m_type) ||
                          ASRUtils::is_pointer(arg->m_type))) {
-                        llvm::Value* alloca_ptr = builder->CreateEntryBlockAlloca(
+                        llvm::Value* alloca_ptr = llvm_utils->CreateEntryBlockAlloca(
                             llvm_arg.getType(), nullptr, std::string(arg->m_name) + "_ptr");
                         builder->CreateStore(&llvm_arg, alloca_ptr);
                         llvm_sym = alloca_ptr;
@@ -7541,7 +7541,7 @@ public:
                         llvm::Type* internal_type = llvm_utils->getComplexType(
                             ASRUtils::extract_kind_from_ttype_t(arg->m_type));
                         if (llvm_arg.getType() != internal_type) {
-                            llvm::Value* arg_alloca = builder->CreateEntryBlockAlloca(
+                            llvm::Value* arg_alloca = llvm_utils->CreateEntryBlockAlloca(
                                 llvm_arg.getType(), nullptr);
                             builder->CreateStore(&llvm_arg, arg_alloca);
                             llvm::Value* cast_ptr = builder->CreateBitCast(
@@ -7563,7 +7563,7 @@ public:
                         llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
                             nullptr, arg->m_type, module.get());
                         llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
-                        llvm::Value* local_copy = builder->CreateEntryBlockAlloca(
+                        llvm::Value* local_copy = llvm_utils->CreateEntryBlockAlloca(
                             val_type, nullptr, std::string(arg->m_name) + "_value");
                         builder->CreateStore(loaded, local_copy);
                         llvm_sym = local_copy;
@@ -7625,7 +7625,7 @@ public:
                 int64_t size = ASRUtils::get_fixed_size_of_array(
                     array_t->m_dims, array_t->n_dims);
                 llvm::Type* arr_type = llvm::ArrayType::get(el_type, size);
-                llvm::Value* local_copy_arr = builder->CreateEntryBlockAlloca(
+                llvm::Value* local_copy_arr = llvm_utils->CreateEntryBlockAlloca(
                     arr_type, nullptr, name);
                 uint64_t total_bytes = el_size_bytes * (uint64_t)size;
                 builder->CreateMemCpy(
@@ -7657,7 +7657,7 @@ public:
                 }
                 ptr_loads = ptr_loads_copy;
                 if (num_elements == nullptr) continue;
-                llvm::Value* local_copy = builder->CreateEntryBlockAlloca(
+                llvm::Value* local_copy = llvm_utils->CreateEntryBlockAlloca(
                     el_type, num_elements, name);
                 llvm::Value* total_bytes = builder->CreateMul(
                     num_elements,
@@ -9529,7 +9529,7 @@ public:
                 llvm::Value* value_ptr = llvm_value;
                 if (!llvm_value->getType()->isPointerTy()) {
                     // String descriptor is a value, need to allocate and get its address
-                    llvm::Value* temp_alloca = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_value->getType());
+                    llvm::Value* temp_alloca = llvm_utils->CreateEntryBlockAlloca( llvm_value->getType());
                     builder->CreateStore(llvm_value, temp_alloca);
                     value_ptr = temp_alloca;
                 }
@@ -9835,7 +9835,7 @@ public:
             } else if (!is_target_class && is_value_class) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                 if (!llvm_value->getType()->isPointerTy()) {
-                    llvm::Value* temp = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_value->getType());
+                    llvm::Value* temp = llvm_utils->CreateEntryBlockAlloca( llvm_value->getType());
                     builder->CreateStore(llvm_value, temp);
                     llvm_value = temp;
                 }
@@ -10502,7 +10502,7 @@ public:
                     if (source_val->getType()->isPointerTy()) {
                         source_alloca = source_val;
                     } else {
-                        source_alloca = builder->CreateEntryBlockAlloca(
+                        source_alloca = llvm_utils->CreateEntryBlockAlloca(
                             source_val->getType(), nullptr, "transfer_source");
                         builder->CreateStore(source_val, source_alloca);
                     }
@@ -10860,7 +10860,7 @@ public:
                 for( size_t i = 0; i < asr_value_tuple->n_elements; i++ ) {
                     ASR::ttype_t* asr_tuple_i_type = ASRUtils::expr_type(asr_value_tuple->m_elements[i]);
                     llvm::Type* llvm_tuple_i_type = llvm_utils->get_type_from_ttype_t_util(asr_value_tuple->m_elements[i], asr_tuple_i_type, module.get());
-                    llvm::Value* llvm_tuple_i = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_tuple_i_type);
+                    llvm::Value* llvm_tuple_i = llvm_utils->CreateEntryBlockAlloca( llvm_tuple_i_type);
                     ptr_loads = !LLVM::is_llvm_struct(asr_tuple_i_type);
                     visit_expr(*asr_value_tuple->m_elements[i]);
                     llvm_utils->deepcopy(asr_value_tuple->m_elements[i], tmp, llvm_tuple_i, expr_type(asr_target_tuple->m_elements[i]), asr_tuple_i_type, module.get());
@@ -12418,7 +12418,7 @@ public:
             llvm::Type* struct_llvm_type,
             const std::vector<FlatCopyback::Member>& layout,
             uint64_t flat_size) {
-        llvm::Value* flat_buf = builder->CreateEntryBlockAlloca(
+        llvm::Value* flat_buf = llvm_utils->CreateEntryBlockAlloca(
             llvm::ArrayType::get(llvm::Type::getInt8Ty(context), flat_size),
             nullptr, "flat_struct");
         llvm::Value* flat_i8 = builder->CreateBitCast(
@@ -12963,7 +12963,7 @@ public:
                 llvm::Type *elem_type =
                     ptr_type->getPointerElementType();
 #endif
-                llvm::Value *backing = builder->CreateEntryBlockAlloca(
+                llvm::Value *backing = llvm_utils->CreateEntryBlockAlloca(
                     elem_type, nullptr,
                     std::string(v->m_name) + ".tmp");
                 builder->CreateStore(backing, ptr_var);
@@ -13244,7 +13244,7 @@ public:
             llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
 
             llvm::Value* cond = nullptr;
-            cond = llvm_utils->CreateEntryBlockAlloca(*builder, llvm::Type::getInt1Ty(context));
+            cond = llvm_utils->CreateEntryBlockAlloca( llvm::Type::getInt1Ty(context));
             ASR::stmt_t** type_block = nullptr;
             size_t n_type_block = 0;
             switch( select_type_stmts[i]->type ) {
@@ -13293,7 +13293,7 @@ public:
                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         llvm_utils->create_if_else(is_selector_null, [=]() {
                             llvm::Value* ptr_to_method = struct_api->get_pointer_to_method(selector_sym, module.get());
-                            llvm::Value* vptr = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_utils->vptr_type);
+                            llvm::Value* vptr = llvm_utils->CreateEntryBlockAlloca( llvm_utils->vptr_type);
                             builder->CreateStore(ptr_to_method, vptr);
                             llvm::Value* val = lfortran_dynamic_cast(
                                 vptr, struct_api->newclass2typeinfo.at(type_sym), true);
@@ -13345,7 +13345,7 @@ public:
                             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         llvm_utils->create_if_else(is_selector_null, [=]() {
                             llvm::Value* ptr_to_method = struct_api->get_pointer_to_method(selector_sym, module.get());
-                            llvm::Value* vptr = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_utils->vptr_type);
+                            llvm::Value* vptr = llvm_utils->CreateEntryBlockAlloca( llvm_utils->vptr_type);
                             builder->CreateStore(ptr_to_method, vptr);
                             llvm::Value* val = lfortran_dynamic_cast(
                                 vptr, struct_api->newclass2typeinfo.at(class_sym), false);
@@ -14109,7 +14109,7 @@ public:
             return;
         }
         tmp = get_string_data(x.m_arg);
-        llvm::AllocaInst *parg = llvm_utils->CreateEntryBlockAlloca(*builder, character_type);
+        llvm::AllocaInst *parg = llvm_utils->CreateEntryBlockAlloca( character_type);
         builder->CreateStore(tmp, parg);
         tmp = lfortran_str_ord(parg);
     }
@@ -14846,7 +14846,7 @@ public:
             type_fxn = FIXED_VECTOR_TYPE::get(el_type, simd_n);
         }
         // Create a pointer <n x float>* to a stack allocated <n x float>
-        llvm::AllocaInst *p_fxn = llvm_utils->CreateEntryBlockAlloca(*builder, type_fxn);
+        llvm::AllocaInst *p_fxn = llvm_utils->CreateEntryBlockAlloca( type_fxn);
         // Assign the array elements to `p_fxn`.
         for (size_t i=0; i < x.n_args; i++) {
             llvm::Value *llvm_el = llvm_utils->create_gep2(type_fxn, p_fxn, i);
@@ -15570,7 +15570,7 @@ public:
         }
         this->visit_expr_wrapper(var, true);
         llvm::Value *val = tmp;
-        llvm::AllocaInst *alloc = builder->CreateEntryBlockAlloca(val->getType(), nullptr);
+        llvm::AllocaInst *alloc = llvm_utils->CreateEntryBlockAlloca(val->getType(), nullptr);
         builder->CreateStore(val, alloc);
         llvm_symtab[(uint64_t)var] = alloc;
         return alloc;
@@ -15704,7 +15704,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::StringToInteger) : {
-                llvm::AllocaInst *parg = llvm_utils->CreateEntryBlockAlloca(*builder, character_type);
+                llvm::AllocaInst *parg = llvm_utils->CreateEntryBlockAlloca( character_type);
                 builder->CreateStore(tmp, parg);
                 tmp = lfortran_str_to_int(parg);
                 break;
@@ -16023,7 +16023,7 @@ public:
                 tmp = builder->CreateSelect(cmp, zero_str, one_str);
 
                 if (ASRUtils::is_allocatable(x.m_type)) {
-                    llvm::Value* temp_str = builder->CreateEntryBlockAlloca(string_descriptor);
+                    llvm::Value* temp_str = llvm_utils->CreateEntryBlockAlloca(string_descriptor);
                     llvm_utils->set_string_memory_on_heap(
                         ASR::string_physical_typeType::DescriptorString,
                         temp_str, lfortran_str_len(string_descriptor, tmp)
@@ -16067,7 +16067,7 @@ public:
                 } else {
                     this->visit_expr(*x.m_arg);
                     llvm::Value *val = tmp;
-                    llvm::AllocaInst *alloc = builder->CreateEntryBlockAlloca(val->getType(), nullptr);
+                    llvm::AllocaInst *alloc = llvm_utils->CreateEntryBlockAlloca(val->getType(), nullptr);
                     builder->CreateStore(val, alloc);
                     ptr = alloc;
                 }
@@ -16456,7 +16456,7 @@ public:
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(item_type_asr, dims);
                             // Allocate array to store runtime dimensions
                             llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n_dims);
-                            llvm::Value* shape_arr = llvm_utils->CreateEntryBlockAlloca(*builder, shape_arr_type);
+                            llvm::Value* shape_arr = llvm_utils->CreateEntryBlockAlloca( shape_arr_type);
 
                             for (size_t d = 0; d < n_dims; d++) {
                                 llvm::Value* dim_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d + 1); // 1-based
@@ -16496,7 +16496,7 @@ public:
             data_ptr = builder->CreateBitCast(data_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
 
             // Create lfortran_nml_item_t struct
-            llvm::Value* item = llvm_utils->CreateEntryBlockAlloca(*builder, item_type);
+            llvm::Value* item = llvm_utils->CreateEntryBlockAlloca( item_type);
             llvm::Value* item_name_ptr = LCompilers::create_global_string_ptr(
                 context, *module, *builder, LCompilers::to_lower(item_name));
             builder->CreateStore(item_name_ptr, builder->CreateStructGEP(item_type, item, 0));
@@ -16531,7 +16531,7 @@ public:
 
         // Create items array
         llvm::ArrayType* items_array_type = llvm::ArrayType::get(item_type, nml_items.size());
-        llvm::Value* items_array = llvm_utils->CreateEntryBlockAlloca(*builder, items_array_type);
+        llvm::Value* items_array = llvm_utils->CreateEntryBlockAlloca( items_array_type);
 
         // Copy items into array
         for (size_t i = 0; i < nml_items.size(); i++) {
@@ -16551,7 +16551,7 @@ public:
             item_type->getPointerTo()                // items
         );
 
-        llvm::Value* group = llvm_utils->CreateEntryBlockAlloca(*builder, group_type);
+        llvm::Value* group = llvm_utils->CreateEntryBlockAlloca( group_type);
         builder->CreateStore(group_name_ptr, builder->CreateStructGEP(group_type, group, 0));
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), nml_items.size()),
                            builder->CreateStructGEP(group_type, group, 1));
@@ -16831,7 +16831,7 @@ public:
                 LCompilers::create_global_string_ptr(context, *module, *builder, " (%lf,%lf)");
         }
         llvm::Function* parent_fn = builder->GetInsertBlock()->getParent();
-        llvm::Value* idx = llvm_utils->CreateEntryBlockAlloca(*builder,
+        llvm::Value* idx = llvm_utils->CreateEntryBlockAlloca(
             llvm::Type::getInt32Ty(context), nullptr, "str_read_idx");
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), idx);
         llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "str_idl.cond", parent_fn);
@@ -16876,7 +16876,7 @@ public:
         uint32_t loop_var_hash = get_hash((ASR::asr_t*)loop_var_sym);
         llvm::Value* loop_var_ptr;
         if (llvm_symtab.find(loop_var_hash) == llvm_symtab.end()) {
-            loop_var_ptr = builder->CreateEntryBlockAlloca(start_val->getType(), nullptr,
+            loop_var_ptr = llvm_utils->CreateEntryBlockAlloca(start_val->getType(), nullptr,
                 loop_var_sym->m_name);
             llvm_symtab[loop_var_hash] = loop_var_ptr;
         } else {
@@ -16921,7 +16921,7 @@ public:
                 llvm::Function* read_fn = get_read_function(elem_type);
                 llvm::Value* read_elem_ptr = elem_ptr;
                 if (ASRUtils::is_logical(*elem_type)) {
-                    llvm::Value* tmp_bool = llvm_utils->CreateEntryBlockAlloca(*builder,
+                    llvm::Value* tmp_bool = llvm_utils->CreateEntryBlockAlloca(
                         llvm::Type::getInt1Ty(context));
                     builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
                     int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
@@ -17151,7 +17151,7 @@ public:
             builder->CreateStore(zero_val, iostat_user);
             if (iostat_kind != 4) {
                 // use temporary i32 for iostat
-                iostat = llvm_utils->CreateEntryBlockAlloca(*builder,
+                iostat = llvm_utils->CreateEntryBlockAlloca(
                     llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
@@ -17165,7 +17165,7 @@ public:
             iostat = llvm::ConstantPointerNull::get(
                         llvm::Type::getInt32Ty(context)->getPointerTo());
             // Create internal iostat for empty_read
-            iostat_for_empty_read = llvm_utils->CreateEntryBlockAlloca(*builder,
+            iostat_for_empty_read = llvm_utils->CreateEntryBlockAlloca(
                         llvm::Type::getInt32Ty(context));
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
@@ -17216,7 +17216,7 @@ public:
             ptr_loads = ptr_copy;
             read_size = tmp;
         } else {
-            read_size = llvm_utils->CreateEntryBlockAlloca(*builder,
+            read_size = llvm_utils->CreateEntryBlockAlloca(
                         llvm::Type::getInt32Ty(context));
         }
 
@@ -17255,7 +17255,7 @@ public:
             llvm::Value *str_offset = nullptr;
             llvm::Value *str_src_data = nullptr, *str_src_len = nullptr;
             if (is_string) {
-                str_offset = llvm_utils->CreateEntryBlockAlloca(*builder,
+                str_offset = llvm_utils->CreateEntryBlockAlloca(
                     llvm::Type::getInt64Ty(context), nullptr, "str_read_offset");
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
@@ -17758,7 +17758,7 @@ public:
                             // fields in list-directed I/O preserve the existing value.
                             int kind = ASRUtils::extract_kind_from_ttype_t(
                                 ASRUtils::type_get_past_allocatable_pointer(val_type));
-                            llvm::Value* tmp_bool = llvm_utils->CreateEntryBlockAlloca(*builder,
+                            llvm::Value* tmp_bool = llvm_utils->CreateEntryBlockAlloca(
                                 llvm::Type::getInt1Ty(context));
                             llvm::Value* cur_val = llvm_utils->CreateLoad2(
                                 llvm_utils->getIntType(kind), var_to_read_into);
@@ -18085,7 +18085,7 @@ public:
         llvm::Value* no_advance_str = builder->CreateBitCast(no_advance_global, character_type);
         llvm::Value* no_advance_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 2);
 
-        llvm::AllocaInst* loop_iostat = builder->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context), nullptr, "loop_iostat");
+        llvm::AllocaInst* loop_iostat = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context), nullptr, "loop_iostat");
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), loop_iostat);
 
         for (size_t i = 0; i < n_values; i++) {
@@ -18133,7 +18133,7 @@ public:
                     loop_step = llvm_utils->convert_kind(loop_step, llvm::Type::getInt64Ty(context));
                 }
 
-                llvm::AllocaInst* loop_var_alloca = builder->CreateEntryBlockAlloca(
+                llvm::AllocaInst* loop_var_alloca = llvm_utils->CreateEntryBlockAlloca(
                     llvm::Type::getInt64Ty(context), nullptr);
                 builder->CreateStore(loop_start, loop_var_alloca);
 
@@ -18167,7 +18167,7 @@ public:
                     cur_val = llvm_utils->convert_kind(cur_val, loop_var_type);
 
                     ASR::symbol_t* loop_var_sym = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
-                    llvm::AllocaInst* temp_loop_var = builder->CreateEntryBlockAlloca(loop_var_type, nullptr);
+                    llvm::AllocaInst* temp_loop_var = llvm_utils->CreateEntryBlockAlloca(loop_var_type, nullptr);
                     builder->CreateStore(cur_val, temp_loop_var);
 
                     uint64_t var_hash = (uint64_t)loop_var_sym;
@@ -18534,7 +18534,7 @@ public:
             llvm::Value *recl_val = llvm_utils->convert_kind(
                 tmp, llvm::Type::getInt32Ty(context));
             llvm::AllocaInst *alloc =                        
-                builder->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+                llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
             builder->CreateStore(recl_val, alloc);            
             recl = alloc;                                  
         } else {
@@ -18664,7 +18664,7 @@ public:
             exist_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        exist_val = llvm_utils->CreateEntryBlockAlloca(*builder,
+        exist_val = llvm_utils->CreateEntryBlockAlloca(
                         llvm::Type::getInt1Ty(context));
 
         if (x.m_unit) {
@@ -18682,7 +18682,7 @@ public:
             opened_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        opened_val = llvm_utils->CreateEntryBlockAlloca(*builder,
+        opened_val = llvm_utils->CreateEntryBlockAlloca(
                         llvm::Type::getInt1Ty(context));
 
         llvm::Value *size_orig_ptr = nullptr;
@@ -18698,11 +18698,11 @@ public:
                 size_val = tmp;
             } else {
                 size_orig_ptr = tmp;
-                size_val = llvm_utils->CreateEntryBlockAlloca(*builder,
+                size_val = llvm_utils->CreateEntryBlockAlloca(
                                 llvm::Type::getInt32Ty(context));
             }
         } else {
-            size_val = llvm_utils->CreateEntryBlockAlloca(*builder,
+            size_val = llvm_utils->CreateEntryBlockAlloca(
                             llvm::Type::getInt32Ty(context));
         }
 
@@ -18719,11 +18719,11 @@ public:
                 pos_val = tmp;
             } else {
                 pos_orig_ptr = tmp;
-                pos_val = llvm_utils->CreateEntryBlockAlloca(*builder,
+                pos_val = llvm_utils->CreateEntryBlockAlloca(
                                 llvm::Type::getInt32Ty(context));
             }
         } else {
-            pos_val = llvm_utils->CreateEntryBlockAlloca(*builder,
+            pos_val = llvm_utils->CreateEntryBlockAlloca(
                             llvm::Type::getInt32Ty(context));
         }
 
@@ -18892,7 +18892,7 @@ public:
             named_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        named = llvm_utils->CreateEntryBlockAlloca(*builder,
+        named = llvm_utils->CreateEntryBlockAlloca(
                     llvm::Type::getInt1Ty(context));
 
         if (x.m_sequential) {
@@ -19066,7 +19066,7 @@ public:
             pending_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        pending_val = llvm_utils->CreateEntryBlockAlloca(*builder,
+        pending_val = llvm_utils->CreateEntryBlockAlloca(
                         llvm::Type::getInt1Ty(context));
 
         if (x.m_asynchronous) {
@@ -19681,7 +19681,7 @@ public:
             ptr_loads = ptr_copy;
             iostat = tmp;
         } else {
-            iostat = llvm_utils->CreateEntryBlockAlloca(*builder,
+            iostat = llvm_utils->CreateEntryBlockAlloca(
                         llvm::Type::getInt32Ty(context)->getPointerTo());
             builder->CreateStore(llvm::ConstantInt::getNullValue(
                 llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
@@ -19895,7 +19895,7 @@ public:
                     }
                     llvm::Type* int_type = llvm::Type::getIntNTy(context, kind * 8);
                     llvm::Value* logical_ext = llvm_utils->convert_kind(logical_val, int_type);
-                    llvm::Value* logical_ptr = llvm_utils->CreateEntryBlockAlloca(*builder, int_type);
+                    llvm::Value* logical_ptr = llvm_utils->CreateEntryBlockAlloca( int_type);
                     builder->CreateStore(logical_ext, logical_ptr);
                     args.push_back(logical_ptr);
                     continue;
@@ -19903,7 +19903,7 @@ public:
                     args.push_back(kind_val);
                     this->visit_expr_wrapper(m_values[i], true);
                     llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(m_values[i], ASRUtils::expr_type(m_values[i]), module.get());
-                    llvm::Value* llvm_arg = llvm_utils->CreateEntryBlockAlloca(*builder, type);
+                    llvm::Value* llvm_arg = llvm_utils->CreateEntryBlockAlloca( type);
                     builder->CreateStore(tmp, llvm_arg);
                     args.push_back(llvm_arg);
                     continue;
@@ -22179,7 +22179,7 @@ public:
                     args.push_back(llvm::ConstantPointerNull::get(
                         null_ptr_type));
                 } else {
-                    llvm::Value* llvm_arg = llvm_utils->CreateEntryBlockAlloca(*builder, llvm_orig_arg_type);
+                    llvm::Value* llvm_arg = llvm_utils->CreateEntryBlockAlloca( llvm_orig_arg_type);
                     args.push_back(llvm_arg);
                 }
                 continue ;
@@ -22410,7 +22410,7 @@ public:
                             int kind = ASRUtils::extract_kind_from_ttype_t(arg->m_type);
                             tmp = builder->CreateZExt(tmp, llvm_utils->getIntType(kind));
                         }
-                        llvm::Value* ptr_to_tmp = llvm_utils->CreateEntryBlockAlloca(*builder, tmp->getType());
+                        llvm::Value* ptr_to_tmp = llvm_utils->CreateEntryBlockAlloca( tmp->getType());
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
                     }
@@ -22580,7 +22580,7 @@ public:
                         ptr_loads = ptr_loads_copy;
                         llvm::Value* complex_ptr = tmp;
                         if (!complex_ptr->getType()->isPointerTy()) {
-                            llvm::AllocaInst* alloc = llvm_utils->CreateEntryBlockAlloca(*builder, complex_ptr->getType());
+                            llvm::AllocaInst* alloc = llvm_utils->CreateEntryBlockAlloca( complex_ptr->getType());
                             builder->CreateStore(complex_ptr, alloc);
                             complex_ptr = alloc;
                         }
@@ -22872,7 +22872,7 @@ public:
                     llvm::Type* poly_elem_type = llvm_utils->get_el_type(
                         ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                         ASRUtils::type_get_past_array(orig_arg_type_past_pointer), module.get());
-                    llvm::Value* poly_wrapper = llvm_utils->CreateEntryBlockAlloca(*builder, poly_elem_type);
+                    llvm::Value* poly_wrapper = llvm_utils->CreateEntryBlockAlloca( poly_elem_type);
                     
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
                     ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
@@ -23537,7 +23537,7 @@ public:
                 // If dest_type is Pointer(Array(...)), we need an extra level of indirection
                 // so that when the caller loads from the returned value, they get the descriptor pointer
                 if (LLVM::is_llvm_pointer(*dest_type)) {
-                    llvm::Value* desc_ptr_ptr = llvm_utils->CreateEntryBlockAlloca(*builder, dest_llvm_type->getPointerTo(), nullptr, "array_descriptor_ptr");
+                    llvm::Value* desc_ptr_ptr = llvm_utils->CreateEntryBlockAlloca( dest_llvm_type->getPointerTo(), nullptr, "array_descriptor_ptr");
                     builder->CreateStore(new_descriptor, desc_ptr_ptr);
                     return desc_ptr_ptr;
             }
@@ -23724,7 +23724,7 @@ public:
                         s_m_args0, ASRUtils::extract_type(s_m_args0_type), module.get());
                     llvm::Value* unlimited_polymorphic_type_array = arr_descr->create_descriptor_alloca(
                         array_type);
-                    llvm::Value* array_data = llvm_utils->CreateEntryBlockAlloca(*builder, array_data_type);
+                    llvm::Value* array_data = llvm_utils->CreateEntryBlockAlloca( array_data_type);
                     builder->CreateStore(
                         array_data, arr_descr->get_pointer_to_data(array_type, unlimited_polymorphic_type_array));
                     arr_descr->fill_array_details(arg_expr,
@@ -24008,7 +24008,7 @@ public:
                     s_m_args0, ASRUtils::extract_type(s_m_args0_type), module.get());
 
                 // ONE-wrapper layout: alloca single {vptr, i8*} wrapper on stack
-                llvm::Value* array_data = llvm_utils->CreateEntryBlockAlloca(*builder, array_data_type);
+                llvm::Value* array_data = llvm_utils->CreateEntryBlockAlloca( array_data_type);
 
                 // Create polymorphic array descriptor
                 llvm::Value* unlimited_polymorphic_type_array =
@@ -24985,7 +24985,7 @@ public:
 
         // Call to LLVM APIs not needed to fetch the return type of the function.
         // We can use asr_return_type as well but anyways for compactness I did it here.
-        llvm::Value* pointer_to_struct = llvm_utils->CreateEntryBlockAlloca(*builder, fnty->getReturnType());
+        llvm::Value* pointer_to_struct = llvm_utils->CreateEntryBlockAlloca( fnty->getReturnType());
         LLVM::CreateStore(*builder, return_value, pointer_to_struct);
         return pointer_to_struct;
     }
@@ -25127,7 +25127,7 @@ public:
             // If the parameter is a POINTER, we need an extra level of indirection
             if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(func->m_args[0]))) {
                 // Allocate space for a pointer on the stack
-                llvm::Value* ptr_storage = llvm_utils->CreateEntryBlockAlloca(*builder, target_struct_type->getPointerTo());
+                llvm::Value* ptr_storage = llvm_utils->CreateEntryBlockAlloca( target_struct_type->getPointerTo());
                 // Store the loaded class descriptor pointer into it
                 builder->CreateStore(llvm_dt, ptr_storage);
                 // Pass the address of the storage (which is now a pointer-to-pointer)
@@ -25855,7 +25855,7 @@ public:
             args.push_back(serialization_info);
 
             // Create and Push a pointer to int64 to store the result size in
-            llvm::Value *result_size_ptr = llvm_utils->CreateEntryBlockAlloca(*builder, llvm::Type::getInt64Ty(context));
+            llvm::Value *result_size_ptr = llvm_utils->CreateEntryBlockAlloca( llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
             // Check unallocated arguments
@@ -25973,7 +25973,7 @@ public:
                     visit_expr_load_wrapper(x.m_args[i], 0);
                     LCOMPILERS_ASSERT(llvm_utils->get_StringType(expr_type(x.m_args[i])) == llvm::Type::getInt8Ty(context))
                     LCOMPILERS_ASSERT(tmp->getType()->isPointerTy()); // atleast not `char`
-                    llvm::Value* tmp_ptr = builder->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
+                    llvm::Value* tmp_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 } else {
@@ -26014,7 +26014,7 @@ public:
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
                     tmp = logical_store_val(tmp, x.m_args[i]);
-                    llvm::Value* tmp_ptr = builder->CreateEntryBlockAlloca(tmp->getType());
+                    llvm::Value* tmp_ptr = llvm_utils->CreateEntryBlockAlloca(tmp->getType());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 }
@@ -26048,7 +26048,7 @@ public:
         } else {
             vec_type = FIXED_VECTOR_TYPE::get(ele_type, n_eles);
         }
-        llvm::AllocaInst *vec = llvm_utils->CreateEntryBlockAlloca(*builder, vec_type);
+        llvm::AllocaInst *vec = llvm_utils->CreateEntryBlockAlloca( vec_type);
         for (size_t i=0; i < n_eles; i++) {
             llvm::Value* store_value = value;
             if (ASRUtils::is_logical(*ASRUtils::type_get_past_array(x.m_type)) &&
