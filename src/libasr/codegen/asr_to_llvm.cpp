@@ -5957,13 +5957,13 @@ public:
 
         visit_procedures(x);
 
-        if (compiler_options.detect_leaks) {
+        if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
             
             std::string fin_name = "_lfortran_module_finalize_" + std::string(x.m_name);
             llvm::FunctionType *fin_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
             llvm::Function *fin_func = llvm::Function::Create(fin_type,
-                    llvm::Function::ExternalLinkage, fin_name, module.get());
+                    llvm::Function::LinkOnceAnyLinkage, fin_name, module.get());
 
             llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, ".entry", fin_func);
             builder->SetInsertPoint(fin_bb);
