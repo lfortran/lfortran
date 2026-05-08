@@ -579,7 +579,8 @@ then:                                             ; preds = %entry
   %8 = getelementptr %string_descriptor, %string_descriptor* %6, i32 0, i32 1
   %9 = getelementptr %string_descriptor, %string_descriptor* %5, i32 0, i32 0
   %10 = load i8*, i8** %9, align 8
-  call void @_lfortran_strcpy_alloc(i8* %2, i8** %7, i64* %8, i8 0, i8 0, i8* %10, i64 5)
+  store i64 5, i64* %8, align 8
+  call void @_lfortran_strcpy_alloc(i8* %2, i8** %7, i64* %8, i8 1, i8 0, i8* %10, i64 5)
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -595,7 +596,8 @@ then1:                                            ; preds = %ifcont
   %14 = getelementptr %string_descriptor, %string_descriptor* %12, i32 0, i32 1
   %15 = getelementptr %string_descriptor, %string_descriptor* %11, i32 0, i32 0
   %16 = load i8*, i8** %15, align 8
-  call void @_lfortran_strcpy_alloc(i8* %2, i8** %13, i64* %14, i8 0, i8 0, i8* %16, i64 4)
+  store i64 4, i64* %14, align 8
+  call void @_lfortran_strcpy_alloc(i8* %2, i8** %13, i64* %14, i8 1, i8 0, i8* %16, i64 4)
   br label %ifcont3
 
 else2:                                            ; preds = %ifcont
@@ -611,7 +613,8 @@ then4:                                            ; preds = %ifcont3
   %20 = getelementptr %string_descriptor, %string_descriptor* %18, i32 0, i32 1
   %21 = getelementptr %string_descriptor, %string_descriptor* %17, i32 0, i32 0
   %22 = load i8*, i8** %21, align 8
-  call void @_lfortran_strcpy_alloc(i8* %2, i8** %19, i64* %20, i8 0, i8 0, i8* %22, i64 6)
+  store i64 6, i64* %20, align 8
+  call void @_lfortran_strcpy_alloc(i8* %2, i8** %19, i64* %20, i8 1, i8 0, i8* %22, i64 6)
   br label %ifcont6
 
 else5:                                            ; preds = %ifcont3
