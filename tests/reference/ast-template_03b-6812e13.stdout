@@ -926,7 +926,7 @@
                     []
                     [(EndOfLine)
                     (Comment
-                        "! call my_axpy(a, x, y)   ! non-generic does not work too\r"
+                        "! call my_axpy(a, x, y)   ! non-generic does not work too"
                     )]
                 )
             )]
