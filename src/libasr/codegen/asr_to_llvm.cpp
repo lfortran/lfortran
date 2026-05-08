@@ -229,9 +229,6 @@ private:
             std::string result = base_name + "(";
             for (size_t i = 0; i < array_item->n_args; i++) {
                 ASR::expr_t* idx_expr = array_item->m_args[i].m_right;
-                if (idx_expr == nullptr) {
-                    return "";
-                }
                 std::string index_name = get_expr_name_for_runtime_message(idx_expr);
                 if (index_name.empty()) {
                     return "";
