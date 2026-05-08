@@ -1303,7 +1303,7 @@ namespace LCompilers {
                     context, "reshape_deepcopy.end");
 
                 llvm::Value* idx = llvm_utils->CreateEntryBlockAlloca(
-                    *builder, index_type);
+                     index_type);
                 builder->CreateStore(
                     llvm::ConstantInt::get(context,
                         llvm::APInt(index_bit_width, 0)), idx);
@@ -1444,7 +1444,7 @@ namespace LCompilers {
                         llvm_data_type->getPointerTo(), first_ptr);
 
                     llvm::Value* I_arr = llvm_utils->CreateEntryBlockAlloca(
-                        *builder, llvm::Type::getInt64Ty(context),
+                         llvm::Type::getInt64Ty(context),
                         llvm::ConstantInt::get(context, llvm::APInt(32, rank)));
 
                     llvm::BasicBlock *order_loop_head = llvm::BasicBlock::Create(context, "reshape_order.head");

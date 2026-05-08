@@ -1870,21 +1870,14 @@ namespace LCompilers {
         llvm::Type *type_ = type;
 #endif
         if (Name != "") {
-            alloca = builder0.CreateEntryBlockAlloca(type_, size, Name);
+            alloca = builder0.CreateAlloca(type_, size, Name);
         } else {
-            alloca = builder0.CreateEntryBlockAlloca(type_, size);
+            alloca = builder0.CreateAlloca(type_, size);
         }
         return alloca;
     }
 
-    llvm::AllocaInst* LLVMUtils::CreateEntryBlockAlloca(llvm::IRBuilder<> &builder,
-            llvm::Type* type, llvm::Value* size, std::string Name, bool
-#if LLVM_VERSION_MAJOR >= 15
-            is_llvm_ptr
-#else
-            /*is_llvm_ptr*/
-#endif
-        ) {
+     {
         llvm::AllocaInst *alloca;
 #if LLVM_VERSION_MAJOR >= 15
         llvm::Type *type_ = is_llvm_ptr ? type->getPointerTo() : type;
@@ -1892,9 +1885,9 @@ namespace LCompilers {
         llvm::Type *type_ = type;
 #endif
         if (Name != "") {
-            alloca = builder.CreateEntryBlockAlloca(type_, size, Name);
+            alloca = builder.CreateAlloca(type_, size, Name);
         } else {
-            alloca = builder.CreateEntryBlockAlloca(type_, size);
+            alloca = builder.CreateAlloca(type_, size);
         }
         return alloca;
     }
@@ -3369,7 +3362,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Value* desc_arr = builder->CreateBitCast(
             data_mem, string_descriptor->getPointerTo());
-        llvm::Value* idx = CreateEntryBlockAlloca(*builder, i64_ty);
+        llvm::Value* idx = CreateEntryBlockAlloca( i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("str_desc_init", [&]() {
             return builder->CreateICmpSLT(
@@ -3460,7 +3453,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* flat_buf = LLVMArrUtils::lfortran_malloc(
             context, *module, *builder, total_bytes);
 
-        llvm::Value* idx = CreateEntryBlockAlloca(*builder, i64_ty);
+        llvm::Value* idx = CreateEntryBlockAlloca(i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("char_consolidate", [&]() {
             return builder->CreateICmpSLT(
@@ -3478,7 +3471,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 builder->CreateAdd(i, llvm::ConstantInt::get(i64_ty, 1)), idx);
         });
 
-        llvm::Value* result = CreateEntryBlockAlloca(*builder, str_desc_ty,
+        llvm::Value* result = CreateEntryBlockAlloca( str_desc_ty,
             nullptr, "consolidated_str");
         builder->CreateStore(flat_buf, create_gep2(str_desc_ty, result, 0));
         builder->CreateStore(char_len, create_gep2(str_desc_ty, result, 1));
@@ -3499,7 +3492,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* char_len = CreateLoad2(i64_ty,
             create_gep2(str_desc_ty, consolidated_desc, 1));
 
-        llvm::Value* idx = CreateEntryBlockAlloca(*builder, i64_ty);
+        llvm::Value* idx = CreateEntryBlockAlloca(i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("char_writeback", [&]() {
             return builder->CreateICmpSLT(
@@ -3529,7 +3522,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // bounded by the enclosing call, so a heap allocation would leak.
         llvm::Value* descs = CreateEntryBlockAlloca(*builder, str_desc_ty, n_elems_i64);
 
-        llvm::Value* idx = CreateEntryBlockAlloca(*builder, i64_ty);
+        llvm::Value* idx = CreateEntryBlockAlloca(i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("str_expand", [&]() {
             return builder->CreateICmpSLT(
