@@ -22451,7 +22451,7 @@ public:
                     if (orig_arg &&
                         LLVM::is_llvm_pointer(*orig_arg->m_type)) {
                         llvm::Value* ptr_to_tmp = llvm_utils->CreateEntryBlockAlloca(
-                            *builder, tmp->getType());
+                        tmp->getType());
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
                     }
@@ -23063,7 +23063,7 @@ public:
                             ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                         char_llvm_type, false);
                     llvm::Value* descriptor = llvm_utils->CreateEntryBlockAlloca(
-                        *builder, desc_type, nullptr, "cfi_desc_char");
+                         desc_type, nullptr, "cfi_desc_char");
                     llvm::DataLayout dl(module->getDataLayout());
                     uint64_t desc_size = dl.getTypeAllocSize(desc_type);
                     builder->CreateMemSet(
@@ -23092,7 +23092,6 @@ public:
                             ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)));
                     if (formal_str->m_physical_type != ASR::string_physical_typeType::CChar) {
                         llvm::Value* arg_ptr = llvm_utils->CreateEntryBlockAlloca(
-                            *builder,
                             llvm_utils->string_descriptor->getPointerTo(),
                             nullptr, "str_arg_ptr");
                         builder->CreateStore(str_desc, arg_ptr);
@@ -23356,7 +23355,7 @@ public:
                 // Build a CFI descriptor directly (no offset field)
                 llvm::StructType* cfi_type = arr_descr->get_cfi_type(elem_llvm_type, 0);
                 llvm::Value* descriptor = llvm_utils->CreateEntryBlockAlloca(
-                    *builder, cfi_type);
+                     cfi_type);
                 // base_addr: load the scalar's pointer (NULL if unallocated)
                 llvm::Value* data_gep = llvm_utils->create_gep2(
                     cfi_type, descriptor, LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_BASE_ADDR);
