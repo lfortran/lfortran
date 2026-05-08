@@ -5972,7 +5972,7 @@ public:
             builder->CreateRetVoid();
 
             
-            llvm::appendToGlobalDtors(*module, fin_func, 100);
+            llvm::appendToGlobalDtors(*module, fin_func, 2000); 
 
             if (saved_bb) builder->SetInsertPoint(saved_bb);
             else builder->ClearInsertionPoint();
@@ -6159,6 +6159,7 @@ public:
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
         free_heap_fixed_size_arrays();
+        
         {
             llvm::Function *fn_finalize = module->getFunction(
                 "_lfortran_internal_alloc_finalize");
@@ -6171,7 +6172,7 @@ public:
             }
             
             if (compiler_options.detect_leaks) {
-                llvm::appendToGlobalDtors(*module, fn_finalize, 300);
+                llvm::appendToGlobalDtors(*module, fn_finalize, 1000);
             } else {
                 builder->CreateCall(fn_finalize, {});
             }
@@ -6185,9 +6186,9 @@ public:
                 fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "dbg_report", module.get());
             }
-            
-            llvm::appendToGlobalDtors(*module, fn, 200);
+            llvm::appendToGlobalDtors(*module, fn, 1500);
         }
+        
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
