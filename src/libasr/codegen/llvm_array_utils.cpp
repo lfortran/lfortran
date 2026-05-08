@@ -1269,7 +1269,7 @@ namespace LCompilers {
             llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(result_type, reshaped);
-            llvm::Value* arr_first = llvm_utils->CreateEntryBlockAlloca( llvm_data_type, num_elements);
+            llvm::Value* arr_first = builder->CreateAlloca( llvm_data_type, num_elements);
             builder->CreateStore(arr_first, first_ptr);
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(arr_type, array);
@@ -1527,7 +1527,7 @@ namespace LCompilers {
             llvm::Type* llvm_data_type = llvm_utils->get_el_type(
                 array_expr, ASRUtils::extract_type(asr_data_type), module);
             if( reserve_memory ) {
-                llvm::Value* arr_first = llvm_utils->CreateEntryBlockAlloca( llvm_data_type, num_elements);
+                llvm::Value* arr_first = builder->CreateAlloca( llvm_data_type, num_elements);
                 builder->CreateStore(arr_first, first_ptr);
             }
 

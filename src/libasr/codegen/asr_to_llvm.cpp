@@ -840,7 +840,7 @@ public:
                     arr_first = builder->CreateBitCast(
                         arr_first_i8, llvm_data_type->getPointerTo());
                 } else {
-                    arr_first = llvm_utils->CreateEntryBlockAlloca( llvm_data_type, prod);
+                    arr_first = builder->CreateAlloca( llvm_data_type, prod);
                     builder->CreateStore(arr_first, arr);
                 }
             }
