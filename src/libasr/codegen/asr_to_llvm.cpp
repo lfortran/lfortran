@@ -261,18 +261,24 @@ private:
     void generate_unallocated_array_runtime_error(llvm::Value* is_not_allocated,
                                                   ASR::expr_t* target_expr) {
         std::string target_expr_name = get_expr_name_for_runtime_message(target_expr);
-        if (target_expr_name.empty()) {
-            target_expr_name = "LHS";
+        if (!target_expr_name.empty()) {
+            llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(
+                context, *module, *builder, target_expr_name);
+            llvm_utils->generate_runtime_error(
+                is_not_allocated,
+                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
+                infile,
+                location_manager,
+                target_expr_name_llvm);
+        } else {
+            llvm_utils->generate_runtime_error(
+                is_not_allocated,
+                "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
+                infile,
+                location_manager);
         }
-        llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(
-            context, *module, *builder, target_expr_name);
-        llvm_utils->generate_runtime_error(
-            is_not_allocated,
-            "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
-            {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
-            infile,
-            location_manager,
-            target_expr_name_llvm);
     }
 
     llvm::Value* allocate_class_wrapper_storage(ASR::expr_t* target_expr,
