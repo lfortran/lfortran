@@ -40,50 +40,27 @@ class ASRToLLVMVisitor;
         return (uint64_t)node;
     }
 
-    // Returns a scope-qualified key for a Struct_t, for use in name2dertype
-    // and related maps. E.g., struct "object_t" inside module "mod_a" becomes
-    // "mod_a.object_t", preventing collisions between same-named types in
-    // different modules. Unlimited polymorphic types (starting with "~") are
-    // global sentinels and are never qualified.
-    inline std::string get_type_key(ASR::Struct_t* struct_type) {
-        std::string name = struct_type->m_name;
-        // Skip qualification for internal sentinel types like ~unlimited_polymorphic_type
-        if (!name.empty() && name[0] == '~') {
-            return name;
-        }
-        if (struct_type->m_symtab && struct_type->m_symtab->parent &&
-                struct_type->m_symtab->parent->asr_owner &&
-                ASR::is_a<ASR::symbol_t>(*struct_type->m_symtab->parent->asr_owner)) {
-            ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
-                struct_type->m_symtab->parent->asr_owner);
-            name = std::string(ASRUtils::symbol_name(parent_sym)) + "." + name;
-        }
-        return name;
-    }
 
-    // Returns a scope-qualified key for a Union_t.
-    inline std::string get_type_key(ASR::Union_t* union_type) {
-        std::string name = union_type->m_name;
-        if (union_type->m_symtab && union_type->m_symtab->parent &&
-                union_type->m_symtab->parent->asr_owner &&
-                ASR::is_a<ASR::symbol_t>(*union_type->m_symtab->parent->asr_owner)) {
-            ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
-                union_type->m_symtab->parent->asr_owner);
-            name = std::string(ASRUtils::symbol_name(parent_sym)) + "." + name;
-        }
-        return name;
-    }
-
-    // Returns a scope-qualified key for a symbol_t* that may be Struct or Union.
-    // Resolves ExternalSymbol automatically.
+    // Return symbolName
+    // Adds unqiue symtab ID for Struct and Union
     inline std::string get_type_key(ASR::symbol_t* sym) {
         sym = ASRUtils::symbol_get_past_external(sym);
-        if (ASR::is_a<ASR::Struct_t>(*sym)) {
-            return get_type_key(ASR::down_cast<ASR::Struct_t>(sym));
-        } else if (ASR::is_a<ASR::Union_t>(*sym)) {
-            return get_type_key(ASR::down_cast<ASR::Union_t>(sym));
+        std::string name = ASRUtils::symbol_name(sym);
+        if (!name.empty() && name[0] == '~') return name; // global sentinels for UPoly 
+
+        if(ASR::is_a<ASR::Struct_t>(*sym) || ASR::is_a<ASR::Union_t>(*sym)){
+            ASR::Module_t* mod = ASRUtils::get_sym_module(sym);
+            if(mod) {
+                name = ASRUtils::symbol_name(&mod->base) + 
+                        std::string(".") + name;
+            }
+            name += "." + ASRUtils::symbol_symtab(sym)->get_counter();
         }
-        return std::string(ASRUtils::symbol_name(sym));
+
+        return name;
+    }
+    inline std::string get_type_key(ASR::Struct_t* sym){
+        return get_type_key(&sym->base);
     }
 
     namespace {
@@ -802,6 +779,11 @@ class ASRToLLVMVisitor;
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
+            // Convert complex return value from platform ABI to internal representation
+            // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.
+            llvm::Value* complex_function_return_abi_to_internal(llvm::Value* abi_val,
+                ASR::ttype_t* return_var_type0);
+
             std::vector<llvm::Type*> convert_args(const ASR::Function_t &x, llvm::Module* module);
 
             std::vector<llvm::Type*> convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x);
@@ -1063,6 +1045,12 @@ class ASRToLLVMVisitor;
             if (struct_sym != nullptr
                     && !ASRUtils::is_allocatable(type)
                     && struct_sym->n_member_functions > 0) {
+                ASR::ttype_t* v_type_past =
+                    ASRUtils::type_get_past_allocatable_pointer(type);
+                if (ASRUtils::is_pointer(type)) {
+                    finalize(ptr, type, struct_sym, in_struct);
+                    return;
+                }
                 for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
                     std::string final_proc_name = struct_sym->m_member_functions[fi];
                     ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
@@ -1071,7 +1059,6 @@ class ASRToLLVMVisitor;
                         uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                         if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                             llvm::Function* final_fn = llvm_symtab_fn_[fh];
-                            ASR::ttype_t* v_type_past = ASRUtils::type_get_past_allocatable(type);
                             if (ASR::is_a<ASR::Array_t>(*v_type_past)) {
                                 // Variable is an array but the final subroutine
                                 // takes a scalar — call it element-by-element.
@@ -2024,9 +2011,10 @@ class ASRToLLVMVisitor;
                 key += std::to_string(n_dims) + "_";
                 key += get_type_key(ASRUtils::extract_type(t_past), struct_sym);
             } else if(struct_sym != nullptr) { // StructType or structType Class
-                key += ASRUtils::get_type_code(t_past, false, false, false) +"__" + struct_sym->m_name;
+                key += ASRUtils::get_type_code(t_past, false, false, false) +"__" +
+                       struct_sym->m_name + "_" + struct_sym->m_symtab->get_counter();
                 if(auto module = ASRUtils::get_sym_module(&struct_sym->base)) {
-                    key += "_of_"; 
+                    key += "_of_";
                     key += module->m_name;
                 }
             } else {

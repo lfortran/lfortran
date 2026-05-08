@@ -531,7 +531,7 @@ namespace LCompilers {
 
     llvm::Type* LLVMUtils::getUnion(ASR::Union_t* union_type,
         llvm::Module* module, bool is_pointer) {
-        std::string union_type_name = get_type_key(union_type);
+        std::string union_type_name = get_type_key(&union_type->base);
         llvm::StructType* union_type_llvm = nullptr;
         if( name2dertype.find(union_type_name) != name2dertype.end() ) {
             union_type_llvm = name2dertype[union_type_name];
@@ -1430,6 +1430,41 @@ namespace LCompilers {
         llvm::FunctionType *function_type = llvm::FunctionType::get(
                 return_type, args, false);
         return function_type;
+    }
+
+    llvm::Value* LLVMUtils::complex_function_return_abi_to_internal(llvm::Value* tmp,
+            ASR::ttype_t* return_var_type0) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*return_var_type0));
+        int a_kind = ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+        if (a_kind != 4) {
+            return tmp;
+        }
+        if (compiler_options.platform == Platform::Windows) {
+            // tmp is i64, have to convert to {float, float}
+            // i64
+            llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
+            // Convert i64 to i64*
+            llvm::AllocaInst *p_fx2 = CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
+            builder->CreateStore(tmp, p_fx2);
+            // Convert i64* to {float,float}* using bitcast
+            tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
+            // Convert {float,float}* to {float,float}
+            tmp = CreateLoad2(complex_type_4, tmp);
+        } else if (compiler_options.platform == Platform::macOS_ARM) {
+            // pass - already {float, float}
+        } else {
+            // tmp is <2 x float>, convert to {float, float}
+            // <2 x float>
+            llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+            // Convert <2 x float> to <2 x float>*
+            llvm::AllocaInst *p_fx2 = CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
+            builder->CreateStore(tmp, p_fx2);
+            // Convert <2 x float>* to {float,float}* using bitcast
+            tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
+            // Convert {float,float}* to {float,float}
+            tmp = CreateLoad2(complex_type_4, tmp);
+        }
+        return tmp;
     }
 
     std::vector<llvm::Type*> LLVMUtils::convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x) {
@@ -9395,8 +9430,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* data_mem = nullptr;
         if (realloc) {
             llvm::Value* existing_data_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
-            llvm::Type* base_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
-            llvm::Value* existing_data = builder->CreateLoad(base_struct_type->getPointerTo(), existing_data_ptr);
+            llvm::Type* existing_load_type = ASRUtils::is_unlimited_polymorphic_type(class_symbol)
+                ? llvm_utils->i8_ptr
+                : llvm_utils->getStructType(class_symbol, llvm_utils->module)->getPointerTo();
+            llvm::Value* existing_data = builder->CreateLoad(existing_load_type, existing_data_ptr);
             data_mem = LLVM::lfortran_realloc(context, *llvm_utils->module, *builder, existing_data, total_bytes_to_alloc);
         } else {
             data_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder, total_bytes_to_alloc);
@@ -9404,11 +9441,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         builder->CreateMemSet(data_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
             total_bytes_to_alloc, llvm::MaybeAlign());
         
-        // Step 3: Store the data pointer in the wrapper's data field (index 1)
-        // Bitcast to base struct type since wrapper expects that type
-        llvm::Type* const base_struct_type = llvm_utils->getStructType(class_symbol, llvm_utils->module);
         llvm::Value* data_field_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
-        llvm::Value* bitcasted_data = builder->CreateBitCast(data_mem, base_struct_type->getPointerTo());
+        llvm::Value* bitcasted_data = data_mem;
+        if (!ASRUtils::is_unlimited_polymorphic_type(class_symbol)) {
+            llvm::Type* const base_struct_type = llvm_utils->getStructType(
+                class_symbol, llvm_utils->module);
+            bitcasted_data = builder->CreateBitCast(
+                data_mem, base_struct_type->getPointerTo());
+        }
         builder->CreateStore(bitcasted_data, data_field_ptr);
         
         // Step 4: Store vptr for the allocated subclass type (or fall back to class_symbol)
@@ -10617,12 +10657,40 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                 llvm::Function::ExternalLinkage, func_name, module);
                                         }
 
-                                        // Create class descriptors for dest and src
-                                        llvm::Value* dest_class = create_class_view(mem_struct_t, dest_member);
-                                        llvm::Value* src_class = create_class_view(mem_struct_t, src_member);
+                                        ASR::Variable_t* fn_lhs_var = ASRUtils::EXPR2VAR(func_t->m_args[0]);
+                                        ASR::ttype_t* fn_lhs_type = ASRUtils::type_get_past_array(
+                                            ASRUtils::type_get_past_allocatable(
+                                                ASRUtils::type_get_past_pointer(fn_lhs_var->m_type)));
+                                        bool fn_lhs_is_class = ASRUtils::is_class_type(fn_lhs_type);
+
+                                        ASR::Variable_t* fn_rhs_var = ASRUtils::EXPR2VAR(func_t->m_args[1]);
+                                        ASR::ttype_t* fn_rhs_type = ASRUtils::type_get_past_array(
+                                            ASRUtils::type_get_past_allocatable(
+                                                ASRUtils::type_get_past_pointer(fn_rhs_var->m_type)));
+                                        bool fn_rhs_is_class = ASRUtils::is_class_type(fn_rhs_type);
+
+                                        bool member_is_class = ASRUtils::is_class_type(
+                                            ASRUtils::extract_type(member_type));
+
+                                        llvm::Type* mem_class_llvm = llvm_utils->getClassType(mem_struct_t);
+                                        llvm::Type* mem_struct_llvm = llvm_utils->get_type_from_ttype_t_util(
+                                            ASRUtils::symbol_type(mem_struct), mem_struct, module);
+
+                                        auto adjust_arg = [&](llvm::Value* v, bool fn_arg_is_class) -> llvm::Value* {
+                                            if (member_is_class && !fn_arg_is_class) {
+                                                llvm::Value* gep = llvm_utils->create_gep2(mem_class_llvm, v, 1);
+                                                return llvm_utils->CreateLoad2(mem_struct_llvm->getPointerTo(), gep);
+                                            } else if (!member_is_class && fn_arg_is_class) {
+                                                return create_class_view(mem_struct_t, v);
+                                            }
+                                            return v;
+                                        };
+
+                                        llvm::Value* dest_arg = adjust_arg(dest_member, fn_lhs_is_class);
+                                        llvm::Value* src_arg = adjust_arg(src_member, fn_rhs_is_class);
 
                                         // Call defined assignment: assign(lhs=dest, rhs=src)
-                                        builder->CreateCall(assign_fn, {dest_class, src_class});
+                                        builder->CreateCall(assign_fn, {dest_arg, src_arg});
                                         return;
                                     }
                                 }

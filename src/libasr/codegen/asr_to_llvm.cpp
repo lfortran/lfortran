@@ -15254,7 +15254,7 @@ public:
             case ASR::ttypeType::UnionType: {
                 ASR::Union_t* der_type = ASR::down_cast<ASR::Union_t>(
                     ASRUtils::symbol_get_past_external(x->m_type_declaration));
-                current_der_type_name = get_type_key(der_type);
+                current_der_type_name = get_type_key(&der_type->base);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                     tmp = llvm_symtab[h];
@@ -19397,7 +19397,67 @@ public:
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if( x.m_overloaded ) {
+            // DTIO: set child I/O mode to suppress record terminators in
+            // child writes, call the user-defined I/O subroutine, then
+            // clear child mode and write the parent record terminator.
+            llvm::Value *unit_val;
+            if (x.m_unit == nullptr) {
+                unit_val = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, 6, true));
+            } else {
+                this->visit_expr_wrapper(x.m_unit, true);
+                unit_val = tmp;
+                if (unit_val->getType()->isIntegerTy() &&
+                    unit_val->getType()->getIntegerBitWidth() > 32) {
+                    unit_val = builder->CreateTrunc(
+                        unit_val, llvm::Type::getInt32Ty(context));
+                }
+            }
+
+            // _lfortran_set_child_io(unit, 1)
+            {
+                std::string func_name = "_lfortran_set_child_io";
+                llvm::Function *fn = module->getFunction(func_name);
+                if (!fn) {
+                    llvm::FunctionType *ft = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context),
+                        {llvm::Type::getInt32Ty(context),
+                         llvm::Type::getInt32Ty(context)}, false);
+                    fn = llvm::Function::Create(ft,
+                        llvm::Function::ExternalLinkage, func_name,
+                        module.get());
+                }
+                llvm::Value *one = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, 1, true));
+                builder->CreateCall(fn, {unit_val, one});
+            }
+
             this->visit_stmt(*x.m_overloaded);
+
+            // _lfortran_set_child_io(unit, 0)
+            {
+                std::string func_name = "_lfortran_set_child_io";
+                llvm::Function *fn = module->getFunction(func_name);
+                llvm::Value *zero = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, 0, true));
+                builder->CreateCall(fn, {unit_val, zero});
+            }
+
+            // Write parent record terminator
+            {
+                std::string func_name = "_lfortran_file_write_newline";
+                llvm::Function *fn = module->getFunction(func_name);
+                if (!fn) {
+                    llvm::FunctionType *ft = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context),
+                        {llvm::Type::getInt32Ty(context)}, false);
+                    fn = llvm::Function::Create(ft,
+                        llvm::Function::ExternalLinkage, func_name,
+                        module.get());
+                }
+                builder->CreateCall(fn, {unit_val});
+            }
+
             return ;
         }
 
@@ -25124,6 +25184,12 @@ public:
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         tmp = builder->CreateCall(fnTy, fn, args);
+        if (func->m_return_var) {
+            ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
+                tmp = llvm_utils->complex_function_return_abi_to_internal(tmp, ret_ty);
+            }
+        }
         return;
     }
 
@@ -25332,38 +25398,11 @@ public:
             }
         }
         // Convert complex return value from platform ABI to internal representation
-        {
+        if (s->m_return_var) {
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (is_a<ASR::Complex_t>(*return_var_type0)) {
-                int a_kind = down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
-                if (a_kind == 4) {
-                    if (compiler_options.platform == Platform::Windows) {
-                        // tmp is i64, have to convert to {float, float}
-
-                        // i64
-                        llvm::Type* type_fx2 = llvm::Type::getInt64Ty(context);
-                        // Convert i64 to i64*
-                        llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
-                        builder->CreateStore(tmp, p_fx2);
-                        // Convert i64* to {float,float}* using bitcast
-                        tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
-                        // Convert {float,float}* to {float,float}
-                        tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
-                    } else if (compiler_options.platform == Platform::macOS_ARM) {
-                        // pass - already {float, float}
-                    } else {
-                        // tmp is <2 x float>, convert to {float, float}
-                        // <2 x float>
-                        llvm::Type* type_fx2 = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                        // Convert <2 x float> to <2 x float>*
-                        llvm::AllocaInst *p_fx2 = llvm_utils->CreateAlloca(type_fx2, nullptr, "complex_ret_tmp");
-                        builder->CreateStore(tmp, p_fx2);
-                        // Convert <2 x float>* to {float,float}* using bitcast
-                        tmp = builder->CreateBitCast(p_fx2, complex_type_4->getPointerTo());
-                        // Convert {float,float}* to {float,float}
-                        tmp = llvm_utils->CreateLoad2(complex_type_4, tmp);
-                    }
-                }
+                tmp = llvm_utils->complex_function_return_abi_to_internal(tmp,
+                    return_var_type0);
             }
         }
         if (ASRUtils::is_character(*x.m_type)) {
@@ -25594,6 +25633,7 @@ public:
 
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
         switch( physical_type ) {
+            case ASR::array_physical_typeType::AssumedRankArray:
             case ASR::array_physical_typeType::DescriptorArray: {
                 llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));

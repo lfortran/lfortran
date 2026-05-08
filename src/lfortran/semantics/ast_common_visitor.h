@@ -2171,16 +2171,22 @@ public:
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
         if (compiler_options.implicit_typing) {
             if (!in_Subroutine) {
-                if (implicit_mapping.size() != 0) {
-                    implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                if (implicit_mapping.size() != 0 && current_scope->asr_owner) {
+                    auto it = implicit_mapping.find(get_hash(current_scope->asr_owner));
+                    if (it != implicit_mapping.end()) {
+                        implicit_dictionary = it->second;
+                    }
                     if (implicit_dictionary.size() == 0 && current_scope->parent
                             && current_scope->parent->asr_owner) {
                         implicit_dictionary = implicit_mapping[get_hash(
                             current_scope->parent->asr_owner)];
                     }
-                    if (implicit_dictionary.size() == 0 && is_implicit_interface) {
-                        implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
                     }
+                    if (implicit_dictionary.size() == 0 && is_implicit_interface
+                            && implicit_interface_parent_scope->asr_owner
+                            && implicit_mapping.find(get_hash(implicit_interface_parent_scope->asr_owner))
+                                != implicit_mapping.end()) {
+                        implicit_dictionary = implicit_mapping[get_hash(implicit_interface_parent_scope->asr_owner)];
                 }
             }
         }
@@ -2683,7 +2689,8 @@ public:
 		} else {
 		    intent = ASRUtils::intent_local;
 		}
-		get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
+		ASR::ttype_t* typ = implicit_dictionary.at(std::string(1,sym[0]));
+		get_sym = declare_implicit_variable2(s.loc, sym, intent, typ);
 	    } else {
 		if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
 	            ASR::intentType intent;
@@ -15389,10 +15396,28 @@ public:
         current_scope = al.make_new<SymbolTable>(sym_scope);
 
         Vec<ASR::call_arg_t> c_args;
-        visit_expr_list(x.m_args, x.n_args, c_args);
+        c_args.reserve(al, x.n_args + 1);
+        bool has_alt_returns = false;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
+                has_alt_returns = true;
+                continue;
+            }
+            this->visit_expr(*x.m_args[i].m_end);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            c_args.push_back(al, {expr->base.loc, expr});
+        }
+        // Reserve spot for compiler's `__lfortran_alt_ret` 
+        if (has_alt_returns) {
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                compiler_options.po.default_integer_kind));
+            ASR::expr_t* alt_ret_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, 0, int_type));
+            c_args.push_back(al, {x.base.base.loc, alt_ret_expr});
+        }
 
         Vec<ASR::expr_t*> args;
-        args.reserve(al, x.n_args);
+        args.reserve(al, c_args.size());
         std::string sym_name = to_lower(func_name);
 
         // For implicit argument casting, look up the Implementation to get correct param types
@@ -15412,7 +15437,7 @@ public:
             }
         }
 
-        for (size_t i=0; i<x.n_args; i++) {
+        for (size_t i=0; i<c_args.size(); i++) {
             std::string arg_name = sym_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
             ASR::expr_t *var_expr = c_args[i].m_value;
@@ -18509,6 +18534,11 @@ public:
             throw SemanticAbort();
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
+        if (std::isinf(r)) {
+            diag.add(Diagnostic(
+                "Real constant overflows its kind (" + std::to_string(r_kind) + ")",
+                Level::Warning, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
         tmp = ASR::make_RealConstant_t(al, x.base.base.loc, r, type);
     }
 

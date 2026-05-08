@@ -5526,6 +5526,9 @@ static int32_t seq_unf_record_len[MAXUNITS];
 // Pending list-directed null-repeat state per unit.
 static int32_t lf_list_dir_null_remaining[MAXUNITS];
 
+// Child I/O mode per unit (for DTIO: suppress record terminators in child writes).
+static int32_t lf_child_io_mode[MAXUNITS];
+
 static inline void seq_unf_state_reset(int32_t unit_num) {
     if (unit_num < 0 || unit_num >= MAXUNITS) return;
     seq_unf_pending[unit_num] = 0;
@@ -5568,6 +5571,12 @@ static inline int seq_unf_finish_record(int32_t unit_num, FILE* filep) {
 static inline void list_dir_state_reset(int32_t unit_num) {
     if (unit_num < 0 || unit_num >= MAXUNITS) return;
     lf_list_dir_null_remaining[unit_num] = 0;
+}
+
+LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
+    if (unit_num >= 0 && unit_num < MAXUNITS) {
+        lf_child_io_mode[unit_num] = is_child;
+    }
 }
 
 // Pre-connect standard Fortran units at program startup.
@@ -5628,6 +5637,21 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[2].pad_mode = 1;
 
     last_index_used = 2;
+}
+
+LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
+    _lfortran_init_standard_units();
+    bool unit_file_bin;
+    int access_id;
+    bool read_access, write_access;
+    int delim;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
+        &access_id, &read_access, &write_access, &delim, NULL, NULL, NULL,
+        NULL, NULL, NULL, NULL);
+    if (!filep) {
+        filep = stdout;
+    }
+    fprintf(filep, "\n");
 }
 
 static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
@@ -11367,7 +11391,10 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             internal_free(combined);
         } else {
             // Sequential / stream access: write as before
-            if (end != NULL) {
+            // In child I/O mode (DTIO), suppress the record terminator
+            bool is_child = (unit_num >= 0 && unit_num < MAXUNITS &&
+                             lf_child_io_mode[unit_num]);
+            if (end != NULL && !is_child) {
                 if(open_delim != '\0') {
                     fprintf(filep, "%c%.*s%c%.*s",
                         open_delim, (int)str_len, str, close_delim,
