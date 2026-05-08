@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stderr": "run-string_assignment_01-9537046.stderr",
+    "stderr_hash": "6de9ca81534ea96d935361bacad9712025c842b6dcb185b616553594",
+    "returncode": 10
 }

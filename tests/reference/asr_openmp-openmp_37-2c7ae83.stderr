@@ -1,0 +1,5 @@
+semantic error: The clause variable `ix)` is not declared or not a variable
+  --> tests/../integration_tests/openmp_37.f90:10:2
+   |
+10 |  !$omp parallel do private(iy, ix)
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

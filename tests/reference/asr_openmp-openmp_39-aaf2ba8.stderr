@@ -1,0 +1,5 @@
+semantic error: The clause variable `iz)` is not declared or not a variable
+  --> tests/../integration_tests/openmp_39.f90:11:1
+   |
+11 | !$omp parallel do collapse(2) private(iy, ix, iz)
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -1,0 +1,5 @@
+semantic error: The clause variable `array)` is not declared or not a variable
+  --> tests/../integration_tests/openmp_46.f90:14:3
+   |
+14 |   !$OMP PARALLEL SECTIONS SHARED(array)
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

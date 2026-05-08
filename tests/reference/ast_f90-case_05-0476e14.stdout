@@ -1,7 +1,7 @@
 program case_05
 implicit none
 
-! local variable declaration
+! local variable declaration
 character :: grade = "B"
 
 select case (grade)

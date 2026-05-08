@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-infer_realloc_disabled_01-25a8068.stderr",
-    "stderr_hash": "cb8946869603ac1adefbf48a223c25305c3921c58de9c776de3ae908",
-    "returncode": 1
+    "stderr_hash": "84c0feddc151fdb783dfa6b717a1334bbc99daeb1528d72b610ca8c0",
+    "returncode": 10
 }

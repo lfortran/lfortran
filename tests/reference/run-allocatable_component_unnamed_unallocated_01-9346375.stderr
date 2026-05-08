@@ -1,5 +1,3 @@
-runtime error: Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
-  --> tests/../integration_tests/allocatable_component_unnamed_unallocated_01.f90:10:5
-   |
-10 |     x(1)%arr = [1, 2, 3]
-   |     ^^^^^^^^ LHS not allocated here
+The command 'link /NOLOGO /OUT:allocatable_component_unnamed_unallocated_01.out C:\Users\srinj\AppData\Local\Temp\allocatable_component_unnamed_unallocated_01.tmp_FY2MVPA70JoK7WLtZwBEO6.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

@@ -1,0 +1,5 @@
+[0;31;1msemantic error[0;0m[0;1m: The clause variable `b)` is not declared or not a variable[0;0m
+  [0;34;1m-->[0;0m tests/../integration_tests/openmp_72.f90:10:5
+   [0;34;1m|[0;0m
+[0;34;1m10 |[0;0m     !$omp target map(tofrom:a, b)
+   [0;34;1m|[0;0m     [0;31;1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [0;0m

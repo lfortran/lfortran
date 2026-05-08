@@ -1,0 +1,5 @@
+semantic error: The clause variable `tid)` is not declared or not a variable
+  --> tests/../integration_tests/openmp_44.f90:26:3
+   |
+26 |   !$omp parallel sections reduction(+:tid)
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -1,5 +1,3 @@
-runtime error: Array 'x' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
- --> tests/errors/infer_realloc_disabled_01.f90:3:5
-  |
-3 |     x = [1, 2, 3]
-  |     ^ 'x' not allocated here
+The command 'link /NOLOGO /OUT:infer_realloc_disabled_01.out C:\Users\srinj\AppData\Local\Temp\infer_realloc_disabled_01.tmp_SslAPiy5dxGGELkFrhNNe6.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

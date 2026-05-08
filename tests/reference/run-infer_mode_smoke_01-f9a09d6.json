@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stderr": "run-infer_mode_smoke_01-f9a09d6.stderr",
+    "stderr_hash": "5aba98dba95bbeef4e64c2b8e2641797192872387b66c7b8a2031ad0",
+    "returncode": 10
 }

@@ -297,7 +297,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "! Thanks to https://stackoverflow.com/a/57015100/1876449"
+                    "! Thanks to https://stackoverflow.com/a/57015100/1876449\r"
                 )]
             )
         )

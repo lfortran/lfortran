@@ -330,7 +330,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "!test-issue 746"
+                    "!test-issue 746\r"
                 )
                 (EndOfLine)]
             )

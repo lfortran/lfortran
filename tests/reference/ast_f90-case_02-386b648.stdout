@@ -1,7 +1,7 @@
 program case_02
 implicit none
 
-! local variable declaration
+! local variable declaration
 integer :: marks, out
 marks = 81
 
@@ -42,7 +42,7 @@ if (out /= 1) then
     error stop
 end if
 
-! case default at the top
+! case default at the top
 select case (marks)
 
     case default
@@ -69,7 +69,7 @@ select case (marks)
 end select
 print *, "Your marks are ", marks
 
-! case default in the middle
+! case default in the middle
 select case (marks)
 
     case (91:100)

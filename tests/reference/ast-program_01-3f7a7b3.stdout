@@ -122,16 +122,16 @@
             (TriviaNode
                 [(EndOfLine)
                 (Comment
-                    "! Returns a psuedorandom scalar drawn from the standard normal distribution."
+                    "! Returns a psuedorandom scalar drawn from the standard normal distribution.\r"
                 )
                 (Comment
-                    "!"
+                    "!\r"
                 )
                 (Comment
-                    "! [1] Marsaglia, G., & Bray, T. A. (1964). A Convenient Method for"
+                    "! [1] Marsaglia, G., & Bray, T. A. (1964). A Convenient Method for\r"
                 )
                 (Comment
-                    "!       Generating Normal Variables. SIAM Review, 6(3), 260–264."
+                    "!       Generating Normal Variables. SIAM Review, 6(3), 260–264.\r"
                 )]
                 [(EndOfLine)
                 (EndOfLine)]

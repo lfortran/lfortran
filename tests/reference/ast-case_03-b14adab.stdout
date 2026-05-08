@@ -10,7 +10,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "! local variable declaration"
+                    "! local variable declaration\r"
                 )]
             )
         )]

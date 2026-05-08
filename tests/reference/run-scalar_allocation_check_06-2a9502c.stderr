@@ -1,5 +1,3 @@
-runtime error: Argument 1 is unallocated.
- --> tests/errors/scalar_allocation_check_06.f90:6:14
-  |
-6 |     print *, x
-  |              ^ This is unallocated
+The command 'link /NOLOGO /OUT:scalar_allocation_check_06.out C:\Users\srinj\AppData\Local\Temp\scalar_allocation_check_06.tmp_pCjahXIPp4f24kyhpMv0Z0.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

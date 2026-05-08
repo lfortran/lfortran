@@ -57,7 +57,7 @@ if (j /= 3) then
     error stop
 end if
 
-!test-issue 746
+!test-issue 746
 
 k = 2
 do i = 1, 10, k

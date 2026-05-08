@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-realloc_lhs_20-ef3baef.stderr",
-    "stderr_hash": "cd90e7a73795c4d91de7ad88218f33a80869be40bb49c6d545c246f9",
-    "returncode": 1
+    "stderr_hash": "524a43da14444d7843ffb0e50d2f8aaa4cedb11a445bdc54df20db31",
+    "returncode": 10
 }

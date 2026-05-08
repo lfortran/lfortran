@@ -1,1 +1,3 @@
-ERROR STOP hi
+The command 'link /NOLOGO /OUT:error_stop_04.out C:\Users\srinj\AppData\Local\Temp\error_stop_04.tmp_yjdDF8NLnlky7p665otsxh.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

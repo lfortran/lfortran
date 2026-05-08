@@ -15,3 +15,6 @@ warning: Assuming implicit save attribute for variable declaration
   |
 9 |         integer :: x = 5
   |                    ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+The command 'link /NOLOGO /OUT:style1.out C:\Users\srinj\AppData\Local\Temp\style1.tmp_XDMaxTqJF3iw83btwcmtrM.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

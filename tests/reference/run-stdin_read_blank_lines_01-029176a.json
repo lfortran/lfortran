@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stderr": "run-stdin_read_blank_lines_01-029176a.stderr",
+    "stderr_hash": "a25369d65e85d1609b02d688669b7956a7f808f23474ae8da52a4536",
+    "returncode": 10
 }

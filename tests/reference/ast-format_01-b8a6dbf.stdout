@@ -133,22 +133,22 @@
         )
         (Format
             130
-            " 10X,                                                   'keyword Input Echo - Values from input or default', / ,80A, / "
+            " 10X,                                                   &\r\n               'keyword Input Echo - Values from input or default', / ,&\r\n                80A, / "
             ()
         )
         (Format
             131
-            " 10X,                                                   'keyword Input Echo - Values from input or default', / ,80A, /"
+            " 10X,                                                   &\r\n               'keyword Input Echo - Values from input or default', / ,&\r\n                80A, /"
             ()
         )
         (Format
             158
-            " 4X, 'epsi = ', ES11.4, /, 4X, 'iitm = ', I3, /,        4X, 'oitm = ', I4, /, 4X, 'timedep = ', I1, /,         4X, 'swp_typ = ', I1, /, 4X, 'multiswp = ', I1, /,     4X, 'angcpy = ', I1, /,  4X, 'it_det = ', I1, /,       4X, 'soloutp = ', I1, /, 4X, 'kplane = ', I4, /,       4X, 'popout = ', I1, /, 4X, 'fluxp = ', I1, /,         4X, 'fixup = ', I1, / "
+            " 4X, 'epsi = ', ES11.4, /, 4X, 'iitm = ', I3, /,        &\r\n                4X, 'oitm = ', I4, /, 4X, 'timedep = ', I1, /,         &\r\n                4X, 'swp_typ = ', I1, /, 4X, 'multiswp = ', I1, /,     &\r\n                4X, 'angcpy = ', I1, /,  4X, 'it_det = ', I1, /,       &\r\n                4X, 'soloutp = ', I1, /, 4X, 'kplane = ', I4, /,       &\r\n                4X, 'popout = ', I1, /, 4X, 'fluxp = ', I1, /,         &\r\n                4X, 'fixup = ', I1, / "
             ()
         )
         (Format
             161
-            " 'slgg(nmat,nmom,ng,ng) echo', /, 'Column-order loops:',' Mats (fastest ), Moments, Groups, Groups (slowest)' "
+            " 'slgg(nmat,nmom,ng,ng) echo', /, 'Column-order loops:',&\r\n                ' Mats (fastest ), Moments, Groups, Groups (slowest)' "
             ()
         )
         (Format
@@ -158,7 +158,7 @@
         )
         (Format
             221
-            " 4X, 'Group ', I3, 4X, ' Inner ', I5, 4X, ' Dfmxi ',    ES11.4, '     Fixup x/y/z/t ', 4(ES9.2,1x) "
+            " 4X, 'Group ', I3, 4X, ' Inner ', I5, 4X, ' Dfmxi ',    &\r\n                ES11.4, '     Fixup x/y/z/t ', 4(ES9.2,1x) "
             ()
         )
         (Format
@@ -173,7 +173,7 @@
         )
         (Format
             422
-            " /, 4X, 'Manufactured/Computed Solutions Max Diff=',    ES13.6 "
+            " /, 4X, 'Manufactured/Computed Solutions Max Diff=',    &\r\n                 ES13.6 "
             ()
         )
         (Format
@@ -228,7 +228,7 @@
         )
         (Format
             600
-            "//,63x,'Internal',/, 1x,'Cell',3(5x,'Temp '), 7x,'P',8x,'Density',6x,'Energy', /,2x,'Num',6x,'(K)',7x,'(C)',7x,'(F)',6x,'(Pa)',6x, '(kg/m**3)',5x,'(J/kg)' "
+            "//,63x,'Internal',/, &\r\n           1x,'Cell',3(5x,'Temp '), 7x,'P',8x,'Density',6x,'Energy', &\r\n           /,2x,'Num',6x,'(K)',7x,'(C)',7x,'(F)',6x,'(Pa)',6x, &\r\n           '(kg/m**3)',5x,'(J/kg)' "
             ()
         )
         (Format
@@ -258,7 +258,7 @@
         )
         (Format
             650
-            " 5X, 'ng= ', I4, /                                      5X, 'mat_opt= ', I2, /                                 5X, 'src_opt= ', I2, /                                 5X, 'scatp= ', I2 "
+            " 5X, 'ng= ', I4, /                                      &\r\n                5X, 'mat_opt= ', I2, /                                 &\r\n                5X, 'src_opt= ', I2, /                                 &\r\n                5X, 'scatp= ', I2 "
             ()
         )
         (Format

@@ -4,7 +4,7 @@
         (TriviaNode
             [(EndOfLine)
             (Comment
-                "! Test parantheses in expressions"
+                "! Test parantheses in expressions\r"
             )]
             []
         )

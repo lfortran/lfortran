@@ -9,4 +9,6 @@ warning: Routine `exit` is a non-standard function
   |
 7 |         call exit(2)
   |         ^^^^^^^^^^^^ 
-STOP 2
+The command 'link /NOLOGO /OUT:exit2.out C:\Users\srinj\AppData\Local\Temp\exit2.tmp_0QpejR6YmqnuNkUvM4XhTL.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

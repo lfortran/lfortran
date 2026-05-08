@@ -31,7 +31,7 @@
                 []
                 [(EndOfLine)
                 (Comment
-                    "!     (a) plain DO loop: no label on `do`, no label on `end do`."
+                    "!     (a) plain DO loop: no label on `do`, no label on `end do`.\r"
                 )]
             )
         )]
@@ -76,10 +76,10 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "!     (b) Label only on `end do`. `go to 1` branches to the loop"
+                    "!     (b) Label only on `end do`. `go to 1` branches to the loop\r"
                 )
                 (Comment
-                    "!     terminator, which cycles the iteration (F2018 11.1.7.5)."
+                    "!     terminator, which cycles the iteration (F2018 11.1.7.5).\r"
                 )]
             )
         )
@@ -140,7 +140,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "!     (c) Labels on both `do` and `end do` (modern labelled DO)."
+                    "!     (c) Labels on both `do` and `end do` (modern labelled DO).\r"
                 )]
             )
         )
@@ -201,7 +201,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "!     (d) Legacy `DO <label> ... <label> CONTINUE` form."
+                    "!     (d) Legacy `DO <label> ... <label> CONTINUE` form.\r"
                 )]
             )
         )

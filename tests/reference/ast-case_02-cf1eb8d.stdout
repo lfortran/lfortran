@@ -10,7 +10,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "! local variable declaration"
+                    "! local variable declaration\r"
                 )]
             )
         )]
@@ -246,7 +246,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "! case default at the top"
+                    "! case default at the top\r"
                 )]
             )
         )
@@ -386,7 +386,7 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "! case default in the middle"
+                    "! case default in the middle\r"
                 )]
             )
         )

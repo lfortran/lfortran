@@ -1,5 +1,3 @@
-runtime error: Argument 1 of subroutine ff is unallocated.
- --> tests/errors/scalar_allocation_check_04.f90:3:13
-  |
-3 |     call ff(xx)
-  |             ^^ This is unallocated
+The command 'link /NOLOGO /OUT:scalar_allocation_check_04.out C:\Users\srinj\AppData\Local\Temp\scalar_allocation_check_04.tmp_SZT8MxPFqcYscKaIg3sS9w.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

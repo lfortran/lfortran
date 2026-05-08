@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "run-allocatable_component_reshape_unallocated_01-15046b1.stderr",
-    "stderr_hash": "f189ede90d14e98aef9467208e1527a7e6af77b41a51a16c2f9cf387",
-    "returncode": 1
+    "stderr_hash": "4670fecf08374cfd08e512c2281e47b3fb11c6c18f78f464ded817d8",
+    "returncode": 10
 }

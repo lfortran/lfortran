@@ -1,0 +1,5 @@
+syntax error: Newline is unexpected here
+  --> tests/../integration_tests/line_continuation_03.f90:52:7
+   |
+52 |     i
+   |       ^ 

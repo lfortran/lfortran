@@ -51,7 +51,7 @@
                     ()
                     (TriviaNode
                         [(EOLComment
-                            "! Module procedure interface body for sub1"
+                            "! Module procedure interface body for sub1\r"
                         )]
                         []
                     )
@@ -122,7 +122,7 @@
             (TriviaNode
                 []
                 [(EOLComment
-                    "! Use association of module m1"
+                    "! Use association of module m1\r"
                 )
                 (EndOfLine)]
             )
@@ -149,7 +149,7 @@
                     ()
                     (TriviaNode
                         [(EOLComment
-                            "! Module procedure interface body for func1"
+                            "! Module procedure interface body for func1\r"
                         )]
                         [(EndOfLine)
                         (EndOfLine)]
@@ -174,7 +174,7 @@
                     ()
                     (TriviaNode
                         [(EOLComment
-                            "! Module procedure interface body for func2"
+                            "! Module procedure interface body for func2\r"
                         )]
                         []
                     )
@@ -241,7 +241,7 @@
             (TriviaNode
                 []
                 [(EOLComment
-                    "! Use association of module m1"
+                    "! Use association of module m1\r"
                 )]
             )
         )]
@@ -293,7 +293,7 @@
             (TriviaNode
                 []
                 [(EOLComment
-                    "! Use association of module m4"
+                    "! Use association of module m4\r"
                 )
                 (EndOfLine)]
             )
@@ -311,7 +311,7 @@
             ()
             (TriviaNode
                 [(EOLComment
-                    "! Implementation of sub1 declared in m1"
+                    "! Implementation of sub1 declared in m1\r"
                 )]
                 []
             )
@@ -401,7 +401,7 @@
             ()
             (TriviaNode
                 [(EOLComment
-                    "! Implementation of func1 declared in m2"
+                    "! Implementation of func1 declared in m2\r"
                 )]
                 []
             )
@@ -443,7 +443,7 @@
             ()
             (TriviaNode
                 [(EOLComment
-                    "! Implementation of func2 declared in m2"
+                    "! Implementation of func2 declared in m2\r"
                 )]
                 []
             )

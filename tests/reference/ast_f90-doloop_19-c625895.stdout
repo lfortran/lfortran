@@ -1,6 +1,6 @@
 program doloop_19
 integer :: i, s
-!     (a) plain DO loop: no label on `do`, no label on `end do`.
+!     (a) plain DO loop: no label on `do`, no label on `end do`.
 s = 0
 do i = 1, 5
     s = s + i
@@ -9,8 +9,8 @@ if (s /= 15) then
     error stop
 end if
 
-!     (b) Label only on `end do`. `go to 1` branches to the loop
-!     terminator, which cycles the iteration (F2018 11.1.7.5).
+!     (b) Label only on `end do`. `go to 1` branches to the loop
+!     terminator, which cycles the iteration (F2018 11.1.7.5).
 s = 0
 do i = 1, 5
     if (i == 3) then
@@ -22,7 +22,7 @@ if (s /= 12) then
     error stop
 end if
 
-!     (c) Labels on both `do` and `end do` (modern labelled DO).
+!     (c) Labels on both `do` and `end do` (modern labelled DO).
 s = 0
 do i = 1, 5
     if (i == 3) then
@@ -34,7 +34,7 @@ if (s /= 12) then
     error stop
 end if
 
-!     (d) Legacy `DO <label> ... <label> CONTINUE` form.
+!     (d) Legacy `DO <label> ... <label> CONTINUE` form.
 s = 0
 do i = 1, 5
     if (i == 3) then

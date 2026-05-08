@@ -1,0 +1,5 @@
+semantic error: The clause sections is not supported for parallel sections
+  --> tests/../integration_tests/openmp_45.f90:26:3
+   |
+26 |   !$omp parallel sections
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^ 

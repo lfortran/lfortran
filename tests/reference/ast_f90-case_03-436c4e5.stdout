@@ -1,7 +1,7 @@
 program case03
 implicit none
 
-! local variable declaration
+! local variable declaration
 integer :: marks
 integer, parameter :: a = 1, b = 2
 marks = 94

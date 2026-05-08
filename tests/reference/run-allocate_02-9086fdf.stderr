@@ -1,5 +1,3 @@
-runtime error: allocate with source= requires an allocated/associated polymorphic source expression
- --> tests/errors/allocate_02.f90:7:4
-  |
-7 |    allocate(obj, source = get_return())
-  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source expression is not allocated/associated
+The command 'link /NOLOGO /OUT:allocate_02.out C:\Users\srinj\AppData\Local\Temp\allocate_02.tmp_IJ9ApsSOjxZ1eULZape0xU.o $DIR\src\bin/../runtime\lfortran_runtime_static.lib' failed.
+Tip: If there is a linker issue, switch the linker using --linker=<CC> option or create an environment variable `export LFORTRAN_LINKER=<CC>`, where CC is clang or gcc
+Also, if required use --linker-path=<PATH>, where PATH has location to look for the linker executable

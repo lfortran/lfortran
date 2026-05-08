@@ -13,10 +13,10 @@ end do
 contains
 
 subroutine rand(x)
-! Returns a psuedorandom scalar drawn from the standard normal distribution.
-!
-! [1] Marsaglia, G., & Bray, T. A. (1964). A Convenient Method for
-!       Generating Normal Variables. SIAM Review, 6(3), 260–264.
+! Returns a psuedorandom scalar drawn from the standard normal distribution.
+!
+! [1] Marsaglia, G., & Bray, T. A. (1964). A Convenient Method for
+!       Generating Normal Variables. SIAM Review, 6(3), 260–264.
 real(dp), intent(out) :: x
 logical, save :: first = .true.
 real(dp), save :: u(2)
