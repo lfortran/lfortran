@@ -10,11 +10,13 @@ end interface
 
 contains
     function get_valid_newunit() result(unit)
-        integer, parameter :: LUN_MIN=0, LUN_MAX=1000
+        ! F2023 12.5.6.13: NEWUNIT= must return a negative unit number
+        ! that is not -1 and is not currently associated with any unit.
+        integer, parameter :: LUN_START=-10, LUN_MIN=-1000
         logical :: opened
-        integer(4) :: lun 
-        integer(4) :: unit ! no need for kind 8, we have limit of 1000 for now.
-        do lun=LUN_MIN,LUN_MAX
+        integer(4) :: lun
+        integer(4) :: unit
+        do lun=LUN_START,LUN_MIN,-1
             inquire(unit=lun,opened=opened)
             if (.not. opened) then
                 unit = lun
@@ -28,12 +30,14 @@ contains
     subroutine newunit_int_1(unit)
         implicit none
         integer(1), intent(out) :: unit
-        if(get_valid_newunit() >= 2**8) then
-            print *, "integer(KIND=1) & 
-            &is has small limit. Use larger kind for the unit number"
+        integer(4) :: u
+        u = get_valid_newunit()
+        if (u < -2**7) then
+            print *, "integer(KIND=1) &
+            &has small range. Use larger kind for the unit number"
             error stop
         end if
-        unit =  INT(get_valid_newunit(),1)
+        unit =  INT(u,1)
     end subroutine newunit_int_1
 
     subroutine newunit_int_2(unit)
