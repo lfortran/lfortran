@@ -324,11 +324,8 @@ class ASRToLLVMVisitor;
             llvm::Value* CreateInBoundsGEP2(llvm::Type *t  , llvm::Value *x, const std::vector<llvm::Value *> &idx);
             llvm::Value* CreateInBoundsGEP2(ASR::ttype_t *t, llvm::Value *x, const std::vector<llvm::Value *> &idx);
 
-            llvm::AllocaInst* CreateAlloca(llvm::Type* type,
+            llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Type* type,
                 llvm::Value* size=nullptr, std::string Name="",
-                bool is_llvm_ptr=false);
-            llvm::AllocaInst* CreateAlloca(llvm::IRBuilder<> &builder,
-                llvm::Type* type, llvm::Value* size=nullptr, std::string Name="",
                 bool is_llvm_ptr=false);
 
             llvm::Value* allocate_string_descriptor_on_heap(llvm::Type* string_desc_type);
@@ -399,12 +396,12 @@ class ASRToLLVMVisitor;
 
                         // Allocate and populate labels and spans
                         llvm::Type *label_arr_type = llvm::ArrayType::get(label_type, labels.size());
-                        llvm::Value *labels_v = builder->CreateAlloca(label_arr_type);
+                        llvm::Value *labels_v = llvm_utils_->CreateEntryBlockAlloca(label_arr_type);
                         for (size_t i = 0; i < labels.size(); i++) {
                             llvm::Value *idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
 
                             llvm::Type *span_arr_type = llvm::ArrayType::get(span_type, labels[i].spans.size());
-                            llvm::Value *spans_v = builder->CreateAlloca(span_arr_type);
+                            llvm::Value *spans_v = llvm_utils_->CreateEntryBlockAlloca(span_arr_type);
                             for (size_t j = 0; j < labels[i].spans.size(); j++) {
                                 llvm::Value *span_idx = llvm::ConstantInt::get(context, llvm::APInt(32, j));
                                 llvm::Value *span_j = LLVMUtils::CreateInBoundsGEP2(span_arr_type, spans_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), span_idx});
@@ -1068,7 +1065,7 @@ class ASRToLLVMVisitor;
                                     ptr, elem_llvm_type->getPointerTo());
                                 int64_t array_size = ASRUtils::get_fixed_size_of_array(type);
                                 auto iter_type = llvm::Type::getInt64Ty(builder_->getContext());
-                                auto* iter = builder_->CreateAlloca(iter_type, nullptr, "final_iter");
+                                auto* iter = llvm_utils_->CreateEntryBlockAlloca(iter_type, nullptr, "final_iter");
                                 builder_->CreateStore(
                                     llvm::ConstantInt::get(iter_type, -1, true), iter);
                                 auto cond_fn = [&]() {
@@ -1514,7 +1511,7 @@ class ASRToLLVMVisitor;
                     llvm_utils_->create_gep2(list_llvm_type, ptr, 2));
 
                 auto iter_type = llvm::Type::getInt32Ty(builder_->getContext());
-                auto* iter = builder_->CreateAlloca(iter_type, nullptr, "list_fin_iter");
+                auto* iter = llvm_utils_->CreateEntryBlockAlloca(iter_type, nullptr, "list_fin_iter");
                 builder_->CreateStore(
                     llvm::ConstantInt::get(iter_type, uint64_t(-1), true), iter);
 
@@ -1570,7 +1567,7 @@ class ASRToLLVMVisitor;
                         llvm_utils_->character_type,
                         llvm_utils_->create_gep2(dict_llvm_type, ptr, 4));
 
-                    auto* iter = builder_->CreateAlloca(i32_type, nullptr, "dict_sc_fin_i");
+                    auto* iter = llvm_utils_->CreateEntryBlockAlloca(i32_type, nullptr, "dict_sc_fin_i");
                     builder_->CreateStore(
                         llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
 
@@ -1600,7 +1597,7 @@ class ASRToLLVMVisitor;
                                              dict_t->m_value_type, nullptr, false);
                                 }
                                 // Walk chain to finalize elements in chain nodes
-                                auto* chain_itr = builder_->CreateAlloca(
+                                auto* chain_itr = llvm_utils_->CreateEntryBlockAlloca(
                                     llvm_utils_->character_type, nullptr, "chain_itr");
                                 builder_->CreateStore(
                                     llvm_utils_->CreateLoad2(llvm_utils_->character_type,
@@ -1672,7 +1669,7 @@ class ASRToLLVMVisitor;
                         llvm_utils_->character_type,
                         llvm_utils_->create_gep2(dict_llvm_type, ptr, 3));
 
-                    auto* iter = builder_->CreateAlloca(i32_type, nullptr, "dict_lp_fin_i");
+                    auto* iter = llvm_utils_->CreateEntryBlockAlloca(i32_type, nullptr, "dict_lp_fin_i");
                     builder_->CreateStore(
                         llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
 
@@ -1818,7 +1815,7 @@ class ASRToLLVMVisitor;
                     finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
 
                 auto const iter_type = llvm::Type::getInt64Ty(builder_->getContext());
-                auto const iter = builder_->CreateAlloca(iter_type, nullptr, "upoly_arr_iter");
+                auto const iter = llvm_utils_->CreateEntryBlockAlloca(iter_type, nullptr, "upoly_arr_iter");
                 builder_->CreateStore(llvm::ConstantInt::get(iter_type, -1, true), iter);
 
                 auto const cond_fn = [&]() {
@@ -1856,7 +1853,7 @@ class ASRToLLVMVisitor;
          */ 
         void free_array_structs(llvm::Value* const data_ptr, ASR::StructType_t* const struct_t, ASR::Struct_t* const struct_sym, llvm::Value* array_size){
             auto const iter_llvm_type =llvm::Type::getInt64Ty(builder_->getContext());
-            auto const iter = builder_->CreateAlloca(iter_llvm_type, nullptr, "arrSize_iter");
+            auto const iter = llvm_utils_->CreateEntryBlockAlloca(iter_llvm_type, nullptr, "arrSize_iter");
             builder_->CreateStore(llvm::ConstantInt::get(iter_llvm_type, -1 , true), iter);
 
             auto const cond_fn = [&](){ // while(++arrSize_iter < array_size)

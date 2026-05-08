@@ -2820,7 +2820,7 @@ public:
 	                    diag::Label("", {m_dim[i].loc})}));
 	            throw SemanticAbort();
 	        }
-	        ASR::dimension_t dim_dummy; dims.push_back(al, dim_dummy);
+	        ASR::dimension_t dim_dummy{}; dims.push_back(al, dim_dummy);
 	        ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
 	        dim.m_length = nullptr; dim.m_start = nullptr;
 	        dim.loc = m_dim[i].loc;
