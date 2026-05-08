@@ -6169,8 +6169,14 @@ public:
                     llvm::Function::ExternalLinkage,
                     "_lfortran_internal_alloc_finalize", module.get());
             }
-            builder->CreateCall(fn_finalize, {});
+            
+            if (compiler_options.detect_leaks) {
+                llvm::appendToGlobalDtors(*module, fn_finalize, 300);
+            } else {
+                builder->CreateCall(fn_finalize, {});
+            }
         }
+        
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = module->getFunction("dbg_report");
             if(!fn) {
@@ -6180,7 +6186,7 @@ public:
                     llvm::Function::ExternalLinkage, "dbg_report", module.get());
             }
             
-            llvm::appendToGlobalDtors(*module, fn, 65535);
+            llvm::appendToGlobalDtors(*module, fn, 200);
         }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
