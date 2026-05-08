@@ -396,12 +396,12 @@ class ASRToLLVMVisitor;
 
                         // Allocate and populate labels and spans
                         llvm::Type *label_arr_type = llvm::ArrayType::get(label_type, labels.size());
-                        llvm::Value *labels_v = llvm_utils_->CreateEntryBlockAlloca(label_arr_type);
+                        llvm::Value *labels_v = CreateEntryBlockAlloca(label_arr_type);
                         for (size_t i = 0; i < labels.size(); i++) {
                             llvm::Value *idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
 
                             llvm::Type *span_arr_type = llvm::ArrayType::get(span_type, labels[i].spans.size());
-                            llvm::Value *spans_v = llvm_utils_->CreateEntryBlockAlloca(span_arr_type);
+                            llvm::Value *spans_v = CreateEntryBlockAlloca(span_arr_type);
                             for (size_t j = 0; j < labels[i].spans.size(); j++) {
                                 llvm::Value *span_idx = llvm::ConstantInt::get(context, llvm::APInt(32, j));
                                 llvm::Value *span_j = LLVMUtils::CreateInBoundsGEP2(span_arr_type, spans_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), span_idx});

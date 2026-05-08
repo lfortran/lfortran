@@ -1852,7 +1852,7 @@ namespace LCompilers {
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
-    llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::Type* type,
+    llvm::AllocaInst* LLVMUtils::CreateEntryBlockAlloca(llvm::Type* type,
             llvm::Value* size, std::string Name, bool
 #if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
@@ -1877,7 +1877,7 @@ namespace LCompilers {
         return alloca;
     }
 
-    llvm::AllocaInst* LLVMUtils::CreateAlloca(llvm::IRBuilder<> &builder,
+    llvm::AllocaInst* LLVMUtils::CreateEntryBlockAlloca(llvm::IRBuilder<> &builder,
             llvm::Type* type, llvm::Value* size, std::string Name, bool
 #if LLVM_VERSION_MAJOR >= 15
             is_llvm_ptr
@@ -2144,9 +2144,9 @@ namespace LCompilers {
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, &module);
         }
-        llvm::AllocaInst *pleft_arg = LLVMUtils::CreateAlloca(character_type);
+        llvm::AllocaInst *pleft_arg = LLVMUtils::CreateEntryBlockAlloca(character_type);
         LLVM::CreateStore(*builder, left_arg, pleft_arg);
-        llvm::AllocaInst *pright_arg = LLVMUtils::CreateAlloca(character_type);
+        llvm::AllocaInst *pright_arg = LLVMUtils::CreateEntryBlockAlloca(character_type);
         LLVM::CreateStore(*builder, right_arg, pright_arg);
         std::vector<llvm::Value*> args = {pleft_arg, pright_arg};
         return builder->CreateCall(fn, args);
@@ -2269,7 +2269,7 @@ namespace LCompilers {
         } else {
             throw LCompilersException("Unhandled string physical type");
         }
-        llvm::Value *s_alloc = builder->CreateAlloca(llvm::Type::getInt8Ty(context), builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
+        llvm::Value *s_alloc = builder->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context), builder->CreateSExtOrTrunc(len, llvm::Type::getInt32Ty(context)));
         builder->CreateStore(s_alloc, str_data);
         builder->CreateStore(convert_kind(len, llvm::Type::getInt64Ty(context)), str_len);
     }
@@ -2556,7 +2556,7 @@ namespace LCompilers {
             convert_kind(str_len   , llvm::Type::getInt64Ty(context)));
 
         llvm::Value* allocated_mem{};
-        allocated_mem = builder->CreateAlloca(llvm::Type::getInt8Ty(context), whole_memory_needed);
+        allocated_mem = builder->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context), whole_memory_needed);
         builder->CreateStore(allocated_mem, get_string_data(str_type, str, true));
     }
 
@@ -2656,7 +2656,7 @@ namespace LCompilers {
 
         if (dest_str_type->m_physical_type == ASR::CChar) {
             lhs_data = dest;
-            lhs_len = builder->CreateAlloca(
+            lhs_len = builder->CreateEntryBlockAlloca(
                 llvm::Type::getInt64Ty(context), nullptr, "cchar_len");
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
@@ -2983,7 +2983,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
     llvm::Value* LLVMUtils::is_equal_pointer_string(llvm::Value* left, llvm::Value* right)
     {
-        str_cmp_itr = LLVMUtils::CreateAlloca(llvm::Type::getInt32Ty(context));
+        str_cmp_itr = LLVMUtils::CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         llvm::Value* null_char = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
                                                     llvm::APInt(8, '\0'));
         llvm::Value* idx = str_cmp_itr;
@@ -3070,7 +3070,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type* const res_type = llvm::Type::getInt1Ty(context);
         llvm::Type* const i64_t = llvm::Type::getInt64Ty(context);
         llvm::Type* const i8_t = llvm::Type::getInt8Ty(context);
-        llvm::Value* const is_matching_strings = builder->CreateAlloca(res_type, nullptr, "is_matching_strings");
+        llvm::Value* const is_matching_strings = builder->CreateEntryBlockAlloca(res_type, nullptr, "is_matching_strings");
         builder->CreateStore(llvm::ConstantInt::get(res_type, true), is_matching_strings);
 
 
@@ -3089,7 +3089,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
             start_new_block(elseBB);
             { // else (while loop)
-                llvm::Value* i = builder->CreateAlloca(i64_t, nullptr, "i");
+                llvm::Value* i = builder->CreateEntryBlockAlloca(i64_t, nullptr, "i");
                 builder->CreateStore(llvm::ConstantInt::get(i64_t, llvm::APInt(64, 0)), i);
 
                 llvm::BasicBlock* loop_head = llvm::BasicBlock::Create(context, "loop.head");
@@ -3246,7 +3246,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 return builder->CreateFCmp(pred, left, right);
             }
             case ASR::ttypeType::String: {
-                str_cmp_itr = LLVMUtils::CreateAlloca(llvm::Type::getInt32Ty(context));
+                str_cmp_itr = LLVMUtils::CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
                 llvm::Value* null_char = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
                                                             llvm::APInt(8, '\0'));
                 llvm::Value* idx = str_cmp_itr;
@@ -4256,7 +4256,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             // TODO: Should be created outside the user loop and not here.
             // LLVMList should treat them as data members and create them
             // only if they are NULL
-            llvm::AllocaInst *pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+            llvm::AllocaInst *pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
             LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                                llvm::APInt(32, 0)), pos_ptr);
 
@@ -4358,8 +4358,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     void LLVMDictSeparateChaining::deepcopy_key_value_pair_linked_list(ASR::expr_t* src_expr,
         llvm::Value* srci, llvm::Value* desti, llvm::Value* dest_key_value_pairs,
         ASR::Dict_t* dict_type, llvm::Module* module) {
-        src_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        dest_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        src_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        dest_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
         llvm::Type* key_value_pair_type = get_key_value_pair_type(dict_type->m_key_type, dict_type->m_value_type)->getPointerTo();
         LLVM::CreateStore(*builder,
             builder->CreateBitCast(srci, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -4458,7 +4458,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     void LLVMDictSeparateChaining::write_key_value_pair_linked_list(
         ASR::expr_t* dict_expr, llvm::Value* kv_ll, llvm::Value* dict, llvm::Value* capacity,
         ASR::ttype_t* m_key_type, ASR::ttype_t* m_value_type, llvm::Module* module) {
-        src_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        src_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
         llvm::Type* key_value_pair_type = get_key_value_pair_type(m_key_type, m_value_type)->getPointerTo();
         LLVM::CreateStore(*builder,
             builder->CreateBitCast(kv_ll, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -4560,8 +4560,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         dest_key_value_pairs = builder->CreateBitCast(
             dest_key_value_pairs,
             get_key_value_pair_type(dict_type->m_key_type, dict_type->m_value_type)->getPointerTo());
-        copy_itr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        next_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        copy_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        next_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         llvm::Value* llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
         LLVM::CreateStore(*builder, llvm_zero, copy_itr);
         LLVM::CreateStore(*builder, src_capacity, next_ptr);
@@ -4649,7 +4649,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 get_pointer_to_keymask(
                     dict_type->m_key_type, dict_type->m_value_type, dict));
 
-            auto* iter = builder->CreateAlloca(i32_type, nullptr, "free_sc_i");
+            auto* iter = builder->CreateEntryBlockAlloca(i32_type, nullptr, "free_sc_i");
             builder->CreateStore(
                 llvm::ConstantInt::get(i32_type, uint64_t(-1), true), iter);
 
@@ -4690,7 +4690,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                             llvm_utils->lfortran_free(data_ptr);
                         }
                         // Walk chain nodes and free their string data
-                        auto* chain_itr_var = builder->CreateAlloca(
+                        auto* chain_itr_var = builder->CreateEntryBlockAlloca(
                             llvm_utils->character_type, nullptr, "free_chain_itr");
                         builder->CreateStore(
                             llvm_utils->CreateLoad2(llvm_utils->character_type,
@@ -4831,8 +4831,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* key, llvm::Value* key_list,
         llvm::Value* key_mask, llvm::Module* module,
         ASR::ttype_t* key_asr_type, bool for_read) {
-        pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        is_key_matching_var = llvm_utils->CreateAlloca(llvm::Type::getInt1Ty(context));
+        pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        is_key_matching_var = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt1Ty(context));
         LLVM::CreateStore(*builder, key_hash, pos_ptr);
         std::string key_type_code = ASRUtils::get_type_code(key_asr_type);
 
@@ -4953,9 +4953,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          *
          */
         if( !for_read ) {
-            pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+            pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         }
-        is_key_matching_var = llvm_utils->CreateAlloca(llvm::Type::getInt1Ty(context));
+        is_key_matching_var = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt1Ty(context));
 
         LLVM::CreateStore(*builder, key_hash, pos_ptr);
         std::string key_type_code = ASRUtils::get_type_code(key_asr_type);
@@ -5061,9 +5061,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * // now, chain_itr either points to kv or is nullptr
          *
          */
-        chain_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        chain_itr_prev = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        is_key_matching_var = llvm_utils->CreateAlloca(llvm::Type::getInt1Ty(context));
+        chain_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        chain_itr_prev = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        is_key_matching_var = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt1Ty(context));
 
         LLVM::CreateStore(*builder,
                 llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()), chain_itr_prev);
@@ -5451,7 +5451,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             ASRUtils::get_type_code(value_asr_type)
         );
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
-        llvm::Value* result = llvm_utils->CreateAlloca(value_type);
+        llvm::Value* result = llvm_utils->CreateEntryBlockAlloca(value_type);
         _check_key_present_or_default(dict_expr, module, key, key_list, key_asr_type, value_list,
                                         value_asr_type, pos, def_value, result);
         return result;
@@ -5495,7 +5495,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
-        pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
@@ -5571,7 +5571,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
-        pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
@@ -5623,13 +5623,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* key_mask
             = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(key_asr_type, value_asr_type, dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
-        pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         std::pair<std::string, std::string> llvm_key = std::make_pair(
             ASRUtils::get_type_code(key_asr_type),
             ASRUtils::get_type_code(value_asr_type)
         );
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
-        llvm::Value* result = llvm_utils->CreateAlloca(value_type);
+        llvm::Value* result = llvm_utils->CreateEntryBlockAlloca(value_type);
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
@@ -5684,7 +5684,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             ASRUtils::get_type_code(value_asr_type)
         );
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
-        tmp_value_ptr = llvm_utils->CreateAlloca(value_type);
+        tmp_value_ptr = llvm_utils->CreateEntryBlockAlloca(value_type);
         llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr);
         llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_struct_type->getPointerTo());
         llvm::Value* value = llvm_utils->CreateLoad2(value_type, llvm_utils->create_gep2(kv_struct_type, kv_struct, 1));
@@ -5724,7 +5724,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         );
 
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
-        tmp_value_ptr = llvm_utils->CreateAlloca(value_type);
+        tmp_value_ptr = llvm_utils->CreateEntryBlockAlloca(value_type);
         llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
             llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key_mask, key_hash));
         llvm::Value* does_kv_exists = builder->CreateICmpEQ(key_mask_value,
@@ -5769,7 +5769,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             ASRUtils::get_type_code(value_asr_type)
         );
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
-        tmp_value_ptr = llvm_utils->CreateAlloca(value_type);
+        tmp_value_ptr = llvm_utils->CreateEntryBlockAlloca(value_type);
         llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), llvm_utils->create_ptr_gep2(dict_Type, key_mask, key_hash));
         llvm::Value* does_kv_exists = builder->CreateICmpEQ(key_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
@@ -5796,9 +5796,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                         llvm::APInt(8, '\0'));
         llvm::Value* p = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 31));
         llvm::Value* m = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 100000009));
-        hash_value = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
-        hash_iter = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
-        polynomial_powers = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
+        hash_value = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
+        hash_iter = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
+        polynomial_powers = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
         LLVM::CreateStore(*builder,
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
             hash_value);
@@ -5859,7 +5859,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* str_data, *str_len;
 
         if (key->getType() == llvm_utils->string_descriptor) {
-            llvm::Value* tmp = llvm_utils->CreateAlloca(llvm_utils->string_descriptor);
+            llvm::Value* tmp = llvm_utils->CreateEntryBlockAlloca(llvm_utils->string_descriptor);
             builder->CreateStore(key, tmp);
             key = tmp;
         }
@@ -5868,9 +5868,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Value* p = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 31));
         llvm::Value* m = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 100000009));
-        hash_value = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
-        hash_iter = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
-        polynomial_powers = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
+        hash_value = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
+        hash_iter = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
+        polynomial_powers = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
         LLVM::CreateStore(*builder,
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
             hash_value);
@@ -6009,12 +6009,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Type* dict_Type = get_dict_type(key_type_code, value_type_code, 0, 0, key_llvm_type, value_llvm_type);
         llvm::Value* key_list = get_key_list(dict_Type, dict);
-        llvm::Value* new_key_list = llvm_utils->CreateAlloca(llvm_utils->list_api->get_list_type(key_llvm_type,
+        llvm::Value* new_key_list = llvm_utils->CreateEntryBlockAlloca(llvm_utils->list_api->get_list_type(key_llvm_type,
                                                           key_type_code, key_type_size));
         llvm_utils->list_api->list_init(key_type_code, new_key_list, module, capacity, capacity);
 
         llvm::Value* value_list = get_value_list(dict_Type, dict);
-        llvm::Value* new_value_list = llvm_utils->CreateAlloca(llvm_utils->list_api->get_list_type(value_llvm_type,
+        llvm::Value* new_value_list = llvm_utils->CreateEntryBlockAlloca(llvm_utils->list_api->get_list_type(value_llvm_type,
                                                             value_type_code, value_type_size));
         llvm_utils->list_api->list_init(value_type_code, new_value_list, module, capacity, capacity);
 
@@ -6029,7 +6029,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                                                 get_pointer_to_capacity_using_type(key_asr_type, value_asr_type, dict));
-        idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        idx_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
             llvm::APInt(32, 0)), idx_ptr);
 
@@ -6116,12 +6116,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         [[maybe_unused]] ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Module* module,
         ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type) {
-        old_capacity = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        old_occupancy = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        old_number_of_buckets_filled = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        old_key_value_pairs = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        old_key_mask = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        old_capacity = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        old_occupancy = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        old_number_of_buckets_filled = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        idx_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        old_key_value_pairs = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        old_key_mask = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
         llvm::Type* dict_type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
         llvm::Type* kv_pair_type = get_key_value_pair_type(key_asr_type, value_asr_type);
         llvm::Value* capacity_ptr = get_pointer_to_capacity(dict_type, dict);
@@ -6458,7 +6458,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(nullptr, dict_type->m_value_type, module);
 
         if( get_pointer ) {
-            llvm::Value* return_ptr = llvm_utils->CreateAlloca(value_type);
+            llvm::Value* return_ptr = llvm_utils->CreateEntryBlockAlloca(value_type);
             LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(value_type, value_ptr), return_ptr);
             return return_ptr;
         }
@@ -6550,7 +6550,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             std::string value_type_code = ASRUtils::get_type_code(dict_type->m_value_type);
             llvm::Type* llvm_value_type = std::get<2>(typecode2dicttype[std::make_pair(
                 key_type_code, value_type_code)]).second;
-            llvm::Value* return_ptr = llvm_utils->CreateAlloca(llvm_value_type);
+            llvm::Value* return_ptr = llvm_utils->CreateEntryBlockAlloca(llvm_value_type);
             LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(value_type, value_ptr), return_ptr);
             return return_ptr;
         }
@@ -6598,7 +6598,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* el_list = key_or_value == 0 ? get_key_list(dict_type, dict) : get_value_list(dict_type, dict);
         ASR::ttype_t* el_asr_type = key_or_value == 0 ? key_asr_type : value_asr_type;
 
-        idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        idx_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
             llvm::APInt(32, 0)), idx_ptr);
 
@@ -6650,8 +6650,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* elements_list, ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type, llvm::Module* module,
         bool key_or_value) {
-        idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        chain_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        idx_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        chain_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                             llvm::APInt(32, 0)), idx_ptr);
         llvm::Type* dict_type = get_dict_type(ASRUtils::get_type_code(key_asr_type), ASRUtils::get_type_code(value_asr_type), 0, 0, nullptr, nullptr);
@@ -6888,14 +6888,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // TODO: Should be created outside the user loop and not here.
         // LLVMList should treat them as data members and create them
         // only if they are NULL
-        llvm::AllocaInst *tmp_ptr = llvm_utils->CreateAlloca(el_type);
+        llvm::AllocaInst *tmp_ptr = llvm_utils->CreateEntryBlockAlloca(el_type);
         LLVM::CreateStore(*builder, read_item_using_ttype(asr_type, list, pos, false, module, false), tmp_ptr);
         llvm::Value* tmp = nullptr;
 
         // TODO: Should be created outside the user loop and not here.
         // LLVMList should treat them as data members and create them
         // only if they are NULL
-        llvm::AllocaInst *pos_ptr = llvm_utils->CreateAlloca(
+        llvm::AllocaInst *pos_ptr = llvm_utils->CreateEntryBlockAlloca(
                                     llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, pos, pos_ptr);
 
@@ -6991,10 +6991,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                llvm::Type::getInt32Ty(context) ,get_pointer_to_current_end_point_using_type(list_type, list));
 
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
-        llvm::AllocaInst *i = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *i = llvm_utils->CreateEntryBlockAlloca(pos_type);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), i);       // i = 0
-        llvm::AllocaInst *j = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *j = llvm_utils->CreateEntryBlockAlloca(pos_type);
         llvm::Value* tmp = nullptr;
         tmp = builder->CreateSub(end_point, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
         LLVM::CreateStore(*builder, tmp, j);        // j = end_point - 1
@@ -7047,7 +7047,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // TODO: Should be created outside the user loop and not here.
         // LLVMList should treat them as data members and create them
         // only if they are NULL
-        llvm::AllocaInst *i = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *i = llvm_utils->CreateEntryBlockAlloca(pos_type);
         if(start) {
             LLVM::CreateStore(*builder, start, i);
         }
@@ -7141,10 +7141,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point_using_type(list_type, list));
-        llvm::AllocaInst *i = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *i = llvm_utils->CreateEntryBlockAlloca(pos_type);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), i);
-        llvm::AllocaInst *cnt = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *cnt = llvm_utils->CreateEntryBlockAlloca(pos_type);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), cnt);
         llvm::Value* tmp = nullptr;
@@ -7212,7 +7212,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // TODO: Should be created outside the user loop and not here.
         // LLVMList should treat them as data members and create them
         // only if they are NULL
-        llvm::AllocaInst *item_pos = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *item_pos = llvm_utils->CreateEntryBlockAlloca(pos_type);
         llvm::Value* tmp = LLVMList::find_item_position(list, item, item_type, module);
         LLVM::CreateStore(*builder, tmp, item_pos);
 
@@ -7326,7 +7326,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context),end_point_ptr);
 
-        llvm::AllocaInst *pos_ptr = llvm_utils->CreateAlloca(
+        llvm::AllocaInst *pos_ptr = llvm_utils->CreateEntryBlockAlloca(
                                     llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, pos, pos_ptr);
 
@@ -7335,7 +7335,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                       true, module, LLVM::is_llvm_struct(list_element_type));
         if( LLVM::is_llvm_struct(list_element_type) ) {
             LCOMPILERS_ASSERT(typecode2listtype.find(el_type_code) != typecode2listtype.end());
-            llvm::AllocaInst *target = llvm_utils->CreateAlloca(
+            llvm::AllocaInst *target = llvm_utils->CreateEntryBlockAlloca(
                 std::get<2>(typecode2listtype[el_type_code]), nullptr,
                 "pop_position_item");
             llvm_utils->deepcopy(list_expr, item, target, list_element_type, list_element_type, module);
@@ -7396,7 +7396,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                  llvm::LLVMContext& context,
                                                  llvm::IRBuilder<>* builder,
                                                  llvm::Module* module) {
-        llvm::AllocaInst *is_equal = llvm_utils->CreateAlloca(llvm::Type::getInt1Ty(context));
+        llvm::AllocaInst *is_equal = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt1Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 1)), is_equal);
 
         std::string type_code = ASRUtils::get_type_code(item_type);
@@ -7410,7 +7410,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         builder->CreateCondBr(cond, thenBB, elseBB);
         builder->SetInsertPoint(thenBB);
-        llvm::AllocaInst *idx = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        llvm::AllocaInst *idx = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), idx);
         llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
@@ -7483,18 +7483,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         std::string el_type_code = ASRUtils::get_type_code(item_type);
         llvm::Type* list_type = get_list_type(nullptr, el_type_code, 0);
 
-        llvm::AllocaInst *equality_holds = llvm_utils->CreateAlloca(
+        llvm::AllocaInst *equality_holds = llvm_utils->CreateEntryBlockAlloca(
                                                 llvm::Type::getInt1Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 1)),
                           equality_holds);
-        llvm::AllocaInst *inequality_holds = llvm_utils->CreateAlloca(
+        llvm::AllocaInst *inequality_holds = llvm_utils->CreateEntryBlockAlloca(
                                                 llvm::Type::getInt1Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 0)),
                           inequality_holds);
 
         llvm::Value *a_len = llvm_utils->list_api->len_using_type(list_type, l1);
         llvm::Value *b_len = llvm_utils->list_api->len_using_type(list_type, l2);
-        llvm::AllocaInst *idx = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        llvm::AllocaInst *idx = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), idx);
         llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
@@ -7559,10 +7559,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                     llvm::Module* module) {
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
         std::string el_type_code = ASRUtils::get_type_code(list_type->m_type);
-        llvm::AllocaInst *i = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *i = llvm_utils->CreateEntryBlockAlloca(pos_type);
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(
                                     context, llvm::APInt(32, 0)), i);       // i = 0
-        llvm::AllocaInst *j = llvm_utils->CreateAlloca(pos_type);
+        llvm::AllocaInst *j = llvm_utils->CreateEntryBlockAlloca(pos_type);
         llvm::Value* tmp = nullptr;
 
         llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
@@ -7745,11 +7745,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          *
          */
 
-        llvm::AllocaInst *equality_holds = llvm_utils->CreateAlloca(
+        llvm::AllocaInst *equality_holds = llvm_utils->CreateEntryBlockAlloca(
                                                 llvm::Type::getInt1Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 1)),
                           equality_holds);
-        llvm::AllocaInst *inequality_holds = llvm_utils->CreateAlloca(
+        llvm::AllocaInst *inequality_holds = llvm_utils->CreateEntryBlockAlloca(
                                                 llvm::Type::getInt1Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 0)),
                           inequality_holds);
@@ -8039,9 +8039,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                                 llvm::APInt(8, '\0'));
                 llvm::Value* p = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 31));
                 llvm::Value* m = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 100000009));
-                hash_value = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
-                hash_iter = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
-                polynomial_powers = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
+                hash_value = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_value");
+                hash_iter = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "hash_iter");
+                polynomial_powers = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt64Ty(context), nullptr, "p_pow");
                 LLVM::CreateStore(*builder,
                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)),
                     hash_value);
@@ -8164,9 +8164,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          */
 
         if( !for_read ) {
-            pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+            pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         }
-        is_el_matching_var = llvm_utils->CreateAlloca(llvm::Type::getInt1Ty(context));
+        is_el_matching_var = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt1Ty(context));
         std::string el_type_code = ASRUtils::get_type_code(el_asr_type);
 
         LLVM::CreateStore(*builder, el_hash, pos_ptr);
@@ -8260,9 +8260,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          *
          */
 
-        chain_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        chain_itr_prev = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        is_el_matching_var = llvm_utils->CreateAlloca(llvm::Type::getInt1Ty(context));
+        chain_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        chain_itr_prev = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        is_el_matching_var = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt1Ty(context));
 
         LLVM::CreateStore(*builder,
                 llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()), chain_itr_prev);
@@ -8532,7 +8532,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Type* set_type = get_set_type(el_type_code, 0, el_llvm_type);
         llvm::Value* el_list = get_el_list(set_type, set);
-        llvm::Value* new_el_list = llvm_utils->CreateAlloca(llvm_utils->list_api->get_list_type(el_llvm_type,
+        llvm::Value* new_el_list = llvm_utils->CreateEntryBlockAlloca(llvm_utils->list_api->get_list_type(el_llvm_type,
                                                           el_type_code, el_type_size));
         llvm_utils->list_api->list_init(el_type_code, new_el_list, module, capacity, capacity);
 
@@ -8546,7 +8546,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                                                                 get_pointer_to_capacity_using_typecode(el_type_code, set));
-        idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        idx_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
             llvm::APInt(32, 0)), idx_ptr);
 
@@ -8635,12 +8635,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * }
          *
          */
-        old_capacity = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        old_occupancy = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        old_number_of_buckets_filled = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        old_elems = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        old_el_mask = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        old_capacity = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        old_occupancy = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        old_number_of_buckets_filled = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        idx_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        old_elems = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        old_el_mask = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
 
 
         std::string el_type_code = ASRUtils::get_type_code(el_asr_type);
@@ -8763,7 +8763,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          *
          */
 
-        src_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        src_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
 
         llvm::Type* el_struct_type = typecode2elstruct[ASRUtils::get_type_code(m_el_type)]->getPointerTo();
         LLVM::CreateStore(*builder,
@@ -8909,7 +8909,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Value* el_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_mask(set_type, set));
         llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_type(el_list_type, set));
-        pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        pos_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
@@ -9174,8 +9174,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         malloc_size = builder->CreateMul(malloc_size, llvm_el_struct_size);
         llvm::Value* dest_elems = LLVM::lfortran_malloc(context, *module, *builder, malloc_size);
         dest_elems = builder->CreateBitCast(dest_elems, el_struct_type->getPointerTo());
-        copy_itr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
-        next_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
+        copy_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
+        next_ptr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt32Ty(context));
         llvm::Value* llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
         LLVM::CreateStore(*builder, llvm_zero, copy_itr);
         LLVM::CreateStore(*builder, src_capacity, next_ptr);
@@ -9244,8 +9244,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
          * }
          *
          */
-        src_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
-        dest_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        src_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
+        dest_itr = llvm_utils->CreateEntryBlockAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
 
         llvm::Type* el_struct_type = typecode2elstruct[ASRUtils::get_type_code(set_type->m_type)]->getPointerTo();
         LLVM::CreateStore(*builder,
@@ -9379,7 +9379,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     
     llvm::Value* LLVMStruct::create_class_view(ASR::Struct_t* const class_symbol,
             llvm::Value* const viewed_struct, llvm::Value* vptr){
-        llvm::Value* const allocated_class_structure = builder->CreateAlloca(llvm_utils->getClassType(class_symbol));
+        llvm::Value* const allocated_class_structure = builder->CreateEntryBlockAlloca(llvm_utils->getClassType(class_symbol));
         if (vptr) {
             if (vptr->getType() != llvm_utils->vptr_type) {
                 vptr = builder->CreateBitCast(vptr, llvm_utils->vptr_type);
@@ -10108,7 +10108,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         uint64_t dim_des_size = data_layout.getTypeAllocSize(dim_des);
         unsigned index_bit_width = llvm_utils->arr_api->get_index_type()->getIntegerBitWidth();
 
-        llvm::Value* r = llvm_utils->CreateAlloca(*builder, i32_ty);
+        llvm::Value* r = llvm_utils->CreateEntryBlockAlloca(*builder, i32_ty);
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
         llvm_utils->create_loop("copy_dim_desc", [&]() {
             return builder->CreateICmpSLT(
@@ -10240,7 +10240,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
                 // Loop: copy each data element using byte offsets
-                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
+                llvm::Value* ui = llvm_utils->CreateEntryBlockAlloca(*builder, i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("upoly_deepcopy", [&]() {
                     return builder->CreateICmpSLT(
@@ -10311,7 +10311,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
                 // Loop: copy each element using byte offsets
-                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
+                llvm::Value* ui = llvm_utils->CreateEntryBlockAlloca(*builder, i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("class_deepcopy", [&]() {
                     return builder->CreateICmpSLT(
@@ -10348,7 +10348,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
             llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.body");
             llvm::BasicBlock *loopEnd  = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.end");
 
-            llvm::Value* i = llvm_utils->CreateAlloca(*builder, index_type);
+            llvm::Value* i = llvm_utils->CreateEntryBlockAlloca(*builder, index_type);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), i);
 
             // head
@@ -10499,7 +10499,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         // extractvalue yields the pointer value itself.
                         // deepcopy(Pointer) expects a pointer-to-pointer,
                         // so store into a temporary alloca.
-                        llvm::Value* tmp = builder->CreateAlloca(src_member->getType());
+                        llvm::Value* tmp = builder->CreateEntryBlockAlloca(src_member->getType());
                         builder->CreateStore(src_member, tmp);
                         src_member = tmp;
                     }
