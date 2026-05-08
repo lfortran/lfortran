@@ -3479,6 +3479,11 @@ public:
                     // Create assignment statement only for non-struct types
                     // All validation was already done above before creating the Allocate ASR node
                     if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
+                        ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                        if (ASRUtils::is_assumed_rank_array(tgt_t)) {
+                            continue;
+                        }
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* source_copy = expr_duplicator.duplicate_expr(source);
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(
