@@ -2644,7 +2644,7 @@ namespace LCompilers {
                 dest_str_type, dest, true, true);
         }
 
-        if (src_str_type->m_physical_type == ASR::CChar) {g
+        if (src_str_type->m_physical_type == ASR::CChar) {
             rhs_data = builder->CreateLoad(character_type, src);
             llvm::Value* rhs_len_val = builder->CreateCall(
                 module->getOrInsertFunction("strlen",
