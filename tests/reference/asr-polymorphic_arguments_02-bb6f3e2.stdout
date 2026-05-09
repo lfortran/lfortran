@@ -203,32 +203,6 @@
                                                     0
                                                     []
                                                     .false.
-                                                ),
-                                            ~unlimited_polymorphic_type:
-                                                (Struct
-                                                    (SymbolTable
-                                                        4
-                                                        {
-                                                            
-                                                        })
-                                                    ~unlimited_polymorphic_type
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .false.
-                                                        .true.
-                                                    )
-                                                    []
-                                                    []
-                                                    []
-                                                    Source
-                                                    Public
-                                                    .false.
-                                                    .true.
-                                                    []
-                                                    ()
-                                                    ()
-                                                    []
                                                 )
                                         })
                                     str_scalar
