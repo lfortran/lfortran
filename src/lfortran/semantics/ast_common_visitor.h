@@ -7766,10 +7766,17 @@ public:
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
                         }
-                        init_expr = ASRUtils::expr_value(
-                            ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
-                                args.p, args.n, type, ASR::arraystorageType::ColMajor))
-                        );
+                        if (size == 0) {
+                            // Zero-size array: create an empty ArrayConstant directly
+                            init_expr = ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                                al, init_expr->base.loc, 0, nullptr, type,
+                                ASR::arraystorageType::ColMajor));
+                        } else {
+                            init_expr = ASRUtils::expr_value(
+                                ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                    args.p, args.n, type, ASR::arraystorageType::ColMajor))
+                            );
+                        }
                         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
                         value = init_expr;
                     }
@@ -9437,20 +9444,30 @@ public:
                         throw SemanticAbort();
                     }
                 } else {
-                    SymbolTable *parent_scope = current_scope;
-                    current_scope = al.make_new<SymbolTable>(parent_scope);
-                    ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
-                                                    s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
-                                                    nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
-                                                    nullptr, 0, nullptr, nullptr, nullptr, 0);
-                    ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
-                    ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
-                    ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
-                    struct_->m_struct_signature = struct_type;
-                    struct_symbol = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)struct_);
-                    v = ASR::down_cast<ASR::symbol_t>(dtype);
-                    parent_scope->add_symbol(derived_type_name, v);
-                    current_scope = parent_scope;
+                    // Place ~unlimited_polymorphic_type at the module or
+                    // program scope so it is shared across all class(*)
+                    // declarations and survives module serialisation.
+                    SymbolTable *target_scope = current_scope;
+                    while (target_scope->parent != nullptr
+                           && target_scope->parent->parent != nullptr) {
+                        target_scope = target_scope->parent;
+                    }
+                    if (target_scope->get_symbol(derived_type_name) != nullptr) {
+                        // Reuse the existing symbol
+                        v = target_scope->get_symbol(derived_type_name);
+                    } else {
+                        SymbolTable *struct_symtab = al.make_new<SymbolTable>(target_scope);
+                        ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
+                                                        s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
+                                                        nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                        ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
+                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
+                        ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
+                        struct_->m_struct_signature = struct_type;
+                        v = ASR::down_cast<ASR::symbol_t>(dtype);
+                        target_scope->add_symbol(derived_type_name, v);
+                    }
                     // this is class variable declaration
                     // set the variable's type declaration to the derived type
                     type_declaration = v;
