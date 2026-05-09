@@ -999,7 +999,7 @@ class ASRToLLVMVisitor;
             if(ASRUtils::is_allocatable(t)){
                 finalize_allocatable(ptr, t, struct_sym, in_struct);
             } else if(ASRUtils::is_pointer(t)) {
-                finalize_pointer(ptr, t, struct_sym, in_struct);
+                finalize_pointer(ptr, t, struct_sym);
             } else {
                 finalize_type(ptr, t, struct_sym);
             }
@@ -1125,7 +1125,7 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, bool in_struct){
+        void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_pointer(t), "Must be finalizable pointer.")
             auto const t_past = ASRUtils::type_get_past_pointer(t);
             switch (t_past->type) {
@@ -1137,7 +1137,6 @@ class ASRToLLVMVisitor;
                                         llvm_utils_->create_gep2(get_llvm_type(t_past, struct_sym), ptr, 0));
                         llvm_utils_->lfortran_free_nocheck(wrapper);
                     }
-                    if(in_struct) { llvm_utils_->lfortran_free_nocheck(ptr); }
                 }
                 break;
                 case ASR::StructType:
