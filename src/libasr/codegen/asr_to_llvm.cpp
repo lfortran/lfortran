@@ -5957,6 +5957,7 @@ public:
 
         visit_procedures(x);
 
+        // ... (inside visit_Module) ...
         if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
             
@@ -5970,9 +5971,8 @@ public:
 
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             builder->CreateRetVoid();
-
             
-            llvm::appendToGlobalDtors(*module, fin_func, 2000); 
+            llvm::appendToGlobalDtors(*module, fin_func, 1000);
 
             if (saved_bb) builder->SetInsertPoint(saved_bb);
             else builder->ClearInsertionPoint();
@@ -6172,7 +6172,7 @@ public:
             }
             
             if (compiler_options.detect_leaks) {
-                llvm::appendToGlobalDtors(*module, fn_finalize, 1000);
+                llvm::appendToGlobalDtors(*module, fn_finalize, 3000);
             } else {
                 builder->CreateCall(fn_finalize, {});
             }
@@ -6186,7 +6186,7 @@ public:
                 fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "dbg_report", module.get());
             }
-            llvm::appendToGlobalDtors(*module, fn, 1500);
+            llvm::appendToGlobalDtors(*module, fn, 2000);
         }
         
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
