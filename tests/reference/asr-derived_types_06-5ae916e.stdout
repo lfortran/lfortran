@@ -27,7 +27,7 @@
                                                         .false.
                                                         .true.
                                                     )
-                                                    3 ~unlimited_polymorphic_type
+                                                    2 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -98,6 +98,32 @@
                                     .true.
                                     .true.
                                     ()
+                                ),
+                            ~unlimited_polymorphic_type:
+                                (Struct
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    ~unlimited_polymorphic_type
+                                    (StructType
+                                        []
+                                        []
+                                        .false.
+                                        .true.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    []
+                                    ()
+                                    ()
+                                    []
                                 )
                         })
                     abstract_type
