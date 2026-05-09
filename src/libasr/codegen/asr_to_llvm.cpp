@@ -6176,39 +6176,48 @@ public:
         finalize_list_call_arg_allocas();
         free_heap_fixed_size_arrays();
         
-        llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
-
         if (compiler_options.detect_leaks) {
             llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
-
-            llvm::Function *dtor_func = llvm::Function::Create(void_ft,
-                llvm::Function::InternalLinkage, "_lfortran_program_dtor", module.get());
-            llvm::BasicBlock *dtor_bb = llvm::BasicBlock::Create(context, ".entry", dtor_func);
-            builder->SetInsertPoint(dtor_bb);
-
-            llvm::Function *fn_dbg = module->getFunction("dbg_report");
-            if(!fn_dbg) {
-                fn_dbg = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+            llvm::Function *reg_func = llvm::Function::Create(void_ft,
+                llvm::Function::InternalLinkage, "_lfortran_register_leak_check", module.get());
+            llvm::BasicBlock *reg_bb = llvm::BasicBlock::Create(context, ".entry", reg_func);
+            builder->SetInsertPoint(reg_bb);
+            
+            llvm::Function *atexit_fn = module->getFunction("atexit");
+            if (!atexit_fn) {
+                llvm::FunctionType *atexit_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {void_ft->getPointerTo()}, false);
+                atexit_fn = llvm::Function::Create(atexit_type,
+                    llvm::Function::ExternalLinkage, "atexit", module.get());
             }
-            builder->CreateCall(fn_dbg, {});
 
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
-                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
+                    "_lfortran_internal_alloc_finalize", module.get());
             }
-            builder->CreateCall(fn_finalize, {});
+            builder->CreateCall(atexit_fn, {fn_finalize});
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if(!fn_dbg) {
+                fn_dbg = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
+                    "dbg_report", module.get());
+            }
+            builder->CreateCall(atexit_fn, {fn_dbg});
 
             builder->CreateRetVoid();
-            llvm::appendToGlobalDtors(*module, dtor_func, 65535);
+            
+            llvm::appendToGlobalCtors(*module, reg_func, 65534);
 
             if (saved_bb) builder->SetInsertPoint(saved_bb);
             else builder->ClearInsertionPoint();
-            
         } else {
-            // When not tracking leaks, just shut down the allocator safely in main
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
-                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
+                    "_lfortran_internal_alloc_finalize", module.get());
             }
             builder->CreateCall(fn_finalize, {});
         }
