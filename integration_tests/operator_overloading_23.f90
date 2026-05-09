@@ -34,7 +34,7 @@ contains
     type(diag_t) :: d
     type(string_t) :: array(2)
     logical :: overall_passed
-    overall_passed = all(diagnoses%stats(1)%passed(1))
+    overall_passed = diagnoses%stats(1)%passed(1)
 
     d = diag_t( &
       test_passed = overall_passed, &
