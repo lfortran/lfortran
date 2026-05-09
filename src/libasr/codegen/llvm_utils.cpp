@@ -3812,6 +3812,25 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                     llvm::Type* fn_ptr_type = get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module);
                     src = CreateLoad2(fn_ptr_type, src);
                     LLVM::CreateStore(*builder, src, dest);
+                } else if (ASR::is_a<ASR::Array_t>(*pointer_type->m_type) &&
+                           ASRUtils::is_array_physically_descriptor(pointer_type->m_type)) {
+                    // For pointer descriptor-array components inside structs,
+                    // the descriptor is heap-allocated. Copy the descriptor
+                    // contents (memcpy) rather than the pointer itself so that
+                    // each struct instance keeps its own descriptor and
+                    // finalization does not double-free.
+                    llvm::Type* descr_type = get_type_from_ttype_t_util(
+                        src_expr, pointer_type->m_type, module);
+                    llvm::Value* src_descr = CreateLoad2(
+                        descr_type->getPointerTo(), src);
+                    llvm::Value* dest_descr = CreateLoad2(
+                        descr_type->getPointerTo(), dest);
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    uint64_t descr_size = data_layout.getTypeAllocSize(descr_type);
+                    llvm::Value* size_val = llvm::ConstantInt::get(
+                        context, llvm::APInt(64, descr_size));
+                    builder->CreateMemCpy(dest_descr, llvm::MaybeAlign(),
+                                          src_descr, llvm::MaybeAlign(), size_val);
                 } else {
                     src = CreateLoad2(get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module)->getPointerTo(), src);
                     LLVM::CreateStore(*builder, src, dest);
