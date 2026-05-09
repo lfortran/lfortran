@@ -257,8 +257,14 @@ public:
 
             // Check if intent(out) and (allocatable or struct with allocatable components)
             if (arg_var->m_intent != ASR::intentType::Out) continue;
+            bool is_array_of_struct =
+                !ASRUtils::is_allocatable(arg_var->m_type) &&
+                ASRUtils::is_array(arg_var->m_type) &&
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(arg_var->m_type));
             if (!ASRUtils::is_allocatable(arg_var->m_type) &&
-                !ASR::is_a<ASR::StructType_t>(*arg_var->m_type)) continue;
+                !ASR::is_a<ASR::StructType_t>(*arg_var->m_type) &&
+                !is_array_of_struct) continue;
 
             // Skip if this is the function's return variable (used in intrinsic implementations)
             if (xx.m_return_var && ASR::is_a<ASR::Var_t>(*xx.m_return_var)) {
