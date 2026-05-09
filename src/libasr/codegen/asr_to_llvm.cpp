@@ -6177,64 +6177,50 @@ public:
         free_heap_fixed_size_arrays();
         
         llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
-        
-        if (!compiler_options.detect_leaks) {
+
+        if (compiler_options.detect_leaks) {
+            llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+
+            llvm::Function *dtor_func = llvm::Function::Create(void_ft,
+                llvm::Function::InternalLinkage, "_lfortran_program_dtor", module.get());
+            llvm::BasicBlock *dtor_bb = llvm::BasicBlock::Create(context, ".entry", dtor_func);
+            builder->SetInsertPoint(dtor_bb);
+
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if(!fn_dbg) {
+                fn_dbg = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            }
+            builder->CreateCall(fn_dbg, {});
+
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
-                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
-                    "_lfortran_internal_alloc_finalize", module.get());
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
+            }
+            builder->CreateCall(fn_finalize, {});
+
+            builder->CreateRetVoid();
+            llvm::appendToGlobalDtors(*module, dtor_func, 65535);
+
+            if (saved_bb) builder->SetInsertPoint(saved_bb);
+            else builder->ClearInsertionPoint();
+            
+        } else {
+            // When not tracking leaks, just shut down the allocator safely in main
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
+            if (!fn_finalize) {
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
             }
             builder->CreateCall(fn_finalize, {});
         }
 
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
-        
-        if (compiler_options.detect_leaks) {
-            llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
-            
-            llvm::Function *reg_func = llvm::Function::Create(void_ft,
-                llvm::Function::InternalLinkage, "_lfortran_register_leak_check", module.get());
-            llvm::BasicBlock *reg_bb = llvm::BasicBlock::Create(context, ".entry", reg_func);
-            builder->SetInsertPoint(reg_bb);
-            
-            llvm::Function *atexit_fn = module->getFunction("atexit");
-            if (!atexit_fn) {
-                llvm::FunctionType *atexit_type = llvm::FunctionType::get(
-                    llvm::Type::getInt32Ty(context), {void_ft->getPointerTo()}, false);
-                atexit_fn = llvm::Function::Create(atexit_type,
-                    llvm::Function::ExternalLinkage, "atexit", module.get());
-            }
-
-            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
-            if (!fn_finalize) {
-                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
-                    "_lfortran_internal_alloc_finalize", module.get());
-            }
-            builder->CreateCall(atexit_fn, {fn_finalize});
-
-            llvm::Function *fn_dbg = module->getFunction("dbg_report");
-            if(!fn_dbg) {
-                fn_dbg = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
-                    "dbg_report", module.get());
-            }
-            builder->CreateCall(atexit_fn, {fn_dbg});
-
-            builder->CreateRetVoid();
-            
-            llvm::appendToGlobalCtors(*module, reg_func, 100);
-
-            if (saved_bb) builder->SetInsertPoint(saved_bb);
-            else builder->ClearInsertionPoint();
-        }
-       
 
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
         set_api_lp->set_is_set_present(is_set_present_copy_lp);
         set_api_sc->set_is_set_present(is_set_present_copy_sc);
 
-        // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         if (compiler_options.emit_debug_info) debug_current_scope = debug_current_scope_copy;
         current_scope = current_scope_copy;
