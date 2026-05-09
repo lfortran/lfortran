@@ -1473,6 +1473,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     (orig_variable->m_intent == ASRUtils::intent_out ||
                      orig_variable->m_intent == ASRUtils::intent_inout ||
                      ASRUtils::is_pointer(orig_variable->m_type))) {
+                        
+                    visit_call_arg(x_m_args[i]); 
+                    
                     x_m_args_vec.push_back(al, x_m_args[i]);
                     continue;
                 }
@@ -1495,13 +1498,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        !ASRUtils::is_array(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                        ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::Var_t>(
-                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                           *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
-                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                           *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                          !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                          !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
                        !ASR::is_a<ASR::PointerNullConstant_t>(
-                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
+                           *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value), name_hint, al, current_body,
@@ -1518,6 +1521,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 struct_var_temporary_arg.m_value = struct_var_temporary;
                 x_m_args_vec.push_back(al, struct_var_temporary_arg);
             } else {
+                visit_call_arg(x_m_args[i]); 
                 x_m_args_vec.push_back(al, x_m_args[i]);
             }
         }
