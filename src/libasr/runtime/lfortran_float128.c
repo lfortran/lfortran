@@ -30,10 +30,17 @@
  *   P. ARM64 sret shims
  */
 
-#include "lf_float128_to_str.h"
+#include "lfortran_float128.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>   /* atoi */
+#if defined(LFORTRAN_HAVE_CONFIG_H) || __has_include(<libasr/config.h>)
+#  include <libasr/config.h>
+#endif
+#if LFORTRAN_HAVE_REAL128
+#  include <quadmath.h>
+#endif
 
 /* ========================================================================
  * A. u128 helpers
@@ -632,7 +639,7 @@ lf_float128 __floatunditf_lf_impl(uint64_t x) {
     return f128_pack_parts(0, exp, mant);
 }
 
-int32_t __fixtfsi(lf_float128 a) {
+int32_t __fixtfsi_lf_impl(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan || p.is_inf || p.is_zero) return 0;
     if (p.exp < 0) return 0;
@@ -641,7 +648,7 @@ int32_t __fixtfsi(lf_float128 a) {
     return p.sign ? -(int32_t)v : (int32_t)v;
 }
 
-int64_t __fixtfdi(lf_float128 a) {
+int64_t __fixtfdi_lf_impl(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan || p.is_inf || p.is_zero) return 0;
     if (p.exp < 0) return 0;
@@ -742,7 +749,7 @@ lf_float128 lf_f128_pow(lf_float128 base, lf_float128 exp_v) {
 
     /* Integer exponent: use fast repeated squaring */
     if (ep.exp >= 0 && ep.exp < 63) {
-        int64_t n = __fixtfdi(exp_v);
+        int64_t n = __fixtfdi_lf_impl(exp_v);
         lf_float128 frac_part = __subtf3_lf_impl(exp_v, __floatditf_lf_impl(n));
         int is_int = f128_is_zero(frac_part);
         if (is_int) {
@@ -846,7 +853,7 @@ lf_float128 lf_f128_exp(lf_float128 a) {
 
     /* n = nint(a / ln2) -- round to nearest integer */
     lf_float128 fn = __multf3_lf_impl(a, inv_ln2);
-    int64_t n = __fixtfdi(__addtf3_lf_impl(fn,
+    int64_t n = __fixtfdi_lf_impl(__addtf3_lf_impl(fn,
                     f128_const(p.sign, 16382, 0, 0)));  /* fn + 0.5*sign, then trunc */
     /* simpler: */
     {
@@ -1242,7 +1249,7 @@ void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
         return;
     }
     if(!biased&&!mhi&&!mlo){
-        sprintf(result,"%s0.000000000000000000000000000000000E+000",vsign?"-":"");
+        sprintf(result,"%s0.000000000000000000000000000000000E+0000",vsign?"-":"");
         return;
     }
     uint64_t sig_hi=mhi|(biased?(1ull<<48):0ull);
@@ -1280,7 +1287,7 @@ void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
     *p++=digits[0]; *p++='.';
     for(int i=1;i<34;i++) *p++=digits[i];
     int ae=dec_exp>=0?dec_exp:-dec_exp;
-    sprintf(p,"E%c%03d",dec_exp>=0?'+':'-',ae);
+    sprintf(p,"E%c%04d",dec_exp>=0?'+':'-',ae);
 }
 
 /* ========================================================================
@@ -1392,8 +1399,6 @@ lf_float128 lf_float128_from_str(const char *s) {
             uint64_t lo2 = (limb < sig.n) ? sig.d[limb] : 0;
             uint64_t hi2 = (limb+1 < sig.n) ? sig.d[limb+1] : 0;
             uint64_t hi3 = (limb+2 < sig.n) ? sig.d[limb+2] : 0;
-            u128 raw = u128_make(hi2, lo2) | ((u128)hi3 << 128);
-            mant = (raw >> bit) | ((u128)((limb+2 < sig.n ? sig.d[limb+2] : 0)) << (128-bit));
             mant = u128_make(hi2, lo2);
             if (bit) mant = (mant >> bit) | ((u128)hi3 << (64-bit));
             else     mant = u128_make(hi2, lo2);
@@ -1484,17 +1489,29 @@ lf_float128 __extendsftf2(float a)                  { return __extendsftf2_lf_im
 lf_float128 __floatsitf(int32_t a)                  { return __floatsitf_lf_impl(a); }
 lf_float128 __floatditf(int64_t a)                  { return __floatditf_lf_impl(a); }
 lf_float128 __floatunditf(uint64_t a)               { return __floatunditf_lf_impl(a); }
+int32_t     __fixtfsi(lf_float128 a)                { return __fixtfsi_lf_impl(a); }
+int64_t     __fixtfdi(lf_float128 a)                { return __fixtfdi_lf_impl(a); }
 #endif
 
 /* ========================================================================
- * Q. ARM64 sret shims
+ * Q. ARM64 calling-convention shims
  *
- * On ARM64, LLVM lowers fp128 to sret calls: the fp128 result goes to
- * the address in register x8, not in x0/x1. Our C structs go in x0/x1.
- * These naked shims: save x8, call the _lf_impl (result in x0/x1),
- * restore x8, write result to *x8.
+ * On macOS ARM64, LLVM lowers fp128 ops to runtime calls using the Apple
+ * ARM64 ABI for __float128:
+ *   fp128 args in q0/q1 (128-bit SIMD); fp128 result in q0.
+ *   int->fp128 conversions: int arg in w0/x0; fp128 result in q0.
+ *   fp128->int conversions: fp128 arg in q0; int result in w0/x0.
  *
- * macOS mangling: symbol names get a leading underscore in asm.
+ * Our _lf_impl C functions use the struct ABI (lf_float128 = 16-byte struct):
+ *   Two-arg: args in x0/x1, x2/x3; result in x0/x1.
+ *   One-arg:  arg  in x0/x1;       result in x0/x1.
+ *   double->fp128: arg in d0;       result in x0/x1.
+ *   fp128->int:    arg in x0/x1;    result in x0/w0.
+ *
+ * Each shim marshals registers in both directions so the two ABIs meet.
+ * All shims are strong symbols (no `weak`) to override system versions.
+ *
+ * macOS asm symbol mangling: leading underscore required.
  * Linux/ELF: no leading underscore.
  * ======================================================================== */
 #if defined(__aarch64__)
@@ -1505,38 +1522,174 @@ lf_float128 __floatunditf(uint64_t a)               { return __floatunditf_lf_im
 #  define _LF_SYM(n) #n
 #endif
 
-#define _LF_SRET_SHIM2(pub, impl)                           \
-__attribute__((naked, weak))                                 \
+/* Two-operand: fp128 args q0,q1 -> x0/x1,x2/x3; result x0/x1 -> q0 */
+#define _LF_SHIM2(pub, impl)                                 \
+__attribute__((naked))                                       \
 void pub(void) {                                             \
     __asm__ volatile(                                        \
-        "stp x29, x30, [sp, #-32]!\n\t"                     \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
         "mov x29, sp\n\t"                                    \
-        "str x8,  [sp, #16]\n\t"                             \
+        "fmov x0, d0\n\t"                                    \
+        "mov  x1, v0.d[1]\n\t"                               \
+        "fmov x2, d1\n\t"                                    \
+        "mov  x3, v1.d[1]\n\t"                               \
         "bl  " _LF_SYM(impl) "\n\t"                         \
-        "ldr x8,  [sp, #16]\n\t"                             \
-        "stp x0, x1, [x8]\n\t"                              \
-        "ldp x29, x30, [sp], #32\n\t"                       \
+        "fmov d0, x0\n\t"                                    \
+        "mov  v0.d[1], x1\n\t"                               \
+        "ldp x29, x30, [sp], #16\n\t"                       \
         "ret\n\t"                                            \
     );                                                       \
 }
 
-/* __extenddftf2: input is a double in d0, output fp128 via sret (*x8).
- * d0 is preserved through the bl call (callee-saved for our impl). */
-#define _LF_SRET_SHIM1(pub, impl) _LF_SRET_SHIM2(pub, impl)
+/* One-operand fp128: arg q0 -> x0/x1; result x0/x1 -> q0 */
+#define _LF_SHIM1(pub, impl)                                 \
+__attribute__((naked))                                       \
+void pub(void) {                                             \
+    __asm__ volatile(                                        \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
+        "mov x29, sp\n\t"                                    \
+        "fmov x0, d0\n\t"                                    \
+        "mov  x1, v0.d[1]\n\t"                               \
+        "bl  " _LF_SYM(impl) "\n\t"                         \
+        "fmov d0, x0\n\t"                                    \
+        "mov  v0.d[1], x1\n\t"                               \
+        "ldp x29, x30, [sp], #16\n\t"                       \
+        "ret\n\t"                                            \
+    );                                                       \
+}
 
-_LF_SRET_SHIM2(__addtf3,       __addtf3_lf_impl)
-_LF_SRET_SHIM2(__subtf3,       __subtf3_lf_impl)
-_LF_SRET_SHIM2(__multf3,       __multf3_lf_impl)
-_LF_SRET_SHIM2(__divtf3,       __divtf3_lf_impl)
-_LF_SRET_SHIM1(__negtf2,       __negtf2_lf_impl)
-_LF_SRET_SHIM1(__extenddftf2,  __extenddftf2_lf_impl)
-_LF_SRET_SHIM1(__extendsftf2,  __extendsftf2_lf_impl)
-_LF_SRET_SHIM1(__floatsitf,    __floatsitf_lf_impl)
-_LF_SRET_SHIM1(__floatditf,    __floatditf_lf_impl)
-_LF_SRET_SHIM1(__floatunditf,  __floatunditf_lf_impl)
+/* scalar->fp128: arg already in d0/s0/w0/x0; result x0/x1 -> q0 */
+#define _LF_SHIM_FROM_SCALAR(pub, impl)                      \
+__attribute__((naked))                                       \
+void pub(void) {                                             \
+    __asm__ volatile(                                        \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
+        "mov x29, sp\n\t"                                    \
+        "bl  " _LF_SYM(impl) "\n\t"                         \
+        "fmov d0, x0\n\t"                                    \
+        "mov  v0.d[1], x1\n\t"                               \
+        "ldp x29, x30, [sp], #16\n\t"                       \
+        "ret\n\t"                                            \
+    );                                                       \
+}
 
-#undef _LF_SRET_SHIM2
-#undef _LF_SRET_SHIM1
+/* fp128->int: arg q0 -> x0/x1; int result already in x0/w0 */
+#define _LF_SHIM_TO_INT(pub, impl)                           \
+__attribute__((naked))                                       \
+void pub(void) {                                             \
+    __asm__ volatile(                                        \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
+        "mov x29, sp\n\t"                                    \
+        "fmov x0, d0\n\t"                                    \
+        "mov  x1, v0.d[1]\n\t"                               \
+        "bl  " _LF_SYM(impl) "\n\t"                         \
+        "ldp x29, x30, [sp], #16\n\t"                       \
+        "ret\n\t"                                            \
+    );                                                       \
+}
+
+_LF_SHIM2(__addtf3,          __addtf3_lf_impl)
+_LF_SHIM2(__subtf3,          __subtf3_lf_impl)
+_LF_SHIM2(__multf3,          __multf3_lf_impl)
+_LF_SHIM2(__divtf3,          __divtf3_lf_impl)
+_LF_SHIM1(__negtf2,          __negtf2_lf_impl)
+_LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)
+_LF_SHIM_FROM_SCALAR(__extendsftf2,   __extendsftf2_lf_impl)
+_LF_SHIM_FROM_SCALAR(__floatsitf,     __floatsitf_lf_impl)
+_LF_SHIM_FROM_SCALAR(__floatditf,     __floatditf_lf_impl)
+_LF_SHIM_FROM_SCALAR(__floatunditf,   __floatunditf_lf_impl)
+_LF_SHIM_TO_INT(__fixtfsi,            __fixtfsi_lf_impl)
+_LF_SHIM_TO_INT(__fixtfdi,            __fixtfdi_lf_impl)
+
+#undef _LF_SHIM2
+#undef _LF_SHIM1
+#undef _LF_SHIM_FROM_SCALAR
+#undef _LF_SHIM_TO_INT
 #undef _LF_SYM
 
 #endif /* __aarch64__ */
+
+/* ========================================================================
+ * Q. Linux / HAVE_REAL128 path helpers
+ *
+ * On Linux with __float128 (LFORTRAN_HAVE_REAL128=1), lf_float128 is a
+ * typedef for __float128 (defined in lf_float128_to_str.h).  These wrappers
+ * expose the same API used by lfortran_intrinsics.c on that path.
+ * ======================================================================== */
+
+#if LFORTRAN_HAVE_REAL128
+
+lf_float128 lf_f128_from_double(double d)  { return (__float128)d; }
+double       lf_f128_to_double(lf_float128 v) { return (double)v; }
+int lf_f128_isnan   (lf_float128 v) { return isnanq(v); }
+int lf_f128_isinf   (lf_float128 v) { return isinfq(v); }
+int lf_f128_signbit (lf_float128 v) {
+    uint64_t hi; memcpy(&hi, (const char*)&v + 8, 8); return (int)(hi >> 63);
+}
+int lf_f128_cmp(lf_float128 a, lf_float128 b) {
+    if (isnanq(a) || isnanq(b)) return 1;
+    return (a > b) - (a < b);
+}
+int lf_f128_eq(lf_float128 a, lf_float128 b) {
+    if (isnanq(a) || isnanq(b)) return 0;
+    return a == b;
+}
+
+/* Compiler-rt comparison ABI (weak on ELF so libgcc can override) */
+#if defined(__ELF__)
+#  define LF_TF2_ATTR __attribute__((weak))
+#else
+#  define LF_TF2_ATTR
+#endif
+
+LF_TF2_ATTR int __eqtf2   (lf_float128 a, lf_float128 b) { return lf_f128_eq(a,b) ? 0 : 1; }
+LF_TF2_ATTR int __netf2   (lf_float128 a, lf_float128 b) { return lf_f128_eq(a,b) ? 0 : 1; }
+LF_TF2_ATTR int __lttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
+LF_TF2_ATTR int __letf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
+LF_TF2_ATTR int __gttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
+LF_TF2_ATTR int __getf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
+LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) { return (isnanq(a)||isnanq(b))?1:0; }
+
+#else /* !LFORTRAN_HAVE_REAL128 — expose the struct-based helpers used by intrinsics.c */
+
+lf_float128 lf_f128_from_double(double d)     { return __extenddftf2_lf_impl(d); }
+double       lf_f128_to_double(lf_float128 v) { return __trunctfdf2(v); }
+int lf_f128_isnan   (lf_float128 v) { return f128_is_nan(v); }
+int lf_f128_isinf   (lf_float128 v) { return f128_is_inf(v); }
+int lf_f128_signbit (lf_float128 v) { return f128_sign(v); }
+int lf_f128_cmp     (lf_float128 a, lf_float128 b) {
+    int c = f128_cmp_internal(a, b);
+    return (c >= 2) ? 1 : c;   /* NaN -> 1 (unordered) */
+}
+int lf_f128_eq(lf_float128 a, lf_float128 b) {
+    return f128_cmp_internal(a, b) == 0;
+}
+
+#endif /* LFORTRAN_HAVE_REAL128 */
+
+/* ========================================================================
+ * R. format_float128_fortran — Fortran print formatting for real(16)
+ *
+ * Output: [-]d.dddddddddddddddddddddddddddddddddE+eee  (34 sig digits)
+ *
+ * HAVE_REAL128: uses quadmath_snprintf (exact, native).
+ * !HAVE_REAL128: delegates to lf_float128_to_str (Dragon4, correct).
+ *   The old u256-based implementation that lived here overflowed: for
+ *   values like 1.5, multiplying the 113-bit significand by 5^112
+ *   requires 373 bits — beyond any u256.
+ * ======================================================================== */
+
+void format_float128_fortran(char *result, lf_float128 val) {
+#if LFORTRAN_HAVE_REAL128
+    char buf[64];
+    int n = quadmath_snprintf(buf, sizeof(buf), "%.33Qe", val);
+    if (n < 0 || n >= (int)sizeof(buf)) { snprintf(result, 64, "NaN"); return; }
+    char *ep = strchr(buf, 'e'); if (!ep) ep = strchr(buf, 'E');
+    if (ep) {
+        int w = (int)(ep - buf); char es = ep[1]; int ev = atoi(ep + 2);
+        sprintf(result, "%.*sE%c%04d", w, buf, es=='-'?'-':'+', ev<0?-ev:ev);
+    } else { strcpy(result, buf); }
+#else
+    lf_float128_to_str(result, val.bytes);
+#endif
+}
