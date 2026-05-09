@@ -162,7 +162,7 @@
                                                         .false.
                                                         .true.
                                                     )
-                                                    3 ~unlimited_polymorphic_type
+                                                    2 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -203,32 +203,6 @@
                                                     0
                                                     []
                                                     .false.
-                                                ),
-                                            ~unlimited_polymorphic_type:
-                                                (Struct
-                                                    (SymbolTable
-                                                        4
-                                                        {
-                                                            
-                                                        })
-                                                    ~unlimited_polymorphic_type
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .false.
-                                                        .true.
-                                                    )
-                                                    []
-                                                    []
-                                                    []
-                                                    Source
-                                                    Public
-                                                    .false.
-                                                    .true.
-                                                    []
-                                                    ()
-                                                    ()
-                                                    []
                                                 )
                                         })
                                     str_scalar
@@ -265,6 +239,32 @@
                                     .true.
                                     .true.
                                     ()
+                                ),
+                            ~unlimited_polymorphic_type:
+                                (Struct
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    ~unlimited_polymorphic_type
+                                    (StructType
+                                        []
+                                        []
+                                        .false.
+                                        .true.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    []
+                                    ()
+                                    ()
+                                    []
                                 )
                         })
                     polymorphic_argument_02
