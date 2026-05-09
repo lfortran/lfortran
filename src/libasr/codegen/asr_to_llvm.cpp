@@ -5957,22 +5957,39 @@ public:
 
         visit_procedures(x);
 
-        // ... (inside visit_Module) ...
+        // ... (visit_procedures(x);) ...
+
         if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
             
             std::string fin_name = "_lfortran_module_finalize_" + std::string(x.m_name);
-            llvm::FunctionType *fin_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
-            llvm::Function *fin_func = llvm::Function::Create(fin_type,
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+            llvm::Function *fin_func = llvm::Function::Create(void_ft,
                     llvm::Function::LinkOnceAnyLinkage, fin_name, module.get());
 
             llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, ".entry", fin_func);
             builder->SetInsertPoint(fin_bb);
-
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             builder->CreateRetVoid();
+
+            std::string init_name = "_lfortran_module_init_atexit_" + std::string(x.m_name);
+            llvm::Function *init_func = llvm::Function::Create(void_ft,
+                    llvm::Function::LinkOnceAnyLinkage, init_name, module.get());
             
-            llvm::appendToGlobalDtors(*module, fin_func, 1000);
+            llvm::BasicBlock *init_bb = llvm::BasicBlock::Create(context, ".entry", init_func);
+            builder->SetInsertPoint(init_bb);
+
+            llvm::Function *atexit_fn = module->getFunction("atexit");
+            if (!atexit_fn) {
+                llvm::FunctionType *atexit_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {void_ft->getPointerTo()}, false);
+                atexit_fn = llvm::Function::Create(atexit_type,
+                    llvm::Function::ExternalLinkage, "atexit", module.get());
+            }
+            builder->CreateCall(atexit_fn, {fin_func});
+            builder->CreateRetVoid();
+            
+            llvm::appendToGlobalCtors(*module, init_func, 65535);
 
             if (saved_bb) builder->SetInsertPoint(saved_bb);
             else builder->ClearInsertionPoint();
@@ -6156,42 +6173,64 @@ public:
         }
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         start_new_block(proc_return);
+        
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
         free_heap_fixed_size_arrays();
         
-        {
-            llvm::Function *fn_finalize = module->getFunction(
-                "_lfortran_internal_alloc_finalize");
+        llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+        
+        if (!compiler_options.detect_leaks) {
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
-                llvm::FunctionType *ft = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn_finalize = llvm::Function::Create(ft,
-                    llvm::Function::ExternalLinkage,
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
                     "_lfortran_internal_alloc_finalize", module.get());
             }
-            
-            if (compiler_options.detect_leaks) {
-                llvm::appendToGlobalDtors(*module, fn_finalize, 3000);
-            } else {
-                builder->CreateCall(fn_finalize, {});
-            }
+            builder->CreateCall(fn_finalize, {});
         }
+
+        llvm::Value *ret_val2 = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+        builder->CreateRet(ret_val2);
         
         if (compiler_options.detect_leaks) {
-            llvm::Function *fn = module->getFunction("dbg_report");
-            if(!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+            
+            llvm::Function *reg_func = llvm::Function::Create(void_ft,
+                llvm::Function::InternalLinkage, "_lfortran_register_leak_check", module.get());
+            llvm::BasicBlock *reg_bb = llvm::BasicBlock::Create(context, ".entry", reg_func);
+            builder->SetInsertPoint(reg_bb);
+            
+            llvm::Function *atexit_fn = module->getFunction("atexit");
+            if (!atexit_fn) {
+                llvm::FunctionType *atexit_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {void_ft->getPointerTo()}, false);
+                atexit_fn = llvm::Function::Create(atexit_type,
+                    llvm::Function::ExternalLinkage, "atexit", module.get());
             }
-            llvm::appendToGlobalDtors(*module, fn, 2000);
+
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
+            if (!fn_finalize) {
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
+                    "_lfortran_internal_alloc_finalize", module.get());
+            }
+            builder->CreateCall(atexit_fn, {fn_finalize});
+
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if(!fn_dbg) {
+                fn_dbg = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage,
+                    "dbg_report", module.get());
+            }
+            builder->CreateCall(atexit_fn, {fn_dbg});
+
+            builder->CreateRetVoid();
+            
+            llvm::appendToGlobalCtors(*module, reg_func, 100);
+
+            if (saved_bb) builder->SetInsertPoint(saved_bb);
+            else builder->ClearInsertionPoint();
         }
-        
-        llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
-            llvm::APInt(32, 0));
-        builder->CreateRet(ret_val2);
+       
+
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
         set_api_lp->set_is_set_present(is_set_present_copy_lp);
