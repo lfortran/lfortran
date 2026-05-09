@@ -5,9 +5,9 @@
     "infile_hash": "839bc36c5653bbe5c190abafd9760c2cfc94d2a5da73b93c480c61cd",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "asr_openmp-openmp_45-1c0e790.stderr",
-    "stderr_hash": "21274d177f1e1a93b51c1353e661f11eb9f948f84fd666508209e579",
-    "returncode": 2
+    "stdout": "asr_openmp-openmp_45-1c0e790.stdout",
+    "stdout_hash": "fbd0998a3b3d88f1e1d25ce7b14e1ef2d51394b6e05ee10a46ae4592",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }

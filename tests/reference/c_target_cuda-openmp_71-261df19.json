@@ -5,9 +5,9 @@
     "infile_hash": "3dc8c9d0a33e2b1fd1dd572fabf806b89547b85ec20bee4d0688d7c6",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
-    "stderr": "c_target_cuda-openmp_71-261df19.stderr",
-    "stderr_hash": "957d6ece986fa7142de1a45fd97a23ce3f016e32112946f239167e3b",
-    "returncode": 2
+    "stdout": "c_target_cuda-openmp_71-261df19.stdout",
+    "stdout_hash": "81081e8992cc71273d0108c505e65a0361e66d4ffaa43033582041ff",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
 }
