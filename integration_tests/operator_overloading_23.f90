@@ -32,13 +32,21 @@ contains
   pure function aggregate(diagnoses) result(d)
     type(diag_t), intent(in) :: diagnoses(:)
     type(diag_t) :: d
-    type(string_t) :: array(2)
+    type(string_t) :: array(size(diagnoses))
+    logical :: passed_array(size(diagnoses))
     logical :: overall_passed
-    overall_passed = diagnoses%stats(1)%passed(1)
+    integer :: i
+
+    passed_array = diagnoses%stats(1)%passed(1)
+    overall_passed = .true.
+    do i = 1, size(diagnoses)
+      if (.not. passed_array(i)) overall_passed = .false.
+      array(i)%s = "err"
+    end do
 
     d = diag_t( &
       test_passed = overall_passed, &
-      diagnostics_string = .cat. pack(array, mask = .not. diagnoses%stats(2)%passed) &
+      diagnostics_string = .cat. pack(array, mask = .not. diagnoses%stats(2)%passed(1)) &
     )
   end function
 end module
@@ -70,6 +78,7 @@ program operator_overloading_23
   
   result = aggregate(diagnoses)
   if (.not. result%stats(1)%passed(1)) error stop
+  
   diagnoses(2)%stats(1)%passed(1) = .false.
   result = aggregate(diagnoses)
   if (result%stats(1)%passed(1)) error stop
