@@ -18905,21 +18905,15 @@ public:
                         loop_step = get_int64_value(idl->m_increment);
                     }
 
+                    // count = max(0, (end - start) / step + 1)
                     llvm::Value* zero = llvm::ConstantInt::get(int64_type, 0);
                     llvm::Value* one = llvm::ConstantInt::get(int64_type, 1);
-                    llvm::Value* step_is_pos = builder->CreateICmpSGT(loop_step, zero);
-                    llvm::Value* pos_has_iters = builder->CreateICmpSLE(loop_start, loop_end);
-                    llvm::Value* neg_has_iters = builder->CreateICmpSGE(loop_start, loop_end);
-                    llvm::Value* has_iters = builder->CreateSelect(
-                        step_is_pos, pos_has_iters, neg_has_iters);
-                    llvm::Value* pos_span = builder->CreateSub(loop_end, loop_start);
-                    llvm::Value* neg_span = builder->CreateSub(loop_start, loop_end);
-                    llvm::Value* span = builder->CreateSelect(step_is_pos, pos_span, neg_span);
-                    llvm::Value* abs_step = builder->CreateSelect(
-                        step_is_pos, loop_step, builder->CreateNeg(loop_step));
                     llvm::Value* count = builder->CreateAdd(
-                        builder->CreateSDiv(span, abs_step), one);
-                    count = builder->CreateSelect(has_iters, count, zero);
+                        builder->CreateSDiv(
+                            builder->CreateSub(loop_end, loop_start), loop_step),
+                        one);
+                    count = builder->CreateSelect(
+                        builder->CreateICmpSGT(count, zero), count, zero);
 
                     var_size = builder->CreateMul(var_size, count);
 
