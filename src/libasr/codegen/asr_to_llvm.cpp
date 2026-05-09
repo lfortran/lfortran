@@ -18882,53 +18882,29 @@ public:
                     var_size = builder->CreateMul(elem_size, num_elements);
                 }
                 if (idl) {
-                    int ptr_copy = ptr_loads;
-                    ptr_loads = 0;
-                    this->visit_expr_wrapper(idl->m_start, true);
-                    llvm::Value* loop_start = tmp;
-                    ptr_loads = ptr_copy;
-                    if (loop_start->getType()->isPointerTy()) {
-                        ASR::ttype_t* t = ASRUtils::expr_type(idl->m_start);
-                        llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(
-                            idl->m_start, t, module.get());
-                        loop_start = llvm_utils->CreateLoad2(ty, loop_start);
-                    }
-                    loop_start = llvm_utils->convert_kind(loop_start,
-                        llvm::Type::getInt64Ty(context));
-
-                    ptr_copy = ptr_loads;
-                    ptr_loads = 0;
-                    this->visit_expr_wrapper(idl->m_end, true);
-                    llvm::Value* loop_end = tmp;
-                    ptr_loads = ptr_copy;
-                    if (loop_end->getType()->isPointerTy()) {
-                        ASR::ttype_t* t = ASRUtils::expr_type(idl->m_end);
-                        llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(
-                            idl->m_end, t, module.get());
-                        loop_end = llvm_utils->CreateLoad2(ty, loop_end);
-                    }
-                    loop_end = llvm_utils->convert_kind(loop_end,
-                        llvm::Type::getInt64Ty(context));
-
-                    llvm::Value* loop_step = llvm::ConstantInt::get(
-                        llvm::Type::getInt64Ty(context), 1);
-                    if (idl->m_increment) {
-                        ptr_copy = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr_wrapper(idl->m_increment, true);
-                        loop_step = tmp;
-                        ptr_loads = ptr_copy;
-                        if (loop_step->getType()->isPointerTy()) {
-                            ASR::ttype_t* t = ASRUtils::expr_type(idl->m_increment);
-                            llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(
-                                idl->m_increment, t, module.get());
-                            loop_step = llvm_utils->CreateLoad2(ty, loop_step);
-                        }
-                        loop_step = llvm_utils->convert_kind(loop_step,
-                            llvm::Type::getInt64Ty(context));
-                    }
-
                     llvm::Type* int64_type = llvm::Type::getInt64Ty(context);
+                    auto get_int64_value = [&](ASR::expr_t* expr) {
+                        int ptr_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr_wrapper(expr, true);
+                        llvm::Value* value = tmp;
+                        ptr_loads = ptr_copy;
+                        if (value->getType()->isPointerTy()) {
+                            ASR::ttype_t* t = ASRUtils::expr_type(expr);
+                            llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(
+                                expr, t, module.get());
+                            value = llvm_utils->CreateLoad2(ty, value);
+                        }
+                        return llvm_utils->convert_kind(value, int64_type);
+                    };
+
+                    llvm::Value* loop_start = get_int64_value(idl->m_start);
+                    llvm::Value* loop_end = get_int64_value(idl->m_end);
+                    llvm::Value* loop_step = llvm::ConstantInt::get(int64_type, 1);
+                    if (idl->m_increment) {
+                        loop_step = get_int64_value(idl->m_increment);
+                    }
+
                     llvm::Value* zero = llvm::ConstantInt::get(int64_type, 0);
                     llvm::Value* one = llvm::ConstantInt::get(int64_type, 1);
                     llvm::Value* step_is_pos = builder->CreateICmpSGT(loop_step, zero);
@@ -18954,7 +18930,7 @@ public:
                             idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
                         final_val = llvm_utils->convert_kind(final_val, loop_var_type);
 
-                        ptr_copy = ptr_loads;
+                        int ptr_copy = ptr_loads;
                         ptr_loads = 0;
                         bool iat_copy = is_assignment_target;
                         is_assignment_target = true;
