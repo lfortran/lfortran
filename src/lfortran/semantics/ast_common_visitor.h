@@ -7766,10 +7766,17 @@ public:
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
                         }
-                        init_expr = ASRUtils::expr_value(
-                            ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
-                                args.p, args.n, type, ASR::arraystorageType::ColMajor))
-                        );
+                        if (size == 0) {
+                            // Zero-size array: create an empty ArrayConstant directly
+                            init_expr = ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                                al, init_expr->base.loc, 0, nullptr, type,
+                                ASR::arraystorageType::ColMajor));
+                        } else {
+                            init_expr = ASRUtils::expr_value(
+                                ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                    args.p, args.n, type, ASR::arraystorageType::ColMajor))
+                            );
+                        }
                         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
                         value = init_expr;
                     }
