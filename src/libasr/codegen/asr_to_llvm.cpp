@@ -5957,8 +5957,6 @@ public:
 
         visit_procedures(x);
 
-        // ... (visit_procedures(x);) ...
-
         if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
             
