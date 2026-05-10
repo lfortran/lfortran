@@ -397,31 +397,32 @@ public:
             module_name = module_name.substr(19);
         }
 
-        if (global_symtab->get_symbol(module_name) != nullptr) {
-            Module_t *m = down_cast<Module_t>(global_symtab->get_symbol(module_name));
-            symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
-            if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
-            } else {
-                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
-                    + original_name + "' was not found in the module '"
-                    + module_name + "' (but the module was found)");
+        // First, try to resolve from global_symtab or external_symtab
+        // (only if the symbol there is a Module).
+        // We must be careful: the module_name might match a Module in
+        // global/external symtab, but the ExternalSymbol might actually
+        // refer to a Struct/Enum/Function with the same name visible in
+        // current_scope.  So if we find a Module but the symbol is not
+        // inside it, we fall through to current_scope resolution.
+        bool found_in_global_or_external = false;
+        for (SymbolTable *search_symtab : {global_symtab, external_symtab}) {
+            ASR::symbol_t *mod_sym = search_symtab->get_symbol(module_name);
+            if (mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym)) {
+                Module_t *m = down_cast<Module_t>(mod_sym);
+                symbol_t *sym = m->m_symtab->find_scoped_symbol(
+                    original_name, x.n_scope_names, x.m_scope_names);
+                if (sym) {
+                    ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
+                    xx.m_external = sym;
+                    found_in_global_or_external = true;
+                    break;
+                }
             }
-        } else if (external_symtab->get_symbol(module_name) != nullptr) {
-            Module_t *m = down_cast<Module_t>(external_symtab->get_symbol(module_name));
-            symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
-            if (sym) {
-                // FIXME: this is a hack, we need to pass in a non-const `x`.
-                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
-                xx.m_external = sym;
-            } else {
-                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
-                    + original_name + "' was not found in the module '"
-                    + module_name + "' (but the module was found)");
-            }
-        } else if (current_scope->resolve_symbol(module_name) != nullptr) {
+        }
+        if (found_in_global_or_external) {
+            return;
+        }
+        if (current_scope->resolve_symbol(module_name) != nullptr) {
             ASR::symbol_t* m_sym = ASRUtils::symbol_get_past_external(
                                     current_scope->resolve_symbol(module_name));
             if( !m_sym ) {
