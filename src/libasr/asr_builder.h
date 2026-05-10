@@ -1009,8 +1009,15 @@ class ASRBuilder {
         for (auto &x: elements) m_eles.push_back(al, x);
 
         ASR::ttype_t *fixed_size_type = Array({(int64_t) elements.size()}, base_type);
-        ASR::expr_t *arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
-            m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
+        ASR::expr_t *arr_constant;
+        if (elements.size() == 0) {
+            // Zero-size array: create an empty ArrayConstant directly
+            arr_constant = EXPR(ASR::make_ArrayConstant_t(al, loc,
+                0, nullptr, fixed_size_type, ASR::arraystorageType::ColMajor));
+        } else {
+            arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
+        }
 
         // Set multi-dimensional type
         if (array_type) {

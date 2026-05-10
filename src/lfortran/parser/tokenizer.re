@@ -343,10 +343,10 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'end' whitespace 'block' { KW(END_BLOCK) }
             'endblock' { KW(ENDBLOCK) }
 
-            'end' whitespace 'block' whitespace 'data' { KW(END_BLOCK_DATA) }
-            'endblock' whitespace 'data' { KW(END_BLOCK_DATA) }
-            'end' whitespace 'blockdata' { KW(END_BLOCK_DATA) }
-            'endblockdata' { KW(ENDBLOCKDATA) }
+            'end' whitespace 'block' whitespace 'data' / [^a-zA-Z0-9_] { KW(END_BLOCK_DATA) }
+            'endblock' whitespace 'data' / [^a-zA-Z0-9_] { KW(END_BLOCK_DATA) }
+            'end' whitespace 'blockdata' / [^a-zA-Z0-9_] { KW(END_BLOCK_DATA) }
+            'endblockdata' / [^a-zA-Z0-9_] { KW(ENDBLOCKDATA) }
 
             'end' whitespace 'subroutine' { KW(END_SUBROUTINE) }
             'endsubroutine' { KW(ENDSUBROUTINE) }
