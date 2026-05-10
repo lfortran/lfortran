@@ -18226,6 +18226,26 @@ public:
                 builder->CreateBr(loop_cond_bb);
 
                 builder->SetInsertPoint(loop_end_bb);
+                if (compiler_options.po.use_loop_variable_after_loop) {
+                    llvm::Value* cur_val = builder->CreateLoad(
+                        llvm::Type::getInt64Ty(context), loop_var_alloca);
+                    llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
+                        idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
+                    cur_val = llvm_utils->convert_kind(cur_val, loop_var_type);
+
+                    int ptr_copy_inner = ptr_loads;
+                    ptr_loads = 0;
+                    bool iat_copy_inner = is_assignment_target;
+                    is_assignment_target = true;
+                    this->visit_expr(*idl->m_var);
+                    llvm::Value* real_var_ptr = tmp;
+                    is_assignment_target = iat_copy_inner;
+                    ptr_loads = ptr_copy_inner;
+
+                    if (real_var_ptr && real_var_ptr->getType()->isPointerTy()) {
+                        builder->CreateStore(cur_val, real_var_ptr);
+                    }
+                }
             } else {
                 emit_single_formatted_read(val_expr, unit_val, loop_iostat, read_size,
                                            no_advance_str, no_advance_len,
@@ -18838,7 +18858,14 @@ public:
             
             for (size_t i = 0; i < x.n_iolength_vars; i++) {
                 ASR::expr_t* var_expr = x.m_iolength_vars[i];
-                ASR::ttype_t* var_type = ASRUtils::expr_type(var_expr);
+                ASR::ImpliedDoLoop_t* idl = nullptr;
+                ASR::expr_t* size_expr = var_expr;
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*var_expr)) {
+                    idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(var_expr);
+                    LCOMPILERS_ASSERT(idl->n_values > 0);
+                    size_expr = idl->m_values[0];
+                }
+                ASR::ttype_t* var_type = ASRUtils::expr_type(size_expr);
                 ASR::ttype_t* var_type_base = ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var_type)));
@@ -18864,10 +18891,67 @@ public:
                 if (ASRUtils::is_array(var_type)) {
                     ASR::ttype_t* int_type = ASRUtils::TYPE(
                         ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    visit_ArraySizeUtil(var_expr, int_type, nullptr, nullptr);
+                    visit_ArraySizeUtil(size_expr, int_type, nullptr, nullptr);
                     llvm::Value* num_elements = builder->CreateZExtOrTrunc(
                         tmp, llvm::Type::getInt64Ty(context));
                     var_size = builder->CreateMul(elem_size, num_elements);
+                }
+                if (idl) {
+                    llvm::Type* int64_type = llvm::Type::getInt64Ty(context);
+                    auto get_int64_value = [&](ASR::expr_t* expr) {
+                        int ptr_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr_wrapper(expr, true);
+                        llvm::Value* value = tmp;
+                        ptr_loads = ptr_copy;
+                        if (value->getType()->isPointerTy()) {
+                            ASR::ttype_t* t = ASRUtils::expr_type(expr);
+                            llvm::Type* ty = llvm_utils->get_type_from_ttype_t_util(
+                                expr, t, module.get());
+                            value = llvm_utils->CreateLoad2(ty, value);
+                        }
+                        return llvm_utils->convert_kind(value, int64_type);
+                    };
+
+                    llvm::Value* loop_start = get_int64_value(idl->m_start);
+                    llvm::Value* loop_end = get_int64_value(idl->m_end);
+                    llvm::Value* loop_step = llvm::ConstantInt::get(int64_type, 1);
+                    if (idl->m_increment) {
+                        loop_step = get_int64_value(idl->m_increment);
+                    }
+
+                    // count = max(0, (end - start) / step + 1)
+                    llvm::Value* zero = llvm::ConstantInt::get(int64_type, 0);
+                    llvm::Value* one = llvm::ConstantInt::get(int64_type, 1);
+                    llvm::Value* count = builder->CreateAdd(
+                        builder->CreateSDiv(
+                            builder->CreateSub(loop_end, loop_start), loop_step),
+                        one);
+                    count = builder->CreateSelect(
+                        builder->CreateICmpSGT(count, zero), count, zero);
+
+                    var_size = builder->CreateMul(var_size, count);
+
+                    if (compiler_options.po.use_loop_variable_after_loop) {
+                        llvm::Value* final_val = builder->CreateAdd(
+                            loop_start, builder->CreateMul(count, loop_step));
+                        llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
+                            idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
+                        final_val = llvm_utils->convert_kind(final_val, loop_var_type);
+
+                        int ptr_copy = ptr_loads;
+                        ptr_loads = 0;
+                        bool iat_copy = is_assignment_target;
+                        is_assignment_target = true;
+                        this->visit_expr(*idl->m_var);
+                        llvm::Value* real_var_ptr = tmp;
+                        is_assignment_target = iat_copy;
+                        ptr_loads = ptr_copy;
+
+                        if (real_var_ptr && real_var_ptr->getType()->isPointerTy()) {
+                            builder->CreateStore(final_val, real_var_ptr);
+                        }
+                    }
                 }
 
                 total_size = builder->CreateAdd(total_size, var_size);
