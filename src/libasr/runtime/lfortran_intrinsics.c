@@ -5520,6 +5520,13 @@ int32_t last_index_used = -1;
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
 // Pending bytes for sequential unformatted records per unit (shared by all types).
+// The Fortran standard mandates that the NEWUNIT specifier generates unique negative
+// unit numbers. To track the I/O state (such as pending bytes) for these negative units
+// without changing the data structure drastically, we allocate double the capacity
+// (MAXUNITS * 2).
+// Positive units [0, MAXUNITS-1] map to indices [0, MAXUNITS-1].
+// Negative units [-MAXUNITS+1, -1] map to indices [MAXUNITS+1, 2*MAXUNITS-1].
+// The STATE_INDEX macro provides this seamless mapping.
 #define STATE_INDEX(u) ((u) >= 0 ? (u) : (MAXUNITS - (u)))
 static int32_t seq_unf_pending[MAXUNITS*2];
 static int32_t seq_unf_record_len[MAXUNITS*2];
