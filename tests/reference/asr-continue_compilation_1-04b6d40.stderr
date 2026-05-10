@@ -1108,19 +1108,19 @@ semantic error: `exit` statements cannot be outside of loops or blocks
 513 |     exit
     |     ^^^^ 
 
-semantic error: Required argument `y` at position 2 is missing in function call
+semantic error: Required argument `y` at position 2 is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:516:18
     |
 516 |     call my_func(10)
     |                  ^^ 
 
-semantic error: Required argument `x` is missing in function call
+semantic error: Required argument `x` is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:517:5
     |
 517 |     call my_func()
     |     ^^^^^^^^^^^^^^ 
 
-semantic error: Required argument `extra_arg` is missing in function call
+semantic error: Required argument `extra_arg` is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:521:5
     |
 521 |     call obj%display()
@@ -1157,7 +1157,7 @@ semantic error: Argument was not specified
 528 |     call logger % add_log_file(filename=filename)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 1-th argument not specified for add_log_file
 
-semantic error: Required argument `unit` is missing in function call
+semantic error: Required argument `unit` is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:529:5
     |
 529 |     call logger % add_log_file()
