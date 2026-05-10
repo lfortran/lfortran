@@ -12787,12 +12787,11 @@ public:
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
 
             if (!ASRUtils::is_array(m_type)) {
-                // rank(0): extract scalar value from the assumed-rank descriptor.
+                // rank(0): extract scalar from the assumed-rank descriptor.
                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(
                     data_type->getPointerTo(),
                     arr_descr->get_pointer_to_data(arr_type, arg));
-                if (ASRUtils::is_struct(*m_type)) {
-                    // For struct types, return the pointer (deepcopy needs a pointer)
+                if (ASRUtils::is_struct(*m_type) || ptr_loads == 0) {
                     tmp = data_ptr;
                 } else {
                     tmp = llvm_utils->CreateLoad2(data_type, data_ptr);
@@ -22556,7 +22555,16 @@ public:
                     }
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
+                ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                    x.m_args[i].m_value);
+                int64_t ptr_loads_copy = ptr_loads;
+                if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                        apc->m_new == ASR::array_physical_typeType::DescriptorArray &&
+                        !ASRUtils::is_array(apc->m_type)) {
+                    ptr_loads = 0;
+                }
                 this->visit_expr_wrapper(x.m_args[i].m_value);
+                ptr_loads = ptr_loads_copy;
                 if (ASRUtils::is_class_type(
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)))
                     && !ASRUtils::is_class_type(
