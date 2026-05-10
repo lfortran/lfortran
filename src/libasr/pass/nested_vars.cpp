@@ -195,8 +195,6 @@ public:
                     }
                 }
             } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::symbol_t* par_func_sym_copy = par_func_sym;
-                par_func_sym = cur_func_sym;
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
                     item.second);
                 if (!is_func_visited) {
@@ -206,6 +204,8 @@ public:
                     }
                 }
 
+                ASR::symbol_t* par_func_sym_copy = par_func_sym;
+                par_func_sym = cur_func_sym;
                 visit_Function(*s);
                 par_func_sym = par_func_sym_copy;
             } else {
