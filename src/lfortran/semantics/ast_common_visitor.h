@@ -2154,7 +2154,7 @@ public:
         }
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, nullptr, value);
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), intent, value, value != nullptr ? ASRUtils::expr_value(value) : value,
@@ -8259,11 +8259,17 @@ public:
                             variable_added_to_symtab->m_type = type;
                         }
                     }
-                    SetChar variable_dependencies_vec;
-                    variable_dependencies_vec.reserve(al, 1);
-                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value, sym);
-                    variable_added_to_symtab->m_dependencies = variable_dependencies_vec.p;
-                    variable_added_to_symtab->n_dependencies = variable_dependencies_vec.n;
+
+                    if (!is_implicitly_declared) {
+                        // An implicit dimension statement can declare array dimensions containing
+                        // variables, which are added to the dependencies. 
+                        // Collecting variable dependencies again overwrites them, so skip them.
+                        SetChar variable_dependencies_vec;
+                        variable_dependencies_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value, sym);
+                        variable_added_to_symtab->m_dependencies = variable_dependencies_vec.p;
+                        variable_added_to_symtab->n_dependencies = variable_dependencies_vec.n;
+                    }
 
                     if (ASR::is_a<ASR::StructType_t>(
                             *ASRUtils::extract_type(variable_added_to_symtab->m_type))
