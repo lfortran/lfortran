@@ -45,6 +45,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
@@ -5955,6 +5956,40 @@ public:
         finish_module_init_function_prototype(x);
 
         visit_procedures(x);
+        if (compiler_options.detect_leaks) {
+            std::string mod_name_str = std::string(x.m_name);
+            std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
+
+            // Guard: only emit once per module (re-entrant visit protection)
+            if (!module->getFunction(finalizer_name)) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), /*isVarArg=*/false);
+                llvm::Function *fin_fn = llvm::Function::Create(
+                    ft,
+                    llvm::GlobalValue::ExternalLinkage,
+                    finalizer_name,
+                    module.get());
+
+                llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(
+                    context, "entry", fin_fn);
+
+                llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+                llvm::BasicBlock::iterator saved_ip = builder->GetInsertPoint();
+
+                builder->SetInsertPoint(fin_bb);
+
+                llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+
+                builder->CreateRetVoid();
+
+                if (saved_bb) {
+                    builder->SetInsertPoint(saved_bb, saved_ip);
+                }
+
+                llvm::appendToGlobalDtors(*module, fin_fn, 200);
+            }
+        }
+
         mangle_prefix = "";
         current_scope = current_scope_copy;
     }
@@ -6085,8 +6120,6 @@ public:
                 llvm::APInt(32, compiler_options.fpe_traps));
             builder->CreateCall(fpe_fn, {mask_val});
         }
-        // Enable CFI debug mode so CFI_allocate/CFI_deallocate use the
-        // tracked allocator, keeping them in sync with Fortran allocate/deallocate.
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = module->getFunction("_lfortran_set_cfi_debug_mode");
             if (!fn) {
@@ -6136,14 +6169,17 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
-        // Free globals if detecting leaks is ON, to print clean report
         if(compiler_options.detect_leaks){
             SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
             for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
                 auto &sym = name_sym_pair.second;
                 if(ASR::is_a<ASR::Module_t>(*sym)){
-                    llvm_symtab_finalizer.finalize_symtab(
-                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
+                    ASR::Module_t *mod_sym = ASR::down_cast<ASR::Module_t>(sym);
+                    std::string fin_name = "_lfortran_module_finalize_"
+                                          + std::string(mod_sym->m_name);
+                    if (!module->getFunction(fin_name)) {
+                        llvm_symtab_finalizer.finalize_symtab(mod_sym->m_symtab);
+                    }
                 }
             }
         }
@@ -6162,13 +6198,13 @@ public:
         }
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = module->getFunction("dbg_report");
-            if(!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            if (!fn) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context),false);
+                fn = llvm::Function::Create(ft,
+                    llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
             }
-            builder->CreateCall(fn, {});
+            llvm::appendToGlobalDtors(*module, fn, 255);
         }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));

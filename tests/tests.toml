@@ -5168,3 +5168,8 @@ asr = true
 [[test]]
 filename = "../integration_tests/read_83.f90"
 llvm = true
+
+[[test]]
+filename = "detect_leaks_separate_compilation_prog.f90"
+llvm = true
+options = "--separate-compilation --detect-leaks"
