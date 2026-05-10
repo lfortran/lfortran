@@ -1,5 +1,0 @@
-semantic error: Cannot call 'xub' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
- --> tests/errors/implicit_call_01.f90:4:5
-  |
-4 |     call xub (i)
-  |     ^^^^^^^^^^^^ 
