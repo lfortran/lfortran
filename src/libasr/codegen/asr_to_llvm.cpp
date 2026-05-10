@@ -5966,7 +5966,7 @@ public:
                     llvm::Type::getVoidTy(context), /*isVarArg=*/false);
                 llvm::Function *fin_fn = llvm::Function::Create(
                     ft,
-                    llvm::GlobalValue::ExternalLinkage,
+                    llvm::GlobalValue::LinkOnceODRLinkage,
                     finalizer_name,
                     module.get());
 

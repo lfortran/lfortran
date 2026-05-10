@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-detect_leaks_separate_compilation_prog-7bcf151",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/detect_leaks_separate_compilation_prog.f90",
+    "infile_hash": "11ce96e9beac68294efc55fdb91c46a6b80dd575360d22301b6354f4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 3221226105
+}
