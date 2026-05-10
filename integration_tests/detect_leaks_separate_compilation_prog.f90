@@ -1,4 +1,4 @@
-﻿program p
+program p
     interface
         subroutine sub()
         end subroutine
