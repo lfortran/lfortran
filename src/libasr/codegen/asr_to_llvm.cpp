@@ -23949,8 +23949,32 @@ public:
                         // Store Vptr from original struct
                         llvm::Value* vptr;
                         if (ASRUtils::is_class_type(arg_type)) {
-                            vptr = builder->CreateBitCast(dt, llvm_utils->vptr_type->getPointerTo());
-                            vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
+                            llvm::Type* wrapper_struct_type = llvm::StructType::get(
+                                context, {llvm_utils->vptr_type, llvm_utils->i8_ptr});
+                            ASR::ttype_t* arg_full_type = ASRUtils::expr_type(arg_expr);
+                            llvm::Value* wrapper_ptr = dt;
+                            if (LLVM::is_llvm_pointer(*arg_full_type)) {
+
+                                wrapper_ptr = llvm_utils->CreateLoad2(
+                                    wrapper_struct_type->getPointerTo(),
+                                    builder->CreateBitCast(dt,
+                                        wrapper_struct_type->getPointerTo()->getPointerTo()));
+                            } else {
+                                wrapper_ptr = builder->CreateBitCast(
+                                    dt, wrapper_struct_type->getPointerTo());
+                            }
+                            llvm::Value* vptr_slot = llvm_utils->create_gep2(
+                                wrapper_struct_type, wrapper_ptr, 0);
+                            vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_slot);
+                            builder->CreateStore(vptr, llvm_utils->create_gep2(
+                                unlimited_polymorphic_type, unlimited_polymorphic_struct, 0));
+
+                            llvm::Value* wrapper_data_slot = llvm_utils->create_gep2(
+                                wrapper_struct_type, wrapper_ptr, 1);
+                            llvm::Value* wrapper_data = llvm_utils->CreateLoad2(
+                                llvm_utils->i8_ptr, wrapper_data_slot);
+                            builder->CreateStore(wrapper_data, data_ptr);
+                            return unlimited_polymorphic_struct;
                         } else {
                             vptr = struct_api->get_pointer_to_method(ASRUtils::symbol_get_past_external(
                                 ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), module.get());
