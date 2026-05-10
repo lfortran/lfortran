@@ -2985,8 +2985,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
             }
         }
         for( ; i < sub.n_args; i++ ) {
-            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
-            if( v->m_presence != ASR::presenceType::Optional ) {
+            ASR::symbol_t* sub_arg_sym = symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(sub.m_args[i])->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sub_arg_sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sub_arg_sym);
+                if (v->m_presence != ASR::presenceType::Optional) {
+                    return false;
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
                 return false;
             }
         }

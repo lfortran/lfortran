@@ -1461,6 +1461,12 @@ warning: Real constant overflows its kind (4)
 651 |     print  *, 9.99e+99
     |               ^^^^^^^^ 
 
+semantic error: Missing actual argument for argument 'stat'
+   --> tests/errors/continue_compilation_1.f90:652:10
+    |
+652 |     a5 = missing_required_arg_func()
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: No matching `operator(-)` found for this operand type
    --> tests/errors/continue_compilation_1.f90:662:18
     |

@@ -7682,7 +7682,7 @@ public:
                             if (args.empty()) {
                                 diag.add(diag::Diagnostic(
                                     "Required argument `" + std::string(v->m_name) +
-                                    "` is missing in function call",
+                                    "` is missing in procedure call",
                                     diag::Level::Error, diag::Stage::Semantic, {
                                         diag::Label("", {x.base.base.loc})
                                     }));
@@ -7693,7 +7693,7 @@ public:
                             diag.add(diag::Diagnostic(
                                 "Required argument `" + std::string(v->m_name) +
                                 "` at position " + std::to_string(i + 1) +
-                                " is missing in function call",
+                                " is missing in procedure call",
                                 diag::Level::Error, diag::Stage::Semantic, {
                                     diag::Label("", {args_loc})
                                 }));
