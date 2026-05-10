@@ -14793,17 +14793,14 @@ public:
                 break;
             }
             case 16 : {
-                if (x.m_n != nullptr && x.m_n[0] != '\0') {
-                    std::string s = ASRUtils::extract_real_16_str(x.m_n);
-                    llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(s));
-                    tmp = llvm::ConstantFP::get(context, apf);
-                } else {
-                    llvm::APFloat apf(val);
-                    bool losesInfo;
-                    apf.convert(llvm::APFloat::IEEEquad(),
-                                llvm::APFloat::rmNearestTiesToEven, &losesInfo);
-                    tmp = llvm::ConstantFP::get(context, apf);
-                }
+                // recover pointer to lf_float128 stored in m_r via memcpy
+                uintptr_t addr;
+                memcpy(&addr, &val, sizeof(uintptr_t));
+                lf_float128 *p = (lf_float128*)addr;
+                char buf[64];
+                lf_float128_to_str(buf, p->bytes);
+                llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
+                tmp = llvm::ConstantFP::get(context, apf);
                 break;
             }
             default : {
