@@ -66,7 +66,7 @@
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/gpu_utils.h>
-
+#include <libasr/runtime/lfortran_float128.h>
 namespace LCompilers {
 
 using ASR::is_a;
@@ -14793,14 +14793,25 @@ public:
                 break;
             }
             case 16 : {
-                // recover pointer to lf_float128 stored in m_r via memcpy
-                uintptr_t addr;
-                memcpy(&addr, &val, sizeof(uintptr_t));
-                lf_float128 *p = (lf_float128*)addr;
-                char buf[64];
-                lf_float128_to_str(buf, p->bytes);
-                llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
-                tmp = llvm::ConstantFP::get(context, apf);
+                uint64_t bits;
+                memcpy(&bits, &val, sizeof(uint64_t));
+                // NaN-boxed pointer: top 16 bits = 0xFFF8 means pointer
+                bool is_nanboxed_ptr = (bits & 0xFFFF000000000000ULL) == 0xFFF8000000000000ULL;
+                if (is_nanboxed_ptr) {
+                    uintptr_t addr = (uintptr_t)(bits & 0x0000FFFFFFFFFFFFULL);
+                    lf_float128 *p = (lf_float128*)addr;
+                    char buf[64];
+                    lf_float128_to_str(buf, p->bytes);
+                    llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
+                    tmp = llvm::ConstantFP::get(context, apf);
+                } else {
+                    // plain double (from constant folding) - promote to fp128
+                    llvm::APFloat apf(val);
+                    bool losesInfo;
+                    apf.convert(llvm::APFloat::IEEEquad(),
+                                llvm::APFloat::rmNearestTiesToEven, &losesInfo);
+                    tmp = llvm::ConstantFP::get(context, apf);
+                }
                 break;
             }
             default : {

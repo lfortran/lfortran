@@ -97,7 +97,7 @@ static inline std::string extract_real(const char *s) {
     return x;
 }
 
-/
+
 static inline std::string extract_real_16_str(const char *s) {
     std::string r = extract_real(s);         // normalise d/D/q/Q → e/E
     auto pos = r.rfind('_');
@@ -2605,7 +2605,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 0, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, nullptr, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, asr_type));
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 0.0, 0.0, asr_type));
@@ -2638,7 +2638,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 1, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, nullptr, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 0.0, asr_type));
@@ -2679,7 +2679,7 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
                 default:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, nullptr, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
             throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
@@ -2712,7 +2712,7 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
                 default:
                     throw LCompilersException("get_maximum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, nullptr, asr_type));
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         default: {
             throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
@@ -7343,9 +7343,9 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         case ASR::ttypeType::Real: {
             switch (kind) {
                 case 4: value = EXPR(ASR::make_RealConstant_t(al, loc,
-                                    ((float*)data)[i], nullptr, type)); break;
+                                    ((float*)data)[i], type)); break;
                 case 8: value = EXPR(ASR::make_RealConstant_t(al, loc,
-                                    ((double*)data)[i], nullptr, type)); break;
+                                    ((double*)data)[i], type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }
@@ -8535,7 +8535,7 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
             if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
                 args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r, nullptr,
+                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
                     ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
             } else {
                 args.p[i] = EXPR(ASR::make_Cast_t(
