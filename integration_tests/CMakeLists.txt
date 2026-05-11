@@ -2506,6 +2506,7 @@ RUN(NAME allocate_67 LABELS gfortran llvm)
 RUN(NAME allocate_68 LABELS gfortran llvm)
 RUN(NAME allocate_69 LABELS gfortran llvm)
 RUN(NAME allocate_70 LABELS gfortran llvm)
+RUN(NAME allocate_71 LABELS gfortran llvm)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
