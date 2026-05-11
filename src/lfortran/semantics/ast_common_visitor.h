@@ -18048,7 +18048,7 @@ public:
 
         if (!matched) {
             diag.add(Diagnostic(
-                "The operator `." + op + ".` is defined, but a procedure in it was not found",
+                "No matching procedure found in `.def_op.` with compatible argument types",
                 Level::Error,
                 Stage::Semantic,
                 { Label("", { loc }) }));
