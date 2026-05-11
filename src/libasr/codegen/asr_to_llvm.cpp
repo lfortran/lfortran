@@ -6526,7 +6526,8 @@ public:
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
                     ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration));
-                    allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type);
+                    allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type,
+                        is_intent_out, initialize_val, skip_allocatable_array_descriptor_init);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     // Skip string descriptor setup for bind(C) struct non-pointer character members
                     bool is_bindc = (struct_type_t->m_abi == ASR::abiType::BindC);
@@ -7349,8 +7350,10 @@ public:
                         allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
                     }
                 } else {
+                    bool is_intent_out_var = (v->m_intent == ASR::intentType::Out);
                     allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type);
+                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type,
+                        is_intent_out_var);
                 }
                 if (struct_skip_bb != nullptr) {
                     builder->CreateBr(struct_skip_bb);
