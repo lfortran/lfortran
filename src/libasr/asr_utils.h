@@ -118,16 +118,6 @@ static inline double extract_real_8(const char *s) {
     return std::strtod(r_str.c_str(), nullptr);
 }
 
-static inline double extract_real_16(const char *s) {
-    // NOTE: ASR::RealConstant_t currently stores m_r as a C double, so this
-    // function is only used for constant-folding paths that read back m_r.
-    // For full precision at codegen time, use extract_real_16_str() and pass
-    // the result directly to llvm::APFloat(IEEEquad, StringRef).
-    // (tracked: lfortran issue #3468)
-    std::string r_str = extract_real(s);
-    return std::strtod(r_str.c_str(), nullptr);
-}
-
 static inline ASR::expr_t* EXPR(const ASR::asr_t *f)
 {
     return ASR::down_cast<ASR::expr_t>(f);
