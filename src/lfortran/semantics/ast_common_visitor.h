@@ -15255,7 +15255,7 @@ public:
         diag.semantic_warning_label(
             "`sizeof` is an LFortran extension",
             {x.base.base.loc},
-            "use `c_sizeof` from `iso_c_binding` for portable code");
+            "use the `storage_size` intrinsic function. Alternatively, use `c_sizeof` from `iso_c_binding` for `bind(c)` types");
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("sizeof"));
@@ -15272,7 +15272,7 @@ public:
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
             size_type, value);
     }
-
+    
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc, int kind) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
