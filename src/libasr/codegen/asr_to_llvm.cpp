@@ -8962,11 +8962,16 @@ public:
         // Get rank from base array
         int n_dims = ASRUtils::extract_n_dims_from_ttype(base_struct_array_type);
 
+        LCOMPILERS_ASSERT(n_dims == 1 );
+
         // Compute the stride multiplier: sizeof(struct) / sizeof(component)
         // This is the number of component-sized elements between consecutive struct elements
         llvm::DataLayout data_layout(module->getDataLayout());
         uint64_t struct_size = data_layout.getTypeAllocSize(struct_llvm_type);
         uint64_t component_size = data_layout.getTypeAllocSize(component_llvm_type);
+    
+        LCOMPILERS_ASSERT(component_size > 0);
+
         uint64_t stride_multiplier = struct_size / component_size;
 
         if (base_ptype == ASR::array_physical_typeType::DescriptorArray) {
