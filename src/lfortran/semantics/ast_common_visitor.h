@@ -4161,8 +4161,8 @@ public:
                     this->visit_expr(*a->m_object[0]);
                     ASR::expr_t* object = ASRUtils::EXPR(tmp);
                     ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+                    size_t curr_value = 0;
                     if (ASRUtils::is_array(obj_type)) { // it is an array
-                        size_t curr_value = 0;
                         handle_array_data_stmt(x, a, obj_type, object, curr_value);
                     } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
                         /*
@@ -4170,7 +4170,7 @@ public:
                             Here the implied do loop gets expanded to:
                             DATA a(1), a(2), a(3), a(4), a(5) /1.0, 2.0, 0.0, 0.0, 0.0/
                         */
-                        handle_implied_do_loop_data_stmt(x, a, object, i);
+                        handle_implied_do_loop_data_stmt(x, a, object, curr_value);
                     } else {
                         diag.add(Diagnostic(
                             "There is one variable and multiple values, but the variable is not an array",
@@ -4219,6 +4219,8 @@ public:
                     ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
                     if (ASRUtils::is_array(obj_type)) {
                         handle_array_data_stmt(x, a, obj_type, object, j);
+                    } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
+                        handle_implied_do_loop_data_stmt(x, a, object, j);
                     } else {
                         handle_scalar_data_stmt(x, a, i, j);
                     }
