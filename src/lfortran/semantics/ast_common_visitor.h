@@ -9932,6 +9932,7 @@ public:
             if( a.m_right ) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(a.m_right))) {
                     is_arg_array = true;
+                    is_item = false;
                     ASR::dimension_t* arg_dim = nullptr;
                     if (!(ASRUtils::extract_dimensions_from_ttype(
                             ASRUtils::expr_type(a.m_right), arg_dim) == 1)) {
@@ -10023,7 +10024,8 @@ public:
                     if (arg.m_left == nullptr && arg.m_step == nullptr) {
                         ASR::expr_t *val = ASRUtils::expr_value(v_Var);
                         ASR::expr_t *index = ASRUtils::expr_value(arg.m_right);
-                        if (val && index) {
+                        // Only fold at compile time when the index is a scalar integer constant
+                        if (val && index && !is_arg_array && ASR::is_a<ASR::IntegerConstant_t>(*index)) {
                             val = ASRUtils::expr_value(val);
                             ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
                             ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
@@ -10378,11 +10380,18 @@ public:
                 if (args.p[i].m_step != nullptr
                     || (args.p[i].m_step == nullptr && args.p[i].m_right != nullptr
                         && ASRUtils::is_array(ASRUtils::expr_type(args.p[i].m_right)))) {
-                    ASR::dimension_t empty_dim;
-                    empty_dim.loc = loc;
-                    empty_dim.m_start = nullptr;
-                    empty_dim.m_length = nullptr;
-                    array_section_dims.push_back(al, empty_dim);
+                    ASR::dimension_t dim_to_push;
+                    dim_to_push.loc = loc;
+                    if (is_arg_array && args.p[i].m_step == nullptr && args.p[i].m_right != nullptr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(args.p[i].m_right)) &&
+                            i < res_dims_vec.size()) {
+                        dim_to_push.m_start  = res_dims_vec.p[i].m_start;
+                        dim_to_push.m_length = res_dims_vec.p[i].m_length;
+                    } else {
+                        dim_to_push.m_start  = nullptr;
+                        dim_to_push.m_length = nullptr;
+                    }
+                    array_section_dims.push_back(al, dim_to_push);
                 }
                 int max_kind = -1;
                 int left_kind = -1;
@@ -10704,7 +10713,7 @@ public:
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         dim.m_start = one;
-        if( !is_fixed_size_implied_do_loop || use_descriptorArray) {
+        if( !is_fixed_size_implied_do_loop ) {
             dim.m_length = nullptr;
         } else {
             ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, n_elements, int_type));
