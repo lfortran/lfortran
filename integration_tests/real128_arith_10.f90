@@ -1,11 +1,9 @@
-program real128_arith_01
+program real128_arith_10
     use, intrinsic :: iso_fortran_env, only: real128
     implicit none
     real(real128) :: a, b, c
-    a = 1.5_real128
-    print *, a
-    b = 2.5_real128
-    c = a + b
-    c = 2*c
+    a = 3.0_real128
+    b = 4.0_real128
+    c = (a + b) * (a - b)
     print *, c
 end program
