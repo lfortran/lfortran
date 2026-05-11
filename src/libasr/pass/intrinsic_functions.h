@@ -3858,11 +3858,9 @@ namespace Mod {
             ASR::expr_t* arg0 = b.r2r_t(args[0], new_type);
             ASR::expr_t* arg1 = b.r2r_t(args[1], new_type);
 
-            if (upper_kind == 4) {
-                body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.i2r_t(b.r2i_t(b.Div(arg0, arg1), real32), real32)))));
-            } else {
-                body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.i2r_t(b.r2i_t(b.Div(arg0, arg1), real64), real64)))));
-            }
+            body.push_back(al, b.Assignment(result,
+                b.Sub(arg0, b.Mul(arg1,
+                    b.i2r_t(b.r2i_t(b.Div(arg0, arg1), int64), new_type)))));
         } else {
             ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, upper_kind));
             ASR::expr_t* arg0 = b.i2i_t(args[0], new_type);

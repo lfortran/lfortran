@@ -16,8 +16,8 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
 #include <libasr/runtime/lfortran_float128.h>
-
-
+#include <cstdint>
+#include <cstring>
 #include <string>
 #include <sstream>
 #include <set>
@@ -18514,13 +18514,10 @@ public:
         } else if ( r_kind == 8 ) {
             r = ASRUtils::extract_real_8(x.m_n);
         } else if ( r_kind == 16 ) {
-            // NaN-box the pointer: store as 0xFFF8_xxxx_xxxx_xxxx
-            // so codegen can distinguish it from a plain double
             lf_float128 *p = (lf_float128*)al.alloc(sizeof(lf_float128));
             *p = lf_float128_from_str(ASRUtils::extract_real_16_str(x.m_n).c_str());
             uintptr_t addr = (uintptr_t)p;
-            uint64_t nanboxed = 0xFFF8000000000000ULL | (addr & 0x0000FFFFFFFFFFFFULL);
-            memcpy(&r, &nanboxed, sizeof(double));
+            std::memcpy(&r, &addr, sizeof(addr));
         } else {
             diag.add(Diagnostic("Kind not supported",
                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));

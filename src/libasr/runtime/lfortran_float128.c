@@ -1423,8 +1423,7 @@ lf_float128 lf_float128_from_str(const char *s) {
         int bl_r = top_r*64 + (63-__builtin_clzll(sig.d[top_r]));
         int k    = bl_s - bl_r + 112;
         if (k < 0) {
-            /* sig larger: shift S */
-            big_shl(&S2, -k); k = 0;
+            big_shl(&S2, -k);
         } else {
             big_shl(&sig, k);
         }
@@ -1445,32 +1444,27 @@ lf_float128 lf_float128_from_str(const char *s) {
                 k--;
             }
         }
-        /* Now sig/S2 ∈ [2^112, 2^113) */
-        /* Extract 113 bits using binary long division */
+        /* Now sig/S2 is close to [2^112, 2^113). Extract the integer
+         * quotient directly; this quotient is the binary128 significand. */
         u128 mant2 = 0;
-        for (int i = 112; i >= 0; i--) {
-            big_shl(&sig, 1);
-            if (big_cmp(&sig, &S2) >= 0) {
-                big_sub(&sig, &S2);
+        for (int i = 113; i >= 0; i--) {
+            Big shifted = S2;
+            big_shl(&shifted, i);
+            if (big_cmp(&sig, &shifted) >= 0) {
+                big_sub(&sig, &shifted);
                 mant2 |= (u128)1 << i;
             }
         }
-        /* Round: if remainder*2 >= S2, round up */
+
+        /* Round: if remainder*2 >= denominator, round up. */
         big_shl(&sig, 1);
         if (big_cmp(&sig, &S2) >= 0) mant2++;
 
-        int32_t exp2 = k - bl_s + bl_r;  /* hmm, let me recalc */
-        /* The true exponent: sig_orig/S = mant2/2^112 * 2^(k+bl_r-bl_s+???) */
-        /* Simpler recalculation: */
-        exp2 = 112 - k;   /* since we shifted sig left by k to represent it as integer */
-
-        /* Actually: original_value = sig_orig / S2_orig
-         * We shifted sig left by k: new_sig = sig_orig * 2^k
-         * new_sig / S2 = mant2 which is in [2^112, 2^113)
-         * So: sig_orig / S2_orig = mant2 / 2^k = mant2 * 2^(−k)
-         * true_exp of result = exp of mant2 - k = 112 - k
-         */
-        exp2 = 112 - k;
+        int32_t exp2 = 112 - k;
+        if (mant2 >> 113) {
+            mant2 >>= 1;
+            exp2++;
+        }
         return f128_pack_parts(sign, exp2, mant2);
     }
 }

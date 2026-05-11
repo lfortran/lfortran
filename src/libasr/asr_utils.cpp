@@ -3118,8 +3118,12 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
         } else if (a_kind == ASR::cast_kindType::RealToReal) {
             double v = ASR::down_cast<ASR::RealConstant_t>(
                     ASRUtils::expr_value(a_arg))->m_r;
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a_arg));
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
-            if (dest_kind != 16) {
+            if (src_kind != 16 && dest_kind != 16) {
+                value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_RealConstant_t(al, a_loc, v, a_type));
+            } else if (src_kind == 16 && dest_kind == 16) {
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_RealConstant_t(al, a_loc, v, a_type));
             }

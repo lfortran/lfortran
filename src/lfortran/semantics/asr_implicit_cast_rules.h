@@ -212,9 +212,13 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
-                    double rval = static_cast<double>(i->m_n);
-                    value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                                                                 rval, dest_type2);
+                    if (ASRUtils::extract_kind_from_ttype_t(dest_type2) != 16) {
+                        double rval = static_cast<double>(i->m_n);
+                        value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                                                                    rval, dest_type2);
+                    } else {
+                        value = nullptr;
+                    }
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                     ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
