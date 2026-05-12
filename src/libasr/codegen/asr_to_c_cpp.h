@@ -393,12 +393,14 @@ R"(#include <stdio.h>
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string open_paranthesis = indent + "{\n";
         std::string close_paranthesis = indent + "}\n";
-        if (x.m_label != -1) {
+        if (x.m_label != (int64_t)-1) {
             std::string b_name;
-            if (gotoid2name.find(x.m_label) != gotoid2name.end()) {
-                b_name = gotoid2name[x.m_label];
+            int label_key = (int)x.m_label; // Explicit cast to resolve MSVC C4244
+            
+            if (gotoid2name.find(label_key) != gotoid2name.end()) {
+                b_name = gotoid2name[label_key];
             } else {
-                b_name = "__" +std::to_string(x.m_label);
+                b_name = "__" + std::to_string(label_key);
             }
             open_paranthesis = indent + b_name + ": {\n";
         }
@@ -1600,12 +1602,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
         self().visit_expr(*x.m_target);
         std::string target_desc = src;
+        
+        int value_rank = (int) array_section->n_args;
+        int target_rank = 0;
 
-        int value_rank = array_section->n_args, target_rank = 0;
         std::vector<std::string> lbs(value_rank);
         std::vector<std::string> ubs(value_rank);
         std::vector<std::string> ds(value_rank);
         std::vector<std::string> non_sliced_indices(value_rank);
+
         for( int i = 0; i < value_rank; i++ ) {
             lbs[i] = ""; ubs[i] = ""; ds[i] = "";
             non_sliced_indices[i] = "";
@@ -1627,10 +1632,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
         if( ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::PointerArray ||
             ASRUtils::extract_physical_type(array_type) == ASR::array_physical_typeType::FixedSizeArray ) {
+            
             value_desc = value_desc + "->data";
             ASR::dimension_t* m_dims = nullptr;
-            // Fill in m_dims:
-            [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+
+            [[maybe_unused]] int array_value_rank = (int) ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+            
             LCOMPILERS_ASSERT(array_value_rank == value_rank);
             std::vector<std::string> diminfo;
             diminfo.reserve(value_rank * 2);
@@ -2872,7 +2879,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string goto_c_name = "__c__goto__" + std::string(x.m_name);
         src =  indent + "goto " + goto_c_name + ";\n";
-        gotoid2name[x.m_target_id] = goto_c_name;
+        gotoid2name[(int)x.m_target_id] = goto_c_name;
     }
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {

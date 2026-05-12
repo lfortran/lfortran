@@ -6582,12 +6582,12 @@ namespace DotProduct {
             if (kind == 4) {
                 std::vector<int32_t> a(dim), b(dim);
                 populate_vector(al, a, b, vector_a, vector_b, dim);
-                int64_t result_32 = std::inner_product(a.begin(), a.end(), b.begin(), (int64_t)0);
+                int64_t result = std::inner_product(a.begin(), a.end(), b.begin(), (int64_t)0);
                 return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
             } else if (kind == 8) {
                 std::vector<int64_t> a(dim), b(dim);
                 populate_vector(al, a, b, vector_a, vector_b, dim);
-                int64_t result_64 = std::inner_product(a.begin(), a.end(), b.begin(), (int64_t)0);
+                int64_t result = std::inner_product(a.begin(), a.end(), b.begin(), (int64_t)0);
                 return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
             } else {
                 append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);

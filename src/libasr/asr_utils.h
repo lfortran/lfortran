@@ -7405,17 +7405,15 @@ T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
-    }
+        data[i] = (T) (ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r);
     return data;
 }
 
 template<typename T>
 T* set_data_complex(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[2*i] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re;
-        data[2*i + 1] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im;
-    }
+        data[2*i] = (T) (ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re);
+        data[2*i + 1] = (T) (ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im);
     return data;
 }
 
