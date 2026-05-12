@@ -4302,12 +4302,60 @@ public:
         }
     }
 
+    ASR::ttype_t* evaluate_type_bounds(Allocator& al, ASR::ttype_t* type, const Location& loc) {
+        if (ASRUtils::is_array(type)) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.reserve(al, arr->n_dims);
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                ASR::dimension_t dim = arr->m_dims[i];
+                if (dim.m_start) {
+                    ASR::expr_t* v = ASRUtils::expr_value(dim.m_start);
+                    if (v && ASRUtils::is_value_constant(v)) {
+                        dim.m_start = v;
+                    } else {
+                        diag.add(Diagnostic("COMMON block array bounds must be constant expressions", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+                if (dim.m_length) {
+                    ASR::expr_t* v = ASRUtils::expr_value(dim.m_length);
+                    if (v && ASRUtils::is_value_constant(v)) {
+                        dim.m_length = v;
+                    } else {
+                        diag.add(Diagnostic("COMMON block array bounds must be constant expressions", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                }
+                new_dims.push_back(al, dim);
+            }
+            ASR::ttype_t* inner_type = evaluate_type_bounds(al, arr->m_type, loc);
+            return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc, inner_type, new_dims.p, new_dims.size(), arr->m_physical_type));
+        } else if (ASRUtils::is_character(*type)) {
+            ASR::String_t* str = ASR::down_cast<ASR::String_t>(type);
+            if (str->m_len) {
+                ASR::expr_t* v = ASRUtils::expr_value(str->m_len);
+                if (v && ASRUtils::is_value_constant(v)) {
+                    return ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc, str->m_kind, v, str->m_len_kind, str->m_physical_type));
+                }
+            }
+        }
+        return type;
+    }
+
     void add_sym_to_struct(ASR::Variable_t* var_, ASR::Struct_t* struct_type) {
         char* var_name = var_->m_name;
         SymbolTable* struct_scope = struct_type->m_symtab;
+        
+        ASR::ttype_t* var_type = evaluate_type_bounds(al, var_->m_type, var_->base.base.loc);
+
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type, var_->m_symbolic_value, var_->m_value);
+
         ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, var_->base.base.loc, struct_scope,
-                        var_->m_name, var_->m_dependencies, var_->n_dependencies, var_->m_intent,
-                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type,
+                        var_->m_name, variable_dependencies_vec.p, variable_dependencies_vec.size(), var_->m_intent,
+                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_type,
                         var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
         struct_scope->add_symbol(var_name, var_sym_new);
 
