@@ -3448,7 +3448,7 @@ RUN(NAME real128_arith_04 LABELS gfortran llvm)
 RUN(NAME real128_arith_05 LABELS gfortran llvm)
 RUN(NAME real128_arith_06 LABELS gfortran llvm)
 RUN(NAME real128_arith_07 LABELS gfortran llvm)
-RUN(NAME real128_arith_08 LABELS gfortran llvm) !todo : fix this test
+RUN(NAME real128_arith_08 LABELS gfortran llvm) #todo : fix this test
 RUN(NAME real128_arith_09 LABELS gfortran llvm)
 RUN(NAME real128_arith_10 LABELS gfortran llvm)
 
