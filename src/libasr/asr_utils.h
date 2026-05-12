@@ -7603,6 +7603,10 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         } else if (ASR::is_a<ASR::StructType_t>(*a_type_->m_type)) {
             // For struct types, n_data represents the number of struct constant pointers
             n_data = curr_idx * sizeof(ASR::expr_t*);
+        } else if (ASR::is_a<ASR::CPtr_t>(*a_type_->m_type)) {
+            // C_PTR and C_FUNPTR are pointer-sized opaque handles. extract_kind returns -1 for CPtr
+            // (it has no fortran 'kind' parameter), so compute the byte size explicitly
+            n_data = curr_idx * sizeof(void*);
         }   
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }

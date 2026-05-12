@@ -3772,6 +3772,7 @@ RUN(NAME c_ptr_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME c_ptr_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME c_ptr_14 LABELS gfortran llvm)
 RUN(NAME c_ptr_15 LABELS gfortran llvm)
+RUN(NAME c_ptr_16 LABELS gfortran llvm EXTRAFILES c_ptr_16_module.f90)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
 
