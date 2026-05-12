@@ -1545,9 +1545,27 @@ public:
         }
     }
 
-    void visit_ArrayConstructor(const ArrayConstructor_t& x) {
+   void visit_ArrayConstructor(const ArrayConstructor_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstructor must be an array");
+
+        ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
+        require(arr_type->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
+            "ArrayConstructor must have a physical type of PointerToDataArray");
+
+        bool all_constant = true;
+        for (size_t i = 0; i < x.n_args; ++i) {
+            // Note: If m_args requires .m_value in your specific branch, 
+            // change this to x.m_args[i].m_value
+            if (!ASRUtils::is_value_constant(x.m_args[i])) { 
+                all_constant = false;
+                break;
+            }
+        }
+        require(!all_constant,
+            "ArrayConstructor has all constant elements; it should be converted to an ArrayConstant");
+        // ----------------------------------------------------------------------
+
         if (x.m_struct_var != nullptr) {
             require(ASR::is_a<ASR::Var_t>(*x.m_struct_var),
                 "ArrayConstructor::m_struct_vars must be nullptr or var to struct symbol");
@@ -1555,9 +1573,19 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 
-    void visit_ArrayConstant(const ArrayConstant_t& x) {
+   void visit_ArrayConstant(const ArrayConstant_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
+
+        ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
+        require(arr_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray,
+            "ArrayConstant must have a physical type of FixedSizeArray");
+
+        for (size_t i = 0; i < x.n_args; ++i) {
+            require(ASRUtils::is_value_constant(x.m_args[i]),
+                "All elements in an ArrayConstant must be compile-time constants");
+        }
+        // -----------------------------------------------------------------
 
         int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (ASRUtils::is_character(*x.m_type)) {

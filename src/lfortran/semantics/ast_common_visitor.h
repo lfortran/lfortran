@@ -10567,10 +10567,6 @@ public:
             }
         }
 
-        // if "type-spec" is omitted (for e.g. in "[1, 2, 3, 4.5]"), each element in
-        // the array-constructor shall have the same type and kind type parameters,
-        // otherwise each element in the array-constructor is cast using "ImplicitCastRules"
-        // (e.g. "[real :: 1, 2, 3, 4]")
         bool is_type_spec_ommitted { type == nullptr };
         check_if_type_spec_has_asterisk(type);
 
@@ -10605,7 +10601,6 @@ public:
                 if (ASR::is_a<ASR::Tuple_t>(*extracted_type)) {
                      ASR::Tuple_t *t = ASR::down_cast<ASR::Tuple_t>(extracted_type);
                      if (t->n_type > 0) {
-                         // Check for mixed types and report error, OR cast if compatible
                          bool has_numeric = true;
                          for(size_t k=0; k<t->n_type; k++) {
                              ASR::ttype_t* t_extracted = ASRUtils::extract_type(t->m_type[k]);
@@ -10617,7 +10612,6 @@ public:
                         }
 
                         if (has_numeric) {
-                             // Determine dominant type
                              ASR::ttype_t* dominant_type = t->m_type[0];
                              for(size_t k=1; k<t->n_type; k++) {
                                  ASR::ttype_t* curr = t->m_type[k];
@@ -10636,7 +10630,6 @@ public:
                                  }
                              }
                              if (dominant_type) {
-                                  // Cast elements in ImpliedDoLoop
                                   if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                                       ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
                                       for(size_t k=0; k<idl->n_values; k++) {
@@ -10662,7 +10655,6 @@ public:
                      }
                 }
             } else if (is_type_spec_ommitted) {
-                // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
                 if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type, expr, expr)) {
                     diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_with_kind(extracted_type, expr)
@@ -10713,26 +10705,19 @@ public:
             dim.m_length = x_n_args;
         }
         dims.push_back(al, dim);
-        if (use_descriptorArray){
-            type = ASRUtils::duplicate_type(al, type, &dims,
-                    ASR::array_physical_typeType::DescriptorArray, true);
-        } else {
-            type = ASRUtils::duplicate_type(al, type, &dims);
+
+        bool Array_constant = true;
+        for (size_t i = 0; i < body.size(); i++) {
+            ASR::expr_t* a_value = ASRUtils::expr_value(body[i]);
+            Array_constant &= ASRUtils::is_value_constant(a_value);
         }
+        ASR::array_physical_typeType array_physical_type = Array_constant ? 
+            ASR::array_physical_typeType::FixedSizeArray : 
+            ASR::array_physical_typeType::PointerToDataArray;
 
+        type = ASRUtils::duplicate_type(al, type, &dims, array_physical_type, true);
+    
         {
-            /*
-                * type_spec --> `[character(10) :: ......]`
-
-                ArrayConstant    + No type_spec => Check length equality
-                ArrayConstant    + type_spec    => Adjust Length
-
-            */
-            bool Array_constant = true;
-            for (size_t i = 0; i < body.size(); i++) {
-                ASR::expr_t* a_value = ASRUtils::expr_value(body[i]);
-                Array_constant &= ASRUtils::is_value_constant(a_value);
-            }
             if (is_type_spec_ommitted &&
                 Array_constant &&
                 ASRUtils::is_array_of_strings(type)) {
@@ -10751,8 +10736,7 @@ public:
             }
 
             if( ASRUtils::is_array_of_strings(type) &&
-                ((Array_constant && !is_type_spec_ommitted))){ // Adjust 
-                // Adjust constant strings based on array's length.
+                ((Array_constant && !is_type_spec_ommitted))){ 
                 int64_t arr_len {};
                 if(ASRUtils::extract_value(ASRUtils::get_string_type(type)->m_len, arr_len)){
                     int64_t item_len;
