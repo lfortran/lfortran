@@ -1247,6 +1247,16 @@ int compile_src_to_object_file(const std::string &infile,
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
+        if (!arg_c) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "no main program found; cannot build an executable. "
+                "To compile this file as a library, use the `-c` option.",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Semantic, {})
+            );
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return 1;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
@@ -1605,7 +1615,8 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        bool arg_c = false)
 {
     std::string input = read_file_ok(infile);
 
@@ -1638,6 +1649,16 @@ int compile_to_object_file_cpp(const std::string &infile,
     }
 
     if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        if (!arg_c) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "no main program found; cannot build an executable. "
+                "To compile this file as a library, use the `-c` option.",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Semantic, {})
+            );
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return 1;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         if (compiler_options.platform == LCompilers::Platform::Windows) {
@@ -1718,7 +1739,8 @@ int compile_to_object_file_c(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, const std::string &rtlib_header_dir,
         LCompilers::PassManager pass_manager,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        bool arg_c = false)
 {
     std::string input = read_file_ok(infile);
 
@@ -1749,6 +1771,16 @@ int compile_to_object_file_c(const std::string &infile,
     }
 
     if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        if (!arg_c) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "no main program found; cannot build an executable. "
+                "To compile this file as a library, use the `-c` option.",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Semantic, {})
+            );
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return 1;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         if (compiler_options.platform == LCompilers::Platform::Windows) {
@@ -2810,10 +2842,10 @@ int main_app(int argc, char *argv[]) {
 #endif
         } else if (backend == Backend::c) {
             result = compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
-                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options, opts.arg_c);
         } else if (backend == Backend::cpp) {
             result = compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
-                    true, rtlib_c_header_dir, compiler_options);
+                    true, rtlib_c_header_dir, compiler_options, opts.arg_c);
         } else if (backend == Backend::x86) {
             result = compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
