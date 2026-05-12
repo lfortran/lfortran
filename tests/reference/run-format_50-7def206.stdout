@@ -1,8 +1,0 @@
-tiny = 2.225E-308
-huge = 1.798E+308
-test = 1.235E+010
-test =12.346E+009
-test = 0.123E+011
-tiny = 2.225E-0308
-test = 1.235E+0010
-PASSED

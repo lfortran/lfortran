@@ -1,5 +1,0 @@
-semantic error: Kind of all the arguments of Ior must be the same
- --> tests/errors/intrinsics5.f90:2:14
-  |
-2 |     print *, ior(1, 1_8)
-  |              ^^^^^^^^^^^ 

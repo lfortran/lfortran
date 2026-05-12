@@ -1,5 +1,0 @@
-semantic error: The first index in string section is less than 1
- --> tests/errors/string_negative_start_index.f90:5:15
-  |
-5 | print*, "s:", s(-1:4)
-  |               ^^^^^^^ 

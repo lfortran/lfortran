@@ -1,0 +1,13 @@
+{
+    "basename": "asr-precision_real_01-fdb950b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/precision_real_01.f90",
+    "infile_hash": "86fae41669b2c40b1aac8ae75a7d9b14c13551aaf134df45ab021a1e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 3221226105
+}

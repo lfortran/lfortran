@@ -6255,18 +6255,83 @@ public:
                             array_reshape->m_type = ASRUtils::duplicate_type(al, array_reshape->m_type, &array_reshape_dims, ASR::array_physical_typeType::DescriptorArray,true);
                         }
                     }
-                    if (ASRUtils::is_logical(*value_type) && ASRUtils::is_integer(*target_type)) {
-                        if (!compiler_options.logical_casting) {
-                            diag.add(Diagnostic(
-                                "Implicit casting from LOGICAL to INTEGER is not allowed by default. Use `--logical-casting` flag to enable it.",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{x.base.base.loc})
-                                }));
-                            throw SemanticAbort();
+                    // Warn if a single precision real literal is implicitly
+                    // converted to double precision
+                    if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                        ASR::ttype_t *src_real = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_pointer(value_type));
+                        ASR::ttype_t *dst_real = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_pointer(target_type));
+                        
+                        if (ASR::is_a<ASR::Real_t>(*src_real) &&
+                                ASR::is_a<ASR::Real_t>(*dst_real)) {
+                            
+                            int src_kind = ASRUtils::extract_kind_from_ttype_t(src_real);
+                            int dst_kind = ASRUtils::extract_kind_from_ttype_t(dst_real);
+                            
+                            if (src_kind == 4 && dst_kind == 8) {
+                                ASR::RealConstant_t *rc =
+                                    ASR::down_cast<ASR::RealConstant_t>(value);
+                                
+                                // 1. Simulate the precision loss by casting to float
+                                float single_val_f = rc->m_r;
+                                
+                                // 2. Find kind parameter name in scope
+                                std::string kind_suffix = std::to_string(dst_kind);
+                                SymbolTable *scope = current_scope;
+                                while (scope) {
+                                    bool found = false;
+                                    for (auto &it : scope->get_scope()) {
+                                        ASR::symbol_t *sym = it.second;
+                                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                                            ASR::Variable_t *var =
+                                                ASR::down_cast<ASR::Variable_t>(sym);
+                                            if (var->m_storage == ASR::storage_typeType::Parameter &&
+                                                    var->m_value &&
+                                                    ASR::is_a<ASR::IntegerConstant_t>(*var->m_value)) {
+                                                
+                                                int64_t val = ASR::down_cast<
+                                                    ASR::IntegerConstant_t>(var->m_value)->m_n;
+                                                if (val == dst_kind) {
+                                                    kind_suffix = it.first;
+                                                    found = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (found) break;
+                                    scope = scope->parent;
+                                }
+
+                                // 3. Format the numbers exactly as requested
+                                std::ostringstream oss_base;
+                                oss_base << rc->m_r; 
+                                
+                                std::ostringstream oss_corrupted;
+                                oss_corrupted.precision(17);
+                                oss_corrupted << std::scientific << static_cast<double>(single_val_f);
+
+                                std::ostringstream oss_correct;
+                                oss_correct.precision(17);
+                                oss_correct << std::scientific << rc->m_r;
+
+                                std::string hint_msg = "hint: " + oss_base.str() + " is equal to " + 
+                                                       oss_corrupted.str() + ", use " + oss_base.str() + 
+                                                       "_" + kind_suffix + " to make it equal to " + 
+                                                       oss_correct.str();
+
+                                diag.semantic_warning_label(
+                                    "This implies single precision; use a kind suffix to make precision explicit",
+                                    {value->base.loc},
+                                    hint_msg
+                                );
+                            }
                         }
                     }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type, diag);
+                    
                     }
                 }
             }

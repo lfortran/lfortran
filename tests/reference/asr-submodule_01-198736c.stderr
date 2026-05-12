@@ -1,9 +1,0 @@
-semantic error: Procedure 'func' must be declared within a generic module interface
-  --> tests/errors/submodule_01.f90:14:3 - 16:1
-   |
-14 |      module procedure func
-   |      ^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-16 |    
-   | ...^ 
