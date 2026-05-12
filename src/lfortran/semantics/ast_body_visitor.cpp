@@ -6304,17 +6304,15 @@ public:
                                     scope = scope->parent;
                                 }
 
-                                // 3. Format the numbers exactly as requested
+                                // Format the values for the hint message
                                 std::ostringstream oss_base;
                                 oss_base << rc->m_r; 
-                                
+
                                 std::ostringstream oss_corrupted;
-                                oss_corrupted.precision(17);
-                                oss_corrupted << std::scientific << static_cast<double>(single_val_f);
+                                oss_corrupted << std::scientific << std::setprecision(17) << (double)single_val_f;
 
                                 std::ostringstream oss_correct;
-                                oss_correct.precision(17);
-                                oss_correct << std::scientific << rc->m_r;
+                                oss_correct << std::scientific << std::setprecision(17) << rc->m_r;
 
                                 std::string hint_msg = "hint: " + oss_base.str() + " is equal to " + 
                                                        oss_corrupted.str() + ", use " + oss_base.str() + 
