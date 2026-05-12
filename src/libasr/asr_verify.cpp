@@ -1545,26 +1545,27 @@ public:
         }
     }
 
-   void visit_ArrayConstructor(const ArrayConstructor_t& x) {
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        auto &diagnostics = this->diag;
+
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstructor must be an array");
 
+        // Enforce physical type: must be PointerToDataArray
         ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
         require(arr_type->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
             "ArrayConstructor must have a physical type of PointerToDataArray");
 
+        // Verify that it is NOT fully constant
         bool all_constant = true;
         for (size_t i = 0; i < x.n_args; ++i) {
-            // Note: If m_args requires .m_value in your specific branch, 
-            // change this to x.m_args[i].m_value
-            if (!ASRUtils::is_value_constant(x.m_args[i])) { 
+            if (!ASRUtils::is_value_constant(x.m_args[i])) {
                 all_constant = false;
                 break;
             }
         }
         require(!all_constant,
             "ArrayConstructor has all constant elements; it should be converted to an ArrayConstant");
-        // ----------------------------------------------------------------------
 
         if (x.m_struct_var != nullptr) {
             require(ASR::is_a<ASR::Var_t>(*x.m_struct_var),
@@ -1573,29 +1574,35 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 
-   void visit_ArrayConstant(const ArrayConstant_t& x) {
+    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+        auto &diagnostics = this->diag;
+
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
 
+        // Enforce physical type: must be FixedSizeArray
         ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(x.m_type);
         require(arr_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray,
             "ArrayConstant must have a physical type of FixedSizeArray");
 
+        // Verify all elements are compile-time constants
         for (size_t i = 0; i < x.n_args; ++i) {
             require(ASRUtils::is_value_constant(x.m_args[i]),
                 "All elements in an ArrayConstant must be compile-time constants");
         }
-        // -----------------------------------------------------------------
 
+        // Validate byte size (m_n_data)
         int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (ASRUtils::is_character(*x.m_type)) {
             ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
             int64_t len;
-            require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
+            require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), 
+                "Constant array of strings should have constant string length");
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
         } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(x.m_type))) {
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(ASR::expr_t*);
         }
+        
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
     }
