@@ -1758,6 +1758,7 @@ RUN(NAME intrinsics_457 LABELS gfortran llvm) # eoshift on 2D array with dim
 RUN(NAME intrinsics_458 LABELS gfortran llvm) # sign with common block variables
 RUN(NAME intrinsics_459 LABELS gfortran llvm) # minval over array with runtime bounds (--fast regression)
 RUN(NAME intrinsics_460 LABELS gfortran llvm) # random_seed put/get round-trip
+RUN(NAME intrinsics_461 LABELS gfortran llvm) # MVbits with array (treated as elemental function)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
