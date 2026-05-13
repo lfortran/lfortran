@@ -11064,7 +11064,7 @@ static void common_formatted_read(InputSource *inputSource,
             c = read_character(inputSource);
             read_any = read_any || (c != EOF);
         } while (c != '\n' && c != EOF);
-        if (c == EOF && !read_any) {
+        if (c == EOF && !read_any && no_of_args == 0) {
             if (iostat) {
                 *iostat = -1;
             } else {
