@@ -1328,6 +1328,43 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::expr_type(target));
         if (realloc_dims.size() != target_rank) return false;
 
+        ASR::expr_t* realloc_str_len = nullptr;
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        if (ASRUtils::is_character(*target_type)) {
+            ASR::String_t* target_str = ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(target_type));
+            ASRUtils::ExprStmtDuplicator d(al);
+            if (target_str->m_len_kind != ASR::string_length_kindType::DeferredLength
+                    && target_str->m_len != nullptr) {
+                int64_t target_len {};
+                if (ASRUtils::is_value_constant(target_str->m_len, target_len)) {
+                    realloc_str_len = builder.i32(target_len);
+                } else {
+                    realloc_str_len = d.duplicate_expr(target_str->m_len);
+                }
+            } else {
+                ASR::expr_t* len_value = nullptr;
+                int64_t len {};
+                ASR::String_t* val_str = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(ASRUtils::expr_type(value)));
+                if (val_str->m_len != nullptr &&
+                        ASRUtils::is_value_constant(val_str->m_len, len)) {
+                    len_value = builder.i32(len);
+                }
+                ASR::expr_t* len_src = nullptr;
+                if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
+                    len_src = ASR::down_cast<ASR::ArrayItem_t>(value)->m_v;
+                } else if (ASR::is_a<ASR::ArraySection_t>(*value)) {
+                    len_src = ASR::down_cast<ASR::ArraySection_t>(value)->m_v;
+                }
+                if (len_src == nullptr) {
+                    return false;
+                }
+                realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                    al, loc, d.duplicate_expr(len_src), int32, len_value));
+            }
+        }
+
         Vec<ASR::alloc_arg_t> alloc_args;
         alloc_args.reserve(al, 1);
         ASR::alloc_arg_t aa;
@@ -1335,7 +1372,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         aa.m_a = target;
         aa.m_dims = realloc_dims.p;
         aa.n_dims = realloc_dims.size();
-        aa.m_len_expr = nullptr;
+        aa.m_len_expr = realloc_str_len;
         aa.m_type = nullptr;
         aa.m_sym_subclass = nullptr;
         alloc_args.push_back(al, aa);
