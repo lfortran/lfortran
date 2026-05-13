@@ -23538,12 +23538,10 @@ public:
                     symbol_get_past_external(x.m_name);
                 bool is_proc_ptr_call =
                     called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
-                // Skip type/class-bound method dispatches (x.m_dt is set);
-                // those resolve to a real Fortran implementation that
-                // expects the string descriptor as-is.
                 if (orig_arg && callee_fn_type &&
                         !is_proc_ptr_call &&
                         x.m_dt == nullptr &&
+                        !callee_fn_type->m_module &&
                         func_subrout->type == ASR::symbolType::Function &&
                         callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
                         callee_fn_type->m_abi == ASR::abiType::Source &&
