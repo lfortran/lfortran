@@ -20,7 +20,7 @@ program data_23
     if (trim(vfmt(6)) /= "85X,1") error stop "vfmt6"
 
     if (trim(v2a) /= "A16,1P1X,") error stop "v2a"
-    if (trim(v2i) /= "I5,1P2X") error stop "v2i"
+    if (trim(v2i) /= "I5,1P2X,") error stop "v2i"
 
     print *, "PASS"
 end program
