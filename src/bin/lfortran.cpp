@@ -2957,7 +2957,8 @@ int main_app(int argc, char *argv[]) {
         return err_;
     } else {
         if (any_fortran_src && !found_main && err_ == 0
-                && backend != Backend::wasm && backend != Backend::x86) {
+                && (backend == Backend::llvm || backend == Backend::c
+                    || backend == Backend::cpp)) {
             std::cerr << "semantic error: no main program found; "
                 "cannot build an executable. To compile this file as a "
                 "library, use the `-c` option." << std::endl;
