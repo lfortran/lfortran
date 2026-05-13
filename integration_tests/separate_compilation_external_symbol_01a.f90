@@ -23,10 +23,12 @@ module sep_comp_ext_sym_use_m2
     use sep_comp_ext_sym_m2
     implicit none
     private
-    public :: foo
+    public :: foo, sep_comp_ext_sym_expected
+    integer, parameter :: sep_comp_ext_sym_expected = 42
 contains
-    subroutine foo()
+    integer function foo()
         type(sep_comp_ext_sym_m1) :: f
-        f%var = 1
-    end subroutine
+        f%var = sep_comp_ext_sym_expected
+        foo = f%var
+    end function
 end module
