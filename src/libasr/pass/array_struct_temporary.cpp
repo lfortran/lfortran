@@ -253,6 +253,11 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         }
     }
     var_type = normalize_string_temporary_type(al, value->base.loc, var_type);
+    if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+        ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value);
+        ASRUtils::ReplaceFunctionParamWithArg replacer(al, func_call->m_args, func_call->n_args);
+        replacer.replace_type(var_type);
+    }
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
     if (is_compile_time) {
