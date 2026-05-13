@@ -265,7 +265,7 @@ namespace LCompilers::CommandLineInterface {
         // Language-related flags (affecting Fortran language behavior, typing, and interfaces)
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing")->group(group_language_options);
         app.add_flag("--fixed-form-infer", opts.fixed_form_infer, "Use heuristics to infer if a file is in fixed form")->group(group_language_options);
-        app.add_option("--std", opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
+        app.add_option("--std", opts.arg_standard, "Select standard conformance:\n  lf     = LFortran default behavior\n  f23    = Enforce Fortran 2023 standard compliance\n  legacy = Allow non-standard and legacy extensions")->group(group_language_options);
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
