@@ -2805,6 +2805,8 @@ public:
                 create_associate_stmt = true;
                 ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
                 tmp_type = sim->m_type;
+            } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
+                create_associate_stmt = true;
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
@@ -7682,7 +7684,7 @@ public:
                             if (args.empty()) {
                                 diag.add(diag::Diagnostic(
                                     "Required argument `" + std::string(v->m_name) +
-                                    "` is missing in function call",
+                                    "` is missing in procedure call",
                                     diag::Level::Error, diag::Stage::Semantic, {
                                         diag::Label("", {x.base.base.loc})
                                     }));
@@ -7693,7 +7695,7 @@ public:
                             diag.add(diag::Diagnostic(
                                 "Required argument `" + std::string(v->m_name) +
                                 "` at position " + std::to_string(i + 1) +
-                                " is missing in function call",
+                                " is missing in procedure call",
                                 diag::Level::Error, diag::Stage::Semantic, {
                                     diag::Label("", {args_loc})
                                 }));
@@ -8228,7 +8230,7 @@ public:
         all_loops_blocks_nesting++;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
-        ASR::ttype_t *test_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(test));
+        ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(test));
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
                 ASRUtils::type_to_str_with_kind(test_type, test) + " instead",

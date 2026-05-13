@@ -589,6 +589,16 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 use_temp_var_for_return = (ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_value)) &&
                                             !ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_target)));
                 is_pointer_return = use_temp_var_for_return;
+                {
+                    ASR::ttype_t* target_type_ = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(target));
+                    ASR::ttype_t* value_type_ = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(value));
+                    if (ASRUtils::is_class_type(target_type_) &&
+                        !ASRUtils::is_class_type(value_type_)) {
+                        use_temp_var_for_return = true;
+                    }
+                }
             } else if (ASR::is_a<ASR::Associate_t>(xx)) {
                 ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                 value = associate->m_value;
@@ -666,12 +676,28 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     ASRUtils::expr_type(value));
                 bool class_to_type_mismatch = !ASRUtils::is_class_type(target_unwrapped) &&
                     ASRUtils::is_class_type(value_unwrapped);
+                bool type_to_class_mismatch = ASRUtils::is_class_type(target_unwrapped) &&
+                    !ASRUtils::is_class_type(value_unwrapped);
 
-                if (class_to_type_mismatch) {
+                if (class_to_type_mismatch || type_to_class_mismatch) {
                     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
-                    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
+                    ASR::symbol_t* struct_sym = nullptr;
+                    if (type_to_class_mismatch) {
+                        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
+                        if (struct_sym == nullptr &&
+                            ASR::is_a<ASR::Function_t>(*func_sym)) {
+                            ASR::Function_t* func_local =
+                                ASR::down_cast<ASR::Function_t>(func_sym);
+                            if (func_local->n_args > 0) {
+                                struct_sym = ASRUtils::get_struct_sym_from_struct_expr(
+                                    func_local->m_args[func_local->n_args - 1]);
+                            }
+                        }
+                    } else {
+                        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
+                    }
                     ASR::symbol_t* temp_sym = ASR::down_cast<ASR::symbol_t>(
                         ASRUtils::make_Variable_t_util(
                             al, target->base.loc, current_scope, s2c(al, var_name),
