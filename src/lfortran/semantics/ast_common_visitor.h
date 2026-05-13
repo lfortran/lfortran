@@ -20050,16 +20050,26 @@ public:
         }
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                diag.add(Diagnostic(
-                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {loc})
+            {
+                ASR::symbol_t *existing_sub_sym = current_scope->get_symbol(local_sym);
+                if (existing_sub_sym != nullptr) {
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*existing_sub_sym)) {
+                        ASR::ExternalSymbol_t *ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(existing_sub_sym);
+                        if (ext_sym->m_external == t) {
+                            // Same symbol already imported, skip silently
+                            return;
+                        }
                     }
-                ));
-                // if the symbol exists in the current scope, we erase it
-                // and write the new symbol which points to the new module
-                current_scope->erase_symbol(local_sym);
+                    diag.add(Diagnostic(
+                        "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
+                        Level::Warning, Stage::Semantic, {
+                            Label("", {loc})
+                        }
+                    ));
+                    // if the symbol exists in the current scope, we erase it
+                    // and write the new symbol which points to the new module
+                    current_scope->erase_symbol(local_sym);
+                }
             }
             ASR::Function_t *msub = ASR::down_cast<ASR::Function_t>(t);
             // `msub` is the Subroutine in a module. Now we construct
@@ -20083,24 +20093,26 @@ public:
             process_generic_proc_custom_op<ASR::CustomOperator_t>(local_sym, t,
                 to_be_imported_later, loc, m, &ASR::make_CustomOperator_t, nullptr);
         } else if (ASR::is_a<ASR::Function_t>(*t)) {
-            bool is_already_defined = false;
-            ASR::symbol_t* imported_func_sym = current_scope->get_symbol(local_sym);
-            if (imported_func_sym != nullptr) {
-                ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(imported_func_sym);
-                if( ext_sym->m_external != t ) {
-                    is_already_defined = true;
-                }
-            }
-            if( is_already_defined ) {
-                diag.add(Diagnostic(
-                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {loc})
+            {
+                ASR::symbol_t* imported_func_sym = current_scope->get_symbol(local_sym);
+                if (imported_func_sym != nullptr) {
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*imported_func_sym)) {
+                        ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(imported_func_sym);
+                        if (ext_sym->m_external == t) {
+                            // Same symbol already imported, skip silently
+                            return;
+                        }
                     }
-                ));
-                // if the symbol exists in the current scope, we erase it
-                // and write the new symbol which points to the new module
-                current_scope->erase_symbol(local_sym);
+                    diag.add(Diagnostic(
+                        "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
+                        Level::Warning, Stage::Semantic, {
+                            Label("", {loc})
+                        }
+                    ));
+                    // if the symbol exists in the current scope, we erase it
+                    // and write the new symbol which points to the new module
+                    current_scope->erase_symbol(local_sym);
+                }
             }
             ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(t);
             // `mfn` is the Function in a module. Now we construct
@@ -20116,18 +20128,28 @@ public:
                 m->m_name, nullptr, 0, mfn->m_name,
                 dflt_access
                 );
-            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
         } else if (ASR::is_a<ASR::Variable_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
-                diag.add(Diagnostic(
-                    "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
-                    Level::Warning, Stage::Semantic, {
-                        Label("", {loc})
+            {
+                ASR::symbol_t *existing_var_sym = current_scope->get_symbol(local_sym);
+                if (existing_var_sym != nullptr) {
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*existing_var_sym)) {
+                        ASR::ExternalSymbol_t *ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(existing_var_sym);
+                        if (ext_sym->m_external == t) {
+                            // Same symbol already imported, skip silently
+                            return;
+                        }
                     }
-                ));
-                // if the symbol exists in the current scope, we erase it
-                // and write the new symbol which points to the new module
-                current_scope->erase_symbol(local_sym);
+                    diag.add(Diagnostic(
+                        "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
+                        Level::Warning, Stage::Semantic, {
+                            Label("", {loc})
+                        }
+                    ));
+                    // if the symbol exists in the current scope, we erase it
+                    // and write the new symbol which points to the new module
+                    current_scope->erase_symbol(local_sym);
+                }
             }
             ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(t);
             // `mv` is the Variable in a module. Now we construct

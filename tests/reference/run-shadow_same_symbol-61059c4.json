@@ -1,0 +1,13 @@
+{
+    "basename": "run-shadow_same_symbol-61059c4",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/shadow_same_symbol.f90",
+    "infile_hash": "a5d775b97cbc7166ca96b9a7f59d492c3327bcc0533b41b6b4b3c896",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-shadow_same_symbol-61059c4.stdout",
+    "stdout_hash": "3e6d065c9c5361b904f927916a15f082df6c2f6e0ee41debc40f6d96",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
