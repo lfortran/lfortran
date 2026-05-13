@@ -1518,6 +1518,7 @@ public:
             ATTRTYPE(Kind)
             ATTRTYPE(Len)
             ATTRTYPE(Module)
+            ATTRTYPE(Namespace)
             ATTRTYPE(NoPass)
             ATTRTYPE(NonDeferred)
             ATTRTYPE(Non_Intrinsic)
