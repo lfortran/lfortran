@@ -5453,9 +5453,24 @@ LFORTRAN_API int64_t _lfortran_int64_rand_num() {
     return rand();
 }
 
+static int32_t _lfortran_seed_buffer[8] = {0};
+
+static void _lfortran_seed_buffer_init_repeatable(void) {
+    for (int i = 0; i < 8; i++) {
+        _lfortran_seed_buffer[i] = 0;
+    }
+}
+
+static void _lfortran_seed_buffer_init_random(void) {
+    for (int i = 0; i < 8; i++) {
+        _lfortran_seed_buffer[i] = rand();
+    }
+}
+
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
         srand(0);
+        _lfortran_seed_buffer_init_repeatable();
     } else {
         static unsigned int call_count = 0;
         unsigned int seed;
@@ -5470,6 +5485,7 @@ LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
         }
 #endif
         srand(seed);
+        _lfortran_seed_buffer_init_random();
     }
     return false;
 }
@@ -5480,6 +5496,24 @@ LFORTRAN_API int64_t _lfortran_random_seed(unsigned seed)
     // The seed array size is typically 8 elements because Fortran's RNG often uses a seed with a fixed length of 8 integers to ensure sufficient randomness and repeatability in generating sequences of random numbers.
     return 8;
 
+}
+
+LFORTRAN_API void _lfortran_random_seed_put_i32(int32_t value, int32_t index)
+{
+    if (index >= 1 && index <= 8) {
+        _lfortran_seed_buffer[index - 1] = value;
+    }
+    if (index == 1) {
+        srand((unsigned)value);
+    }
+}
+
+LFORTRAN_API int32_t _lfortran_random_seed_get_i32(int32_t index)
+{
+    if (index >= 1 && index <= 8) {
+        return _lfortran_seed_buffer[index - 1];
+    }
+    return 0;
 }
 
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
