@@ -11005,6 +11005,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        validate_missing_required_arguments(loc, args, func);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
             final_sym, v, args.p, args.size(), return_type,
@@ -11144,6 +11145,8 @@ public:
             }
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        validate_missing_required_arguments(loc, args, func, v_expr,
+            v_class_proc->m_is_nopass);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();
@@ -11200,6 +11203,7 @@ public:
                 ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
             }
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+            validate_missing_required_arguments(loc, args, func);
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
                 final_sym, v, args.p, args.size(), type,
@@ -11266,6 +11270,7 @@ public:
                 for (size_t i = 1; i < args.size(); i++) {
                     args_without_dt.push_back(al, args[i]);
                 }
+                validate_missing_required_arguments(loc, args, func);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 ASR::call_arg_t* call_args = args_without_dt.p;
                 size_t n_call_args = args_without_dt.size();
@@ -11280,6 +11285,7 @@ public:
                 }
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
                 ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+                validate_missing_required_arguments(loc, args, func);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
@@ -11889,6 +11895,41 @@ public:
         }
     }
 
+    void validate_missing_required_arguments(const Location &loc,
+                Vec<ASR::call_arg_t>& args, ASR::Function_t* func,
+                ASR::expr_t* dt=nullptr, bool nopass=false) {
+        const int offset = (dt != nullptr && !nopass) ? 1 : 0;
+        for (size_t i = 0; i + offset < func->n_args; i++) {
+            ASR::expr_t* dummy = func->m_args[i + offset];
+            ASR::symbol_t* dummy_sym = nullptr;
+            if (ASR::is_a<ASR::Var_t>(*dummy)) {
+                dummy_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+            }
+            if (dummy_sym == nullptr) {
+                continue;
+            }
+            std::string dummy_name;
+            bool is_required = false;
+            if (ASR::is_a<ASR::Variable_t>(*dummy_sym)) {
+                ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+                dummy_name = dummy_var->m_name;
+                is_required = dummy_var->m_presence != ASR::presenceType::Optional;
+            } else if (ASR::is_a<ASR::Function_t>(*dummy_sym)) {
+                dummy_name = ASR::down_cast<ASR::Function_t>(dummy_sym)->m_name;
+                is_required = true;
+            }
+            if (is_required && (i >= args.size() || args[i].m_value == nullptr)) {
+                diag.add(diag::Diagnostic(
+                    "Missing actual argument for argument '" +
+                    dummy_name + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     ASR::asr_t* create_Function(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
@@ -11904,7 +11945,6 @@ public:
         }
         
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
-        
         if (ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::Intrinsic) {
             std::string func_name = std::string(func->m_name);
             
@@ -11936,6 +11976,16 @@ public:
             }
         }
         
+        if (args.size() > func->n_args) {
+            const Location args_loc { ASRUtils::get_vec_loc(args) };
+            diag.add(diag::Diagnostic(
+                    "More actual than formal arguments in procedure call",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {args_loc})}));
+            throw SemanticAbort();
+        }
+        validate_missing_required_arguments(loc, args, func);
+
         ASR::ttype_t *return_type = nullptr;
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
         if (first_array_arg) {
@@ -11976,14 +12026,6 @@ public:
             current_module_dependencies.push_back(al, v_module->m_name);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-        if (args.size() > func->n_args) {
-            const Location args_loc { ASRUtils::get_vec_loc(args) };
-            diag.add(diag::Diagnostic(
-                    "More actual than formal arguments in procedure call",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {args_loc})}));
-            throw SemanticAbort();
-        }
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
         validate_create_function_arguments(args, v);
@@ -17575,9 +17617,8 @@ public:
                         return_type = ASRUtils::duplicate_type(al, ftype);
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc, binop, left, right, dest_type));
                         if (!ASRUtils::check_equal_type(dest_type, return_type, f->m_args[1], f->m_return_var)) {
-                            diag.add(Diagnostic("Unapplicable types for intrinsic operator " + op_name,
-                                Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
+                            ImplicitCastRules::set_converted_value(al, loc,
+                                &value, dest_type, return_type, diag);
                         }
                     } else {
                         return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));

@@ -3447,8 +3447,15 @@ public:
     }
 
     void generate_Abs(ASR::expr_t* m_arg) {
+        // Mirror visit_RealBinOp: if the argument has a Pointer wrapper
+        // (e.g. an associate-name target), load twice so we reach the
+        // underlying scalar value before applying fabs/select.
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_arg)) ? 2 : 1;
         this->visit_expr_wrapper(m_arg, true);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *item = tmp;
+        load_non_array_non_character_pointers(m_arg, ASRUtils::expr_type(m_arg), item);
         llvm::Type *item_type = item->getType();
         if (item_type->isFloatingPointTy()) {
 #if LLVM_VERSION_MAJOR >= 12
@@ -5459,9 +5466,15 @@ public:
                         value = x.m_symbolic_value;
                     }
                     if (value) {
-                        llvm::Constant* initializer = get_const_array(value, type->getArrayElementType());
-                        module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
-                    } else {
+
+                         if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+                             module->getNamedGlobal(llvm_var_name)->setInitializer(
+                                llvm::ConstantArray::getNullValue(type));
+                          } else {
+                             llvm::Constant* initializer = get_const_array(value, type->getArrayElementType());
+                             module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
+                          }
+                      } else {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
                         set_global_variable_linkage_as_common(ptr, x);
                     }

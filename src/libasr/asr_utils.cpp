@@ -1291,6 +1291,10 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
     ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move) {
     bool is_allocatable = ASRUtils::is_allocatable(a_target);
+    if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
+        is_allocatable = ASRUtils::is_allocatable(
+            ASRUtils::get_past_array_physical_cast(a_target));
+    }
     if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
         ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
         is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
@@ -2985,8 +2989,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
             }
         }
         for( ; i < sub.n_args; i++ ) {
-            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
-            if( v->m_presence != ASR::presenceType::Optional ) {
+            ASR::symbol_t* sub_arg_sym = symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(sub.m_args[i])->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sub_arg_sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sub_arg_sym);
+                if (v->m_presence != ASR::presenceType::Optional) {
+                    return false;
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
                 return false;
             }
         }

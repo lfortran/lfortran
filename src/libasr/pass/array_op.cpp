@@ -1269,12 +1269,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool per_assign_realloc = false) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
-        bool array_copy = ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target);
+        ASR::expr_t* underlying_target = ASRUtils::get_past_array_physical_cast(target);
+        ASR::ttype_t* underlying_target_type = ASRUtils::expr_type(underlying_target);
+        ASR::expr_t* underlying_value = ASRUtils::get_past_array_physical_cast(value);
+        bool array_copy = ASR::is_a<ASR::Var_t>(*underlying_value) && ASR::is_a<ASR::Var_t>(*underlying_target);
         if (!realloc_lhs && !per_assign_realloc) {
             return;
         }
-        if( (!ASRUtils::is_allocatable(target_type) || vars.size() == 1) &&
-            !(array_copy && ASRUtils::is_allocatable(target_type)) ) {
+        if( (!ASRUtils::is_allocatable(underlying_target_type) || vars.size() == 1) &&
+            !(array_copy && ASRUtils::is_allocatable(underlying_target_type)) ) {
             return ;
         }
 
@@ -1364,7 +1367,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
         alloc_arg.loc = loc;
-        alloc_arg.m_a = target;
+        alloc_arg.m_a = underlying_target;
         alloc_arg.m_dims = realloc_dims.p;
         alloc_arg.n_dims = realloc_dims.size();
         alloc_arg.m_len_expr = realloc_str_len;
@@ -1705,7 +1708,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         if (bounds_checking && 
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
-            ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            ASRUtils::get_expr_size_expr(x.m_target) != nullptr) {
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
             ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);

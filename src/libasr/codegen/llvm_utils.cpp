@@ -3652,7 +3652,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 lfortran_str_copy(dest, src,
                     ASRUtils::get_string_type(asr_dest_type),
                     ASRUtils::get_string_type(asr_src_type),
-                    ASRUtils::is_allocatable(asr_dest_type));
+                    /*is_dest_allocatable=*/true);
                 break;
             case ASR::ttypeType::FunctionType:
             case ASR::ttypeType::CPtr: {

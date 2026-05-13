@@ -395,6 +395,10 @@ public:
         if ( check_external && x.m_realloc_lhs ) {
             ASR::expr_t* a_target = x.m_target;
             bool is_allocatable = ASRUtils::is_allocatable(a_target);
+            if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
+                is_allocatable = ASRUtils::is_allocatable(
+                    ASRUtils::get_past_array_physical_cast(a_target));
+            }
             if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
                 ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
                 is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);

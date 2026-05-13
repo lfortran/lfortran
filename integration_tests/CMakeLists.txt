@@ -974,6 +974,7 @@ RUN(NAME select_rank_28 LABELS gfortran llvm)
 RUN(NAME select_rank_29 LABELS gfortran llvm)
 RUN(NAME select_rank_30 LABELS gfortran llvm)
 RUN(NAME select_rank_31 LABELS gfortran llvm)
+RUN(NAME select_rank_32 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2409,6 +2410,8 @@ RUN(NAME derived_types_141 LABELS gfortran llvm)
 RUN(NAME derived_types_142 LABELS gfortran llvm)
 RUN(NAME derived_types_apply_clip_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME derived_types_143 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2599,6 +2602,7 @@ RUN(NAME associate_47 LABELS gfortran llvm)
 RUN(NAME associate_48 LABELS gfortran llvm)
 RUN(NAME associate_49 LABELS gfortran llvm)
 RUN(NAME associate_50 LABELS gfortran llvm)
+RUN(NAME associate_51 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3072,6 +3076,7 @@ RUN(NAME class_allocate_03 LABELS gfortran llvm)
 RUN(NAME class_allocate_04 LABELS gfortran llvm)
 RUN(NAME class_allocate_05 LABELS gfortran llvm)
 RUN(NAME class_allocate_06 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME class_allocate_07 LABELS gfortran llvm)
 RUN(NAME class_optional_01 LABELS gfortran llvm)
 RUN(NAME empty_array_01 LABELS gfortran llvm)
 
@@ -3210,6 +3215,8 @@ RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc NOFAST_TILL_LLVM1
 RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)                   # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)                    # FIXME: add visit_OverloadedBinOp to wasm
+RUN(NAME template_intrinsic_func_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_intrinsic_op_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3773,6 +3780,7 @@ RUN(NAME c_ptr_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME c_ptr_14 LABELS gfortran llvm)
 RUN(NAME c_ptr_15 LABELS gfortran llvm)
 RUN(NAME c_ptr_16 LABELS gfortran llvm EXTRAFILES c_ptr_16_module.f90)
+RUN(NAME c_ptr_17 LABELS gfortran llvm EXTRAFILES c_ptr_17_module.f90)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
 
