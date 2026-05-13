@@ -1185,8 +1185,8 @@ int compile_src_to_object_file(const std::string &infile,
         bool assembly,
         CompilerOptions &compiler_options,
         LCompilers::PassManager& lpm,
-        bool arg_c = false,
-        bool *found_main = nullptr)
+        bool arg_c,
+        bool *found_main)
 {
     int time_file_read=0;
     int time_src_to_asr=0;
@@ -1384,7 +1384,7 @@ int compile_to_assembly_file(const std::string &infile,
     const std::string &outfile, bool time_report, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
 {
-    return compile_src_to_object_file(infile, outfile, time_report, true, compiler_options, lpm);
+    return compile_src_to_object_file(infile, outfile, time_report, true, compiler_options, lpm, false, nullptr);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -1620,8 +1620,8 @@ int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
         CompilerOptions &compiler_options,
-        bool arg_c = false,
-        bool *found_main = nullptr)
+        bool arg_c,
+        bool *found_main)
 {
     std::string input = read_file_ok(infile);
 
@@ -1748,8 +1748,8 @@ int compile_to_object_file_c(const std::string &infile,
         bool assembly, const std::string &rtlib_header_dir,
         LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options,
-        bool arg_c = false,
-        bool *found_main = nullptr)
+        bool arg_c,
+        bool *found_main)
 {
     std::string input = read_file_ok(infile);
 
@@ -2847,17 +2847,17 @@ int main_app(int argc, char *argv[]) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             result = compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
-                compiler_options, lfortran_pass_manager, opts.arg_c);
+                compiler_options, lfortran_pass_manager, opts.arg_c, nullptr);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
         } else if (backend == Backend::c) {
             result = compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
-                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options, opts.arg_c);
+                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options, opts.arg_c, nullptr);
         } else if (backend == Backend::cpp) {
             result = compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
-                    true, rtlib_c_header_dir, compiler_options, opts.arg_c);
+                    true, rtlib_c_header_dir, compiler_options, opts.arg_c, nullptr);
         } else if (backend == Backend::x86) {
             result = compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
