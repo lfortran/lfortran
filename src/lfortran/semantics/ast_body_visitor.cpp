@@ -6431,6 +6431,21 @@ public:
                     alloc_arg.n_dims = alloc_dims.n;
                     alloc_arg.m_len_expr = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*val_elem_type)) {
+                        ASR::symbol_t* struct_sym =
+                            ASRUtils::get_struct_sym_from_struct_expr(value);
+                        if (struct_sym != nullptr && current_scope != nullptr) {
+                            ASR::symbol_t* in_scope_sym =
+                                current_scope->resolve_symbol(
+                                    ASRUtils::symbol_name(struct_sym));
+                            if (in_scope_sym != nullptr &&
+                                ASRUtils::symbol_get_past_external(in_scope_sym)
+                                    == struct_sym) {
+                                struct_sym = in_scope_sym;
+                            }
+                        }
+                        alloc_arg.m_sym_subclass = struct_sym;
+                    }
                     alloc_arg.m_type = val_elem_type;
                     Vec<ASR::alloc_arg_t> alloc_args;
                     alloc_args.reserve(al, 1);
