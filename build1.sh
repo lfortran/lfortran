@@ -4,11 +4,11 @@ set -e
 set -x
 
 cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_BUILD_TYPE=Release \
     -DWITH_LLVM=yes \
-    -DLFORTRAN_BUILD_ALL=yes \
-    -DWITH_STACKTRACE=yes \
-    -DWITH_RUNTIME_STACKTRACE=yes \
+    -DLFORTRAN_BUILD_ALL=no \
+    -DWITH_STACKTRACE=no \
+    -DWITH_RUNTIME_STACKTRACE=no \
     -DWITH_LSP=no \
     -DWITH_INTERNAL_ALLOC_CHECK=yes \
     -DUSE_DYNAMIC_ZSTD=no \
