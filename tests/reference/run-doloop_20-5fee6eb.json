@@ -1,0 +1,13 @@
+{
+    "basename": "run-doloop_20-5fee6eb",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/warnings/doloop_20.f90",
+    "infile_hash": "dd8743bb6df86e3f66a8692a173c490026f41252c66908a694ab11d9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-doloop_20-5fee6eb.stdout",
+    "stdout_hash": "4b3bcb44b815f2095015b27cfee417ead26bfa7dcb6eb09ac23f4576",
+    "stderr": "run-doloop_20-5fee6eb.stderr",
+    "stderr_hash": "03446391894b85a8a36a43bedc5644b84b0295e837d0737422cc45a0",
+    "returncode": 0
+}

@@ -8408,6 +8408,14 @@ public:
         if (x.m_var) {
             const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
             var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var))));
+            ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(var));
+            if (!ASR::is_a<ASR::Integer_t>(*var_type)) {
+                diag.semantic_warning_label(
+                    "Loop variable in DO loop must be integer",
+                    {var->base.loc},
+                    ""
+                );
+            }
         }
         if (x.m_start) {
             visit_expr(*x.m_start);
