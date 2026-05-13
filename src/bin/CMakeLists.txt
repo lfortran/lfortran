@@ -26,6 +26,7 @@ endif()
 set(LFORTRAN_SRC
     lfortran_accessor.cpp
     lsp_cli.cpp
+    lsp_server.cpp
     ${LFORTRAN_SRC}
 )
 
