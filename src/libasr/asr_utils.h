@@ -3424,6 +3424,31 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
 
         return tc;
     }
+
+    void replace_type(ASR::ttype_t* t) {
+        if (!t) return;
+        t = ASRUtils::type_get_past_allocatable_pointer(t);
+
+        if (ASR::is_a<ASR::String_t>(*t)) {
+            ASR::String_t* s = ASR::down_cast<ASR::String_t>(t);
+            if (s->m_len) {
+                s->m_len = replace_FunctionParam_with_arg(s->m_len);
+            }
+        } else if (ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
+            replace_type(arr->m_type);
+
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                if (arr->m_dims[i].m_start) {
+                    arr->m_dims[i].m_start = replace_FunctionParam_with_arg(arr->m_dims[i].m_start);
+                }
+
+                if (arr->m_dims[i].m_length) {
+                    arr->m_dims[i].m_length = replace_FunctionParam_with_arg(arr->m_dims[i].m_length);
+                }
+            }
+        }
+    }
 };
 
 static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false) {
