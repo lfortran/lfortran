@@ -23635,6 +23635,37 @@ public:
                 tmp = descriptor;
             }
 
+            {
+                ASR::symbol_t* called_sym =
+                    symbol_get_past_external(x.m_name);
+                bool is_proc_ptr_call =
+                    called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
+                if (orig_arg && callee_fn_type &&
+                        !is_proc_ptr_call &&
+                        x.m_dt == nullptr &&
+                        !callee_fn_type->m_module &&
+                        func_subrout->type == ASR::symbolType::Function &&
+                        callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
+                        callee_fn_type->m_abi == ASR::abiType::Source &&
+                        !ASRUtils::is_array(orig_arg->m_type) &&
+                        ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                        tmp->getType() ==
+                            llvm_utils->string_descriptor->getPointerTo()) {
+                    ASR::Function_t* called_fn =
+                        ASR::down_cast<ASR::Function_t>(func_subrout);
+                    if (called_fn->n_body == 0) {
+                        llvm::Value* data_gep = llvm_utils->create_gep2(
+                            llvm_utils->string_descriptor, tmp, 0);
+                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            data_gep);
+                        tmp = builder->CreateBitCast(
+                            data_ptr,
+                            llvm_utils->string_descriptor->getPointerTo());
+                    }
+                }
+            }
+
             // For bind(C) calls, ensure the argument type matches the
             // function parameter type. This handles cases like passing a
             // CFI descriptor (%array*) to a function declared with i8**
