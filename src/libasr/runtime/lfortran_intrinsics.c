@@ -56,6 +56,7 @@ typedef enum {
 
 typedef struct Alloc_info {
     size_t size;
+    bool leakable;
 } Alloc_info;
 
 unsigned long mem_debugger_HASH(void* const ptr) { // Thomas Wang hash
@@ -75,12 +76,13 @@ DEFINE_HASHTABLE_FOR_TYPES(void*, Alloc_info, mem_debugger)
 static mem_debugger mem_dbg_hashTable = {NULL, 0, 0};
 
 // Create `Alloc_info` and map to the ptr
-static void register_ptr(void* const ptr, size_t size){
+static void register_ptr(void* const ptr, size_t size, bool leakable){
     if(!ptr) return;
     if(!mem_dbg_hashTable.buckets) mem_debugger_init(&mem_dbg_hashTable, MEM_DEBUG_INITIAL_BUCKETS);
 
     Alloc_info a;
     a.size = size;
+    a.leakable = leakable;
     mem_debugger_insert(&mem_dbg_hashTable, ptr, a);
 }
 
@@ -89,7 +91,7 @@ void* dbg_malloc(void *context, int64_t size) {
     size_t alloc_size = (size_t)size;
     void *ptr = malloc(alloc_size);
     if(alloc_size && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_malloc\n");
-    register_ptr(ptr, alloc_size);
+    register_ptr(ptr, alloc_size, false);
     return ptr;
 
 }
@@ -115,7 +117,7 @@ void* dbg_calloc(void *context, int64_t nmemb, int64_t size) {
     size_t alloc_size = (size_t)size;
     void *ptr = calloc(count, alloc_size);
     if((alloc_size * count) && !ptr) fprintf(stderr, "ERROR : Unexpected error at dbg_calloc\n");
-    register_ptr(ptr, alloc_size * count);
+    register_ptr(ptr, alloc_size * count, false);
     return ptr;
 }
 
@@ -150,8 +152,9 @@ void  *dbg_realloc(void *context, void *ptr, int64_t size){
     if (new_ptr == ptr) {
         found->size = alloc_size;
     } else {
+        bool leakable = found->leakable;
         mem_debugger_remove(&mem_dbg_hashTable, ptr);
-        register_ptr(new_ptr, alloc_size);
+        register_ptr(new_ptr, alloc_size, leakable);
     }
 
     return new_ptr;
@@ -168,6 +171,7 @@ void dbg_report() {
     for (size_t i = 0; i < mem_dbg_hashTable.num_buckets; i++) {
         if (mem_dbg_hashTable.buckets[i].state != OCCUPIED_BKT) continue;
         Alloc_info *a = &mem_dbg_hashTable.buckets[i].value;
+        if (a->leakable) continue;
         fprintf(stderr, "   ==> LEAK: %zu bytes\n", a->size);
         leaks++;
         total_bytes += a->size;
@@ -182,6 +186,17 @@ void dbg_report() {
     else {
         fprintf(stdout, "NO LEAKS FOUND\n");
     }
+}
+
+LFORTRAN_API void _lfortran_dbg_mark_leakable(void *ptr) {
+    if (!ptr) return;
+    if (!mem_dbg_hashTable.buckets) return;
+    Alloc_info *found = mem_debugger_get(&mem_dbg_hashTable, ptr);
+    if (!found) {
+        fprintf(stderr, "Error: at _lfortran_dbg_mark_leakable -- ptr not found\n");
+        exit(1);
+    }
+    found->leakable = true;
 }
 /* ------------------------------------------------------------- */
 /* -------------- End memory debug implementation -------------- */
