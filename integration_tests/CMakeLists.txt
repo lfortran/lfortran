@@ -3212,6 +3212,7 @@ RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)                   # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)                    # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_intrinsic_func_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_intrinsic_op_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

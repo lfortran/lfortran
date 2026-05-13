@@ -17575,9 +17575,8 @@ public:
                         return_type = ASRUtils::duplicate_type(al, ftype);
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc, binop, left, right, dest_type));
                         if (!ASRUtils::check_equal_type(dest_type, return_type, f->m_args[1], f->m_return_var)) {
-                            diag.add(Diagnostic("Unapplicable types for intrinsic operator " + op_name,
-                                Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
+                            ImplicitCastRules::set_converted_value(al, loc,
+                                &value, dest_type, return_type, diag);
                         }
                     } else {
                         return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
