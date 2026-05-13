@@ -346,7 +346,19 @@ public:
                 } else if (AST::is_a<AST::Write_t>(*x)) {
                     process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements);
                 } else if (AST::is_a<AST::Read_t>(*x)) {
-                    process_format_statement<ASR::FileRead_t>(old_tmp, label, al, format_statements);
+                    // For READ, set m_fmt to the resolved format string
+                    // directly instead of wrapping values in StringFormat.
+                    ASR::FileRead_t *read_stmt = ASR::down_cast2<ASR::FileRead_t>(old_tmp);
+                    ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, read_stmt->base.base.loc, 1,
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, read_stmt->base.base.loc,
+                            format_statements[label].size(),
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, read_stmt->base.base.loc, 4)))),
+                        ASR::string_length_kindType::ExpressionLength,
+                        ASR::string_physical_typeType::DescriptorString));
+                    read_stmt->m_fmt = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, read_stmt->base.base.loc,
+                        s2c(al, format_statements[label]), fmt_type));
                 }
             }
         }
@@ -2370,16 +2382,11 @@ public:
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos);
         } else if( _type == AST::stmtType::Read ) {
             if (formatted && a_fmt_constant) {
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                    ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, 1, nullptr,
-                        ASR::string_length_kindType::DeferredLength,
-                        ASR::string_physical_typeType::DescriptorString))));
-                ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
-                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
-                    type, nullptr));
-                a_values_vec.reserve(al, 1);
-                a_values_vec.push_back(al, string_format);
+                // For READ, do not wrap values in StringFormat (which is for
+                // output/WRITE). Instead, use the resolved format string as
+                // m_fmt directly so that the read target variables are passed
+                // as-is to the codegen, avoiding creation of temporaries.
+                a_fmt = a_fmt_constant;
             }
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad);
