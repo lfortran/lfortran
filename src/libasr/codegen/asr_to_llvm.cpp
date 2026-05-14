@@ -2403,19 +2403,18 @@ public:
             }
         }
         if (m_stat) {
-            ASR::Variable_t *asr_target = EXPR2VAR(m_stat);
-            uint32_t h = get_hash((ASR::asr_t*)asr_target);
-            if (llvm_symtab.find(h) != llvm_symtab.end()) {
-                llvm::Value *target, *value;
-                target = llvm_symtab[h];
-                // Store 0 (success) in the stat variable
-                ASR::ttype_t* stat_type = ASRUtils::expr_type(m_stat);
-                int kind = ASRUtils::extract_kind_from_ttype_t(stat_type);
-                value = llvm::ConstantInt::get(context, llvm::APInt(8*kind, 0));
-                builder->CreateStore(value, target);
-            } else {
-                throw CodeGenError("Stat variable in allocate not found in LLVM symtab");
-            }
+            // m_stat is any assignable integer expression (Var, struct member,
+            // array element); evaluate as an lvalue and store 0 (success).
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(m_stat, false);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value *target = tmp;
+            ASR::ttype_t* stat_type = ASRUtils::expr_type(m_stat);
+            int kind = ASRUtils::extract_kind_from_ttype_t(stat_type);
+            llvm::Value *value = llvm::ConstantInt::get(context,
+                llvm::APInt(8*kind, 0));
+            builder->CreateStore(value, target);
         }
     }
 
