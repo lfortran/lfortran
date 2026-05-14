@@ -2,78 +2,77 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
-%class_circle2.circle.3_class = type <{ i32 (...)**, %class_circle2.circle.3* }>
+%string_descriptor = type <{ ptr, i64 }>
+%class_circle2.circle.3_class = type <{ ptr, ptr }>
 %class_circle2.circle.3 = type { float }
 
 @__module_class_circle2_pi = global float 0x400921FB60000000
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
-@_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_circle = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_class_circle2_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle2_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle2_for_UPoly to i8*), i8* bitcast (float (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
+@_Type_Info_circle = linkonce_odr unnamed_addr constant { ptr, ptr, ptr } { ptr @_Name_circle, ptr inttoptr (i64 4 to ptr), ptr null }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [7 x ptr] } { [7 x ptr] [ptr null, ptr @_Type_Info_circle, ptr @_copy_class_circle2_circle, ptr @_allocate_struct_class_circle2_circle, ptr @finalize_StructType__circle_3_of_class_circle2_for_UPoly, ptr @__module_class_circle2_circle_area, ptr @__module_class_circle2_circle_print] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [25 x i8] c"S-DESC-12,R4,S-DESC-8,R4\00", align 1
 @string_const_data = private constant [12 x i8] c"Circle: r = "
-@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 12 }>
+@string_const = private global %string_descriptor <{ ptr @string_const_data, i64 12 }>
 @string_const_data.1 = private constant [8 x i8] c" area = "
-@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([8 x i8], [8 x i8]* @string_const_data.1, i32 0, i32 0), i64 8 }>
+@string_const.2 = private global %string_descriptor <{ ptr @string_const_data.1, i64 8 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define float @__module_class_circle2_circle_area(%class_circle2.circle.3_class* %this) {
+define float @__module_class_circle2_circle_area(ptr %this) {
 .entry:
   %circle_area = alloca float, align 4
-  %0 = load float, float* @__module_class_circle2_pi, align 4
-  %1 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %this, i32 0, i32 1
-  %2 = load %class_circle2.circle.3*, %class_circle2.circle.3** %1, align 8
-  %3 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %2, i32 0, i32 0
-  %4 = load float, float* %3, align 4
+  %0 = load float, ptr @__module_class_circle2_pi, align 4
+  %1 = getelementptr %class_circle2.circle.3_class, ptr %this, i32 0, i32 1
+  %2 = load ptr, ptr %1, align 8
+  %3 = getelementptr %class_circle2.circle.3, ptr %2, i32 0, i32 0
+  %4 = load float, ptr %3, align 4
   %simplified_pow_operation = fmul float %4, %4
   %5 = fmul float %0, %simplified_pow_operation
-  store float %5, float* %circle_area, align 4
+  store float %5, ptr %circle_area, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_circle_area
 
 FINALIZE_SYMTABLE_circle_area:                    ; preds = %return
-  %6 = load float, float* %circle_area, align 4
+  %6 = load float, ptr %circle_area, align 4
   ret float %6
 }
 
-define void @__module_class_circle2_circle_print(%class_circle2.circle.3_class* %this) {
+define void @__module_class_circle2_circle_print(ptr %this) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
-  %0 = call i8* @_lfortran_get_default_allocator()
+  %0 = call ptr @_lfortran_get_default_allocator()
   %area = alloca float, align 4
-  %1 = bitcast %class_circle2.circle.3_class* %this to float (%class_circle2.circle.3_class*)***
-  %2 = load float (%class_circle2.circle.3_class*)**, float (%class_circle2.circle.3_class*)*** %1, align 8
-  %3 = getelementptr inbounds float (%class_circle2.circle.3_class*)*, float (%class_circle2.circle.3_class*)** %2, i32 3
-  %4 = load float (%class_circle2.circle.3_class*)*, float (%class_circle2.circle.3_class*)** %3, align 8
-  %5 = call float %4(%class_circle2.circle.3_class* %this)
-  store float %5, float* %area, align 4
-  %6 = alloca i64, align 8
-  %7 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %this, i32 0, i32 1
-  %8 = load %class_circle2.circle.3*, %class_circle2.circle.3** %7, align 8
-  %9 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %8, i32 0, i32 0
-  %10 = load float, float* %9, align 4
-  %11 = alloca float, align 4
-  store float %10, float* %11, align 4
-  %12 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @serialization_info, i32 0, i32 0), i64* %6, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %11, %string_descriptor* @string_const.2, float* %area)
-  %13 = load i64, i64* %6, align 8
-  %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %12, i8** %14, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %13, i64* %15, align 8
-  %16 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %17 = load i8*, i8** %16, align 8
-  %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %19 = load i64, i64* %18, align 8
-  %20 = trunc i64 %19 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %17, i32 %20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  %21 = icmp eq i8* %12, null
-  br i1 %21, label %free_done, label %free_nonnull
+  %1 = load ptr, ptr %this, align 8
+  %2 = getelementptr inbounds ptr, ptr %1, i32 3
+  %3 = load ptr, ptr %2, align 8
+  %4 = call float %3(ptr %this)
+  store float %4, ptr %area, align 4
+  %5 = alloca i64, align 8
+  %6 = getelementptr %class_circle2.circle.3_class, ptr %this, i32 0, i32 1
+  %7 = load ptr, ptr %6, align 8
+  %8 = getelementptr %class_circle2.circle.3, ptr %7, i32 0, i32 0
+  %9 = load float, ptr %8, align 4
+  %10 = alloca float, align 4
+  store float %9, ptr %10, align 4
+  %11 = call ptr (ptr, ptr, i64, ptr, ptr, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(ptr %0, ptr null, i64 0, ptr @serialization_info, ptr %5, i32 0, i32 0, i32 0, i32 0, i32 0, ptr @string_const, ptr %10, ptr @string_const.2, ptr %area)
+  %12 = load i64, ptr %5, align 8
+  %13 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  store ptr %11, ptr %13, align 8
+  %14 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  store i64 %12, ptr %14, align 8
+  %15 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 0
+  %16 = load ptr, ptr %15, align 8
+  %17 = getelementptr %string_descriptor, ptr %stringFormat_desc, i32 0, i32 1
+  %18 = load i64, ptr %17, align 8
+  %19 = trunc i64 %18 to i32
+  call void @_lfortran_printf(ptr @1, ptr %16, i32 %19, ptr @0, i32 1)
+  %20 = icmp eq ptr %11, null
+  br i1 %20, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %.entry
-  call void @_lfortran_free_alloc(i8* %0, i8* %12)
+  call void @_lfortran_free_alloc(ptr %0, ptr %11)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %.entry
@@ -90,16 +89,16 @@ define void @__module_class_circle2__xx_lcompilers_changed_main_xx() {
 .entry:
   %0 = alloca %class_circle2.circle.3_class, align 8
   %c = alloca %class_circle2.circle.3, align 8
-  %1 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %c, i32 0, i32 0
-  %2 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %c, i32 0, i32 0
-  store float 1.000000e+00, float* %2, align 4
-  %3 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %c, i32 0, i32 0
-  store float 1.500000e+00, float* %3, align 4
-  %4 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %0, i32 0, i32 0
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
-  %5 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %0, i32 0, i32 1
-  store %class_circle2.circle.3* %c, %class_circle2.circle.3** %5, align 8
-  call void @__module_class_circle2_circle_print(%class_circle2.circle.3_class* %0)
+  %1 = getelementptr %class_circle2.circle.3, ptr %c, i32 0, i32 0
+  %2 = getelementptr %class_circle2.circle.3, ptr %c, i32 0, i32 0
+  store float 1.000000e+00, ptr %2, align 4
+  %3 = getelementptr %class_circle2.circle.3, ptr %c, i32 0, i32 0
+  store float 1.500000e+00, ptr %3, align 4
+  %4 = getelementptr %class_circle2.circle.3_class, ptr %0, i32 0, i32 0
+  store ptr getelementptr inbounds ({ [7 x ptr] }, ptr @_VTable_circle, i32 0, i32 0, i32 2), ptr %4, align 8
+  %5 = getelementptr %class_circle2.circle.3_class, ptr %0, i32 0, i32 1
+  store ptr %c, ptr %5, align 8
+  call void @__module_class_circle2_circle_print(ptr %0)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -109,17 +108,15 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret void
 }
 
-define linkonce_odr void @_copy_class_circle2_circle(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_class_circle2_circle(ptr %0, ptr %1) {
 entry:
-  %2 = bitcast i8* %0 to %class_circle2.circle.3*
-  %3 = bitcast i8* %1 to %class_circle2.circle.3*
-  %4 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %2, i32 0, i32 0
-  %5 = load float, float* %4, align 4
-  %6 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %3, i32 0, i32 0
+  %2 = getelementptr %class_circle2.circle.3, ptr %0, i32 0, i32 0
+  %3 = load float, ptr %2, align 4
+  %4 = getelementptr %class_circle2.circle.3, ptr %1, i32 0, i32 0
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store float %5, float* %6, align 4
+  store float %3, ptr %4, align 4
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -129,48 +126,44 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_class_circle2_circle(i8** %0) {
+define linkonce_odr void @_allocate_struct_class_circle2_circle(ptr %0) {
 entry:
-  %1 = call i8* @_lfortran_get_default_allocator()
-  %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 16, i1 false)
-  store i8* %2, i8** %0, align 8
-  %3 = load i8*, i8** %0, align 8
-  %4 = bitcast i8* %3 to %class_circle2.circle.3_class*
-  %5 = bitcast %class_circle2.circle.3_class* %4 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
-  %6 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %4, i32 0, i32 1
-  %7 = call i8* @_lfortran_get_default_allocator()
-  %8 = call i8* @_lfortran_malloc_alloc(i8* %7, i64 4)
-  call void @llvm.memset.p0i8.i32(i8* %8, i8 0, i32 4, i1 false)
-  %9 = bitcast i8* %8 to %class_circle2.circle.3*
-  store %class_circle2.circle.3* %9, %class_circle2.circle.3** %6, align 8
-  %10 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %9, i32 0, i32 0
+  %1 = call ptr @_lfortran_get_default_allocator()
+  %2 = call ptr @_lfortran_malloc_alloc(ptr %1, i64 16)
+  call void @llvm.memset.p0.i32(ptr %2, i8 0, i32 16, i1 false)
+  store ptr %2, ptr %0, align 8
+  %3 = load ptr, ptr %0, align 8
+  store ptr getelementptr inbounds ({ [7 x ptr] }, ptr @_VTable_circle, i32 0, i32 0, i32 2), ptr %3, align 8
+  %4 = getelementptr %class_circle2.circle.3_class, ptr %3, i32 0, i32 1
+  %5 = call ptr @_lfortran_get_default_allocator()
+  %6 = call ptr @_lfortran_malloc_alloc(ptr %5, i64 4)
+  call void @llvm.memset.p0.i32(ptr %6, i8 0, i32 4, i1 false)
+  store ptr %6, ptr %4, align 8
+  %7 = getelementptr %class_circle2.circle.3, ptr %6, i32 0, i32 0
   ret void
 }
 
-define internal void @finalize_StructType__circle_3_of_class_circle2_for_UPoly(i8* %0) {
+define internal void @finalize_StructType__circle_3_of_class_circle2_for_UPoly(ptr %0) {
 entry:
-  %1 = bitcast i8* %0 to %class_circle2.circle.3*
   ret void
 }
 
-declare i8* @_lfortran_malloc_alloc(i8*, i64)
+declare ptr @_lfortran_malloc_alloc(ptr, i64)
 
-declare i8* @_lfortran_get_default_allocator()
+declare ptr @_lfortran_get_default_allocator()
 
-; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
+declare void @llvm.memset.p0.i32(ptr nocapture writeonly, i8, i32, i1 immarg) #0
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
+declare ptr @_lcompilers_string_format_fortran(ptr, ptr, i64, ptr, ptr, i32, i32, i32, i32, i32, ...)
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(ptr, ptr, i32, ptr, i32)
 
-declare void @_lfortran_free_alloc(i8*, i8*)
+declare void @_lfortran_free_alloc(ptr, ptr)
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   call void @__module_class_circle2__xx_lcompilers_changed_main_xx()
   br label %return
 
@@ -182,8 +175,8 @@ FINALIZE_SYMTABLE_circle_test:                    ; preds = %return
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
 declare void @_lfortran_internal_alloc_finalize()
 
-attributes #0 = { argmemonly nounwind willreturn writeonly }
+attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
