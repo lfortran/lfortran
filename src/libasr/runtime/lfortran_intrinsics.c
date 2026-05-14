@@ -11259,9 +11259,19 @@ static void common_formatted_read(InputSource *inputSource,
 
     if (!advance_no && !consumed_newline && (!iostat || *iostat == 0)) {
         int c = 0;
+        bool read_any = false;
         do {
             c = read_character(inputSource);
+            read_any = read_any || (c != EOF);
         } while (c != '\n' && c != EOF);
+        if (c == EOF && !read_any && no_of_args == 0) {
+            if (iostat) {
+                *iostat = -1;
+            } else {
+                fprintf(stderr, "Runtime Error: End of file\n");
+                exit(1);
+            }
+        }
     }
 
 }
