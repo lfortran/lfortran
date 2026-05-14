@@ -35,46 +35,211 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>   /* atoi */
+#include <math.h>
 #if defined(LFORTRAN_HAVE_CONFIG_H) || __has_include(<libasr/config.h>)
 #  include <libasr/config.h>
 #endif
 #if LFORTRAN_HAVE_REAL128
 #  include <quadmath.h>
+#else
+#  if defined(_MSC_VER)
+#    include <intrin.h>
+#  endif
 #endif
 
 /* ========================================================================
  * A. u128 helpers
  * ======================================================================== */
 
-typedef unsigned __int128 u128;
-typedef   signed __int128 s128;
+/* ========================================================================
+ * A. u128 helpers — portable struct-based 128-bit integer.
+ *    Pure C99. No __int128. Works on MSVC, Clang, GCC.
+ *    Only used in the !LFORTRAN_HAVE_REAL128 (macOS + Windows) path.
+ * ======================================================================== */
 
+typedef struct { uint64_t lo; uint64_t hi; } u128;
+typedef struct { uint64_t lo;  int64_t hi; } s128;
+
+/* Construction and extraction */
 static inline u128 u128_make(uint64_t hi, uint64_t lo) {
-    return ((u128)hi << 64) | lo;
+    u128 r; r.lo = lo; r.hi = hi; return r;
 }
-static inline uint64_t u128_hi(u128 v) { return (uint64_t)(v >> 64); }
-static inline uint64_t u128_lo(u128 v) { return (uint64_t)v; }
+static inline uint64_t u128_hi(u128 v) { return v.hi; }
+static inline uint64_t u128_lo(u128 v) { return v.lo; }
 
-/* count leading zeros of a 128-bit value */
+/* Conversion from scalar */
+static inline u128 u128_from_u64(uint64_t v) {
+    u128 r; r.lo = v; r.hi = 0; return r;
+}
+
+/* Constants */
+static inline u128 u128_zero(void) { u128 r; r.lo = 0; r.hi = 0; return r; }
+static inline u128 u128_one (void) { u128 r; r.lo = 1; r.hi = 0; return r; }
+
+/* Arithmetic */
+static inline u128 u128_add(u128 a, u128 b) {
+    u128 r;
+    r.lo = a.lo + b.lo;
+    r.hi = a.hi + b.hi + (r.lo < a.lo ? 1u : 0u);
+    return r;
+}
+static inline u128 u128_sub(u128 a, u128 b) {
+    u128 r;
+    r.lo = a.lo - b.lo;
+    r.hi = a.hi - b.hi - (a.lo < b.lo ? 1u : 0u);
+    return r;
+}
+static inline u128 u128_inc(u128 a) {
+    u128 r;
+    r.lo = a.lo + 1;
+    r.hi = a.hi + (r.lo == 0 ? 1u : 0u);
+    return r;
+}
+
+/* Bitwise */
+static inline u128 u128_and(u128 a, u128 b) {
+    u128 r; r.lo = a.lo & b.lo; r.hi = a.hi & b.hi; return r;
+}
+static inline u128 u128_or(u128 a, u128 b) {
+    u128 r; r.lo = a.lo | b.lo; r.hi = a.hi | b.hi; return r;
+}
+static inline u128 u128_xor(u128 a, u128 b) {
+    u128 r; r.lo = a.lo ^ b.lo; r.hi = a.hi ^ b.hi; return r;
+}
+static inline u128 u128_not(u128 a) {
+    u128 r; r.lo = ~a.lo; r.hi = ~a.hi; return r;
+}
+
+/* Shifts */
+static inline u128 u128_shl(u128 a, int n) {
+    u128 r;
+    if (n <= 0)   { return a; }
+    if (n >= 128) { r.lo = 0; r.hi = 0; return r; }
+    if (n >= 64)  { r.hi = a.lo << (n - 64); r.lo = 0; return r; }
+    r.hi = (a.hi << n) | (a.lo >> (64 - n));
+    r.lo = a.lo << n;
+    return r;
+}
+static inline u128 u128_shr(u128 a, int n) {
+    u128 r;
+    if (n <= 0)   { return a; }
+    if (n >= 128) { r.lo = 0; r.hi = 0; return r; }
+    if (n >= 64)  { r.lo = a.hi >> (n - 64); r.hi = 0; return r; }
+    r.lo = (a.lo >> n) | (a.hi << (64 - n));
+    r.hi = a.hi >> n;
+    return r;
+}
+
+/* Comparisons — return int (0 or 1) */
+static inline int u128_gt(u128 a, u128 b) {
+    return a.hi > b.hi || (a.hi == b.hi && a.lo > b.lo);
+}
+static inline int u128_gte(u128 a, u128 b) {
+    return a.hi > b.hi || (a.hi == b.hi && a.lo >= b.lo);
+}
+static inline int u128_lt(u128 a, u128 b)  { return u128_gt(b, a); }
+static inline int u128_lte(u128 a, u128 b) { return u128_gte(b, a); }
+static inline int u128_eq(u128 a, u128 b)  {
+    return a.hi == b.hi && a.lo == b.lo;
+}
+static inline int u128_is_zero(u128 a) { return !a.lo && !a.hi; }
+
+/* Check if bit N is set (0-indexed from LSB) */
+static inline int u128_bit(u128 a, int n) {
+    if (n >= 64) return (int)((a.hi >> (n - 64)) & 1);
+    return (int)((a.lo >> n) & 1);
+}
+
+/* Set bit N */
+static inline u128 u128_set_bit(u128 a, int n) {
+    if (n >= 64) { a.hi |= (uint64_t)1 << (n - 64); }
+    else         { a.lo |= (uint64_t)1 << n; }
+    return a;
+}
+
+/* Right shift by 1, fast */
+static inline u128 u128_shr1(u128 a) {
+    u128 r;
+    r.lo = (a.lo >> 1) | (a.hi << 63);
+    r.hi = a.hi >> 1;
+    return r;
+}
+
+/* Left shift by 1, fast */
+static inline u128 u128_shl1(u128 a) {
+    u128 r;
+    r.hi = (a.hi << 1) | (a.lo >> 63);
+    r.lo = a.lo << 1;
+    return r;
+}
+
+/* Count leading zeros — only #ifdef in the entire file */
+static inline int lf_clz64(uint64_t v) {
+#if defined(_MSC_VER)
+    unsigned long idx;
+    return _BitScanReverse64(&idx, v) ? (int)(63 - idx) : 64;
+#else
+    return v ? __builtin_clzll(v) : 64;
+#endif
+}
+static inline int lf_clz32(uint32_t v) {
+#if defined(_MSC_VER)
+    unsigned long idx;
+    return _BitScanReverse(&idx, v) ? (int)(31 - idx) : 32;
+#else
+    return v ? __builtin_clz(v) : 32;
+#endif
+}
 static inline int u128_clz(u128 v) {
-    if (u128_hi(v)) return __builtin_clzll(u128_hi(v));
-    if (u128_lo(v)) return 64 + __builtin_clzll(u128_lo(v));
+    if (v.hi) return lf_clz64(v.hi);
+    if (v.lo) return 64 + lf_clz64(v.lo);
     return 128;
 }
 
-/* 256-bit product of two 128-bit values: result stored as (hi128, lo128) */
+/* Get value of top N bits shifted down (for reading specific bit ranges) */
+static inline uint64_t u128_top_u64(u128 a) { return a.hi; }
+
+/* 64x64 -> 128-bit multiply (schoolbook via 32-bit halves) */
+static inline u128 mul64x64(uint64_t a, uint64_t b) {
+    uint64_t a_lo = a & 0xFFFFFFFFull, a_hi = a >> 32;
+    uint64_t b_lo = b & 0xFFFFFFFFull, b_hi = b >> 32;
+
+    uint64_t p0 = a_lo * b_lo;
+    uint64_t p1 = a_lo * b_hi;
+    uint64_t p2 = a_hi * b_lo;
+    uint64_t p3 = a_hi * b_hi;
+
+    uint64_t mid = (p0 >> 32)
+                 + (p1 & 0xFFFFFFFFull)
+                 + (p2 & 0xFFFFFFFFull);
+    u128 r;
+    r.lo = (mid << 32) | (p0 & 0xFFFFFFFFull);
+    r.hi = p3 + (p1 >> 32) + (p2 >> 32) + (mid >> 32);
+    return r;
+}
+
+/* 128x128 -> 256-bit multiply. Result in (hi_out, lo_out) each 128 bits. */
 static void u128_mul128(u128 a, u128 b, u128 *hi_out, u128 *lo_out) {
-    uint64_t a1 = u128_hi(a), a0 = u128_lo(a);
-    uint64_t b1 = u128_hi(b), b0 = u128_lo(b);
+    u128 c00 = mul64x64(a.lo, b.lo);
+    u128 c01 = mul64x64(a.lo, b.hi);
+    u128 c10 = mul64x64(a.hi, b.lo);
+    u128 c11 = mul64x64(a.hi, b.hi);
 
-    u128 c00 = (u128)a0 * b0;
-    u128 c01 = (u128)a0 * b1;
-    u128 c10 = (u128)a1 * b0;
-    u128 c11 = (u128)a1 * b1;
+    /* mid = c00.hi + c01.lo + c10.lo  (tracking carry) */
+    uint64_t m0 = c00.hi;
+    uint64_t m1 = m0 + c01.lo; int mc1 = (m1 < m0) ? 1 : 0;
+    uint64_t m2 = m1 + c10.lo; int mc2 = (m2 < m1) ? 1 : 0;
 
-    u128 mid  = (c00 >> 64) + u128_lo(c01) + u128_lo(c10);
-    *lo_out   = (mid << 64) | u128_lo(c00);
-    *hi_out   = c11 + u128_hi(c01) + u128_hi(c10) + u128_hi(mid);
+    lo_out->lo = c00.lo;
+    lo_out->hi = m2;
+
+    uint64_t h0 = c11.lo;
+    uint64_t h1 = h0 + c01.hi; int hc1 = (h1 < h0) ? 1 : 0;
+    uint64_t h2 = h1 + c10.hi; int hc2 = (h2 < h1) ? 1 : 0;
+    uint64_t h3 = h2 + (uint64_t)(mc1 + mc2); int hc3 = (h3 < h2) ? 1 : 0;
+
+    hi_out->lo = h3;
+    hi_out->hi = c11.hi + (uint64_t)(hc1 + hc2 + hc3);
 }
 
 /* ========================================================================
@@ -133,7 +298,7 @@ static lf_float128 f128_pack_parts(int sign, int32_t exp, u128 mant) {
     lf_float128 r;
     uint64_t lo, hi;
 
-    if (!mant) {
+    if (u128_is_zero(mant)) {
         /* zero */
         hi = (uint64_t)sign << 63;
         lo = 0;
@@ -147,20 +312,20 @@ static lf_float128 f128_pack_parts(int sign, int32_t exp, u128 mant) {
     int shift = clz - (127 - 112);  /* = clz - 15 */
 
     if (shift > 0) {
-        mant <<= shift;
+        mant = u128_shl(mant, shift);
         exp  -= shift;
     } else if (shift < 0) {
         /* rounding shift right */
         int rsh = -shift;
-        u128 sticky = mant & (((u128)1 << rsh) - 1);
-        mant >>= rsh;
+        u128 sticky = u128_and(mant, u128_sub(u128_shl(u128_one(), rsh), u128_one()));
+        mant = u128_shr(mant, rsh);
         /* round to nearest-even */
-        u128 half = (u128)1 << (rsh - 1);
-        u128 lsb  = (u128)1;
-        if (sticky > half || (sticky == half && (mant & lsb)))
-            mant++;
+        u128 half = u128_shl(u128_one(), rsh - 1);
+        u128 lsb  = u128_one();
+        if (u128_gt(sticky, half) || (u128_eq(sticky, half) && !u128_is_zero(u128_and(mant, lsb))))
+            mant = u128_inc(mant);
         /* re-check normalisation after rounding */
-        if (mant >> 113) { mant >>= 1; exp++; }
+        if (!u128_is_zero(u128_shr(mant, 113))) { mant = u128_shr(mant, 1); exp++; }
         exp += rsh;
     }
 
@@ -176,7 +341,7 @@ static lf_float128 f128_pack_parts(int sign, int32_t exp, u128 mant) {
             memcpy(r.bytes+8, &hi, 8);
             return r;
         }
-        mant >>= subnorm_shift;
+        mant = u128_shr(mant, subnorm_shift);
         /* biased = 0 for subnormals */
         uint64_t mhi = u128_hi(mant) & 0x0000FFFFFFFFFFFFull;
         uint64_t mlo = u128_lo(mant);
@@ -198,7 +363,7 @@ static lf_float128 f128_pack_parts(int sign, int32_t exp, u128 mant) {
     }
 
     /* strip implicit leading 1 (bit 112) and store */
-    mant &= ((u128)1 << 112) - 1;
+    mant = u128_and(mant, u128_sub(u128_shl(u128_one(), 112), u128_one()));
     uint64_t mhi = u128_hi(mant) & 0x0000FFFFFFFFFFFFull;
     uint64_t mlo = u128_lo(mant);
     hi = ((uint64_t)sign << 63) | ((uint64_t)biased << 48) | mhi;
@@ -286,7 +451,7 @@ static int f128_cmp_internal(lf_float128 a, lf_float128 b) {
     else if (pa.is_inf)         mag = 1;
     else if (pb.is_inf)         mag = -1;
     else if (pa.exp != pb.exp)  mag = pa.exp > pb.exp ? 1 : -1;
-    else                        mag = (pa.mant > pb.mant) ? 1 : (pa.mant < pb.mant) ? -1 : 0;
+    else                        mag = u128_gt(pa.mant, pb.mant) ? 1 : u128_lt(pa.mant, pb.mant) ? -1 : 0;
 
     return as ? -mag : mag;  /* if negative, flip */
 }
@@ -323,13 +488,13 @@ lf_float128 lf_f128_abs(lf_float128 a) {
 static lf_float128 f128_add_same_sign(f128_parts pa, f128_parts pb) {
     /* Align significands */
     int shift = pa.exp - pb.exp;
-    u128 mb = (shift < 128) ? (pb.mant >> shift) : 0;
-    u128 sum = pa.mant + mb;
+    u128 mb = (shift < 128) ? u128_shr(pb.mant, shift) : u128_zero();
+    u128 sum = u128_add(pa.mant, mb);
     int32_t exp = pa.exp;
 
     /* Check carry out of bit 113 */
-    if (sum >> 113) {
-        sum >>= 1;
+    if (!u128_is_zero(u128_shr(sum, 113))) {
+        sum = u128_shr(sum, 1);
         exp++;
     }
     return f128_pack_parts(pa.sign, exp, sum);
@@ -339,8 +504,8 @@ static lf_float128 f128_add_same_sign(f128_parts pa, f128_parts pb) {
  * |pa| > |pb|, result sign = result_sign. */
 static lf_float128 f128_sub_mag(f128_parts pa, f128_parts pb, int result_sign) {
     int shift = pa.exp - pb.exp;
-    u128 mb = (shift < 128) ? (pb.mant >> shift) : 0;
-    u128 diff = pa.mant - mb;
+    u128 mb = (shift < 128) ? u128_shr(pb.mant, shift) : u128_zero();
+    u128 diff = u128_sub(pa.mant, mb);
     return f128_pack_parts(result_sign, pa.exp, diff);
 }
 
@@ -361,7 +526,7 @@ lf_float128 __addtf3_lf_impl(lf_float128 a, lf_float128 b) {
 
     /* Sort so pa has the larger (or equal) magnitude */
     int swapped = 0;
-    if (pa.exp < pb.exp || (pa.exp == pb.exp && pa.mant < pb.mant)) {
+    if (pa.exp < pb.exp || (pa.exp == pb.exp && u128_lt(pa.mant, pb.mant))) {
         f128_parts tmp = pa; pa = pb; pb = tmp;
         swapped = 1;
     }
@@ -370,7 +535,7 @@ lf_float128 __addtf3_lf_impl(lf_float128 a, lf_float128 b) {
         return f128_add_same_sign(pa, pb);
     } else {
         /* Subtraction: pa.mant >= pb.mant (by sort above) */
-        if (pa.mant == pb.mant && pa.exp == pb.exp) return f128_make_zero(0);
+        if (u128_eq(pa.mant, pb.mant) && pa.exp == pb.exp) return f128_make_zero(0);
         int rsign = swapped ? pb.sign : pa.sign;
         return f128_sub_mag(pa, pb, rsign);
     }
@@ -417,18 +582,24 @@ lf_float128 __multf3_lf_impl(lf_float128 a, lf_float128 b) {
     if (rsh >= 128) {
         /* result fits entirely in prod_hi */
         int rsh2 = rsh - 128;
-        result_mant = prod_hi >> rsh2;
+        result_mant = u128_shr(prod_hi, rsh2);
         /* rounding bit is (prod_hi >> (rsh2-1)) & 1 if rsh2>0, else prod_lo's top */
-        u128 round_bit = rsh2 > 0 ? ((prod_hi >> (rsh2-1)) & 1) : (prod_lo >> 127);
-        u128 sticky    = rsh2 > 1 ? (prod_hi & (((u128)1 << (rsh2-1))-1)) : 0;
-        sticky |= prod_lo;
-        if (round_bit && (sticky || (result_mant & 1))) result_mant++;
+        int round_bit = rsh2 > 0 ? u128_bit(prod_hi, rsh2 - 1) : u128_bit(prod_lo, 127);
+        u128 sticky    = rsh2 > 1
+                       ? u128_and(prod_hi, u128_sub(u128_shl(u128_one(), rsh2 - 1), u128_one()))
+                       : u128_zero();
+        sticky = u128_or(sticky, prod_lo);
+        if (round_bit && (!u128_is_zero(sticky) || !u128_is_zero(u128_and(result_mant, u128_one())))) {
+            result_mant = u128_inc(result_mant);
+        }
     } else {
         /* straddling prod_hi and prod_lo */
-        result_mant = (prod_hi << (128 - rsh)) | (prod_lo >> rsh);
-        u128 round_bit = (prod_lo >> (rsh - 1)) & 1;
-        u128 sticky    = prod_lo & (((u128)1 << (rsh-1)) - 1);
-        if (round_bit && (sticky || (result_mant & 1))) result_mant++;
+        result_mant = u128_or(u128_shl(prod_hi, 128 - rsh), u128_shr(prod_lo, rsh));
+        int round_bit = u128_bit(prod_lo, rsh - 1);
+        u128 sticky    = u128_and(prod_lo, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
+        if (round_bit && (!u128_is_zero(sticky) || !u128_is_zero(u128_and(result_mant, u128_one())))) {
+            result_mant = u128_inc(result_mant);
+        }
     }
     exp += rsh - 112;  /* correct for the shift */
 
@@ -478,9 +649,6 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
      * Divide by mant_b (113 bits) to get a 113-bit quotient + remainder. */
 
     /* Represent dividend as (mant_a << 112) */
-    u128 div_hi = mant_a >> (128 - 112);   /* top 112 bits of mant_a */
-    u128 div_lo = mant_a << 112;           /* bottom portion */
-
     /* Long division: quotient = (div_hi:div_lo) / mant_b
      * We need 113 bits of quotient. Use iterative bit-by-bit or
      * restoring division with 128-bit intermediates. */
@@ -497,18 +665,18 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
 
     /* Method: 113-step binary restoring division */
     u128 remainder = mant_a;
-    u128 quotient  = 0;
+    u128 quotient  = u128_zero();
     /* We want quotient = floor(mant_a * 2^113 / mant_b), giving 113 bits */
     for (int i = 0; i < 113; i++) {
-        remainder <<= 1;
-        quotient  <<= 1;
-        if (remainder >= mant_b) {
-            remainder -= mant_b;
-            quotient  |= 1;
+        remainder = u128_shl1(remainder);
+        quotient  = u128_shl1(quotient);
+        if (u128_gte(remainder, mant_b)) {
+            remainder = u128_sub(remainder, mant_b);
+            quotient  = u128_or(quotient, u128_one());
         }
     }
     /* Round: if remainder*2 >= mant_b, round up */
-    if ((remainder << 1) >= mant_b) quotient++;
+    if (u128_gte(u128_shl1(remainder), mant_b)) quotient = u128_inc(quotient);
 
     int32_t rexp = exp_a - exp_b - 1;  /* -1 because quotient has an extra factor of 2 */
 
@@ -537,11 +705,11 @@ lf_float128 __extenddftf2_lf_impl(double d) {
     int32_t exp;
     if (dexp) {
         /* normal double */
-        mant = (u128)(dmant | (1ull << 52)) << (112 - 52);  /* align to bit 112 */
+        mant = u128_shl(u128_from_u64(dmant | (1ull << 52)), 112 - 52);  /* align to bit 112 */
         exp  = dexp - 1023;
     } else {
         /* subnormal double */
-        mant = (u128)dmant << (112 - 52);
+        mant = u128_shl(u128_from_u64(dmant), 112 - 52);
         exp  = -1022 - 52;  /* will be corrected by pack_parts normalisation */
     }
     return f128_pack_parts(sign, exp, mant);
@@ -563,10 +731,10 @@ lf_float128 __extendsftf2_lf_impl(float f) {
     u128 mant;
     int32_t exp;
     if (fexp) {
-        mant = (u128)(fmant | (1u << 23)) << (112 - 23);
+        mant = u128_shl(u128_from_u64(fmant | (1u << 23)), 112 - 23);
         exp  = fexp - 127;
     } else {
-        mant = (u128)fmant << (112 - 23);
+        mant = u128_shl(u128_from_u64(fmant), 112 - 23);
         exp  = -126 - 23;
     }
     return f128_pack_parts(sign, exp, mant);
@@ -574,28 +742,28 @@ lf_float128 __extendsftf2_lf_impl(float f) {
 
 double __trunctfdf2(lf_float128 a) {
     f128_parts p = f128_unpack(a);
-    if (p.is_nan) return 0.0 / 0.0;  /* NaN */
-    if (p.is_inf) return p.sign ? -1.0/0.0 : 1.0/0.0;
+    if (p.is_nan) return NAN;
+    if (p.is_inf) return p.sign ? -INFINITY : INFINITY;
     if (p.is_zero) return p.sign ? -0.0 : 0.0;
 
     /* Shift mant right to get 52 bits + rounding */
     int32_t dexp = p.exp + 1023;
-    if (dexp >= 0x7FF) return p.sign ? -1.0/0.0 : 1.0/0.0;  /* overflow */
+    if (dexp >= 0x7FF) return p.sign ? -INFINITY : INFINITY;  /* overflow */
     if (dexp <= 0) {
         /* subnormal double: shift further */
         int extra_shift = 1 - dexp;
         int rsh = (112 - 52) + extra_shift;
         if (rsh >= 128) return p.sign ? -0.0 : 0.0;
-        uint64_t dmant = (uint64_t)(p.mant >> rsh);
+        uint64_t dmant = u128_lo(u128_shr(p.mant, rsh));
         uint64_t bits  = ((uint64_t)p.sign << 63) | dmant;
         double r; memcpy(&r, &bits, 8); return r;
     }
     int rsh = 112 - 52;
-    uint64_t dmant = (uint64_t)(p.mant >> rsh) & 0x000FFFFFFFFFFFFFull;
+    uint64_t dmant = u128_lo(u128_shr(p.mant, rsh)) & 0x000FFFFFFFFFFFFFull;
     /* rounding */
-    u128 round_bit = (p.mant >> (rsh-1)) & 1;
-    u128 sticky    = p.mant & (((u128)1 << (rsh-1)) - 1);
-    if (round_bit && (sticky || (dmant & 1))) dmant++;
+    int round_bit = u128_bit(p.mant, rsh - 1);
+    u128 sticky    = u128_and(p.mant, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
+    if (round_bit && (!u128_is_zero(sticky) || (dmant & 1))) dmant++;
     if (dmant >> 52) { dmant >>= 1; dexp++; }
     uint64_t bits = ((uint64_t)p.sign << 63) | ((uint64_t)dexp << 52) | dmant;
     double r; memcpy(&r, &bits, 8); return r;
@@ -609,15 +777,16 @@ lf_float128 __floatsitf_lf_impl(int32_t x) {
     if (!x) return f128_make_zero(0);
     int sign = x < 0 ? 1 : 0;
     uint64_t abs_x = sign ? (uint64_t)(-(int64_t)x) : (uint64_t)x;
-    u128 mant = (u128)abs_x;
+    u128 mant = u128_from_u64(abs_x);
     int clz   = u128_clz(mant);
-    mant    <<= clz;        /* normalise to have leading 1 in bit 127 */
+    mant    = u128_shl(mant, clz);        /* normalise to have leading 1 in bit 127 */
     int32_t exp = 127 - clz;
     /* pack_parts expects leading 1 in bit 112 */
-    mant <<= (112 - 127 + clz);  /* re-align */
+    mant = u128_shl(mant, 112 - 127 + clz);  /* re-align */
     /* Actually, simpler: */
-    mant = (u128)abs_x << (112 - (31 - __builtin_clz((uint32_t)abs_x)));
-    exp  = 31 - __builtin_clz((uint32_t)abs_x);
+    int lz32 = lf_clz32((uint32_t)abs_x);
+    mant = u128_shl(u128_from_u64(abs_x), 112 - (31 - lz32));
+    exp  = 31 - lz32;
     return f128_pack_parts(sign, exp, mant);
 }
 
@@ -625,17 +794,17 @@ lf_float128 __floatditf_lf_impl(int64_t x) {
     if (!x) return f128_make_zero(0);
     int sign = x < 0 ? 1 : 0;
     uint64_t abs_x = sign ? (uint64_t)(-x) : (uint64_t)x;
-    int lz   = __builtin_clzll(abs_x);
+    int lz   = lf_clz64(abs_x);
     int32_t exp = 63 - lz;
-    u128 mant = (u128)abs_x << (112 - exp);
+    u128 mant = u128_shl(u128_from_u64(abs_x), 112 - exp);
     return f128_pack_parts(sign, exp, mant);
 }
 
 lf_float128 __floatunditf_lf_impl(uint64_t x) {
     if (!x) return f128_make_zero(0);
-    int lz  = __builtin_clzll(x);
+    int lz  = lf_clz64(x);
     int32_t exp = 63 - lz;
-    u128 mant = (u128)x << (112 - exp);
+    u128 mant = u128_shl(u128_from_u64(x), 112 - exp);
     return f128_pack_parts(0, exp, mant);
 }
 
@@ -644,7 +813,7 @@ int32_t __fixtfsi_lf_impl(lf_float128 a) {
     if (p.is_nan || p.is_inf || p.is_zero) return 0;
     if (p.exp < 0) return 0;
     if (p.exp > 30) return p.sign ? (int32_t)0x80000000 : (int32_t)0x7FFFFFFF;
-    uint32_t v = (uint32_t)(p.mant >> (112 - p.exp));
+    uint32_t v = (uint32_t)u128_lo(u128_shr(p.mant, 112 - p.exp));
     return p.sign ? -(int32_t)v : (int32_t)v;
 }
 
@@ -653,7 +822,7 @@ int64_t __fixtfdi_lf_impl(lf_float128 a) {
     if (p.is_nan || p.is_inf || p.is_zero) return 0;
     if (p.exp < 0) return 0;
     if (p.exp > 62) return p.sign ? (int64_t)0x8000000000000000LL : (int64_t)0x7FFFFFFFFFFFFFFFLL;
-    uint64_t v = (uint64_t)(p.mant >> (112 - p.exp));
+    uint64_t v = u128_lo(u128_shr(p.mant, 112 - p.exp));
     return p.sign ? -(int64_t)v : (int64_t)v;
 }
 
@@ -682,7 +851,7 @@ lf_float128 lf_f128_sqrt(lf_float128 a) {
     }
     /* Better: start from exponent midpoint */
     int32_t half_exp = (p.exp >> 1);
-    u128 half_mant   = (u128)1 << 112;  /* 1.0 */
+    u128 half_mant   = u128_shl(u128_one(), 112);  /* 1.0 */
     lf_float128 x    = f128_pack_parts(0, half_exp, half_mant);
 
     /* Refine with Newton: x = (x + a/x) / 2, 7 iterations for 113+ bits */
@@ -708,11 +877,11 @@ lf_float128 lf_f128_floor(lf_float128 a) {
 
     /* Zero the fractional bits (bits 0 .. 111-exp) */
     int frac_bits = 112 - p.exp;
-    u128 mask = ~(((u128)1 << frac_bits) - 1);
-    u128 trunc_mant = p.mant & mask;
+    u128 mask = u128_not(u128_sub(u128_shl(u128_one(), frac_bits), u128_one()));
+    u128 trunc_mant = u128_and(p.mant, mask);
     lf_float128 trunc = f128_pack_parts(p.sign, p.exp, trunc_mant);
 
-    if (!p.sign || trunc_mant == p.mant) return trunc;
+    if (!p.sign || u128_eq(trunc_mant, p.mant)) return trunc;
     /* negative and had fractional part: floor = trunc - 1 */
     return __subtf3_lf_impl(trunc, f128_one());
 }
@@ -726,11 +895,11 @@ lf_float128 lf_f128_ceiling(lf_float128 a) {
         return f128_one();
     }
     int frac_bits = 112 - p.exp;
-    u128 mask     = ~(((u128)1 << frac_bits) - 1);
-    u128 trunc_mant = p.mant & mask;
+    u128 mask     = u128_not(u128_sub(u128_shl(u128_one(), frac_bits), u128_one()));
+    u128 trunc_mant = u128_and(p.mant, mask);
     lf_float128 trunc = f128_pack_parts(p.sign, p.exp, trunc_mant);
 
-    if (p.sign || trunc_mant == p.mant) return trunc;
+    if (p.sign || u128_eq(trunc_mant, p.mant)) return trunc;
     return __addtf3_lf_impl(trunc, f128_one());
 }
 
@@ -1204,8 +1373,14 @@ static void big_shl(Big *a, int shift) {
 static void big_mul_small(Big *a, uint32_t k) {
     uint64_t carry=0;
     for(int i=0;i<a->n;i++){
-        unsigned __int128 t=(unsigned __int128)a->d[i]*k+carry;
-        a->d[i]=(uint64_t)t; carry=(uint64_t)(t>>64);
+        uint64_t t_lo, t_hi;
+        {
+            u128 prod = mul64x64(a->d[i], (uint64_t)k);
+            prod = u128_add(prod, u128_from_u64(carry));
+            t_lo = prod.lo;
+            t_hi = prod.hi;
+        }
+        a->d[i]=t_lo; carry=t_hi;
     }
     if(carry&&a->n<BIG_MAX) a->d[a->n++]=carry;
 }
@@ -1221,8 +1396,10 @@ static void big_sub(Big *a, const Big *b) {
     uint64_t borrow=0;
     for(int i=0;i<a->n;i++){
         uint64_t bv=(i<b->n)?b->d[i]:0;
-        unsigned __int128 t=(unsigned __int128)a->d[i]-bv-borrow;
-        a->d[i]=(uint64_t)t; borrow=(uint64_t)(-(int64_t)(uint64_t)(t>>64));
+        uint64_t sub = bv + borrow;
+        uint64_t av = a->d[i];
+        a->d[i] = av - sub;
+        borrow = (av < sub) ? 1 : 0;
     }
     while(a->n>1&&!a->d[a->n-1]) a->n--;
 }
@@ -1346,9 +1523,10 @@ lf_float128 lf_float128_from_str(const char *s) {
         uint64_t carry = intbuf[i] - '0';
         for (int j = 0; j < sig.n || carry; j++) {
             if (j >= sig.n) sig.d[sig.n++] = 0;
-            unsigned __int128 t = (unsigned __int128)sig.d[j] + carry;
-            sig.d[j] = (uint64_t)t;
-            carry = (uint64_t)(t >> 64);
+            uint64_t sum_lo = sig.d[j] + carry;
+            uint64_t sum_carry = (sum_lo < sig.d[j]) ? 1 : 0;
+            sig.d[j] = sum_lo;
+            carry = sum_carry;
         }
     }
     for (int i = 0; i < frac_len; i++) {
@@ -1356,9 +1534,10 @@ lf_float128 lf_float128_from_str(const char *s) {
         uint64_t carry = fracbuf[i] - '0';
         for (int j = 0; j < sig.n || carry; j++) {
             if (j >= sig.n) sig.d[sig.n++] = 0;
-            unsigned __int128 t = (unsigned __int128)sig.d[j] + carry;
-            sig.d[j] = (uint64_t)t;
-            carry = (uint64_t)(t >> 64);
+            uint64_t sum_lo = sig.d[j] + carry;
+            uint64_t sum_carry = (sum_lo < sig.d[j]) ? 1 : 0;
+            sig.d[j] = sum_lo;
+            carry = sum_carry;
         }
     }
 
@@ -1379,19 +1558,19 @@ lf_float128 lf_float128_from_str(const char *s) {
     if (eff_exp >= 0) {
         /* sig is the integer value. Find its bit length. */
         int top_limb = sig.n - 1;
-        int bit_pos  = top_limb * 64 + (63 - __builtin_clzll(sig.d[top_limb]));
+        int bit_pos  = top_limb * 64 + (63 - lf_clz64(sig.d[top_limb]));
         /* bit_pos = position of leading 1 (0-indexed) */
         int32_t exp = bit_pos;  /* true exponent */
 
         /* Extract 113 bits starting from bit_pos */
-        u128 mant = 0;
+        u128 mant = u128_zero();
         int shift = bit_pos - 112;  /* how many bits to shift sig right */
         if (shift < 0) {
             /* sig has fewer than 113 bits: shift left */
             /* Build sig as u128 directly */
             uint64_t lo2 = sig.d[0];
             uint64_t hi2 = sig.n > 1 ? sig.d[1] : 0;
-            mant = u128_make(hi2, lo2) << (-shift);
+            mant = u128_shl(u128_make(hi2, lo2), -shift);
         } else {
             /* shift right: read relevant limbs */
             int limb = shift / 64;
@@ -1400,11 +1579,10 @@ lf_float128 lf_float128_from_str(const char *s) {
             uint64_t hi2 = (limb+1 < sig.n) ? sig.d[limb+1] : 0;
             uint64_t hi3 = (limb+2 < sig.n) ? sig.d[limb+2] : 0;
             mant = u128_make(hi2, lo2);
-            if (bit) mant = (mant >> bit) | ((u128)hi3 << (64-bit));
+            if (bit) mant = u128_or(u128_shr(mant, bit), u128_shl(u128_from_u64(hi3), 64 - bit));
             else     mant = u128_make(hi2, lo2);
-            mant >>= 0;
             /* Simplified: just take top 2 limbs and shift */
-            mant = u128_make(hi2, lo2) >> bit;
+            mant = u128_shr(u128_make(hi2, lo2), bit);
         }
         return f128_pack_parts(sign, exp, mant);
     } else {
@@ -1419,8 +1597,8 @@ lf_float128 lf_float128_from_str(const char *s) {
         /* Estimate k: bit_len(S) - bit_len(sig) + 112 */
         int top_s = S2.n - 1;
         int top_r = sig.n - 1;
-        int bl_s = top_s*64 + (63-__builtin_clzll(S2.d[top_s]));
-        int bl_r = top_r*64 + (63-__builtin_clzll(sig.d[top_r]));
+        int bl_s = top_s*64 + (63 - lf_clz64(S2.d[top_s]));
+        int bl_r = top_r*64 + (63 - lf_clz64(sig.d[top_r]));
         int k    = bl_s - bl_r + 112;
         if (k < 0) {
             big_shl(&S2, -k);
@@ -1446,23 +1624,23 @@ lf_float128 lf_float128_from_str(const char *s) {
         }
         /* Now sig/S2 is close to [2^112, 2^113). Extract the integer
          * quotient directly; this quotient is the binary128 significand. */
-        u128 mant2 = 0;
+        u128 mant2 = u128_zero();
         for (int i = 113; i >= 0; i--) {
             Big shifted = S2;
             big_shl(&shifted, i);
             if (big_cmp(&sig, &shifted) >= 0) {
                 big_sub(&sig, &shifted);
-                mant2 |= (u128)1 << i;
+                mant2 = u128_or(mant2, u128_shl(u128_one(), i));
             }
         }
 
         /* Round: if remainder*2 >= denominator, round up. */
         big_shl(&sig, 1);
-        if (big_cmp(&sig, &S2) >= 0) mant2++;
+        if (big_cmp(&sig, &S2) >= 0) mant2 = u128_inc(mant2);
 
         int32_t exp2 = 112 - k;
-        if (mant2 >> 113) {
-            mant2 >>= 1;
+        if (!u128_is_zero(u128_shr(mant2, 113))) {
+            mant2 = u128_shr(mant2, 1);
             exp2++;
         }
         return f128_pack_parts(sign, exp2, mant2);
