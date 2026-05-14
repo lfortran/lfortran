@@ -3583,14 +3583,13 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
     char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
     ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr,
-    int64_t a_corank = 0, ASR::codimension_t* a_codims = nullptr,
-    size_t n_codims = 0, bool a_is_coarray = false
+    ASR::codimension_t* a_codims = nullptr, size_t n_codims = 0
 ) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
         a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
-        a_pass_attr, a_self_argument, a_corank, a_codims, n_codims, a_is_coarray
+        a_pass_attr, a_self_argument, a_codims, n_codims
     );
 }
 
@@ -6035,7 +6034,7 @@ class SymbolDuplicator {
                 variable->m_presence, variable->m_value_attr, variable->m_target_attr,
                 variable->m_contiguous_attr, variable->m_bindc_name, variable->m_is_volatile,
                 variable->m_is_protected, variable->m_pass_attr, variable->m_self_argument,
-                variable->m_corank, variable->m_codims, variable->n_codims, variable->m_is_coarray
+                variable->m_codims, variable->n_codims
             ));
     }
 
@@ -6994,7 +6993,7 @@ static inline bool is_coarray(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
-        return v->m_is_coarray || v->m_corank > 0;
+        return v->n_codims > 0;
     }
     return false;
 }
@@ -7002,7 +7001,7 @@ static inline bool is_coarray(ASR::symbol_t* s) {
 static inline int64_t symbol_corank(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
-        return ASR::down_cast<ASR::Variable_t>(s)->m_corank;
+        return ASR::down_cast<ASR::Variable_t>(s)->n_codims;
     }
     return 0;
 }
@@ -7882,7 +7881,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                         ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false,
                                         false, false, nullptr, false, false,
-                                        ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false);
+                                        ASR::pass_attrType::NotMethod, nullptr);
 
                         ASR::symbol_t* cast_sym = ASR::down_cast<ASR::symbol_t>(cast_);
                         current_scope->add_symbol(cast_sym_name, cast_sym);
