@@ -19,13 +19,13 @@ program read_list6
   print *, 'test 1:'
   i1 = -1; i2 = -2; i3 = -3; i4 = -4; i5 = -5; i6 = -6; i7 = -7
   read (lun_io, *) i1, i2, i3, i4, i5, i6, i7
-  print *, 'i1 =', i1, pf (i1 == -1)
-  print *, 'i2 =', i2, pf (i2 ==  4)
-  print *, 'i3 =', i3, pf (i3 == -3)
-  print *, 'i4 =', i4, pf (i4 ==  8)
-  print *, 'i5 =', i5, pf (i5 == -5)
-  print *, 'i6 =', i6, pf (i6 == -6)
-  print *, 'i7 =', i7, pf (i7 == 14)
+  if (i1 /= -1) error stop 'i1 mismatch'
+  if (i2 /=  4) error stop 'i2 mismatch'
+  if (i3 /= -3) error stop 'i3 mismatch'
+  if (i4 /=  8) error stop 'i4 mismatch'
+  if (i5 /= -5) error stop 'i5 mismatch'
+  if (i6 /= -6) error stop 'i6 mismatch'
+  if (i7 /= 14) error stop 'i7 mismatch'
 
   print *
   print *, 'test 2:'
