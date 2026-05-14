@@ -9912,8 +9912,16 @@ public:
                     llvm::Value* src_first_el_ptr = llvm_utils->create_ptr_gep2(
                         src_el_type, src_data_ptr, src_offset);
 
-                    llvm::Value* dst_first_el_ptr = builder->CreateBitCast(
-                        src_first_el_ptr, dst_el_type->getPointerTo());
+                    bool dst_is_class_array = ASRUtils::is_class_type(
+                        ASRUtils::extract_type(dst_arr_asr_type));
+                    llvm::Value* dst_first_el_ptr = nullptr;
+                    if (!dst_is_class_array) {
+                        dst_first_el_ptr = get_typed_array_data_ptr(
+                            src_asr_type, dst_asr_type, src_el_type, dst_el_type, src_first_el_ptr);
+                    } else {
+                        dst_first_el_ptr = builder->CreateBitCast(
+                            src_first_el_ptr, dst_el_type->getPointerTo());
+                    }
 
                     builder->CreateStore(dst_first_el_ptr,
                         arr_descr->get_pointer_to_data(target_desc_type, target_desc));
@@ -13321,8 +13329,9 @@ public:
                         selector_var_type = ASRUtils::type_get_past_pointer(selector_var_type);
                         static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
                     }
-                    if (ASRUtils::is_array(selector_var_type) && 
-                            ASRUtils::extract_physical_type(selector_var_type) == ASR::array_physical_typeType::DescriptorArray) {
+                    if (ASRUtils::is_array(selector_var_type) &&
+                            (ASRUtils::extract_physical_type(selector_var_type) == ASR::array_physical_typeType::DescriptorArray ||
+                             ASRUtils::extract_physical_type(selector_var_type) == ASR::array_physical_typeType::AssumedRankArray)) {
                         static_ptr_type = llvm_utils->get_type_from_ttype_t_util(
                             x.m_selector, ASRUtils::type_get_past_allocatable_pointer(selector_var_type), module.get());
                         static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
