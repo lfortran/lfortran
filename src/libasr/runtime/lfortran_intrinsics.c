@@ -7453,7 +7453,7 @@ static void skip_trailing_comma(FILE *filep) {
     if (c != EOF) ungetc(c, filep); // not a comma, push back
 }
 
-static bool read_list_directed_token(FILE *filep, char *buffer, size_t bufsize, int32_t *iostat)
+static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t bufsize, int32_t *iostat)
 {
     if (bufsize == 0) {
         if (iostat) *iostat = 1;
@@ -7522,7 +7522,7 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -7665,7 +7665,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -7806,7 +7806,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -7916,7 +7916,7 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
 
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -8863,7 +8863,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
 
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -9824,7 +9824,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
     if (unit_num == -1) {
         // Read as string to handle Fortran D exponent notation
         char buffer[100];
-        if (!read_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (iostat) return;
             fprintf(stderr, "Error: Failed to read double from stdin.\n");
             exit(1);
