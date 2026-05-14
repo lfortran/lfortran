@@ -3393,11 +3393,12 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     Allocator& al;
     ASR::call_arg_t* m_args;
     size_t n_args;
+    bool found_func_param;
 
     public:
 
     ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
-        al(al_), m_args(m_args_), n_args(n_args_) {}
+        al(al_), m_args(m_args_), n_args(n_args_), found_func_param(false) {}
 
     void replace_FunctionParam(ASR::FunctionParam_t *x) {
         if (current_expr) {
@@ -3406,10 +3407,13 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
                 LCOMPILERS_ASSERT("FunctionParam param number not in range.");
             };
             *current_expr = m_args[n].m_value;
+            found_func_param = true;
         }
     }
 
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
+        found_func_param = false;
+
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
         duplicator.success = true;
@@ -3422,7 +3426,10 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
         replace_expr(tc);
         current_expr = current_copy;
 
-        return tc;
+        if (found_func_param) {
+            return tc;
+        }
+        return t;
     }
 
     void replace_type(ASR::ttype_t* t) {
