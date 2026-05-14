@@ -6600,24 +6600,15 @@ public:
                                 builder->CreateStore(
                                     tmp, llvm_utils->create_gep2(array_desc_type, pointer_array, 0));
                             } else {
-                                // Non-pointer array (e.g. c_funptr array): zero-initialize
-                                // the fixed-size array data stored inline (null = zero).
-                                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(v->m_type);
+                                // Non-pointer array (e.g. c_funptr array): the inline
+                                // fixed-size storage is null when zero-initialized.
                                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                                     ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
                                     v->m_type, module.get());
-                                llvm::DataLayout data_layout(module->getDataLayout());
-                                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-                                    ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
-                                    ASRUtils::type_get_past_array(v->m_type), module.get());
-                                size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
-                                llvm::Value* arg_size = llvm::ConstantInt::get(
-                                    llvm::Type::getInt32Ty(context),
-                                    llvm::APInt(32, ASRUtils::get_fixed_size_of_array(arr->m_dims, arr->n_dims)));
-                                arg_size = builder->CreateMul(llvm::ConstantInt::get(
-                                    llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
-                                builder->CreateMemSet(llvm_utils->create_gep2(array_type, ptr_member, 0),
-                                    llvm::ConstantInt::get(context, llvm::APInt(8, 0)), arg_size,
+                                uint64_t total_bytes = module->getDataLayout().getTypeAllocSize(array_type);
+                                builder->CreateMemSet(ptr_member,
+                                    llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), total_bytes),
                                     llvm::MaybeAlign());
                             }
                         } else if(ASRUtils::is_string_only(expr_type(v->m_symbolic_value))) {
