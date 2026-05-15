@@ -16018,7 +16018,7 @@ public:
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, loop_var_type);
             std::string hidden_var_name = current_scope->get_unique_name(
-                "~implied_do_" + scoped_idl_var_name);
+                "lcompilers_implied_do_" + scoped_idl_var_name);
             scoped_idl_sym = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                     current_scope, s2c(al, hidden_var_name), variable_dependencies_vec.p,
