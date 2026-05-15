@@ -6583,21 +6583,34 @@ public:
                         visit_expr(*v->m_symbolic_value);
                         if( ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) &&
                             ASRUtils::is_array(v->m_type)){ // Store into array's data pointer.
-                            LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*v->m_type));
-                            llvm::Value* pointer_array = builder->CreateLoad(
-                                llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                                al, v->base.base.loc, &v->base)), v->m_type, module.get()),
-                                ptr_member);
-                            llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
-                                ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
-                                ASRUtils::type_get_past_allocatable_pointer(v->m_type),
-                                llvm_utils->get_el_type(
+                            if(ASR::is_a<ASR::Pointer_t>(*v->m_type)){
+                                // Pointer array: store null into descriptor's data pointer.
+                                llvm::Value* pointer_array = builder->CreateLoad(
+                                    llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                                    al, v->base.base.loc, &v->base)), v->m_type, module.get()),
+                                    ptr_member);
+                                llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
+                                    ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
+                                    ASRUtils::type_get_past_allocatable_pointer(v->m_type),
+                                    llvm_utils->get_el_type(
+                                        ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                                        ASRUtils::extract_type(v->m_type),
+                                        module.get()),
+                                    false);
+                                builder->CreateStore(
+                                    tmp, llvm_utils->create_gep2(array_desc_type, pointer_array, 0));
+                            } else {
+                                // Non-pointer array (e.g. c_funptr array): the inline
+                                // fixed-size storage is null when zero-initialized.
+                                llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                                     ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
-                                    ASRUtils::extract_type(v->m_type),
-                                    module.get()),
-                                false);
-                            builder->CreateStore(
-                                tmp, llvm_utils->create_gep2(array_desc_type, pointer_array, 0));
+                                    v->m_type, module.get());
+                                uint64_t total_bytes = module->getDataLayout().getTypeAllocSize(array_type);
+                                builder->CreateMemSet(ptr_member,
+                                    llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), total_bytes),
+                                    llvm::MaybeAlign());
+                            }
                         } else if(ASRUtils::is_string_only(expr_type(v->m_symbolic_value))) {
                             llvm_utils->lfortran_str_copy(
                             ptr_member, tmp,
