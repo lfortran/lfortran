@@ -32,7 +32,7 @@ def run_cmd(cmd, cwd=None):
         exit(1)
 
 def run_test(backend, std, test_pattern=None):
-    run_cmd(f"mkdir {BASE_DIR}/test-{backend}")
+    run_cmd(f"mkdir -p {BASE_DIR}/test-{backend}")
     if std == "f23":
         std_string = "-DSTD_F23=yes"
     elif std == "legacy":
@@ -191,6 +191,8 @@ def get_args():
                         ", ".join(SUPPORTED_BACKENDS))
     parser.add_argument("--std", type=str, default="lf",
                 help="Run tests with the requested Fortran standard: ".join(SUPPORTED_STANDARDS))
+    parser.add_argument("--clean", action='store_true',
+                help="Wipe the build cache for the requested backends before testing")            
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
     parser.add_argument("--detect-leaks", dest="detect_leaks", action='store_true',
@@ -224,9 +226,9 @@ def main():
 
     # Set environment variable for testing
     os.environ["LFORTRAN_TEST_ENV_VAR"] = "STATUS OK!"
-    # delete previously created directories (if any)
-    for backend in SUPPORTED_BACKENDS:
-        run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
+    if args.clean:
+        for backend in args.backends:
+            run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
 
     if args.no_of_threads:
         NO_OF_THREADS = args.no_of_threads
