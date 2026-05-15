@@ -3,7 +3,7 @@ program read_93
 contains
    subroutine s()
       integer :: i
-      open(86, file="/dev/null")
+      open(86, status="scratch")
       if (i > 0) then
          read(86, *, end=20) i
 20       print *, 'a'
