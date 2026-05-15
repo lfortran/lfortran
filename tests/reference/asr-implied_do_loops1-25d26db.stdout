@@ -11,12 +11,12 @@
                                 (Variable
                                     2
                                     a
-                                    [~implied_do_j]
+                                    [lcompilers_implied_do_j]
                                     Local
                                     (ArrayConstructor
                                         [(ImpliedDoLoop
-                                            [(Var 2 ~implied_do_j)]
-                                            (Var 2 ~implied_do_j)
+                                            [(Var 2 lcompilers_implied_do_j)]
+                                            (Var 2 lcompilers_implied_do_j)
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 10 (Integer 4) Decimal)
                                             ()
@@ -118,6 +118,32 @@
                                     []
                                     .false.
                                 ),
+                            lcompilers_implied_do_j:
+                                (Variable
+                                    2
+                                    lcompilers_implied_do_j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    0
+                                    []
+                                    .false.
+                                ),
                             s:
                                 (Function
                                     (SymbolTable
@@ -166,32 +192,6 @@
                                     .false.
                                     .false.
                                     ()
-                                ),
-                            ~implied_do_j:
-                                (Variable
-                                    2
-                                    ~implied_do_j
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    0
-                                    []
-                                    .false.
                                 )
                         })
                     implied_do_loop1
