@@ -7453,6 +7453,44 @@ static void skip_trailing_comma(FILE *filep) {
     if (c != EOF) ungetc(c, filep); // not a comma, push back
 }
 
+static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t bufsize, int32_t *iostat)
+{
+    if (bufsize == 0) {
+        if (iostat) *iostat = 1;
+        return false;
+    }
+
+    int c;
+    do {
+        c = fgetc(filep);
+    } while (c != EOF && isspace((unsigned char)c));
+
+    if (c == EOF) {
+        if (iostat) *iostat = -1;
+        return false;
+    }
+
+    size_t i = 0;
+    while (c != EOF && !isspace((unsigned char)c) && c != ',') {
+        if (i + 1 < bufsize) {
+            buffer[i++] = (char)c;
+        }
+        c = fgetc(filep);
+    }
+    buffer[i] = '\0';
+
+    if (c != EOF && c != ',') {
+        ungetc(c, filep);
+        skip_trailing_comma(filep);
+    }
+
+    if (i == 0) {
+        if (iostat) *iostat = 1;
+        return false;
+    }
+    return true;
+}
+
 static bool read_next_nonblank_stdin_line(char *buffer, size_t bufsize, int32_t *iostat)
 {
     while (true) {
@@ -7484,11 +7522,15 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_next_nonblank_stdin_line(buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
             return;
         }
 
-        char *token = strtok(buffer, " \t\n");
+        char *token = buffer;
         if (token == NULL) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input for int16_t.\n");
@@ -7623,11 +7665,15 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_next_nonblank_stdin_line(buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
             return;
         }
 
-        char *token = strtok(buffer, " \t\n");
+        char *token = buffer;
         if (token == NULL) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input for int32_t.\n");
@@ -7760,11 +7806,15 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_next_nonblank_stdin_line(buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
             return;
         }
 
-        char *token = strtok(buffer, " \t\n");
+        char *token = buffer;
         if (token == NULL) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input for int64_t.\n");
@@ -7866,11 +7916,15 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
 
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_next_nonblank_stdin_line(buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
             return;
         }
 
-        char *token = strtok(buffer, " \t\n");
+        char *token = buffer;
         if (token == NULL) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input for logical.\n");
@@ -8809,12 +8863,16 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
 
     if (unit_num == -1) {
         char buffer[100];
-        if (!read_next_nonblank_stdin_line(buffer, sizeof(buffer), iostat)) {
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
             return;
         }
 
         convert_fortran_d_exponent(buffer);
-        char *token = strtok(buffer, " \t\n");
+        char *token = buffer;
         if (token == NULL) {
             if (iostat) { *iostat = 1; return; }
             fprintf(stderr, "Error: Invalid input for float.\n");
@@ -9766,8 +9824,8 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
     if (unit_num == -1) {
         // Read as string to handle Fortran D exponent notation
         char buffer[100];
-        if (scanf("%99s", buffer) != 1) {
-            if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (iostat) return;
             fprintf(stderr, "Error: Failed to read double from stdin.\n");
             exit(1);
         }
