@@ -454,6 +454,15 @@ enum LineType {
 // The line ends with either `\n` or `\0`.  Only used for fixed-form
 LineType determine_line_type(const unsigned char *pos)
 {
+    const unsigned char *p = pos;
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p == '\0') {
+        return LineType::EndOfFile;
+    }
+    if (*p == '\n' || (*p == '\r' && *(p+1) == '\n')) {
+        return LineType::Comment;
+    }
+
     int col=1;
     if (*pos == '\n') {
         // Empty line => classified as comment
