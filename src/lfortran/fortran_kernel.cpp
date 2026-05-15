@@ -17,8 +17,9 @@
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
+#include <xeus/xhelper.hpp>
 #include <xeus-zmq/xzmq_context.hpp>
-#include <xeus-zmq/xserver_zmq_split.hpp>
+#include <xeus-zmq/xserver_zmq.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -105,7 +106,8 @@ namespace LCompilers::LFortran {
 
         nl::json kernel_info_request_impl() override;
 
-        void shutdown_request_impl() override;
+        nl::json shutdown_request_impl(bool restart) override;
+        nl::json interrupt_request_impl() override;
     };
 
     
@@ -486,8 +488,13 @@ namespace LCompilers::LFortran {
         return result;
     }
 
-    void custom_interpreter::shutdown_request_impl() {
+    nl::json custom_interpreter::shutdown_request_impl(bool restart) {
         std::cout << "Bye!!" << std::endl;
+        return xeus::create_shutdown_reply(restart);
+    }
+
+    nl::json custom_interpreter::interrupt_request_impl() {
+        return xeus::create_interrupt_reply();
     }
 
     int run_kernel(const std::string &connection_filename)
@@ -511,7 +518,7 @@ namespace LCompilers::LFortran {
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_shell_main,
+                             xeus::make_xserver_default,
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
