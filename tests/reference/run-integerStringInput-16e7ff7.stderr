@@ -1,1 +1,1 @@
-Error: Invalid input for int32_t from file.
+Error: Invalid int32_t input from file (EOF).

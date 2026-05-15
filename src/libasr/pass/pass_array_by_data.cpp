@@ -363,6 +363,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 if (!mod->m_has_submodules) continue;
                 std::string func_name = std::string(func->m_name);
                 bool impl_processed = false;
+                bool impl_declared = false;
                 for (auto& top_item : x.m_symtab->get_scope()) {
                     if (!ASR::is_a<ASR::Module_t>(*top_item.second)) continue;
                     ASR::Module_t* sub_mod = ASR::down_cast<ASR::Module_t>(
@@ -372,13 +373,15 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                             std::string(mod->m_name)) continue;
                     ASR::symbol_t* impl_sym = sub_mod->m_symtab->resolve_symbol(
                         func_name);
-                    if (impl_sym && ASR::is_a<ASR::Function_t>(*impl_sym) &&
-                            proc2newproc.find(impl_sym) != proc2newproc.end()) {
-                        impl_processed = true;
-                        break;
+                    if (impl_sym && ASR::is_a<ASR::Function_t>(*impl_sym)) {
+                        impl_declared = true;
+                        if (proc2newproc.find(impl_sym) != proc2newproc.end()) {
+                            impl_processed = true;
+                            break;
+                        }
                     }
                 }
-                if (!impl_processed) {
+                if (impl_declared && !impl_processed) {
                     iface_to_remove.push_back(kv.first);
                 }
             }
@@ -1578,6 +1581,7 @@ class CallbackMismatchCleanup : public ASR::BaseWalkVisitor<CallbackMismatchClea
 public:
     PassArrayByDataProcedureVisitor& v;
     std::set<ASR::symbol_t*> to_remove;
+    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> iface_to_assigned;
 
     CallbackMismatchCleanup(PassArrayByDataProcedureVisitor& v_) : v(v_) {}
 
@@ -1618,6 +1622,60 @@ public:
             }
         }
     }
+    static ASR::symbol_t* get_slot_iface(ASR::expr_t* target) {
+        ASR::symbol_t* slot_var = nullptr;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+            slot_var = ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m;
+        } else if (ASR::is_a<ASR::Var_t>(*target)) {
+            slot_var = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        } else {
+            return nullptr;
+        }
+        ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(slot_var);
+        if (!resolved || !ASR::is_a<ASR::Variable_t>(*resolved)) return nullptr;
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(resolved);
+        if (!var->m_type_declaration) return nullptr;
+        ASR::symbol_t* iface = ASRUtils::symbol_get_past_external(
+            var->m_type_declaration);
+        if (!iface || !ASR::is_a<ASR::Function_t>(*iface)) return nullptr;
+        return iface;
+    }
+
+    static ASR::symbol_t* get_rhs_function(ASR::expr_t* value) {
+        if (!value || !ASR::is_a<ASR::Var_t>(*value)) return nullptr;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
+        ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(sym);
+        if (!resolved || !ASR::is_a<ASR::Function_t>(*resolved)) return nullptr;
+        return resolved;
+    }
+
+    void record_assignment(ASR::expr_t* target, ASR::expr_t* value) {
+        ASR::symbol_t* iface = get_slot_iface(target);
+        ASR::symbol_t* fn = get_rhs_function(value);
+        if (iface && fn) {
+            iface_to_assigned[iface].insert(fn);
+        }
+    }
+
+    void visit_Associate(const ASR::Associate_t& x) {
+        record_assignment(x.m_target, x.m_value);
+        BaseWalkVisitor::visit_Associate(x);
+    }
+
+    void visit_Variable(const ASR::Variable_t& x) {
+        // Capture default initialisation `procedure(iface), pointer :: p => f`.
+        if (x.m_type_declaration && x.m_symbolic_value) {
+            ASR::symbol_t* iface = ASRUtils::symbol_get_past_external(
+                x.m_type_declaration);
+            if (iface && ASR::is_a<ASR::Function_t>(*iface)) {
+                ASR::symbol_t* fn = get_rhs_function(x.m_symbolic_value);
+                if (fn) {
+                    iface_to_assigned[iface].insert(fn);
+                }
+            }
+        }
+        BaseWalkVisitor::visit_Variable(x);
+    }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         check_callback_args(x.m_name, x.m_args, x.n_args);
@@ -1629,7 +1687,30 @@ public:
         BaseWalkVisitor::visit_FunctionCall(x);
     }
 
+    void resolve_pointer_assignment_groups() {
+        for (auto& kv : iface_to_assigned) {
+            ASR::symbol_t* iface = kv.first;
+            bool any_untransformable = false;
+            for (ASR::symbol_t* fn : kv.second) {
+                if (v.proc2newproc.find(fn) == v.proc2newproc.end()) {
+                    any_untransformable = true;
+                    break;
+                }
+            }
+            if (!any_untransformable) continue;
+            if (v.proc2newproc.find(iface) != v.proc2newproc.end()) {
+                to_remove.insert(iface);
+            }
+            for (ASR::symbol_t* fn : kv.second) {
+                if (v.proc2newproc.find(fn) != v.proc2newproc.end()) {
+                    to_remove.insert(fn);
+                }
+            }
+        }
+    }
+
     void apply() {
+        resolve_pointer_assignment_groups();
         for (ASR::symbol_t* sym : to_remove) {
             ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(
                 v.proc2newproc[sym].first);

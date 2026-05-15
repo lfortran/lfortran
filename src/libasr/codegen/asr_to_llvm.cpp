@@ -9689,6 +9689,29 @@ public:
                 llvm::Value* const target_wrapper = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target);
                 builder->CreateMemCpy(target_wrapper, llvm::MaybeAlign(),
                                       wrapper_ptr, llvm::MaybeAlign(), wrapper_size);
+            } else if (!is_target_class &&
+                       ASR::is_a<ASR::Pointer_t>(*target_type) &&
+                       ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(target_type)) &&
+                       !ASRUtils::is_array(target_type) &&
+                       ASRUtils::is_array(value_type) &&
+                       ASRUtils::is_class_type(ASRUtils::extract_type(value_type)) &&
+                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::AssumedRankArray) {
+                llvm::Type* const array_desc_type = llvm_utils->arr_api->
+                    get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
+                        llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
+                llvm::Value* value_data_ptr = llvm_utils->create_gep2(array_desc_type, llvm_value, 0);
+                llvm::Type* value_el_type = llvm_utils->get_el_type(
+                    x.m_value, ASRUtils::extract_type(value_type), module.get());
+                llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(
+                    value_el_type->getPointerTo(), value_data_ptr);
+                // Class wrapper layout is { vptr, data* }; load the data field.
+                llvm::Value* data_field_ptr = llvm_utils->create_gep2(value_el_type, wrapper_ptr, 1);
+                llvm::Value* data_i8_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_field_ptr);
+                llvm::Type* target_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_target, ASRUtils::type_get_past_pointer(target_type), module.get());
+                llvm::Value* casted_data = builder->CreateBitCast(
+                    data_i8_ptr, target_struct_llvm_type->getPointerTo());
+                builder->CreateStore(casted_data, llvm_target);
             } else if ((is_target_class || is_value_class) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(value_type)) &&
                     !ASRUtils::is_array(ASRUtils::type_get_past_pointer(target_type))) {
@@ -13970,27 +13993,11 @@ public:
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
         if (llvm_goto_targets.find(x.m_id) == llvm_goto_targets.end()) {
-            // If the target does not exist yet, create it
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
             llvm_goto_targets[x.m_id] = new_target;
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_id];
-        if (target->getTerminator()) {
-            // The target block already has a terminator (e.g., shared DO loop
-            // terminator already processed by an inner loop). Continue in a
-            // fresh block to avoid inserting a second terminator.
-            llvm::BasicBlock *last_bb = builder->GetInsertBlock();
-            llvm::Function *fn = last_bb->getParent();
-            llvm::BasicBlock *cont = llvm::BasicBlock::Create(context,
-                "goto_target.cont");
-            llvm_fn_insert_bb(fn, cont);
-            if (last_bb->getTerminator() == nullptr) {
-                builder->CreateBr(cont);
-            }
-            builder->SetInsertPoint(cont);
-        } else {
-            start_new_block(target);
-        }
+        start_new_block(target); 
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
@@ -17630,10 +17637,18 @@ public:
                                     arr_data = llvm_utils->CreateLoad2(
                                         el_type->getPointerTo(), arr_data);
                                 }
-                                llvm::Type* fn_param_type = fn->getFunctionType()->getParamType(3);
-                                if (arr_data->getType() != fn_param_type) {
-                                    arr_data = builder->CreateBitCast(arr_data, fn_param_type);
-                                }
+                            }
+                            // The runtime entry takes a flat element pointer.
+                            // For FixedSizeArray the variable's address is
+                            // already a `[N x T]*`, which the LLVM verifier
+                            // rejects against the cached function signature.
+                            // Bitcast to the declared parameter type so the
+                            // call matches regardless of physical layout.
+                            llvm::Type* fn_param_type =
+                                fn->getFunctionType()->getParamType(3);
+                            if (arr_data->getType() != fn_param_type) {
+                                arr_data = builder->CreateBitCast(
+                                    arr_data, fn_param_type);
                             }
                         }
                         if (x.m_iostat && ASRUtils::is_array_of_strings(type)) {
@@ -18307,11 +18322,76 @@ public:
         }
 
         if (has_implied_do) {
-            ASR::FileRead_t x2 = x;
-            x2.m_values = values;
-            x2.n_values = n_values;
-            emit_formatted_read_with_idl(x2, unit_val, iostat, read_size, advance, advance_length, pad_data, pad_len, is_string, fmt_expr);
-            return;
+            if (is_string) {
+                // For internal string reads, we cannot use the per-iteration IDL
+                // approach because each call to _lfortran_string_formatted_read
+                // creates a new InputSource that resets the read position to 0.
+                // Instead, extract the underlying arrays from IDL patterns like
+                // (array(i), i=1,N) and pass them directly through the non-IDL
+                // path, which makes a single runtime call.
+                Vec<ASR::expr_t*> expanded_values;
+                expanded_values.reserve(al, n_values);
+                bool can_expand = true;
+                for (size_t i = 0; i < n_values; i++) {
+                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+                        // Check for simple pattern: (array(i), i=start, end)
+                        // where array is a 1D fixed-size array and loop covers
+                        // the entire array.
+                        if (idl->n_values == 1 && ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0])) {
+                            ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(idl->m_values[0]);
+                            if (arr_item->n_args == 1) {
+                                // Replace with the array variable itself
+                                expanded_values.push_back(al, arr_item->m_v);
+                                continue;
+                            }
+                        }
+                        can_expand = false;
+                        break;
+                    } else {
+                        expanded_values.push_back(al, values[i]);
+                    }
+                }
+                if (can_expand) {
+                    // Emit final loop variable assignments: i = end + step
+                    // to match Fortran semantics for implied-do loops.
+                    for (size_t i = 0; i < n_values; i++) {
+                        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+                            // Get pointer to loop variable
+                            int ptr_copy = ptr_loads;
+                            ptr_loads = 0;
+                            this->visit_expr_wrapper(idl->m_var, false);
+                            llvm::Value* loop_var_ptr = tmp;
+                            ptr_loads = ptr_copy;
+                            // Compute end + step
+                            this->visit_expr_wrapper(idl->m_end, true);
+                            llvm::Value* end_val = tmp;
+                            llvm::Value* step_val;
+                            if (idl->m_increment) {
+                                this->visit_expr_wrapper(idl->m_increment, true);
+                                step_val = tmp;
+                            } else {
+                                step_val = llvm::ConstantInt::get(
+                                    end_val->getType(), 1);
+                            }
+                            llvm::Value* final_val = builder->CreateAdd(end_val, step_val);
+                            builder->CreateStore(final_val, loop_var_ptr);
+                        }
+                    }
+                    values = expanded_values.p;
+                    n_values = expanded_values.size();
+                    has_implied_do = false;
+                    // Fall through to the non-IDL path below
+                }
+            }
+            if (has_implied_do) {
+                ASR::FileRead_t x2 = x;
+                x2.m_values = values;
+                x2.n_values = n_values;
+                emit_formatted_read_with_idl(x2, unit_val, iostat, read_size, advance, advance_length, pad_data, pad_len, is_string, fmt_expr);
+                return;
+            }
         }
 
         size_t total_scalar_values = 0;
@@ -23539,6 +23619,37 @@ public:
                 tmp = descriptor;
             }
 
+            {
+                ASR::symbol_t* called_sym =
+                    symbol_get_past_external(x.m_name);
+                bool is_proc_ptr_call =
+                    called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
+                if (orig_arg && callee_fn_type &&
+                        !is_proc_ptr_call &&
+                        x.m_dt == nullptr &&
+                        !callee_fn_type->m_module &&
+                        func_subrout->type == ASR::symbolType::Function &&
+                        callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
+                        callee_fn_type->m_abi == ASR::abiType::Source &&
+                        !ASRUtils::is_array(orig_arg->m_type) &&
+                        ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                        tmp->getType() ==
+                            llvm_utils->string_descriptor->getPointerTo()) {
+                    ASR::Function_t* called_fn =
+                        ASR::down_cast<ASR::Function_t>(func_subrout);
+                    if (called_fn->n_body == 0) {
+                        llvm::Value* data_gep = llvm_utils->create_gep2(
+                            llvm_utils->string_descriptor, tmp, 0);
+                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            data_gep);
+                        tmp = builder->CreateBitCast(
+                            data_ptr,
+                            llvm_utils->string_descriptor->getPointerTo());
+                    }
+                }
+            }
+
             // For bind(C) calls, ensure the argument type matches the
             // function parameter type. This handles cases like passing a
             // CFI descriptor (%array*) to a function declared with i8**
@@ -23955,8 +24066,32 @@ public:
                         // Store Vptr from original struct
                         llvm::Value* vptr;
                         if (ASRUtils::is_class_type(arg_type)) {
-                            vptr = builder->CreateBitCast(dt, llvm_utils->vptr_type->getPointerTo());
-                            vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr);
+                            llvm::Type* wrapper_struct_type = llvm::StructType::get(
+                                context, {llvm_utils->vptr_type, llvm_utils->i8_ptr});
+                            ASR::ttype_t* arg_full_type = ASRUtils::expr_type(arg_expr);
+                            llvm::Value* wrapper_ptr = dt;
+                            if (LLVM::is_llvm_pointer(*arg_full_type)) {
+
+                                wrapper_ptr = llvm_utils->CreateLoad2(
+                                    wrapper_struct_type->getPointerTo(),
+                                    builder->CreateBitCast(dt,
+                                        wrapper_struct_type->getPointerTo()->getPointerTo()));
+                            } else {
+                                wrapper_ptr = builder->CreateBitCast(
+                                    dt, wrapper_struct_type->getPointerTo());
+                            }
+                            llvm::Value* vptr_slot = llvm_utils->create_gep2(
+                                wrapper_struct_type, wrapper_ptr, 0);
+                            vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_slot);
+                            builder->CreateStore(vptr, llvm_utils->create_gep2(
+                                unlimited_polymorphic_type, unlimited_polymorphic_struct, 0));
+
+                            llvm::Value* wrapper_data_slot = llvm_utils->create_gep2(
+                                wrapper_struct_type, wrapper_ptr, 1);
+                            llvm::Value* wrapper_data = llvm_utils->CreateLoad2(
+                                llvm_utils->i8_ptr, wrapper_data_slot);
+                            builder->CreateStore(wrapper_data, data_ptr);
+                            return unlimited_polymorphic_struct;
                         } else {
                             vptr = struct_api->get_pointer_to_method(ASRUtils::symbol_get_past_external(
                                 ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), module.get());
