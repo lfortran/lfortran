@@ -149,13 +149,6 @@ if (WITH_LLVM)
     target_link_libraries(lfortran_utils p::llvm)
 endif()
 
-# Install the dwarf_convert.py and dat_convert.py
-install(
-    FILES dwarf_convert.py dat_convert.py
-    PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/lfortran
-)
-
 # Copy Metal GPU runtime source to build directory so the
 # lfortran binary can find it at its expected relative path
 file(COPY
