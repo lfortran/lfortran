@@ -978,6 +978,7 @@ RUN(NAME select_rank_29 LABELS gfortran llvm)
 RUN(NAME select_rank_30 LABELS gfortran llvm)
 RUN(NAME select_rank_31 LABELS gfortran llvm)
 RUN(NAME select_rank_32 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME select_rank_33 LABELS gfortran llvm)
 
 RUN(NAME select_rank_34 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME select_rank_35 LABELS gfortran llvm)
