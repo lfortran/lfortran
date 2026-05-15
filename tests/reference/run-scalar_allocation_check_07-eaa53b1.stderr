@@ -1,0 +1,5 @@
+runtime error: Argument 1 of subroutine ss2 is unallocated.
+ --> tests/errors/scalar_allocation_check_07.f90:5:14
+  |
+5 |     call ss2(y)
+  |              ^ This is unallocated
