@@ -7,6 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/intrinsic_subroutines.h>
 
 #include <libasr/asr_builder.h>
 
@@ -2010,6 +2011,30 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
         generate_loop(x, vars, fix_type_args, loc);
+    }
+
+    void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t &x) {
+
+        if( (int64_t)ASRUtils::IntrinsicImpureSubroutines::Mvbits != x.m_sub_intrinsic_id ){
+            return; // If want to check more functions, Use an array + loop
+        } 
+
+        Vec<ASR::expr_t**> vars;
+        vars.reserve(al, 1);
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i] && ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i]))) {
+                vars.push_back(al, &(x.m_args[i]));
+            }
+        }
+
+        if (vars.size() == 0) {
+            return;
+        }
+
+        Vec<ASR::expr_t**> fix_type_args;
+        fix_type_args.reserve(al, 1);
+
+        generate_loop(x, vars, fix_type_args, x.base.base.loc);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
