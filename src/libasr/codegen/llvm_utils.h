@@ -2531,6 +2531,12 @@ class ASRToLLVMVisitor;
                 case ASR::Array: {
                     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
                     if (arr_t->m_type->type != ASR::StructType) { return; }
+                    auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
+                    llvm::Value* arr_ptr = ptr;
+                    if (!arr_ptr->getType()->isPointerTy()) {
+                        arr_ptr = builder_->CreateAlloca(arr_llvm_t, nullptr, "dealloc_arr_desc");
+                        builder_->CreateStore(ptr, arr_ptr);
+                    }
 
                     if (ASRUtils::is_class_type(arr_t->m_type)
                         && ASRUtils::is_unlimited_polymorphic_type(arr_t->m_type)) {
@@ -2538,10 +2544,9 @@ class ASRToLLVMVisitor;
                         // descriptor.data -> wrapper {vptr, i8* payload}.
                         // For explicit deallocate, finalize all elements and free payload;
                         // wrapper is freed by call_lfortran_free() in asr_to_llvm.
-                        auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
                         auto *const elem_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
                         llvm::Value* const wrapper_ptr_ref =
-                            llvm_utils_->create_gep2(arr_llvm_t, ptr, 0);
+                            llvm_utils_->create_gep2(arr_llvm_t, arr_ptr, 0);
                         llvm::Value* const wrapper_ptr = builder_->CreateLoad(
                             elem_llvm_t->getPointerTo(), wrapper_ptr_ref);
                         llvm::Value* const wrapper_not_null = builder_->CreateICmpNE(
@@ -2550,7 +2555,7 @@ class ASRToLLVMVisitor;
                                 llvm::cast<llvm::PointerType>(elem_llvm_t->getPointerTo())));
                         llvm_utils_->create_if_else(wrapper_not_null, [&]() {
                             llvm::Value* arr_size = llvm_utils_->get_array_size(
-                                ptr, arr_llvm_t, t_past, &asr_to_llvm_visitor_);
+                                arr_ptr, arr_llvm_t, t_past, &asr_to_llvm_visitor_);
                             finalize_upoly_array_elements(wrapper_ptr,
                                 ASR::down_cast<ASR::StructType_t>(arr_t->m_type),
                                 struct_sym, arr_size);
@@ -2560,13 +2565,12 @@ class ASRToLLVMVisitor;
 
                     if (!is_finalizable_type(arr_t->m_type, struct_sym, in_struct)) { return; }
                     // Finalize array elements but don't free the array data itself
-                    auto *const arr_llvm_t = get_llvm_type(t_past, struct_sym);
                     auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
                     auto const array_size_lazy = [&]() {
-                        return llvm_utils_->get_array_size(ptr, arr_llvm_t, t_past, &asr_to_llvm_visitor_);
+                        return llvm_utils_->get_array_size(arr_ptr, arr_llvm_t, t_past, &asr_to_llvm_visitor_);
                     };
                     auto const data = builder_->CreateLoad(arrayType_llvm_t->getPointerTo(),
-                        llvm_utils_->create_gep2(arr_llvm_t, ptr, 0));
+                        llvm_utils_->create_gep2(arr_llvm_t, arr_ptr, 0));
                     check_if_allocated_then_finalize(data, arr_t->m_type, struct_sym, [&](){
                         free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
                     });
