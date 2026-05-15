@@ -1243,6 +1243,32 @@
                                                     0
                                                     []
                                                     .false.
+                                                ),
+                                            ~implied_do_i:
+                                                (Variable
+                                                    5
+                                                    ~implied_do_i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    0
+                                                    []
+                                                    .false.
                                                 )
                                         })
                                     sort_keys
@@ -1348,8 +1374,8 @@
                                         ()
                                         (ArrayConstructor
                                             [(ImpliedDoLoop
-                                                [(Var 5 i)]
-                                                (Var 5 i)
+                                                [(Var 5 ~implied_do_i)]
+                                                (Var 5 ~implied_do_i)
                                                 (Var 5 low)
                                                 (Var 5 high)
                                                 ()
@@ -1371,8 +1397,8 @@
                                         (Var 5 indexarray)
                                         (ArrayConstructor
                                             [(ImpliedDoLoop
-                                                [(Var 5 i)]
-                                                (Var 5 i)
+                                                [(Var 5 ~implied_do_i)]
+                                                (Var 5 ~implied_do_i)
                                                 (Var 5 low)
                                                 (Var 5 high)
                                                 ()
