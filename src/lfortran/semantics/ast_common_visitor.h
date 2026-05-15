@@ -15958,7 +15958,8 @@ public:
             }
         }
         idl_nesting_level++;
-        bool scoped_array_constructor_idl = array_initializer_depth > 0;
+        bool scoped_array_constructor_idl = array_initializer_depth > 0 &&
+            current_scope->resolve_symbol(to_lower(x.m_var)) == nullptr;
         ASR::symbol_t* scoped_idl_sym = nullptr;
         std::string scoped_idl_var_name = to_lower(x.m_var);
         struct SymbolAliasGuard {
