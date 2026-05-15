@@ -4479,6 +4479,7 @@ public:
 
     void visit_Template(const AST::Template_t &x){
         is_template = true;
+        std::string template_name = to_lower(std::string(x.m_name));
         ASR::accessType dflt_access_copy = dflt_access;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -4537,9 +4538,9 @@ public:
         }
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
-            current_scope, x.m_name, args.p, args.size(), reqs.p, reqs.size());
+            current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
 
-        parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(temp));
+        parent_scope->add_symbol(template_name, ASR::down_cast<ASR::symbol_t>(temp));
         current_scope = parent_scope;
 
         // needs to rebuild the context prior to visiting template
