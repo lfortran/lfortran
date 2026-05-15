@@ -8254,7 +8254,6 @@ public:
 
     void visit_If(const AST::If_t &x) {
         all_blocks_nesting++;
-        all_loops_blocks_nesting++;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(test));
@@ -8286,7 +8285,6 @@ public:
         tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), orelse.p, orelse.size());
         all_blocks_nesting--;
-        all_loops_blocks_nesting--;
     }
 
     void visit_IfArithmetic(const AST::IfArithmetic_t &x) {
