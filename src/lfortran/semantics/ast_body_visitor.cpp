@@ -346,7 +346,19 @@ public:
                 } else if (AST::is_a<AST::Write_t>(*x)) {
                     process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements);
                 } else if (AST::is_a<AST::Read_t>(*x)) {
-                    process_format_statement<ASR::FileRead_t>(old_tmp, label, al, format_statements);
+                    // For READ, set m_fmt to the resolved format string
+                    // directly instead of wrapping values in StringFormat.
+                    ASR::FileRead_t *read_stmt = ASR::down_cast2<ASR::FileRead_t>(old_tmp);
+                    ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, read_stmt->base.base.loc, 1,
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, read_stmt->base.base.loc,
+                            format_statements[label].size(),
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, read_stmt->base.base.loc, 4)))),
+                        ASR::string_length_kindType::ExpressionLength,
+                        ASR::string_physical_typeType::DescriptorString));
+                    read_stmt->m_fmt = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, read_stmt->base.base.loc,
+                        s2c(al, format_statements[label]), fmt_type));
                 }
             }
         }
@@ -2370,16 +2382,11 @@ public:
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos);
         } else if( _type == AST::stmtType::Read ) {
             if (formatted && a_fmt_constant) {
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                    ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, 1, nullptr,
-                        ASR::string_length_kindType::DeferredLength,
-                        ASR::string_physical_typeType::DescriptorString))));
-                ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
-                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
-                    type, nullptr));
-                a_values_vec.reserve(al, 1);
-                a_values_vec.push_back(al, string_format);
+                // For READ, do not wrap values in StringFormat (which is for
+                // output/WRITE). Instead, use the resolved format string as
+                // m_fmt directly so that the read target variables are passed
+                // as-is to the codegen, avoiding creation of temporaries.
+                a_fmt = a_fmt_constant;
             }
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad);
@@ -2805,6 +2812,8 @@ public:
                 create_associate_stmt = true;
                 ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
                 tmp_type = sim->m_type;
+            } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
+                create_associate_stmt = true;
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
@@ -3479,6 +3488,11 @@ public:
                     // Create assignment statement only for non-struct types
                     // All validation was already done above before creating the Allocate ASR node
                     if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
+                        ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                        if (ASRUtils::is_assumed_rank_array(tgt_t)) {
+                            continue;
+                        }
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* source_copy = expr_duplicator.duplicate_expr(source);
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(
@@ -6175,7 +6189,7 @@ public:
         }
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
-        ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
+        ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
         if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
             value->type == ASR::exprType::ArrayConstant ) {
             diag.add(Diagnostic(
@@ -6266,7 +6280,7 @@ public:
                         }
                     }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                        value_type, target_type, diag);
+                                    ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value)),target_type, diag);
                     }
                 }
             }
@@ -6431,6 +6445,21 @@ public:
                     alloc_arg.n_dims = alloc_dims.n;
                     alloc_arg.m_len_expr = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*val_elem_type)) {
+                        ASR::symbol_t* struct_sym =
+                            ASRUtils::get_struct_sym_from_struct_expr(value);
+                        if (struct_sym != nullptr && current_scope != nullptr) {
+                            ASR::symbol_t* in_scope_sym =
+                                current_scope->resolve_symbol(
+                                    ASRUtils::symbol_name(struct_sym));
+                            if (in_scope_sym != nullptr &&
+                                ASRUtils::symbol_get_past_external(in_scope_sym)
+                                    == struct_sym) {
+                                struct_sym = in_scope_sym;
+                            }
+                        }
+                        alloc_arg.m_sym_subclass = struct_sym;
+                    }
                     alloc_arg.m_type = val_elem_type;
                     Vec<ASR::alloc_arg_t> alloc_args;
                     alloc_args.reserve(al, 1);
@@ -8503,12 +8532,25 @@ public:
                     break;
                 }
             }
+            if (!already_targeted && x.n_body > 0) {
+                AST::stmt_t *last_stmt = x.m_body[x.n_body - 1];
+                if (last_stmt->type == AST::stmtType::DoLoop) {
+                    AST::DoLoop_t *inner_do = AST::down_cast<AST::DoLoop_t>(last_stmt);
+                    if (inner_do->m_do_label == x.m_do_label) {
+                        // The inner loop shares this label and will emit the target.
+                        // Flag it true so the outer loop doesn't emit a duplicate!
+                        already_targeted = true; 
+                    }
+                }
+            }
+            
             if (!already_targeted) {
                 ASR::asr_t *gt = ASR::make_GoToTarget_t(al, x.base.base.loc,
                     x.m_do_label, s2c(al, std::to_string(x.m_do_label)));
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(gt));
             }
         }
+        
         if(pragma_in_block) {
             nesting_lvl_inside_pragma--;
         }

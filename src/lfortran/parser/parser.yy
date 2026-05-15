@@ -1430,6 +1430,7 @@ common_block_object
 
 data_set_list
     : data_set_list "," data_set { $$ = $1; LIST_ADD($$, $3); }
+    | data_set_list data_set { $$ = $1; LIST_ADD($$, $2); }
     | data_set { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
