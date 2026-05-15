@@ -14836,6 +14836,13 @@ public:
                 tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
                 break;
             }
+            case 16 : {
+                llvm::APFloat dval(val);
+                bool ignored;
+                dval.convert(llvm::APFloat::IEEEquad(),llvm::APFloat::rmNearestTiesToEven, &ignored);
+                tmp = llvm::ConstantFP::get(context, dval);
+                break;
+            }
             default : {
                 break;
             }
@@ -14861,6 +14868,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (16) :
+                    el_type = llvm::Type::getFP128Ty(context); break;
                 default :
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
@@ -14919,6 +14928,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (16) :
+                    el_type = llvm::Type::getFP128Ty(context); break;
                 default :
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
