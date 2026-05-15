@@ -11,12 +11,12 @@
                                 (Variable
                                     2
                                     a
-                                    [lcompilers_implied_do_j]
+                                    [j]
                                     Local
                                     (ArrayConstructor
                                         [(ImpliedDoLoop
-                                            [(Var 2 lcompilers_implied_do_j)]
-                                            (Var 2 lcompilers_implied_do_j)
+                                            [(Var 2 j)]
+                                            (Var 2 j)
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 10 (Integer 4) Decimal)
                                             ()
@@ -96,32 +96,6 @@
                                 (Variable
                                     2
                                     j
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    0
-                                    []
-                                    .false.
-                                ),
-                            lcompilers_implied_do_j:
-                                (Variable
-                                    2
-                                    lcompilers_implied_do_j
                                     []
                                     Local
                                     ()

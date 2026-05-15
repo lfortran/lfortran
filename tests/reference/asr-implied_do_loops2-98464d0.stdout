@@ -91,58 +91,6 @@
                                     0
                                     []
                                     .false.
-                                ),
-                            lcompilers_implied_do_i:
-                                (Variable
-                                    2
-                                    lcompilers_implied_do_i
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    0
-                                    []
-                                    .false.
-                                ),
-                            lcompilers_implied_do_j:
-                                (Variable
-                                    2
-                                    lcompilers_implied_do_j
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    0
-                                    []
-                                    .false.
                                 )
                         })
                     implied_do_loop2
@@ -152,23 +100,23 @@
                         (ArrayReshape
                             (ArrayConstructor
                                 [(ImpliedDoLoop
-                                    [(Var 2 lcompilers_implied_do_i)
+                                    [(Var 2 i)
                                     (ImpliedDoLoop
                                         [(IntegerBinOp
-                                            (Var 2 lcompilers_implied_do_i)
+                                            (Var 2 i)
                                             Add
-                                            (Var 2 lcompilers_implied_do_j)
+                                            (Var 2 j)
                                             (Integer 4)
                                             ()
                                         )]
-                                        (Var 2 lcompilers_implied_do_j)
+                                        (Var 2 j)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal)
                                         ()
                                         (Integer 4)
                                         ()
                                     )]
-                                    (Var 2 lcompilers_implied_do_i)
+                                    (Var 2 i)
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 3 (Integer 4) Decimal)
                                     ()
