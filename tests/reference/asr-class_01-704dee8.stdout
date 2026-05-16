@@ -22,8 +22,8 @@
                                     6
                                     1_circle_radius
                                     3 radius
-                                    circle
-                                    []
+                                    class_circle1
+                                    [circle]
                                     radius
                                     Public
                                 ),
@@ -209,8 +209,8 @@
                                                     4
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle1
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -344,8 +344,8 @@
                                                     5
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle1
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),

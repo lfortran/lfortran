@@ -254,8 +254,8 @@
                                                     6
                                                     1_toml_array_list
                                                     5 list
-                                                    toml_array
-                                                    []
+                                                    tomlf_type_array
+                                                    [toml_array]
                                                     list
                                                     Public
                                                 ),
@@ -284,8 +284,8 @@
                                                     6
                                                     1_toml_value_key
                                                     10 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),
@@ -668,8 +668,8 @@
                                                     23
                                                     1_toml_keyval_raw
                                                     21 raw
-                                                    toml_keyval
-                                                    []
+                                                    tomlf_type_keyval
+                                                    [toml_keyval]
                                                     raw
                                                     Public
                                                 ),
@@ -678,8 +678,8 @@
                                                     23
                                                     1_toml_value_key
                                                     22 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_keyval
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),

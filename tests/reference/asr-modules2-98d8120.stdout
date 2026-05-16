@@ -191,8 +191,8 @@
                                                     15
                                                     1_toml_array_list
                                                     14 list
-                                                    toml_array
-                                                    []
+                                                    tomlf_type_array
+                                                    [toml_array]
                                                     list
                                                     Public
                                                 ),
@@ -221,8 +221,8 @@
                                                     15
                                                     1_toml_value_key
                                                     5 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),

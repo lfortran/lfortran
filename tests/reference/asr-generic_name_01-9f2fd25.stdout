@@ -126,8 +126,8 @@
                                                     4
                                                     1_complextype_i
                                                     3 i
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     i
                                                     Public
                                                 ),
@@ -136,8 +136,8 @@
                                                     4
                                                     1_complextype_r
                                                     3 r
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     r
                                                     Public
                                                 ),
@@ -373,8 +373,8 @@
                                                     5
                                                     1_complextype_i
                                                     3 i
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     i
                                                     Public
                                                 ),
@@ -383,8 +383,8 @@
                                                     5
                                                     1_complextype_r
                                                     3 r
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     r
                                                     Public
                                                 ),
@@ -626,8 +626,8 @@
                                     6
                                     1_complextype_i
                                     3 i
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     i
                                     Public
                                 ),
@@ -646,8 +646,8 @@
                                     6
                                     1_complextype_r
                                     3 r
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     r
                                     Public
                                 ),

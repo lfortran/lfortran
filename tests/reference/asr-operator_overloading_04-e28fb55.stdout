@@ -17,8 +17,8 @@
                                                     4
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    operator_overloading_04_stdlib_string_type
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -193,8 +193,8 @@
                                                     5
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    operator_overloading_04_stdlib_string_type
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),

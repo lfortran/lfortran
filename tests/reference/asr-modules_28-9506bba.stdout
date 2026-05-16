@@ -17,8 +17,8 @@
                                                     13
                                                     1_git_target_t_object
                                                     12 object
-                                                    git_target_t
-                                                    []
+                                                    fpm_git
+                                                    [git_target_t]
                                                     object
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     13
                                                     1_git_target_t_url
                                                     12 url
-                                                    git_target_t
-                                                    []
+                                                    fpm_git
+                                                    [git_target_t]
                                                     url
                                                     Public
                                                 ),
@@ -736,8 +736,8 @@
                                                     9
                                                     1_dependency_config_t_git
                                                     5 git
-                                                    dependency_config_t
-                                                    []
+                                                    fpm_manifest_dependency
+                                                    [dependency_config_t]
                                                     git
                                                     Public
                                                 ),
