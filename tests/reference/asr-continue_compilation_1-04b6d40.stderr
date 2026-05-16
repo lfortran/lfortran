@@ -428,39 +428,39 @@ semantic error: Type mismatch in pointer initialization of `ptr_type_mismatch`
     |                           ~~~~~~~~~~~~ target declared here
 
 semantic error: Cannot convert LOGICAL to REAL
-   --> tests/errors/continue_compilation_1.f90:684:24
+   --> tests/errors/continue_compilation_1.f90:686:24
     |
-684 |         real :: adwf = .true.
+686 |         real :: adwf = .true.
     |                        ^^^^^^ 
 
 warning: Assuming implicit save attribute for variable declaration
-   --> tests/errors/continue_compilation_1.f90:688:23
+   --> tests/errors/continue_compilation_1.f90:690:23
     |
-688 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
+690 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
 
 semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
-   --> tests/errors/continue_compilation_1.f90:714:9
+   --> tests/errors/continue_compilation_1.f90:716:9
     |
-714 |         integer,allocatable  :: x(3)
+716 |         integer,allocatable  :: x(3)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Pointer array 'y' must have a deferred shape or assumed rank
-   --> tests/errors/continue_compilation_1.f90:715:9
+   --> tests/errors/continue_compilation_1.f90:717:9
     |
-715 |         integer,pointer  :: y(3)
+717 |         integer,pointer  :: y(3)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: COMMON block array bounds must be constant expressions
-   --> tests/errors/continue_compilation_1.f90:726:20
+   --> tests/errors/continue_compilation_1.f90:728:20
     |
-726 |         integer :: arr(n:10)
+728 |         integer :: arr(n:10)
     |                    ^^^^^^^^^ 
 
 semantic error: COMMON block array bounds must be constant expressions
-   --> tests/errors/continue_compilation_1.f90:733:20
+   --> tests/errors/continue_compilation_1.f90:735:20
     |
-733 |         integer :: arr(1:n)
+735 |         integer :: arr(1:n)
     |                    ^^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -1114,12 +1114,6 @@ semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It
 511 |     print *, ieor()
     |              ^^^^^^ 
 
-semantic error: `exit` statements cannot be outside of loops or blocks
-   --> tests/errors/continue_compilation_1.f90:513:5
-    |
-513 |     exit
-    |     ^^^^ 
-
 semantic error: Required argument `y` at position 2 is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:516:18
     |
@@ -1480,43 +1474,43 @@ semantic error: Missing actual argument for argument 'stat'
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: No matching `operator(-)` found for this operand type
-   --> tests/errors/continue_compilation_1.f90:662:18
+   --> tests/errors/continue_compilation_1.f90:664:18
     |
-662 |         print *, -tt
+664 |         print *, -tt
     |                  ^^^ 
 
 semantic error: Variable 'k' is not declared
-   --> tests/errors/continue_compilation_1.f90:678:12
+   --> tests/errors/continue_compilation_1.f90:680:12
     |
-678 |         do k = 1, 3
+680 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
 semantic error: Expected logical expression in if statement, but recieved logical[:] instead
-   --> tests/errors/continue_compilation_1.f90:689:13
+   --> tests/errors/continue_compilation_1.f90:691:13
     |
-689 |         if (abs(arr1)(1) /= 2471095) error stop
+691 |         if (abs(arr1)(1) /= 2471095) error stop
     |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
 
 semantic error: Character intrinsic 'len' with class(*) argument must be inside 'type is (character(len=*))' guard
-   --> tests/errors/continue_compilation_1.f90:697:22
+   --> tests/errors/continue_compilation_1.f90:699:22
     |
-697 |         print *, len(generic)
+699 |         print *, len(generic)
     |                      ^^^^^^^ invalid use of character intrinsic with polymorphic argument
 
 semantic error: Argument of 'len' intrinsic must be CHARACTER, found integer instead.
-   --> tests/errors/continue_compilation_1.f90:698:22
+   --> tests/errors/continue_compilation_1.f90:700:22
     |
-698 |         print *, len(a)
+700 |         print *, len(a)
     |                      ^ 
 
 semantic error: `unit` must be of type Integer or Character
-   --> tests/errors/continue_compilation_1.f90:704:9
+   --> tests/errors/continue_compilation_1.f90:706:9
     |
-704 |         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
+706 |         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_1.f90:710:9
+   --> tests/errors/continue_compilation_1.f90:712:9
     |
-710 |         x = [character(len=3) :: "aa", "bb", "aa"]
+712 |         x = [character(len=3) :: "aa", "bb", "aa"]
     |         ^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (integer[:] and string[:])
