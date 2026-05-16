@@ -4300,6 +4300,8 @@ RUN(NAME separate_compilation_class_star_03 LABELS gfortran llvm
 RUN(NAME separate_compilation_class_star_04 LABELS gfortran llvm
     EXTRAFILES separate_compilation_class_star_04a.f90
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME separate_compilation_external_symbol_01 LABELS gfortran llvm
+    EXTRAFILES separate_compilation_external_symbol_01a.f90)
 RUN(NAME class_star_pointer_01 LABELS gfortran llvm)
 
 RUN(NAME separate_compilation_14 LABELS gfortran llvm EXTRAFILES separate_compilation_14a.f90)
