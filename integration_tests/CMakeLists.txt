@@ -978,7 +978,9 @@ RUN(NAME select_rank_29 LABELS gfortran llvm)
 RUN(NAME select_rank_30 LABELS gfortran llvm)
 RUN(NAME select_rank_31 LABELS gfortran llvm)
 RUN(NAME select_rank_32 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME select_rank_33 LABELS gfortran llvm)
 
+RUN(NAME select_rank_34 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME select_rank_35 LABELS gfortran llvm)
 
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1002,6 +1004,7 @@ RUN(NAME pointer_13 LABELS gfortran llvmImplicit)
 RUN(NAME pointer_14 LABELS gfortran llvm)
 RUN(NAME pointer_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME pointer_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME array_section_is_non_allocatable LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_indices_array_section LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1758,6 +1761,8 @@ RUN(NAME intrinsics_457 LABELS gfortran llvm) # eoshift on 2D array with dim
 RUN(NAME intrinsics_458 LABELS gfortran llvm) # sign with common block variables
 RUN(NAME intrinsics_459 LABELS gfortran llvm) # minval over array with runtime bounds (--fast regression)
 RUN(NAME intrinsics_460 LABELS gfortran llvm) # random_seed put/get round-trip
+RUN(NAME intrinsics_461 LABELS gfortran llvm) # MVbits with array (treated as elemental function)
+RUN(NAME intrinsics_462 LABELS gfortran llvm) # nested spread over array section preserves result shape
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -2423,6 +2428,7 @@ RUN(NAME derived_types_143 LABELS gfortran llvm
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_type_c_funptr_array_01 LABELS gfortran llvm)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
 RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTRAFILES multi_file_member_access_02_mod.f90)
 RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
@@ -2518,6 +2524,7 @@ RUN(NAME allocate_68 LABELS gfortran llvm)
 RUN(NAME allocate_69 LABELS gfortran llvm)
 RUN(NAME allocate_70 LABELS gfortran llvm)
 RUN(NAME allocate_71 LABELS gfortran llvm)
+RUN(NAME allocate_72 LABELS gfortran llvm)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
@@ -2892,6 +2899,7 @@ RUN(NAME file_67 LABELS gfortran llvm)
 RUN(NAME file_68 LABELS gfortran llvm)
 RUN(NAME file_69 LABELS gfortran llvm)
 RUN(NAME file_70 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
+RUN(NAME file_71 LABELS gfortran llvm)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_close_02 LABELS gfortran llvm)
@@ -3089,6 +3097,7 @@ RUN(NAME class_allocate_04 LABELS gfortran llvm)
 RUN(NAME class_allocate_05 LABELS gfortran llvm)
 RUN(NAME class_allocate_06 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_allocate_07 LABELS gfortran llvm)
+RUN(NAME class_allocate_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_optional_01 LABELS gfortran llvm)
 RUN(NAME empty_array_01 LABELS gfortran llvm)
 
@@ -3189,6 +3198,7 @@ RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 # DISABLED: #8115 - ASR verify: FunctionType contains types tied to scope after template instantiation
 # RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME template_06 LABELS llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc)             # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_add_01c LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -3483,6 +3493,10 @@ RUN(NAME read_90 LABELS gfortran llvm fortran)
 RUN(NAME read_91 LABELS gfortran llvm)
 RUN(NAME read_92 LABELS gfortran llvm)
 
+
+RUN(NAME read_93 LABELS gfortran llvm)
+RUN(NAME read_94 LABELS gfortran llvm EXTRAFILES read_94.c)
+
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3688,6 +3702,7 @@ RUN(NAME common_35 LABELS gfortran llvm)
 RUN(NAME common_36 LABELS gfortran llvm)
 RUN(NAME common_37 LABELS gfortran llvm)
 RUN(NAME common_38 LABELS gfortran llvm)
+RUN(NAME common_39 LABELS gfortran llvm)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
@@ -3775,6 +3790,7 @@ RUN(NAME character_26 LABELS gfortran llvm)
 RUN(NAME character_27 LABELS gfortran llvm)
 RUN(NAME character_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME character_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3809,6 +3825,7 @@ RUN(NAME array_indices_array_item_assignment LABELS gfortran llvm llvm_wasm llvm
 RUN(NAME array_indices_array_item_assignment_1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_indices_array_item_assignment_2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_indices_array_item_assignment_3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME array_indices_array_item_assignment_4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME implicit_argument_casting_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-argument-casting --legacy-array-sections

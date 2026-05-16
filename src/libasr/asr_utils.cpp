@@ -3754,6 +3754,14 @@ ASR::asr_t* make_ArraySize_t_util(
                 diag::Diagnostics diag;
                 return ASRUtils::Merge::create_Merge(al, a_loc, merge_args, diag);
             }
+        } else if( array_func_type != nullptr && is_dimension_constant ) {
+            ASR::dimension_t* af_dims = nullptr;
+            size_t af_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                array_func_type, af_dims);
+            if( (size_t) dim >= 1 && (size_t) dim <= af_n_dims &&
+                af_dims[dim - 1].m_length != nullptr ) {
+                return (ASR::asr_t*) af_dims[dim - 1].m_length;
+            }
         }
     } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
         ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(a_v);

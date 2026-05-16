@@ -6189,7 +6189,7 @@ public:
         }
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
-        ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
+        ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
         if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
             value->type == ASR::exprType::ArrayConstant ) {
             diag.add(Diagnostic(
@@ -6280,7 +6280,7 @@ public:
                         }
                     }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                        value_type, target_type, diag);
+                                    ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value)),target_type, diag);
                     }
                 }
             }
@@ -8532,12 +8532,25 @@ public:
                     break;
                 }
             }
+            if (!already_targeted && x.n_body > 0) {
+                AST::stmt_t *last_stmt = x.m_body[x.n_body - 1];
+                if (last_stmt->type == AST::stmtType::DoLoop) {
+                    AST::DoLoop_t *inner_do = AST::down_cast<AST::DoLoop_t>(last_stmt);
+                    if (inner_do->m_do_label == x.m_do_label) {
+                        // The inner loop shares this label and will emit the target.
+                        // Flag it true so the outer loop doesn't emit a duplicate!
+                        already_targeted = true; 
+                    }
+                }
+            }
+            
             if (!already_targeted) {
                 ASR::asr_t *gt = ASR::make_GoToTarget_t(al, x.base.base.loc,
                     x.m_do_label, s2c(al, std::to_string(x.m_do_label)));
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(gt));
             }
         }
+        
         if(pragma_in_block) {
             nesting_lvl_inside_pragma--;
         }
