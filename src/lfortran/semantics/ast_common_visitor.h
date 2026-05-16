@@ -15961,6 +15961,14 @@ public:
                 }
             }
         }
+        // Per the Fortran standard, an array-constructor implied-do variable
+        // has scope local to the implied-do. With --implicit-typing, we must
+        // not leak this variable into the enclosing scope (where it would
+        // become host-associated in contained procedures). Track whether the
+        // implied-do variable is already visible so we can remove the
+        // implicit declaration after the implied-do is processed.
+        std::string idl_var_name_lower = to_lower(x.m_var);
+        bool idl_var_pre_existing = (current_scope->resolve_symbol(idl_var_name_lower) != nullptr);
         idl_nesting_level++;
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
@@ -16032,8 +16040,29 @@ public:
 
         // fetch loop variables
         std::vector<ASR::symbol_t*> loop_vars; fetch_implied_do_loop_variables(idl, loop_vars);
+        auto rename_implicit_idl_var = [&]() {
+            // Per the Fortran standard, an array-constructor implied-do
+            // variable has scope local to the implied-do. With
+            // --implicit-typing, the variable would be added to the enclosing
+            // scope and then host-associated by contained procedures. To
+            // avoid that, rename the implicit symbol to a unique name so
+            // name lookups for the original identifier in contained
+            // procedures don't resolve to it (they then get their own
+            // implicit declaration locally).
+            if (!compiler_options.implicit_typing || idl_var_pre_existing) return;
+            ASR::symbol_t* implicit_sym = current_scope->get_symbol(idl_var_name_lower);
+            if (implicit_sym == nullptr) return;
+            if (!ASR::is_a<ASR::Variable_t>(*implicit_sym)) return;
+            std::string unique_name = current_scope->get_unique_name(
+                "__implicit_idl_" + idl_var_name_lower);
+            current_scope->erase_symbol(idl_var_name_lower);
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(implicit_sym);
+            var->m_name = s2c(al, unique_name);
+            current_scope->add_symbol(unique_name, implicit_sym);
+        };
         if (is_body_visitor) {
             idl_nesting_level--;
+            rename_implicit_idl_var();
             return;
         }
         // check compiletime evaluation possibility
@@ -16117,6 +16146,7 @@ public:
             }
         }
         idl_nesting_level--;
+        rename_implicit_idl_var();
     }
 
     ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
