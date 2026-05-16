@@ -924,15 +924,17 @@ static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
 {
     std::string s_id = down_cast2<Name_t>(id)->m_id;
-    if (s_id == "MIN") {
+    std::string s_upper = s_id;
+    std::transform(s_upper.begin(), s_upper.end(), s_upper.begin(), ::toupper);
+    if (s_upper == "MIN" ) {
         return reduce_opType::ReduceMIN;
-    } else if (s_id == "MAX") {
+    } else if (s_upper == "MAX") {
         return reduce_opType::ReduceMAX;
-    } else if (s_id == "IAND" || s_id == "iand") {
+    } else if (s_upper == "IAND") {
         return reduce_opType::ReduceIAND;
-    } else if (s_id == "IOR" || s_id == "ior") {
+    } else if (s_upper == "IOR") {
         return reduce_opType::ReduceIOR;
-    } else if (s_id == "IEOR" || s_id == "ieor") {
+    } else if (s_upper == "IEOR") {
         return reduce_opType::ReduceIEOR;
     } else {
         diagnostics.add(LCompilers::diag::Diagnostic(
