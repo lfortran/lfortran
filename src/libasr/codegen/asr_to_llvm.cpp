@@ -490,11 +490,13 @@ public:
     }
 
     // Free data buffers of list-type call_arg_value allocas at scope exit.
+    // Free data buffers of list-type call_arg_value allocas at scope exit.
     void finalize_list_call_arg_allocas() {
         for (auto& kv : list_call_arg_to_finalize) {
             list_api->free_data_using_type(kv.second, kv.first, module.get());
-            llvm::Type* alloc_type = kv.second->getAllocatedType();
-            builder->CreateStore(llvm::ConstantAggregateZero::get(alloc_type), kv.second);
+            llvm::AllocaInst* alloca_inst = llvm::cast<llvm::AllocaInst>(kv.first);
+            llvm::Type* alloc_type = alloca_inst->getAllocatedType();
+            builder->CreateStore(llvm::ConstantAggregateZero::get(alloc_type), kv.first);
         }
         list_call_arg_to_finalize.clear();
     }
