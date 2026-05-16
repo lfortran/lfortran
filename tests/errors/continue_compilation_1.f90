@@ -288,6 +288,10 @@ program continue_compilation_1
         module procedure bad_op
     end interface
 
+    interface operator(.mismatch.)
+        module procedure mismatch_op
+    end interface
+
     integer :: bad_x
     type(ieee_class_type) :: ieee_cls
     type(Base) :: base_var
@@ -607,6 +611,7 @@ program continue_compilation_1
 
     ! unary defined operator with no matching function
     bad_x = .bad. 10
+    bad_x = .mismatch. 10
     bad_x = 5 .op. 3
     ieee_cls = ieee_class(0.0)
     b = (ieee_cls == ieee_quiet_nan)
@@ -655,6 +660,12 @@ program continue_compilation_1
 
 
     contains
+    
+    integer function mismatch_op(a)
+        real, intent(in) :: a
+        mismatch_op = int(a)
+    end function mismatch_op
+
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
         implicit none
