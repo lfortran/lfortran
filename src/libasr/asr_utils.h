@@ -5280,21 +5280,23 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
 
     std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
     if (scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
-        // Use the owning module's name as the module_name and set scope_names
-        // to navigate through the struct. This avoids ambiguity when a struct
-        // and a top-level module share the same name (the deserializer would
-        // otherwise find the Module instead of the Struct).
-        ASR::symbol_t* struct_t_owner = ASRUtils::get_asr_owner(
-                                            ASRUtils::symbol_get_past_external(struct_t));
         std::string member_module_name = struct_external_symbol_name;
         char** scope_names_arr = nullptr;
         size_t n_scope_names = 0;
+
+        // Use the owning module's name as module_name and encode the struct
+        // name in scope_names. This avoids ambiguity during deserialization
+        // when a struct and a top-level module share the same name (the
+        // deserializer would otherwise find the Module instead of the Struct).
+        ASR::symbol_t* struct_t_actual = ASRUtils::symbol_get_past_external(struct_t);
+        ASR::symbol_t* struct_t_owner = ASRUtils::get_asr_owner(struct_t_actual);
         if (struct_t_owner != nullptr && ASR::is_a<ASR::Module_t>(*struct_t_owner)) {
             member_module_name = ASRUtils::symbol_name(struct_t_owner);
             scope_names_arr = al.allocate<char*>(1);
             scope_names_arr[0] = s2c(al, struct_t_name);
             n_scope_names = 1;
         }
+
         ASR::symbol_t* struct_member_external_symbol = ASR::down_cast<ASR::symbol_t>(
                                                         ASR::make_ExternalSymbol_t(al,
                                                                                 struct_member->base.loc,

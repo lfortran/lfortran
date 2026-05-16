@@ -921,6 +921,19 @@ public:
             if (!name_matches && m != nullptr && x.n_scope_names > 0) {
                 name_matches = (x_m_module_name == std::string(m->m_name));
             }
+            // When the direct owner is a Struct, m_module_name may refer
+            // to the enclosing Module instead of the Struct itself.
+            // Walk up from the Struct to find the Module.
+            if (!name_matches && sm != nullptr) {
+                ASR::symbol_t* struct_parent = ASRUtils::get_asr_owner((ASR::symbol_t*)sm);
+                if (struct_parent != nullptr && ASR::is_a<ASR::Module_t>(*struct_parent)) {
+                    ASR::Module_t* parent_mod = ASR::down_cast<ASR::Module_t>(struct_parent);
+                    if (x_m_module_name == std::string(parent_mod->m_name)) {
+                        name_matches = true;
+                        m = parent_mod;
+                    }
+                }
+            }
             require(name_matches,
                 "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
@@ -933,6 +946,7 @@ public:
                 // scope_names encodes the path to the nested owner.
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
+                // Direct struct owner lookup (handles both scope_names and no scope_names cases)
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( em ) {
                 s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
