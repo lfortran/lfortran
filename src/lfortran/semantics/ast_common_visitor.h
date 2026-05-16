@@ -4304,7 +4304,15 @@ public:
     }
 
     ASR::ttype_t* evaluate_type_bounds(Allocator& al, ASR::ttype_t* type, const Location& loc) {
-        if (ASRUtils::is_array(type)) {
+        if (ASR::is_a<ASR::Pointer_t>(*type)) {
+            ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(type);
+            ASR::ttype_t* inner_type = evaluate_type_bounds(al, p->m_type, loc);
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, p->base.base.loc, inner_type));
+        } else if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+            ASR::Allocatable_t* a = ASR::down_cast<ASR::Allocatable_t>(type);
+            ASR::ttype_t* inner_type = evaluate_type_bounds(al, a->m_type, loc);
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, a->base.base.loc, inner_type));
+        } else if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
             Vec<ASR::dimension_t> new_dims;
             new_dims.reserve(al, arr->n_dims);
