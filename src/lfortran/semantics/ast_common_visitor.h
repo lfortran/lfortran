@@ -1984,7 +1984,7 @@ public:
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
     // mapping of hash int's of scope to 'explicit_intrinsic_procedures'
     std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping;
-    std::map<std::string, ASR::symbol_t*> changed_external_function_symbol;
+    std::map<std::pair<SymbolTable*, std::string>, ASR::symbol_t*> changed_external_function_symbol;
     std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
 
@@ -16228,7 +16228,7 @@ public:
                 LCOMPILERS_ASSERT(v!=nullptr);
                 // check if external sym is updated, or: say if signature of external_sym and original_sym are different
                 if (v && external_sym && is_external_procedure && ASRUtils::is_external_sym_changed(v, external_sym)) {
-                    changed_external_function_symbol[ASRUtils::symbol_name(v)] = v;
+                    changed_external_function_symbol[{current_scope, ASRUtils::symbol_name(v)}] = v;
                 }
                 // remove from external_procedures_mapping
                 if (v && is_external_procedure) {
