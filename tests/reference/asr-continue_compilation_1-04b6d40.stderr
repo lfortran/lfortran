@@ -427,6 +427,12 @@ semantic error: Type mismatch in pointer initialization of `ptr_type_mismatch`
 646 |     type(Base), target :: ptr_tgt_base
     |                           ~~~~~~~~~~~~ target declared here
 
+semantic error: Dimensions specified for 'm' after its initialization
+   --> tests/errors/continue_compilation_1.f90:654:18
+    |
+654 |     dimension :: m(3)
+    |                  ^^^^ 
+
 semantic error: Cannot convert LOGICAL to REAL
    --> tests/errors/continue_compilation_1.f90:684:24
     |
