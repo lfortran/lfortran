@@ -946,7 +946,6 @@ public:
                 // scope_names encodes the path to the nested owner.
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
-                // Direct struct owner lookup (handles both scope_names and no scope_names cases)
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( em ) {
                 s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
