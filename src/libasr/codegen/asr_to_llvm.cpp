@@ -463,7 +463,10 @@ public:
         if (idx < pool.size()) {
             return pool[idx++];
         }
+        // Need to create a new alloca
         llvm::AllocaInst* alloca = llvm_utils->CreateAlloca(type, nullptr, "call_arg_value");
+         // Zero-initialize struct allocas (e.g. list, tuple) at entry block
+        // so null-guarded free is safe on the very first use in a loop.
         if (type->isStructTy()) {
             llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
             llvm::IRBuilder<> entry_builder(context);
@@ -23051,7 +23054,7 @@ public:
                                             arg_type);
                                         std::string tc = ASRUtils::get_type_code(
                                             list_t->m_type, false, false);
-                                            
+
                                         llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                         list_call_arg_to_finalize[target] = tc;
                                     } else {
