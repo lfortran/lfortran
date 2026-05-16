@@ -425,8 +425,8 @@
                                     6
                                     1_t_1_multiply
                                     3 multiply
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     multiply
                                     Public
                                 ),
@@ -435,8 +435,8 @@
                                     6
                                     1_t_1_sqrt_subtract
                                     3 sqrt_subtract
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     sqrt_subtract
                                     Public
                                 ),

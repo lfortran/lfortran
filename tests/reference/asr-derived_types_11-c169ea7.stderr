@@ -1,5 +1,0 @@
-ASR verify pass error: ExternalSymbol::m_module_name `derived_types_11` must match external's module name `y`
- --> tests/../integration_tests/derived_types_11.f90:4:37
-  |
-4 |         character(kind=1, len=1) :: backslash = '\'
-  |                                     ^^^^^^^^^^^^^^^ failed here

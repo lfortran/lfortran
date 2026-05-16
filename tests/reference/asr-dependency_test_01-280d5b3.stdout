@@ -17,8 +17,8 @@
                                                     6
                                                     1_dependency_tree_t_find_dependency
                                                     5 find_dependency
-                                                    dependency_tree_t
-                                                    []
+                                                    fpm_dependency
+                                                    [dependency_tree_t]
                                                     find_dependency
                                                     Public
                                                 ),

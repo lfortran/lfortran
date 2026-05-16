@@ -12,8 +12,8 @@
                                     6
                                     1_circle_print
                                     3 print
-                                    circle
-                                    []
+                                    class_circle1
+                                    [circle]
                                     print
                                     Public
                                 ),
@@ -334,8 +334,8 @@
                                                     5
                                                     1_circle_area
                                                     3 area
-                                                    circle
-                                                    []
+                                                    class_circle1
+                                                    [circle]
                                                     area
                                                     Public
                                                 ),

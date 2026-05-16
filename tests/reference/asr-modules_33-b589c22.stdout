@@ -1706,8 +1706,8 @@
                                                     5
                                                     1_dependency_tree_t_add_project
                                                     10 add_project
-                                                    1_dependency_tree_t
-                                                    []
+                                                    fpm_dependency_modules_33
+                                                    [dependency_tree_t]
                                                     add_project
                                                     Public
                                                 ),

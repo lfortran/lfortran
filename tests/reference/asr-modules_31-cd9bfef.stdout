@@ -47,8 +47,8 @@
                                                     7
                                                     1_dependency_tree_t_update_dependency
                                                     12 update_dependency
-                                                    dependency_tree_t
-                                                    []
+                                                    fpm_dependency_modules_31
+                                                    [dependency_tree_t]
                                                     update_dependency
                                                     Public
                                                 ),

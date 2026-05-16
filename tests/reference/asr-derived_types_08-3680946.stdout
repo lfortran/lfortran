@@ -52,8 +52,8 @@
                                     6
                                     1_shape_initialize
                                     3 initialize
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     initialize
                                     Public
                                 ),

@@ -286,8 +286,8 @@
                                                     6
                                                     1_toml_structure_destroy
                                                     17 destroy
-                                                    1_toml_structure
-                                                    []
+                                                    tomlf_structure_base
+                                                    [toml_structure]
                                                     destroy
                                                     Public
                                                 ),

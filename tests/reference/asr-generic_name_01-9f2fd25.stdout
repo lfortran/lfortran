@@ -636,8 +636,8 @@
                                     6
                                     1_complextype_integer_add_subrout
                                     3 integer_add_subrout
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     integer_add_subrout
                                     Public
                                 ),
@@ -656,8 +656,8 @@
                                     6
                                     1_complextype_real_add_subrout
                                     3 real_add_subrout
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     real_add_subrout
                                     Public
                                 ),

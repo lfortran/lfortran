@@ -227,8 +227,8 @@
                                                     8
                                                     1_toml_date_to_string
                                                     4 to_string
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     to_string
                                                     Public
                                                 ),
@@ -257,8 +257,8 @@
                                                     8
                                                     1_toml_time_to_string
                                                     3 to_string
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     to_string
                                                     Public
                                                 ),
