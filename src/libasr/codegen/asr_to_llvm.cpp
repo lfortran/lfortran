@@ -463,22 +463,16 @@ public:
         if (idx < pool.size()) {
             return pool[idx++];
         }
-        // Need to create a new alloca
         llvm::AllocaInst* alloca = llvm_utils->CreateAlloca(type, nullptr, "call_arg_value");
-        // Zero-initialize struct allocas (e.g. list, tuple) at entry block
-        // so null-guarded free is safe on the very first use in a loop.
         if (type->isStructTy()) {
             llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
             llvm::IRBuilder<> entry_builder(context);
             entry_builder.SetInsertPoint(&entry_block, std::next(alloca->getIterator()));
-            uint64_t type_size = module->getDataLayout().getTypeAllocSize(type);
-            entry_builder.CreateMemSet(alloca, entry_builder.getInt8(0), type_size,
-#if LLVM_VERSION_MAJOR >= 11
-                llvm::MaybeAlign(alloca->getAlign()));
-#else
-                llvm::MaybeAlign(alloca->getAlignment()));
-#endif
+            llvm::Value* data_ptr_gep = entry_builder.CreateStructGEP(type, alloca, 0);
+            llvm::Type* elem_type = type->getStructElementType(0);
+            entry_builder.CreateStore(llvm::Constant::getNullValue(elem_type), data_ptr_gep);
         }
+
         pool.push_back(alloca);
         idx++;
         return alloca;
@@ -496,6 +490,8 @@ public:
     void finalize_list_call_arg_allocas() {
         for (auto& kv : list_call_arg_to_finalize) {
             list_api->free_data_using_type(kv.second, kv.first, module.get());
+            llvm::Type* alloc_type = kv.second->getAllocatedType();
+            builder->CreateStore(llvm::ConstantAggregateZero::get(alloc_type), kv.second);
         }
         list_call_arg_to_finalize.clear();
     }
@@ -23055,14 +23051,12 @@ public:
                                             arg_type);
                                         std::string tc = ASRUtils::get_type_code(
                                             list_t->m_type, false, false);
-                                        // Always free old data before deepcopy.
-                                        // The alloca is zero-initialized at entry, so
-                                        // the null-guarded free is a no-op on first use.
-                                        list_api->free_data_using_type(
-                                            tc, target, module.get());
+                                            
+                                        llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                         list_call_arg_to_finalize[target] = tc;
+                                    } else {
+                                        llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                     }
-                                    llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                     // Free source temp data for ListConstant only.
                                     // Other non-Var sources (e.g., ListItem) may hold
                                     // shallow-copy data pointers shared with a parent
