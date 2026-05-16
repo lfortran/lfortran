@@ -2751,6 +2751,13 @@ public:
 	    }
 
 	    if ( v->m_type ) {
+		if (v->m_symbolic_value != nullptr || v->m_value != nullptr) {
+		    diag.add(diag::Diagnostic(
+		        "Dimensions specified for '" + std::string(s.m_name) + "' after its initialization",
+		        diag::Level::Error, diag::Stage::Semantic, {
+		            diag::Label("", {s.loc})}));
+		    throw SemanticAbort();
+		}
 		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
 		                               : ASR::abiType::Source;
 	        if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(),
