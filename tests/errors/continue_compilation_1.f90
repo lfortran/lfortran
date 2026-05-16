@@ -654,7 +654,7 @@ program continue_compilation_1
     derived_cls = base_var
     call print_len_non_char("  Hello World  ")
     print  *, 9.99e+99
-
+    a5 = missing_required_arg_func()
 
 
 
@@ -725,4 +725,23 @@ program continue_compilation_1
         integer,allocatable  :: x(3)
         integer,pointer  :: y(3)
     end subroutine
+
+    integer function missing_required_arg_func(stat)
+        integer, intent(out) :: stat
+        missing_required_arg_func = 0
+        stat = 0
+    end function
+    subroutine sub_common_block_nonconstant_lower_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(n:10)
+        common /common_nonconstant_lower_bound/ arr
+    end subroutine sub_common_block_nonconstant_lower_bound
+
+    subroutine sub_common_block_nonconstant_upper_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(1:n)
+        common /common_nonconstant_upper_bound/ arr
+    end subroutine sub_common_block_nonconstant_upper_bound
 end program

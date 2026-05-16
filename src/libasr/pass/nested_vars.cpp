@@ -195,8 +195,6 @@ public:
                     }
                 }
             } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::symbol_t* par_func_sym_copy = par_func_sym;
-                par_func_sym = cur_func_sym;
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
                     item.second);
                 if (!is_func_visited) {
@@ -206,6 +204,8 @@ public:
                     }
                 }
 
+                ASR::symbol_t* par_func_sym_copy = par_func_sym;
+                par_func_sym = cur_func_sym;
                 visit_Function(*s);
                 par_func_sym = par_func_sym_copy;
             } else {
@@ -492,6 +492,14 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 bool is_allocatable = ASRUtils::is_allocatable(var->m_type);
                 bool is_pointer = ASRUtils::is_pointer(var->m_type);
                 LCOMPILERS_ASSERT(!(is_allocatable && is_pointer));
+                // For intent(IN) allocatable arrays, use a Pointer in the
+                // context module instead of Allocatable. This ensures
+                // the sync uses Associate (pointer association) which
+                // preserves the original array bounds. Assignment would
+                // reset lower bounds to 1.
+                if (is_allocatable && var->m_intent == ASR::intentType::In) {
+                    is_allocatable = false;
+                }
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(var->m_type));
                 ASR::ttype_t* var_type_ = ASRUtils::type_get_past_array(var_type);
@@ -1104,10 +1112,17 @@ public:
             }
             assigns_at_end.clear();
             loop_end_syncs.clear();
+            ASR::symbol_t *assigned_target_sym = nullptr;
+            if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
+                ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
+                assigned_target_sym = get_root_host_symbol(assignment->m_target);
+            }
             visit_stmt(*m_body[i]);
             if (cur_func_sym != nullptr && (calls_present || calls_in_loop_condition)) {
                 if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
                     for (auto &sym: nesting_map[cur_func_sym]) {
+                        bool skip_sync_back = ASR::is_a<ASR::Assignment_t>(*m_body[i]) &&
+                            assigned_target_sym == ASRUtils::symbol_get_past_external(sym);
                         std::string m_name = nested_var_to_ext_var[sym].first;
                         ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
                         ASR::symbol_t *ext_sym = nullptr;
@@ -1216,7 +1231,9 @@ public:
                                                             target, val, nullptr, true, true));
                                 // First push allocate stmt for LHS
                                 body.push_back(al, assignment);
-                                if( ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
+                                if( ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
+                                        ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In &&
+                                        !skip_sync_back) {
                                     assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                         val, target, nullptr, true, true));
                                     // Now push the assignment from LHS to RHS at end of function
@@ -1229,7 +1246,9 @@ public:
                                 // TODO : Remove the following if block (See integration test `arrays_87.f90`)
                                 if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
                                     is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
-                                    && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
+                                    && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter
+                                    && ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In
+                                    && !skip_sync_back) {
                                     associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                         val, target));
                                     assigns_at_end.push_back(associate);
@@ -1247,7 +1266,8 @@ public:
                                 body.push_back(al, assignment);
                             }
                             if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
-                                    ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In) {
+                                    ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In &&
+                                    !skip_sync_back) {
                                 assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                 val, target, nullptr, false, false));
                                 /* Allocatable RHS Needs A Check `IF allocated --> assign` (Based On Fortran Standards) */

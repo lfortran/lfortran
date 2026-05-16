@@ -99,6 +99,8 @@ void pass_dead_code_removal(Allocator &al, ASR::TranslationUnit_t &unit,
     std::string rl_path = pass_options.runtime_library_dir;
     DeadCodeRemovalVisitor v(al, rl_path);
     v.visit_TranslationUnit(unit);
+    PassUtils::UpdateDependenciesVisitor update_dependencies(al);
+    update_dependencies.visit_TranslationUnit(unit);
 }
 
 

@@ -149,7 +149,6 @@ namespace RandomSeed {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
         std::string c_func_name_1 = "_lfortran_random_seed";
-        std::string c_func_name_2 = "_lfortran_dp_rand_num";
         std::string new_name = "_lcompilers_random_seed_";
         declare_basic_variables(new_name);
         int flag = 0;
@@ -168,24 +167,32 @@ namespace RandomSeed {
             flag = 1;
             ASR::ttype_t* put_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[1]);
             fill_func_arg_sub("put", put_type, In);
-            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable(arg_types[1]));
-            if (fn_symtab->get_symbol(c_func_name_1) == nullptr) {
-                ASR::symbol_t *s_seed = b.create_c_func_subroutines(
-                    c_func_name_1, fn_symtab, 1, elem_type);
-                fn_symtab->add_symbol(c_func_name_1, s_seed);
-                dep.push_back(al, s2c(al, c_func_name_1));
+            std::string put_func_name = "_lfortran_random_seed_put_i32";
+            if (fn_symtab->get_symbol(put_func_name) == nullptr) {
+                Vec<ASR::ttype_t*> put_param_types; put_param_types.reserve(al, 2);
+                put_param_types.push_back(al, int32);
+                put_param_types.push_back(al, int32);
+                std::vector<std::string> put_param_names = {"value", "index"};
+                std::vector<bool> put_value = {true, true};
+                ASR::symbol_t* s_put = b.create_c_subroutine_interface(
+                    put_func_name, fn_symtab, put_param_types, put_param_names, put_value);
+                fn_symtab->add_symbol(put_func_name, s_put);
+                dep.push_back(al, s2c(al, put_func_name));
             }
-            std::vector<ASR::expr_t*> idx = {b.i32(1)};
-            auto seed_elem = declare("_seed_elem", elem_type, Local);
-            body.push_back(al, b.Assignment(seed_elem,
-                b.ArrayItem_01(args[1], idx)));
-            Vec<ASR::expr_t*> put_call_args; put_call_args.reserve(al, 1);
-            put_call_args.push_back(al, seed_elem);
-            auto seed_discard = declare("_seed_val", elem_type, Local);
-            body.push_back(al, b.Assignment(seed_discard,
-                b.Call(fn_symtab->get_symbol(c_func_name_1),
-                    put_call_args, elem_type)));
+            ASR::symbol_t* s_put = fn_symtab->get_symbol(put_func_name);
+            ASR::ttype_t* put_elem_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(arg_types[1]));
+            for (int i = 1; i <= 8; i++) {
+                std::vector<ASR::expr_t*> idx = {b.i32(i)};
+                auto elem_var = declare("_put_elem_" + std::to_string(i),
+                    put_elem_type, Local);
+                body.push_back(al, b.Assignment(elem_var,
+                    b.ArrayItem_01(args[1], idx)));
+                Vec<ASR::call_arg_t> put_call_args; put_call_args.reserve(al, 2);
+                put_call_args.push_back(al, ASR::call_arg_t{loc, elem_var});
+                put_call_args.push_back(al, ASR::call_arg_t{loc, b.i32(i)});
+                body.push_back(al, b.SubroutineCall(s_put, put_call_args));
+            }
         } else {
             fill_func_arg_sub("put", real32, In);
         }
@@ -195,33 +202,24 @@ namespace RandomSeed {
             if (flag == 1) {
                 body.push_back(al, b.Assignment(args[2], args[1]));
             } else {
-                std::vector<LCompilers::ASR::expr_t *> vals;
-                std::string c_func = c_func_name_2;
-                int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[2]);
-                if ( is_real(*arg_types[2]) ) {
-                    if (kind == 4) {
-                        c_func = "_lfortran_sp_rand_num";
-                    } else {
-                        c_func = "_lfortran_dp_rand_num";
-                    }
-                } else if ( is_integer(*arg_types[2]) ) {
-                    if (kind == 4) {
-                        c_func = "_lfortran_int32_rand_num";
-                    } else {
-                        c_func = "_lfortran_int64_rand_num";
-                    }
+                std::string get_func_name = "_lfortran_random_seed_get_i32";
+                if (fn_symtab->get_symbol(get_func_name) == nullptr) {
+                    ASR::symbol_t* s_get = b.create_c_func_subroutines_with_return_type(
+                        get_func_name, fn_symtab, 1, {int32}, int32);
+                    fn_symtab->add_symbol(get_func_name, s_get);
+                    dep.push_back(al, s2c(al, get_func_name));
                 }
-                ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func, fn_symtab, 0, arg_types[2]);
-                fn_symtab->add_symbol(c_func, s_2);
-                dep.push_back(al, s2c(al, c_func));
-                Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 0);
+                ASR::symbol_t* s_get = fn_symtab->get_symbol(get_func_name);
                 ASR::ttype_t* elem_type = extract_type(arg_types[2]);
-                for (int i = 0; i < 8; i++) {
-                    auto xx = declare("i_" + std::to_string(i), elem_type, Local);
-                    body.push_back(al, b.Assignment(xx, b.Call(s_2, call_args2, int32)));
+                std::vector<LCompilers::ASR::expr_t *> vals;
+                for (int i = 1; i <= 8; i++) {
+                    auto xx = declare("seed_" + std::to_string(i), elem_type, Local);
+                    Vec<ASR::expr_t*> get_call_args; get_call_args.reserve(al, 1);
+                    get_call_args.push_back(al, b.i32(i));
+                    body.push_back(al, b.Assignment(xx, b.Call(s_get, get_call_args, int32)));
                     vals.push_back(xx);
                 }
-                body.push_back(al, b.Assignment(args[2], b.ArrayConstant(vals, extract_type(arg_types[2]), false)));
+                body.push_back(al, b.Assignment(args[2], b.ArrayConstant(vals, elem_type, false)));
             }
         } else {
             fill_func_arg_sub("get", real32, In);
