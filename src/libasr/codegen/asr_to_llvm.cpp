@@ -471,9 +471,7 @@ public:
             llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
             llvm::IRBuilder<> entry_builder(context);
             entry_builder.SetInsertPoint(&entry_block, std::next(alloca->getIterator()));
-            llvm::Value* data_ptr_gep = entry_builder.CreateStructGEP(type, alloca, 0);
-            llvm::Type* elem_type = type->getStructElementType(0);
-            entry_builder.CreateStore(llvm::Constant::getNullValue(elem_type), data_ptr_gep);
+            entry_builder.CreateStore(llvm::ConstantAggregateZero::get(type), alloca);
         }
 
         pool.push_back(alloca);
@@ -489,7 +487,6 @@ public:
         }
     }
 
-    // Free data buffers of list-type call_arg_value allocas at scope exit.
     // Free data buffers of list-type call_arg_value allocas at scope exit.
     void finalize_list_call_arg_allocas() {
         for (auto& kv : list_call_arg_to_finalize) {
@@ -23056,7 +23053,7 @@ public:
                                             arg_type);
                                         std::string tc = ASRUtils::get_type_code(
                                             list_t->m_type, false, false);
-
+                                        list_api->free_data_using_type(tc, target, module.get());
                                         llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                         list_call_arg_to_finalize[target] = tc;
                                     } else {
