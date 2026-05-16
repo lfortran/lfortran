@@ -7779,6 +7779,22 @@ public:
                     if (is_char_type && storage_type == ASR::storage_typeType::Parameter) {
                         validate_and_adjust_character_parameter_length(
                             init_expr, value, type, x.base.base.loc, al, diag);
+                    } else if (is_char_type && value
+                            && ASR::is_a<ASR::ArrayConstant_t>(*value)
+                            && ASRUtils::is_array_of_strings(type)
+                            && ASRUtils::is_array_of_strings(ASRUtils::expr_type(value))) {
+                        ASR::String_t* lhs_str = ASRUtils::get_string_type(type);
+                        ASR::String_t* rhs_str = ASRUtils::get_string_type(
+                            ASRUtils::expr_type(value));
+                        int64_t lhs_len = 0, rhs_len = 0;
+                        if (lhs_str->m_len && rhs_str->m_len
+                                && ASRUtils::extract_value(lhs_str->m_len, lhs_len)
+                                && ASRUtils::extract_value(rhs_str->m_len, rhs_len)
+                                && lhs_len != rhs_len) {
+                            value = adjust_array_character_length(value, lhs_len,
+                                rhs_len, al);
+                            init_expr = value;
+                        }
                     }
 
                     ASR::expr_t* tmp_init = init_expr;
