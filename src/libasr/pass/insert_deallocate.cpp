@@ -371,13 +371,14 @@ public:
                     }
                 }
 
-                // Recursively collect deallocation statements for all allocatable
-                // components nested at any depth within the struct hierarchy.
-                // parent_expr is the base access expression (e.g., arg, arg%member, etc.)
-                // parent_sym is the symbol corresponding to parent_expr
-                std::function<void(ASR::Struct_t*, ASR::expr_t*, ASR::symbol_t*)>
-                    collect_nested_deallocs = [&](ASR::Struct_t* st,
-                        ASR::expr_t* parent_expr, ASR::symbol_t* parent_sym) {
+                 // collect deallocation statements for all allocatable
+                // components nested at any depth within the struct hierarchy are handled recursively.
+                // @param parent_expr is the base access expression (e.g., arg, arg%member, etc.)
+                // @param parent_sym is the symbol (structSymbol) corresponding to parent_expr
+                // @param self pass self lambda to recurise call.
+                // TODO : Clean into regular function
+                auto collect_deallocs_of_struct = [&](auto self,
+                    ASR::Struct_t* st, ASR::expr_t* parent_expr, ASR::symbol_t* parent_sym) -> void {
                     ASR::Struct_t* current_st = st;
                     SymbolTable* sym_table = current_st->m_symtab;
                     while (sym_table != nullptr) {
@@ -418,6 +419,7 @@ public:
                                 ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, root_var_expr, arg_var->m_presence, if_stmt);
                                 dealloc_stmts.push_back(al, wrapped_stmt);
                             } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(mem_type))) {
+                                if (ASRUtils::is_array(mem_type)) continue;
                                 // Non-allocatable struct member: recurse into it
                                 ASR::Variable_t* mem_var = ASR::down_cast<ASR::Variable_t>(struct_member.second);
                                 if (!mem_var->m_type_declaration) continue;
@@ -430,7 +432,7 @@ public:
                                     (ASR::asr_t*)parent_expr, parent_sym,
                                     struct_member.second, x.m_symtab));
 
-                                collect_nested_deallocs(
+                                 self(self,
                                     ASR::down_cast<ASR::Struct_t>(nested_struct_sym),
                                     member_expr, struct_member.second);
                             }
@@ -446,7 +448,7 @@ public:
                 };
 
                 ASR::expr_t* base_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
-                collect_nested_deallocs(struct_type, base_var_expr, arg_sym);
+                collect_deallocs_of_struct(collect_deallocs_of_struct, struct_type, base_var_expr, arg_sym);
             }
         }
 
