@@ -1188,7 +1188,7 @@ public:
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
     // For constant bounds: (vals(i), i=1,3) -> vals(1), vals(2), vals(3)
     // For variable bounds: (vals(i), i=1,n) -> vals(1:n)
-    void expand_implied_do_for_read(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& out) {
+    void expand_implied_do_for_read(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& out, std::vector<ASR::stmt_t*>& post_stmts) {
         int64_t start_val, end_val, inc_val = 1;
         bool constant_bounds = true;
 
@@ -1210,11 +1210,11 @@ public:
         if (constant_bounds && inc_val != 0) {
             // Expand to individual elements
             ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var);
-            for (int64_t idx = start_val;
+            int64_t idx = start_val;
+            for (;
                  (inc_val > 0) ? (idx <= end_val) : (idx >= end_val);
                  idx += inc_val) {
-                ASR::ttype_t* int_type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, idl->m_var->base.loc, 4));
+                ASR::ttype_t* int_type = ASRUtils::expr_type(idl->m_var);
                 ASR::expr_t* idx_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, idl->m_var->base.loc, idx, int_type));
                 for (size_t j = 0; j < idl->n_values; j++) {
@@ -1224,7 +1224,7 @@ public:
                             ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
                         ASR::ImpliedDoLoop_t* substituted_idl =
                             substitute_loop_var_in_idl(inner_idl, loop_var, idx_const);
-                        expand_implied_do_for_read(substituted_idl, out);
+                        expand_implied_do_for_read(substituted_idl, out, post_stmts);
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
                         // Replace loop variable with constant index
                         ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(value);
@@ -1235,6 +1235,15 @@ public:
                         out.push_back(al, value);
                     }
                 }
+            }
+            if (compiler_options.use_loop_variable_after_loop ||
+                    compiler_options.po.use_loop_variable_after_loop) {
+                ASR::ttype_t* int_type = ASRUtils::expr_type(idl->m_var);
+                ASR::expr_t* final_idx_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, idl->m_var->base.loc, idx, int_type));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, idl->m_var->base.loc, idl->m_var, final_idx_const, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+                post_stmts.push_back(assign_stmt);
             }
         } else {
             out.push_back(al, ASRUtils::EXPR((ASR::asr_t*)idl));
@@ -2072,6 +2081,7 @@ public:
         } else if (_type == AST::stmtType::Write) {
             a_fmt_constant = a_fmt;
         }
+        std::vector<ASR::stmt_t*> post_stmts;
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             if (AST::is_a<AST::Name_t>(*m_values[i])) {
                 AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_values[i]);
@@ -2106,7 +2116,7 @@ public:
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec);
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec, post_stmts);
             } else {
                 a_values_vec.push_back(al, expr);
             }
@@ -2342,6 +2352,17 @@ public:
                     tmp_vec.push_back(tmp);
                     tmp = nullptr;
                     emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
+                }
+                if (!post_stmts.empty()) {
+                    if (tmp != nullptr) {
+                        tmp_vec.push_back(tmp);
+                        tmp = nullptr;
+                    }
+                    for (ASR::stmt_t* s : post_stmts) {
+                        tmp_vec.push_back((ASR::asr_t*)s);
+                    }
+                }
+                if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
                     tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
                 }
                 return;
@@ -2423,6 +2444,9 @@ public:
                         body.p, body.size(), nullptr, 0));
                 }
             }
+        }
+        for (ASR::stmt_t* s : post_stmts) {
+            tmp_vec.push_back((ASR::asr_t*)s);
         }
         tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
         tmp = nullptr;
