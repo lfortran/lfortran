@@ -3500,6 +3500,7 @@ RUN(NAME read_89 LABELS gfortran llvm)
 RUN(NAME read_90 LABELS gfortran llvm fortran)
 RUN(NAME read_91 LABELS gfortran llvm)
 RUN(NAME read_92 LABELS gfortran llvm)
+RUN(NAME read_95 LABELS gfortran llvm)
 
 
 RUN(NAME read_93 LABELS gfortran llvm)
