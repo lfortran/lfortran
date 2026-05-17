@@ -2919,33 +2919,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     int64_t num_elements = ASRUtils::get_fixed_size_of_array((ASR::ttype_t*)array_t);
     int64_t total_len = elem_len * num_elements;
 
-    ASR::String_t* str = ASRUtils::get_string_type(fake_string_type);
-    int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
-    if (arrayConst_t) {
-        int64_t src_elem_len = 0;
-        ASRUtils::extract_value(
-            ASRUtils::get_string_type(arrayConst_t->m_type)->m_len, src_elem_len);
-        if (src_elem_len < actual_len) {
-            int64_t arr_size = ASRUtils::get_fixed_size_of_array((ASR::ttype_t*)array_t);
-            std::string padded;
-            padded.reserve(actual_len * arr_size);
-            for (int64_t i = 0; i < arr_size; i++) {
-                int64_t base = i * src_elem_len;
-                int64_t take = std::min(src_elem_len,
-                    (int64_t)sequence.size() - base);
-                if (take > 0) padded.append(sequence, base, take);
-                else take = 0;
-                padded.append(actual_len - take, ' ');
-            }
-            sequence = padded;
-        }
-    }
-    sequence.resize(len,' '); // Pad
-    llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, actual_len));
-    llvm::Constant* string_constant;
-    // setup global string constant (llvm array of i8)
-    switch(str->m_len_kind){
-        case ASR::DeferredLength:{
+    llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, elem_len));
+    llvm::Constant* string_constant = nullptr;
+
+    // 3. Handle data initialization based on length kind
+    switch (elem_string->m_len_kind) {
+        case ASR::DeferredLength: {
+            // MUST use LFortran's internal character_type to avoid pointer mismatch
             string_constant = llvm::ConstantPointerNull::get(character_type);
             break;
         }
