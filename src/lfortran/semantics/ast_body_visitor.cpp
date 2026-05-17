@@ -8652,6 +8652,12 @@ public:
                         red.m_op = ASR::reduction_opType::ReduceMIN;
                     } else if ( op == AST::reduce_opType::ReduceMul ) {
                         red.m_op = ASR::reduction_opType::ReduceMul;
+                    } else if ( op == AST::reduce_opType::ReduceIAND ) {
+                        red.m_op = ASR::reduction_opType::ReduceIAND;
+                    } else if ( op == AST::reduce_opType::ReduceIOR ) {
+                        red.m_op = ASR::reduction_opType::ReduceIOR;
+                    } else if ( op == AST::reduce_opType::ReduceIEOR ) {
+                        red.m_op = ASR::reduction_opType::ReduceIEOR;
                     } else {
                         diag.add(Diagnostic(
                             "Unknown reduction operation",

@@ -1062,6 +1062,11 @@ RUN(NAME intrinsic_reduce_derived_type_01 LABELS llvm)
 RUN(NAME product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME product_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+#gfortran 11-12 does not support reduce()
+RUN(NAME reduce_01 LABELS  llvm llvm_wasm llvm_wasm_emcc) 
+RUN(NAME reduce_02 LABELS  llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME reduce_03 LABELS  llvm llvm_wasm llvm_wasm_emcc )
+
 RUN(NAME reserved_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME reserved_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME reserved_03 LABELS gfortran llvm fortran)
