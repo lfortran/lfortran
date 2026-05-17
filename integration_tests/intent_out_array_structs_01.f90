@@ -1,4 +1,4 @@
-module m
+module intent_out_array_structs_01_mod
     type :: regex_token
         integer :: id
         character(len=:), allocatable :: ccl
@@ -15,7 +15,7 @@ contains
 end module
 
 program intent_out_array_structs
-    use m
+    use intent_out_array_structs_01_mod
     type(regex_pattern) :: p
     call parse_pattern(p)
     if (p%pattern(1)%id /= 1) error stop
