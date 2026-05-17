@@ -17,8 +17,8 @@
                                                     17
                                                     1_git_target_t_object
                                                     16 object
-                                                    git_target_t
-                                                    []
+                                                    fpm_git1
+                                                    [git_target_t]
                                                     object
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     17
                                                     1_git_target_t_url
                                                     16 url
-                                                    git_target_t
-                                                    []
+                                                    fpm_git1
+                                                    [git_target_t]
                                                     url
                                                     Public
                                                 ),
@@ -736,8 +736,8 @@
                                                     13
                                                     1_dependency_config_t_git
                                                     9 git
-                                                    dependency_config_t
-                                                    []
+                                                    fpm_manifest_dependency1
+                                                    [dependency_config_t]
                                                     git
                                                     Public
                                                 ),
@@ -1311,8 +1311,8 @@
                                                     6
                                                     1_executable_config_t_dependency
                                                     5 dependency
-                                                    executable_config_t
-                                                    []
+                                                    fpm_manifest_executable
+                                                    [executable_config_t]
                                                     dependency
                                                     Public
                                                 ),

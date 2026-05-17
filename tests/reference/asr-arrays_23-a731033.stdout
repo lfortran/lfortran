@@ -17,8 +17,8 @@
                                                     4
                                                     1_toml_context_num
                                                     3 num
-                                                    toml_context
-                                                    []
+                                                    arrays_23
+                                                    [toml_context]
                                                     num
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     4
                                                     1_toml_context_ptr
                                                     3 ptr
-                                                    toml_context
-                                                    []
+                                                    arrays_23
+                                                    [toml_context]
                                                     ptr
                                                     Public
                                                 ),

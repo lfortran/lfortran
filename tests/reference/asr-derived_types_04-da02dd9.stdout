@@ -17,8 +17,8 @@
                                                     6
                                                     1_toml_date_day
                                                     4 day
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     day
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     6
                                                     1_toml_date_month
                                                     4 month
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     month
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     6
                                                     1_toml_date_year
                                                     4 year
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     year
                                                     Public
                                                 ),
@@ -227,8 +227,8 @@
                                                     8
                                                     1_toml_date_to_string
                                                     4 to_string
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     to_string
                                                     Public
                                                 ),
@@ -237,8 +237,8 @@
                                                     8
                                                     1_toml_datetime_date
                                                     5 date
-                                                    toml_datetime
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_datetime]
                                                     date
                                                     Public
                                                 ),
@@ -247,8 +247,8 @@
                                                     8
                                                     1_toml_datetime_time
                                                     5 time
-                                                    toml_datetime
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_datetime]
                                                     time
                                                     Public
                                                 ),
@@ -257,8 +257,8 @@
                                                     8
                                                     1_toml_time_to_string
                                                     3 to_string
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     to_string
                                                     Public
                                                 ),
@@ -690,8 +690,8 @@
                                                     9
                                                     1_toml_time_hour
                                                     3 hour
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     hour
                                                     Public
                                                 ),
@@ -700,8 +700,8 @@
                                                     9
                                                     1_toml_time_millisec
                                                     3 millisec
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     millisec
                                                     Public
                                                 ),
@@ -710,8 +710,8 @@
                                                     9
                                                     1_toml_time_minute
                                                     3 minute
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     minute
                                                     Public
                                                 ),
@@ -720,8 +720,8 @@
                                                     9
                                                     1_toml_time_second
                                                     3 second
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     second
                                                     Public
                                                 ),
@@ -730,8 +730,8 @@
                                                     9
                                                     1_toml_time_zone
                                                     3 zone
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     zone
                                                     Public
                                                 ),
@@ -1078,8 +1078,8 @@
                                                     7
                                                     1_toml_time_hour
                                                     3 hour
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     hour
                                                     Public
                                                 ),
@@ -1088,8 +1088,8 @@
                                                     7
                                                     1_toml_time_millisec
                                                     3 millisec
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     millisec
                                                     Public
                                                 ),
@@ -1098,8 +1098,8 @@
                                                     7
                                                     1_toml_time_minute
                                                     3 minute
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     minute
                                                     Public
                                                 ),
@@ -1108,8 +1108,8 @@
                                                     7
                                                     1_toml_time_second
                                                     3 second
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     second
                                                     Public
                                                 ),
@@ -1118,8 +1118,8 @@
                                                     7
                                                     1_toml_time_zone
                                                     3 zone
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     zone
                                                     Public
                                                 ),

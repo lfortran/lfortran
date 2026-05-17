@@ -3232,10 +3232,25 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
                     }
                     module_name = imported_module_name;
                 }
+                // Use the owning module's name as module_name and encode
+                // the struct path in scope_names. This avoids ambiguity
+                // during deserialization when a struct and a top-level module
+                // share the same name.
+                std::string ext_module_name = module_name;
+                char** scope_names_arr = nullptr;
+                size_t n_scope_names = 0;
+                ASR::symbol_t* struct_owner = ASRUtils::get_asr_owner(
+                    ASRUtils::symbol_get_past_external(module_sym));
+                if (struct_owner != nullptr && ASR::is_a<ASR::Module_t>(*struct_owner)) {
+                    ext_module_name = ASRUtils::symbol_name(struct_owner);
+                    scope_names_arr = al.allocate<char*>(1);
+                    scope_names_arr[0] = s2c(al, struct_name);
+                    n_scope_names = 1;
+                }
                 ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_ExternalSymbol_t(
                         al, loc, current_scope, s2c(al, imported_proc_name),
-                        original_sym, s2c(al, module_name), nullptr, 0,
+                        original_sym, s2c(al, ext_module_name), scope_names_arr, n_scope_names,
                         ASRUtils::symbol_name(original_sym), ASR::accessType::Public
                     )
                 );

@@ -384,8 +384,8 @@
                                                     10
                                                     1_omap_map_stored_value
                                                     8 stored_value
-                                                    omap_map
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [omap_map]
                                                     stored_value
                                                     Public
                                                 ),
@@ -599,8 +599,8 @@
                                                     11
                                                     1_integer32complex32orderedmap_map
                                                     9 map
-                                                    integer32complex32orderedmap
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [integer32complex32orderedmap]
                                                     map
                                                     Public
                                                 ),
@@ -609,8 +609,8 @@
                                                     11
                                                     1_omap_map_at_rc
                                                     8 at_rc
-                                                    omap_map
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [omap_map]
                                                     at_rc
                                                     Public
                                                 ),
@@ -619,8 +619,8 @@
                                                     11
                                                     1_omap_map_stored_value
                                                     8 stored_value
-                                                    omap_map
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [omap_map]
                                                     stored_value
                                                     Public
                                                 ),
@@ -1297,8 +1297,8 @@
                                     12
                                     1_integer32complex32orderedmap_insert_key_value
                                     9 insert_key_value
-                                    integer32complex32orderedmap
-                                    []
+                                    gftl2_integer32complex32orderedmap
+                                    [integer32complex32orderedmap]
                                     insert_key_value
                                     Public
                                 ),

@@ -12,8 +12,8 @@
                                     4
                                     1_mytype_a
                                     3 a
-                                    mytype
-                                    []
+                                    derived_types_41_mod
+                                    [mytype]
                                     a
                                     Public
                                 ),
@@ -22,8 +22,8 @@
                                     4
                                     1_mytype_b
                                     3 b
-                                    mytype
-                                    []
+                                    derived_types_41_mod
+                                    [mytype]
                                     b
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     4
                                     1_mytype_c
                                     3 c
-                                    mytype
-                                    []
+                                    derived_types_41_mod
+                                    [mytype]
                                     c
                                     Public
                                 ),

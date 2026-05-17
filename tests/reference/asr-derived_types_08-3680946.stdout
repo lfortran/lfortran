@@ -12,8 +12,8 @@
                                     6
                                     1_rectangle_length
                                     4 length
-                                    rectangle
-                                    []
+                                    shape_mod
+                                    [rectangle]
                                     length
                                     Public
                                 ),
@@ -22,8 +22,8 @@
                                     6
                                     1_rectangle_width
                                     4 width
-                                    rectangle
-                                    []
+                                    shape_mod
+                                    [rectangle]
                                     width
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     6
                                     1_shape_color
                                     3 color
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     color
                                     Public
                                 ),
@@ -42,8 +42,8 @@
                                     6
                                     1_shape_filled
                                     3 filled
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     filled
                                     Public
                                 ),
@@ -52,8 +52,8 @@
                                     6
                                     1_shape_initialize
                                     3 initialize
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     initialize
                                     Public
                                 ),
@@ -62,8 +62,8 @@
                                     6
                                     1_shape_x
                                     3 x
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     x
                                     Public
                                 ),
@@ -72,8 +72,8 @@
                                     6
                                     1_shape_y
                                     3 y
-                                    shape
-                                    []
+                                    shape_mod
+                                    [shape]
                                     y
                                     Public
                                 ),
@@ -334,8 +334,8 @@
                                                     5
                                                     1_shape_color
                                                     3 color
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     color
                                                     Public
                                                 ),
@@ -344,8 +344,8 @@
                                                     5
                                                     1_shape_filled
                                                     3 filled
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     filled
                                                     Public
                                                 ),
@@ -354,8 +354,8 @@
                                                     5
                                                     1_shape_x
                                                     3 x
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     x
                                                     Public
                                                 ),
@@ -364,8 +364,8 @@
                                                     5
                                                     1_shape_y
                                                     3 y
-                                                    shape
-                                                    []
+                                                    shape_mod
+                                                    [shape]
                                                     y
                                                     Public
                                                 ),
