@@ -30,7 +30,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 # xeus does use `dynamic_cast` and thus needs rtti (otherwise it segfaults)
-if (NOT WITH_XEUS)
+if (NOT WITH_XEUS AND NOT XEUS_LFORTRAN_WASM_BUILD)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
     elseif (CMAKE_CXX_COMPILER_ID MATCHES Clang)
@@ -38,7 +38,7 @@ if (NOT WITH_XEUS)
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(LFORTRAN_CXX_NO_RTTI_FLAG "/GR-")
     endif ()
-endif(NOT WITH_XEUS)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
@@ -356,6 +356,73 @@ if (WITH_XEUS)
     install(DIRECTORY ${XEUS_CALCSPEC_DIR}
             DESTINATION ${XJUPYTER_DATA_DIR}
             PATTERN "*.in" EXCLUDE)
+endif()
+
+# XEUS_LFORTRAN_WASM_BUILD — build xlfortran.js/wasm JupyterLite kernel
+set(XEUS_LFORTRAN_WASM_BUILD no CACHE BOOL "Build xlfortran JupyterLite WASM kernel")
+if (XEUS_LFORTRAN_WASM_BUILD)
+    if (NOT EMSCRIPTEN)
+        message(FATAL_ERROR "XEUS_LFORTRAN_WASM_BUILD requires Emscripten (run via emcmake)")
+    endif()
+
+    find_package(xeus 6.0.0 REQUIRED)
+    find_package(xeus-lite REQUIRED)
+    find_package(LLD REQUIRED CONFIG
+        HINTS "${CMAKE_PREFIX_PATH}/lib/cmake/lld"
+    )
+
+    # WasmBuildOptions.cmake lives alongside xeusConfig.cmake;
+    # xeus_DIR is set by find_package(xeus) above.
+    find_file(WASM_BUILD_OPTIONS_CMAKE WasmBuildOptions.cmake
+        HINTS "${xeus_DIR}"
+    )
+    if (NOT WASM_BUILD_OPTIONS_CMAKE)
+        message(FATAL_ERROR "Could not find WasmBuildOptions.cmake (part of xeus)")
+    endif()
+    include(${WASM_BUILD_OPTIONS_CMAKE})
+
+    set(HAVE_LFORTRAN_XEUS yes)
+
+    # Generate kernel.json for xlfortran (no argv path needed — kernel is a
+    # JS module loaded directly by JupyterLite)
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xlfortran/kernel.json.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xlfortran/kernel.json"
+    )
+
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xlfortran/lfortran-logo.svg"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xlfortran/logo-svg.svg"
+        COPYONLY
+    )
+
+    set(XJUPYTER_DATA_DIR "share/jupyter" CACHE STRING "Jupyter data directory")
+    set(XEUS_CALCSPEC_DIR ${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels)
+    install(DIRECTORY ${XEUS_CALCSPEC_DIR}
+            DESTINATION ${XJUPYTER_DATA_DIR}
+            PATTERN "*.in" EXCLUDE)
+
+    add_executable(xlfortran
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/fortran_kernel.cpp
+    )
+    target_include_directories(xlfortran PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_BINARY_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran
+        ${CMAKE_CURRENT_BINARY_DIR}/src/lfortran
+    )
+    target_link_libraries(xlfortran PRIVATE
+        lfortran_lib
+        xeus-lite
+    )
+    xeus_wasm_compile_options(xlfortran)
+    xeus_wasm_link_options(xlfortran "web,worker")
+
+    install(FILES
+        "$<TARGET_FILE_DIR:xlfortran>/xlfortran.js"
+        "$<TARGET_FILE_DIR:xlfortran>/xlfortran.wasm"
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 endif()
 
 # JSON OR LSP (`conda install rapidjson`)
