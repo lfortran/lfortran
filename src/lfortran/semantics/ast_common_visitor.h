@@ -16525,9 +16525,19 @@ public:
                 }
             }
         }
-        bool is_scalar_var = ASR::is_a<ASR::Variable_t>(*v) && !ASRUtils::is_array(ASRUtils::symbol_type(v)) &&
-                            !ASRUtils::is_symbol_procedure_variable(v);
-        if (v && !compiler_options.implicit_interface && (is_external_procedure || is_scalar_var)) {
+        bool is_current_function_return_var = false;
+        if (v && ASR::is_a<ASR::Variable_t>(*v) && current_scope->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+            ASR::Function_t* current_function = ASR::down_cast<ASR::Function_t>(
+                ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+            is_current_function_return_var = current_function->m_return_var &&
+                ASR::is_a<ASR::Var_t>(*current_function->m_return_var) &&
+                ASR::down_cast<ASR::Var_t>(current_function->m_return_var)->m_v == v;
+        }
+        bool is_scalar_var = v && ASR::is_a<ASR::Variable_t>(*v) && !ASRUtils::is_array(ASRUtils::symbol_type(v)) &&
+                            !ASRUtils::is_symbol_procedure_variable(v) && !is_current_function_return_var;
+        if (v && !compiler_options.implicit_interface && !not_resolvable_to_fncall && (is_external_procedure || is_scalar_var)) {
             /*
                 Case: ./integration_tests/external_01.f90
                 We have `enorm` declared outside current_scope. Check if it is a function
