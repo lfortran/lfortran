@@ -45,6 +45,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
@@ -6096,6 +6097,41 @@ public:
         finish_module_init_function_prototype(x);
 
         visit_procedures(x);
+
+        if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
+            std::string mod_name_str = std::string(x.m_name);
+            std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
+
+            // Guard: only emit once per module (re-entrant visit protection)
+            if (!module->getFunction(finalizer_name)) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), /*isVarArg=*/false);
+                llvm::Function *fin_fn = llvm::Function::Create(
+                    ft,
+                    llvm::GlobalValue::LinkOnceODRLinkage,
+                    finalizer_name,
+                    module.get());
+
+                llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(
+                    context, "entry", fin_fn);
+
+                llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+                llvm::BasicBlock::iterator saved_ip = builder->GetInsertPoint();
+
+                builder->SetInsertPoint(fin_bb);
+
+                llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+
+                builder->CreateRetVoid();
+
+                if (saved_bb) {
+                    builder->SetInsertPoint(saved_bb, saved_ip);
+                }
+
+                llvm::appendToGlobalDtors(*module, fin_fn, 200);
+            }
+        }
+
         mangle_prefix = "";
         current_scope = current_scope_copy;
     }
@@ -6226,8 +6262,6 @@ public:
                 llvm::APInt(32, compiler_options.fpe_traps));
             builder->CreateCall(fpe_fn, {mask_val});
         }
-        // Enable CFI debug mode so CFI_allocate/CFI_deallocate use the
-        // tracked allocator, keeping them in sync with Fortran allocate/deallocate.
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = module->getFunction("_lfortran_set_cfi_debug_mode");
             if (!fn) {
@@ -6277,40 +6311,50 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
-        // Free globals if detecting leaks is ON, to print clean report
-        if(compiler_options.detect_leaks){
-            SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
-            for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
-                auto &sym = name_sym_pair.second;
-                if(ASR::is_a<ASR::Module_t>(*sym)){
-                    llvm_symtab_finalizer.finalize_symtab(
-                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
-                }
+        
+        free_heap_fixed_size_arrays(); 
+        if (compiler_options.detect_leaks) {
+            llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+
+            // Create ONE unified destructor function
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+            llvm::Function *dtor_fn = llvm::Function::Create(void_ft,
+                llvm::Function::InternalLinkage, "_lfortran_program_dtor", module.get());
+            llvm::BasicBlock *dtor_bb = llvm::BasicBlock::Create(context, "entry", dtor_fn);
+            builder->SetInsertPoint(dtor_bb);
+
+            // 1. Run the report
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if (!fn_dbg) {
+                fn_dbg = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
             }
-        }
-        free_heap_fixed_size_arrays();
-        {
-            llvm::Function *fn_finalize = module->getFunction(
-                "_lfortran_internal_alloc_finalize");
+            builder->CreateCall(fn_dbg, {});
+            
+            // 2. Safely shut down the memory tracker
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
-                llvm::FunctionType *ft = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn_finalize = llvm::Function::Create(ft,
-                    llvm::Function::ExternalLinkage,
-                    "_lfortran_internal_alloc_finalize", module.get());
+                fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
+            }
+            builder->CreateCall(fn_finalize, {});
+
+            builder->CreateRetVoid();
+            
+            // Register this unified block to run absolute last (Priority 0)
+            llvm::appendToGlobalDtors(*module, dtor_fn, 0);
+
+            if (saved_bb) builder->SetInsertPoint(saved_bb);
+            else builder->ClearInsertionPoint();
+            
+        } else {
+            // When not detecting leaks, just shut down safely inline
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
+            if (!fn_finalize) {
+                llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+                fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
             }
             builder->CreateCall(fn_finalize, {});
         }
-        if (compiler_options.detect_leaks) {
-            llvm::Function *fn = module->getFunction("dbg_report");
-            if(!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "dbg_report", module.get());
-            }
-            builder->CreateCall(fn, {});
-        }
+        
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -6334,9 +6378,8 @@ public:
             add_wasm_start_function();
         }
 #endif
-    }
-
-    /*
+    }   
+     /*
     * This function detects if the current variable is an argument.
     * of a function or argument. Some manipulations are to be done
     * only on arguments and not on local variables.
@@ -9062,7 +9105,6 @@ public:
 
         // Get rank from base array
         int n_dims = ASRUtils::extract_n_dims_from_ttype(base_struct_array_type);
-
         LCOMPILERS_ASSERT(n_dims == 1 );
 
         // Compute the stride multiplier: sizeof(struct) / sizeof(component)
@@ -9070,8 +9112,8 @@ public:
         llvm::DataLayout data_layout(module->getDataLayout());
         uint64_t struct_size = data_layout.getTypeAllocSize(struct_llvm_type);
         uint64_t component_size = data_layout.getTypeAllocSize(component_llvm_type);
-    
         LCOMPILERS_ASSERT(component_size > 0);
+    
 
         uint64_t stride_multiplier = struct_size / component_size;
 
