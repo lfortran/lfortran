@@ -3639,7 +3639,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
-                } } else if (tolower(value[0]) == 'f') {
+                } else if (tolower(value[0]) == 'f') {
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
                     FloatFormatType float_fmt_type = (FloatFormatType)float_fmt_enum;
                     
