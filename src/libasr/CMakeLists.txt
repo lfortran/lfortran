@@ -31,6 +31,7 @@ set(SRC
 
     pass/nested_vars.cpp
     pass/array_struct_temporary.cpp
+    pass/fuse_array_reduction.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
     pass/array_passed_in_function_call.cpp
