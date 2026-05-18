@@ -850,7 +850,7 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
 }
 
 void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface,
-        std::map<std::string, ASR::symbol_t*> changed_external_function_symbol) {
+    std::map<std::pair<SymbolTable*, std::string>, ASR::symbol_t*> changed_external_function_symbol) {
     /*
         Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args
         and update the args if they are equal to the old symbol
@@ -882,8 +882,8 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
         Allocator &al;
         SymbolTable* scope = current_scope;
         ArgsReplacer replacer;
-        std::map<std::string, ASR::symbol_t*> &changed_external_function_symbol;
-        ArgsVisitor(Allocator &al_, std::map<std::string, ASR::symbol_t*> &changed_external_function_symbol_) : al(al_), replacer(al_),
+        std::map<std::pair<SymbolTable*, std::string>, ASR::symbol_t*> &changed_external_function_symbol;
+        ArgsVisitor(Allocator &al_, std::map<std::pair<SymbolTable*, std::string>, ASR::symbol_t*> &changed_external_function_symbol_) : al(al_), replacer(al_),
                     changed_external_function_symbol(changed_external_function_symbol_) {}
 
         void call_replacer_(ASR::symbol_t* new_sym) {
@@ -947,15 +947,22 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
             std::map<std::string, ASR::symbol_t*> scope_ = scope->get_scope();
             std::vector<std::string> symbols_to_duplicate;
             for (auto it: scope_) {
-                if (changed_external_function_symbol.find(it.first) != changed_external_function_symbol.end() &&
-                    is_external_sym_changed(it.second, changed_external_function_symbol[it.first])) {
+                auto key = std::make_pair(scope, it.first);
+                auto it_changed = changed_external_function_symbol.find(key);
+                if (it_changed != changed_external_function_symbol.end() &&
+                    is_external_sym_changed(it.second, it_changed->second)) {
                     symbols_to_duplicate.push_back(it.first);
                 }
             }
 
             for (auto it: symbols_to_duplicate) {
+                auto key = std::make_pair(scope, it);
+                auto it_changed = changed_external_function_symbol.find(key);
+                if (it_changed == changed_external_function_symbol.end()) {
+                    continue;
+                }
                 scope->erase_symbol(it);
-                symbol_duplicator.duplicate_symbol(changed_external_function_symbol[it], scope);
+                symbol_duplicator.duplicate_symbol(it_changed->second, scope);
             }
 
             for (size_t i = 0; i < func->n_args; i++) {

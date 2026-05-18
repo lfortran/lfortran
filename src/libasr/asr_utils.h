@@ -2769,7 +2769,7 @@ static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::sym
 }
 
 void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface,
-        std::map<std::string, ASR::symbol_t*> changed_external_function_symbol);
+    std::map<std::pair<SymbolTable*, std::string>, ASR::symbol_t*> changed_external_function_symbol);
 
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);

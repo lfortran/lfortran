@@ -7232,7 +7232,7 @@ public:
             }
             // check if external sym is updated, or: say if signature of external_sym and original_sym are different
             if (original_sym && external_sym && is_external && ASRUtils::is_external_sym_changed(original_sym, external_sym)) {
-                changed_external_function_symbol[ASRUtils::symbol_name(original_sym)] = original_sym;
+                changed_external_function_symbol[{current_scope, ASRUtils::symbol_name(original_sym)}] = original_sym;
             }
             // remove from external_procedures_mapping
             if (original_sym && is_external) {
