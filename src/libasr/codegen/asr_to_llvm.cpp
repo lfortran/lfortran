@@ -25320,7 +25320,7 @@ public:
             llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(arg, asr_type, module.get());
             tmp = llvm_utils->CreateLoad2(class_type, tmp);
         }
-        if( n_dims > 0 ) {
+        if( n_dims > 0 || ASRUtils::is_array(asr_type) ) {
             visit_expr_load_wrapper(arg, 1, true);
             tmp = arr_descr->get_is_allocated_flag(tmp, arg);
         } else if (ASRUtils::is_character(*expr_type(arg))) {
