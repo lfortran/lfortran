@@ -6227,35 +6227,49 @@ public:
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
         
-        free_heap_fixed_size_arrays();
-        {
-            llvm::Function *fn_finalize = module->getFunction(
-                "_lfortran_internal_alloc_finalize");
-            if (!fn_finalize) {
-                llvm::FunctionType *ft = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn_finalize = llvm::Function::Create(ft,
-                    llvm::Function::ExternalLinkage,
-                    "_lfortran_internal_alloc_finalize", module.get());
+        free_heap_fixed_size_arrays(); 
+        if (compiler_options.detect_leaks) {
+            llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+
+            // Create ONE unified destructor function
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+            llvm::Function *dtor_fn = llvm::Function::Create(void_ft,
+                llvm::Function::InternalLinkage, "_lfortran_program_dtor", module.get());
+            llvm::BasicBlock *dtor_bb = llvm::BasicBlock::Create(context, "entry", dtor_fn);
+            builder->SetInsertPoint(dtor_bb);
+
+            // 1. Run the report
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if (!fn_dbg) {
+                fn_dbg = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
             }
+            builder->CreateCall(fn_dbg, {});
             
-            if (compiler_options.detect_leaks) {
-                llvm::appendToGlobalDtors(*module, fn_finalize, 0); 
-            } else {
-                builder->CreateCall(fn_finalize, {});
+            // 2. Safely shut down the memory tracker
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
+            if (!fn_finalize) {
+                fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
             }
+            builder->CreateCall(fn_finalize, {});
+
+            builder->CreateRetVoid();
+            
+            // Register this unified block to run absolute last (Priority 0)
+            llvm::appendToGlobalDtors(*module, dtor_fn, 0);
+
+            if (saved_bb) builder->SetInsertPoint(saved_bb);
+            else builder->ClearInsertionPoint();
+            
+        } else {
+            // When not detecting leaks, just shut down safely inline
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
+            if (!fn_finalize) {
+                llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+                fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
+            }
+            builder->CreateCall(fn_finalize, {});
         }
         
-        if (compiler_options.detect_leaks) {
-            llvm::Function *fn = module->getFunction("dbg_report");
-            if (!fn) {
-                llvm::FunctionType *ft = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context),false);
-                fn = llvm::Function::Create(ft,
-                    llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
-            }
-            llvm::appendToGlobalDtors(*module, fn, 0); 
-        }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -6279,9 +6293,8 @@ public:
             add_wasm_start_function();
         }
 #endif
-    }
-
-    /*
+    }   
+     /*
     * This function detects if the current variable is an argument.
     * of a function or argument. Some manipulations are to be done
     * only on arguments and not on local variables.
