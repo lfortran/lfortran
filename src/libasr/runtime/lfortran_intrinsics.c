@@ -2942,7 +2942,7 @@ static inline char* write_to_result_at_pos(lfortran_allocator_t* al,
 
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode, int *round_mode, int *pad_mode);
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
+LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, int32_t float_fmt_enum, const char* serialization_string,
     int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, ...)
 {
     va_list args;
@@ -3639,16 +3639,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
                     result_len += temp_len;
                     internal_free(temp_buf);
-                } else if (tolower(value[0]) == 'f') {
+                } } else if (tolower(value[0]) == 'f') {
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    FloatFormatType float_fmt_type;
-                    if (strcmp(value, "f-64") == 0) {
-                        float_fmt_type = FLOAT_FORMAT_F64;
-                    } else if (strcmp(value, "f-32") == 0) {
-                        float_fmt_type = FLOAT_FORMAT_F32;
-                    } else {
-                        float_fmt_type = FLOAT_FORMAT_CUSTOM;
-                    }
+                    FloatFormatType float_fmt_type = (FloatFormatType)float_fmt_enum;
+                    
                     handle_float(float_fmt_type, value, double_val, scale, &temp_buf, is_SP_specifier, rounding_mode);
                     if (decimal_mode == 1) {
                         for(int i = 0; temp_buf[i]; i++) {

@@ -26193,11 +26193,22 @@ public:
     }
 
     void visit_StringFormat(const ASR::StringFormat_t& x) {
-        // TODO: Handle some things at compile time if possible:
-        //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
-        // if (fmt_value) ...
         if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
             std::vector<llvm::Value *> args;
+
+            int32_t float_enum_val = 2; 
+            if (x.m_fmt != nullptr) {
+                ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
+                if (fmt_value && ASR::is_a<ASR::StringConstant_t>(*fmt_value)) {
+                    std::string fmt_str = std::string(ASR::down_cast<ASR::StringConstant_t>(fmt_value)->m_s);
+                    if (fmt_str.find("f-64") != std::string::npos) {
+                        float_enum_val = 0; 
+                    } else if (fmt_str.find("f-32") != std::string::npos) {
+                        float_enum_val = 1; 
+                    }
+                }
+            }
+           
             // Push fmt string.
             if(x.m_fmt == nullptr){ // default formatting
                 llvm::Type* int8Type = builder->getInt8Ty();
@@ -26205,6 +26216,8 @@ public:
                 llvm::Constant* nullCharPtr = llvm::ConstantPointerNull::get(charPtrType);
                 args.push_back(nullCharPtr);
                 args.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                
+                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), float_enum_val));
             } else {
                 llvm::Value* fmt_data, *fmt_len;
                 std::tie(fmt_data, fmt_len) = get_string_data_and_length(x.m_fmt);
@@ -26223,6 +26236,8 @@ public:
                 }
                 args.push_back(fmt_data);
                 args.push_back(fmt_len);
+
+                args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), float_enum_val));
             }
             // Push Serialization;
             llvm::Value* serialization_info = SerializeExprTypes(x.m_args, x.n_args);
@@ -26334,10 +26349,10 @@ public:
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
                                                     arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray));
                         ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(
-                                                                ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
-                                                                x.m_args[i],arr->m_physical_type,
-                                                                ASR::array_physical_typeType::PointerArray,
-                                                                array_type, nullptr));
+                                                        ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
+                                                        x.m_args[i],arr->m_physical_type,
+                                                        ASR::array_physical_typeType::PointerArray,
+                                                        array_type, nullptr));
                         this->visit_expr(*array_casted_to_pointer);
                     } else {
                         this->visit_expr(*x.m_args[i]);

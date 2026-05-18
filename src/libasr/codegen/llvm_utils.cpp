@@ -340,22 +340,23 @@ namespace LCompilers {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     {llvm::Type::getInt8Ty(context)->getPointerTo(), // allocator
-                    llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    llvm::Type::getInt64Ty(context)->getPointerTo(),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context)}, true);
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),  // format
+                    llvm::Type::getInt64Ty(context),                 // format_len
+                    llvm::Type::getInt32Ty(context),                 // NEW: float_format_enum
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),  // serialization_string
+                    llvm::Type::getInt64Ty(context)->getPointerTo(), // result_size
+                    llvm::Type::getInt32Ty(context),                 // array_sizes_cnt
+                    llvm::Type::getInt32Ty(context),                 // string_lengths_cnt
+                    llvm::Type::getInt32Ty(context),                 // decimal_mode
+                    llvm::Type::getInt32Ty(context),                 // sign_mode
+                    llvm::Type::getInt32Ty(context)}, true);         // round_mode
             fn_printf = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", module);
         }
 
         std::vector<llvm::Value*> full_args;
         full_args.push_back(get_allocator(module));
-        // args contains 6 fixed arguments, then variadic arguments.
-        for (size_t i = 0; i < 6 && i < args.size(); i++) {
+        for (size_t i = 0; i < 7 && i < args.size(); i++) { // CHANGED: 6 to 7
             full_args.push_back(args[i]);
         }
         if (decimal_mode) {
@@ -373,7 +374,7 @@ namespace LCompilers {
         } else {
             full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
         }
-        for (size_t i = 6; i < args.size(); i++) {
+        for (size_t i = 7; i < args.size(); i++) { 
             full_args.push_back(args[i]);
         }
         auto ret = builder->CreateCall(fn_printf, full_args);
