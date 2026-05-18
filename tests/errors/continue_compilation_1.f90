@@ -298,8 +298,8 @@ program continue_compilation_1
     contiguous :: contig_not_declared
     contiguous :: MyClass
     class(Derived), allocatable :: derived_cls
-    integer, parameter :: m(1) = 2
-    integer, parameter :: qval(2) = reshape([7, 8], -[m])
+    integer, parameter :: z(1) = 2
+    integer, parameter :: qval(2) = reshape([7, 8], -[z])
 
 
 
