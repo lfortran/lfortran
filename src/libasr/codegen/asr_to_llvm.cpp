@@ -6238,8 +6238,14 @@ public:
                     llvm::Function::ExternalLinkage,
                     "_lfortran_internal_alloc_finalize", module.get());
             }
-            builder->CreateCall(fn_finalize, {});
+            
+            if (compiler_options.detect_leaks) {
+                llvm::appendToGlobalDtors(*module, fn_finalize, 0); 
+            } else {
+                builder->CreateCall(fn_finalize, {});
+            }
         }
+        
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = module->getFunction("dbg_report");
             if (!fn) {
