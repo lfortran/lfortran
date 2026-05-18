@@ -456,6 +456,7 @@ static int f128_cmp_internal(lf_float128 a, lf_float128 b) {
     return as ? -mag : mag;  /* if negative, flip */
 }
 
+#if !defined(__wasm32__)
 int __eqtf2   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) == 0 ? 0 : 1; }
 int __netf2   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) != 0 ? 1 : 0; }
 int __lttf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
@@ -463,6 +464,7 @@ int __letf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); ret
 int __gttf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
 int __getf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
 int __unordtf2(lf_float128 a, lf_float128 b) { return (f128_is_nan(a)||f128_is_nan(b))?1:0; }
+#endif
 
 /* ========================================================================
  * E. Negation / Abs
@@ -740,7 +742,7 @@ lf_float128 __extendsftf2_lf_impl(float f) {
     return f128_pack_parts(sign, exp, mant);
 }
 
-double __trunctfdf2(lf_float128 a) {
+double __trunctfdf2_lf_impl(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan) return NAN;
     if (p.is_inf) return p.sign ? -INFINITY : INFINITY;
@@ -769,8 +771,8 @@ double __trunctfdf2(lf_float128 a) {
     double r; memcpy(&r, &bits, 8); return r;
 }
 
-float __trunctfsf2(lf_float128 a) {
-    return (float)__trunctfdf2(a);  /* double handles the precision */
+float __trunctfsf2_lf_impl(lf_float128 a) {
+    return (float)__trunctfdf2_lf_impl(a);  /* double handles the precision */
 }
 
 lf_float128 __floatsitf_lf_impl(int32_t x) {
@@ -840,7 +842,7 @@ lf_float128 lf_f128_sqrt(lf_float128 a) {
      * Start from double sqrt, then refine. */
 
     /* Initial guess from double */
-    double da = __trunctfdf2(a);
+    double da = __trunctfdf2_lf_impl(a);
     double dsqrt;
     /* Use __builtin_sqrt if available, else manual Newton in double */
     {
@@ -1011,7 +1013,7 @@ lf_float128 lf_f128_exp(lf_float128 a) {
 
     /* Overflow/underflow bounds: exp(11356) > max_f128, exp(-11357) < min_subnormal */
     if (p.exp > 13) {   /* |a| > 8192 roughly */
-        double da = __trunctfdf2(a);
+        double da = __trunctfdf2_lf_impl(a);
         if (da > 11356.0) return f128_make_inf(0);
         if (da < -11357.0) return f128_make_zero(0);
     }
@@ -1026,7 +1028,7 @@ lf_float128 lf_f128_exp(lf_float128 a) {
                     f128_const(p.sign, 16382, 0, 0)));  /* fn + 0.5*sign, then trunc */
     /* simpler: */
     {
-        double dv = __trunctfdf2(fn);
+        double dv = __trunctfdf2_lf_impl(fn);
         n = (int64_t)(dv >= 0 ? (int64_t)(dv + 0.5) : (int64_t)(dv - 0.5));
     }
     lf_float128 fn128 = __floatditf_lf_impl(n);
@@ -1162,9 +1164,9 @@ static int sincos_reduce(lf_float128 x, lf_float128 *r) {
 
     /* Octant */
     int octant = 0;
-    if (__gttf2(xr, pi) > 0)        { xr = __subtf3_lf_impl(xr, pi);  octant += 4; }
-    if (__gttf2(xr, pi_2) > 0)      { xr = __subtf3_lf_impl(xr, pi_2); octant += 2; }
-    if (__gttf2(xr, pi_4) > 0)      { xr = __subtf3_lf_impl(xr, pi_4); xr = __subtf3_lf_impl(pi_4, xr); octant += 1; }
+    if (f128_cmp_internal(xr, pi) > 0)        { xr = __subtf3_lf_impl(xr, pi);  octant += 4; }
+    if (f128_cmp_internal(xr, pi_2) > 0)      { xr = __subtf3_lf_impl(xr, pi_2); octant += 2; }
+    if (f128_cmp_internal(xr, pi_4) > 0)      { xr = __subtf3_lf_impl(xr, pi_4); xr = __subtf3_lf_impl(pi_4, xr); octant += 1; }
     *r = xr;
     return octant;
 }
@@ -1650,7 +1652,7 @@ lf_float128 lf_float128_from_str(const char *s) {
 /* ========================================================================
  * P. Non-ARM64 thin wrappers (restore public names)
  * ======================================================================== */
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(__wasm32__)
 lf_float128 __addtf3(lf_float128 a, lf_float128 b)  { return __addtf3_lf_impl(a, b); }
 lf_float128 __subtf3(lf_float128 a, lf_float128 b)  { return __subtf3_lf_impl(a, b); }
 lf_float128 __multf3(lf_float128 a, lf_float128 b)  { return __multf3_lf_impl(a, b); }
@@ -1658,11 +1660,138 @@ lf_float128 __divtf3(lf_float128 a, lf_float128 b)  { return __divtf3_lf_impl(a,
 lf_float128 __negtf2(lf_float128 a)                 { return __negtf2_lf_impl(a); }
 lf_float128 __extenddftf2(double a)                 { return __extenddftf2_lf_impl(a); }
 lf_float128 __extendsftf2(float a)                  { return __extendsftf2_lf_impl(a); }
+double      __trunctfdf2(lf_float128 a)             { return __trunctfdf2_lf_impl(a); }
+float       __trunctfsf2(lf_float128 a)             { return __trunctfsf2_lf_impl(a); }
 lf_float128 __floatsitf(int32_t a)                  { return __floatsitf_lf_impl(a); }
 lf_float128 __floatditf(int64_t a)                  { return __floatditf_lf_impl(a); }
 lf_float128 __floatunditf(uint64_t a)               { return __floatunditf_lf_impl(a); }
 int32_t     __fixtfsi(lf_float128 a)                { return __fixtfsi_lf_impl(a); }
 int64_t     __fixtfdi(lf_float128 a)                { return __fixtfdi_lf_impl(a); }
+#endif
+
+/* ========================================================================
+ * P2. WASM32 fp128 ABI wrappers
+ *
+ * LLVM lowers fp128 soft-float calls on wasm32 as low/high i64 words, not as
+ * byval C structs. Keep the portable implementation struct-based internally,
+ * but export the compiler-rt symbols with the ABI LLVM expects.
+ * ======================================================================== */
+#if defined(__wasm32__)
+
+static lf_float128 f128_from_words(uint64_t lo, uint64_t hi) {
+    lf_float128 r;
+    memcpy(r.bytes, &lo, 8);
+    memcpy(r.bytes + 8, &hi, 8);
+    return r;
+}
+
+static void f128_store_words(lf_float128 *out, lf_float128 v) {
+    memcpy(out->bytes, v.bytes, 16);
+}
+
+void __addtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+        uint64_t b_lo, uint64_t b_hi) {
+    f128_store_words(out, __addtf3_lf_impl(
+        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
+}
+
+void __subtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+        uint64_t b_lo, uint64_t b_hi) {
+    f128_store_words(out, __subtf3_lf_impl(
+        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
+}
+
+void __multf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+        uint64_t b_lo, uint64_t b_hi) {
+    f128_store_words(out, __multf3_lf_impl(
+        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
+}
+
+void __divtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+        uint64_t b_lo, uint64_t b_hi) {
+    f128_store_words(out, __divtf3_lf_impl(
+        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
+}
+
+void __negtf2(lf_float128 *out, uint64_t a_lo, uint64_t a_hi) {
+    f128_store_words(out, __negtf2_lf_impl(f128_from_words(a_lo, a_hi)));
+}
+
+void __extenddftf2(lf_float128 *out, double a) {
+    f128_store_words(out, __extenddftf2_lf_impl(a));
+}
+
+void __extendsftf2(lf_float128 *out, float a) {
+    f128_store_words(out, __extendsftf2_lf_impl(a));
+}
+
+double __trunctfdf2(uint64_t a_lo, uint64_t a_hi) {
+    return __trunctfdf2_lf_impl(f128_from_words(a_lo, a_hi));
+}
+
+float __trunctfsf2(uint64_t a_lo, uint64_t a_hi) {
+    return __trunctfsf2_lf_impl(f128_from_words(a_lo, a_hi));
+}
+
+void __floatsitf(lf_float128 *out, int32_t a) {
+    f128_store_words(out, __floatsitf_lf_impl(a));
+}
+
+void __floatditf(lf_float128 *out, int64_t a) {
+    f128_store_words(out, __floatditf_lf_impl(a));
+}
+
+void __floatunditf(lf_float128 *out, uint64_t a) {
+    f128_store_words(out, __floatunditf_lf_impl(a));
+}
+
+int32_t __fixtfsi(uint64_t a_lo, uint64_t a_hi) {
+    return __fixtfsi_lf_impl(f128_from_words(a_lo, a_hi));
+}
+
+int64_t __fixtfdi(uint64_t a_lo, uint64_t a_hi) {
+    return __fixtfdi_lf_impl(f128_from_words(a_lo, a_hi));
+}
+
+int __eqtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+    return f128_cmp_internal(f128_from_words(a_lo, a_hi),
+        f128_from_words(b_lo, b_hi)) == 0 ? 0 : 1;
+}
+
+int __netf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+    return f128_cmp_internal(f128_from_words(a_lo, a_hi),
+        f128_from_words(b_lo, b_hi)) != 0 ? 1 : 0;
+}
+
+int __lttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
+        f128_from_words(b_lo, b_hi));
+    return c >= 2 ? 1 : c;
+}
+
+int __letf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
+        f128_from_words(b_lo, b_hi));
+    return c >= 2 ? 1 : c;
+}
+
+int __gttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
+        f128_from_words(b_lo, b_hi));
+    return c >= 2 ? 1 : c;
+}
+
+int __getf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
+        f128_from_words(b_lo, b_hi));
+    return c >= 2 ? 1 : c;
+}
+
+int __unordtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+    return (f128_is_nan(f128_from_words(a_lo, a_hi)) ||
+        f128_is_nan(f128_from_words(b_lo, b_hi))) ? 1 : 0;
+}
+
 #endif
 
 /* ========================================================================
@@ -1686,7 +1815,7 @@ int64_t     __fixtfdi(lf_float128 a)                { return __fixtfdi_lf_impl(a
  * macOS asm symbol mangling: leading underscore required.
  * Linux/ELF: no leading underscore.
  * ======================================================================== */
-#if defined(__aarch64__)
+#if defined(__aarch64__) && !defined(__wasm32__)
 
 #if defined(__APPLE__)
 #  define _LF_SYM(n) "_" #n
@@ -1825,7 +1954,7 @@ LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) { return (isnanq(a)||is
 #else /* !LFORTRAN_HAVE_REAL128 — expose the struct-based helpers used by intrinsics.c */
 
 lf_float128 lf_f128_from_double(double d)     { return __extenddftf2_lf_impl(d); }
-double       lf_f128_to_double(lf_float128 v) { return __trunctfdf2(v); }
+double       lf_f128_to_double(lf_float128 v) { return __trunctfdf2_lf_impl(v); }
 int lf_f128_isnan   (lf_float128 v) { return f128_is_nan(v); }
 int lf_f128_isinf   (lf_float128 v) { return f128_is_inf(v); }
 int lf_f128_signbit (lf_float128 v) { return f128_sign(v); }

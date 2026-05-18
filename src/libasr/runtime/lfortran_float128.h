@@ -50,7 +50,7 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b);
 lf_float128 __negtf2_lf_impl(lf_float128 a);
 
 /* On non-ARM64 (and non-sret) platforms the public symbols are thin wrappers */
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(__wasm32__)
 lf_float128 __addtf3(lf_float128 a, lf_float128 b);
 lf_float128 __subtf3(lf_float128 a, lf_float128 b);
 lf_float128 __multf3(lf_float128 a, lf_float128 b);
@@ -65,8 +65,8 @@ lf_float128 __negtf2(lf_float128 a);
 /* fp128 <-> floating-point */
 lf_float128 __extenddftf2_lf_impl(double a);   /* double  -> fp128 */
 lf_float128 __extendsftf2_lf_impl(float  a);   /* float   -> fp128 */
-double       __trunctfdf2(lf_float128 a);       /* fp128   -> double */
-float        __trunctfsf2(lf_float128 a);       /* fp128   -> float  */
+double       __trunctfdf2_lf_impl(lf_float128 a); /* fp128 -> double */
+float        __trunctfsf2_lf_impl(lf_float128 a); /* fp128 -> float  */
 
 /* fp128 <-> integer */
 lf_float128 __floatsitf_lf_impl(int32_t  a);   /* int32   -> fp128 */
@@ -75,14 +75,16 @@ lf_float128 __floatunditf_lf_impl(uint64_t a); /* uint64  -> fp128 */
 int32_t      __fixtfsi_lf_impl(lf_float128 a);      /* fp128   -> int32  */
 int64_t      __fixtfdi_lf_impl(lf_float128 a);      /* fp128   -> int64  */
 
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(__wasm32__)
 int32_t      __fixtfsi(lf_float128 a);              /* fp128   -> int32  */
 int64_t      __fixtfdi(lf_float128 a);              /* fp128   -> int64  */
 #endif
 
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(__wasm32__)
 lf_float128 __extenddftf2(double a);
 lf_float128 __extendsftf2(float  a);
+double       __trunctfdf2(lf_float128 a);
+float        __trunctfsf2(lf_float128 a);
 lf_float128 __floatsitf(int32_t  a);
 lf_float128 __floatditf(int64_t  a);
 lf_float128 __floatunditf(uint64_t a);
@@ -91,6 +93,7 @@ lf_float128 __floatunditf(uint64_t a);
 /* ========================================================================
  * Comparisons  (return int, no sret — same on all platforms)
  * ======================================================================== */
+#if !defined(__wasm32__)
 int __eqtf2   (lf_float128 a, lf_float128 b); /* 0 if a==b,   else 1  */
 int __netf2   (lf_float128 a, lf_float128 b); /* 0 if a==b,   else 1  */
 int __lttf2   (lf_float128 a, lf_float128 b); /* <0 if a<b            */
@@ -98,6 +101,7 @@ int __letf2   (lf_float128 a, lf_float128 b); /* ≤0 if a≤b            */
 int __gttf2   (lf_float128 a, lf_float128 b); /* >0 if a>b            */
 int __getf2   (lf_float128 a, lf_float128 b); /* ≥0 if a≥b            */
 int __unordtf2(lf_float128 a, lf_float128 b); /* 1 if a or b is NaN   */
+#endif
 
 /* ========================================================================
  * Math — Fortran intrinsics for real(16)
