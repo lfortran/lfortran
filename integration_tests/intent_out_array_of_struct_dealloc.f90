@@ -6,6 +6,14 @@ module intent_out_array_of_struct_dealloc_m
         real :: val
         real, allocatable, dimension(:) :: history
     end type metric_dict_type
+
+    type :: tt2
+        integer, allocatable :: xx
+    end type tt2
+
+    type :: tt
+        type(tt2) :: internal
+    end type tt
 contains
     subroutine metric_dict_alloc(input, source)
         type(metric_dict_type), dimension(:), intent(out) :: input
@@ -16,13 +24,18 @@ contains
             allocate(input(i)%history(size(source(i)%history, dim=1)))
         end do
     end subroutine metric_dict_alloc
+
+    subroutine reset_nested(kk)
+        type(tt), intent(out) :: kk(:)
+    end subroutine reset_nested
 end module intent_out_array_of_struct_dealloc_m
 
 program intent_out_array_of_struct_dealloc
-    use intent_out_array_of_struct_dealloc_m, only: metric_dict_type, metric_dict_alloc
+    use intent_out_array_of_struct_dealloc_m
     implicit none
 
     type(metric_dict_type), allocatable, dimension(:) :: arr1, arr2
+    type(tt) :: instance(10)
     integer :: i
 
     allocate(arr1(2))
@@ -46,4 +59,10 @@ program intent_out_array_of_struct_dealloc
         if (size(arr2(i)%history) /= 3) error stop 2
         if (arr2(i)%key /= arr1(i)%key) error stop 3
     end do
+    
+    allocate(instance(1)%internal%xx)
+    allocate(instance(7)%internal%xx)
+    call reset_nested(instance)
+    if (allocated(instance(1)%internal%xx)) error stop 4
+    if (allocated(instance(7)%internal%xx)) error stop 5
 end program intent_out_array_of_struct_dealloc
