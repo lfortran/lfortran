@@ -921,9 +921,9 @@ public:
             if (!name_matches && m != nullptr && x.n_scope_names > 0) {
                 name_matches = (x_m_module_name == std::string(m->m_name));
             }
-            // When the direct owner is a Struct, m_module_name may refer
-            // to the enclosing Module instead of the Struct itself.
-            // Walk up from the Struct to find the Module.
+            // When the direct owner is a Struct, m_module_name refers
+            // to the enclosing Module, not the Struct itself. Walk up
+            // to the parent Module to verify the match.
             if (!name_matches && sm != nullptr) {
                 ASR::symbol_t* struct_parent = ASRUtils::get_asr_owner((ASR::symbol_t*)sm);
                 if (struct_parent != nullptr && ASR::is_a<ASR::Module_t>(*struct_parent)) {
