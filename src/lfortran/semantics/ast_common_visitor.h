@@ -16525,14 +16525,16 @@ public:
                 }
             }
         }
-        if (v && !compiler_options.implicit_interface && is_external_procedure) {
+        bool is_scalar_var = ASR::is_a<ASR::Variable_t>(*v) && !ASRUtils::is_array(ASRUtils::symbol_type(v)) &&
+                            !ASRUtils::is_symbol_procedure_variable(v);
+        if (v && !compiler_options.implicit_interface && (is_external_procedure || is_scalar_var)) {
             /*
                 Case: ./integration_tests/external_01.f90
                 We have `enorm` declared outside current_scope. Check if it is a function
                 and if it is, then we need to remove template function `enorm` from current scope and external procedures.
             */
             ASR::symbol_t* v2 = current_scope->parent->resolve_symbol(var_name);
-            if (ASR::is_a<ASR::Function_t>(*v2)) {
+            if (v2 && ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
                 erase_from_external_mapping(var_name);
                 ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
