@@ -275,8 +275,12 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
         line_skips += "\n";
     }
     std::cout << line_skips << std::flush;
-    history.push_back(concat(m.lines));
-    return concat(m.lines);
+    std::string current_entry = concat(m.lines);
+    if (current_entry.find_first_not_of(" \t\r\n") != std::string::npos) {
+        history.push_back(current_entry);
+    }
+   
+    return current_entry;
 }
 
 #endif // TERMINAL_PROMPT0_H
