@@ -1,0 +1,12 @@
+{
+    "display_name": "Fortran (xlfortran)",
+    "argv": ["@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xlfortran"],
+    "language": "fortran",
+    "kernel_protocol_version": "5.6.0",
+    "metadata": {
+        "debugger": false,
+        "shared": {
+            "libxeus.so": "lib/libxeus.so"
+        }
+    }
+}

@@ -78,6 +78,14 @@
 #include <mlir/Target/LLVMIR/Export.h>
 #endif
 
+// LLD wasm driver — included at global scope so LLD_HAS_DRIVER declares
+// ::lld::wasm::link in the global lld namespace, not inside LCompilers.
+#ifdef __EMSCRIPTEN__
+#include <dlfcn.h>
+#include <lld/Common/Driver.h>
+LLD_HAS_DRIVER(wasm)
+#endif
+
 namespace LCompilers {
 
 // Extracts the integer from APInt.
@@ -235,7 +243,11 @@ LLVMEvaluator::LLVMEvaluator(const std::string &t)
         target_triple = LLVMGetDefaultTargetTriple();
 
     std::string Error;
+#if LLVM_VERSION_MAJOR >= 21
+    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(llvm::Triple(target_triple), Error);
+#else
     const llvm::Target *target = llvm::TargetRegistry::lookupTarget(target_triple, Error);
+#endif
     if (!target) {
         throw LCompilersException(Error);
     }
@@ -559,5 +571,115 @@ std::string LLVMEvaluator::get_default_target_triple()
 {
     return LLVMGetDefaultTargetTriple();
 }
+
+#ifdef __EMSCRIPTEN__
+
+WasmLFortranExecutor::~WasmLFortranExecutor() = default;
+
+WasmLFortranExecutor::WasmLFortranExecutor()
+{
+    LLVMInitializeWebAssemblyTarget();
+    LLVMInitializeWebAssemblyTargetInfo();
+    LLVMInitializeWebAssemblyTargetMC();
+    LLVMInitializeWebAssemblyAsmPrinter();
+    LLVMInitializeWebAssemblyAsmParser();
+
+    context = std::make_unique<llvm::LLVMContext>();
+
+    llvm::SmallString<256> tmp;
+    if (llvm::sys::fs::createUniqueDirectory("xlfortran-wasm-exec-", tmp))
+        throw LCompilersException("WasmLFortranExecutor: failed to create temp dir");
+    TempDir = tmp.str().str();
+}
+
+llvm::LLVMContext &WasmLFortranExecutor::get_context()
+{
+    return *context;
+}
+
+void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_count)
+{
+    std::unique_ptr<llvm::Module> mod = std::move(lm->m_m);
+    const std::string triple = "wasm32-unknown-emscripten";
+    std::string err;
+#if LLVM_VERSION_MAJOR >= 21
+    const llvm::Target *Target = llvm::TargetRegistry::lookupTarget(llvm::Triple(triple), err);
+#else
+    const llvm::Target *Target = llvm::TargetRegistry::lookupTarget(triple, err);
+#endif
+    if (!Target)
+        throw LCompilersException("WasmLFortranExecutor: failed to find wasm32 target: " + err);
+
+    llvm::TargetOptions TO;
+    std::unique_ptr<llvm::TargetMachine> TM(
+#if LLVM_VERSION_MAJOR >= 21
+        Target->createTargetMachine(llvm::Triple(triple), "", "", TO, llvm::Reloc::Model::PIC_)
+#else
+        Target->createTargetMachine(triple, "", "", TO, llvm::Reloc::Model::PIC_)
+#endif
+    );
+    mod->setTargetTriple(llvm::Triple(triple));
+    mod->setDataLayout(TM->createDataLayout());
+
+    const std::string stem = "__lfortran_evaluate_" + std::to_string(eval_count);
+    llvm::SmallString<256> objFile, wasmFile;
+    objFile = TempDir;
+    llvm::sys::path::append(objFile, stem + ".o");
+    wasmFile = TempDir;
+    llvm::sys::path::append(wasmFile, stem + ".wasm");
+
+    std::error_code EC;
+    llvm::raw_fd_ostream ObjOut(objFile, EC);
+    if (EC)
+        throw LCompilersException("WasmLFortranExecutor: cannot open obj file: " + EC.message());
+
+    llvm::legacy::PassManager PM;
+    if (TM->addPassesToEmitFile(PM, ObjOut, nullptr, llvm::CodeGenFileType::ObjectFile))
+        throw LCompilersException("WasmLFortranExecutor: wasm32 backend cannot emit object file");
+    PM.run(*mod);
+    ObjOut.close();
+
+    std::vector<const char *> LinkerArgs = {
+        "wasm-ld", "-shared",
+        "--import-memory", "--stack-first", "--allow-undefined",
+        objFile.c_str(), "-o", wasmFile.c_str()
+    };
+    // Capture lld stderr to suppress the "not yet stable" noise and include
+    // it in the exception message only when lld actually fails.
+    std::string lld_errs;
+    llvm::raw_string_ostream lld_errs_stream(lld_errs);
+    const ::lld::DriverDef WasmDriver = {::lld::Flavor::Wasm, &::lld::wasm::link};
+    ::lld::Result Result = ::lld::lldMain(LinkerArgs, llvm::outs(), lld_errs_stream, {WasmDriver});
+    // lld::wasm::link calls cl::ResetAllOptionOccurrences() which clears all
+    // LLVM command-line option state (e.g. -wasm-enable-eh). Re-parse the
+    // stored args so the next TargetMachine creation sees the correct state.
+    if (!stored_llvm_args.empty()) {
+        std::vector<const char *> arg_ptrs;
+        arg_ptrs.push_back("xlfortran (restoring LLVM options)");
+        for (const std::string &arg : stored_llvm_args)
+            arg_ptrs.push_back(arg.c_str());
+        llvm::cl::ParseCommandLineOptions(arg_ptrs.size(), arg_ptrs.data());
+    }
+    if (Result.retCode)
+        throw LCompilersException("WasmLFortranExecutor: wasm-ld failed for "
+                                  + stem + ": " + lld_errs_stream.str());
+
+    void *handle = dlopen(wasmFile.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    if (!handle)
+        throw LCompilersException(std::string("WasmLFortranExecutor: dlopen failed: ") + dlerror());
+    loaded_modules.push_back(handle);
+}
+
+intptr_t WasmLFortranExecutor::get_symbol_address(const std::string &name)
+{
+    for (auto it = loaded_modules.rbegin(); it != loaded_modules.rend(); ++it) {
+        void *sym = dlsym(*it, name.c_str());
+        if (sym)
+            return reinterpret_cast<intptr_t>(sym);
+    }
+    throw LCompilersException("WasmLFortranExecutor: symbol not found: " + name);
+}
+
+#endif // __EMSCRIPTEN__
 
 } // namespace LCompilers

@@ -29,6 +29,8 @@ set(LFORTRAN_SRC
     ${LFORTRAN_SRC}
 )
 
+if (NOT EMSCRIPTEN)
+
 add_executable(lfortran ${LFORTRAN_SRC})
 target_include_directories(lfortran PRIVATE "tpl")
 target_link_libraries(lfortran ${LFORTRAN_LINK_LIBRARIES})
@@ -114,6 +116,8 @@ install(TARGETS lfortran
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+endif() # NOT EMSCRIPTEN
 
 if (WITH_BENCHMARKS)
     add_executable(parse parse.cpp)

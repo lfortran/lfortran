@@ -1786,8 +1786,13 @@ public:
         {
             std::string target_triple = llvm::sys::getDefaultTargetTriple();
             std::string Error;
+#if LLVM_VERSION_MAJOR >= 21
+            const llvm::Target *target =
+                llvm::TargetRegistry::lookupTarget(llvm::Triple(target_triple), Error);
+#else
             const llvm::Target *target =
                 llvm::TargetRegistry::lookupTarget(target_triple, Error);
+#endif
             if (target) {
                 llvm::TargetOptions opt;
                 auto TM = target->createTargetMachine(
@@ -20715,16 +20720,30 @@ public:
         std::string global_name = "__lfortran_gpu_source_" + kernel_name;
         llvm::Value *gpu_src;
         if (!compiler_options.gpu_metal_source.empty()) {
+#if LLVM_VERSION_MAJOR >= 20
+            gpu_src = builder->CreateGlobalString(
+                compiler_options.gpu_metal_source, global_name);
+#else
             gpu_src = builder->CreateGlobalStringPtr(
                 compiler_options.gpu_metal_source, global_name);
+#endif
         } else if (!compiler_options.gpu_cuda_source.empty()) {
             // CUDA kernels are pre-compiled; pass empty string
+#if LLVM_VERSION_MAJOR >= 20
+            gpu_src = builder->CreateGlobalString("", global_name);
+        } else {
+            gpu_src = builder->CreateGlobalString("", global_name);
+        }
+
+        llvm::Value *entry_name = builder->CreateGlobalString(kernel_name);
+#else
             gpu_src = builder->CreateGlobalStringPtr("", global_name);
         } else {
             gpu_src = builder->CreateGlobalStringPtr("", global_name);
         }
 
         llvm::Value *entry_name = builder->CreateGlobalStringPtr(kernel_name);
+#endif
 
         // 3. lfortran_gpu_load_kernel(ctx, source, entry_point) -> kernel
         llvm::FunctionType *load_ft = llvm::FunctionType::get(
