@@ -1088,7 +1088,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
 
-            if( !can_edit_call(x.m_args, x.n_args) && !ASRUtils::get_FunctionType(subrout_sym)->m_module
+            if( !can_edit_call(x.m_args, x.n_args)
                     && !is_struct_method_declaration(x.m_name) ) {
                 not_to_be_erased.insert(subrout_sym);
                 return ;
