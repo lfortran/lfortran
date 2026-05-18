@@ -6012,7 +6012,8 @@ public:
         finish_module_init_function_prototype(x);
 
         visit_procedures(x);
-        if (compiler_options.detect_leaks) {
+
+        if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             std::string mod_name_str = std::string(x.m_name);
             std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
 
@@ -6225,20 +6226,7 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
-        if(compiler_options.detect_leaks){
-            SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
-            for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
-                auto &sym = name_sym_pair.second;
-                if(ASR::is_a<ASR::Module_t>(*sym)){
-                    ASR::Module_t *mod_sym = ASR::down_cast<ASR::Module_t>(sym);
-                    std::string fin_name = "_lfortran_module_finalize_"
-                                          + std::string(mod_sym->m_name);
-                    if (!module->getFunction(fin_name)) {
-                        llvm_symtab_finalizer.finalize_symtab(mod_sym->m_symtab);
-                    }
-                }
-            }
-        }
+        
         free_heap_fixed_size_arrays();
         {
             llvm::Function *fn_finalize = module->getFunction(
@@ -6260,7 +6248,7 @@ public:
                 fn = llvm::Function::Create(ft,
                     llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
             }
-            llvm::appendToGlobalDtors(*module, fn, 255);
+            llvm::appendToGlobalDtors(*module, fn, 0); 
         }
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
@@ -8997,13 +8985,14 @@ public:
 
         // Get rank from base array
         int n_dims = ASRUtils::extract_n_dims_from_ttype(base_struct_array_type);
-
+        LCOMPILERS_ASSERT(n_dims == 1 );
 
         // Compute the stride multiplier: sizeof(struct) / sizeof(component)
         // This is the number of component-sized elements between consecutive struct elements
         llvm::DataLayout data_layout(module->getDataLayout());
         uint64_t struct_size = data_layout.getTypeAllocSize(struct_llvm_type);
         uint64_t component_size = data_layout.getTypeAllocSize(component_llvm_type);
+        LCOMPILERS_ASSERT(component_size > 0);
     
 
         uint64_t stride_multiplier = struct_size / component_size;
