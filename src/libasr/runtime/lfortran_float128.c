@@ -1678,6 +1678,8 @@ int64_t     __fixtfdi(lf_float128 a)                { return __fixtfdi_lf_impl(a
  * ======================================================================== */
 #if defined(__wasm32__)
 
+#define LF_WASM_TF2_ATTR __attribute__((weak))
+
 static lf_float128 f128_from_words(uint64_t lo, uint64_t hi) {
     lf_float128 r;
     memcpy(r.bytes, &lo, 8);
@@ -1689,108 +1691,110 @@ static void f128_store_words(lf_float128 *out, lf_float128 v) {
     memcpy(out->bytes, v.bytes, 16);
 }
 
-void __addtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+LF_WASM_TF2_ATTR void __addtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
         uint64_t b_lo, uint64_t b_hi) {
     f128_store_words(out, __addtf3_lf_impl(
         f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
 }
 
-void __subtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+LF_WASM_TF2_ATTR void __subtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
         uint64_t b_lo, uint64_t b_hi) {
     f128_store_words(out, __subtf3_lf_impl(
         f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
 }
 
-void __multf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+LF_WASM_TF2_ATTR void __multf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
         uint64_t b_lo, uint64_t b_hi) {
     f128_store_words(out, __multf3_lf_impl(
         f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
 }
 
-void __divtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
+LF_WASM_TF2_ATTR void __divtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
         uint64_t b_lo, uint64_t b_hi) {
     f128_store_words(out, __divtf3_lf_impl(
         f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
 }
 
-void __negtf2(lf_float128 *out, uint64_t a_lo, uint64_t a_hi) {
+LF_WASM_TF2_ATTR void __negtf2(lf_float128 *out, uint64_t a_lo, uint64_t a_hi) {
     f128_store_words(out, __negtf2_lf_impl(f128_from_words(a_lo, a_hi)));
 }
 
-void __extenddftf2(lf_float128 *out, double a) {
+LF_WASM_TF2_ATTR void __extenddftf2(lf_float128 *out, double a) {
     f128_store_words(out, __extenddftf2_lf_impl(a));
 }
 
-void __extendsftf2(lf_float128 *out, float a) {
+LF_WASM_TF2_ATTR void __extendsftf2(lf_float128 *out, float a) {
     f128_store_words(out, __extendsftf2_lf_impl(a));
 }
 
-double __trunctfdf2(uint64_t a_lo, uint64_t a_hi) {
+LF_WASM_TF2_ATTR double __trunctfdf2(uint64_t a_lo, uint64_t a_hi) {
     return __trunctfdf2_lf_impl(f128_from_words(a_lo, a_hi));
 }
 
-float __trunctfsf2(uint64_t a_lo, uint64_t a_hi) {
+LF_WASM_TF2_ATTR float __trunctfsf2(uint64_t a_lo, uint64_t a_hi) {
     return __trunctfsf2_lf_impl(f128_from_words(a_lo, a_hi));
 }
 
-void __floatsitf(lf_float128 *out, int32_t a) {
+LF_WASM_TF2_ATTR void __floatsitf(lf_float128 *out, int32_t a) {
     f128_store_words(out, __floatsitf_lf_impl(a));
 }
 
-void __floatditf(lf_float128 *out, int64_t a) {
+LF_WASM_TF2_ATTR void __floatditf(lf_float128 *out, int64_t a) {
     f128_store_words(out, __floatditf_lf_impl(a));
 }
 
-void __floatunditf(lf_float128 *out, uint64_t a) {
+LF_WASM_TF2_ATTR void __floatunditf(lf_float128 *out, uint64_t a) {
     f128_store_words(out, __floatunditf_lf_impl(a));
 }
 
-int32_t __fixtfsi(uint64_t a_lo, uint64_t a_hi) {
+LF_WASM_TF2_ATTR int32_t __fixtfsi(uint64_t a_lo, uint64_t a_hi) {
     return __fixtfsi_lf_impl(f128_from_words(a_lo, a_hi));
 }
 
-int64_t __fixtfdi(uint64_t a_lo, uint64_t a_hi) {
+LF_WASM_TF2_ATTR int64_t __fixtfdi(uint64_t a_lo, uint64_t a_hi) {
     return __fixtfdi_lf_impl(f128_from_words(a_lo, a_hi));
 }
 
-int __eqtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+LF_WASM_TF2_ATTR int __eqtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
     return f128_cmp_internal(f128_from_words(a_lo, a_hi),
         f128_from_words(b_lo, b_hi)) == 0 ? 0 : 1;
 }
 
-int __netf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+LF_WASM_TF2_ATTR int __netf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
     return f128_cmp_internal(f128_from_words(a_lo, a_hi),
         f128_from_words(b_lo, b_hi)) != 0 ? 1 : 0;
 }
 
-int __lttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+LF_WASM_TF2_ATTR int __lttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
     int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
         f128_from_words(b_lo, b_hi));
     return c >= 2 ? 1 : c;
 }
 
-int __letf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+LF_WASM_TF2_ATTR int __letf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
     int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
         f128_from_words(b_lo, b_hi));
     return c >= 2 ? 1 : c;
 }
 
-int __gttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+LF_WASM_TF2_ATTR int __gttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
     int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
         f128_from_words(b_lo, b_hi));
     return c >= 2 ? 1 : c;
 }
 
-int __getf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+LF_WASM_TF2_ATTR int __getf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
     int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
         f128_from_words(b_lo, b_hi));
     return c >= 2 ? 1 : c;
 }
 
-int __unordtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
+LF_WASM_TF2_ATTR int __unordtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
     return (f128_is_nan(f128_from_words(a_lo, a_hi)) ||
         f128_is_nan(f128_from_words(b_lo, b_hi))) ? 1 : 0;
 }
+
+#undef LF_WASM_TF2_ATTR
 
 #endif
 
