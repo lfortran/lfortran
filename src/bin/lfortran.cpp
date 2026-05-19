@@ -2764,6 +2764,15 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::mlir;
     } else if (opts.arg_backend == "liric") {
         backend = Backend::liric;
+        // pass_array_by_data renames functions that take array args to
+        // a per-element-type variant (e.g. add_strings_many becomes
+        // add_strings_many_string_t____1).  It does this at the
+        // definition site but does not rewrite cross-module call
+        // sites consistently in the direct backend, so the linker
+        // ends up with undefined references.  Skip the pass; the
+        // direct backend handles the unmangled names fine.
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back(
+            "pass_array_by_data");
     } else {
         std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir, liric." << std::endl;
         return 1;
