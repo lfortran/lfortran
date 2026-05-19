@@ -63,6 +63,9 @@ target_include_directories(lfortran_lib PRIVATE $<BUILD_INTERFACE:${CMAKE_CURREN
 
 configure_file(config.h.cmakein config.h @ONLY)
 target_link_libraries(lfortran_lib asr lfortran_parser_obj lfortran_runtime_static)
+if (WITH_LIRIC)
+    target_link_libraries(lfortran_lib asr_liric)
+endif()
 
 
 if (WITH_ZLIB)
