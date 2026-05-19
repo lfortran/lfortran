@@ -15,6 +15,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/exception.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 #include <cstring>
 #include <string>
@@ -1002,6 +1003,71 @@ public:
             const ASR::IntrinsicElementalFunction_t &x) {
         if (x.m_value) { visit_expr(*x.m_value); return; }
         throw CodeGenError("liric: runtime intrinsic not yet supported");
+    }
+
+    // --- IntrinsicImpureFunction ---
+    //
+    // Mirrors the LLVM backend's three supported cases.  Everything else
+    // is left to fail with a clear diagnostic until we need it.
+
+    void visit_IntrinsicImpureFunction(
+            const ASR::IntrinsicImpureFunction_t &x) {
+        switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(
+                x.m_impure_intrinsic_id)) {
+            case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd: {
+                visit_expr(*x.m_args[0]);
+                tmp = lr_emit_icmp(s, LR_CMP_EQ,
+                    V(tmp, ty_i32), I(-1, ty_i32));
+                break;
+            }
+            case ASRUtils::IntrinsicImpureFunctions::IsIostatEor: {
+                visit_expr(*x.m_args[0]);
+                tmp = lr_emit_icmp(s, LR_CMP_EQ,
+                    V(tmp, ty_i32), I(-2, ty_i32));
+                break;
+            }
+            default:
+                throw CodeGenError(std::string("liric: impure intrinsic ")
+                    + ASRUtils::get_impure_intrinsic_name(
+                            x.m_impure_intrinsic_id)
+                    + " not yet supported");
+        }
+    }
+
+    // --- Iachar / Ichar ---
+    //
+    // Both dispatch to a runtime that takes the data pointer of the
+    // single-character string and returns an i32.  Iachar may be widened
+    // to i64 by callers; Ichar always returns i32.
+
+    void visit_Iachar(const ASR::Iachar_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_arg);
+        uint32_t desc = tmp;
+        uint32_t idx0 = 0;
+        uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+            V(desc, ty_str_desc), &idx0, 1);
+        lr_type_t *params[] = {ty_ptr};
+        declare_func("_lfortran_iachar", ty_i32, params, 1, false);
+        lr_operand_desc_t args[] = {V(data, ty_ptr)};
+        uint32_t r = emit_call("_lfortran_iachar", ty_i32, args, 1);
+        lr_type_t *rt = get_type(x.m_type);
+        tmp = (rt == ty_i32) ? r : lr_emit_sext(s, rt, V(r, ty_i32));
+    }
+
+    void visit_Ichar(const ASR::Ichar_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_arg);
+        uint32_t desc = tmp;
+        uint32_t idx0 = 0;
+        uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+            V(desc, ty_str_desc), &idx0, 1);
+        lr_type_t *params[] = {ty_ptr};
+        declare_func("_lfortran_ichar", ty_i32, params, 1, false);
+        lr_operand_desc_t args[] = {V(data, ty_ptr)};
+        uint32_t r = emit_call("_lfortran_ichar", ty_i32, args, 1);
+        lr_type_t *rt = get_type(x.m_type);
+        tmp = (rt == ty_i32) ? r : lr_emit_sext(s, rt, V(r, ty_i32));
     }
 
     // --- StringConstant ---
