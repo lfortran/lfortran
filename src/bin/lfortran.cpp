@@ -1518,7 +1518,9 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
 #ifdef HAVE_LFORTRAN_LIRIC
 int compile_to_object_file_liric(const std::string &infile,
         const std::string &outfile, bool time_report,
-        CompilerOptions &compiler_options, int liric_backend = 2)
+        CompilerOptions &compiler_options,
+        LCompilers::PassManager &pass_manager,
+        int liric_backend = 2)
 {
     std::string input;
     LCompilers::diag::Diagnostics diagnostics;
@@ -1564,6 +1566,11 @@ int compile_to_object_file_liric(const std::string &infile,
         int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
+
+    // ASR passes: intrinsic instantiation, array/string lowering, ...
+    // Without this the codegen sees raw IntrinsicElementalFunction /
+    // IntrinsicImpureFunction nodes that no backend can lower directly.
+    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
 
     // ASR -> liric object
     {
@@ -2955,7 +2962,8 @@ int main_app(int argc, char *argv[]) {
         } else if (backend == Backend::liric) {
 #ifdef HAVE_LFORTRAN_LIRIC
             result = compile_to_object_file_liric(opts.arg_file, outfile,
-                compiler_options.time_report, compiler_options);
+                compiler_options.time_report, compiler_options,
+                lfortran_pass_manager);
 #else
             std::cerr << "The -c option with `--backend=liric` requires the "
                 "liric backend to be enabled. Recompile with `-DWITH_LIRIC=ON`."
@@ -3025,7 +3033,8 @@ int main_app(int argc, char *argv[]) {
             } else if (backend == Backend::liric) {
 #ifdef HAVE_LFORTRAN_LIRIC
                 err = compile_to_object_file_liric(arg_file, tmp_o,
-                    compiler_options.time_report, compiler_options);
+                    compiler_options.time_report, compiler_options,
+                    lfortran_pass_manager);
 #else
                 std::cerr << "Compiling Fortran files to object files using "
                     "`--backend=liric` requires the liric backend to be enabled. "
