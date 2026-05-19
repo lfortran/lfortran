@@ -1777,23 +1777,6 @@ public:
             }
         }
         std::string base = fn->m_name;
-        // Intrinsic-abi functions are part of the runtime archive's
-        // ABI and must stay unprefixed; everything else gets prefixed
-        // by its enclosing Function (for nested print_generic style)
-        // and then by its enclosing non-intrinsic Module (so two
-        // modules each defining `basename` don't collide at link).
-        bool is_intrinsic_abi = false;
-        if (fn->m_function_signature) {
-            ASR::FunctionType_t *ft = down_cast<ASR::FunctionType_t>(
-                fn->m_function_signature);
-            if (ft->m_abi == ASR::abiType::Intrinsic) {
-                is_intrinsic_abi = true;
-            }
-        }
-        if (is_intrinsic_abi) {
-            callable_name_cache[h] = base;
-            return base;
-        }
         SymbolTable *st = fn->m_symtab ? fn->m_symtab->parent : nullptr;
         while (st) {
             ASR::asr_t *owner = (ASR::asr_t *)st->asr_owner;
@@ -1811,9 +1794,11 @@ public:
                 if (ASR::is_a<ASR::Module_t>(*osym)) {
                     ASR::Module_t *mod =
                         down_cast<ASR::Module_t>(osym);
-                    if (!mod->m_intrinsic) {
-                        base = std::string(mod->m_name) + "__" + base;
-                    }
+                    // Always module-prefix; m_intrinsic isn't a
+                    // stable cross-compile property so different .o
+                    // files might disagree on whether to prefix the
+                    // same module's functions.
+                    base = std::string(mod->m_name) + "__" + base;
                     break;
                 }
             }
