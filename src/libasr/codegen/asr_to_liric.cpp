@@ -1198,6 +1198,70 @@ public:
         }
     }
 
+    // --- ArrayBound (constant-folded path only) ---
+    //
+    // We can answer lbound/ubound at compile time when the array's
+    // dimensions and the requested dim are all constant.  The runtime
+    // case requires descriptor-array support that this backend does not
+    // have yet.
+
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        LIRIC_PASSTHROUGH(x)
+
+        ASR::expr_t *array_value = ASRUtils::expr_value(x.m_v);
+        if (!array_value || !x.m_dim ||
+                !ASRUtils::is_value_constant(x.m_dim)) {
+            throw CodeGenError(
+                "liric: ArrayBound requires constant dim and a "
+                "value-folded array argument");
+        }
+
+        ASR::dimension_t *dims = nullptr;
+        ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(array_value), dims);
+        int req_dim;
+        ASRUtils::extract_value(x.m_dim, req_dim);
+        req_dim--;
+        if (!dims) {
+            throw CodeGenError(
+                "liric: ArrayBound has no dimensions available");
+        }
+        size_t lbound = 1;
+        if (dims[req_dim].m_start) {
+            ASRUtils::extract_value(dims[req_dim].m_start, lbound);
+        }
+        size_t length = 0;
+        bool has_length = dims[req_dim].m_length != nullptr &&
+            ASRUtils::extract_value(dims[req_dim].m_length, length);
+        size_t bound = 0;
+        if (x.m_bound == ASR::arrayboundType::LBound) {
+            bound = (has_length && length == 0) ? 1 : lbound;
+        } else {
+            // UBound; per F2018 a zero-length dim returns 0.
+            bound = (has_length && length == 0)
+                ? 0 : (length + lbound - 1);
+        }
+        lr_type_t *rt = get_type(x.m_type);
+        tmp = lr_emit_add(s, rt, I((int64_t)bound, rt), I(0, rt));
+    }
+
+    // --- LogicalCompare ---
+
+    void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_left);  uint32_t l = tmp;
+        visit_expr(*x.m_right); uint32_t r = tmp;
+        int pred = LR_CMP_EQ;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq:    pred = LR_CMP_EQ;  break;
+            case ASR::cmpopType::NotEq: pred = LR_CMP_NE;  break;
+            default:
+                throw CodeGenError(
+                    "liric: LogicalCompare supports only .eqv./.neqv.");
+        }
+        tmp = lr_emit_icmp(s, pred, V(l, ty_i1), V(r, ty_i1));
+    }
+
     // --- StringItem ---
     //
     // s(i:i): build a new descriptor whose data pointer points to byte
