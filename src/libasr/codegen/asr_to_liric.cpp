@@ -1262,6 +1262,63 @@ public:
         tmp = lr_emit_icmp(s, pred, V(l, ty_i1), V(r, ty_i1));
     }
 
+    // --- StringSection ---
+    //
+    // s(start:end:step) for Fortran has step==1 always.  We need:
+    //   data' = data + (start - 1)
+    //   len'  = max(0, end - start + 1)
+    // and we return a new {data', len'} descriptor.  The result is a
+    // view into the source string; no allocation.
+
+    void visit_StringSection(const ASR::StringSection_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        if (!x.m_start || !x.m_end) {
+            throw CodeGenError(
+                "liric: StringSection requires both start and end "
+                "(open-ended slices not yet supported)");
+        }
+
+        visit_expr(*x.m_arg);  uint32_t desc  = tmp;
+        visit_expr(*x.m_start); uint32_t start = tmp;
+        visit_expr(*x.m_end);   uint32_t end   = tmp;
+
+        lr_type_t *start_t = get_type(ASRUtils::expr_type(x.m_start));
+        lr_type_t *end_t   = get_type(ASRUtils::expr_type(x.m_end));
+        uint32_t start64 = (start_t == ty_i64)
+            ? start
+            : lr_emit_sext(s, ty_i64, V(start, start_t));
+        uint32_t end64 = (end_t == ty_i64)
+            ? end
+            : lr_emit_sext(s, ty_i64, V(end, end_t));
+
+        // Raw length = end - start + 1; clamp to 0 if negative.
+        uint32_t raw_diff = lr_emit_sub(s, ty_i64,
+            V(end64, ty_i64), V(start64, ty_i64));
+        uint32_t raw_len = lr_emit_add(s, ty_i64,
+            V(raw_diff, ty_i64), I(1, ty_i64));
+        uint32_t is_neg = lr_emit_icmp(s, LR_CMP_SLT,
+            V(raw_len, ty_i64), I(0, ty_i64));
+        uint32_t new_len = lr_emit_select(s, ty_i64,
+            V(is_neg, ty_i1), I(0, ty_i64), V(raw_len, ty_i64));
+
+        // Shift the data pointer by (start - 1).
+        uint32_t fld0 = 0;
+        uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+            V(desc, ty_str_desc), &fld0, 1);
+        uint32_t off = lr_emit_sub(s, ty_i64,
+            V(start64, ty_i64), I(1, ty_i64));
+        lr_operand_desc_t gep_idx[1] = {V(off, ty_i64)};
+        uint32_t new_data = lr_emit_gep(s, ty_i8,
+            V(data, ty_ptr), gep_idx, 1);
+
+        // Assemble the new descriptor.
+        uint32_t fld1 = 1;
+        uint32_t d0 = lr_emit_insertvalue(s, ty_str_desc,
+            LR_UNDEF(ty_str_desc), V(new_data, ty_ptr), &fld0, 1);
+        tmp = lr_emit_insertvalue(s, ty_str_desc,
+            V(d0, ty_str_desc), V(new_len, ty_i64), &fld1, 1);
+    }
+
     // --- StringItem ---
     //
     // s(i:i): build a new descriptor whose data pointer points to byte
