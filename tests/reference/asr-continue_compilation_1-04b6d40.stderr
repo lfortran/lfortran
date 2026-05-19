@@ -1126,6 +1126,12 @@ semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It
 511 |     print *, ieor()
     |              ^^^^^^ 
 
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_1.f90:512:14
+    |
+512 |     print *, min(c, c)
+    |              ^^^^^^^^^ 
+
 semantic error: `exit` statements cannot be outside of loops or blocks
    --> tests/errors/continue_compilation_1.f90:513:5
     |
