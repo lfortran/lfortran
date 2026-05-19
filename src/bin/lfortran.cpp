@@ -2192,6 +2192,15 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
+            if (backend == Backend::liric) {
+                // The liric runtime archive holds the Fortran intrinsic
+                // bodies (newunit_int_4, c_logb, compute_lps, etc.).
+                // Wrap with --whole-archive so the linker keeps every
+                // .o, since callers reference them as if they were in
+                // the C runtime.
+                compile_cmd += " -Wl,--whole-archive -llfortran_runtime_fortran"
+                    " -Wl,--no-whole-archive";
+            }
             if (compiler_options.openmp && CC.find("clang" ) != std::string::npos) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
                 std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";

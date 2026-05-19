@@ -543,30 +543,13 @@ public:
     // --- Module ---
 
     void visit_Module(const ASR::Module_t &x) {
-        if (x.m_intrinsic) return;
-        // Declare module-level Variables as globals.  We use the
-        // variable hash both as a key into lr_globals (intern id) and
-        // as a deterministic name for the global itself.
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-            ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
-            uint64_t h = get_hash((ASR::asr_t *)v);
-            if (lr_globals.count(h)) continue;
-            std::string gname = std::string("_lr_modvar_")
-                + x.m_name + "_" + v->m_name;
-            lr_type_t *vt = get_type(v->m_type);
-            // Zero-init blob of the right size.
-            // Without runtime initializers we just hand liric an
-            // uninitialised array<i8, sizeof(type)> as the data; the
-            // first store inside any function fixes it up.
-            uint64_t nbytes = lr_type_size_or_default(vt);
-            std::vector<uint8_t> zeros(nbytes, 0);
-            lr_session_global(s, gname.c_str(),
-                lr_type_array_s(s, ty_i8, nbytes),
-                false, zeros.data(), nbytes);
-            uint32_t sym = lr_session_intern(s, gname.c_str());
-            lr_globals[h] = sym;
-        }
+        // Intrinsic and ordinary modules: emit Function bodies so that
+        // user code that imports them can link.  Module variables are
+        // NOT emitted here - they get lazy-created per-consumer in
+        // visit_Var, so multiple .o files don't trip the linker with
+        // duplicate definitions.  As long as the variables are
+        // parameter-style constants (which is what fpm and tomlf use),
+        // each .o seeing its own copy is fine.
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
@@ -652,10 +635,16 @@ public:
         // across function boundaries are not legal Fortran anyway.
         goto_blocks.clear();
 
-        // Skip interface-only functions (no body)
+        // Skip interface-only functions (no body), but emit bodies for
+        // Intrinsic-abi functions so callers can link against them
+        // (e.g. newunit_int_4 from lfortran_intrinsic_custom).
         if (x.n_body == 0 && !x.m_return_var) return;
-        if (ftype->m_abi == ASR::abiType::Intrinsic) return;
         if (ftype->m_deftype == ASR::deftypeType::Interface) return;
+        // bind(c, name=...) declarations resolve to externally provided
+        // C symbols at link time - we shouldn't emit a Fortran body.
+        if (ftype->m_abi == ASR::abiType::BindC && ftype->m_bindc_name) {
+            return;
+        }
 
         // Build parameter types
         std::vector<lr_type_t *> param_types;
@@ -778,10 +767,13 @@ public:
             }
             return;
         }
-        // Neither local nor global - declare a placeholder global so
-        // subsequent passes don't crash.  This is a last-resort safety
-        // net for symbols that escape our visit_Module pass.
-        std::string gname = std::string("_lr_implicit_") + v->m_name;
+        // Neither local nor global - declare a placeholder global with
+        // a per-Variable name.  We don't have weak linkage in the
+        // direct backend, so per-.o uniqueness is the simplest way to
+        // avoid multiple-definition link errors when the same module
+        // variable is referenced from many consumer .o files.
+        std::string gname = std::string("_lr_var_")
+            + std::to_string(h) + "_" + v->m_name;
         lr_type_t *t = get_type(v->m_type);
         uint64_t nbytes = lr_type_size_or_default(t);
         std::vector<uint8_t> zeros(nbytes, 0);
@@ -1735,6 +1727,20 @@ public:
 
     // --- SubroutineCall ---
 
+    // Pick the externally-visible name for a Function: bind(c, name=)
+    // overrides the Fortran identifier.
+    const char *callable_name(ASR::Function_t *fn) {
+        if (!fn) return "<null>";
+        if (fn->m_function_signature) {
+            ASR::FunctionType_t *ft = down_cast<ASR::FunctionType_t>(
+                fn->m_function_signature);
+            if (ft->m_abi == ASR::abiType::BindC && ft->m_bindc_name) {
+                return ft->m_bindc_name;
+            }
+        }
+        return fn->m_name;
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::Function_t *fn = down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
@@ -1753,7 +1759,7 @@ public:
             }
         }
 
-        uint32_t sym = lr_session_intern(s, fn->m_name);
+        uint32_t sym = lr_session_intern(s, callable_name(fn));
         lr_emit_call_void(s, LR_GLOBAL(sym, ty_ptr),
                           args.data(), args.size());
     }
@@ -1780,7 +1786,7 @@ public:
         }
 
         lr_type_t *ret = get_type(x.m_type);
-        uint32_t sym = lr_session_intern(s, fn->m_name);
+        uint32_t sym = lr_session_intern(s, callable_name(fn));
         tmp = lr_emit_call(s, ret, LR_GLOBAL(sym, ty_ptr),
                            args.data(), args.size());
     }
