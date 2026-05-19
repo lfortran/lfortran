@@ -543,13 +543,13 @@ public:
     // --- Module ---
 
     void visit_Module(const ASR::Module_t &x) {
-        // Intrinsic and ordinary modules: emit Function bodies so that
-        // user code that imports them can link.  Module variables are
-        // NOT emitted here - they get lazy-created per-consumer in
-        // visit_Var, so multiple .o files don't trip the linker with
-        // duplicate definitions.  As long as the variables are
-        // parameter-style constants (which is what fpm and tomlf use),
-        // each .o seeing its own copy is fine.
+        // Skip intrinsic modules: their function bodies come from the
+        // dedicated liblfortran_runtime_fortran.a archive.
+        if (x.m_intrinsic) return;
+        // Skip modules loaded from .mod files (imports).  Their bodies
+        // are emitted in the .o file that defines them; emitting them
+        // here would create duplicate definitions in every consumer.
+        if (x.m_loaded_from_mod) return;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
