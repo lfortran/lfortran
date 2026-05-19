@@ -198,8 +198,8 @@
                                                                     6
                                                                     1_package_config_t_version
                                                                     11 version
-                                                                    package_config_t
-                                                                    []
+                                                                    fpm_manifest_package_modules_34
+                                                                    [package_config_t]
                                                                     version
                                                                     Public
                                                                 ),
@@ -218,8 +218,8 @@
                                                                     6
                                                                     1_version_t_to_string
                                                                     14 to_string
-                                                                    1_version_t
-                                                                    []
+                                                                    fpm_versioning_modules_34
+                                                                    [version_t]
                                                                     to_string
                                                                     Public
                                                                 ),
@@ -493,8 +493,8 @@
                                                     15
                                                     1_version_t_to_string
                                                     14 to_string
-                                                    version_t
-                                                    []
+                                                    fpm_versioning_modules_34
+                                                    [version_t]
                                                     to_string
                                                     Public
                                                 ),

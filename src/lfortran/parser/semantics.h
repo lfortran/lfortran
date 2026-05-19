@@ -924,10 +924,16 @@ static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
 {
     std::string s_id = down_cast2<Name_t>(id)->m_id;
-    if (s_id == "MIN" ) {
+    if (s_id == "MIN") {
         return reduce_opType::ReduceMIN;
     } else if (s_id == "MAX") {
         return reduce_opType::ReduceMAX;
+    } else if (s_id == "IAND" || s_id == "iand") {
+        return reduce_opType::ReduceIAND;
+    } else if (s_id == "IOR" || s_id == "ior") {
+        return reduce_opType::ReduceIOR;
+    } else if (s_id == "IEOR" || s_id == "ieor") {
+        return reduce_opType::ReduceIEOR;
     } else {
         diagnostics.add(LCompilers::diag::Diagnostic(
             "Unsupported operation in reduction",

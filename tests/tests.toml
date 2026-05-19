@@ -4082,6 +4082,10 @@ filename = "errors/scalar_allocation_check_06.f90"
 run = true
 
 [[test]]
+filename = "errors/scalar_allocation_check_07.f90"
+run = true
+
+[[test]]
 filename = "errors/matmul_unallocated_01.f90"
 run = true
 
@@ -5168,3 +5172,17 @@ asr = true
 [[test]]
 filename = "../integration_tests/read_83.f90"
 llvm = true
+
+[[test]]
+filename = "no_main_program_1.f90"
+run = true
+
+[[test]]
+filename = "no_main_program_2.f90"
+options = "--backend=c"
+run = true
+
+[[test]]
+filename = "no_main_program_3.f90"
+options = "--backend=cpp"
+run = true

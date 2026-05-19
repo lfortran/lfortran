@@ -304,8 +304,8 @@
                                     7
                                     1_open_hashmap_type_map_entry
                                     3 map_entry
-                                    open_hashmap_type
-                                    []
+                                    mod_submodule_04
+                                    [open_hashmap_type]
                                     map_entry
                                     Public
                                 ),

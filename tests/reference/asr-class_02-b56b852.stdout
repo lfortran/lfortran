@@ -116,8 +116,8 @@
                                                     4
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -241,8 +241,8 @@
                                                     5
                                                     1_circle_circle_area
                                                     3 circle_area
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     circle_area
                                                     Public
                                                 ),
@@ -251,8 +251,8 @@
                                                     5
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -391,8 +391,8 @@
                                                     6
                                                     1_circle_circle_print
                                                     3 circle_print
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     circle_print
                                                     Public
                                                 ),
@@ -401,8 +401,8 @@
                                                     6
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
