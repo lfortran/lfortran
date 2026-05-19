@@ -1842,16 +1842,21 @@ public:
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::Function_t *fn = resolve_to_function(x.m_name);
-        if (!fn) {
-            throw CodeGenError(
-                "liric: SubroutineCall target did not resolve to a Function");
+        ASR::symbol_t *raw =
+            ASRUtils::symbol_get_past_external(x.m_name);
+        bool is_proc_ptr = !fn && raw &&
+            ASR::is_a<ASR::Variable_t>(*raw);
+        if (!fn && !is_proc_ptr) {
+            throw CodeGenError(std::string(
+                "liric: SubroutineCall target did not resolve: ")
+                + (raw ? ASRUtils::symbol_name(raw) : "<null>")
+                + " kind=" + std::to_string(raw ? (int)raw->type : -1));
         }
 
         std::vector<lr_operand_desc_t> args;
         for (size_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_value) {
                 visit_expr(*x.m_args[i].m_value);
-                // Pass by pointer: alloca + store
                 lr_type_t *at = get_type(ASRUtils::expr_type(x.m_args[i].m_value));
                 uint32_t slot = lr_emit_alloca(s, at);
                 lr_emit_store(s, V(tmp, at), V(slot, ty_ptr));
@@ -1859,6 +1864,17 @@ public:
             } else {
                 args.push_back(LR_NULL(ty_ptr));
             }
+        }
+
+        if (is_proc_ptr) {
+            // Indirect call through the procedure-pointer variable's
+            // value.  Load the address and pass it as the callee.
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(raw);
+            uint32_t slot = lr_symtab[get_hash((ASR::asr_t *)v)];
+            uint32_t fptr = lr_emit_load(s, ty_ptr, V(slot, ty_ptr));
+            lr_emit_call_void(s, V(fptr, ty_ptr),
+                              args.data(), args.size());
+            return;
         }
 
         uint32_t sym = lr_session_intern(s, callable_name(fn).c_str());
@@ -1872,9 +1888,14 @@ public:
         if (x.m_value) { visit_expr(*x.m_value); return; }
 
         ASR::Function_t *fn = resolve_to_function(x.m_name);
-        if (!fn) {
-            throw CodeGenError(
-                "liric: FunctionCall target did not resolve to a Function");
+        ASR::symbol_t *raw = ASRUtils::symbol_get_past_external(x.m_name);
+        bool is_proc_ptr = !fn && raw &&
+            ASR::is_a<ASR::Variable_t>(*raw);
+        if (!fn && !is_proc_ptr) {
+            throw CodeGenError(std::string(
+                "liric: FunctionCall target did not resolve to a Function: ")
+                + (raw ? ASRUtils::symbol_name(raw) : "<null>")
+                + " kind=" + std::to_string(raw ? (int)raw->type : -1));
         }
 
         std::vector<lr_operand_desc_t> args;
@@ -1891,6 +1912,14 @@ public:
         }
 
         lr_type_t *ret = get_type(x.m_type);
+        if (is_proc_ptr) {
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(raw);
+            uint32_t slot = lr_symtab[get_hash((ASR::asr_t *)v)];
+            uint32_t fptr = lr_emit_load(s, ty_ptr, V(slot, ty_ptr));
+            tmp = lr_emit_call(s, ret, V(fptr, ty_ptr),
+                               args.data(), args.size());
+            return;
+        }
         uint32_t sym = lr_session_intern(s, callable_name(fn).c_str());
         tmp = lr_emit_call(s, ret, LR_GLOBAL(sym, ty_ptr),
                            args.data(), args.size());
