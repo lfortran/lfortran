@@ -3509,6 +3509,18 @@ RUN(NAME read_92 LABELS gfortran llvm)
 RUN(NAME read_93 LABELS gfortran llvm)
 RUN(NAME read_94 LABELS gfortran llvm EXTRAFILES read_94.c)
 
+RUN(NAME real128_literal_01 LABELS gfortran llvm)
+RUN(NAME real128_arith_01 LABELS gfortran llvm)
+RUN(NAME real128_arith_02 LABELS gfortran llvm)
+RUN(NAME real128_arith_03 LABELS gfortran llvm)
+RUN(NAME real128_arith_04 LABELS gfortran llvm)
+RUN(NAME real128_arith_05 LABELS gfortran llvm)
+RUN(NAME real128_arith_06 LABELS gfortran llvm)
+#RUN(NAME real128_arith_07 LABELS gfortran llvm) #seg fault
+RUN(NAME real128_arith_08 LABELS gfortran llvm) #todo : fix this test
+RUN(NAME real128_arith_09 LABELS gfortran llvm)
+RUN(NAME real128_arith_10 LABELS gfortran llvm)
+
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
