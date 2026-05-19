@@ -1762,16 +1762,32 @@ public:
     std::unordered_map<uint64_t, std::string> callable_name_cache;
 
     // Resolve a symbol to the underlying Function, following
-    // ExternalSymbol and StructMethodDeclaration links.
+    // ExternalSymbol, StructMethodDeclaration, and GenericProcedure
+    // links.
     ASR::Function_t *resolve_to_function(ASR::symbol_t *sym) {
         if (!sym) return nullptr;
         sym = ASRUtils::symbol_get_past_external(sym);
-        if (sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+        if (!sym) return nullptr;
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
             ASR::StructMethodDeclaration_t *m =
                 down_cast<ASR::StructMethodDeclaration_t>(sym);
             return resolve_to_function(m->m_proc);
         }
-        if (sym && ASR::is_a<ASR::Function_t>(*sym)) {
+        if (ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
+            ASR::GenericProcedure_t *gp =
+                down_cast<ASR::GenericProcedure_t>(sym);
+            // ASR pass-manager should have resolved the call to one of
+            // the specifics, but as a fallback pick the first.
+            if (gp->n_procs > 0) return resolve_to_function(gp->m_procs[0]);
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
+            ASR::CustomOperator_t *co =
+                down_cast<ASR::CustomOperator_t>(sym);
+            if (co->n_procs > 0) return resolve_to_function(co->m_procs[0]);
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
             return down_cast<ASR::Function_t>(sym);
         }
         return nullptr;
