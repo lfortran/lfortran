@@ -4,7 +4,7 @@ target datalayout = "..."
 
 define void @a() {
 .entry:
-  call void @b(ptr @f, ptr @g)
+  call void @b(float ()* @f, float ()* @g)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -14,7 +14,7 @@ FINALIZE_SYMTABLE_a:                              ; preds = %return
   ret void
 }
 
-declare void @b(ptr, ptr)
+declare void @b(float ()*, float ()*)
 
 declare float @f()
 
