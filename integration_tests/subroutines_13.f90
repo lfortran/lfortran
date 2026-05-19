@@ -16,10 +16,4 @@ program subroutines_13
     print *, cmd
 
     CALL get_command()
-
-    call get_command(length=a)
-    print *, a
-
-    call get_command(status=b)
-    print *, b
 end program 
