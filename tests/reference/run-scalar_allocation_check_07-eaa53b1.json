@@ -1,0 +1,13 @@
+{
+    "basename": "run-scalar_allocation_check_07-eaa53b1",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/scalar_allocation_check_07.f90",
+    "infile_hash": "1dc81214f7a0b50c0e355ba21d205c007ca3f6fda583b780ba2e0294",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-scalar_allocation_check_07-eaa53b1.stdout",
+    "stdout_hash": "2d6d67d91d0badcdd06cbbba1fe11538a68a37ec9c2e26457ceff12b",
+    "stderr": "run-scalar_allocation_check_07-eaa53b1.stderr",
+    "stderr_hash": "8a2a50e2d08336ff6ee08551b9faa9c8502113183117523ac7d15a18",
+    "returncode": 1
+}
