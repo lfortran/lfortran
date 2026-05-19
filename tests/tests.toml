@@ -800,6 +800,21 @@ cpp = true
 x86 = true
 
 [[test]]
+filename = "errors/read_error_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "errors/read_error_02.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "read_iostat_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
 filename = "program2.f90"
 ast = true
 
