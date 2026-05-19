@@ -2,9 +2,9 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   %a = alloca [5 x float], align 4
   %b = alloca [5 x float], align 4
   %c = alloca [3 x i32], align 4
@@ -25,6 +25,6 @@ FINALIZE_SYMTABLE_array2:                         ; preds = %return
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
 declare void @_lfortran_internal_alloc_finalize()
