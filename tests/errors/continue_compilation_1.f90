@@ -300,7 +300,7 @@ program continue_compilation_1
     class(Derived), allocatable :: derived_cls
     integer, parameter :: z(1) = 2
     integer, parameter :: qval(2) = reshape([7, 8], -[z])
-
+    integer :: u
 
 
 
@@ -652,8 +652,8 @@ program continue_compilation_1
     a5 = missing_required_arg_func()
     integer :: m = 7
     dimension :: m(3)
-
-
+    open(newunit=u, file="test.dat", status="replace", asynchronous=1)
+    open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
