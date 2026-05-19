@@ -3362,40 +3362,33 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
         }
 };
 
-class ExprReferencesSymbolVisitor:
-    public ASR::BaseWalkVisitor<ExprReferencesSymbolVisitor> {
+
+class HasFunctionParamVisitor : public ASR::BaseWalkVisitor<HasFunctionParamVisitor> {
 public:
-    ASR::symbol_t* target_sym;
     bool found;
+    
+    HasFunctionParamVisitor() : found(false) {}
 
-    ExprReferencesSymbolVisitor(ASR::symbol_t* sym) :
-        target_sym(sym), found(false) {}
-
-    void visit_Var(const ASR::Var_t& x) {
-        if (x.m_v == target_sym) {
-            found = true;
-        }
+    void visit_FunctionParam(const ASR::FunctionParam_t & /*x*/) {
+        found = true;
     }
 };
 
-static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym) {
+// Public wrapper for easy use across the compiler
+static inline bool expr_has_function_param(ASR::expr_t* expr) {
     if (!expr) return false;
-    ExprReferencesSymbolVisitor visitor(sym);
-    visitor.visit_expr(*expr);
-    return visitor.found;
+    HasFunctionParamVisitor v;
+    v.visit_expr(*expr);
+    return v.found;
 }
 
-// This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
-// To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
     private:
-
     Allocator& al;
     ASR::call_arg_t* m_args;
     size_t n_args;
 
     public:
-
     ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
         al(al_), m_args(m_args_), n_args(n_args_) {}
 
@@ -3410,6 +3403,8 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     }
 
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
+        if (!t) return nullptr;
+
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
         duplicator.success = true;
