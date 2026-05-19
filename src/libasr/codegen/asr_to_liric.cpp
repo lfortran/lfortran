@@ -1325,6 +1325,160 @@ public:
         tmp = (rt == ty_i32) ? r : lr_emit_sext(s, rt, V(r, ty_i32));
     }
 
+    // --- FileWrite ---
+    //
+    // Minimal implementation: emit each value through _lfortran_printf,
+    // separated by " " and terminated by m_end (or "\n").  Strings are
+    // written via their {data,len}; integers/reals/logicals go through
+    // _lcompilers_string_format_fortran so the runtime handles the
+    // formatting.  Both unit==null (write(*,...)) and integer-unit
+    // (write(stdout,...)) cases land in the same printf-based path
+    // because lfortran's _lfortran_printf already writes to stdout.
+
+    void file_write_emit_string(uint32_t data, uint32_t len64) {
+        uint32_t fmt_sym = declare_global_cstring("%.*s", "_lr_fwfmt_pct_s");
+        uint32_t len32 = lr_emit_trunc(s, ty_i32, V(len64, ty_i64));
+        lr_type_t *printf_params[] = {ty_ptr};
+        declare_func("printf", ty_i32, printf_params, 1, true);
+        uint32_t printf_sym = lr_session_intern(s, "printf");
+        lr_inst_desc_t d;
+        memset(&d, 0, sizeof(d));
+        lr_operand_desc_t ops[4] = {
+            LR_GLOBAL(printf_sym, ty_ptr),
+            LR_GLOBAL(fmt_sym, ty_ptr),
+            V(len32, ty_i32),
+            V(data, ty_ptr)
+        };
+        d.op = LR_OP_CALL;
+        d.type = ty_i32;
+        d.operands = ops;
+        d.num_operands = 4;
+        d.call_external_abi = true;
+        d.call_vararg = true;
+        d.call_fixed_args = 1;
+        lr_session_emit(s, &d, nullptr);
+    }
+
+    // Declare/intern a private c-string and return its symbol id for
+    // use in LR_GLOBAL operands.  Idempotent: identical (data,name)
+    // pairs collapse to the same intern id.
+    uint32_t declare_global_cstring(const char *data, const char *name_hint) {
+        std::string name = std::string(name_hint) + "_" + data;
+        // Sanitize: strip non-printable for safety in symbol names
+        for (char &c : name) {
+            if (c == '\n') c = 'N';
+            else if (c == '\t') c = 'T';
+            else if (c == '%') c = 'P';
+        }
+        size_t len = std::strlen(data) + 1;
+        lr_session_global(s, name.c_str(),
+            lr_type_array_s(s, ty_i8, len),
+            true, data, len);
+        return lr_session_intern(s, name.c_str());
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        if (x.m_overloaded) {
+            throw CodeGenError("liric: derived-type I/O FileWrite not yet supported");
+        }
+        if (x.m_id || x.m_rec || x.m_pos) {
+            throw CodeGenError(
+                "liric: FileWrite with id/rec/pos not yet supported");
+        }
+        // iomsg / iostat are silently ignored for now: their target
+        // variables will not be updated.  Most fpm uses only consult
+        // iostat to check end-of-file on reads, not writes.
+        if (x.m_unit) {
+            ASR::ttype_t *ut = ASRUtils::expr_type(x.m_unit);
+            ut = ASRUtils::type_get_past_allocatable_pointer(ut);
+            ut = ASRUtils::type_get_past_array(ut);
+            if (!ASR::is_a<ASR::Integer_t>(*ut)) {
+                throw CodeGenError(
+                    "liric: write() to a non-integer unit (e.g. internal "
+                    "file) not yet supported");
+            }
+            // Integer unit value is evaluated but ignored: _lfortran_printf
+            // always writes to stdout.  fpm only writes to stdout/stderr
+            // through this path so the simplification is safe for now.
+            visit_expr(*x.m_unit);
+            (void)tmp;
+        }
+
+        // When the frontend wraps the value list in a StringFormat (e.g.
+        // `write(*, '(A)') str` becomes FileWrite([StringFormat('(A)',
+        // [str])])), unpack it so we see the real args.  Matches the
+        // LLVM backend's behaviour.
+        ASR::expr_t **values = x.m_values;
+        size_t n_values = x.n_values;
+        if (n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*values[0])) {
+            ASR::StringFormat_t *sf =
+                down_cast<ASR::StringFormat_t>(values[0]);
+            values = sf->m_args;
+            n_values = sf->n_args;
+        }
+
+        // Emit values.  Skip inter-value separators (format='(A)' /
+        // single-string is the only case we currently hit on fpm; the
+        // multi-arg list-directed path can revisit this later).
+        for (size_t i = 0; i < n_values; i++) {
+            ASR::expr_t *val = values[i];
+            ASR::ttype_t *vt = ASRUtils::expr_type(val);
+            vt = ASRUtils::type_get_past_allocatable_pointer(vt);
+            vt = ASRUtils::type_get_past_array(vt);
+            if (ASR::is_a<ASR::String_t>(*vt)) {
+                visit_expr(*val);
+                uint32_t desc = tmp;
+                uint32_t fld0 = 0, fld1 = 1;
+                uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+                    V(desc, ty_str_desc), &fld0, 1);
+                uint32_t len  = lr_emit_extractvalue(s, ty_i64,
+                    V(desc, ty_str_desc), &fld1, 1);
+                file_write_emit_string(data, len);
+            } else {
+                throw CodeGenError(
+                    "liric: write() of non-string values not yet supported "
+                    "(use print *, ... for now)");
+            }
+        }
+
+        // Trailer: m_end overrides the default "\n".  If advance=='no' the
+        // frontend passes m_end="" which suppresses the newline.
+        if (x.m_end) {
+            ASR::ttype_t *et = ASRUtils::expr_type(x.m_end);
+            et = ASRUtils::type_get_past_allocatable_pointer(et);
+            et = ASRUtils::type_get_past_array(et);
+            if (ASR::is_a<ASR::String_t>(*et)) {
+                visit_expr(*x.m_end);
+                uint32_t desc = tmp;
+                uint32_t fld0 = 0, fld1 = 1;
+                uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+                    V(desc, ty_str_desc), &fld0, 1);
+                uint32_t len  = lr_emit_extractvalue(s, ty_i64,
+                    V(desc, ty_str_desc), &fld1, 1);
+                file_write_emit_string(data, len);
+            }
+        } else {
+            uint32_t nl_sym = declare_global_cstring("\n", "_lr_fwnl");
+            lr_type_t *printf_params[] = {ty_ptr};
+            declare_func("printf", ty_i32, printf_params, 1, true);
+            uint32_t printf_sym = lr_session_intern(s, "printf");
+            lr_inst_desc_t d;
+            memset(&d, 0, sizeof(d));
+            lr_operand_desc_t ops[2] = {
+                LR_GLOBAL(printf_sym, ty_ptr),
+                LR_GLOBAL(nl_sym, ty_ptr)
+            };
+            d.op = LR_OP_CALL;
+            d.type = ty_i32;
+            d.operands = ops;
+            d.num_operands = 2;
+            d.call_external_abi = true;
+            d.call_vararg = true;
+            d.call_fixed_args = 1;
+            lr_session_emit(s, &d, nullptr);
+        }
+    }
+
     // --- StringConstant ---
     //
     // Emit two private globals: a [len x i8] data array, and a {ptr,i64}
