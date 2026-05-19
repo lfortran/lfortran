@@ -923,16 +923,17 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
 {
-    std::string s_id = down_cast2<Name_t>(id)->m_id;
-    if (s_id == "MIN") {
+        std::string s_id = down_cast2<Name_t>(id)->m_id;
+        std::string s_lower = LCompilers::to_lower(s_id);
+        if (s_lower == "min" ) {
         return reduce_opType::ReduceMIN;
-    } else if (s_id == "MAX") {
+        } else if (s_lower == "max") {
         return reduce_opType::ReduceMAX;
-    } else if (s_id == "IAND" || s_id == "iand") {
+        } else if (s_lower == "iand") {
         return reduce_opType::ReduceIAND;
-    } else if (s_id == "IOR" || s_id == "ior") {
+        } else if (s_lower == "ior") {
         return reduce_opType::ReduceIOR;
-    } else if (s_id == "IEOR" || s_id == "ieor") {
+        } else if (s_lower == "ieor") {
         return reduce_opType::ReduceIEOR;
     } else {
         diagnostics.add(LCompilers::diag::Diagnostic(
