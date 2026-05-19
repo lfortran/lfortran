@@ -202,9 +202,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     arrblock
@@ -291,9 +289,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_arrblock
@@ -335,9 +331,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             myzero:
                                                 (Variable
@@ -361,9 +355,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     myblock
@@ -433,9 +425,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     file_common_block_myblock
@@ -472,9 +462,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
                     []
-                    .false.
                 ),
             myblock:
                 (ExternalSymbol
@@ -508,9 +496,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
                     []
-                    .false.
                 ),
             myzero:
                 (Variable
@@ -534,9 +520,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
                     []
-                    .false.
                 ),
             struct_instance_arrblock:
                 (ExternalSymbol
