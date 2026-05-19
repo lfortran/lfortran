@@ -347,6 +347,8 @@ if (WITH_LIRIC)
         INTERFACE_INCLUDE_DIRECTORIES "${LIRIC_INCLUDE_DIR}")
     set_property(TARGET p::liric PROPERTY
         INTERFACE_LINK_LIBRARIES "${LIRIC_LIBRARY}")
+    set_property(TARGET p::liric PROPERTY
+        INTERFACE_LINK_OPTIONS "$<$<PLATFORM_ID:Linux>:-no-pie>")
     set(HAVE_LFORTRAN_LIRIC yes)
 endif()
 

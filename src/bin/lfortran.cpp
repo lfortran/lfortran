@@ -1560,6 +1560,11 @@ int compile_to_object_file_liric(const std::string &infile,
     }
     auto t3 = std::chrono::high_resolution_clock::now();
 
+    {
+        int err = save_mod_files(*asr, compiler_options, lm);
+        if (err) return err;
+    }
+
     // ASR -> liric object
     {
         diagnostics.diagnostics.clear();
