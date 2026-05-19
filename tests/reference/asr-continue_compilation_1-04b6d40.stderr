@@ -541,6 +541,12 @@ semantic error: Intrinsic 'not_real' is not recognized
 268 |     call sub(not_real)
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
 
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_1.f90:303:14
+    |
+303 |     print *, min(c, c)
+    |              ^^^^^^^^^ 
+
 semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
    --> tests/errors/continue_compilation_1.f90:328:14
     |
