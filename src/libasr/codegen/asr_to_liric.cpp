@@ -1761,6 +1761,22 @@ public:
 
     std::unordered_map<uint64_t, std::string> callable_name_cache;
 
+    // Resolve a symbol to the underlying Function, following
+    // ExternalSymbol and StructMethodDeclaration links.
+    ASR::Function_t *resolve_to_function(ASR::symbol_t *sym) {
+        if (!sym) return nullptr;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            ASR::StructMethodDeclaration_t *m =
+                down_cast<ASR::StructMethodDeclaration_t>(sym);
+            return resolve_to_function(m->m_proc);
+        }
+        if (sym && ASR::is_a<ASR::Function_t>(*sym)) {
+            return down_cast<ASR::Function_t>(sym);
+        }
+        return nullptr;
+    }
+
     std::string callable_name(ASR::Function_t *fn) {
         if (!fn) return std::string("<null>");
         uint64_t h = get_hash((ASR::asr_t *)fn);
@@ -1809,8 +1825,11 @@ public:
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        ASR::Function_t *fn = down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::Function_t *fn = resolve_to_function(x.m_name);
+        if (!fn) {
+            throw CodeGenError(
+                "liric: SubroutineCall target did not resolve to a Function");
+        }
 
         std::vector<lr_operand_desc_t> args;
         for (size_t i = 0; i < x.n_args; i++) {
@@ -1836,8 +1855,11 @@ public:
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         if (x.m_value) { visit_expr(*x.m_value); return; }
 
-        ASR::Function_t *fn = down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::Function_t *fn = resolve_to_function(x.m_name);
+        if (!fn) {
+            throw CodeGenError(
+                "liric: FunctionCall target did not resolve to a Function");
+        }
 
         std::vector<lr_operand_desc_t> args;
         for (size_t i = 0; i < x.n_args; i++) {
