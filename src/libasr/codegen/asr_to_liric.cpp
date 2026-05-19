@@ -160,6 +160,7 @@ public:
     diag::Diagnostics &diag;
     std::unordered_map<uint64_t, uint32_t> lr_symtab;
     std::unordered_map<uint64_t, lr_type_t *> struct_types;
+    std::unordered_map<int, uint32_t> goto_blocks;
     std::vector<uint32_t> loop_head_stack;
     std::vector<uint32_t> loop_end_stack;
 
@@ -547,6 +548,7 @@ public:
     // --- Program ---
 
     void visit_Program(const ASR::Program_t &x) {
+        goto_blocks.clear();
         // Visit nested functions first
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
@@ -605,6 +607,9 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t *ftype = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
+        // Label/block bookkeeping is function-scoped; nested gotos
+        // across function boundaries are not legal Fortran anyway.
+        goto_blocks.clear();
 
         // Skip interface-only functions (no body)
         if (x.n_body == 0 && !x.m_return_var) return;
@@ -2315,6 +2320,50 @@ public:
             d.call_fixed_args = 1;
             lr_session_emit(s, &d, nullptr);
         }
+    }
+
+    // --- GoTo / GoToTarget ---
+    //
+    // Each label id maps to a fresh block.  Forward gotos lazy-create
+    // their target block, so we don't need a pre-pass over the body.
+
+    uint32_t get_goto_block(int id) {
+        auto it = goto_blocks.find(id);
+        if (it != goto_blocks.end()) return it->second;
+        uint32_t b = lr_session_block(s);
+        goto_blocks[id] = b;
+        return b;
+    }
+
+    void visit_GoTo(const ASR::GoTo_t &x) {
+        uint32_t bb = get_goto_block(x.m_target_id);
+        lr_emit_br(s, bb);
+        // Statements after a GoTo are unreachable until the next
+        // GoToTarget reopens a block; start a sink block so further
+        // codegen has somewhere to go.
+        lr_error_t err;
+        uint32_t sink = lr_session_block(s);
+        lr_session_set_block(s, sink, &err);
+    }
+
+    // --- TypeInquiry: always compile-time foldable ---
+
+    void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
+        // The frontend already evaluates kind/precision/etc; we just
+        // emit the constant value.
+        visit_expr(*x.m_value);
+    }
+
+    // --- GoToTarget: no-op block marker ---
+
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        // Fall-through into the labelled block: emit a branch from the
+        // current block to the (possibly already-created) target, then
+        // make the labelled block the new current block.
+        uint32_t bb = get_goto_block(x.m_id);
+        lr_emit_br(s, bb);
+        lr_error_t err;
+        lr_session_set_block(s, bb, &err);
     }
 
     // --- Nullify: write null into each pointer's slot ---
