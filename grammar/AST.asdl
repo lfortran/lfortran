@@ -449,7 +449,7 @@ use_symbol
     | UseWrite(identifier id)
     | UseRead(identifier id)
 
-concurrent_control = ConcurrentControl(identifier? var, expr? start, expr? end, expr? increment)
+concurrent_control = ConcurrentControl(decl_attribute? type, identifier? var, expr? start, expr? end, expr? increment)
 
 concurrent_locality
     = ConcurrentLocal(identifier *vars)

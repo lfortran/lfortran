@@ -2169,10 +2169,18 @@ static inline void drop_trailing_matching_continue(
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
         EXPR(mask), down_cast<stmt_t>(assign), nullptr)
 
-#define CONCURRENT_CONTROL1(i, a, b, l) make_ConcurrentControl_t(p.m_a, l, \
+#define CONCURRENT_CONTROL1(t, i, a, b, l) \
+    make_ConcurrentControl_t(p.m_a, l, \
+        ((t) ? \
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
+            : nullptr), \
         name2char(i), EXPR(a), EXPR(b), nullptr)
 
-#define CONCURRENT_CONTROL2(i, a, b, c, l) make_ConcurrentControl_t(p.m_a, l, \
+#define CONCURRENT_CONTROL2(t, i, a, b, c, l) \
+    make_ConcurrentControl_t(p.m_a, l, \
+        ((t) ? \
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
+            : nullptr), \
         name2char(i), EXPR(a), EXPR(b), EXPR(c))
 
 

@@ -8635,7 +8635,25 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+            std::string var_name = to_lower(h.m_var);
+            ASR::expr_t *var = nullptr;
+            if (h.m_type) {
+                AST::decl_attribute_t *decl_type = h.m_type;
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, decl_type, false, false,
+                                                    dims, nullptr, type_declaration, ASR::abiType::Source);
+                ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, var_name),
+                        nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                        type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false,
+                        false, false, nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
+                current_scope->add_symbol(var_name, var_sym);
+                var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));                                    
+            } else {
+                var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, var_name));
+            }
             visit_expr(*h.m_start);
             ASR::expr_t *start = ASRUtils::EXPR(tmp);
             visit_expr(*h.m_end);

@@ -2160,9 +2160,13 @@ concurrent_control_list
 
 concurrent_control
     : id "=" expr ":" expr {
-            $$ = CONCURRENT_CONTROL1($1, $3, $5,     @$); }
+            $$ = CONCURRENT_CONTROL1(nullptr, $1, $3, $5, @$); }
     | id "=" expr ":" expr ":" expr {
-            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, @$); }
+            $$ = CONCURRENT_CONTROL2(nullptr, $1, $3, $5, $7, @$); }
+    | declaration_type_spec "::" id "=" expr ":" expr {
+            $$ = CONCURRENT_CONTROL1($1, $3, $5, $7, @$); }
+    | declaration_type_spec "::" id "=" expr ":" expr ":" expr {
+            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, $9, @$); }
     ;
 
 concurrent_locality_star
