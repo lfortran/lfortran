@@ -1047,6 +1047,25 @@ public:
                     V(tmp, ty_i32), I(-2, ty_i32));
                 break;
             }
+            case ASRUtils::IntrinsicImpureFunctions::Allocated: {
+                ASR::expr_t *arg = x.m_args[0];
+                ASR::ttype_t *at = ASRUtils::expr_type(arg);
+                at = ASRUtils::type_get_past_allocatable_pointer(at);
+                at = ASRUtils::type_get_past_array(at);
+                if (!ASR::is_a<ASR::String_t>(*at)) {
+                    throw CodeGenError(
+                        "liric: allocated() supports only string "
+                        "arguments at this stage");
+                }
+                visit_expr(*arg);
+                uint32_t v = tmp;
+                uint32_t fld0 = 0;
+                uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+                    V(v, ty_str_desc), &fld0, 1);
+                tmp = lr_emit_icmp(s, LR_CMP_NE,
+                    V(data, ty_ptr), LR_NULL(ty_ptr));
+                break;
+            }
             default:
                 throw CodeGenError(std::string("liric: impure intrinsic ")
                     + ASRUtils::get_impure_intrinsic_name(
