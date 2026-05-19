@@ -724,6 +724,121 @@ public:
         loop_end_stack.pop_back();
     }
 
+    // --- Allocate (string allocatables only) ---
+    //
+    // Implements the minimal `allocate(character(len=N) :: s)` shape.
+    // Calls _lfortran_malloc_alloc and writes the {data, N} descriptor
+    // back to the variable's slot.  Anything else (arrays, source=,
+    // stat=, mold=) is rejected with a clear diagnostic.
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        if (x.m_source || x.m_stat || x.m_errmsg) {
+            throw CodeGenError(
+                "liric: allocate() source/stat/errmsg not supported yet");
+        }
+        for (size_t i = 0; i < x.n_args; i++) {
+            const ASR::alloc_arg_t &arg = x.m_args[i];
+            if (arg.n_dims > 0) {
+                throw CodeGenError(
+                    "liric: allocate() of arrays not supported yet");
+            }
+            ASR::ttype_t *at = ASRUtils::expr_type(arg.m_a);
+            at = ASRUtils::type_get_past_allocatable_pointer(at);
+            at = ASRUtils::type_get_past_array(at);
+            if (!ASR::is_a<ASR::String_t>(*at)) {
+                throw CodeGenError(
+                    "liric: allocate() supports only string targets yet");
+            }
+            if (!arg.m_len_expr) {
+                throw CodeGenError(
+                    "liric: allocate() of string requires an explicit "
+                    "len= expression");
+            }
+
+            bool was_target = is_target;
+            is_target = true;
+            visit_expr(*arg.m_a);
+            is_target = was_target;
+            uint32_t desc_ptr = tmp;
+
+            visit_expr(*arg.m_len_expr);
+            uint32_t len = tmp;
+            lr_type_t *len_t = get_type(ASRUtils::expr_type(arg.m_len_expr));
+            uint32_t len64 = (len_t == ty_i64)
+                ? len
+                : lr_emit_sext(s, ty_i64, V(len, len_t));
+
+            uint32_t allocator = emit_call(
+                "_lfortran_get_default_allocator", ty_ptr, nullptr, 0);
+
+            lr_type_t *malloc_params[] = {ty_ptr, ty_i64};
+            declare_func("_lfortran_malloc_alloc", ty_ptr,
+                malloc_params, 2, false);
+            lr_operand_desc_t malloc_args[] = {
+                V(allocator, ty_ptr), V(len64, ty_i64)
+            };
+            uint32_t data = emit_call("_lfortran_malloc_alloc",
+                ty_ptr, malloc_args, 2);
+
+            uint32_t fld0 = 0, fld1 = 1;
+            uint32_t d0 = lr_emit_insertvalue(s, ty_str_desc,
+                LR_UNDEF(ty_str_desc), V(data, ty_ptr), &fld0, 1);
+            uint32_t d1 = lr_emit_insertvalue(s, ty_str_desc,
+                V(d0, ty_str_desc), V(len64, ty_i64), &fld1, 1);
+            lr_emit_store(s, V(d1, ty_str_desc), V(desc_ptr, ty_ptr));
+        }
+    }
+
+    // --- ExplicitDeallocate / ImplicitDeallocate (string-only path) ---
+
+    void deallocate_string_var(ASR::expr_t *v) {
+        ASR::ttype_t *at = ASRUtils::expr_type(v);
+        at = ASRUtils::type_get_past_allocatable_pointer(at);
+        at = ASRUtils::type_get_past_array(at);
+        if (!ASR::is_a<ASR::String_t>(*at)) {
+            // Non-string deallocate is a no-op until we have array
+            // descriptor support.
+            return;
+        }
+
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*v);
+        is_target = was_target;
+        uint32_t desc_ptr = tmp;
+
+        uint32_t desc = lr_emit_load(s, ty_str_desc, V(desc_ptr, ty_ptr));
+        uint32_t fld0 = 0;
+        uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+            V(desc, ty_str_desc), &fld0, 1);
+
+        uint32_t allocator = emit_call(
+            "_lfortran_get_default_allocator", ty_ptr, nullptr, 0);
+        lr_operand_desc_t free_args[] = {
+            V(allocator, ty_ptr), V(data, ty_ptr)
+        };
+        emit_call_void("_lfortran_free_alloc", free_args, 2);
+
+        uint32_t fld1 = 1;
+        uint32_t z0 = lr_emit_insertvalue(s, ty_str_desc,
+            LR_UNDEF(ty_str_desc), LR_NULL(ty_ptr), &fld0, 1);
+        uint32_t z1 = lr_emit_insertvalue(s, ty_str_desc,
+            V(z0, ty_str_desc), I(0, ty_i64), &fld1, 1);
+        lr_emit_store(s, V(z1, ty_str_desc), V(desc_ptr, ty_ptr));
+    }
+
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) {
+            deallocate_string_var(x.m_vars[i]);
+        }
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) {
+            deallocate_string_var(x.m_vars[i]);
+        }
+    }
+
     // --- Control flow: Return, Stop, ErrorStop, Exit, Cycle ---
 
     void visit_Return(const ASR::Return_t &) {
