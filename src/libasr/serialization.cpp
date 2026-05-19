@@ -382,6 +382,26 @@ public:
         }
         return result;
     }
+    ASR::symbol_t* owner_in_symtab(SymbolTable *symtab,const std::string &owner_name) {
+        for (auto &sym : symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Module_t>(*sym.second)) continue;
+            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(sym.second);
+            ASR::symbol_t *owner = mod->m_symtab->get_symbol(owner_name);
+            if (owner && (ASR::is_a<ASR::Struct_t>(*owner)
+                || ASR::is_a<ASR::Enum_t>(*owner)
+                || ASR::is_a<ASR::Function_t>(*owner))) {
+                return owner;
+            }
+        }
+        return nullptr;
+    }
+    ASR::symbol_t* owner_in_loaded_modules(const std::string &owner_name) {
+        ASR::symbol_t* result = owner_in_symtab(global_symtab, owner_name);
+        if (!result && external_symtab != global_symtab) {
+            result = owner_in_symtab(external_symtab, owner_name);
+        }
+        return result;
+    }
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
         if (x.m_external != nullptr) {
             // Nothing to do, the external symbol is already resolved
@@ -471,6 +491,30 @@ public:
             xx.m_external = enum_->m_symtab->get_symbol(x.m_original_name);;
             if(!xx.m_external) { 
                 throw LCompilersException("Enumerator variable : '"+ original_name +"' not found, but enum symtab found.");
+            }
+        } else if (ASR::symbol_t* owner_sym = owner_in_loaded_modules(module_name)) {
+            ASR::symbol_t* owner = ASRUtils::symbol_get_past_external(owner_sym);
+            symbol_t *sym = nullptr;
+            if (ASR::is_a<ASR::Struct_t>(*owner)) {
+                Struct_t *m = down_cast<Struct_t>(owner);
+                sym = m->m_symtab->find_scoped_symbol(original_name,
+                        x.n_scope_names, x.m_scope_names);
+            } else if (ASR::is_a<ASR::Enum_t>(*owner)) {
+                Enum_t *m = down_cast<Enum_t>(owner);
+                sym = m->m_symtab->find_scoped_symbol(original_name,
+                        x.n_scope_names, x.m_scope_names);
+            } else if (ASR::is_a<ASR::Function_t>(*owner)) {
+                Function_t *m = down_cast<Function_t>(owner);
+                sym = m->m_symtab->find_scoped_symbol(original_name,
+                        x.n_scope_names, x.m_scope_names);
+            }
+            if (sym) {
+                ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
+                xx.m_external = sym;
+            } else {
+                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
+                    + original_name + "' was not found in the owner '"
+                    + module_name + "' (owner found in loaded module)");
             }
         } else {
             if( attempt <= 1 ) {
