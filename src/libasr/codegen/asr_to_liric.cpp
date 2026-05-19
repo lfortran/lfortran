@@ -204,9 +204,11 @@ public:
                 if (total <= 0) total = 1;
                 return lr_type_array_s(s, et, (uint64_t)total);
             }
-            // Non-fixed arrays appear at ABI boundaries as raw data
-            // pointers; descriptor support is a later chunk.
-            return ty_ptr;
+            // Descriptor-style array: full CFI-compatible descriptor
+            // {base_addr, elem_len, version, rank, type, attribute,
+            //  extra, offset, dim[n_dims]} sized so alloca produces the
+            // right amount of stack for a local descriptor.
+            return get_array_desc_type((int)at->n_dims);
         }
         switch (t->type) {
             case ASR::ttypeType::Integer: {
@@ -260,6 +262,40 @@ public:
                 throw CodeGenError(std::string("liric: unsupported type kind ")
                     + std::to_string((int)t->type));
         }
+    }
+
+    // --- Cached array descriptor type per rank ---
+    //
+    // Layout matches asr_to_llvm's SimpleCMODescriptor and the CFI
+    // descriptor that the lfortran runtime expects:
+    //   {i8*, i64, i32, i8, i8, i8, i8, i64, [n_dims x {i64,i64,i64}]}
+
+    std::unordered_map<int, lr_type_t *> array_desc_types;
+
+    lr_type_t *get_array_desc_type(int n_dims) {
+        auto it = array_desc_types.find(n_dims);
+        if (it != array_desc_types.end()) return it->second;
+
+        lr_type_t *dim_fields[3] = {ty_i64, ty_i64, ty_i64};
+        lr_type_t *dim_struct =
+            lr_type_struct_s(s, dim_fields, 3, false);
+        lr_type_t *dim_array =
+            lr_type_array_s(s, dim_struct, n_dims > 0 ? n_dims : 1);
+
+        lr_type_t *fields[9] = {
+            ty_ptr,   // base_addr
+            ty_i64,   // elem_len
+            ty_i32,   // version
+            ty_i8,    // rank
+            ty_i8,    // type
+            ty_i8,    // attribute
+            ty_i8,    // extra
+            ty_i64,   // offset
+            dim_array // dim[n_dims]
+        };
+        lr_type_t *t = lr_type_struct_s(s, fields, 9, false);
+        array_desc_types[n_dims] = t;
+        return t;
     }
 
     // --- Map ASR StructType to a cached liric struct type ---
@@ -648,13 +684,21 @@ public:
         ASR::Variable_t *v = down_cast<ASR::Variable_t>(x.m_v);
         uint32_t slot = lr_symtab[get_hash((ASR::asr_t *)v)];
         if (is_target) {
-            // Return the address for store
             tmp = slot;
-        } else {
-            // Load the value
-            lr_type_t *vt = get_type(v->m_type);
-            tmp = lr_emit_load(s, vt, V(slot, ty_ptr));
+            return;
         }
+        // Arrays (any physical type) act by reference for the direct
+        // backend: every reader (ArrayItem/ArraySize/ArrayBound/
+        // allocated) expects a pointer into the alloca'd slot, not a
+        // value-loaded descriptor.
+        ASR::ttype_t *vt = ASRUtils::type_get_past_allocatable_pointer(
+            v->m_type);
+        if (ASR::is_a<ASR::Array_t>(*vt)) {
+            tmp = slot;
+            return;
+        }
+        lr_type_t *t = get_type(v->m_type);
+        tmp = lr_emit_load(s, t, V(slot, ty_ptr));
     }
 
     // --- Assignment ---
@@ -989,6 +1033,55 @@ public:
     // back to the variable's slot.  Anything else (arrays, source=,
     // stat=, mold=) is rejected with a clear diagnostic.
 
+    // Byte size of a scalar element for descriptor.elem_len.
+    int64_t element_byte_size(ASR::ttype_t *t) {
+        t = ASRUtils::type_get_past_allocatable_pointer(t);
+        t = ASRUtils::type_get_past_array(t);
+        switch (t->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::UnsignedInteger:
+            case ASR::ttypeType::Real: {
+                int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                return kind > 0 ? (int64_t)kind : 8;
+            }
+            case ASR::ttypeType::Logical:
+                return 4;
+            case ASR::ttypeType::Complex: {
+                int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                return 2 * (kind > 0 ? (int64_t)kind : 8);
+            }
+            case ASR::ttypeType::String:
+                return 16;            // descriptor
+            case ASR::ttypeType::Pointer:
+            case ASR::ttypeType::CPtr:
+                return 8;
+            default:
+                return 8;
+        }
+    }
+
+    // Write i64 value into the descriptor at desc_ptr + byte_offset.
+    void desc_store_i64(uint32_t desc_ptr, int64_t byte_offset,
+                        uint32_t value) {
+        lr_operand_desc_t off[1] = {I(byte_offset, ty_i64)};
+        uint32_t p = lr_emit_gep(s, ty_i8,
+            V(desc_ptr, ty_ptr), off, 1);
+        lr_emit_store(s, V(value, ty_i64), V(p, ty_ptr));
+    }
+
+    // Write ptr value into descriptor at offset 0 (base_addr slot).
+    void desc_store_base(uint32_t desc_ptr, uint32_t base_ptr) {
+        lr_emit_store(s, V(base_ptr, ty_ptr), V(desc_ptr, ty_ptr));
+    }
+
+    // Fill the rank field (offset 20, i8).
+    void desc_store_rank(uint32_t desc_ptr, int rank) {
+        lr_operand_desc_t off[1] = {I(20, ty_i64)};
+        uint32_t p = lr_emit_gep(s, ty_i8,
+            V(desc_ptr, ty_ptr), off, 1);
+        lr_emit_store(s, I(rank, ty_i8), V(p, ty_ptr));
+    }
+
     void visit_Allocate(const ASR::Allocate_t &x) {
         if (x.m_source || x.m_stat || x.m_errmsg) {
             throw CodeGenError(
@@ -996,16 +1089,19 @@ public:
         }
         for (size_t i = 0; i < x.n_args; i++) {
             const ASR::alloc_arg_t &arg = x.m_args[i];
-            if (arg.n_dims > 0) {
-                throw CodeGenError(
-                    "liric: allocate() of arrays not supported yet");
-            }
             ASR::ttype_t *at = ASRUtils::expr_type(arg.m_a);
-            at = ASRUtils::type_get_past_allocatable_pointer(at);
-            at = ASRUtils::type_get_past_array(at);
-            if (!ASR::is_a<ASR::String_t>(*at)) {
+            ASR::ttype_t *core_naked =
+                ASRUtils::type_get_past_allocatable_pointer(at);
+            if (arg.n_dims > 0 ||
+                    ASR::is_a<ASR::Array_t>(*core_naked)) {
+                allocate_array(arg);
+                continue;
+            }
+            ASR::ttype_t *core = ASRUtils::type_get_past_array(core_naked);
+            if (!ASR::is_a<ASR::String_t>(*core)) {
                 throw CodeGenError(
-                    "liric: allocate() supports only string targets yet");
+                    "liric: allocate() supports only string and array "
+                    "targets at this stage");
             }
             if (!arg.m_len_expr) {
                 throw CodeGenError(
@@ -1044,6 +1140,106 @@ public:
             uint32_t d1 = lr_emit_insertvalue(s, ty_str_desc,
                 V(d0, ty_str_desc), V(len64, ty_i64), &fld1, 1);
             lr_emit_store(s, V(d1, ty_str_desc), V(desc_ptr, ty_ptr));
+        }
+    }
+
+    // Allocate an array variable: fill its descriptor in place.
+    // Stride is in *bytes* (CFI semantics), and dim[0].stride = elem_len,
+    // dim[i+1].stride = dim[i].stride * dim[i].extent.
+
+    void allocate_array(const ASR::alloc_arg_t &arg) {
+        ASR::ttype_t *at = ASRUtils::expr_type(arg.m_a);
+        ASR::ttype_t *naked = ASRUtils::type_get_past_allocatable_pointer(at);
+        if (!ASR::is_a<ASR::Array_t>(*naked)) {
+            throw CodeGenError(
+                "liric: allocate_array: target is not an Array");
+        }
+        ASR::Array_t *array_t = down_cast<ASR::Array_t>(naked);
+        int n_dims = (int)array_t->n_dims;
+        int64_t elem_bytes = element_byte_size(array_t->m_type);
+
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*arg.m_a);
+        is_target = was_target;
+        uint32_t desc_ptr = tmp;
+
+        // Compute extents.  Frontend may set arg.m_dims (preferred) or
+        // leave us with the array type's declared dims.
+        ASR::dimension_t *dims = arg.m_dims;
+        size_t n = arg.n_dims;
+        if (!dims) {
+            dims = array_t->m_dims;
+            n = array_t->n_dims;
+        }
+        if ((int)n != n_dims) {
+            throw CodeGenError(
+                "liric: allocate(): dim count mismatch");
+        }
+
+        std::vector<uint32_t> extents(n_dims);
+        std::vector<uint32_t> lbounds(n_dims);
+        uint32_t total = lr_emit_add(s, ty_i64, I(1, ty_i64), I(0, ty_i64));
+        for (int d = 0; d < n_dims; d++) {
+            uint32_t lb;
+            if (dims[d].m_start) {
+                visit_expr(*dims[d].m_start);
+                lr_type_t *lt = get_type(ASRUtils::expr_type(dims[d].m_start));
+                lb = (lt == ty_i64) ? tmp
+                    : lr_emit_sext(s, ty_i64, V(tmp, lt));
+            } else {
+                lb = lr_emit_add(s, ty_i64, I(1, ty_i64), I(0, ty_i64));
+            }
+            uint32_t ext;
+            if (dims[d].m_length) {
+                visit_expr(*dims[d].m_length);
+                lr_type_t *lt = get_type(ASRUtils::expr_type(dims[d].m_length));
+                ext = (lt == ty_i64) ? tmp
+                    : lr_emit_sext(s, ty_i64, V(tmp, lt));
+            } else {
+                ext = lr_emit_add(s, ty_i64, I(1, ty_i64), I(0, ty_i64));
+            }
+            lbounds[d] = lb;
+            extents[d] = ext;
+            total = lr_emit_mul(s, ty_i64,
+                V(total, ty_i64), V(ext, ty_i64));
+        }
+
+        // Total bytes to allocate.
+        uint32_t byte_total = lr_emit_mul(s, ty_i64,
+            V(total, ty_i64), I(elem_bytes, ty_i64));
+
+        uint32_t allocator = emit_call(
+            "_lfortran_get_default_allocator", ty_ptr, nullptr, 0);
+        lr_type_t *malloc_params[] = {ty_ptr, ty_i64};
+        declare_func("_lfortran_malloc_alloc", ty_ptr,
+            malloc_params, 2, false);
+        lr_operand_desc_t malloc_args[] = {
+            V(allocator, ty_ptr), V(byte_total, ty_i64)
+        };
+        uint32_t data = emit_call("_lfortran_malloc_alloc",
+            ty_ptr, malloc_args, 2);
+
+        // Populate descriptor.
+        desc_store_base(desc_ptr, data);
+        // elem_len at offset 8
+        desc_store_i64(desc_ptr, 8,
+            lr_emit_add(s, ty_i64, I(elem_bytes, ty_i64), I(0, ty_i64)));
+        desc_store_rank(desc_ptr, n_dims);
+        // offset at byte 24
+        desc_store_i64(desc_ptr, 24,
+            lr_emit_add(s, ty_i64, I(0, ty_i64), I(0, ty_i64)));
+
+        // dim[d].{lbound, extent, stride}: stride in bytes, row-major
+        uint32_t cur_stride = lr_emit_add(s, ty_i64,
+            I(elem_bytes, ty_i64), I(0, ty_i64));
+        for (int d = 0; d < n_dims; d++) {
+            int64_t base_off = DESC_HEADER_BYTES + DESC_DIM_BYTES * d;
+            desc_store_i64(desc_ptr, base_off + 0,  lbounds[d]);
+            desc_store_i64(desc_ptr, base_off + 8,  extents[d]);
+            desc_store_i64(desc_ptr, base_off + 16, cur_stride);
+            cur_stride = lr_emit_mul(s, ty_i64,
+                V(cur_stride, ty_i64), V(extents[d], ty_i64));
         }
     }
 
