@@ -1961,6 +1961,7 @@ public:
     bool _declaring_variable = false;
     bool _processing_common_block_object = false;
     bool is_implicit_interface = false;
+    int array_initializer_depth = 0;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
@@ -10667,6 +10668,11 @@ public:
         bool use_descriptorArray = false; // Set to true if any argument has no fixed size (array arguments).
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         size_t n_elements = 0;
+        struct ArrayInitializerDepthGuard {
+            int &depth;
+            ArrayInitializerDepthGuard(int &depth) : depth(depth) { depth++; }
+            ~ArrayInitializerDepthGuard() { depth--; }
+        } array_initializer_depth_guard(array_initializer_depth);
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
@@ -15993,6 +15999,79 @@ public:
             }
         }
         idl_nesting_level++;
+        bool scoped_array_constructor_idl = array_initializer_depth > 0 &&
+            current_scope->resolve_symbol(to_lower(x.m_var)) == nullptr;
+        ASR::symbol_t* scoped_idl_sym = nullptr;
+        std::string scoped_idl_var_name = to_lower(x.m_var);
+        struct SymbolAliasGuard {
+            SymbolTable* scope = nullptr;
+            std::string name;
+            ASR::symbol_t* previous = nullptr;
+            bool active = false;
+
+            void set(SymbolTable* scope_, const std::string &name_,
+                    ASR::symbol_t* previous_) {
+                scope = scope_;
+                name = name_;
+                previous = previous_;
+                active = true;
+            }
+
+            void restore() {
+                if (!active) return;
+                scope->erase_symbol(name);
+                if (previous) {
+                    scope->add_symbol(name, previous);
+                }
+                active = false;
+            }
+
+            ~SymbolAliasGuard() { restore(); }
+        } scoped_idl_alias_guard;
+        if (scoped_array_constructor_idl) {
+            ASR::symbol_t* previous_direct_sym = current_scope->get_symbol(scoped_idl_var_name);
+            ASR::symbol_t* outer_sym = current_scope->resolve_symbol(scoped_idl_var_name);
+            ASR::ttype_t *loop_var_type = nullptr;
+            if (outer_sym && ASR::is_a<ASR::Variable_t>(
+                    *ASRUtils::symbol_get_past_external(outer_sym))) {
+                loop_var_type = ASRUtils::symbol_type(outer_sym);
+            } else if (compiler_options.implicit_typing) {
+                std::string first_letter = std::string(1, scoped_idl_var_name[0]);
+                if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
+                    loop_var_type = implicit_dictionary[first_letter];
+                    if (loop_var_type == nullptr) {
+                        diag.semantic_error_label("The implied do loop variable '" + scoped_idl_var_name
+                            + "' is not declared", {x.base.base.loc},
+                            "'" + scoped_idl_var_name + "' is undeclared");
+                        throw SemanticAbort();
+                    }
+                } else {
+                    loop_var_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                        x.base.base.loc, compiler_options.po.default_integer_kind));
+                }
+            } else {
+                diag.add(Diagnostic("The implied do loop variable '" +
+                    scoped_idl_var_name + "' is not declared",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, loop_var_type);
+            std::string hidden_var_name = current_scope->get_unique_name(
+                "lcompilers_implied_do_" + scoped_idl_var_name);
+            scoped_idl_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, x.base.base.loc,
+                    current_scope, s2c(al, hidden_var_name), variable_dependencies_vec.p,
+                    variable_dependencies_vec.size(), ASRUtils::intent_local,
+                    nullptr, nullptr, ASR::storage_typeType::Default, loop_var_type,
+                    nullptr, current_procedure_abi_type, ASR::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(hidden_var_name, scoped_idl_sym);
+            current_scope->add_or_overwrite_symbol(scoped_idl_var_name, scoped_idl_sym);
+            scoped_idl_alias_guard.set(current_scope, scoped_idl_var_name, previous_direct_sym);
+        }
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
         a_start = a_end = a_increment = nullptr;
@@ -16028,7 +16107,9 @@ public:
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
 
-        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
+        scoped_idl_alias_guard.restore();
+        ASR::symbol_t* a_sym = scoped_idl_sym ?
+            scoped_idl_sym : current_scope->resolve_symbol(to_lower(x.m_var));
         if (a_sym == nullptr) {
             if (compiler_options.implicit_typing) {
                 std::string var_name = to_lower(x.m_var);
