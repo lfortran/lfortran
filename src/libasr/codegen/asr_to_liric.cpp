@@ -573,6 +573,29 @@ public:
         return 32;
     }
 
+    uint64_t storage_size_or_default(ASR::ttype_t *asr_type,
+            lr_type_t *liric_type) {
+        ASR::ttype_t *type =
+            ASRUtils::type_get_past_allocatable_pointer(asr_type);
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+            if (array->m_physical_type ==
+                    ASR::array_physical_typeType::DescriptorArray) {
+                return DESC_HEADER_BYTES + DESC_DIM_BYTES *
+                    (array->n_dims > 0 ? array->n_dims : 1);
+            }
+            int64_t total = ASRUtils::get_fixed_size_of_array(type);
+            if (total > 0) {
+                return (uint64_t)total * element_byte_size(array->m_type);
+            }
+        }
+        type = ASRUtils::type_get_past_array(type);
+        if (ASR::is_a<ASR::String_t>(*type)) {
+            return 16;
+        }
+        return lr_type_size_or_default(liric_type);
+    }
+
     // --- Program ---
 
     void visit_Program(const ASR::Program_t &x) {
@@ -804,7 +827,7 @@ public:
         std::string gname = std::string("_lr_var_")
             + std::to_string(h) + "_" + v->m_name;
         lr_type_t *t = get_type(v->m_type);
-        uint64_t nbytes = lr_type_size_or_default(t);
+        uint64_t nbytes = storage_size_or_default(v->m_type, t);
         std::vector<uint8_t> zeros(nbytes, 0);
         lr_session_global(s, gname.c_str(),
             lr_type_array_s(s, ty_i8, nbytes),
