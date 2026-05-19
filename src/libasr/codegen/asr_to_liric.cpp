@@ -662,7 +662,9 @@ public:
         }
 
         lr_error_t err;
-        lr_session_func_begin(s, x.m_name, ret_type,
+        std::string fn_name = callable_name(
+            const_cast<ASR::Function_t *>(&x));
+        lr_session_func_begin(s, fn_name.c_str(), ret_type,
             param_types.data(), param_types.size(), false, &err);
 
         uint32_t entry_block = lr_session_block(s);
@@ -1747,17 +1749,55 @@ public:
     // --- SubroutineCall ---
 
     // Pick the externally-visible name for a Function: bind(c, name=)
-    // overrides the Fortran identifier.
-    const char *callable_name(ASR::Function_t *fn) {
-        if (!fn) return "<null>";
+    // overrides the Fortran identifier.  For functions nested inside
+    // another function's `contains` block we prefix the parent's name
+    // so two siblings with the same name (e.g. M_CLI2's two
+    // `print_generic` nested subroutines) don't collide at link.
+    std::string callable_name_cache_get(uint64_t h) {
+        auto it = callable_name_cache.find(h);
+        if (it != callable_name_cache.end()) return it->second;
+        return "";
+    }
+
+    std::unordered_map<uint64_t, std::string> callable_name_cache;
+
+    std::string callable_name(ASR::Function_t *fn) {
+        if (!fn) return std::string("<null>");
+        uint64_t h = get_hash((ASR::asr_t *)fn);
+        auto it = callable_name_cache.find(h);
+        if (it != callable_name_cache.end()) return it->second;
+
         if (fn->m_function_signature) {
             ASR::FunctionType_t *ft = down_cast<ASR::FunctionType_t>(
                 fn->m_function_signature);
             if (ft->m_abi == ASR::abiType::BindC && ft->m_bindc_name) {
-                return ft->m_bindc_name;
+                std::string r = ft->m_bindc_name;
+                callable_name_cache[h] = r;
+                return r;
             }
         }
-        return fn->m_name;
+        std::string base = fn->m_name;
+        // Walk up the parent symtab chain; if we find a Function in
+        // the chain it means we're nested.
+        SymbolTable *st = fn->m_symtab ? fn->m_symtab->parent : nullptr;
+        while (st) {
+            ASR::asr_t *owner = (ASR::asr_t *)st->asr_owner;
+            if (!owner) break;
+            if (owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *osym = (ASR::symbol_t *)owner;
+                if (ASR::is_a<ASR::Function_t>(*osym)) {
+                    ASR::Function_t *parent =
+                        down_cast<ASR::Function_t>(osym);
+                    base = std::string(parent->m_name) + "__" + base;
+                    st = parent->m_symtab
+                        ? parent->m_symtab->parent : nullptr;
+                    continue;
+                }
+            }
+            break;
+        }
+        callable_name_cache[h] = base;
+        return base;
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -1778,7 +1818,7 @@ public:
             }
         }
 
-        uint32_t sym = lr_session_intern(s, callable_name(fn));
+        uint32_t sym = lr_session_intern(s, callable_name(fn).c_str());
         lr_emit_call_void(s, LR_GLOBAL(sym, ty_ptr),
                           args.data(), args.size());
     }
@@ -1805,7 +1845,7 @@ public:
         }
 
         lr_type_t *ret = get_type(x.m_type);
-        uint32_t sym = lr_session_intern(s, callable_name(fn));
+        uint32_t sym = lr_session_intern(s, callable_name(fn).c_str());
         tmp = lr_emit_call(s, ret, LR_GLOBAL(sym, ty_ptr),
                            args.data(), args.size());
     }
