@@ -836,6 +836,157 @@ public:
         loop_end_stack.pop_back();
     }
 
+    // --- ArraySection: build a fresh descriptor that views a slice of the source ---
+    //
+    // For each dim we recognise three forms in `array_index`:
+    //   * scalar:  m_left=NULL, m_right=idx, m_step=NULL  - drops the dim
+    //   * range:   m_left, m_right, optional m_step
+    //   * full:    m_left=NULL, m_right=NULL              - keeps the whole dim
+    // The result rank equals the number of range/full args; scalar args
+    // are folded into the base_addr offset.  Step != 1 is supported via
+    // the stride field of the new descriptor.
+
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        LIRIC_PASSTHROUGH(x)
+
+        uint32_t src_desc = desc_ptr_of(x.m_v);
+        uint32_t src_base = desc_base_addr(src_desc);
+
+        // Walk dims; compute output rank and gather per-source-dim
+        // {lbound, extent, stride}.  Stride is in bytes.
+        int n_src_dims = (int)x.n_args;
+        std::vector<bool> is_range(n_src_dims, false);
+        std::vector<uint32_t> sel_left(n_src_dims, 0);
+        std::vector<uint32_t> sel_right(n_src_dims, 0);
+        std::vector<uint32_t> sel_step(n_src_dims, 0);
+
+        // src_lbound / src_stride per dim
+        std::vector<uint32_t> src_lbound(n_src_dims);
+        std::vector<uint32_t> src_stride(n_src_dims);
+        for (int d = 0; d < n_src_dims; d++) {
+            src_lbound[d] = desc_dim_lbound(src_desc, d);
+            src_stride[d] = desc_load_i64(src_desc,
+                DESC_HEADER_BYTES + DESC_DIM_BYTES * d + 16);
+        }
+
+        // For each arg, evaluate the slice bounds.
+        for (int d = 0; d < n_src_dims; d++) {
+            const ASR::array_index_t &ai = x.m_args[d];
+            if (ai.m_left || ai.m_step || !ai.m_right ||
+                    (ai.m_left == nullptr && ai.m_right == nullptr)) {
+                is_range[d] = true;
+                if (ai.m_left) {
+                    visit_expr(*ai.m_left);
+                    lr_type_t *lt = get_type(
+                        ASRUtils::expr_type(ai.m_left));
+                    sel_left[d] = (lt == ty_i64) ? tmp
+                        : lr_emit_sext(s, ty_i64, V(tmp, lt));
+                } else {
+                    sel_left[d] = src_lbound[d];
+                }
+                if (ai.m_right) {
+                    visit_expr(*ai.m_right);
+                    lr_type_t *rt = get_type(
+                        ASRUtils::expr_type(ai.m_right));
+                    sel_right[d] = (rt == ty_i64) ? tmp
+                        : lr_emit_sext(s, ty_i64, V(tmp, rt));
+                } else {
+                    // upper = lbound + extent - 1
+                    uint32_t ext = desc_dim_extent(src_desc, d);
+                    uint32_t sum = lr_emit_add(s, ty_i64,
+                        V(src_lbound[d], ty_i64), V(ext, ty_i64));
+                    sel_right[d] = lr_emit_sub(s, ty_i64,
+                        V(sum, ty_i64), I(1, ty_i64));
+                }
+                if (ai.m_step) {
+                    visit_expr(*ai.m_step);
+                    lr_type_t *st = get_type(
+                        ASRUtils::expr_type(ai.m_step));
+                    sel_step[d] = (st == ty_i64) ? tmp
+                        : lr_emit_sext(s, ty_i64, V(tmp, st));
+                } else {
+                    sel_step[d] = lr_emit_add(s, ty_i64,
+                        I(1, ty_i64), I(0, ty_i64));
+                }
+            } else {
+                // scalar index: ai.m_right is the index
+                visit_expr(*ai.m_right);
+                lr_type_t *rt = get_type(
+                    ASRUtils::expr_type(ai.m_right));
+                sel_right[d] = (rt == ty_i64) ? tmp
+                    : lr_emit_sext(s, ty_i64, V(tmp, rt));
+            }
+        }
+
+        // Compute total offset bytes from each dim.
+        uint32_t total_off = lr_emit_add(s, ty_i64,
+            I(0, ty_i64), I(0, ty_i64));
+        for (int d = 0; d < n_src_dims; d++) {
+            uint32_t start_idx = is_range[d] ? sel_left[d] : sel_right[d];
+            uint32_t delta = lr_emit_sub(s, ty_i64,
+                V(start_idx, ty_i64), V(src_lbound[d], ty_i64));
+            uint32_t contrib = lr_emit_mul(s, ty_i64,
+                V(delta, ty_i64), V(src_stride[d], ty_i64));
+            total_off = lr_emit_add(s, ty_i64,
+                V(total_off, ty_i64), V(contrib, ty_i64));
+        }
+
+        // New base_addr = src_base + total_off bytes.
+        lr_operand_desc_t goff[1] = {V(total_off, ty_i64)};
+        uint32_t new_base = lr_emit_gep(s, ty_i8,
+            V(src_base, ty_ptr), goff, 1);
+
+        // Count the result rank (number of range dims).
+        int out_rank = 0;
+        for (int d = 0; d < n_src_dims; d++) {
+            if (is_range[d]) out_rank++;
+        }
+        if (out_rank == 0) {
+            // Pure scalar indexing should have been ArrayItem.  Treat as
+            // scalar via single load if we got here.
+            ASR::ttype_t *core = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+            lr_type_t *et = get_type(core);
+            tmp = lr_emit_load(s, et, V(new_base, ty_ptr));
+            return;
+        }
+
+        // Read source elem_len from descriptor offset 8.
+        uint32_t elem_len = desc_load_i64(src_desc, 8);
+
+        // Allocate a fresh descriptor of rank=out_rank on the stack
+        // and fill it.
+        lr_type_t *new_desc_type = get_array_desc_type(out_rank);
+        uint32_t new_desc = lr_emit_alloca(s, new_desc_type);
+
+        desc_store_base(new_desc, new_base);
+        desc_store_i64(new_desc, 8, elem_len);
+        desc_store_rank(new_desc, out_rank);
+        desc_store_i64(new_desc, 24,
+            lr_emit_add(s, ty_i64, I(0, ty_i64), I(0, ty_i64)));
+
+        int out_d = 0;
+        for (int d = 0; d < n_src_dims; d++) {
+            if (!is_range[d]) continue;
+            uint32_t span = lr_emit_sub(s, ty_i64,
+                V(sel_right[d], ty_i64), V(sel_left[d], ty_i64));
+            uint32_t span_div = lr_emit_sdiv(s, ty_i64,
+                V(span, ty_i64), V(sel_step[d], ty_i64));
+            uint32_t new_extent = lr_emit_add(s, ty_i64,
+                V(span_div, ty_i64), I(1, ty_i64));
+            uint32_t new_stride = lr_emit_mul(s, ty_i64,
+                V(src_stride[d], ty_i64), V(sel_step[d], ty_i64));
+            int64_t base_off = DESC_HEADER_BYTES + DESC_DIM_BYTES * out_d;
+            desc_store_i64(new_desc, base_off + 0,
+                lr_emit_add(s, ty_i64, I(1, ty_i64), I(0, ty_i64)));
+            desc_store_i64(new_desc, base_off + 8,  new_extent);
+            desc_store_i64(new_desc, base_off + 16, new_stride);
+            out_d++;
+        }
+
+        tmp = new_desc;
+    }
+
     // --- DebugCheckArrayBounds: no-op (bounds_checking is off by default) ---
 
     void visit_DebugCheckArrayBounds(
