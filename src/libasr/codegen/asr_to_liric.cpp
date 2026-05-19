@@ -190,8 +190,20 @@ public:
     // --- Type mapping: ASR type -> liric type ---
 
     lr_type_t *get_type(ASR::ttype_t *t) {
-        t = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable(t));
+        t = ASRUtils::type_get_past_allocatable(t);
+        if (ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::Array_t *at = down_cast<ASR::Array_t>(t);
+            lr_type_t *et = get_type(at->m_type);
+            if (at->m_physical_type
+                    == ASR::array_physical_typeType::FixedSizeArray) {
+                int64_t total = ASRUtils::get_fixed_size_of_array(t);
+                if (total <= 0) total = 1;
+                return lr_type_array_s(s, et, (uint64_t)total);
+            }
+            // Non-fixed arrays appear at ABI boundaries as raw data
+            // pointers; descriptor support is a later chunk.
+            return ty_ptr;
+        }
         switch (t->type) {
             case ASR::ttypeType::Integer: {
                 int kind = ASRUtils::extract_kind_from_ttype_t(t);
@@ -722,6 +734,86 @@ public:
         lr_session_set_block(s, end_bb, &err);
         loop_head_stack.pop_back();
         loop_end_stack.pop_back();
+    }
+
+    // --- ArrayItem (FixedSizeArray, single-dim only for now) ---
+    //
+    // Compute row-major linear index from the supplied dim indices and
+    // GEP into the array storage.  FixedSizeArray only; other physical
+    // types still throw a clear diagnostic.
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        LIRIC_PASSTHROUGH(x)
+
+        ASR::ttype_t *vt = ASRUtils::expr_type(x.m_v);
+        vt = ASRUtils::type_get_past_allocatable_pointer(vt);
+        if (!ASR::is_a<ASR::Array_t>(*vt)) {
+            throw CodeGenError(
+                "liric: ArrayItem owner is not an array type");
+        }
+        ASR::Array_t *array_t = down_cast<ASR::Array_t>(vt);
+        if (array_t->m_physical_type
+                != ASR::array_physical_typeType::FixedSizeArray) {
+            throw CodeGenError(
+                "liric: ArrayItem supports only FixedSizeArray today");
+        }
+
+        lr_type_t *array_type = get_type(vt);
+        lr_type_t *elem_type = get_type(array_t->m_type);
+
+        // Pointer to the array storage.
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*x.m_v);
+        is_target = was_target;
+        uint32_t base = tmp;
+
+        // Build row-major linear (i - lbound) accumulator across dims.
+        uint32_t lin = 0;
+        bool first = true;
+        for (size_t r = 0; r < x.n_args; r++) {
+            ASR::array_index_t &ai = x.m_args[r];
+            visit_expr(*ai.m_right);
+            lr_type_t *it = get_type(ASRUtils::expr_type(ai.m_right));
+            uint32_t idx = (it == ty_i32)
+                ? tmp
+                : ((it == ty_i64)
+                    ? lr_emit_trunc(s, ty_i32, V(tmp, it))
+                    : lr_emit_sext(s, ty_i32, V(tmp, it)));
+            int64_t lbound = 1;
+            if (array_t->m_dims[r].m_start) {
+                ASRUtils::extract_value(
+                    array_t->m_dims[r].m_start, lbound);
+            }
+            uint32_t off = lr_emit_sub(s, ty_i32,
+                V(idx, ty_i32), I(lbound, ty_i32));
+            if (first) {
+                lin = off;
+                first = false;
+            } else {
+                int64_t length = 1;
+                if (array_t->m_dims[r].m_length) {
+                    ASRUtils::extract_value(
+                        array_t->m_dims[r].m_length, length);
+                }
+                lin = lr_emit_mul(s, ty_i32,
+                    V(lin, ty_i32), I(length, ty_i32));
+                lin = lr_emit_add(s, ty_i32,
+                    V(lin, ty_i32), V(off, ty_i32));
+            }
+        }
+
+        lr_operand_desc_t gep_idx[2] = {
+            I(0, ty_i32), V(lin, ty_i32)
+        };
+        uint32_t elem_ptr = lr_emit_gep(s, array_type,
+            V(base, ty_ptr), gep_idx, 2);
+
+        if (is_target) {
+            tmp = elem_ptr;
+        } else {
+            tmp = lr_emit_load(s, elem_type, V(elem_ptr, ty_ptr));
+        }
     }
 
     // --- Allocate (string allocatables only) ---
