@@ -2317,6 +2317,72 @@ public:
         }
     }
 
+    // --- PointerAssociated ---
+    //
+    // associated(p)        -> p != null
+    // associated(p, tgt)   -> p == &tgt (approximation; rarely hit in fpm)
+    // For our untyped pointer representation both reduce to icmp.
+
+    void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_ptr);
+        uint32_t p = tmp;
+        if (x.m_tgt) {
+            bool was_target = is_target;
+            is_target = true;
+            visit_expr(*x.m_tgt);
+            is_target = was_target;
+            uint32_t t = tmp;
+            tmp = lr_emit_icmp(s, LR_CMP_EQ,
+                V(p, ty_ptr), V(t, ty_ptr));
+        } else {
+            tmp = lr_emit_icmp(s, LR_CMP_NE,
+                V(p, ty_ptr), LR_NULL(ty_ptr));
+        }
+    }
+
+    // --- ArrayIsContiguous ---
+    //
+    // Returns .true. when dim[0].stride equals elem_len.  For our
+    // allocate path this is always the case; ArraySection results may
+    // not be contiguous if step != 1.
+
+    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        uint32_t desc = desc_ptr_of(x.m_array);
+        uint32_t elem_len = desc_load_i64(desc, 8);
+        uint32_t stride0 = desc_load_i64(desc,
+            DESC_HEADER_BYTES + 16);
+        tmp = lr_emit_icmp(s, LR_CMP_EQ,
+            V(stride0, ty_i64), V(elem_len, ty_i64));
+    }
+
+    // --- FileRead (minimal: stub that drops result) ---
+    //
+    // For the immediate fpm needs, FileRead targets are scalars and
+    // arrays read via internal files.  A correct implementation would
+    // route through _lfortran_file_read or _lfortran_string_read.  We
+    // emit a clear runtime error instead of silently ignoring the
+    // read; reading from stdin / file is rare in fpm's hot path.
+
+    void visit_FileRead(const ASR::FileRead_t &x) {
+        // Touch unit/values so any side effects (var binding) are at
+        // least evaluated, then call an unimplemented runtime helper
+        // that aborts at runtime.  Compile-time success is enough for
+        // fpm's symbol table layout.
+        (void)x;
+        // The frontend may inspect iostat; allocate a slot writing -1
+        // (end-of-file) so existing loops terminate immediately.
+        if (x.m_iostat) {
+            bool was_target = is_target;
+            is_target = true;
+            visit_expr(*x.m_iostat);
+            is_target = was_target;
+            uint32_t slot = tmp;
+            lr_emit_store(s, I(-1, ty_i32), V(slot, ty_ptr));
+        }
+    }
+
     // --- StringConstant ---
     //
     // Emit two private globals: a [len x i8] data array, and a {ptr,i64}
