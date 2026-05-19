@@ -2862,6 +2862,36 @@ public:
 
         ASR::symbol_t *msym = ASRUtils::symbol_get_past_external(x.m_m);
         const char *member_name = ASRUtils::symbol_name(msym);
+        // First: `self%parent_type_name` is the Fortran spelling for
+        // accessing the inherited parent struct as a whole.  Detect
+        // that and return a pointer to the parent struct, which lives
+        // at offset 0 inside the derived struct.
+        ASR::Struct_t *type_match = parent_struct;
+        while (type_match) {
+            if (std::strcmp(type_match->m_name, member_name) == 0
+                    && type_match != parent_struct) {
+                bool was_target_pt = is_target;
+                is_target = true;
+                visit_expr(*x.m_v);
+                is_target = was_target_pt;
+                uint32_t base = tmp;
+                // Parent block sits at offset 0; reuse base directly.
+                if (was_target_pt) {
+                    tmp = base;
+                } else {
+                    // We can't load the whole parent struct usefully;
+                    // hand back the pointer.
+                    tmp = base;
+                }
+                return;
+            }
+            if (!type_match->m_parent) break;
+            ASR::symbol_t *psym = ASRUtils::symbol_get_past_external(
+                type_match->m_parent);
+            if (!ASR::is_a<ASR::Struct_t>(*psym)) break;
+            type_match = down_cast<ASR::Struct_t>(psym);
+        }
+
         int member_idx = -1;
         // Walk up the parent chain.  Each level prepends its own
         // members to the layout, so the member's position is its
