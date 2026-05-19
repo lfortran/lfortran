@@ -2081,7 +2081,8 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm || backend == Backend::mlir) {
+    if (backend == Backend::llvm || backend == Backend::mlir
+            || backend == Backend::liric) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";

@@ -1466,9 +1466,12 @@ public:
                 continue;
             }
             if (!ASR::is_a<ASR::String_t>(*core)) {
-                throw CodeGenError(
-                    "liric: allocate() supports only string, array and "
-                    "derived-type targets at this stage");
+                // Allocatable scalars (Integer/Real/Logical/Complex/
+                // Pointer/CPtr) are also legal allocate targets.  Our
+                // get_type already maps them to inline storage so the
+                // statement is a no-op for the storage side; only any
+                // expression evaluation in arg.m_len_expr matters.
+                continue;
             }
             if (!arg.m_len_expr) {
                 throw CodeGenError(
