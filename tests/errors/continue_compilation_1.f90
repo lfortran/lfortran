@@ -300,7 +300,7 @@ program continue_compilation_1
     class(Derived), allocatable :: derived_cls
     integer, parameter :: z(1) = 2
     integer, parameter :: qval(2) = reshape([7, 8], -[z])
-    print *, min(c, c)
+
 
 
 
@@ -509,7 +509,7 @@ program continue_compilation_1
     print *, present()
     print *, ieor(x)
     print *, ieor()
-
+    print *, min(c, c)
     exit
 
     ! calling function with less arguments
