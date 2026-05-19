@@ -869,6 +869,35 @@ public:
         // the same kind) this is a no-op at the IR level.
     }
 
+    // --- ComplexConstructor ---
+
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_re); uint32_t re = tmp;
+        visit_expr(*x.m_im); uint32_t im = tmp;
+        lr_type_t *ct = get_type(x.m_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        lr_type_t *ft = (kind == 4) ? ty_f32 : ty_f64;
+        uint32_t fld0 = 0, fld1 = 1;
+        uint32_t c0 = lr_emit_insertvalue(s, ct,
+            LR_UNDEF(ct), V(re, ft), &fld0, 1);
+        tmp = lr_emit_insertvalue(s, ct,
+            V(c0, ct), V(im, ft), &fld1, 1);
+    }
+
+    // --- CPtrToPointer: store the c_ptr value into the Fortran ptr slot ---
+
+    void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {
+        visit_expr(*x.m_cptr);
+        uint32_t cptr = tmp;
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*x.m_ptr);
+        is_target = was_target;
+        uint32_t slot = tmp;
+        lr_emit_store(s, V(cptr, ty_ptr), V(slot, ty_ptr));
+    }
+
     // --- ArrayPhysicalCast ---
     //
     // Switches the physical representation of an array between fixed-size,
