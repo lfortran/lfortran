@@ -1,20 +1,20 @@
 module template_nested_m
     implicit none
     private
-    public :: add_t, test_template
+    public :: add_t
 
-    requirement R(T, F) 
-        type, deferred :: T
+    requirement R{T, F}
+        deferred type :: T
         function F(x, y) result(z)
             type(T), intent(in) :: x, y
             type(T) :: z
         end function
     end requirement
 
-    template add_t(T, F)
-        require :: R(T, F)
+    template add_t{T, F}
+        require R{T, F}
         private
-        public :: add_generic
+        public :: call_add_generic
     contains
         function add_generic(x, y) result(z)
             type(T), intent(in) :: x, y
@@ -29,14 +29,9 @@ module template_nested_m
     end template
 
 contains
-    
-    real function func_arg_real(x, y) result(z)
-        real, intent(in) :: x, y
-        z = x + y
-    end function
 
     subroutine test_template()
-        instantiate add_t(real, func_arg_real), only: add_real => call_add_generic
+        instantiate add_t{real, operator(+)}, only: add_real => call_add_generic
         real :: x, y
         integer :: a, b
         x = 5.1

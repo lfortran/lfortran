@@ -4,45 +4,33 @@ module template_array_01_m
     private
     public :: test_template
 
-    requirement r(t)
-        type, deferred :: t
+    requirement r{t}
+        deferred type :: t
     end requirement
 
-    template array_tmpl(t)
-        require :: r(t)
+    template array_tmpl{t}
+        require :: r{t}
         private
         public :: insert_t
     contains
-        function insert_t(lst, i) result(r)
-            type(t), intent(in) :: lst(:), i
-            type(t) :: r
-            lst(1) = i
-            r = lst(1)
-        end function
-
-        function insert_t_n(n, lst, i) result(r)
+        function insert_t(n, lst, i) result(r)
             integer, intent(in) :: n
             type(t), intent(in) :: lst(n), i
             type(t) :: r
             lst(1) = i
-            r = lst(1) 
+            r = lst(1)
         end function
     end template
 
 contains
 
     subroutine test_template()
-        instantiate array_tmpl(integer), only: insert_int => insert_t, insert_int_n => insert_t_n
+        instantiate array_tmpl{integer}, only: insert_int => insert_t
         integer :: a(1), i, r
         a(1) = 0
         i = 1
         print *, a(1)
-        r = insert_int(a, i)
-        print *, a(1)
-
-        a(1) = 0
-        print *, a(1)
-        r = insert_int_n(size(a), a, i)
+        r = insert_int(size(a), a, i)
         print *, a(1)
     end subroutine
 
@@ -55,4 +43,4 @@ program template_array_01
 
     call test_template()
 
-end
+end program
