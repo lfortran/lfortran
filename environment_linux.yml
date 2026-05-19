@@ -10,7 +10,7 @@ dependencies:
   - jupyter=1.1.1
   - xeus>=6.0.0
   - xeus-zmq>=4.0.0
-  - nlohmann_json=3.11.3
+  - nlohmann_json>=3.12.0
   - jupyter_kernel_test
   - xonsh=0.16.0
   - re2c=4.0.1
