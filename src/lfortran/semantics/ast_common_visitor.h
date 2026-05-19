@@ -16054,7 +16054,7 @@ public:
             if (implicit_sym == nullptr) return;
             if (!ASR::is_a<ASR::Variable_t>(*implicit_sym)) return;
             std::string unique_name = current_scope->get_unique_name(
-                "__implicit_idl_" + idl_var_name_lower);
+                "lfortran_implicit_idl_" + idl_var_name_lower);
             current_scope->erase_symbol(idl_var_name_lower);
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(implicit_sym);
             var->m_name = s2c(al, unique_name);
