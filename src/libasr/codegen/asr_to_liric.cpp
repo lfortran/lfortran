@@ -1020,6 +1020,31 @@ public:
         // the same kind) this is a no-op at the IR level.
     }
 
+    // --- AssociateBlockCall ---
+    //
+    // Allocate any locals declared in the associate block's symbol
+    // table, then visit its body.  We do not save/restore the stack
+    // around the block; an associate inside a hot loop will leak alloca
+    // slots, but this is sufficient for the modules fpm hits.
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *blk =
+            down_cast<ASR::AssociateBlock_t>(
+                ASRUtils::symbol_get_past_external(x.m_m));
+        for (auto &item : blk->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(item.second);
+            uint64_t h = get_hash((ASR::asr_t *)v);
+            if (lr_symtab.count(h)) continue;
+            lr_type_t *vt = get_type(v->m_type);
+            uint32_t slot = lr_emit_alloca(s, vt);
+            lr_symtab[h] = slot;
+        }
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
     // --- ComplexConstructor ---
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
@@ -1972,6 +1997,79 @@ public:
         return lr_session_intern(s, name.c_str());
     }
 
+    // Format a single Integer/Real/Logical value via
+    // _lcompilers_string_format_fortran.  Returns {data_ptr, length}.
+    std::pair<uint32_t, uint32_t> format_scalar_to_string(
+            ASR::expr_t *val, ASR::ttype_t *vt) {
+        // Build the serial code for this one value.
+        std::string serial;
+        switch (vt->type) {
+            case ASR::ttypeType::Integer:
+                serial = "I" + std::to_string(
+                    ASRUtils::extract_kind_from_ttype_t(vt));
+                break;
+            case ASR::ttypeType::Real:
+                serial = "R" + std::to_string(
+                    ASRUtils::extract_kind_from_ttype_t(vt));
+                break;
+            case ASR::ttypeType::Logical:
+                serial = "L" + std::to_string(
+                    ASRUtils::extract_kind_from_ttype_t(vt) * 8);
+                break;
+            default:
+                throw CodeGenError(
+                    "liric: format_scalar_to_string: unsupported type");
+        }
+        std::string hash = std::to_string(
+            (uint64_t)reinterpret_cast<uintptr_t>(val));
+        std::string serial_z = serial + '\0';
+        std::string serial_name = "_lr_fwserial_" + hash;
+        lr_session_global(s, serial_name.c_str(),
+            lr_type_array_s(s, ty_i8, serial_z.size()),
+            true, serial_z.data(), serial_z.size());
+        uint32_t serial_sym =
+            lr_session_intern(s, serial_name.c_str());
+
+        // Evaluate and stash the value in an alloca slot.
+        visit_expr(*val);
+        lr_type_t *at = get_type(vt);
+        uint32_t slot = lr_emit_alloca(s, at);
+        lr_emit_store(s, V(tmp, at), V(slot, ty_ptr));
+
+        uint32_t allocator = emit_call(
+            "_lfortran_get_default_allocator", ty_ptr, nullptr, 0);
+        uint32_t out_len_ptr = lr_emit_alloca(s, ty_i64);
+
+        // Call _lcompilers_string_format_fortran with the same fixed
+        // 9-arg prefix that visit_Print uses, plus this single value.
+        uint32_t strfmt_sym = lr_session_intern(s,
+            "_lcompilers_string_format_fortran");
+        lr_inst_desc_t d;
+        memset(&d, 0, sizeof(d));
+        lr_operand_desc_t ops[11];
+        ops[0]  = LR_GLOBAL(strfmt_sym, ty_ptr);
+        ops[1]  = V(allocator, ty_ptr);
+        ops[2]  = LR_NULL(ty_ptr);
+        ops[3]  = I(0, ty_i64);
+        ops[4]  = LR_GLOBAL(serial_sym, ty_ptr);
+        ops[5]  = V(out_len_ptr, ty_ptr);
+        ops[6]  = I(0, ty_i32);
+        ops[7]  = I(0, ty_i32);
+        ops[8]  = I(0, ty_i32);
+        ops[9]  = I(0, ty_i32);
+        ops[10] = V(slot, ty_ptr);
+        d.op = LR_OP_CALL;
+        d.type = ty_ptr;
+        d.operands = ops;
+        d.num_operands = 11;
+        d.call_external_abi = true;
+        d.call_vararg = true;
+        d.call_fixed_args = 9;
+        uint32_t fdata = lr_session_emit(s, &d, nullptr);
+        uint32_t flen = lr_emit_load(s, ty_i64, V(out_len_ptr, ty_ptr));
+        return {fdata, flen};
+    }
+
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if (x.m_overloaded) {
             throw CodeGenError("liric: derived-type I/O FileWrite not yet supported");
@@ -2029,10 +2127,18 @@ public:
                 uint32_t len  = lr_emit_extractvalue(s, ty_i64,
                     V(desc, ty_str_desc), &fld1, 1);
                 file_write_emit_string(data, len);
+            } else if (ASR::is_a<ASR::Integer_t>(*vt) ||
+                       ASR::is_a<ASR::Real_t>(*vt) ||
+                       ASR::is_a<ASR::Logical_t>(*vt)) {
+                // Inline mini-print: format this single value via the
+                // runtime formatter and emit the resulting bytes.
+                uint32_t fdata, flen;
+                std::tie(fdata, flen) =
+                    format_scalar_to_string(val, vt);
+                file_write_emit_string(fdata, flen);
             } else {
                 throw CodeGenError(
-                    "liric: write() of non-string values not yet supported "
-                    "(use print *, ... for now)");
+                    "liric: write() of this value type not yet supported");
             }
         }
 
