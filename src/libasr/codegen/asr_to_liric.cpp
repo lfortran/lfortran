@@ -697,6 +697,17 @@ public:
 
         lr_emit_br(s, proc_return);
 
+        // Defer nested (contains-block) Function emission until after
+        // we've sealed this function.  We collect them and visit them
+        // below after lr_session_func_end.
+        std::vector<ASR::Function_t *> nested_functions;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                nested_functions.push_back(
+                    down_cast<ASR::Function_t>(item.second));
+            }
+        }
+
         // Return block
         lr_session_set_block(s, proc_return, &err);
         if (x.m_return_var) {
@@ -711,6 +722,14 @@ public:
         }
 
         lr_session_func_end(s, nullptr, &err);
+
+        // Emit nested (contains-block) functions as siblings.  They
+        // share names with siblings in other modules at link time,
+        // but the archive demand-load keeps it manageable - one copy
+        // of compute_lps inside libfpm.a is enough for the linker.
+        for (ASR::Function_t *nested : nested_functions) {
+            visit_Function(*nested);
+        }
     }
 
     // --- Var ---
