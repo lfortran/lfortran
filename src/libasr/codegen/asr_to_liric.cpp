@@ -898,6 +898,16 @@ public:
         lr_emit_store(s, V(cptr, ty_ptr), V(slot, ty_ptr));
     }
 
+    // --- StringPhysicalCast ---
+    //
+    // Same idea as ArrayPhysicalCast: at the liric layer the value is
+    // already in descriptor form, so the cast is a no-op.
+
+    void visit_StringPhysicalCast(const ASR::StringPhysicalCast_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_arg);
+    }
+
     // --- ArrayPhysicalCast ---
     //
     // Switches the physical representation of an array between fixed-size,
@@ -1621,7 +1631,50 @@ public:
     void visit_IntrinsicElementalFunction(
             const ASR::IntrinsicElementalFunction_t &x) {
         if (x.m_value) { visit_expr(*x.m_value); return; }
-        throw CodeGenError("liric: runtime intrinsic not yet supported");
+        switch (static_cast<ASRUtils::IntrinsicElementalFunctions>(
+                x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicElementalFunctions::Max:
+                emit_min_max(x, /*is_max=*/true);
+                return;
+            case ASRUtils::IntrinsicElementalFunctions::Min:
+                emit_min_max(x, /*is_max=*/false);
+                return;
+            default: break;
+        }
+        throw CodeGenError(std::string("liric: runtime intrinsic ")
+            + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+            + " not yet supported");
+    }
+
+    void emit_min_max(const ASR::IntrinsicElementalFunction_t &x,
+                      bool is_max) {
+        if (x.n_args == 0) {
+            throw CodeGenError(
+                "liric: min/max needs at least one argument");
+        }
+        lr_type_t *t = get_type(x.m_type);
+        bool is_int = ASR::is_a<ASR::Integer_t>(
+            *ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(x.m_type)));
+        visit_expr(*x.m_args[0]);
+        uint32_t acc = tmp;
+        for (size_t i = 1; i < x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+            uint32_t v = tmp;
+            uint32_t cond;
+            if (is_int) {
+                cond = lr_emit_icmp(s,
+                    is_max ? LR_CMP_SGT : LR_CMP_SLT,
+                    V(acc, t), V(v, t));
+            } else {
+                cond = lr_emit_fcmp(s,
+                    is_max ? LR_FCMP_OGT : LR_FCMP_OLT,
+                    V(acc, t), V(v, t));
+            }
+            acc = lr_emit_select(s, t,
+                V(cond, ty_i1), V(acc, t), V(v, t));
+        }
+        tmp = acc;
     }
 
     // --- IntrinsicImpureFunction ---
