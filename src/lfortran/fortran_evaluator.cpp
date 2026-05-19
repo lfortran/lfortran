@@ -60,6 +60,15 @@ LLVMEvaluator &FortranEvaluator::get_llvm_evaluator() {
     }
     return *e;
 }
+
+#ifdef __EMSCRIPTEN__
+WasmLFortranExecutor &FortranEvaluator::get_wasm_executor() {
+    if (!wasm_exec) {
+        wasm_exec = std::make_unique<WasmLFortranExecutor>();
+    }
+    return *wasm_exec;
+}
+#endif
 #endif
 
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
@@ -153,40 +162,47 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     // LLVM -> Machine code -> Execution
+#ifdef __EMSCRIPTEN__
+    WasmLFortranExecutor &exec = get_wasm_executor();
+    exec.add_module(std::move(m), eval_count);
+    auto sym_addr = [&](const std::string &fn) { return exec.get_symbol_address(fn); };
+#else
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
+    auto sym_addr = [&](const std::string &fn) { return e.get_symbol_address(fn); };
+#endif
     if (return_type == "integer4") {
-        int32_t r = e.execfn<int32_t>(run_fn);
+        int32_t r = reinterpret_cast<int32_t(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = e.execfn<int64_t>(run_fn);
+        int64_t r = reinterpret_cast<int64_t(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = e.execfn<float>(run_fn);
+        float r = reinterpret_cast<float(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = e.execfn<double>(run_fn);
+        double r = reinterpret_cast<double(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
-        std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
+        std::complex<float> r = reinterpret_cast<std::complex<float>(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
     } else if (return_type == "complex8") {
-        std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
+        std::complex<double> r = reinterpret_cast<std::complex<double>(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::complex8;
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        int32_t r = e.execfn<int32_t>(run_fn);
+        int32_t r = reinterpret_cast<int32_t(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::boolean;
         result.b = (r != 0);
     } else if (return_type == "void") {
-        e.execfn<void>(run_fn);
+        reinterpret_cast<void(*)()>(sym_addr(run_fn))();
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = EvalResult::none;
@@ -398,11 +414,17 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
 
+#ifdef __EMSCRIPTEN__
+    llvm::LLVMContext &ctx = get_wasm_executor().get_context();
+#else
+    llvm::LLVMContext &ctx = get_llvm_evaluator().get_context();
+#endif
+
     // ASR -> LLVM
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
-            get_llvm_evaluator().get_context(), al, pass_manager,
+            ctx, al, pass_manager,
             compiler_options, run_fn, "", infile, lm);
     if (res.ok) {
         m = std::move(res.result);
@@ -412,12 +434,14 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     }
 
     if (compiler_options.po.fast) {
+#ifndef __EMSCRIPTEN__
         auto t1 = std::chrono::high_resolution_clock::now();
         get_llvm_evaluator().opt(*m->m_m);
         auto t2 = std::chrono::high_resolution_clock::now();
         if (compiler_options.po.time_report && time_opt) {
             *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         }
+#endif
     }
 
     return m;

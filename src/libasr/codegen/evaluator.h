@@ -98,6 +98,39 @@ public:
 };
 
 
+#ifdef __EMSCRIPTEN__
+
+// WASM executor: replaces ORC JIT for incremental Fortran evaluation in the
+// browser. Each cell is compiled to a wasm32 .o, linked into a side module via
+// wasm-ld (lld), then loaded with dlopen so its symbols become globally visible.
+class WasmLFortranExecutor
+{
+public:
+    WasmLFortranExecutor();
+    ~WasmLFortranExecutor();
+
+    void add_module(std::unique_ptr<LLVMModule> m, int eval_count);
+    intptr_t get_symbol_address(const std::string &name);
+    llvm::LLVMContext &get_context();
+
+    template<class T>
+    T execfn(const std::string &name) {
+        intptr_t addr = get_symbol_address(name);
+        T (*f)() = (T (*)())addr;
+        return f();
+    }
+
+private:
+    std::unique_ptr<llvm::LLVMContext> context;
+    // SmallString stored as std::string because SmallString is not in scope here
+    std::string TempDir;
+    std::vector<void*> loaded_modules;
+    // LLVM cl options to re-apply after lld wipes them (mirrors xeus-cpp Wasm.cpp)
+    std::vector<std::string> stored_llvm_args;
+};
+
+#endif // __EMSCRIPTEN__
+
 } // namespace LCompilers
 
 #endif // LFORTRAN_EVALUATOR_H

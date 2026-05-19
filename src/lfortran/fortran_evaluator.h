@@ -19,6 +19,9 @@ namespace LCompilers {
 class LLVMModule;
 class MLIRModule;
 class LLVMEvaluator;
+#ifdef __EMSCRIPTEN__
+class WasmLFortranExecutor;
+#endif
 
 /*
    FortranEvaluator is the main class to access the Fortran compiler.
@@ -118,12 +121,18 @@ public:
 #ifdef HAVE_LFORTRAN_LLVM
     LLVMEvaluator &get_llvm_evaluator();
 #endif
+#ifdef __EMSCRIPTEN__
+    WasmLFortranExecutor &get_wasm_executor();
+#endif
 
 private:
     Allocator al;
 #ifdef HAVE_LFORTRAN_LLVM
     std::unique_ptr<LLVMEvaluator> e;
     int eval_count;
+#endif
+#ifdef __EMSCRIPTEN__
+    std::unique_ptr<WasmLFortranExecutor> wasm_exec;
 #endif
     SymbolTable *symbol_table;
     std::string run_fn;

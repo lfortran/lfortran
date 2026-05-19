@@ -171,7 +171,11 @@ class ASRToLLVMVisitor;
         return llvm::ConstantExpr::getBitCast(GV, llvm::Type::getInt8PtrTy(context, AddressSpace));
 #else
         // LLVM 8+: Use the standard IRBuilder method
+#if LLVM_VERSION_MAJOR >= 20
+        return builder.CreateGlobalString(Str, Name, AddressSpace);
+#else
         return builder.CreateGlobalStringPtr(Str, Name, AddressSpace);
+#endif
 #endif
     }
 
