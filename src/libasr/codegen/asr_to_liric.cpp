@@ -862,9 +862,12 @@ public:
         // Get allocator
         uint32_t allocator = lr_symtab[0];
 
-        // Build serialization info string for each arg: "I4", "I8", "R4", etc.
+        // Build serialization info string.  Format matches asr_to_llvm's
+        // SerializeType (comma-separated, I<kind>, R<kind>, L<kind*8>,
+        // S-DESC[-N] for strings).
         std::string serial;
         for (size_t i = 0; i < sf.n_args; i++) {
+            if (i > 0) serial += ",";
             ASR::ttype_t *at = ASRUtils::expr_type(sf.m_args[i]);
             at = ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(at));
@@ -878,8 +881,26 @@ public:
                         ASRUtils::extract_kind_from_ttype_t(at));
                     break;
                 case ASR::ttypeType::Logical:
-                    serial += "L4";
+                    serial += "L" + std::to_string(
+                        ASRUtils::extract_kind_from_ttype_t(at) * 8);
                     break;
+                case ASR::ttypeType::String: {
+                    ASR::String_t *st = down_cast<ASR::String_t>(at);
+                    serial += "S-";
+                    if (st->m_physical_type == ASR::DescriptorString) {
+                        serial += "DESC";
+                    } else if (st->m_physical_type == ASR::CChar) {
+                        serial += "CCHAR";
+                    } else {
+                        throw CodeGenError(
+                            "liric: unsupported string physical type for print");
+                    }
+                    int64_t len = -1;
+                    if (st->m_len && ASRUtils::extract_value(st->m_len, len)) {
+                        serial += "-" + std::to_string(len);
+                    }
+                    break;
+                }
                 default:
                     throw CodeGenError("liric: unsupported print arg type");
             }
