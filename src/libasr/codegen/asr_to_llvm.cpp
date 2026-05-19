@@ -465,7 +465,7 @@ public:
         }
         // Need to create a new alloca
         llvm::AllocaInst* alloca = llvm_utils->CreateAlloca(type, nullptr, "call_arg_value");
-         // Zero-initialize struct allocas (e.g. list, tuple) at entry block
+        // Zero-initialize struct allocas (e.g. list, tuple) at entry block
         // so null-guarded free is safe on the very first use in a loop.
         if (type->isStructTy()) {
             llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
