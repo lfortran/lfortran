@@ -239,8 +239,16 @@ public:
                 return ty_str_desc;
             case ASR::ttypeType::StructType:
                 return get_struct_type(down_cast<ASR::StructType_t>(t));
+            case ASR::ttypeType::Pointer:
+                // Untyped at the liric layer; downstream code that
+                // dereferences a Fortran pointer must supply its own
+                // pointee type to load/store/gep.
+                return ty_ptr;
+            case ASR::ttypeType::CPtr:
+                return ty_ptr;
             default:
-                throw CodeGenError("liric: unsupported type");
+                throw CodeGenError(std::string("liric: unsupported type kind ")
+                    + std::to_string((int)t->type));
         }
     }
 
