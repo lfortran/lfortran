@@ -744,6 +744,56 @@ public:
         loop_end_stack.pop_back();
     }
 
+    // --- DebugCheckArrayBounds: no-op (bounds_checking is off by default) ---
+
+    void visit_DebugCheckArrayBounds(
+            const ASR::DebugCheckArrayBounds_t & /*x*/) {
+        // The frontend always emits this node before an array-shape
+        // assignment.  When bounds_checking is enabled the LLVM backend
+        // wires runtime asserts; we just drop the check for now so the
+        // assignment itself still runs.
+    }
+
+    // --- BitCast ---
+    //
+    // Liric values are untyped at the operand layer; for the common
+    // "reinterpret bytes" case we just pass the source value through.
+    // Strings and arrays still throw because their descriptor layout
+    // doesn't match a raw bit-cast.
+
+    void visit_BitCast(const ASR::BitCast_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        ASR::ttype_t *st = ASRUtils::expr_type(x.m_source);
+        st = ASRUtils::type_get_past_allocatable_pointer(st);
+        st = ASRUtils::type_get_past_array(st);
+        if (ASR::is_a<ASR::String_t>(*st) ||
+                ASR::is_a<ASR::StructType_t>(*st)) {
+            throw CodeGenError(
+                "liric: BitCast on string/struct not yet supported");
+        }
+        visit_expr(*x.m_source);
+        // Source and destination scalars share the same bit pattern -
+        // for the small fpm cases (transfer between ints and reals of
+        // the same kind) this is a no-op at the IR level.
+    }
+
+    // --- Associate ---
+    //
+    // associate(name => value) - lower like an assignment to a Var
+    // local that aliases `value`.  The frontend has already declared
+    // `target` as a Var bound to the same storage on entry, so we just
+    // store the rvalue.
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        visit_expr(*x.m_value);
+        uint32_t rhs = tmp;
+        lr_type_t *t = get_type(ASRUtils::expr_type(x.m_value));
+        is_target = true;
+        visit_expr(*x.m_target);
+        is_target = false;
+        lr_emit_store(s, V(rhs, t), V(tmp, ty_ptr));
+    }
+
     // --- ArrayItem (FixedSizeArray, single-dim only for now) ---
     //
     // Compute row-major linear index from the supplied dim indices and
