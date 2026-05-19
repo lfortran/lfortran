@@ -1771,6 +1771,7 @@ RUN(NAME intrinsics_459 LABELS gfortran llvm) # minval over array with runtime b
 RUN(NAME intrinsics_460 LABELS gfortran llvm) # random_seed put/get round-trip
 RUN(NAME intrinsics_461 LABELS gfortran llvm) # MVbits with array (treated as elemental function)
 RUN(NAME intrinsics_462 LABELS gfortran llvm) # nested spread over array section preserves result shape
+RUN(NAME intrinsics_463 LABELS llvm) # get_command (optional keyword arguments) -- gfortran on CI fails, other gfortran versions pass
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
