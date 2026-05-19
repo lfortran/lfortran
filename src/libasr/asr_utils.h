@@ -3387,10 +3387,11 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
 
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
-class HasFunctionParamVisitor : public ASR::BaseExprVisitor<HasFunctionParamVisitor> {
+class HasFunctionParamVisitor : public ASR::BaseWalkVisitor<HasFunctionParamVisitor> {
 public:
     bool found = false;
-    void visit_FunctionParam(const ASR::FunctionParam_t* /*x*/) {
+
+    void visit_FunctionParam(const ASR::FunctionParam_t & /*x*/) {
         found = true;
     }
 };
@@ -3418,13 +3419,13 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
         if (!t) return nullptr;
 
-       
         HasFunctionParamVisitor visitor;
-        visitor.visit_expr(*t);
+        visitor.visit_expr(*t); 
         
         if (!visitor.found) {
             return t; 
         }
+
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
         duplicator.success = true;
@@ -3440,7 +3441,6 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
         return tc;
     }
 
-   
     void replace_type(ASR::ttype_t* t) {
         if (!t) return;
         t = ASRUtils::type_get_past_allocatable_pointer(t);
