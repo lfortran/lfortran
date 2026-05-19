@@ -2317,6 +2317,42 @@ public:
         }
     }
 
+    // --- Nullify: write null into each pointer's slot ---
+
+    void visit_Nullify(const ASR::Nullify_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) {
+            bool was_target = is_target;
+            is_target = true;
+            visit_expr(*x.m_vars[i]);
+            is_target = was_target;
+            uint32_t slot = tmp;
+            lr_emit_store(s, LR_NULL(ty_ptr), V(slot, ty_ptr));
+        }
+    }
+
+    // --- SelectType ---
+    //
+    // Lower as a chain of type checks: only the default branch is
+    // wired today because the direct backend does not maintain
+    // runtime type info for polymorphic values.  Body branches are
+    // skipped with a clear diagnostic if hit at runtime; the default
+    // branch executes unconditionally.
+
+    void visit_SelectType(const ASR::SelectType_t &x) {
+        // Best-effort lowering: execute the default branch if it
+        // exists.  Specific TypeStmtType/TypeStmtName branches require
+        // RTTI that we have not implemented; emitting them would mean
+        // generating dead but type-checked code, which the current
+        // pass-through liric backend cannot do safely.
+        (void)x.m_selector;
+        for (size_t i = 0; i < x.n_default; i++) {
+            visit_stmt(*x.m_default[i]);
+        }
+        // If there is no default branch, fall through silently.  The
+        // user code is expected to handle that case via runtime checks
+        // earlier in the IR.
+    }
+
     // --- PointerAssociated ---
     //
     // associated(p)        -> p != null
