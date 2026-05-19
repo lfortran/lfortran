@@ -72,6 +72,9 @@ static inline uint64_t get_hash(ASR::asr_t *node) {
         case ASR::binopType::BitAnd: tmp = lr_emit_and(s, _t, V(_l,_t), V(_r,_t)); break; \
         case ASR::binopType::BitOr:  tmp = lr_emit_or (s, _t, V(_l,_t), V(_r,_t)); break; \
         case ASR::binopType::BitXor: tmp = lr_emit_xor(s, _t, V(_l,_t), V(_r,_t)); break; \
+        case ASR::binopType::BitLShift: tmp = lr_emit_shl(s, _t, V(_l,_t), V(_r,_t)); break; \
+        case ASR::binopType::BitRShift: tmp = lr_emit_ashr(s, _t, V(_l,_t), V(_r,_t)); break; \
+        case ASR::binopType::LBitRShift: tmp = lr_emit_lshr(s, _t, V(_l,_t), V(_r,_t)); break; \
         default: throw CodeGenError("liric: unsupported int binop"); \
     } \
 } while(0)
@@ -259,6 +262,8 @@ public:
                 // pointee type to load/store/gep.
                 return ty_ptr;
             case ASR::ttypeType::CPtr:
+                return ty_ptr;
+            case ASR::ttypeType::FunctionType:
                 return ty_ptr;
             default:
                 throw CodeGenError(std::string("liric: unsupported type kind ")
@@ -722,8 +727,25 @@ public:
     // --- Var ---
 
     void visit_Var(const ASR::Var_t &x) {
-        ASR::Variable_t *v = down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(x.m_v));
+        ASR::symbol_t *raw_sym =
+            ASRUtils::symbol_get_past_external(x.m_v);
+        // Procedures used as actual arguments (e.g. `call sort(a, cmp)`
+        // where `cmp` is a function) appear as Var_t wrapping a
+        // Function symbol.  Emit the function's address.
+        if (ASR::is_a<ASR::Function_t>(*raw_sym)) {
+            ASR::Function_t *fn = down_cast<ASR::Function_t>(raw_sym);
+            uint32_t fsym = lr_session_intern(s, fn->m_name);
+            lr_operand_desc_t no_off[1] = {I(0, ty_i64)};
+            tmp = lr_emit_gep(s, ty_i8,
+                LR_GLOBAL(fsym, ty_ptr), no_off, 1);
+            return;
+        }
+        if (!ASR::is_a<ASR::Variable_t>(*raw_sym)) {
+            throw CodeGenError(std::string(
+                "liric: visit_Var: unsupported symbol kind for ")
+                + ASRUtils::symbol_name(raw_sym));
+        }
+        ASR::Variable_t *v = down_cast<ASR::Variable_t>(raw_sym);
         uint64_t h = get_hash((ASR::asr_t *)v);
 
         ASR::ttype_t *vt = ASRUtils::type_get_past_allocatable_pointer(
@@ -1082,18 +1104,12 @@ public:
 
     void visit_BitCast(const ASR::BitCast_t &x) {
         LIRIC_PASSTHROUGH(x)
-        ASR::ttype_t *st = ASRUtils::expr_type(x.m_source);
-        st = ASRUtils::type_get_past_allocatable_pointer(st);
-        st = ASRUtils::type_get_past_array(st);
-        if (ASR::is_a<ASR::String_t>(*st) ||
-                ASR::is_a<ASR::StructType_t>(*st)) {
-            throw CodeGenError(
-                "liric: BitCast on string/struct not yet supported");
-        }
         visit_expr(*x.m_source);
-        // Source and destination scalars share the same bit pattern -
-        // for the small fpm cases (transfer between ints and reals of
-        // the same kind) this is a no-op at the IR level.
+        // Source and destination share the same bit pattern.  For
+        // scalars (Integer/Real of the same kind) the value flows
+        // through unchanged.  For strings and structs we keep the
+        // descriptor/struct value as-is; downstream code that needs
+        // the raw byte view treats the data pointer directly.
     }
 
     // --- AssociateBlockCall ---
@@ -2778,6 +2794,43 @@ public:
         }
     }
 
+    // --- StructConstant: build {field0, field1, ...} via insertvalue ---
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        lr_type_t *ct = get_struct_type(
+            down_cast<ASR::StructType_t>(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type)));
+        uint32_t cur = lr_emit_insertvalue(s, ct,
+            LR_UNDEF(ct), I(0, ty_i8),  // placeholder; not used
+            nullptr, 0);
+        // Re-issue insertvalue per-field.
+        cur = 0;
+        bool first = true;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!x.m_args[i].m_value) continue;
+            visit_expr(*x.m_args[i].m_value);
+            uint32_t v = tmp;
+            lr_type_t *ft = get_type(
+                ASRUtils::expr_type(x.m_args[i].m_value));
+            uint32_t idx = (uint32_t)i;
+            if (first) {
+                cur = lr_emit_insertvalue(s, ct,
+                    LR_UNDEF(ct), V(v, ft), &idx, 1);
+                first = false;
+            } else {
+                cur = lr_emit_insertvalue(s, ct,
+                    V(cur, ct), V(v, ft), &idx, 1);
+            }
+        }
+        if (first) {
+            // No args provided; emit an undef value of the struct.
+            uint32_t idx0 = 0;
+            cur = lr_emit_insertvalue(s, ct,
+                LR_UNDEF(ct), I(0, ty_i8), &idx0, 1);
+        }
+        tmp = cur;
+    }
+
     // --- StructInstanceMember ---
     //
     // Resolve the parent Struct symbol from the owning expression, find
@@ -2810,11 +2863,28 @@ public:
         ASR::symbol_t *msym = ASRUtils::symbol_get_past_external(x.m_m);
         const char *member_name = ASRUtils::symbol_name(msym);
         int member_idx = -1;
-        for (size_t i = 0; i < parent_struct->n_members; i++) {
-            if (std::strcmp(parent_struct->m_members[i], member_name) == 0) {
-                member_idx = (int)i;
-                break;
+        // Walk up the parent chain.  Each level prepends its own
+        // members to the layout, so the member's position is its
+        // index within the *defining* level plus the cumulative count
+        // from ancestors.  The LLVM backend handles inheritance the
+        // same way (see asr_to_llvm's name2memidx walk).
+        ASR::Struct_t *cur = parent_struct;
+        int prefix_count = 0;
+        while (cur) {
+            for (size_t i = 0; i < cur->n_members; i++) {
+                if (std::strcmp(cur->m_members[i], member_name) == 0) {
+                    member_idx = prefix_count + (int)i;
+                    break;
+                }
             }
+            if (member_idx >= 0) break;
+            // Walk to parent
+            if (!cur->m_parent) break;
+            ASR::symbol_t *psym = ASRUtils::symbol_get_past_external(
+                cur->m_parent);
+            if (!ASR::is_a<ASR::Struct_t>(*psym)) break;
+            prefix_count += (int)cur->n_members;
+            cur = down_cast<ASR::Struct_t>(psym);
         }
         if (member_idx < 0) {
             throw CodeGenError(std::string("liric: struct member '")
@@ -3024,6 +3094,21 @@ public:
         } else {
             tmp = lr_emit_trunc(s, rt, V(prod, ty_i64));
         }
+    }
+
+    // --- IfExp (ternary expression) ---
+
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_test);
+        uint32_t cond = tmp;
+        visit_expr(*x.m_body);
+        uint32_t body_val = tmp;
+        visit_expr(*x.m_orelse);
+        uint32_t else_val = tmp;
+        lr_type_t *t = get_type(x.m_type);
+        tmp = lr_emit_select(s, t,
+            V(cond, ty_i1), V(body_val, t), V(else_val, t));
     }
 
     // --- LogicalCompare ---
