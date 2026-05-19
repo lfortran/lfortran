@@ -3397,7 +3397,6 @@ class ReplaceFunctionParamWithArg {
     ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
         al(al_), m_args(m_args_), n_args(n_args_) {}
 
-   
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* expr) {
         if (!expr) return nullptr;
 
@@ -3408,11 +3407,11 @@ class ReplaceFunctionParamWithArg {
             ASR::expr_t* new_left = replace_FunctionParam_with_arg(bin->m_left); \
             ASR::expr_t* new_right = replace_FunctionParam_with_arg(bin->m_right); \
             if (new_left != bin->m_left || new_right != bin->m_right) { \
-                ASR::X_t* new_bin = al.aloc<ASR::X_t>(bin->base.base.loc); \
+                ASR::X_t* new_bin = (ASR::X_t*)al.alloc(sizeof(ASR::X_t)); \
                 *new_bin = *bin; \
                 new_bin->m_left = new_left; \
                 new_bin->m_right = new_right; \
-                return ASR::down_cast<ASR::expr_t>(&new_bin->base); \
+                return &(new_bin->base); \
             } \
             return expr; \
         }
@@ -3422,16 +3421,15 @@ class ReplaceFunctionParamWithArg {
             ASR::X_t* un = ASR::down_cast<ASR::X_t>(expr); \
             ASR::expr_t* new_arg = replace_FunctionParam_with_arg(un->m_arg); \
             if (new_arg != un->m_arg) { \
-                ASR::X_t* new_un = al.aloc<ASR::X_t>(un->base.base.loc); \
+                ASR::X_t* new_un = (ASR::X_t*)al.alloc(sizeof(ASR::X_t)); \
                 *new_un = *un; \
                 new_un->m_arg = new_arg; \
-                return ASR::down_cast<ASR::expr_t>(&new_un->base); \
+                return &(new_un->base); \
             } \
             return expr; \
         }
 
         switch (expr->type) {
-            
             case ASR::exprType::FunctionParam: {
                 ASR::FunctionParam_t *p = ASR::down_cast<ASR::FunctionParam_t>(expr);
                 size_t n = p->m_param_number;
@@ -3441,7 +3439,6 @@ class ReplaceFunctionParamWithArg {
                 return m_args[n].m_value; 
             }
 
-            
             COW_BINOP_CASE(IntegerBinOp, IntegerBinOp_t)
             COW_BINOP_CASE(RealBinOp, RealBinOp_t)
             COW_BINOP_CASE(ComplexBinOp, ComplexBinOp_t)
@@ -3454,26 +3451,23 @@ class ReplaceFunctionParamWithArg {
             COW_BINOP_CASE(UnsignedIntegerCompare, UnsignedIntegerCompare_t)
             COW_BINOP_CASE(StringCompare, StringCompare_t)
 
-           
             COW_UNARYOP_CASE(IntegerUnaryMinus, IntegerUnaryMinus_t)
             COW_UNARYOP_CASE(RealUnaryMinus, RealUnaryMinus_t)
             COW_UNARYOP_CASE(ComplexUnaryMinus, ComplexUnaryMinus_t)
             COW_UNARYOP_CASE(LogicalNot, LogicalNot_t)
             
-            
             case ASR::exprType::Cast: {
                 ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
                 ASR::expr_t* new_arg = replace_FunctionParam_with_arg(cast->m_arg);
                 if (new_arg != cast->m_arg) {
-                    ASR::Cast_t* new_cast = al.aloc<ASR::Cast_t>(cast->base.base.loc);
+                    ASR::Cast_t* new_cast = (ASR::Cast_t*)al.alloc(sizeof(ASR::Cast_t));
                     *new_cast = *cast;
                     new_cast->m_arg = new_arg;
-                    return ASR::down_cast<ASR::expr_t>(&new_cast->base);
+                    return &(new_cast->base);
                 }
                 return expr;
             }
 
-            
             default:
                 return expr;
         }
