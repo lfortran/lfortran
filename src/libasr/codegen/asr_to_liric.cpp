@@ -16,6 +16,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/exception.h>
 
+#include <cstring>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -159,6 +160,7 @@ public:
     // Cached types
     lr_type_t *ty_void, *ty_i1, *ty_i8, *ty_i16, *ty_i32, *ty_i64;
     lr_type_t *ty_f32, *ty_f64, *ty_ptr;
+    lr_type_t *ty_str_desc;     // Fortran string descriptor: {i8*, i64}
 
     ASRToLiricVisitor(lr_session_t *session, Allocator &al_,
                       CompilerOptions &co_, diag::Diagnostics &d)
@@ -174,6 +176,13 @@ public:
         ty_f32  = lr_type_f32_s(s);
         ty_f64  = lr_type_f64_s(s);
         ty_ptr  = lr_type_ptr_s(s);
+        // String descriptor mirrors the LLVM backend's character_type:
+        // a 16-byte struct {data_ptr, length} passed by pointer at the
+        // Fortran ABI boundary.
+        {
+            lr_type_t *fields[2] = {ty_ptr, ty_i64};
+            ty_str_desc = lr_type_struct_s(s, fields, 2, false);
+        }
     }
 
     // --- Type mapping: ASR type -> liric type ---
@@ -213,7 +222,7 @@ public:
             case ASR::ttypeType::Logical:
                 return ty_i1;
             case ASR::ttypeType::String:
-                return ty_ptr;
+                return ty_str_desc;
             default:
                 throw CodeGenError("liric: unsupported type");
         }
@@ -961,6 +970,71 @@ public:
             const ASR::IntrinsicElementalFunction_t &x) {
         if (x.m_value) { visit_expr(*x.m_value); return; }
         throw CodeGenError("liric: runtime intrinsic not yet supported");
+    }
+
+    // --- StringConstant ---
+    //
+    // Emit two private globals: a [len x i8] data array, and a {ptr,i64}
+    // descriptor whose data slot is fixed up via a global reloc to the
+    // data array.  Return the loaded descriptor value, matching the ABI
+    // used by every other String_t producer.
+
+    void visit_StringConstant(const ASR::StringConstant_t &x) {
+        ASR::String_t *st = ASRUtils::get_string_type(x.m_type);
+        int64_t len = -1;
+        ASRUtils::extract_value(st->m_len, len);
+        size_t src_len = x.m_s ? std::strlen(x.m_s) : 0;
+        if (len < 0) len = (int64_t)src_len;
+        if (len < 1) len = 1; // liric requires non-empty data globals
+
+        std::string hash = std::to_string(get_hash((ASR::asr_t *)&x));
+        std::string data_name = "_lr_strdata_" + hash;
+        std::string desc_name = "_lr_strdesc_" + hash;
+
+        // Materialize the literal: truncate or right-pad with spaces to len
+        std::string data;
+        if (x.m_s) {
+            size_t take = std::min((size_t)len, src_len);
+            data.assign(x.m_s, take);
+        }
+        if ((int64_t)data.size() < len) {
+            data.resize((size_t)len, ' ');
+        }
+
+        lr_session_global(s, data_name.c_str(),
+            lr_type_array_s(s, ty_i8, (uint64_t)len),
+            true, data.data(), (size_t)len);
+
+        // Descriptor blob: {nullptr, len}.  The data pointer gets resolved
+        // by the reloc below at link/JIT time.
+        struct desc_blob_t { void *p; int64_t l; };
+        desc_blob_t desc_init = { nullptr, len };
+        uint32_t desc_id = lr_session_global(s, desc_name.c_str(),
+            ty_str_desc, true, &desc_init, sizeof(desc_init));
+        lr_session_global_reloc(s, desc_id, 0, data_name.c_str());
+
+        uint32_t desc_sym = lr_session_intern(s, desc_name.c_str());
+        tmp = lr_emit_load(s, ty_str_desc, LR_GLOBAL(desc_sym, ty_ptr));
+    }
+
+    // --- StringLen ---
+    //
+    // Extracts the length field (index 1) from the string descriptor.
+    // Constant-folded results are taken straight from m_value.
+
+    void visit_StringLen(const ASR::StringLen_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_arg);
+        uint32_t desc = tmp;
+        uint32_t idx = 1;
+        uint32_t len64 = lr_emit_extractvalue(s, ty_i64,
+            V(desc, ty_str_desc), &idx, 1);
+        lr_type_t *rt = get_type(x.m_type);
+        if (rt == ty_i64) {
+            tmp = len64;
+        } else {
+            tmp = lr_emit_trunc(s, rt, V(len64, ty_i64));
+        }
     }
 
     // --- StringFormat (evaluated inline by Print) ---
