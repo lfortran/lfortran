@@ -204,7 +204,9 @@ public:
             ASR::Array_t *at = down_cast<ASR::Array_t>(t);
             lr_type_t *et = get_type(at->m_type);
             if (at->m_physical_type
-                    == ASR::array_physical_typeType::FixedSizeArray) {
+                    == ASR::array_physical_typeType::FixedSizeArray ||
+                    at->m_physical_type
+                    == ASR::array_physical_typeType::PointerArray) {
                 int64_t total = ASRUtils::get_fixed_size_of_array(t);
                 if (total <= 0) total = 1;
                 return lr_type_array_s(s, et, (uint64_t)total);
@@ -515,10 +517,12 @@ public:
         }
         {
             // _lcompilers_string_format_fortran(alloc, sep, sep_len,
-            //     serial_info, out_len, kind, a, b, c, ...)
+            //     serial_info, out_len, array_count, string_count,
+            //     decimal_mode, sign_mode, round_mode, ...)
             lr_type_t *p[] = {ty_ptr, ty_ptr, ty_i64, ty_ptr, ty_ptr,
-                              ty_i32, ty_i32, ty_i32, ty_i32};
-            declare_func("_lcompilers_string_format_fortran", ty_ptr, p, 9, true);
+                              ty_i32, ty_i32, ty_i32, ty_i32, ty_i32};
+            declare_func("_lcompilers_string_format_fortran", ty_ptr, p,
+                10, true);
         }
         {
             // _lfortran_printf(fmt, str, str_len, end, end_len)
@@ -608,6 +612,8 @@ public:
                 lr_type_t *vt = get_type(v->m_type);
                 uint32_t slot = lr_emit_alloca(s, vt);
                 lr_symtab[get_hash((ASR::asr_t *)v)] = slot;
+                initialize_local_array_descriptor(slot, v->m_type);
+                initialize_local_string_descriptor(slot, v->m_type);
             }
         }
 
@@ -688,6 +694,8 @@ public:
                     lr_type_t *vt = get_type(v->m_type);
                     uint32_t slot = lr_emit_alloca(s, vt);
                     lr_symtab[get_hash((ASR::asr_t *)v)] = slot;
+                    initialize_local_array_descriptor(slot, v->m_type);
+                    initialize_local_string_descriptor(slot, v->m_type);
                 }
             }
         }
@@ -1295,9 +1303,9 @@ public:
         lr_type_t *elem_type = get_type(array_t->m_type);
 
         if (array_t->m_physical_type
-                == ASR::array_physical_typeType::FixedSizeArray) {
-            lr_type_t *array_type = get_type(vt);
-
+                == ASR::array_physical_typeType::FixedSizeArray ||
+                array_t->m_physical_type
+                == ASR::array_physical_typeType::PointerArray) {
             bool was_target = is_target;
             is_target = true;
             visit_expr(*x.m_v);
@@ -1308,7 +1316,10 @@ public:
             bool first = true;
             for (size_t r = 0; r < x.n_args; r++) {
                 ASR::array_index_t &ai = x.m_args[r];
+                bool was_target = is_target;
+                is_target = false;
                 visit_expr(*ai.m_right);
+                is_target = was_target;
                 lr_type_t *it = get_type(ASRUtils::expr_type(ai.m_right));
                 uint32_t idx = (it == ty_i32)
                     ? tmp
@@ -1338,11 +1349,13 @@ public:
                 }
             }
 
-            lr_operand_desc_t gep_idx[2] = {
-                I(0, ty_i32), V(lin, ty_i32)
-            };
-            uint32_t elem_ptr = lr_emit_gep(s, array_type,
-                V(base, ty_ptr), gep_idx, 2);
+            uint32_t lin64 = lr_emit_sext(s, ty_i64, V(lin, ty_i32));
+            uint32_t byte_off = lr_emit_mul(s, ty_i64,
+                V(lin64, ty_i64),
+                I(element_byte_size(array_t->m_type), ty_i64));
+            lr_operand_desc_t gep_idx[1] = {V(byte_off, ty_i64)};
+            uint32_t elem_ptr = lr_emit_gep(s, ty_i8,
+                V(base, ty_ptr), gep_idx, 1);
 
             if (is_target) {
                 tmp = elem_ptr;
@@ -1363,7 +1376,10 @@ public:
         bool first = true;
         for (size_t r = 0; r < x.n_args; r++) {
             ASR::array_index_t &ai = x.m_args[r];
+            bool was_target = is_target;
+            is_target = false;
             visit_expr(*ai.m_right);
+            is_target = was_target;
             lr_type_t *it = get_type(ASRUtils::expr_type(ai.m_right));
             uint32_t idx64 = (it == ty_i64)
                 ? tmp
@@ -1437,6 +1453,11 @@ public:
         }
     }
 
+    static constexpr int64_t DESC_HEADER_BYTES = 32;
+    static constexpr int64_t DESC_DIM_BYTES    = 24;
+    static constexpr int64_t DESC_DIM_LBOUND   = 0;
+    static constexpr int64_t DESC_DIM_EXTENT   = 8;
+
     // Write i64 value into the descriptor at desc_ptr + byte_offset.
     void desc_store_i64(uint32_t desc_ptr, int64_t byte_offset,
                         uint32_t value) {
@@ -1451,12 +1472,74 @@ public:
         lr_emit_store(s, V(base_ptr, ty_ptr), V(desc_ptr, ty_ptr));
     }
 
+    void desc_store_null_base(uint32_t desc_ptr) {
+        lr_emit_store(s, LR_NULL(ty_ptr), V(desc_ptr, ty_ptr));
+    }
+
     // Fill the rank field (offset 20, i8).
     void desc_store_rank(uint32_t desc_ptr, int rank) {
         lr_operand_desc_t off[1] = {I(20, ty_i64)};
         uint32_t p = lr_emit_gep(s, ty_i8,
             V(desc_ptr, ty_ptr), off, 1);
         lr_emit_store(s, I(rank, ty_i8), V(p, ty_ptr));
+    }
+
+    uint32_t emit_i64_const(int64_t value) {
+        return lr_emit_add(s, ty_i64, I(value, ty_i64), I(0, ty_i64));
+    }
+
+    bool is_descriptor_array_type(ASR::ttype_t *type,
+            ASR::Array_t **array_type = nullptr) {
+        type = ASRUtils::type_get_past_allocatable_pointer(type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) {
+            return false;
+        }
+        ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+        if (array_type) {
+            *array_type = array;
+        }
+        return array->m_physical_type ==
+            ASR::array_physical_typeType::DescriptorArray;
+    }
+
+    void initialize_local_array_descriptor(uint32_t desc_ptr,
+            ASR::ttype_t *type) {
+        ASR::Array_t *array = nullptr;
+        if (!is_descriptor_array_type(type, &array)) {
+            return;
+        }
+        int n_dims = (int)array->n_dims;
+        int64_t elem_bytes = element_byte_size(array->m_type);
+        desc_store_null_base(desc_ptr);
+        desc_store_i64(desc_ptr, 8, emit_i64_const(elem_bytes));
+        desc_store_rank(desc_ptr, n_dims);
+        desc_store_i64(desc_ptr, 24, emit_i64_const(0));
+        uint32_t stride = emit_i64_const(elem_bytes);
+        for (int d = 0; d < n_dims; d++) {
+            int64_t base_off = DESC_HEADER_BYTES + DESC_DIM_BYTES * d;
+            desc_store_i64(desc_ptr, base_off + 0, emit_i64_const(1));
+            desc_store_i64(desc_ptr, base_off + 8, emit_i64_const(0));
+            desc_store_i64(desc_ptr, base_off + 16, stride);
+        }
+    }
+
+    void initialize_local_string_descriptor(uint32_t desc_ptr,
+            ASR::ttype_t *type) {
+        type = ASRUtils::type_get_past_allocatable_pointer(type);
+        if (!ASR::is_a<ASR::String_t>(*type)) {
+            return;
+        }
+        ASR::String_t *string_t = ASR::down_cast<ASR::String_t>(type);
+        if (string_t->m_physical_type != ASR::DescriptorString) {
+            return;
+        }
+        uint32_t fld0 = 0;
+        uint32_t fld1 = 1;
+        uint32_t z0 = lr_emit_insertvalue(s, ty_str_desc,
+            LR_UNDEF(ty_str_desc), LR_NULL(ty_ptr), &fld0, 1);
+        uint32_t z1 = lr_emit_insertvalue(s, ty_str_desc,
+            V(z0, ty_str_desc), I(0, ty_i64), &fld1, 1);
+        lr_emit_store(s, V(z1, ty_str_desc), V(desc_ptr, ty_ptr));
     }
 
     void visit_Allocate(const ASR::Allocate_t &x) {
@@ -1675,8 +1758,12 @@ public:
     // --- ExplicitDeallocate / ImplicitDeallocate (string-only path) ---
 
     void deallocate_string_var(ASR::expr_t *v) {
-        ASR::ttype_t *at = ASRUtils::expr_type(v);
-        at = ASRUtils::type_get_past_allocatable_pointer(at);
+        ASR::ttype_t *expr_t = ASRUtils::expr_type(v);
+        ASR::ttype_t *at = ASRUtils::type_get_past_allocatable_pointer(expr_t);
+        if (ASR::is_a<ASR::Array_t>(*at) &&
+                !ASRUtils::is_allocatable(expr_t)) {
+            return;
+        }
         at = ASRUtils::type_get_past_array(at);
         if (!ASR::is_a<ASR::String_t>(*at)) {
             // Non-string deallocate is a no-op until we have array
@@ -1856,11 +1943,21 @@ public:
         std::vector<lr_operand_desc_t> args;
         for (size_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_value) {
-                visit_expr(*x.m_args[i].m_value);
-                lr_type_t *at = get_type(ASRUtils::expr_type(x.m_args[i].m_value));
-                uint32_t slot = lr_emit_alloca(s, at);
-                lr_emit_store(s, V(tmp, at), V(slot, ty_ptr));
-                args.push_back(V(slot, ty_ptr));
+                ASR::expr_t *arg = x.m_args[i].m_value;
+                if (ASR::is_a<ASR::Var_t>(*arg) ||
+                        ASR::is_a<ASR::ArrayItem_t>(*arg)) {
+                    bool was_target = is_target;
+                    is_target = true;
+                    visit_expr(*arg);
+                    is_target = was_target;
+                    args.push_back(V(tmp, ty_ptr));
+                } else {
+                    visit_expr(*arg);
+                    lr_type_t *at = get_type(ASRUtils::expr_type(arg));
+                    uint32_t slot = lr_emit_alloca(s, at);
+                    lr_emit_store(s, V(tmp, at), V(slot, ty_ptr));
+                    args.push_back(V(slot, ty_ptr));
+                }
             } else {
                 args.push_back(LR_NULL(ty_ptr));
             }
@@ -2129,7 +2226,8 @@ public:
 
         // Build call args for _lcompilers_string_format_fortran
         // Fixed args: alloc, sep(null), sep_len(0), serial_info, out_len,
-        //             kind(0), a(0), b(0), c(0)
+        //             array_count(0), string_count(0), decimal_mode(0),
+        //             sign_mode(0), round_mode(0)
         // Variadic: pointers to each formatted arg
         std::vector<lr_operand_desc_t> call_args;
         call_args.push_back(V(allocator, ty_ptr));                     // alloc
@@ -2137,15 +2235,16 @@ public:
         call_args.push_back(I(0, ty_i64));                             // sep_len
         call_args.push_back(LR_GLOBAL(serial_sym, ty_ptr));           // serial_info
         call_args.push_back(V(out_len_ptr, ty_ptr));                   // out_len
-        call_args.push_back(I(0, ty_i32));                             // kind
-        call_args.push_back(I(0, ty_i32));                             // a
-        call_args.push_back(I(0, ty_i32));                             // b
-        call_args.push_back(I(0, ty_i32));                             // c
+        call_args.push_back(I(0, ty_i32));                             // arrays
+        call_args.push_back(I(0, ty_i32));                             // strings
+        call_args.push_back(I(0, ty_i32));                             // decimal
+        call_args.push_back(I(0, ty_i32));                             // sign
+        call_args.push_back(I(0, ty_i32));                             // round
         for (size_t i = 0; i < arg_slots.size(); i++) {
             call_args.push_back(V(arg_slots[i], ty_ptr));
         }
 
-        // Set up the call as vararg with fixed_args=9
+        // Set up the call as vararg with fixed_args=10
         uint32_t strfmt_sym = lr_session_intern(s,
             "_lcompilers_string_format_fortran");
         {
@@ -2163,7 +2262,7 @@ public:
             d.num_operands = nops;
             d.call_external_abi = true;
             d.call_vararg = true;
-            d.call_fixed_args = 9;
+            d.call_fixed_args = 10;
             tmp = lr_session_emit(s, &d, nullptr);
         }
         uint32_t str_data = tmp;
@@ -2472,12 +2571,12 @@ public:
         uint32_t out_len_ptr = lr_emit_alloca(s, ty_i64);
 
         // Call _lcompilers_string_format_fortran with the same fixed
-        // 9-arg prefix that visit_Print uses, plus this single value.
+        // 10-arg prefix that visit_Print uses, plus this single value.
         uint32_t strfmt_sym = lr_session_intern(s,
             "_lcompilers_string_format_fortran");
         lr_inst_desc_t d;
         memset(&d, 0, sizeof(d));
-        lr_operand_desc_t ops[11];
+        lr_operand_desc_t ops[12];
         ops[0]  = LR_GLOBAL(strfmt_sym, ty_ptr);
         ops[1]  = V(allocator, ty_ptr);
         ops[2]  = LR_NULL(ty_ptr);
@@ -2488,14 +2587,15 @@ public:
         ops[7]  = I(0, ty_i32);
         ops[8]  = I(0, ty_i32);
         ops[9]  = I(0, ty_i32);
-        ops[10] = V(slot, ty_ptr);
+        ops[10] = I(0, ty_i32);
+        ops[11] = V(slot, ty_ptr);
         d.op = LR_OP_CALL;
         d.type = ty_ptr;
         d.operands = ops;
-        d.num_operands = 11;
+        d.num_operands = 12;
         d.call_external_abi = true;
         d.call_vararg = true;
-        d.call_fixed_args = 9;
+        d.call_fixed_args = 10;
         uint32_t fdata = lr_session_emit(s, &d, nullptr);
         uint32_t flen = lr_emit_load(s, ty_i64, V(out_len_ptr, ty_ptr));
         return {fdata, flen};
@@ -3101,11 +3201,6 @@ public:
     // We use byte offsets (i8 GEP) into the descriptor's i8* view so the
     // backend doesn't have to construct a per-rank struct type up front.
 
-    static constexpr int64_t DESC_HEADER_BYTES = 32;
-    static constexpr int64_t DESC_DIM_BYTES    = 24;
-    static constexpr int64_t DESC_DIM_LBOUND   = 0;
-    static constexpr int64_t DESC_DIM_EXTENT   = 8;
-
     // Load i64 at descriptor base + byte_offset.
     uint32_t desc_load_i64(uint32_t desc_ptr, int64_t byte_offset) {
         lr_operand_desc_t off[1] = {I(byte_offset, ty_i64)};
@@ -3184,6 +3279,38 @@ public:
             }
         }
 
+        ASR::ttype_t *vt = ASRUtils::expr_type(x.m_v);
+        vt = ASRUtils::type_get_past_allocatable_pointer(vt);
+        if (ASR::is_a<ASR::Array_t>(*vt)) {
+            ASR::Array_t *array_t = down_cast<ASR::Array_t>(vt);
+            if (array_t->m_physical_type !=
+                    ASR::array_physical_typeType::DescriptorArray &&
+                    const_dim) {
+                int req_dim;
+                ASRUtils::extract_value(x.m_dim, req_dim);
+                req_dim--;
+                int64_t lbound = 1;
+                if (array_t->m_dims[req_dim].m_start) {
+                    ASRUtils::extract_value(
+                        array_t->m_dims[req_dim].m_start, lbound);
+                }
+                int64_t length = 0;
+                bool has_length = array_t->m_dims[req_dim].m_length &&
+                    ASRUtils::extract_value(
+                        array_t->m_dims[req_dim].m_length, length);
+                int64_t bound = 0;
+                if (x.m_bound == ASR::arrayboundType::LBound) {
+                    bound = (has_length && length == 0) ? 1 : lbound;
+                } else {
+                    bound = (has_length && length == 0)
+                        ? 0 : (length + lbound - 1);
+                }
+                lr_type_t *rt = get_type(x.m_type);
+                tmp = lr_emit_add(s, rt, I(bound, rt), I(0, rt));
+                return;
+            }
+        }
+
         // Runtime path: read from descriptor.
         if (!const_dim) {
             throw CodeGenError(
@@ -3229,6 +3356,34 @@ public:
         }
         ASR::Array_t *array_t = down_cast<ASR::Array_t>(vt);
         int64_t n_dims = (int64_t)array_t->n_dims;
+
+        if (array_t->m_physical_type !=
+                ASR::array_physical_typeType::DescriptorArray) {
+            int64_t start_dim = 0;
+            int64_t end_dim = n_dims;
+            if (x.m_dim) {
+                int req_dim;
+                if (!ASRUtils::is_value_constant(x.m_dim) ||
+                        !ASRUtils::extract_value(x.m_dim, req_dim)) {
+                    throw CodeGenError(
+                        "liric: ArraySize with runtime dim not supported");
+                }
+                start_dim = req_dim - 1;
+                end_dim = req_dim;
+            }
+            int64_t prod = 1;
+            for (int64_t d = start_dim; d < end_dim; d++) {
+                int64_t extent = 1;
+                if (array_t->m_dims[d].m_length) {
+                    ASRUtils::extract_value(array_t->m_dims[d].m_length,
+                        extent);
+                }
+                prod *= extent;
+            }
+            lr_type_t *rt = get_type(x.m_type);
+            tmp = lr_emit_add(s, rt, I(prod, rt), I(0, rt));
+            return;
+        }
 
         uint32_t desc = desc_ptr_of(x.m_v);
 
