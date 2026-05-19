@@ -1239,6 +1239,29 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
   }
 
+template <typename T>
+struct USubOp {
+    T operator()(T a) const { return -a; }
+};
+
+template <typename T>
+struct InvertOp {
+    T operator()(T a) const { return ~a; }
+};
+
+template<typename T, typename Op>
+static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, ASR::ArrayConstant_t* arr, ASR::ttype_t* type, Op op) {
+    int64_t arr_size = ASRUtils::get_fixed_size_of_array(type);
+    if (arr_size == -1) return nullptr;
+    int kind = ASRUtils::extract_kind_from_ttype_t(type);
+    T* res_data = al.allocate<T>(arr_size);
+    T* arr_data = (T*)arr->m_data;
+    for (int i = 0; i < arr_size; i++) {
+        res_data[i] = op(arr_data[i]);
+    }
+    return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc, arr_size * kind, res_data, type, arr->m_storage_format));
+}
+
   inline static void visit_UnaryOp(Allocator &al, const AST::UnaryOp_t &x,
                                    ASR::expr_t *&operand, ASR::asr_t *&asr,
                                    SymbolTable* current_scope,
@@ -1251,16 +1274,20 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
         if (ASRUtils::is_integer(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        ASRUtils::expr_value(operand))->m_n;
-                asr = ASR::make_IntegerConstant_t(al, x.base.base.loc, op_value, operand_type);
+                if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
+                    int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(operand))->m_n;
+                    asr = ASR::make_IntegerConstant_t(al, x.base.base.loc, op_value, operand_type);
+                }
             }
         }
         else if (ASRUtils::is_real(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                double op_value = ASR::down_cast<ASR::RealConstant_t>(
-                                ASRUtils::expr_value(operand))->m_r;
-                asr = ASR::make_RealConstant_t(al, x.base.base.loc, op_value, operand_type);
+                if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
+                    double op_value = ASR::down_cast<ASR::RealConstant_t>(
+                                    ASRUtils::expr_value(operand))->m_r;
+                    asr = ASR::make_RealConstant_t(al, x.base.base.loc, op_value, operand_type);
+                }
             }
         }
         return;
@@ -1269,34 +1296,48 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
         if (ASRUtils::is_integer(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        ASRUtils::expr_value(operand))->m_n;
-                value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, operand_type));
+                if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
+                    int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(operand))->m_n;
+                    value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, operand_type));
+                } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
+                    int kind = ASRUtils::extract_kind_from_ttype_t(operand_type);
+                    if (kind == 4) {
+                        value = eval_unary_array_const<int32_t>(al, x.base.base.loc, arr_const, operand_type, USubOp<int32_t>());
+                    } else if (kind == 8) {
+                        value = eval_unary_array_const<int64_t>(al, x.base.base.loc, arr_const, operand_type, USubOp<int64_t>());
+                    }
+                }
             }
             asr = ASR::make_IntegerUnaryMinus_t(al, x.base.base.loc, operand,
                                                     operand_type, value);
             return;
         } else if (ASRUtils::is_real(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                double op_value = ASR::down_cast<ASR::RealConstant_t>(
-                                        ASRUtils::expr_value(operand))->m_r;
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
-                    al, x.base.base.loc, -op_value, operand_type));
+                if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
+                    double op_value = ASR::down_cast<ASR::RealConstant_t>(
+                                            ASRUtils::expr_value(operand))->m_r;
+                    value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+                        al, x.base.base.loc, -op_value, operand_type));
+                }
             }
             asr = ASR::make_RealUnaryMinus_t(al, x.base.base.loc, operand,
                                              operand_type, value);
             return;
         } else if (ASRUtils::is_complex(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
-                                    ASRUtils::expr_value(operand));
-                std::complex<double> op_value(c->m_re, c->m_im);
-                std::complex<double> result;
-                result = -op_value;
-                value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
-                        std::imag(result), operand_type));
+                if (ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(operand))) {
+                    ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
+                                        ASRUtils::expr_value(operand));
+                    std::complex<double> op_value(c->m_re, c->m_im);
+                    std::complex<double> result;
+                    result = -op_value;
+                    value = ASR::down_cast<ASR::expr_t>(
+                            ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
+                            std::imag(result), operand_type));
+                }
             }
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
                                                     operand_type, value);
@@ -1337,10 +1378,12 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
 
         if (ASRUtils::is_integer(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                        ASRUtils::expr_value(operand))->m_n;
-                value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_IntegerConstant_t(al, x.base.base.loc, ~op_value, operand_type));
+                if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
+                    int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(operand))->m_n;
+                    value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc, ~op_value, operand_type));
+                }
             }
             asr = ASR::make_IntegerBitNot_t(al, x.base.base.loc, operand, operand_type, value);
             return;
@@ -1356,10 +1399,12 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     } else if (x.m_op == AST::unaryopType::Not) {
         if (ASRUtils::is_logical(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                bool op_value = ASR::down_cast<ASR::LogicalConstant_t>(
-                                ASRUtils::expr_value(operand))->m_value;
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
-                    al, x.base.base.loc, !op_value, operand_type));
+                if (ASR::is_a<ASR::LogicalConstant_t>(*ASRUtils::expr_value(operand))) {
+                    bool op_value = ASR::down_cast<ASR::LogicalConstant_t>(
+                                    ASRUtils::expr_value(operand))->m_value;
+                    value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(
+                        al, x.base.base.loc, !op_value, operand_type));
+                }
             }
             asr = ASR::make_LogicalNot_t(al, x.base.base.loc, operand, operand_type, value);
             return;
@@ -13234,6 +13279,13 @@ public:
                 dim.loc = loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
                 dim.m_length = ASRUtils::fetch_ArrayConstant_value(al, const_newshape, i);
+                if (ASR::is_a<ASR::IntegerConstant_t>(*dim.m_length)) {
+                    int64_t shape_element = ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
+                    if (shape_element < 0) {
+                        diag.add(Diagnostic("‘shape’ argument of ‘reshape’ intrinsic has negative element (" + std::to_string(shape_element) + ")", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                }
                 dims.push_back(al, dim);
                 new_shape_size *= ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
             }
