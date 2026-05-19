@@ -101,6 +101,9 @@ enum Backend {
     llvm, c, cpp, x86, wasm, fortran, mlir, liric
 };
 
+int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
+    const CompilerOptions &compiler_options, LCompilers::LocationManager lm);
+
 #ifdef HAVE_LFORTRAN_LIRIC
 extern "C" int liric_compile_to_object(
     void *asr, void *diag, void *al, void *lpm,
@@ -128,6 +131,8 @@ int compile_src_to_object_file_liric(const std::string &infile,
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!result.ok) return 1;
     auto *asr = result.result;
+    int mod_err = save_mod_files(*asr, compiler_options, lm);
+    if (mod_err) return mod_err;
     Allocator al(64*1024*1024);
     return liric_compile_to_object(asr, &diagnostics, &al, &lpm,
         &compiler_options, infile.c_str(), &lm, outfile.c_str());
