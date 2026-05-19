@@ -1,4 +1,4 @@
-program p
+program intrinsics_463
     integer :: a
     call get_command(length=a)
     print *, a
