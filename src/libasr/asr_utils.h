@@ -3387,42 +3387,99 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
 
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
-class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
+class ReplaceFunctionParamWithArg {
     private:
-
     Allocator& al;
     ASR::call_arg_t* m_args;
     size_t n_args;
 
     public:
-
     ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
         al(al_), m_args(m_args_), n_args(n_args_) {}
 
-    void replace_FunctionParam(ASR::FunctionParam_t *x) {
-        if (current_expr) {
-            size_t n = x->m_param_number;
-            if (n >= n_args) {
-                LCOMPILERS_ASSERT("FunctionParam param number not in range.");
-            };
-            *current_expr = m_args[n].m_value;
+   
+    ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* expr) {
+        if (!expr) return nullptr;
+
+        
+        #define COW_BINOP_CASE(X, X_t) \
+        case (ASR::exprType::X) : { \
+            ASR::X_t* bin = ASR::down_cast<ASR::X_t>(expr); \
+            ASR::expr_t* new_left = replace_FunctionParam_with_arg(bin->m_left); \
+            ASR::expr_t* new_right = replace_FunctionParam_with_arg(bin->m_right); \
+            if (new_left != bin->m_left || new_right != bin->m_right) { \
+                ASR::X_t* new_bin = al.aloc<ASR::X_t>(bin->base.base.loc); \
+                *new_bin = *bin; \
+                new_bin->m_left = new_left; \
+                new_bin->m_right = new_right; \
+                return ASR::down_cast<ASR::expr_t>(&new_bin->base); \
+            } \
+            return expr; \
         }
-    }
 
-    ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
-        ASRUtils::ExprStmtDuplicator duplicator(al);
-        duplicator.allow_procedure_calls = true;
-        duplicator.success = true;
+        #define COW_UNARYOP_CASE(X, X_t) \
+        case (ASR::exprType::X) : { \
+            ASR::X_t* un = ASR::down_cast<ASR::X_t>(expr); \
+            ASR::expr_t* new_arg = replace_FunctionParam_with_arg(un->m_arg); \
+            if (new_arg != un->m_arg) { \
+                ASR::X_t* new_un = al.aloc<ASR::X_t>(un->base.base.loc); \
+                *new_un = *un; \
+                new_un->m_arg = new_arg; \
+                return ASR::down_cast<ASR::expr_t>(&new_un->base); \
+            } \
+            return expr; \
+        }
 
-        ASR::expr_t* tc = duplicator.duplicate_expr(t);
-        LCOMPILERS_ASSERT(duplicator.success);
+        switch (expr->type) {
+            
+            case ASR::exprType::FunctionParam: {
+                ASR::FunctionParam_t *p = ASR::down_cast<ASR::FunctionParam_t>(expr);
+                size_t n = p->m_param_number;
+                if (n >= n_args) {
+                    LCOMPILERS_ASSERT("FunctionParam param number not in range.");
+                }
+                return m_args[n].m_value; 
+            }
 
-        ASR::expr_t** current_copy = current_expr;
-        current_expr = &tc;
-        replace_expr(tc);
-        current_expr = current_copy;
+            
+            COW_BINOP_CASE(IntegerBinOp, IntegerBinOp_t)
+            COW_BINOP_CASE(RealBinOp, RealBinOp_t)
+            COW_BINOP_CASE(ComplexBinOp, ComplexBinOp_t)
+            COW_BINOP_CASE(LogicalBinOp, LogicalBinOp_t)
+            COW_BINOP_CASE(UnsignedIntegerBinOp, UnsignedIntegerBinOp_t)
+            COW_BINOP_CASE(IntegerCompare, IntegerCompare_t)
+            COW_BINOP_CASE(RealCompare, RealCompare_t)
+            COW_BINOP_CASE(ComplexCompare, ComplexCompare_t)
+            COW_BINOP_CASE(LogicalCompare, LogicalCompare_t)
+            COW_BINOP_CASE(UnsignedIntegerCompare, UnsignedIntegerCompare_t)
+            COW_BINOP_CASE(StringCompare, StringCompare_t)
 
-        return tc;
+           
+            COW_UNARYOP_CASE(IntegerUnaryMinus, IntegerUnaryMinus_t)
+            COW_UNARYOP_CASE(RealUnaryMinus, RealUnaryMinus_t)
+            COW_UNARYOP_CASE(ComplexUnaryMinus, ComplexUnaryMinus_t)
+            COW_UNARYOP_CASE(LogicalNot, LogicalNot_t)
+            
+            
+            case ASR::exprType::Cast: {
+                ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
+                ASR::expr_t* new_arg = replace_FunctionParam_with_arg(cast->m_arg);
+                if (new_arg != cast->m_arg) {
+                    ASR::Cast_t* new_cast = al.aloc<ASR::Cast_t>(cast->base.base.loc);
+                    *new_cast = *cast;
+                    new_cast->m_arg = new_arg;
+                    return ASR::down_cast<ASR::expr_t>(&new_cast->base);
+                }
+                return expr;
+            }
+
+            
+            default:
+                return expr;
+        }
+
+        #undef COW_BINOP_CASE
+        #undef COW_UNARYOP_CASE
     }
 
     void replace_type(ASR::ttype_t* t) {
