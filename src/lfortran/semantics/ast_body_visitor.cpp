@@ -890,7 +890,7 @@ public:
                     diag.add(Diagnostic(
                         R"""(Duplicate value of `asynchronous` found)""",
                         Level::Error, Stage::Semantic, {
-                            Label("", {x.base.base.loc})
+                            Label("", {kwarg.m_value->base.loc})
                         }));
                     throw SemanticAbort();
                 }
@@ -900,7 +900,7 @@ public:
                     diag.add(Diagnostic(
                         "`asynchronous` must be of type String",
                         Level::Error, Stage::Semantic, {
-                            Label("", {x.base.base.loc})
+                            Label("", {kwarg.m_value->base.loc})
                         }));
                     throw SemanticAbort();
                 }
@@ -2074,7 +2074,7 @@ public:
                     diag.add(Diagnostic(
                         R"""(Duplicate value of `asynchronous` found)""",
                         Level::Error, Stage::Semantic, {
-                            Label("", {loc})
+                            Label("", {kwarg.m_value->base.loc})
                         }));
                     throw SemanticAbort();
                 }
@@ -2084,7 +2084,7 @@ public:
                     diag.add(Diagnostic(
                         "`asynchronous` must be of type String",
                         Level::Error, Stage::Semantic, {
-                            Label("", {loc})
+                            Label("", {kwarg.m_value->base.loc})
                         }));
                     throw SemanticAbort();
                 }
