@@ -1771,7 +1771,7 @@ public:
         {"out_of_range", IntrinsicSignature({"value", "mold", "round"}, 2, 3)},
         {"same_type_as", IntrinsicSignature({"a", "b"}, 2, 2)},
         {"extends_type_of", IntrinsicSignature({"a", "mold"}, 2, 2)},
-        {"len_trim", IntrinsicSignature({"String", "Kind"}, 1, 2)},
+        {"len_trim", IntrinsicSignature({"string", "kind"}, 1, 2)},
         {"int", IntrinsicSignature({"i", "kind"}, 1, 2)},
         {"random_number", IntrinsicSignature({"harvest"}, 1, 1)},
         {"abs", IntrinsicSignature({"a"}, 1, 1)},
@@ -2751,6 +2751,13 @@ public:
 	    }
 
 	    if ( v->m_type ) {
+		if (v->m_symbolic_value != nullptr || v->m_value != nullptr) {
+		    diag.add(diag::Diagnostic(
+		        "Dimensions specified for '" + std::string(s.m_name) + "' after its initialization",
+		        diag::Level::Error, diag::Stage::Semantic, {
+		            diag::Label("", {s.loc})}));
+		    throw SemanticAbort();
+		}
 		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
 		                               : ASR::abiType::Source;
 	        if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(),
@@ -4304,7 +4311,15 @@ public:
     }
 
     ASR::ttype_t* evaluate_type_bounds(Allocator& al, ASR::ttype_t* type, const Location& loc) {
-        if (ASRUtils::is_array(type)) {
+        if (ASR::is_a<ASR::Pointer_t>(*type)) {
+            ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(type);
+            ASR::ttype_t* inner_type = evaluate_type_bounds(al, p->m_type, loc);
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, p->base.base.loc, inner_type));
+        } else if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+            ASR::Allocatable_t* a = ASR::down_cast<ASR::Allocatable_t>(type);
+            ASR::ttype_t* inner_type = evaluate_type_bounds(al, a->m_type, loc);
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, a->base.base.loc, inner_type));
+        } else if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(type);
             Vec<ASR::dimension_t> new_dims;
             new_dims.reserve(al, arr->n_dims);
@@ -7779,6 +7794,22 @@ public:
                     if (is_char_type && storage_type == ASR::storage_typeType::Parameter) {
                         validate_and_adjust_character_parameter_length(
                             init_expr, value, type, x.base.base.loc, al, diag);
+                    } else if (is_char_type && value
+                            && ASR::is_a<ASR::ArrayConstant_t>(*value)
+                            && ASRUtils::is_array_of_strings(type)
+                            && ASRUtils::is_array_of_strings(ASRUtils::expr_type(value))) {
+                        ASR::String_t* lhs_str = ASRUtils::get_string_type(type);
+                        ASR::String_t* rhs_str = ASRUtils::get_string_type(
+                            ASRUtils::expr_type(value));
+                        int64_t lhs_len = 0, rhs_len = 0;
+                        if (lhs_str->m_len && rhs_str->m_len
+                                && ASRUtils::extract_value(lhs_str->m_len, lhs_len)
+                                && ASRUtils::extract_value(rhs_str->m_len, rhs_len)
+                                && lhs_len != rhs_len) {
+                            value = adjust_array_character_length(value, lhs_len,
+                                rhs_len, al);
+                            init_expr = value;
+                        }
                     }
 
                     ASR::expr_t* tmp_init = init_expr;

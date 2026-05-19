@@ -24,8 +24,8 @@
                                                     4
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    string_17_string_module
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -171,8 +171,8 @@
                                                     5
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    string_17_string_module
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),

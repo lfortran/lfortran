@@ -176,8 +176,8 @@
                                                     5
                                                     1_softmax_eval_1d
                                                     3 eval_1d
-                                                    softmax
-                                                    []
+                                                    module_function_call1
+                                                    [softmax]
                                                     eval_1d
                                                     Public
                                                 ),

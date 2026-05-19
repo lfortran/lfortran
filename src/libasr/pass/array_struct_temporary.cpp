@@ -1500,6 +1500,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     x_m_args_vec.push_back(al, x_m_args[i]);
                     continue;
                 }
+                if (orig_variable && orig_variable->m_target_attr &&
+                    x_m_args[i].m_value) {
+                    ASR::expr_t* arg_no_cast =
+                        ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value);
+                    if (ASR::is_a<ASR::Var_t>(*arg_no_cast) ||
+                        ASR::is_a<ASR::ArrayItem_t>(*arg_no_cast) ||
+                        ASR::is_a<ASR::StructInstanceMember_t>(*arg_no_cast)) {
+                        x_m_args_vec.push_back(al, x_m_args[i]);
+                        continue;
+                    }
+                }
             }
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);

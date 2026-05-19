@@ -381,8 +381,8 @@
                                                                     10
                                                                     1_enum_stat_success
                                                                     5 success
-                                                                    1_enum_stat
-                                                                    []
+                                                                    class_default_select_type
+                                                                    [enum_stat]
                                                                     success
                                                                     Public
                                                                 )
@@ -440,8 +440,8 @@
                                                                     11
                                                                     1_enum_stat_fatal
                                                                     5 fatal
-                                                                    1_enum_stat
-                                                                    []
+                                                                    class_default_select_type
+                                                                    [enum_stat]
                                                                     fatal
                                                                     Public
                                                                 )

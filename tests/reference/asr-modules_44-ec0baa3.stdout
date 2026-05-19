@@ -107,8 +107,8 @@
                                                     8
                                                     1_fpm_new_settings_name
                                                     7 name
-                                                    fpm_new_settings
-                                                    []
+                                                    modules_44_fpm_cmd_new
+                                                    [fpm_new_settings]
                                                     name
                                                     Public
                                                 ),

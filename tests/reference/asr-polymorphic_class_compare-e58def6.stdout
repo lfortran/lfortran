@@ -17,8 +17,8 @@
                                                     4
                                                     1_map_setiterator_i
                                                     3 i
-                                                    map_setiterator
-                                                    []
+                                                    gftl2_integer32complex32map
+                                                    [map_setiterator]
                                                     i
                                                     Public
                                                 ),
@@ -414,8 +414,8 @@
                                     6
                                     1_map_setiterator_i
                                     3 i
-                                    map_setiterator
-                                    []
+                                    gftl2_integer32complex32map
+                                    [map_setiterator]
                                     i
                                     Public
                                 ),
