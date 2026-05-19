@@ -154,6 +154,7 @@ public:
     CompilerOptions &co;
     diag::Diagnostics &diag;
     std::unordered_map<uint64_t, uint32_t> lr_symtab;
+    std::unordered_map<uint64_t, lr_type_t *> struct_types;
     std::vector<uint32_t> loop_head_stack;
     std::vector<uint32_t> loop_end_stack;
 
@@ -223,9 +224,40 @@ public:
                 return ty_i1;
             case ASR::ttypeType::String:
                 return ty_str_desc;
+            case ASR::ttypeType::StructType:
+                return get_struct_type(down_cast<ASR::StructType_t>(t));
             default:
                 throw CodeGenError("liric: unsupported type");
         }
+    }
+
+    // --- Map ASR StructType to a cached liric struct type ---
+    //
+    // ASR::StructType_t carries the ordered data-member ttypes; we mirror
+    // them as a liric struct.  Keyed by the ttype node pointer because the
+    // same Struct symbol can produce several StructType_t nodes for
+    // polymorphic vs concrete views.
+
+    lr_type_t *get_struct_type(ASR::StructType_t *stt) {
+        uint64_t h = get_hash((ASR::asr_t *)stt);
+        auto it = struct_types.find(h);
+        if (it != struct_types.end()) return it->second;
+
+        std::vector<lr_type_t *> fields;
+        for (size_t i = 0; i < stt->n_data_member_types; i++) {
+            fields.push_back(get_type(stt->m_data_member_types[i]));
+        }
+        lr_type_t *t;
+        if (fields.empty()) {
+            // Empty derived types are legal in Fortran; reserve one byte
+            // so alloca produces a distinct address.
+            lr_type_t *one[1] = {ty_i8};
+            t = lr_type_struct_s(s, one, 1, false);
+        } else {
+            t = lr_type_struct_s(s, fields.data(), fields.size(), false);
+        }
+        struct_types[h] = t;
+        return t;
     }
 
     // --- Declare an external runtime function (idempotent) ---
@@ -1034,6 +1066,69 @@ public:
             tmp = len64;
         } else {
             tmp = lr_emit_trunc(s, rt, V(len64, ty_i64));
+        }
+    }
+
+    // --- StructInstanceMember ---
+    //
+    // Resolve the parent Struct symbol from the owning expression, find
+    // the member's positional index in its m_members array, and emit a
+    // GEP [0, idx] on the cached liric struct type.  Honours is_target:
+    // returns the field address for LHS use, otherwise loads the value.
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        LIRIC_PASSTHROUGH(x)
+
+        ASR::ttype_t *vt = ASRUtils::expr_type(x.m_v);
+        vt = ASRUtils::type_get_past_allocatable_pointer(vt);
+        vt = ASRUtils::type_get_past_array(vt);
+        if (!ASR::is_a<ASR::StructType_t>(*vt)) {
+            throw CodeGenError(
+                "liric: StructInstanceMember owner is not a struct type");
+        }
+        lr_type_t *struct_type = get_struct_type(
+            down_cast<ASR::StructType_t>(vt));
+
+        ASR::symbol_t *parent_sym = ASRUtils::get_struct_sym_from_struct_expr(
+            const_cast<ASR::expr_t *>(x.m_v));
+        if (!parent_sym) {
+            throw CodeGenError(
+                "liric: cannot resolve parent Struct for member access");
+        }
+        parent_sym = ASRUtils::symbol_get_past_external(parent_sym);
+        ASR::Struct_t *parent_struct = down_cast<ASR::Struct_t>(parent_sym);
+
+        ASR::symbol_t *msym = ASRUtils::symbol_get_past_external(x.m_m);
+        const char *member_name = ASRUtils::symbol_name(msym);
+        int member_idx = -1;
+        for (size_t i = 0; i < parent_struct->n_members; i++) {
+            if (std::strcmp(parent_struct->m_members[i], member_name) == 0) {
+                member_idx = (int)i;
+                break;
+            }
+        }
+        if (member_idx < 0) {
+            throw CodeGenError(std::string("liric: struct member '")
+                + member_name + "' not found");
+        }
+
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*x.m_v);
+        is_target = was_target;
+        uint32_t v_ptr = tmp;
+
+        lr_operand_desc_t indices[2] = {
+            I(0, ty_i32), I(member_idx, ty_i32)
+        };
+        uint32_t mem_ptr = lr_emit_gep(s, struct_type,
+            V(v_ptr, ty_ptr), indices, 2);
+
+        if (is_target) {
+            tmp = mem_ptr;
+        } else {
+            lr_type_t *mt = get_type(x.m_type);
+            tmp = lr_emit_load(s, mt, V(mem_ptr, ty_ptr));
         }
     }
 
