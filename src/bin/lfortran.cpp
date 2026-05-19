@@ -2195,12 +2195,12 @@ int link_executable(const std::vector<std::string> &infiles,
             if (backend == Backend::liric) {
                 // The liric runtime archive holds the Fortran intrinsic
                 // bodies (newunit_int_4, c_logb, compute_lps, etc.).
-                // Plain -l does demand-loading - only .o files that
-                // define a referenced undefined symbol get pulled in,
-                // so we avoid duplicate-definition errors when user
-                // .o files also emit instances of _lcompilers_*
-                // intrinsic helpers.
-                compile_cmd += " -llfortran_runtime_fortran";
+                // pass_manager also emits per-TU `_lcompilers_*`
+                // instantiations of trim/index/scan/... into every
+                // consumer .o; these are byte-identical so we accept
+                // multiple definitions and let the linker keep one.
+                compile_cmd += " -llfortran_runtime_fortran"
+                    " -Wl,--allow-multiple-definition";
             }
             if (compiler_options.openmp && CC.find("clang" ) != std::string::npos) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
