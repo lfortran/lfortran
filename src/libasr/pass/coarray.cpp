@@ -5,6 +5,10 @@
 #include <libasr/pass/replace_coarray.h>
 #include <map>
 
+#ifndef CAF_PRIF_VERSION
+#define CAF_PRIF_VERSION 8
+#endif
+
 namespace LCompilers {
 
 class PRIFInterface {
@@ -340,6 +344,32 @@ class PRIFInterface {
         PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_)
             : al(al_), unit(unit_) {}
 
+        // Create the prif_coarray_cleanup_interface Function symbol.
+        // Represents: subroutine(prif_coarray_handle) bind(C)
+        ASR::symbol_t* get_or_create_cleanup_interface(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string iface_name = "prif_coarray_cleanup_interface";
+            if (ASR::symbol_t *existing = global_scope->get_symbol(iface_name)) {
+                return existing;
+            }
+            SymbolTable *iface_symtab = al.make_new<SymbolTable>(global_scope);
+            ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
+            ASR::expr_t *handle_arg = make_struct_var(
+                iface_symtab, loc, "handle", handle_struct,
+                ASR::intentType::In, ASR::presenceType::Required, true);
+            Vec<ASR::expr_t*> iface_args; iface_args.reserve(al, 1);
+            iface_args.push_back(al, handle_arg);
+            ASR::asr_t *iface_fn = ASRUtils::make_Function_t_util(
+                al, loc, iface_symtab, s2c(al, iface_name), nullptr, 0,
+                iface_args.p, iface_args.n, nullptr, 0, nullptr,
+                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::deftypeType::Interface, nullptr,
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(iface_name, ASR::down_cast<ASR::symbol_t>(iface_fn));
+            return ASR::down_cast<ASR::symbol_t>(iface_fn);
+        }
+
         ASR::symbol_t* get_or_create_prif_allocate_coarray_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = "__module_prif_prif_allocate_coarray";
@@ -361,9 +391,25 @@ class PRIFInterface {
                 ASR::intentType::In, nullptr, ASR::abiType::Source, true);
             ASR::expr_t *size_arg = b.Variable(fn_symtab, "size_in_bytes", i64,
                 ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+#if CAF_PRIF_VERSION >= 8
+            // final_proc: procedure(prif_coarray_cleanup_interface), pointer, intent(in)
+            ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
+            ASR::symbol_t *cleanup_iface = get_or_create_cleanup_interface(loc);
+            ASR::ttype_t *handle_type = ASRUtils::make_StructType_t_util(al, loc, handle_struct, true);
+            Vec<ASR::ttype_t*> cleanup_arg_types; cleanup_arg_types.reserve(al, 1);
+            cleanup_arg_types.push_back(al, handle_type);
+            ASR::ttype_t *cleanup_func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                al, loc, cleanup_arg_types.p, cleanup_arg_types.n,
+                nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface,
+                nullptr, false, false, false, false, false, nullptr, 0, false));
+            ASR::ttype_t *cleanup_ptr_type = ASRUtils::TYPE(
+                ASR::make_Pointer_t(al, loc, cleanup_func_type));
+            ASR::expr_t *final_proc = b.Variable(fn_symtab, "final_proc", cleanup_ptr_type,
+                ASR::intentType::In, cleanup_iface, ASR::abiType::BindC, false);
+#else
             ASR::expr_t *final_func = b.Variable(fn_symtab, "final_func", cptr,
                 ASR::intentType::In, nullptr, ASR::abiType::Source, true);
-            ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
+#endif
             ASR::expr_t *handle_var = make_struct_var(fn_symtab, loc, "coarray_handle",
                 handle_struct, ASR::intentType::Out, ASR::presenceType::Required, false);
             ASR::expr_t *alloc_mem = b.Variable(fn_symtab, "allocated_memory", cptr,
@@ -372,7 +418,11 @@ class PRIFInterface {
             args.push_back(al, lcobounds);
             args.push_back(al, ucobounds);
             args.push_back(al, size_arg);
+#if CAF_PRIF_VERSION >= 8
+            args.push_back(al, final_proc);
+#else 
             args.push_back(al, final_func);
+#endif
             args.push_back(al, handle_var);
             args.push_back(al, alloc_mem);
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
@@ -560,9 +610,17 @@ class PRIFInterface {
                     ASR::arraystorageType::ColMajor, nullptr));
                 // size_in_bytes
                 ASR::expr_t *sz = get_size_in_bytes_expr(loc, var->m_type);
-                // final_func = c_null_funptr (use CPtr null - same ABI as c_funptr)
+                // final_proc = null() (null procedure pointer for cleanup interface)
+                ASR::ttype_t *handle_type_fp = ASRUtils::make_StructType_t_util(
+                    al, loc, handle_struct, true);
+                Vec<ASR::ttype_t*> fp_arg_types; fp_arg_types.reserve(al, 1);
+                fp_arg_types.push_back(al, handle_type_fp);
+                ASR::ttype_t *cleanup_ft = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                    al, loc, fp_arg_types.p, fp_arg_types.n,
+                    nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface,
+                    nullptr, false, false, false, false, false, nullptr, 0, false));
                 ASR::expr_t *null_fptr = ASRUtils::EXPR(
-                    ASR::make_PointerNullConstant_t(al, loc, cptr, nullptr));
+                    ASR::make_PointerNullConstant_t(al, loc, cleanup_ft, nullptr));
                 // Build call args
                 Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 6);
                 ASR::call_arg_t a1; a1.loc=loc; a1.m_value=lcobounds_val;
