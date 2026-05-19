@@ -760,62 +760,109 @@ public:
                 "liric: ArrayItem owner is not an array type");
         }
         ASR::Array_t *array_t = down_cast<ASR::Array_t>(vt);
-        if (array_t->m_physical_type
-                != ASR::array_physical_typeType::FixedSizeArray) {
-            throw CodeGenError(
-                "liric: ArrayItem supports only FixedSizeArray today");
-        }
-
-        lr_type_t *array_type = get_type(vt);
         lr_type_t *elem_type = get_type(array_t->m_type);
 
-        // Pointer to the array storage.
-        bool was_target = is_target;
-        is_target = true;
-        visit_expr(*x.m_v);
-        is_target = was_target;
-        uint32_t base = tmp;
+        if (array_t->m_physical_type
+                == ASR::array_physical_typeType::FixedSizeArray) {
+            lr_type_t *array_type = get_type(vt);
 
-        // Build row-major linear (i - lbound) accumulator across dims.
-        uint32_t lin = 0;
+            bool was_target = is_target;
+            is_target = true;
+            visit_expr(*x.m_v);
+            is_target = was_target;
+            uint32_t base = tmp;
+
+            uint32_t lin = 0;
+            bool first = true;
+            for (size_t r = 0; r < x.n_args; r++) {
+                ASR::array_index_t &ai = x.m_args[r];
+                visit_expr(*ai.m_right);
+                lr_type_t *it = get_type(ASRUtils::expr_type(ai.m_right));
+                uint32_t idx = (it == ty_i32)
+                    ? tmp
+                    : ((it == ty_i64)
+                        ? lr_emit_trunc(s, ty_i32, V(tmp, it))
+                        : lr_emit_sext(s, ty_i32, V(tmp, it)));
+                int64_t lbound = 1;
+                if (array_t->m_dims[r].m_start) {
+                    ASRUtils::extract_value(
+                        array_t->m_dims[r].m_start, lbound);
+                }
+                uint32_t off = lr_emit_sub(s, ty_i32,
+                    V(idx, ty_i32), I(lbound, ty_i32));
+                if (first) {
+                    lin = off;
+                    first = false;
+                } else {
+                    int64_t length = 1;
+                    if (array_t->m_dims[r].m_length) {
+                        ASRUtils::extract_value(
+                            array_t->m_dims[r].m_length, length);
+                    }
+                    lin = lr_emit_mul(s, ty_i32,
+                        V(lin, ty_i32), I(length, ty_i32));
+                    lin = lr_emit_add(s, ty_i32,
+                        V(lin, ty_i32), V(off, ty_i32));
+                }
+            }
+
+            lr_operand_desc_t gep_idx[2] = {
+                I(0, ty_i32), V(lin, ty_i32)
+            };
+            uint32_t elem_ptr = lr_emit_gep(s, array_type,
+                V(base, ty_ptr), gep_idx, 2);
+
+            if (is_target) {
+                tmp = elem_ptr;
+            } else {
+                tmp = lr_emit_load(s, elem_type, V(elem_ptr, ty_ptr));
+            }
+            return;
+        }
+
+        // Descriptor-array path (incl. assumed-shape `arr(:)` params).
+        // Read base_addr and per-dim {lbound, stride} from the CFI
+        // descriptor, accumulate the element offset in *bytes*, GEP
+        // i8* and load.
+        uint32_t desc = desc_ptr_of(x.m_v);
+        uint32_t base = desc_base_addr(desc);
+
+        uint32_t byte_off = 0;
         bool first = true;
         for (size_t r = 0; r < x.n_args; r++) {
             ASR::array_index_t &ai = x.m_args[r];
             visit_expr(*ai.m_right);
             lr_type_t *it = get_type(ASRUtils::expr_type(ai.m_right));
-            uint32_t idx = (it == ty_i32)
+            uint32_t idx64 = (it == ty_i64)
                 ? tmp
-                : ((it == ty_i64)
-                    ? lr_emit_trunc(s, ty_i32, V(tmp, it))
-                    : lr_emit_sext(s, ty_i32, V(tmp, it)));
-            int64_t lbound = 1;
-            if (array_t->m_dims[r].m_start) {
-                ASRUtils::extract_value(
-                    array_t->m_dims[r].m_start, lbound);
-            }
-            uint32_t off = lr_emit_sub(s, ty_i32,
-                V(idx, ty_i32), I(lbound, ty_i32));
+                : ((it == ty_i32)
+                    ? lr_emit_sext(s, ty_i64, V(tmp, it))
+                    : lr_emit_sext(s, ty_i64, V(tmp, it)));
+            uint32_t lb = desc_dim_lbound(desc, r);
+            uint32_t delta = lr_emit_sub(s, ty_i64,
+                V(idx64, ty_i64), V(lb, ty_i64));
+            // dim[r].stride is in bytes (CFI "sm" / lfortran's stride).
+            uint32_t stride = desc_load_i64(desc,
+                DESC_HEADER_BYTES + DESC_DIM_BYTES * (int64_t)r + 16);
+            uint32_t contrib = lr_emit_mul(s, ty_i64,
+                V(delta, ty_i64), V(stride, ty_i64));
             if (first) {
-                lin = off;
+                byte_off = contrib;
                 first = false;
             } else {
-                int64_t length = 1;
-                if (array_t->m_dims[r].m_length) {
-                    ASRUtils::extract_value(
-                        array_t->m_dims[r].m_length, length);
-                }
-                lin = lr_emit_mul(s, ty_i32,
-                    V(lin, ty_i32), I(length, ty_i32));
-                lin = lr_emit_add(s, ty_i32,
-                    V(lin, ty_i32), V(off, ty_i32));
+                byte_off = lr_emit_add(s, ty_i64,
+                    V(byte_off, ty_i64), V(contrib, ty_i64));
             }
         }
+        if (first) {
+            // 0-arg ArrayItem: shouldn't happen but be safe.
+            byte_off = lr_emit_add(s, ty_i64,
+                I(0, ty_i64), I(0, ty_i64));
+        }
 
-        lr_operand_desc_t gep_idx[2] = {
-            I(0, ty_i32), V(lin, ty_i32)
-        };
-        uint32_t elem_ptr = lr_emit_gep(s, array_type,
-            V(base, ty_ptr), gep_idx, 2);
+        lr_operand_desc_t gep_off[1] = {V(byte_off, ty_i64)};
+        uint32_t elem_ptr = lr_emit_gep(s, ty_i8,
+            V(base, ty_ptr), gep_off, 1);
 
         if (is_target) {
             tmp = elem_ptr;
@@ -1265,12 +1312,20 @@ public:
             case ASRUtils::IntrinsicImpureFunctions::Allocated: {
                 ASR::expr_t *arg = x.m_args[0];
                 ASR::ttype_t *at = ASRUtils::expr_type(arg);
-                at = ASRUtils::type_get_past_allocatable_pointer(at);
-                at = ASRUtils::type_get_past_array(at);
-                if (!ASR::is_a<ASR::String_t>(*at)) {
+                ASR::ttype_t *naked = ASRUtils::type_get_past_allocatable_pointer(at);
+                if (ASR::is_a<ASR::Array_t>(*naked)) {
+                    // Array: base_addr in descriptor != null.
+                    uint32_t desc = desc_ptr_of(arg);
+                    uint32_t base = desc_base_addr(desc);
+                    tmp = lr_emit_icmp(s, LR_CMP_NE,
+                        V(base, ty_ptr), LR_NULL(ty_ptr));
+                    break;
+                }
+                ASR::ttype_t *core = ASRUtils::type_get_past_array(naked);
+                if (!ASR::is_a<ASR::String_t>(*core)) {
                     throw CodeGenError(
-                        "liric: allocated() supports only string "
-                        "arguments at this stage");
+                        "liric: allocated() supports only string and "
+                        "array arguments at this stage");
                 }
                 visit_expr(*arg);
                 uint32_t v = tmp;
@@ -1607,51 +1662,189 @@ public:
         }
     }
 
-    // --- ArrayBound (constant-folded path only) ---
+    // --- CFI descriptor layout (matches asr_to_llvm's SimpleCMODescriptor) ---
     //
-    // We can answer lbound/ubound at compile time when the array's
-    // dimensions and the requested dim are all constant.  The runtime
-    // case requires descriptor-array support that this backend does not
-    // have yet.
+    // struct array_desc_<n_dims> {
+    //   void*    base_addr;   // 0  (8)
+    //   int64_t  elem_len;    // 8  (8)
+    //   int32_t  version;     // 16 (4)
+    //   int8_t   rank;        // 20 (1)
+    //   int8_t   type;        // 21 (1)
+    //   int8_t   attribute;   // 22 (1)
+    //   int8_t   extra;       // 23 (1)
+    //   int64_t  offset;      // 24 (8)
+    //   struct { int64_t lbound, extent, stride; } dim[n_dims]; // 32 + 24*i
+    // }
+    //
+    // We use byte offsets (i8 GEP) into the descriptor's i8* view so the
+    // backend doesn't have to construct a per-rank struct type up front.
+
+    static constexpr int64_t DESC_HEADER_BYTES = 32;
+    static constexpr int64_t DESC_DIM_BYTES    = 24;
+    static constexpr int64_t DESC_DIM_LBOUND   = 0;
+    static constexpr int64_t DESC_DIM_EXTENT   = 8;
+
+    // Load i64 at descriptor base + byte_offset.
+    uint32_t desc_load_i64(uint32_t desc_ptr, int64_t byte_offset) {
+        lr_operand_desc_t off[1] = {I(byte_offset, ty_i64)};
+        uint32_t p = lr_emit_gep(s, ty_i8,
+            V(desc_ptr, ty_ptr), off, 1);
+        return lr_emit_load(s, ty_i64, V(p, ty_ptr));
+    }
+
+    // Pointer to descriptor for an array expression with is_target=true
+    // semantics.  Returns a ptr-typed vreg.
+    uint32_t desc_ptr_of(ASR::expr_t *v) {
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*v);
+        is_target = was_target;
+        return tmp;
+    }
+
+    // Load the i64 extent for dim_idx of a descriptor array.
+    uint32_t desc_dim_extent(uint32_t desc_ptr, int64_t dim_idx) {
+        return desc_load_i64(desc_ptr,
+            DESC_HEADER_BYTES + DESC_DIM_BYTES * dim_idx + DESC_DIM_EXTENT);
+    }
+
+    uint32_t desc_dim_lbound(uint32_t desc_ptr, int64_t dim_idx) {
+        return desc_load_i64(desc_ptr,
+            DESC_HEADER_BYTES + DESC_DIM_BYTES * dim_idx + DESC_DIM_LBOUND);
+    }
+
+    uint32_t desc_base_addr(uint32_t desc_ptr) {
+        // base_addr is at offset 0, ty_ptr-sized.
+        return lr_emit_load(s, ty_ptr, V(desc_ptr, ty_ptr));
+    }
+
+    // --- ArrayBound ---
+    //
+    // Constant-foldable case stays as before.  Runtime path reads the
+    // CFI descriptor: lbound from dim[i].lower_bound, ubound from
+    // lbound + extent - 1.
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
         LIRIC_PASSTHROUGH(x)
 
+        // Constant-fold path: full compile-time dims + dim.
         ASR::expr_t *array_value = ASRUtils::expr_value(x.m_v);
-        if (!array_value || !x.m_dim ||
-                !ASRUtils::is_value_constant(x.m_dim)) {
-            throw CodeGenError(
-                "liric: ArrayBound requires constant dim and a "
-                "value-folded array argument");
+        bool const_dim = x.m_dim &&
+            ASRUtils::is_value_constant(x.m_dim);
+        if (array_value && const_dim) {
+            ASR::dimension_t *dims = nullptr;
+            ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(array_value), dims);
+            int req_dim;
+            ASRUtils::extract_value(x.m_dim, req_dim);
+            req_dim--;
+            if (dims) {
+                size_t lbound = 1;
+                if (dims[req_dim].m_start) {
+                    ASRUtils::extract_value(
+                        dims[req_dim].m_start, lbound);
+                }
+                size_t length = 0;
+                bool has_length = dims[req_dim].m_length != nullptr &&
+                    ASRUtils::extract_value(
+                        dims[req_dim].m_length, length);
+                size_t bound = 0;
+                if (x.m_bound == ASR::arrayboundType::LBound) {
+                    bound = (has_length && length == 0) ? 1 : lbound;
+                } else {
+                    bound = (has_length && length == 0)
+                        ? 0 : (length + lbound - 1);
+                }
+                lr_type_t *rt = get_type(x.m_type);
+                tmp = lr_emit_add(s, rt,
+                    I((int64_t)bound, rt), I(0, rt));
+                return;
+            }
         }
 
-        ASR::dimension_t *dims = nullptr;
-        ASRUtils::extract_dimensions_from_ttype(
-            ASRUtils::expr_type(array_value), dims);
+        // Runtime path: read from descriptor.
+        if (!const_dim) {
+            throw CodeGenError(
+                "liric: ArrayBound with runtime dim not supported");
+        }
         int req_dim;
         ASRUtils::extract_value(x.m_dim, req_dim);
         req_dim--;
-        if (!dims) {
-            throw CodeGenError(
-                "liric: ArrayBound has no dimensions available");
-        }
-        size_t lbound = 1;
-        if (dims[req_dim].m_start) {
-            ASRUtils::extract_value(dims[req_dim].m_start, lbound);
-        }
-        size_t length = 0;
-        bool has_length = dims[req_dim].m_length != nullptr &&
-            ASRUtils::extract_value(dims[req_dim].m_length, length);
-        size_t bound = 0;
-        if (x.m_bound == ASR::arrayboundType::LBound) {
-            bound = (has_length && length == 0) ? 1 : lbound;
-        } else {
-            // UBound; per F2018 a zero-length dim returns 0.
-            bound = (has_length && length == 0)
-                ? 0 : (length + lbound - 1);
-        }
+
+        uint32_t desc = desc_ptr_of(x.m_v);
+        uint32_t lbound = desc_dim_lbound(desc, req_dim);
         lr_type_t *rt = get_type(x.m_type);
-        tmp = lr_emit_add(s, rt, I((int64_t)bound, rt), I(0, rt));
+        uint32_t result;
+        if (x.m_bound == ASR::arrayboundType::LBound) {
+            result = lbound;
+        } else {
+            uint32_t extent = desc_dim_extent(desc, req_dim);
+            uint32_t sum = lr_emit_add(s, ty_i64,
+                V(lbound, ty_i64), V(extent, ty_i64));
+            result = lr_emit_sub(s, ty_i64,
+                V(sum, ty_i64), I(1, ty_i64));
+        }
+        if (rt == ty_i64) {
+            tmp = result;
+        } else {
+            tmp = lr_emit_trunc(s, rt, V(result, ty_i64));
+        }
+    }
+
+    // --- ArraySize ---
+    //
+    // total = product of extent for each dimension.  Without a dim
+    // argument, walk all n dims of the array's type.
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        LIRIC_PASSTHROUGH(x)
+
+        ASR::ttype_t *vt = ASRUtils::expr_type(x.m_v);
+        vt = ASRUtils::type_get_past_allocatable_pointer(vt);
+        if (!ASR::is_a<ASR::Array_t>(*vt)) {
+            throw CodeGenError(
+                "liric: ArraySize owner is not an array type");
+        }
+        ASR::Array_t *array_t = down_cast<ASR::Array_t>(vt);
+        int64_t n_dims = (int64_t)array_t->n_dims;
+
+        uint32_t desc = desc_ptr_of(x.m_v);
+
+        int64_t start_dim = 0;
+        int64_t end_dim = n_dims;
+        if (x.m_dim) {
+            int req_dim;
+            if (!ASRUtils::is_value_constant(x.m_dim) ||
+                    !ASRUtils::extract_value(x.m_dim, req_dim)) {
+                throw CodeGenError(
+                    "liric: ArraySize with runtime dim not supported");
+            }
+            start_dim = req_dim - 1;
+            end_dim = req_dim;
+        }
+
+        uint32_t prod = 0;
+        bool first = true;
+        for (int64_t d = start_dim; d < end_dim; d++) {
+            uint32_t ext = desc_dim_extent(desc, d);
+            if (first) {
+                prod = ext;
+                first = false;
+            } else {
+                prod = lr_emit_mul(s, ty_i64,
+                    V(prod, ty_i64), V(ext, ty_i64));
+            }
+        }
+        if (first) {
+            prod = lr_emit_add(s, ty_i64, I(1, ty_i64), I(0, ty_i64));
+        }
+
+        lr_type_t *rt = get_type(x.m_type);
+        if (rt == ty_i64) {
+            tmp = prod;
+        } else {
+            tmp = lr_emit_trunc(s, rt, V(prod, ty_i64));
+        }
     }
 
     // --- LogicalCompare ---
