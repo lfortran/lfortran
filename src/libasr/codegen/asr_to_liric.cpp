@@ -68,6 +68,10 @@ static inline uint64_t get_hash(ASR::asr_t *node) {
         case ASR::binopType::Sub: tmp = lr_emit_sub(s, _t, V(_l,_t), V(_r,_t)); break; \
         case ASR::binopType::Mul: tmp = lr_emit_mul(s, _t, V(_l,_t), V(_r,_t)); break; \
         case ASR::binopType::Div: tmp = div_fn(s, _t, V(_l,_t), V(_r,_t)); break; \
+        case ASR::binopType::Pow: tmp = emit_int_pow(_l, _r, _t, (x).m_right); break; \
+        case ASR::binopType::BitAnd: tmp = lr_emit_and(s, _t, V(_l,_t), V(_r,_t)); break; \
+        case ASR::binopType::BitOr:  tmp = lr_emit_or (s, _t, V(_l,_t), V(_r,_t)); break; \
+        case ASR::binopType::BitXor: tmp = lr_emit_xor(s, _t, V(_l,_t), V(_r,_t)); break; \
         default: throw CodeGenError("liric: unsupported int binop"); \
     } \
 } while(0)
@@ -235,6 +239,12 @@ public:
             }
             case ASR::ttypeType::Logical:
                 return ty_i1;
+            case ASR::ttypeType::Complex: {
+                int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                lr_type_t *re = (kind == 4) ? ty_f32 : ty_f64;
+                lr_type_t *fields[2] = {re, re};
+                return lr_type_struct_s(s, fields, 2, false);
+            }
             case ASR::ttypeType::String:
                 return ty_str_desc;
             case ASR::ttypeType::StructType:
@@ -328,6 +338,44 @@ public:
         d.num_operands = nops;
         d.call_external_abi = true;
         lr_session_emit(s, &d, nullptr);
+    }
+
+    // --- Integer Pow: unroll only for small compile-time exponents ---
+
+    uint32_t emit_int_pow(uint32_t l, uint32_t r, lr_type_t *t,
+                          ASR::expr_t *right_expr) {
+        int64_t e = INT64_MAX;
+        if (right_expr) ASRUtils::extract_value(right_expr, e);
+        if (e == 0) {
+            return lr_emit_add(s, t, I(1, t), I(0, t));
+        }
+        if (e == 1) return l;
+        if (e == 2) {
+            return lr_emit_mul(s, t, V(l, t), V(l, t));
+        }
+        if (e == 3) {
+            uint32_t l2 = lr_emit_mul(s, t, V(l, t), V(l, t));
+            return lr_emit_mul(s, t, V(l2, t), V(l, t));
+        }
+        if (e == 4) {
+            uint32_t l2 = lr_emit_mul(s, t, V(l, t), V(l, t));
+            return lr_emit_mul(s, t, V(l2, t), V(l2, t));
+        }
+        if (e >= 5 && e <= 16) {
+            uint32_t acc = l;
+            for (int64_t i = 1; i < e; i++) {
+                acc = lr_emit_mul(s, t, V(acc, t), V(l, t));
+            }
+            return acc;
+        }
+        // Use the runtime helper (lfortran ships an integer pow).
+        const char *fn = (t == ty_i64)
+            ? "_lfortran_kpow_int64" : "_lfortran_kpow_int32";
+        lr_type_t *params[] = {t, t};
+        declare_func(fn, t, params, 2, false);
+        lr_operand_desc_t args[] = {V(l, t), V(r, t)};
+        return emit_call(fn, t, args, 2);
+        (void)r;
     }
 
     // --- One-liner visitors via macros ---
@@ -775,6 +823,19 @@ public:
         // Source and destination scalars share the same bit pattern -
         // for the small fpm cases (transfer between ints and reals of
         // the same kind) this is a no-op at the IR level.
+    }
+
+    // --- ArrayPhysicalCast ---
+    //
+    // Switches the physical representation of an array between fixed-size,
+    // descriptor, and similar shapes.  For the direct backend most of
+    // these casts are no-ops because we already use ty_ptr at ABI
+    // boundaries and read descriptors via raw byte offsets.  Pass the
+    // source value through unchanged.
+
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+        LIRIC_PASSTHROUGH(x)
+        visit_expr(*x.m_arg);
     }
 
     // --- Associate ---
