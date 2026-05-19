@@ -1198,6 +1198,44 @@ public:
         }
     }
 
+    // --- StringItem ---
+    //
+    // s(i:i): build a new descriptor whose data pointer points to byte
+    // i-1 of the source's data and whose length is 1.  No allocation;
+    // this is a view into the source string.
+
+    void visit_StringItem(const ASR::StringItem_t &x) {
+        LIRIC_PASSTHROUGH(x)
+
+        visit_expr(*x.m_arg); uint32_t desc = tmp;
+        visit_expr(*x.m_idx); uint32_t idx = tmp;
+
+        uint32_t fld0 = 0;
+        uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+            V(desc, ty_str_desc), &fld0, 1);
+
+        lr_type_t *idx_t = get_type(ASRUtils::expr_type(x.m_idx));
+        uint32_t idx64;
+        if (idx_t == ty_i64) {
+            idx64 = idx;
+        } else {
+            idx64 = lr_emit_sext(s, ty_i64, V(idx, idx_t));
+        }
+        uint32_t idx0b = lr_emit_sub(s, ty_i64,
+            V(idx64, ty_i64), I(1, ty_i64));
+
+        lr_operand_desc_t gep_idx[1] = {V(idx0b, ty_i64)};
+        uint32_t item_ptr = lr_emit_gep(s, ty_i8,
+            V(data, ty_ptr), gep_idx, 1);
+
+        // Compose a {ptr, i64} descriptor with length 1.
+        uint32_t fld1 = 1;
+        uint32_t d0 = lr_emit_insertvalue(s, ty_str_desc,
+            LR_UNDEF(ty_str_desc), V(item_ptr, ty_ptr), &fld0, 1);
+        tmp = lr_emit_insertvalue(s, ty_str_desc,
+            V(d0, ty_str_desc), I(1, ty_i64), &fld1, 1);
+    }
+
     // --- StringCompare ---
     //
     // Calls the runtime `str_compare(l_data, l_len, r_data, r_len) -> i32`
