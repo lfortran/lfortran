@@ -1358,6 +1358,40 @@ public:
         }
     }
 
+    // --- ReAlloc ---
+    //
+    // Deallocate the existing storage (if any) and run the allocate
+    // path again.  Implemented as a thin wrapper so we can extend it
+    // for source/mold once needed.
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            const ASR::alloc_arg_t &arg = x.m_args[i];
+            deallocate_string_var(arg.m_a);
+            ASR::ttype_t *at = ASRUtils::expr_type(arg.m_a);
+            ASR::ttype_t *naked =
+                ASRUtils::type_get_past_allocatable_pointer(at);
+            if (arg.n_dims > 0 || ASR::is_a<ASR::Array_t>(*naked)) {
+                allocate_array(arg);
+            } else if (ASR::is_a<ASR::String_t>(
+                    *ASRUtils::type_get_past_array(naked))) {
+                // String reallocation: delegate to the existing
+                // visit_Allocate scalar-string branch by faking an
+                // alloc_arg_t with the same fields.
+                ASR::Allocate_t synth;
+                memset(&synth, 0, sizeof(synth));
+                ASR::alloc_arg_t *args_ptr =
+                    const_cast<ASR::alloc_arg_t *>(&arg);
+                synth.m_args = args_ptr;
+                synth.n_args = 1;
+                visit_Allocate(synth);
+            } else {
+                throw CodeGenError(
+                    "liric: ReAlloc target type not yet supported");
+            }
+        }
+    }
+
     // Allocate an array variable: fill its descriptor in place.
     // Stride is in *bytes* (CFI semantics), and dim[0].stride = elem_len,
     // dim[i+1].stride = dim[i].stride * dim[i].extent.
@@ -1622,8 +1656,31 @@ public:
             case ASR::cast_kindType::LogicalToInteger:
                 tmp = lr_emit_zext(s, dst_t, V(val, src_t));
                 break;
+            case ASR::cast_kindType::StringToArray:
+                // String descriptor already exposes (data, len); the
+                // "array of character(1)" view shares the same bytes.
+                tmp = val;
+                break;
+            case ASR::cast_kindType::UnsignedIntegerToInteger:
+            case ASR::cast_kindType::IntegerToUnsignedInteger:
+            case ASR::cast_kindType::UnsignedIntegerToUnsignedInteger: {
+                unsigned sw = lr_type_width(s, src_t);
+                unsigned dw = lr_type_width(s, dst_t);
+                if (dw > sw)
+                    tmp = lr_emit_zext(s, dst_t, V(val, src_t));
+                else if (dw < sw)
+                    tmp = lr_emit_trunc(s, dst_t, V(val, src_t));
+                else
+                    tmp = val;
+                break;
+            }
+            case ASR::cast_kindType::LogicalToLogical:
+                tmp = val;
+                break;
             default:
-                throw CodeGenError("liric: unsupported cast kind");
+                throw CodeGenError(
+                    std::string("liric: unsupported cast kind ")
+                    + std::to_string((int)x.m_kind));
         }
     }
 
@@ -1637,9 +1694,43 @@ public:
 
         ASR::expr_t *text = x.m_text;
 
-        // Print always wraps content in StringFormat
+        // The frontend may hand us a bare String value (e.g. `print *,
+        // some_string`).  Lower it via the file_write_emit_string path:
+        // extract data+len from the descriptor, printf, then newline.
         if (!is_a<ASR::StringFormat_t>(*text)) {
-            throw CodeGenError("liric: Print without StringFormat");
+            ASR::ttype_t *vt = ASRUtils::expr_type(text);
+            vt = ASRUtils::type_get_past_allocatable_pointer(vt);
+            vt = ASRUtils::type_get_past_array(vt);
+            if (!ASR::is_a<ASR::String_t>(*vt)) {
+                throw CodeGenError("liric: Print without StringFormat");
+            }
+            visit_expr(*text);
+            uint32_t desc = tmp;
+            uint32_t fld0 = 0, fld1 = 1;
+            uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+                V(desc, ty_str_desc), &fld0, 1);
+            uint32_t len = lr_emit_extractvalue(s, ty_i64,
+                V(desc, ty_str_desc), &fld1, 1);
+            file_write_emit_string(data, len);
+            uint32_t nl_sym = declare_global_cstring("\n", "_lr_printnl");
+            lr_type_t *printf_params[] = {ty_ptr};
+            declare_func("printf", ty_i32, printf_params, 1, true);
+            uint32_t printf_sym = lr_session_intern(s, "printf");
+            lr_inst_desc_t d2;
+            memset(&d2, 0, sizeof(d2));
+            lr_operand_desc_t ops2[2] = {
+                LR_GLOBAL(printf_sym, ty_ptr),
+                LR_GLOBAL(nl_sym, ty_ptr)
+            };
+            d2.op = LR_OP_CALL;
+            d2.type = ty_i32;
+            d2.operands = ops2;
+            d2.num_operands = 2;
+            d2.call_external_abi = true;
+            d2.call_vararg = true;
+            d2.call_fixed_args = 1;
+            lr_session_emit(s, &d2, nullptr);
+            return;
         }
         ASR::StringFormat_t &sf = *down_cast<ASR::StringFormat_t>(text);
 
@@ -2070,6 +2161,35 @@ public:
         return {fdata, flen};
     }
 
+    // Memcpy data[0:len] into the destination string descriptor's data
+    // buffer, truncated to the buffer's declared length.  The
+    // destination is assumed to be already large enough; reallocation
+    // for deferred-length targets is not yet wired in.
+    void internal_write_chunk(uint32_t dst_desc_ptr, uint32_t data,
+                               uint32_t len) {
+        // Load destination buffer pointer and capacity.
+        uint32_t fld0 = 0, fld1 = 1;
+        uint32_t dst_desc = lr_emit_load(s, ty_str_desc,
+            V(dst_desc_ptr, ty_ptr));
+        uint32_t dst_data = lr_emit_extractvalue(s, ty_ptr,
+            V(dst_desc, ty_str_desc), &fld0, 1);
+        uint32_t dst_cap = lr_emit_extractvalue(s, ty_i64,
+            V(dst_desc, ty_str_desc), &fld1, 1);
+        // Clamp len to capacity.
+        uint32_t small = lr_emit_icmp(s, LR_CMP_SLT,
+            V(len, ty_i64), V(dst_cap, ty_i64));
+        uint32_t copy_len = lr_emit_select(s, ty_i64,
+            V(small, ty_i1), V(len, ty_i64), V(dst_cap, ty_i64));
+        lr_type_t *memcpy_params[] = {ty_ptr, ty_ptr, ty_i64};
+        declare_func("memcpy", ty_ptr, memcpy_params, 3, false);
+        lr_operand_desc_t args[] = {
+            V(dst_data, ty_ptr),
+            V(data,     ty_ptr),
+            V(copy_len, ty_i64)
+        };
+        emit_call("memcpy", ty_ptr, args, 3);
+    }
+
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if (x.m_overloaded) {
             throw CodeGenError("liric: derived-type I/O FileWrite not yet supported");
@@ -2081,20 +2201,30 @@ public:
         // iomsg / iostat are silently ignored for now: their target
         // variables will not be updated.  Most fpm uses only consult
         // iostat to check end-of-file on reads, not writes.
+        bool internal_string_write = false;
+        uint32_t internal_unit_desc_ptr = 0;
         if (x.m_unit) {
             ASR::ttype_t *ut = ASRUtils::expr_type(x.m_unit);
             ut = ASRUtils::type_get_past_allocatable_pointer(ut);
             ut = ASRUtils::type_get_past_array(ut);
-            if (!ASR::is_a<ASR::Integer_t>(*ut)) {
+            if (ASR::is_a<ASR::String_t>(*ut)) {
+                // Internal file: route formatted bytes into the unit
+                // string's buffer instead of stdout.
+                internal_string_write = true;
+                bool was_target = is_target;
+                is_target = true;
+                visit_expr(*x.m_unit);
+                is_target = was_target;
+                internal_unit_desc_ptr = tmp;
+            } else if (ASR::is_a<ASR::Integer_t>(*ut)) {
+                // Integer unit value is evaluated but ignored:
+                // _lfortran_printf always writes to stdout.
+                visit_expr(*x.m_unit);
+                (void)tmp;
+            } else {
                 throw CodeGenError(
-                    "liric: write() to a non-integer unit (e.g. internal "
-                    "file) not yet supported");
+                    "liric: write() unit must be integer or string");
             }
-            // Integer unit value is evaluated but ignored: _lfortran_printf
-            // always writes to stdout.  fpm only writes to stdout/stderr
-            // through this path so the simplification is safe for now.
-            visit_expr(*x.m_unit);
-            (void)tmp;
         }
 
         // When the frontend wraps the value list in a StringFormat (e.g.
@@ -2118,32 +2248,39 @@ public:
             ASR::ttype_t *vt = ASRUtils::expr_type(val);
             vt = ASRUtils::type_get_past_allocatable_pointer(vt);
             vt = ASRUtils::type_get_past_array(vt);
+            uint32_t data = 0, len = 0;
             if (ASR::is_a<ASR::String_t>(*vt)) {
                 visit_expr(*val);
                 uint32_t desc = tmp;
                 uint32_t fld0 = 0, fld1 = 1;
-                uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+                data = lr_emit_extractvalue(s, ty_ptr,
                     V(desc, ty_str_desc), &fld0, 1);
-                uint32_t len  = lr_emit_extractvalue(s, ty_i64,
+                len  = lr_emit_extractvalue(s, ty_i64,
                     V(desc, ty_str_desc), &fld1, 1);
-                file_write_emit_string(data, len);
             } else if (ASR::is_a<ASR::Integer_t>(*vt) ||
                        ASR::is_a<ASR::Real_t>(*vt) ||
                        ASR::is_a<ASR::Logical_t>(*vt)) {
-                // Inline mini-print: format this single value via the
-                // runtime formatter and emit the resulting bytes.
-                uint32_t fdata, flen;
-                std::tie(fdata, flen) =
-                    format_scalar_to_string(val, vt);
-                file_write_emit_string(fdata, flen);
+                std::tie(data, len) = format_scalar_to_string(val, vt);
             } else {
                 throw CodeGenError(
                     "liric: write() of this value type not yet supported");
+            }
+            if (internal_string_write) {
+                // Write `data[0:len]` into the unit string's buffer.
+                // For an allocatable target we (re)allocate, then memcpy.
+                internal_write_chunk(internal_unit_desc_ptr, data, len);
+            } else {
+                file_write_emit_string(data, len);
             }
         }
 
         // Trailer: m_end overrides the default "\n".  If advance=='no' the
         // frontend passes m_end="" which suppresses the newline.
+        // Internal-file writes never append a trailing newline; the caller
+        // is responsible for the buffer's contents.
+        if (internal_string_write) {
+            return;
+        }
         if (x.m_end) {
             ASR::ttype_t *et = ASRUtils::expr_type(x.m_end);
             et = ASRUtils::type_get_past_allocatable_pointer(et);
