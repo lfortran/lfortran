@@ -1037,6 +1037,48 @@ public:
         }
     }
 
+    // --- StringCompare ---
+    //
+    // Calls the runtime `str_compare(l_data, l_len, r_data, r_len) -> i32`
+    // and turns its sign into the requested comparison.  The LLVM backend
+    // has a single-character fast path; we leave that to a future chunk.
+
+    void visit_StringCompare(const ASR::StringCompare_t &x) {
+        LIRIC_PASSTHROUGH(x)
+
+        visit_expr(*x.m_left);  uint32_t l_desc = tmp;
+        visit_expr(*x.m_right); uint32_t r_desc = tmp;
+
+        uint32_t idx0 = 0, idx1 = 1;
+        uint32_t l_data = lr_emit_extractvalue(s, ty_ptr,
+            V(l_desc, ty_str_desc), &idx0, 1);
+        uint32_t l_len  = lr_emit_extractvalue(s, ty_i64,
+            V(l_desc, ty_str_desc), &idx1, 1);
+        uint32_t r_data = lr_emit_extractvalue(s, ty_ptr,
+            V(r_desc, ty_str_desc), &idx0, 1);
+        uint32_t r_len  = lr_emit_extractvalue(s, ty_i64,
+            V(r_desc, ty_str_desc), &idx1, 1);
+
+        lr_type_t *params[] = {ty_ptr, ty_i64, ty_ptr, ty_i64};
+        declare_func("str_compare", ty_i32, params, 4, false);
+        lr_operand_desc_t args[] = {
+            V(l_data, ty_ptr), V(l_len, ty_i64),
+            V(r_data, ty_ptr), V(r_len, ty_i64)
+        };
+        uint32_t cmp = emit_call("str_compare", ty_i32, args, 4);
+
+        int pred = LR_CMP_EQ;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq:    pred = LR_CMP_EQ;  break;
+            case ASR::cmpopType::NotEq: pred = LR_CMP_NE;  break;
+            case ASR::cmpopType::Lt:    pred = LR_CMP_SLT; break;
+            case ASR::cmpopType::LtE:   pred = LR_CMP_SLE; break;
+            case ASR::cmpopType::Gt:    pred = LR_CMP_SGT; break;
+            case ASR::cmpopType::GtE:   pred = LR_CMP_SGE; break;
+        }
+        tmp = lr_emit_icmp(s, pred, V(cmp, ty_i32), I(0, ty_i32));
+    }
+
     // --- StringFormat (evaluated inline by Print) ---
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
