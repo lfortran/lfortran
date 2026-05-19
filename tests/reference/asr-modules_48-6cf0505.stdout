@@ -12,8 +12,8 @@
                                     8
                                     1_string_t_s
                                     3 s
-                                    string_t
-                                    []
+                                    modules_48_fpm_strings
+                                    [string_t]
                                     s
                                     Public
                                 ),
@@ -979,8 +979,8 @@
                                                     5
                                                     1_string_t_s
                                                     3 s
-                                                    string_t
-                                                    []
+                                                    modules_48_fpm_strings
+                                                    [string_t]
                                                     s
                                                     Public
                                                 ),
@@ -1612,8 +1612,8 @@
                                                     7
                                                     1_string_t_s
                                                     3 s
-                                                    string_t
-                                                    []
+                                                    modules_48_fpm_strings
+                                                    [string_t]
                                                     s
                                                     Public
                                                 ),

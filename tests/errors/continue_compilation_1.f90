@@ -650,8 +650,8 @@ program continue_compilation_1
     call print_len_non_char("  Hello World  ")
     print  *, 9.99e+99
     a5 = missing_required_arg_func()
-
-
+    integer :: m = 7
+    dimension :: m(3)
 
 
     contains

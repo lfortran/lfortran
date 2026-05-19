@@ -12,8 +12,8 @@
                                     2
                                     1_enum_escape_newline
                                     3 newline
-                                    enum_escape
-                                    []
+                                    derived_type1
+                                    [enum_escape]
                                     newline
                                     Public
                                 ),

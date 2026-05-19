@@ -385,8 +385,8 @@
                                                     12
                                                     1_point_x
                                                     8 x
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -395,8 +395,8 @@
                                                     12
                                                     1_point_y
                                                     8 y
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     y
                                                     Public
                                                 ),
@@ -595,8 +595,8 @@
                                                     13
                                                     1_point_x
                                                     8 x
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -605,8 +605,8 @@
                                                     13
                                                     1_point_y
                                                     8 y
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     y
                                                     Public
                                                 ),

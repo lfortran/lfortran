@@ -2926,7 +2926,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         case ASR::ExpressionLength: {
             std::string sequence("");
             if (arrayConst_t) {
-                sequence = std::string((char*)arrayConst_t->m_data, arrayConst_t->m_n_data);
+                ASR::String_t* literal_elem_string =
+                    ASRUtils::get_string_type(arrayConst_t->m_type);
+                int64_t literal_elem_len = 0;
+                ASRUtils::extract_value(literal_elem_string->m_len, literal_elem_len);
+                const char* raw = (const char*)arrayConst_t->m_data;
+                sequence.reserve(total_len);
+                int64_t copy_len = std::min(literal_elem_len, elem_len);
+                for (int64_t i = 0; i < num_elements; i++) {
+                    sequence.append(raw + i * literal_elem_len, copy_len);
+                    if (copy_len < elem_len) {
+                        sequence.append(elem_len - copy_len, ' ');
+                    }
+                }
             }
             sequence.resize(total_len, ' '); 
 

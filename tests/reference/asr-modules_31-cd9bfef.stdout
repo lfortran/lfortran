@@ -27,8 +27,8 @@
                                                     7
                                                     1_dependency_config_t_name
                                                     10 name
-                                                    1_dependency_config_t
-                                                    []
+                                                    fpm_dependency_modules_31
+                                                    [dependency_config_t]
                                                     name
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     7
                                                     1_dependency_tree_t_dep
                                                     12 dep
-                                                    dependency_tree_t
-                                                    []
+                                                    fpm_dependency_modules_31
+                                                    [dependency_tree_t]
                                                     dep
                                                     Public
                                                 ),
@@ -47,8 +47,8 @@
                                                     7
                                                     1_dependency_tree_t_update_dependency
                                                     12 update_dependency
-                                                    dependency_tree_t
-                                                    []
+                                                    fpm_dependency_modules_31
+                                                    [dependency_tree_t]
                                                     update_dependency
                                                     Public
                                                 ),

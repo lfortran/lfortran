@@ -120,8 +120,8 @@
                                     4
                                     1_point_x
                                     3 x
-                                    point
-                                    []
+                                    derived_type_collection
+                                    [point]
                                     x
                                     Public
                                 ),
@@ -130,8 +130,8 @@
                                     4
                                     1_point_y
                                     3 y
-                                    point
-                                    []
+                                    derived_type_collection
+                                    [point]
                                     y
                                     Public
                                 ),
@@ -373,8 +373,8 @@
                                                     7
                                                     1_point_x
                                                     3 x
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -383,8 +383,8 @@
                                                     7
                                                     1_point_y
                                                     3 y
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     y
                                                     Public
                                                 ),
@@ -487,8 +487,8 @@
                                                     8
                                                     1_point_x
                                                     3 x
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -497,8 +497,8 @@
                                                     8
                                                     1_point_y
                                                     3 y
-                                                    point
-                                                    []
+                                                    derived_type_collection
+                                                    [point]
                                                     y
                                                     Public
                                                 ),

@@ -4707,6 +4707,43 @@ public:
                 break;
             }
             case ASR::PointerArray: {
+                ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
+                    ASRUtils::expr_type(const_cast<ASR::expr_t*>(&(x.base))));
+                if (result_ptype == ASR::array_physical_typeType::DescriptorArray &&
+                    !ASRUtils::is_character(*x_m_array_type)) {
+                    ASR::ttype_t* desc_input_type = ASRUtils::duplicate_type(al, x_m_array_type,
+                        nullptr, ASR::array_physical_typeType::DescriptorArray, true);
+                    tmp = array;
+                    PointerToData_to_Descriptor(const_cast<ASR::expr_t*>(x.m_array),
+                        desc_input_type, x_m_array_type);
+                    array = tmp;
+
+                    ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
+                        ASRUtils::get_contained_type(x_m_array_type), x_m_array_type->base.loc);
+                    ASR::ttype_t* asr_shape_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_shape));
+                    llvm::Type* llvm_data_type = llvm_utils->get_el_type(x.m_array, asr_data_type, module.get());
+                    llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(x.m_array,
+                        ASRUtils::type_get_past_allocatable_pointer(desc_input_type), module.get());
+                    llvm::Type* shape_type = llvm_utils->get_type_from_ttype_t_util(x.m_shape,
+                        ASRUtils::type_get_past_allocatable_pointer(asr_shape_type), module.get());
+                    ASR::ttype_t* asr_result_type = ASRUtils::expr_type(
+                        const_cast<ASR::expr_t*>(&(x.base)));
+                    asr_result_type = ASRUtils::duplicate_type(al, asr_result_type, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true);
+                    llvm::Type* result_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_array, ASRUtils::type_get_past_allocatable_pointer(asr_result_type),
+                        module.get());
+                    llvm::Value* order = nullptr;
+                    if (x.m_order != nullptr) {
+                        this->visit_expr(*x.m_order);
+                        order = tmp;
+                    }
+                    tmp = arr_descr->reshape(array_type, array, llvm_data_type,
+                        shape_type, shape, asr_shape_type, module.get(),
+                        const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
+                        result_desc_type, order, x.m_order);
+                    break;
+                }
                 llvm::Type* type_of_array = llvm_utils->get_type_from_ttype_t_util(
                                             x.m_array,
                                             ASRUtils::extract_type(x_m_array_type), module.get());
@@ -6574,7 +6611,8 @@ public:
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
                     ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration));
-                    allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type);
+                    allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type,
+                        is_intent_out, initialize_val, skip_allocatable_array_descriptor_init);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     // Skip string descriptor setup for bind(C) struct non-pointer character members
                     bool is_bindc = (struct_type_t->m_abi == ASR::abiType::BindC);
@@ -7410,8 +7448,10 @@ public:
                         allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
                     }
                 } else {
+                    bool is_intent_out_var = (v->m_intent == ASR::intentType::Out);
                     allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type);
+                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type,
+                        is_intent_out_var);
                 }
                 if (struct_skip_bb != nullptr) {
                     builder->CreateBr(struct_skip_bb);
@@ -11661,9 +11701,21 @@ public:
                 target = llvm_utils->CreateLoad2(data_type->getPointerTo(),
                     arr_descr->get_pointer_to_data(arr_type, arg));
             } else {
+                // For assumed-rank allocatable/pointer targets (e.g. inside a
+                // `select rank` block) we need the descriptor pointer
+                // (%array.15*), not the loaded descriptor value. Use
+                // ptr_loads=1 to load just once through the alloca.
+                bool is_assumed_rank_alloc_target =
+                    apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                    LLVM::is_llvm_pointer(*src_asr_type);
+                int64_t saved_ptr_loads = ptr_loads;
+                if (is_assumed_rank_alloc_target) {
+                    ptr_loads = 1;
+                }
                 is_assignment_target = true;
                 this->visit_expr(*apc->m_arg);
                 is_assignment_target = false;
+                ptr_loads = saved_ptr_loads;
                 target = tmp;
                 if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray) {
                     target_expr_for_type = apc->m_arg;
@@ -25268,7 +25320,7 @@ public:
             llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(arg, asr_type, module.get());
             tmp = llvm_utils->CreateLoad2(class_type, tmp);
         }
-        if( n_dims > 0 ) {
+        if( n_dims > 0 || ASRUtils::is_array(asr_type) ) {
             visit_expr_load_wrapper(arg, 1, true);
             tmp = arr_descr->get_is_allocated_flag(tmp, arg);
         } else if (ASRUtils::is_character(*expr_type(arg))) {

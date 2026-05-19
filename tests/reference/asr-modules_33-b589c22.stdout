@@ -1642,8 +1642,8 @@
                                                     5
                                                     1_dependency_tree_t_add_project
                                                     10 add_project
-                                                    1_dependency_tree_t
-                                                    []
+                                                    fpm_dependency_modules_33
+                                                    [dependency_tree_t]
                                                     add_project
                                                     Public
                                                 ),
@@ -1652,8 +1652,8 @@
                                                     5
                                                     1_fpm_model_t_deps
                                                     18 deps
-                                                    fpm_model_t
-                                                    []
+                                                    fpm_model_modules_33
+                                                    [fpm_model_t]
                                                     deps
                                                     Public
                                                 ),

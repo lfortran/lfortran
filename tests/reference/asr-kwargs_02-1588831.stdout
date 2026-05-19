@@ -28,8 +28,8 @@
                                                     4
                                                     1_logger_type_log_io_error
                                                     3 log_io_error
-                                                    logger_type
-                                                    []
+                                                    kwargs_02_stdlib_logger
+                                                    [logger_type]
                                                     log_io_error
                                                     Public
                                                 ),

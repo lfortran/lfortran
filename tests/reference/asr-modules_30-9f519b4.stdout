@@ -17,8 +17,8 @@
                                                     9
                                                     1_executable_config_main
                                                     8 main
-                                                    executable_config
-                                                    []
+                                                    fpm_manifest_executable_modules_30
+                                                    [executable_config]
                                                     main
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     9
                                                     1_executable_config_name
                                                     8 name
-                                                    executable_config
-                                                    []
+                                                    fpm_manifest_executable_modules_30
+                                                    [executable_config]
                                                     name
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     9
                                                     1_executable_config_source_dir
                                                     8 source_dir
-                                                    executable_config
-                                                    []
+                                                    fpm_manifest_executable_modules_30
+                                                    [executable_config]
                                                     source_dir
                                                     Public
                                                 ),
@@ -346,8 +346,8 @@
                                                     10
                                                     1_package_config_t_executable
                                                     5 executable
-                                                    package_config_t
-                                                    []
+                                                    fpm_manifest_package_modules_30
+                                                    [package_config_t]
                                                     executable
                                                     Public
                                                 ),
@@ -356,8 +356,8 @@
                                                     10
                                                     1_package_config_t_name
                                                     5 name
-                                                    package_config_t
-                                                    []
+                                                    fpm_manifest_package_modules_30
+                                                    [package_config_t]
                                                     name
                                                     Public
                                                 ),

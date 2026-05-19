@@ -195,8 +195,8 @@
                                     5
                                     1_rp1d_f
                                     3 f
-                                    rp1d
-                                    []
+                                    mod_struct_allocate
+                                    [rp1d]
                                     f
                                     Public
                                 ),
@@ -205,8 +205,8 @@
                                     5
                                     1_sds_scales
                                     4 scales
-                                    sds
-                                    []
+                                    mod_struct_allocate
+                                    [sds]
                                     scales
                                     Public
                                 ),

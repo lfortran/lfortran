@@ -144,8 +144,8 @@
                                                     6
                                                     1_toml_tokenizer_current
                                                     4 current
-                                                    toml_tokenizer
-                                                    []
+                                                    tomlf_de_tokenizer_24
+                                                    [toml_tokenizer]
                                                     current
                                                     Public
                                                 ),

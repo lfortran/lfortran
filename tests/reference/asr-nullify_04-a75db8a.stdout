@@ -88,8 +88,8 @@
                                     4
                                     1_scaled_data_structure_one_d_real_pointer
                                     3 one_d_real_pointer
-                                    scaled_data_structure
-                                    []
+                                    module_nullify_04
+                                    [scaled_data_structure]
                                     one_d_real_pointer
                                     Public
                                 ),
