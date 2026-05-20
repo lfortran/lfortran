@@ -2590,6 +2590,85 @@ public:
             V(c0, ct), V(im, ft), &fld1, 1);
     }
 
+    // z1 op z2 for complex z1, z2.  Inline Add/Sub/Mul/Div on the
+    // {f,f} struct representation; sidestep the runtime helpers that
+    // would force an alloca-and-out-param dance.  Pow is not handled
+    // (matches the LLVM backend's coverage gap for non-real exponents
+    // on direct).
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_left);
+        uint32_t lv = tmp;
+        visit_expr(*x.m_right);
+        uint32_t rv = tmp;
+        lr_type_t *ct = get_type(x.m_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+        lr_type_t *ft = (kind == 4) ? ty_f32 : ty_f64;
+        uint32_t fld0 = 0, fld1 = 1;
+        uint32_t lre = lr_emit_extractvalue(s, ft, V(lv, ct), &fld0, 1);
+        uint32_t lim = lr_emit_extractvalue(s, ft, V(lv, ct), &fld1, 1);
+        uint32_t rre = lr_emit_extractvalue(s, ft, V(rv, ct), &fld0, 1);
+        uint32_t rim = lr_emit_extractvalue(s, ft, V(rv, ct), &fld1, 1);
+        uint32_t re = 0, im = 0;
+        switch (x.m_op) {
+            case ASR::binopType::Add:
+                re = lr_emit_fadd(s, ft, V(lre, ft), V(rre, ft));
+                im = lr_emit_fadd(s, ft, V(lim, ft), V(rim, ft));
+                break;
+            case ASR::binopType::Sub:
+                re = lr_emit_fsub(s, ft, V(lre, ft), V(rre, ft));
+                im = lr_emit_fsub(s, ft, V(lim, ft), V(rim, ft));
+                break;
+            case ASR::binopType::Mul: {
+                uint32_t ac = lr_emit_fmul(s, ft, V(lre, ft), V(rre, ft));
+                uint32_t bd = lr_emit_fmul(s, ft, V(lim, ft), V(rim, ft));
+                uint32_t ad = lr_emit_fmul(s, ft, V(lre, ft), V(rim, ft));
+                uint32_t bc = lr_emit_fmul(s, ft, V(lim, ft), V(rre, ft));
+                re = lr_emit_fsub(s, ft, V(ac, ft), V(bd, ft));
+                im = lr_emit_fadd(s, ft, V(ad, ft), V(bc, ft));
+                break;
+            }
+            case ASR::binopType::Div: {
+                // (a+bi)/(c+di) = ((ac+bd) + (bc-ad)i) / (c^2+d^2)
+                uint32_t ac = lr_emit_fmul(s, ft, V(lre, ft), V(rre, ft));
+                uint32_t bd = lr_emit_fmul(s, ft, V(lim, ft), V(rim, ft));
+                uint32_t bc = lr_emit_fmul(s, ft, V(lim, ft), V(rre, ft));
+                uint32_t ad = lr_emit_fmul(s, ft, V(lre, ft), V(rim, ft));
+                uint32_t cc = lr_emit_fmul(s, ft, V(rre, ft), V(rre, ft));
+                uint32_t dd = lr_emit_fmul(s, ft, V(rim, ft), V(rim, ft));
+                uint32_t denom = lr_emit_fadd(s, ft, V(cc, ft), V(dd, ft));
+                uint32_t num_re = lr_emit_fadd(s, ft, V(ac, ft), V(bd, ft));
+                uint32_t num_im = lr_emit_fsub(s, ft, V(bc, ft), V(ad, ft));
+                re = lr_emit_fdiv(s, ft, V(num_re, ft), V(denom, ft));
+                im = lr_emit_fdiv(s, ft, V(num_im, ft), V(denom, ft));
+                break;
+            }
+            default:
+                throw CodeGenError("liric: unsupported complex binop");
+        }
+        uint32_t c0 = lr_emit_insertvalue(s, ct,
+            LR_UNDEF(ct), V(re, ft), &fld0, 1);
+        tmp = lr_emit_insertvalue(s, ct,
+            V(c0, ct), V(im, ft), &fld1, 1);
+    }
+
+    // c_loc(p) / PointerToCPtr: a c_ptr in this backend is the same
+    // ty_ptr we already track for Fortran pointers, so this is just a
+    // load through the pointer slot.  Mirrors what the LLVM backend
+    // does after stripping the GetPointer wrappers and casting to
+    // void*.
+    void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*x.m_arg);
+        is_target = was_target;
+        // tmp is now a ty_ptr to the slot holding the pointer value;
+        // load it to materialize the c_ptr.
+        tmp = lr_emit_load(s, ty_ptr, V(tmp, ty_ptr));
+    }
+
     // --- CPtrToPointer: store the c_ptr value into the Fortran ptr slot ---
 
     void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {
