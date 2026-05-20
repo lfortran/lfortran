@@ -70,7 +70,15 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     endif()
 
     if (LFORTRAN_BACKEND)
-        if (${LFORTRAN_BACKEND} IN_LIST labels)
+        # The liric backend reuses the LLVM test corpus: every test
+        # already labelled `llvm` is also eligible to run under
+        # --backend=liric (direct).  This avoids having to relabel
+        # ~3800 tests as we bring up the new backend.
+        set(_LFORTRAN_TEST_LABEL "${LFORTRAN_BACKEND}")
+        if (LFORTRAN_BACKEND STREQUAL "liric")
+            set(_LFORTRAN_TEST_LABEL "llvm")
+        endif()
+        if (${_LFORTRAN_TEST_LABEL} IN_LIST labels)
             # Test is supported by the given LFortran backend
             set(ADD_TEST ON)
         else()
