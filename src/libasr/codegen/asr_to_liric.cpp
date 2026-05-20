@@ -4952,6 +4952,21 @@ public:
             + " not yet supported");
     }
 
+    // sqrt(x) -> libm sqrtf/sqrt
+    void visit_RealSqrt(const ASR::RealSqrt_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_arg);
+        uint32_t v = tmp;
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(x.m_arg));
+        lr_type_t *ft = (kind == 4) ? ty_f32 : ty_f64;
+        const char *fn = (kind == 4) ? "sqrtf" : "sqrt";
+        lr_type_t *params[] = {ft};
+        declare_func(fn, ft, params, 1, false);
+        lr_operand_desc_t args[] = {V(v, ft)};
+        tmp = emit_call(fn, ft, args, 1);
+    }
+
     void visit_IntrinsicArrayFunction(
             const ASR::IntrinsicArrayFunction_t &x) {
         if (x.m_value) {
