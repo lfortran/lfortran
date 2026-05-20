@@ -3615,6 +3615,43 @@ public:
         lr_emit_unreachable(s);
     }
 
+    void visit_Assert(const ASR::Assert_t &x) {
+        // assert(cond [, msg])
+        //   if (!cond) { write "AssertionError\n" to stderr; exit(1); }
+        // The runtime exposes _lcompilers_print_error(fmt, ...) which is a
+        // varargs printf-style sink to stderr.  We don't lower x.m_msg yet
+        // since the LLVM backend's compute_fmt_specifier_and_arg machinery
+        // doesn't have a direct equivalent here; assertion failure with no
+        // message is still strictly better than the current ICE.
+        (void)x.m_msg;
+        visit_expr(*x.m_test);
+        uint32_t cond = tmp;
+        lr_error_t err;
+        uint32_t fail_bb = lr_session_block(s);
+        uint32_t cont_bb = lr_session_block(s);
+        lr_emit_condbr(s, V(cond, ty_i1), cont_bb, fail_bb);
+
+        lr_session_set_block(s, fail_bb, &err);
+        const char *banner = "AssertionError\n";
+        size_t banner_len = std::strlen(banner) + 1;
+        std::string banner_name = std::string("_lr_assert_banner_") +
+            std::to_string(get_hash((ASR::asr_t *)&x));
+        lr_session_global(s, banner_name.c_str(),
+            lr_type_array_s(s, ty_i8, banner_len),
+            true, banner, banner_len);
+        uint32_t banner_sym = lr_session_intern(s, banner_name.c_str());
+        lr_type_t *print_err_params[] = {ty_ptr};
+        declare_func("_lcompilers_print_error", ty_void,
+            print_err_params, 1, true /* varargs */);
+        lr_operand_desc_t print_args[] = {LR_GLOBAL(banner_sym, ty_ptr)};
+        emit_call_void("_lcompilers_print_error", print_args, 1);
+        lr_operand_desc_t exit_args[] = {I(1, ty_i32)};
+        emit_call_void("exit", exit_args, 1);
+        lr_emit_unreachable(s);
+
+        lr_session_set_block(s, cont_bb, &err);
+    }
+
     void visit_Exit(const ASR::Exit_t &) {
         lr_emit_br(s, loop_end_stack.back());
     }
