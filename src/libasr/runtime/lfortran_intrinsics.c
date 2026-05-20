@@ -1288,7 +1288,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     char exponent[12];
     if (width_digits == 0) {
-        sprintf(exponent, "%+02d", exponent_value);
+        // No zero-padding for w=0 formats (ES0.8 etc.): emscripten/WASM
+        // renders %+02d as "-043" instead of "-43" for exponent_value=-43.
+        sprintf(exponent, "%+d", exponent_value);
     } else {
         int exp_width = exp + 1;
         if (exp_width > 10) exp_width = 10;
@@ -1380,7 +1382,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                 val_str[digits + scale] = '\0';
             }
         }
-        strncat(formatted_value, val_str, digits);
+        // When scale<=0 the mantissa is "0." followed by |scale| zeros then
+        // (digits+scale) significant digits.  We must copy exactly digits+scale
+        // characters from val_str, not the full `digits` count.
+        int sig = digits + scale;
+        if (sig < 0) sig = 0;
+        strncat(formatted_value, val_str, sig);
     } else {
         char* temp = substring(val_str, 0, scale);
         strcat(formatted_value, temp);
@@ -1423,7 +1430,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     if (rounding_carry) {
         exponent_value++;
         if (width_digits == 0) {
-            sprintf(exponent, "%+02d", exponent_value);
+            sprintf(exponent, "%+d", exponent_value);
         } else {
             int exp_width = exp + 1;
             if (exp_width > 10) exp_width = 10;
@@ -1452,7 +1459,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
                 strcat(formatted_value, "0");
             }
-            strncat(formatted_value, val_str, digits);
+            int sig_carry = digits + scale;
+            if (sig_carry < 0) sig_carry = 0;
+            strncat(formatted_value, val_str, sig_carry);
             exp_length = new_exp_length;
         }
     }
