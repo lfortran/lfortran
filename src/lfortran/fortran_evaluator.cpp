@@ -30,6 +30,9 @@
 #else
 namespace LCompilers {
     class LLVMEvaluator {};
+#ifdef __EMSCRIPTEN__
+    class WasmLFortranExecutor {};
+#endif
 }
 #endif
 
