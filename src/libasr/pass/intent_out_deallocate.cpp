@@ -1,3 +1,4 @@
+#include <cstring>
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
@@ -25,6 +26,18 @@ namespace LCompilers {
 // - We intentionally skip compiler-generated intrinsic implementations
 //   (`deftype == Implementation`) to avoid changing their internal ownership
 //   conventions.
+static inline bool variable_is_converted_function_result(
+        const ASR::Variable_t* v) {
+    static const char* kMarker = "__lcompilers_marker_was_function_result";
+    for (size_t i = 0; i < v->n_dependencies; i++) {
+        if (v->m_dependencies[i] && std::strcmp(v->m_dependencies[i],
+                kMarker) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
@@ -355,7 +368,12 @@ public:
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
 
-                // Fortran 2018 §7.5.6.3 ¶7:
+                if (variable_is_converted_function_result(arg_var)) {
+                    continue;
+                }
+
+                // Call user-defined FINAL procedures for non-allocatable
+                // intent(out) struct args (Fortran 2018 §7.5.6.3 ¶7):
                 //   "When a procedure is invoked with a nonpointer,
                 //    nonallocatable, INTENT(OUT) dummy argument of a type
                 //    for which a final subroutine is defined, the
