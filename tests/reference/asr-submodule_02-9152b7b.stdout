@@ -36,9 +36,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -62,9 +60,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     point
@@ -121,9 +117,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -153,9 +147,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             distance:
                                                 (Variable
@@ -179,9 +171,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     point_dist_func
@@ -255,9 +245,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -287,9 +275,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             distance:
                                                 (Variable
@@ -313,9 +299,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     point_dist_subrout
@@ -401,8 +385,8 @@
                                                     12
                                                     1_point_x
                                                     8 x
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -411,8 +395,8 @@
                                                     12
                                                     1_point_y
                                                     8 y
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     y
                                                     Public
                                                 ),
@@ -444,9 +428,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -476,9 +458,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             distance:
                                                 (Variable
@@ -502,9 +482,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     point_dist_func
@@ -617,8 +595,8 @@
                                                     13
                                                     1_point_x
                                                     8 x
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     x
                                                     Public
                                                 ),
@@ -627,8 +605,8 @@
                                                     13
                                                     1_point_y
                                                     8 y
-                                                    point
-                                                    []
+                                                    points
+                                                    [point]
                                                     y
                                                     Public
                                                 ),
@@ -660,9 +638,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -692,9 +668,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             distance:
                                                 (Variable
@@ -718,9 +692,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     point_dist_subrout

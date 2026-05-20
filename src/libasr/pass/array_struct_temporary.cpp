@@ -142,6 +142,30 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
 
     return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
 }
+/**
+ * 1) AssumedLength strings cannot be used as temporaries, hence use to DeferredLength
+ * 2) Any DeferredLength string must be allocatable. 
+ */
+inline ASR::ttype_t* normalize_string_temporary_type(
+    Allocator& al, const Location& loc, ASR::ttype_t* var_type) {
+    if (!ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(var_type))) {
+        return var_type;
+    }
+    
+    ASR::ttype_t* type_duplicated = ASRUtils::duplicate_type(al, var_type);
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type_duplicated));
+    if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+        str_type->m_len = nullptr;
+        str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
+    }
+    if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength &&
+            !ASRUtils::is_allocatable(type_duplicated) &&
+            !ASRUtils::is_pointer(type_duplicated)) {
+        type_duplicated = ASRUtils::TYPE(
+            ASRUtils::make_Allocatable_t_util(al, loc, type_duplicated));
+    }
+    return type_duplicated;
+}
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
@@ -215,17 +239,6 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
                 ASR::array_physical_typeType::FixedSizeArray, true);
         }
         var_type = value_type;
-        // DeferredLength string variables must be allocatable or pointer.
-        // When the element type is a DeferredLength string, wrap with Allocatable.
-        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable_pointer(var_type));
-        if (ASR::is_a<ASR::String_t>(*elem_type)) {
-            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
-            if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength &&
-                    !ASRUtils::is_allocatable(var_type) && !ASRUtils::is_pointer(var_type)) {
-                var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
-            }
-        }
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
         if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required &&
@@ -238,6 +251,12 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         } else {
             var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
         }
+    }
+    var_type = normalize_string_temporary_type(al, value->base.loc, var_type);
+    if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+        ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value);
+        ASRUtils::ReplaceFunctionParamWithArg replacer(al, func_call->m_args, func_call->n_args);
+        replacer.replace_type(var_type);
     }
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
@@ -595,6 +614,9 @@ bool set_allocation_size(
                 allocate_dim.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
                     al, loc, end, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
                 allocate_dims.push_back(al, allocate_dim);
+            }
+            if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                len_allocte_expr = ASRUtils::ASRBuilder(al, loc).StringLen(array_item_t->m_v);
             }
             break;
         }
@@ -1053,12 +1075,14 @@ bool set_allocation_size(
 }
 
 void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
-    ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body) {
+    ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body,
+    ASR::expr_t* rank_source) {
     if( !ASRUtils::is_allocatable(temporary_var) ) {
         return ;
     }
     Vec<ASR::dimension_t> allocate_dims;
-    size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var));
+    ASR::expr_t* dim_source = rank_source ? rank_source : temporary_var;
+    size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim_source));
     bool add_allocated_check = false;
     ASR::expr_t* len_allocate_expr {};
     if( !set_allocation_size(al, value, temporary_var, allocate_dims,
@@ -1476,6 +1500,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     x_m_args_vec.push_back(al, x_m_args[i]);
                     continue;
                 }
+                if (orig_variable && orig_variable->m_target_attr &&
+                    x_m_args[i].m_value) {
+                    ASR::expr_t* arg_no_cast =
+                        ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value);
+                    if (ASR::is_a<ASR::Var_t>(*arg_no_cast) ||
+                        ASR::is_a<ASR::ArrayItem_t>(*arg_no_cast) ||
+                        ASR::is_a<ASR::StructInstanceMember_t>(*arg_no_cast)) {
+                        x_m_args_vec.push_back(al, x_m_args[i]);
+                        continue;
+                    }
+                }
             }
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
@@ -1863,6 +1898,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_IntegerCompare(x);
     }
 
+    void visit_StringCompare(const ASR::StringCompare_t& x) {
+        ASR::StringCompare_t& xx = const_cast<ASR::StringCompare_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "string_compare", binop, ASR::exprType::StringCompare) ) {
+            return ;
+        }
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_StringCompare(x);
+    }
+
     template <typename T>
     void visit_TypeConstructor(const T& x, const std::string& name_hint) {
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
@@ -2190,7 +2236,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) {
             std::pair<ASR::expr_t*, targetType>& target_info = exprs_with_target[*current_expr];
             ASR::expr_t* target = target_info.first; targetType target_Type = target_info.second;
-            if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
+            ASR::expr_t* underlying_target = ASRUtils::get_past_array_physical_cast(target);
+            if( underlying_target != target &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
+                target_Type == targetType::OriginalTarget &&
+                realloc_lhs ) {
+                insert_allocate_stmt_for_array(al, underlying_target, *current_expr,
+                                               current_body, target);
+            } else if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
                 target_Type == targetType::OriginalTarget &&
                 realloc_lhs ) {
                 insert_allocate_stmt_for_array(al, target, *current_expr, current_body);
@@ -2683,7 +2736,7 @@ class ReplaceExprWithTemporaryVisitor:
                 ASR::storage_typeType::Default, logical_type, nullptr, 
                 ASR::abiType::Source, ASR::accessType::Public, 
                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false);
+                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0);
         current_scope->add_symbol(std::string(c_name), c_sym);
         ASR::expr_t* c_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, ASRUtils::symbol_get_past_external(c_sym)));
 

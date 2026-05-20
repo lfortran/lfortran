@@ -17,8 +17,8 @@
                                                     11
                                                     1_toml_date_day
                                                     8 day
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     day
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     11
                                                     1_toml_date_month
                                                     8 month
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     month
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     11
                                                     1_toml_date_year
                                                     8 year
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     year
                                                     Public
                                                 ),
@@ -64,9 +64,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             lhs:
                                                 (Variable
@@ -92,9 +90,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -125,9 +121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     date_to_string
@@ -227,8 +221,8 @@
                                                     12
                                                     1_toml_date_to_string
                                                     8 to_string
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     to_string
                                                     Public
                                                 ),
@@ -237,8 +231,8 @@
                                                     12
                                                     1_toml_datetime_date
                                                     9 date
-                                                    toml_datetime
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_datetime]
                                                     date
                                                     Public
                                                 ),
@@ -247,8 +241,8 @@
                                                     12
                                                     1_toml_datetime_time
                                                     9 time
-                                                    toml_datetime
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_datetime]
                                                     time
                                                     Public
                                                 ),
@@ -257,8 +251,8 @@
                                                     12
                                                     1_toml_time_to_string
                                                     10 to_string
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     to_string
                                                     Public
                                                 ),
@@ -286,9 +280,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -342,9 +334,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             temporary:
                                                 (Variable
@@ -370,9 +360,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             time_to_string:
                                                 (ExternalSymbol
@@ -690,8 +678,8 @@
                                                     13
                                                     1_toml_time_hour
                                                     10 hour
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     hour
                                                     Public
                                                 ),
@@ -700,8 +688,8 @@
                                                     13
                                                     1_toml_time_millisec
                                                     10 millisec
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     millisec
                                                     Public
                                                 ),
@@ -710,8 +698,8 @@
                                                     13
                                                     1_toml_time_minute
                                                     10 minute
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     minute
                                                     Public
                                                 ),
@@ -720,8 +708,8 @@
                                                     13
                                                     1_toml_time_second
                                                     10 second
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     second
                                                     Public
                                                 ),
@@ -730,8 +718,8 @@
                                                     13
                                                     1_toml_time_zone
                                                     10 zone
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     zone
                                                     Public
                                                 ),
@@ -757,9 +745,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             millisec:
                                                 (Variable
@@ -783,9 +769,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             minute:
                                                 (Variable
@@ -809,9 +793,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             second:
                                                 (Variable
@@ -835,9 +817,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -874,9 +854,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             zone:
                                                 (Variable
@@ -900,9 +878,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     new_toml_time
@@ -1078,8 +1054,8 @@
                                                     14
                                                     1_toml_time_hour
                                                     10 hour
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     hour
                                                     Public
                                                 ),
@@ -1088,8 +1064,8 @@
                                                     14
                                                     1_toml_time_millisec
                                                     10 millisec
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     millisec
                                                     Public
                                                 ),
@@ -1098,8 +1074,8 @@
                                                     14
                                                     1_toml_time_minute
                                                     10 minute
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     minute
                                                     Public
                                                 ),
@@ -1108,8 +1084,8 @@
                                                     14
                                                     1_toml_time_second
                                                     10 second
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     second
                                                     Public
                                                 ),
@@ -1118,8 +1094,8 @@
                                                     14
                                                     1_toml_time_zone
                                                     10 zone
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     zone
                                                     Public
                                                 ),
@@ -1145,9 +1121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             lfortran_iomsg1:
                                                 (Variable
@@ -1171,9 +1145,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             lhs:
                                                 (Variable
@@ -1199,9 +1171,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -1238,9 +1208,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     time_to_string
@@ -1488,9 +1456,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             month:
                                                 (Variable
@@ -1514,9 +1480,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1551,9 +1515,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -1622,9 +1584,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             time:
                                                 (Variable
@@ -1663,9 +1623,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1758,9 +1716,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             millisec:
                                                 (Variable
@@ -1786,9 +1742,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             minute:
                                                 (Variable
@@ -1812,9 +1766,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             second:
                                                 (Variable
@@ -1838,9 +1790,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1877,9 +1827,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -2071,8 +2019,8 @@
                                                     5
                                                     1_toml_datetime_date
                                                     9 date
-                                                    toml_datetime
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_datetime]
                                                     date
                                                     Public
                                                 ),
@@ -2098,9 +2046,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             err:
                                                 (Variable
@@ -2124,9 +2070,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             first:
                                                 (Variable
@@ -2150,9 +2094,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             raw:
                                                 (Variable
@@ -2176,9 +2118,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -2202,9 +2142,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             timestamp:
                                                 (Variable
@@ -2258,9 +2196,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_raw_to_timestamp

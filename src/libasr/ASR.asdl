@@ -22,7 +22,7 @@ symbol
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
                string? bindc_name, bool is_volatile, bool is_protected, pass_attr pass_attr, identifier? self_argument,
-               int corank, codimension* codims, bool is_coarray)
+               codimension* codims)
     | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
@@ -262,7 +262,7 @@ array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | F
 string_physical_type = DescriptorString | CChar
 string_length_kind = AssumedLength | DeferredLength | ExpressionLength | ImplicitLength
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift
-reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX
+reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX | ReduceIAND | ReduceIOR | ReduceIEOR
 logicalbinop = And | Or | Xor | NEqv | Eqv
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 integerboz = Binary | Hex | Octal | Decimal

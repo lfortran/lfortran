@@ -12,8 +12,8 @@
                                     2
                                     1_y_backslash
                                     3 backslash
-                                    y
-                                    []
+                                    derived_types_11
+                                    [y]
                                     backslash
                                     Public
                                 ),
@@ -68,9 +68,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -118,9 +116,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             y:
                                 (Struct
@@ -155,9 +151,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     y
@@ -197,7 +191,7 @@
                                     4
                                     1_y_backslash
                                     3 backslash
-                                    y
+                                    derived_types_11
                                     []
                                     backslash
                                     Public

@@ -119,9 +119,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             initial_team:
                                 (ExternalSymbol
@@ -239,9 +237,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     integer32complex32orderedmap
@@ -384,8 +380,8 @@
                                                     10
                                                     1_omap_map_stored_value
                                                     8 stored_value
-                                                    omap_map
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [omap_map]
                                                     stored_value
                                                     Public
                                                 ),
@@ -411,9 +407,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             rc:
                                                 (Variable
@@ -437,9 +431,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -465,9 +457,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -502,9 +492,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omap_i_at_rc
@@ -599,8 +587,8 @@
                                                     11
                                                     1_integer32complex32orderedmap_map
                                                     9 map
-                                                    integer32complex32orderedmap
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [integer32complex32orderedmap]
                                                     map
                                                     Public
                                                 ),
@@ -609,8 +597,8 @@
                                                     11
                                                     1_omap_map_at_rc
                                                     8 at_rc
-                                                    omap_map
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [omap_map]
                                                     at_rc
                                                     Public
                                                 ),
@@ -619,8 +607,8 @@
                                                     11
                                                     1_omap_map_stored_value
                                                     8 stored_value
-                                                    omap_map
-                                                    []
+                                                    gftl2_integer32complex32orderedmap
+                                                    [omap_map]
                                                     stored_value
                                                     Public
                                                 ),
@@ -646,9 +634,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             status:
                                                 (Variable
@@ -672,9 +658,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -714,9 +698,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -742,9 +724,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             tol:
                                                 (Variable
@@ -774,9 +754,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             value:
                                                 (Variable
@@ -800,9 +778,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omap_insert_key_value
@@ -1048,9 +1024,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             tree:
                                                 (Variable
@@ -1079,9 +1053,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     omap_map
@@ -1152,9 +1124,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             real128:
                                 (ExternalSymbol
@@ -1297,8 +1267,8 @@
                                     12
                                     1_integer32complex32orderedmap_insert_key_value
                                     9 insert_key_value
-                                    integer32complex32orderedmap
-                                    []
+                                    gftl2_integer32complex32orderedmap
+                                    [integer32complex32orderedmap]
                                     insert_key_value
                                     Public
                                 ),
@@ -1534,9 +1504,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             logical16:
                                 (ExternalSymbol
@@ -1626,9 +1594,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             numeric_storage_size:
                                 (ExternalSymbol
@@ -1842,9 +1808,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     nested_struct_proc_01

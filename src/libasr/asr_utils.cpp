@@ -1291,6 +1291,10 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
     ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move) {
     bool is_allocatable = ASRUtils::is_allocatable(a_target);
+    if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
+        is_allocatable = ASRUtils::is_allocatable(
+            ASRUtils::get_past_array_physical_cast(a_target));
+    }
     if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
         ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
         is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
@@ -1541,21 +1545,23 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     }
     bool found = false;
     bool found_on_right = false;
-    if (!is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct)) {
-        if (right_struct != nullptr && is_op_overloaded(op, intrinsic_op_name, curr_scope, right_struct)) {
-            found_on_right = true;
-        }
+    bool left_has_op = is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct);
+    bool right_has_op = right_struct != nullptr &&
+                        is_op_overloaded(op, intrinsic_op_name, curr_scope, right_struct);
+    if (!left_has_op && right_has_op) {
+        found_on_right = true;
     }
     ASR::Struct_t* op_struct = found_on_right ? right_struct : left_struct;
-    if (is_op_overloaded(op, intrinsic_op_name, curr_scope, op_struct)) {
+    (void)op_struct;
+    if (left_has_op || right_has_op) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
-        ASR::symbol_t* orig_sym2 = nullptr;
-        if (op_struct != nullptr) {
-            ASR::Struct_t* temp_struct = op_struct;
+        auto find_struct_op_sym = [&](ASR::Struct_t* s) -> ASR::symbol_t* {
+            ASR::symbol_t* result = nullptr;
+            ASR::Struct_t* temp_struct = s;
             while (temp_struct) {
                 if (temp_struct->m_symtab->get_symbol(intrinsic_op_name) != nullptr) {
-                    orig_sym2 = temp_struct->m_symtab->get_symbol(intrinsic_op_name);
+                    result = temp_struct->m_symtab->get_symbol(intrinsic_op_name);
                     break;
                 } else if (temp_struct->m_parent) {
                     temp_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(temp_struct->m_parent));
@@ -1563,9 +1569,19 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     temp_struct = nullptr;
                 }
             }
+            return result;
+        };
+        ASR::symbol_t* orig_sym2 = nullptr;
+        ASR::symbol_t* orig_sym2_right = nullptr;
+        if (left_has_op && left_struct != nullptr) {
+            orig_sym2 = find_struct_op_sym(left_struct);
+        }
+        if (right_has_op && right_struct != nullptr) {
+            orig_sym2_right = find_struct_op_sym(right_struct);
         }
         Vec<ASR::symbol_t*> op_overloading_procs; op_overloading_procs.reserve(al, 1);
         size_t n_interface_proc = 0;
+        size_t n_left_struct_end = 0;
         // functions that are declared by interface operator(+)
         if (orig_sym) {
             ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
@@ -1574,20 +1590,34 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             }
             n_interface_proc = gen_proc->n_procs;
         }
-        // functions that are class procedure
+        // functions that are type-bound on the left operand's type
         if (orig_sym2) {
             ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym2);
             for( size_t i = 0; i < gen_proc->n_procs; i++ ) {
                 op_overloading_procs.push_back(al, gen_proc->m_procs[i]);
             }
         }
+        n_left_struct_end = op_overloading_procs.size();
+        // functions that are type-bound on the right operand's type
+        if (orig_sym2_right) {
+            ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym2_right);
+            for( size_t i = 0; i < gen_proc->n_procs; i++ ) {
+                op_overloading_procs.push_back(al, gen_proc->m_procs[i]);
+            }
+        }
         for( size_t i = 0; i < op_overloading_procs.size() && !found; i++ ) {
+            bool proc_from_right_struct = (i >= n_left_struct_end);
+            ASR::Struct_t* proc_op_struct = proc_from_right_struct ? right_struct : left_struct;
+            // For the call-site bookkeeping below, treat as found_on_right
+            // when the procedure is type-bound on the right operand or when
+            // there is no left-side operator at all.
+            bool iter_found_on_right = proc_from_right_struct || found_on_right;
             ASR::symbol_t* proc;
             ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
             if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*op_overloading_procs[i]) ) {
                 ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(op_overloading_procs[i]);
-                if (cp->m_parent_symtab->get_counter() != op_struct->m_symtab->get_counter()) {
-                    ASR::Struct_t* temp_struct = op_struct;
+                if (proc_op_struct != nullptr && cp->m_parent_symtab->get_counter() != proc_op_struct->m_symtab->get_counter()) {
+                    ASR::Struct_t* temp_struct = proc_op_struct;
                     while (temp_struct->m_parent) {
                         if (temp_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
                             cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
@@ -1664,7 +1694,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 a_args.push_back(al, left_call_arg);
                                 right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                                 a_args.push_back(al, right_call_arg);
-                            } else if (found_on_right) {
+                            } else if (iter_found_on_right) {
                                 // Operator is a type-bound procedure on the right
                                 // operand's type. Include both operands as regular
                                 // call arguments (not as self_arg) so that argument
@@ -1678,7 +1708,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 a_args.push_back(al, right_call_arg);
                             }
                             std::string func_name = to_lower(func->m_name);
-                            if (i >= n_interface_proc && !found_on_right) {
+                            if (i >= n_interface_proc && !iter_found_on_right) {
                                 ASR::symbol_t* mem_ext = import_class_procedure(al, loc, orig_proc, curr_scope);
                                 matched_func_name = ASRUtils::symbol_name(mem_ext);
                                 self_arg = left;
@@ -1690,7 +1720,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
                             if( a_name == nullptr ) {
-                                if (i >= n_interface_proc && !found_on_right) {
+                                if (i >= n_interface_proc && !iter_found_on_right) {
                                     err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
                                 } else {
                                     a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
@@ -2959,8 +2989,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
             }
         }
         for( ; i < sub.n_args; i++ ) {
-            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
-            if( v->m_presence != ASR::presenceType::Optional ) {
+            ASR::symbol_t* sub_arg_sym = symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(sub.m_args[i])->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sub_arg_sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sub_arg_sym);
+                if (v->m_presence != ASR::presenceType::Optional) {
+                    return false;
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
                 return false;
             }
         }
@@ -3196,10 +3232,25 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
                     }
                     module_name = imported_module_name;
                 }
+                // Use the owning module's name as module_name and encode
+                // the struct path in scope_names. This avoids ambiguity
+                // during deserialization when a struct and a top-level module
+                // share the same name.
+                std::string ext_module_name = module_name;
+                char** scope_names_arr = nullptr;
+                size_t n_scope_names = 0;
+                ASR::symbol_t* struct_owner = ASRUtils::get_asr_owner(
+                    ASRUtils::symbol_get_past_external(module_sym));
+                if (struct_owner != nullptr && ASR::is_a<ASR::Module_t>(*struct_owner)) {
+                    ext_module_name = ASRUtils::symbol_name(struct_owner);
+                    scope_names_arr = al.allocate<char*>(1);
+                    scope_names_arr[0] = s2c(al, struct_name);
+                    n_scope_names = 1;
+                }
                 ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_ExternalSymbol_t(
                         al, loc, current_scope, s2c(al, imported_proc_name),
-                        original_sym, s2c(al, module_name), nullptr, 0,
+                        original_sym, s2c(al, ext_module_name), scope_names_arr, n_scope_names,
                         ASRUtils::symbol_name(original_sym), ASR::accessType::Public
                     )
                 );
@@ -3717,6 +3768,14 @@ ASR::asr_t* make_ArraySize_t_util(
                 merge_args.push_back(al, builder.Lt(a_dim, af_dim));
                 diag::Diagnostics diag;
                 return ASRUtils::Merge::create_Merge(al, a_loc, merge_args, diag);
+            }
+        } else if( array_func_type != nullptr && is_dimension_constant ) {
+            ASR::dimension_t* af_dims = nullptr;
+            size_t af_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                array_func_type, af_dims);
+            if( (size_t) dim >= 1 && (size_t) dim <= af_n_dims &&
+                af_dims[dim - 1].m_length != nullptr ) {
+                return (ASR::asr_t*) af_dims[dim - 1].m_length;
             }
         }
     } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {

@@ -1185,7 +1185,8 @@ int compile_src_to_object_file(const std::string &infile,
         bool assembly,
         CompilerOptions &compiler_options,
         LCompilers::PassManager& lpm,
-        bool arg_c = false)
+        bool arg_c,
+        bool *found_main)
 {
     int time_file_read=0;
     int time_src_to_asr=0;
@@ -1247,10 +1248,23 @@ int compile_src_to_object_file(const std::string &infile,
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
+        if (!arg_c) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "no main program found; cannot build an executable. "
+                "To compile this file as a library, use the `-c` option.",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Semantic, {})
+            );
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return 1;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
         return 0;
+    }
+    if (found_main && LCompilers::ASRUtils::main_program_present(*asr)) {
+        *found_main = true;
     }
 
     // if compiler_options.generate_code_for_global_procedures is true, then mark all modules as external
@@ -1370,7 +1384,7 @@ int compile_to_assembly_file(const std::string &infile,
     const std::string &outfile, bool time_report, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
 {
-    return compile_src_to_object_file(infile, outfile, time_report, true, compiler_options, lpm);
+    return compile_src_to_object_file(infile, outfile, time_report, true, compiler_options, lpm, false, nullptr);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
@@ -1605,7 +1619,9 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        bool arg_c,
+        bool *found_main)
 {
     std::string input = read_file_ok(infile);
 
@@ -1638,6 +1654,16 @@ int compile_to_object_file_cpp(const std::string &infile,
     }
 
     if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        if (!arg_c) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "no main program found; cannot build an executable. "
+                "To compile this file as a library, use the `-c` option.",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Semantic, {})
+            );
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return 1;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         if (compiler_options.platform == LCompilers::Platform::Windows) {
@@ -1664,6 +1690,9 @@ int compile_to_object_file_cpp(const std::string &infile,
             }
         }
         return 0;
+    }
+    if (found_main) {
+        *found_main = true;
     }
 
     // ASR -> C++
@@ -1718,7 +1747,9 @@ int compile_to_object_file_c(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, const std::string &rtlib_header_dir,
         LCompilers::PassManager pass_manager,
-        CompilerOptions &compiler_options)
+        CompilerOptions &compiler_options,
+        bool arg_c,
+        bool *found_main)
 {
     std::string input = read_file_ok(infile);
 
@@ -1749,6 +1780,16 @@ int compile_to_object_file_c(const std::string &infile,
     }
 
     if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        if (!arg_c) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "no main program found; cannot build an executable. "
+                "To compile this file as a library, use the `-c` option.",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Semantic, {})
+            );
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return 1;
+        }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         if (compiler_options.platform == LCompilers::Platform::Windows) {
@@ -1775,6 +1816,9 @@ int compile_to_object_file_c(const std::string &infile,
             }
         }
         return 0;
+    }
+    if (found_main) {
+        *found_main = true;
     }
 
     // ASR -> C
@@ -2803,17 +2847,17 @@ int main_app(int argc, char *argv[]) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
             result = compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
-                compiler_options, lfortran_pass_manager, opts.arg_c);
+                compiler_options, lfortran_pass_manager, opts.arg_c, nullptr);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
         } else if (backend == Backend::c) {
             result = compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
-                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options, opts.arg_c, nullptr);
         } else if (backend == Backend::cpp) {
             result = compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
-                    true, rtlib_c_header_dir, compiler_options);
+                    true, rtlib_c_header_dir, compiler_options, opts.arg_c, nullptr);
         } else if (backend == Backend::x86) {
             result = compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
@@ -2847,6 +2891,8 @@ int main_app(int argc, char *argv[]) {
     // we need this separate vector to store temporary object files as some object files passed as arguments
     // are considered as it is and we do not want to delete them
     std::vector<std::string> temp_object_files;
+    bool found_main = false;
+    bool any_fortran_src = false;
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
         std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
@@ -2854,6 +2900,7 @@ int main_app(int argc, char *argv[]) {
         temp_object_files.push_back(tmp_o);
         if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+            any_fortran_src = true;
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
                         compiler_options.time_report, compiler_options);
@@ -2861,17 +2908,17 @@ int main_app(int argc, char *argv[]) {
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
                 err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
-                    compiler_options, lfortran_pass_manager);
+                    compiler_options, lfortran_pass_manager, true, &found_main);
 #else
                 std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
 #endif
             } else if (backend == Backend::cpp) {
                 err = compile_to_object_file_cpp(arg_file, tmp_o, opts.arg_v, false,
-                        true, rtlib_header_dir, compiler_options);
+                        true, rtlib_header_dir, compiler_options, true, &found_main);
             } else if (backend == Backend::c) {
                 err = compile_to_object_file_c(arg_file, tmp_o, opts.arg_v,
-                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options, true, &found_main);
             } else if (backend == Backend::fortran) {
                 err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
             } else if (backend == Backend::wasm) {
@@ -2909,6 +2956,17 @@ int main_app(int argc, char *argv[]) {
     if (object_files.size() == 0) {
         return err_;
     } else {
+        if (any_fortran_src && !found_main && err_ == 0
+                && (backend == Backend::llvm || backend == Backend::c
+                    || backend == Backend::cpp)) {
+            std::cerr << "semantic error: no main program found; "
+                "cannot build an executable. To compile this file as a "
+                "library, use the `-c` option." << std::endl;
+            for (const std::string &filename : temp_object_files) {
+                std::remove(filename.c_str());
+            }
+            return 1;
+        }
         int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);

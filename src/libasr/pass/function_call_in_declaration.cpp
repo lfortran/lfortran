@@ -166,111 +166,58 @@ public:
         newargsp = nullptr;
     }
 
-    bool exists_in_arginfo(int arg_number, std::vector<ArgInfo>& indices) {
-        for (auto info: indices) {
-            if (info.arg_number == arg_number) return true;
-        }
-        return false;
-    }
+    class get_arg_indices_used 
+    : public ASR::BaseWalkVisitor<get_arg_indices_used>{
+    private:
+        get_arg_indices_used() = default;
 
-    void helper_get_arg_indices_used(ASR::expr_t* arg, std::vector<ArgInfo>& indices) {
-        if (is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
-            ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
-            arg = cast->m_arg;
+        bool exists_in_arginfo(int arg_number, std::vector<ArgInfo>& indices) {
+            for (auto info: indices) {
+                if (info.arg_number == arg_number) return true;
+            }
+            return false;
         }
-        if (is_a<ASR::FunctionCall_t>(*arg)) {
-            get_arg_indices_used_functioncall(ASR::down_cast<ASR::FunctionCall_t>(arg), indices);
-        } else if (is_a<ASR::IntrinsicArrayFunction_t>(*arg)) {
-            get_arg_indices_used(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(arg), indices);
-        } else if (is_a<ASR::IntrinsicElementalFunction_t>(*arg)) {
-            get_arg_indices_used(ASR::down_cast<ASR::IntrinsicElementalFunction_t>(arg), indices);
-        } else if (is_a<ASR::FunctionParam_t>(*arg)) {
-            ASR::FunctionParam_t* param = ASR::down_cast<ASR::FunctionParam_t>(arg);
+        std::vector<ArgInfo> indices {};
+        SymbolTable *current_scope {nullptr};
+    public : 
+
+        void visit_Function(const ASR::Function_t &x){(void)x;throw LCompilersException("Not expected to visit");}
+        void visit_Program(const ASR::Program_t &x)  {(void)x;throw LCompilersException("Not expected to visit");}
+        void visit_Module(const ASR::Module_t &x)    {(void)x;throw LCompilersException("Not expected to visit");}
+        void visit_FunctionParam(const ASR::FunctionParam_t &x){
+            LCOMPILERS_ASSERT(current_scope)
             ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
-            ArgInfo info = {static_cast<int>(param->m_param_number), param->m_type, func->m_args[param->m_param_number], arg};
-            if (!exists_in_arginfo(param->m_param_number, indices)) {
+            ArgInfo info = {static_cast<int>(x.m_param_number), x.m_type, func->m_args[x.m_param_number], &const_cast<ASR::expr_t&>((x.base))};
+            if (!exists_in_arginfo(x.m_param_number, indices)) {
                 indices.push_back(info);
             }
-        } else if (is_a<ASR::ArraySize_t>(*arg)) {
-            ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(arg);
-            helper_get_arg_indices_used(size->m_v, indices);
-        } else if (is_a<ASR::IntegerCompare_t>(*arg)) {
-            ASR::IntegerCompare_t* comp = ASR::down_cast<ASR::IntegerCompare_t>(arg);
-            helper_get_arg_indices_used(comp->m_left, indices);
-            helper_get_arg_indices_used(comp->m_right, indices);
-        } else if (is_a<ASR::RealCompare_t>(*arg)) {
-            ASR::RealCompare_t* comp = ASR::down_cast<ASR::RealCompare_t>(arg);
-            helper_get_arg_indices_used(comp->m_left, indices);
-            helper_get_arg_indices_used(comp->m_right, indices);
-        } else if (is_a<ASR::RealBinOp_t>(*arg)) {
-            ASR::RealBinOp_t* binop = ASR::down_cast<ASR::RealBinOp_t>(arg);
-            helper_get_arg_indices_used(binop->m_left, indices);
-            helper_get_arg_indices_used(binop->m_right, indices);
-        } else if (is_a<ASR::IntegerBinOp_t>(*arg)) {
-            ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(arg);
-            helper_get_arg_indices_used(binop->m_left, indices);
-            helper_get_arg_indices_used(binop->m_right, indices);
-        } else if (is_a<ASR::RealUnaryMinus_t>(*arg)) {
-            ASR::RealUnaryMinus_t* r_minus = ASR::down_cast<ASR::RealUnaryMinus_t>(arg);
-            helper_get_arg_indices_used(r_minus->m_arg, indices);
-        } else if (is_a<ASR::IntegerUnaryMinus_t>(*arg)) {
-            ASR::IntegerUnaryMinus_t* i_minus = ASR::down_cast<ASR::IntegerUnaryMinus_t>(arg);
-            helper_get_arg_indices_used(i_minus->m_arg, indices);
-        } else if (is_a<ASR::StringLen_t>(*arg)) {
-            ASR::StringLen_t* str_len = ASR::down_cast<ASR::StringLen_t>(arg);
-            helper_get_arg_indices_used(str_len->m_arg, indices);
-        } else if (is_a<ASR::StringPhysicalCast_t>(*arg)){
-            ASR::StringPhysicalCast_t* str_cast = ASR::down_cast<ASR::StringPhysicalCast_t>(arg);
-            helper_get_arg_indices_used(str_cast->m_arg, indices);
-        } else if (is_a<ASR::StringConcat_t>(*arg)) {
-            ASR::StringConcat_t* str_concat = ASR::down_cast<ASR::StringConcat_t>(arg);
-            helper_get_arg_indices_used(str_concat->m_left, indices);
-            helper_get_arg_indices_used(str_concat->m_right, indices);
         }
-         else if (is_a<ASR::Var_t>(*arg)) {
+        void visit_Var(const ASR::Var_t& x) {
+            LCOMPILERS_ASSERT(current_scope)
+            ASR::Var_t* xx = &const_cast<ASR::Var_t&>(x);
             int arg_num = -1;
             int i = 0;
-            std::map<std::string, LCompilers::ASR::symbol_t *> func_scope = current_scope->get_scope();
-            for (auto sym: func_scope) {
-                if (sym.second == ASR::down_cast<ASR::Var_t>(arg)->m_v) { 
+            for (auto &sym: current_scope->get_scope()) {
+                if (sym.second == xx->m_v) { 
                     arg_num = i;
                     break;
                 }
                 i++;
             }
-            ArgInfo info = {arg_num, ASRUtils::expr_type(arg), arg , arg};
+            ArgInfo info = {arg_num, ASRUtils::expr_type(&xx->base), &xx->base , &xx->base};
             if (!exists_in_arginfo(arg_num, indices)) {
                 indices.push_back(info);
             }
-        } else if (is_a<ASR::StructInstanceMember_t>(*arg)) {
-            ASR::StructInstanceMember_t* struct_member = ASR::down_cast<ASR::StructInstanceMember_t>(arg);
-            helper_get_arg_indices_used(struct_member->m_v, indices);
-        } else if (is_a<ASR::LogicalNot_t>(*arg)) {
-            ASR::LogicalNot_t* not_expr = ASR::down_cast<ASR::LogicalNot_t>(arg);
-            helper_get_arg_indices_used(not_expr->m_arg, indices);
-        } else if (is_a<ASR::LogicalBinOp_t>(*arg)) {
-            ASR::LogicalBinOp_t* logical_binop = ASR::down_cast<ASR::LogicalBinOp_t>(arg);
-            helper_get_arg_indices_used(logical_binop->m_left, indices);
-            helper_get_arg_indices_used(logical_binop->m_right, indices);
         }
-    }
+        // 
+        static std::vector<ArgInfo> get(const ASR::expr_t* arg, SymbolTable* current_scope){
+            get_arg_indices_used instance {};
+            instance.current_scope = current_scope;
+            instance.visit_expr(*arg);
+            return instance.indices;
+        }
 
-    void get_arg_indices_used_functioncall(ASR::FunctionCall_t* x, std::vector<ArgInfo>& indices) {
-        for (size_t i = 0; i < x->n_args; i++) {
-            ASR::expr_t* arg = x->m_args[i].m_value;
-            helper_get_arg_indices_used(arg, indices);
-        }
-        return;
-    }
-
-    template<typename T>
-    void get_arg_indices_used(T* x, std::vector<ArgInfo>& indices) {
-        for (size_t i = 0; i < x->n_args; i++) {
-            ASR::expr_t* arg = x->m_args[i];
-            helper_get_arg_indices_used(arg, indices);
-        }
-        return;
-    }
+    };
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t *x) {
         if( newargsp != nullptr /*Processing FunctionParam*/) {
@@ -279,8 +226,7 @@ public:
         }
         if (!assignment_value) return;
 
-        std::vector<ArgInfo> indices;
-        get_arg_indices_used(x, indices);
+        std::vector<ArgInfo> indices = get_arg_indices_used::get(&x->base, current_scope);
 
         SymbolTable* global_scope = current_scope->get_global_scope();
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
@@ -330,6 +276,7 @@ public:
 
         ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
+        collect_and_create_new_externalSymbols(assignment_value_copy);
         replace_FunctionParam_with_FunctionArgs(assignment_value_copy, new_args);
         new_body.push_back(al, b.Assignment(return_var, assignment_value_copy));
         ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.base.loc,
@@ -387,20 +334,7 @@ public:
 
         if (!assignment_value) return;
 
-        std::vector<ArgInfo> indices;
-        switch(x->type){
-            case ASR::StringLen:
-                helper_get_arg_indices_used(ASR::down_cast<ASR::StringLen_t>(x)->m_arg, indices);
-                break;
-            case ASR::FunctionCall:
-                get_arg_indices_used_functioncall(ASR::down_cast<ASR::FunctionCall_t>(x), indices);
-                break;
-            case ASR::IntrinsicElementalFunction:
-                get_arg_indices_used(ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x), indices);
-                break;
-            default : 
-                throw LCompilersException("Unhandled case");
-        }
+        std::vector<ArgInfo> indices = get_arg_indices_used::get(x, current_scope);
         SymbolTable* global_scope = current_scope->parent;
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
         SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
@@ -494,67 +428,44 @@ public:
 class FunctionTypeVisitor : public ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>
 {
 private:
-    bool is_non_scalar(ASR::ttype_t* type){
-        type = ASRUtils::extract_type(type);
-        return 
-            ASRUtils::is_character(*type) || 
+
+    // Check if expression contains any sub-expression that returns a non-scalar (array, struct,character)
+    class expr_contains_functionCall_with_Nonscalar_return 
+    : public ASR::BaseWalkVisitor<expr_contains_functionCall_with_Nonscalar_return>{
+    private :
+        expr_contains_functionCall_with_Nonscalar_return() = default;
+        bool found = false; // If any sub-expression is of non-scalar return
+        bool is_non_scalar(ASR::ttype_t* type){
+            type = ASRUtils::type_get_past_allocatable_pointer(type);
+            return ASRUtils::is_character(*type) || 
             ASRUtils::is_array(type)      ||
             ASRUtils::is_struct(*type);
-    }
-    bool is_call_to_function(ASR::expr_t* expr){
-        return 
-            ASR::is_a<ASR::FunctionCall_t>(*expr) || 
+        }
+        bool is_call_to_function(const ASR::expr_t* expr){
+            return ASR::is_a<ASR::FunctionCall_t>(*expr) || 
             ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr) ||
             ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr);
-    }
-
-    /*Check for any functionCall that's returing non-scalar value (character, array, struct)*/
-    //(TODO : We should use a visitor instead of this function)
-    bool expr_contains_functionCall_with_Nonscalar_return(ASR::expr_t* expr){
-        LCOMPILERS_ASSERT(expr)
-        if(is_call_to_function(expr)){
-            if(is_non_scalar(ASRUtils::expr_type(expr))){
-                return true;
-            }
-        }  
-        // Start looking for for nested expressions 
-        switch(expr->type){
-            case ASR::exprType::StringLen :
-                return expr_contains_functionCall_with_Nonscalar_return(
-                    ASR::down_cast<ASR::StringLen_t>(expr)->m_arg);
-            case ASR::exprType::ArraySize:
-                return expr_contains_functionCall_with_Nonscalar_return(
-                    ASR::down_cast<ASR::ArraySize_t>(expr)->m_v);
-            case ASR::exprType::FunctionCall:{
-                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expr);
-                bool found_non_scalar_return = false;
-                for(size_t i = 0;(i < func_call->n_args) && !found_non_scalar_return; i++){
-                    found_non_scalar_return |= expr_contains_functionCall_with_Nonscalar_return(func_call->m_args[i].m_value);
-                }
-                return found_non_scalar_return;
-                break;
-            }
-            case ASR::IntrinsicElementalFunction :{
-                ASR::IntrinsicElementalFunction_t* intrinsic_elem_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
-                bool found_non_scalar_return = false;
-                for(size_t i = 0;(i < intrinsic_elem_func->n_args) && !found_non_scalar_return; i++){
-                    found_non_scalar_return |= expr_contains_functionCall_with_Nonscalar_return(intrinsic_elem_func->m_args[i]);
-                }
-                return found_non_scalar_return;
-            }
-            case ASR::StringPhysicalCast:
-                return expr_contains_functionCall_with_Nonscalar_return(ASR::down_cast<ASR::StringPhysicalCast_t>(expr)->m_arg);
-            case ASR::StringConcat:{
-                ASR::StringConcat_t* str_concat = ASR::down_cast<ASR::StringConcat_t>(expr);
-                return 
-                    expr_contains_functionCall_with_Nonscalar_return(str_concat->m_left) || 
-                    expr_contains_functionCall_with_Nonscalar_return(str_concat->m_right);
-            }
-            default :
-                return false; // NOTE : This isn't accurate as we only handle 3 cases above.
         }
-        return false;   
-    }
+    public :
+        static bool check(const ASR::expr_t* expr){
+            LCOMPILERS_ASSERT(expr)
+            expr_contains_functionCall_with_Nonscalar_return instance {};
+            instance.visit_expr(*expr);
+            return instance.found;
+        }
+
+        void visit_expr(const ASR::expr_t &b){
+            if(
+                is_call_to_function(&b) &&
+                is_non_scalar(ASRUtils::expr_type(&b))
+            ){
+                found = true;
+                return;
+            }
+            ASR::BaseWalkVisitor<expr_contains_functionCall_with_Nonscalar_return>::visit_expr(b);
+        }
+    };
+
 public:
 
     Allocator &al;
@@ -663,7 +574,7 @@ public:
     }
 
     void visit_String(const ASR::String_t &x){
-        if (x.m_len && expr_contains_functionCall_with_Nonscalar_return(x.m_len)) {
+        if (x.m_len && expr_contains_functionCall_with_Nonscalar_return::check(x.m_len)) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_len));
             { // Same as `this->call_replacer_()`. We did in here to workaround. In general this needs a refactor.
