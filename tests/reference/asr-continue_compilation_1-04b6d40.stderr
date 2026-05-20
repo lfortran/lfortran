@@ -1503,6 +1503,18 @@ semantic error: Missing actual argument for argument 'stat'
 652 |     a5 = missing_required_arg_func()
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: `asynchronous` must be of type String
+   --> tests/errors/continue_compilation_1.f90:655:69
+    |
+655 |     open(newunit=u, file="test.dat", status="replace", asynchronous=1)
+    |                                                                     ^ 
+
+semantic error: Duplicate value of `asynchronous` found
+   --> tests/errors/continue_compilation_1.f90:656:89
+    |
+656 |     open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
+    |                                                                                         ^^^^ 
+
 semantic error: No matching `operator(-)` found for this operand type
    --> tests/errors/continue_compilation_1.f90:662:18
     |

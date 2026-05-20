@@ -7437,7 +7437,7 @@ namespace Max {
             if (!ASR::is_a<ASR::Integer_t>(*arg_type_idx) 
                 && !ASR::is_a<ASR::Real_t>(*arg_type_idx) 
                 && !ASR::is_a<ASR::String_t>(*arg_type_idx)) { 
-                append_error(diag, "Arguments to min0 must be of real, integer or character type", loc);
+                append_error(diag, "Arguments to max0 must be of real, integer or character type", loc);
                 return nullptr;
             }
         }
