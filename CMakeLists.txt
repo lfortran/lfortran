@@ -329,6 +329,26 @@ if (WITH_LLVM)
     endif()
 endif()
 
+# Helper: configure the Fortran kernelspec.
+# On Emscripten, processes wasm_kernel.json.in; otherwise kernel.json.in.
+# Mirrors xeus-cpp's configure_kernel() pattern.
+function(configure_lfortran_kernel)
+    if(EMSCRIPTEN)
+        set(prefix "wasm_")
+    else()
+        set(prefix "")
+    endif()
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/${prefix}kernel.json.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/kernel.json"
+    )
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/lfortran-logo.svg"
+        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/logo-svg.svg"
+        COPYONLY
+    )
+endfunction()
+
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
@@ -336,17 +356,7 @@ if (WITH_XEUS)
     find_package(xeus-zmq 4.0.0 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
 
-    # Generate kernel.json with correct paths
-    configure_file (
-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/kernel.json.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/kernel.json"
-    )
-
-    # Generate logo-svg.svg with correct paths
-    configure_file (
-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/fortran/lfortran-logo.svg"
-        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/fortran/logo-svg.svg"
-    )
+    configure_lfortran_kernel()
 
     # Configuration and data directories for Jupyter and LFortran
     set(XJUPYTER_DATA_DIR "share/jupyter" CACHE STRING "Jupyter data directory")
@@ -383,18 +393,7 @@ if (XEUS_LFORTRAN_WASM_BUILD)
 
     set(HAVE_LFORTRAN_XEUS yes)
 
-    # Generate kernel.json for xlfortran (no argv path needed — kernel is a
-    # JS module loaded directly by JupyterLite)
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xlfortran/kernel.json.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xlfortran/kernel.json"
-    )
-
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xlfortran/lfortran-logo.svg"
-        "${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels/xlfortran/logo-svg.svg"
-        COPYONLY
-    )
+    configure_lfortran_kernel()
 
     set(XJUPYTER_DATA_DIR "share/jupyter" CACHE STRING "Jupyter data directory")
     set(XEUS_CALCSPEC_DIR ${CMAKE_CURRENT_BINARY_DIR}/share/jupyter/kernels)

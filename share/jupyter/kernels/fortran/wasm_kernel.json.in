@@ -1,5 +1,5 @@
 {
-    "display_name": "Fortran (xlfortran)",
+    "display_name": "Fortran",
     "argv": ["@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/xlfortran"],
     "language": "fortran",
     "kernel_protocol_version": "5.6.0",

@@ -9,7 +9,6 @@ set -e
 set -x
 
 export PREFIX=${PREFIX:-$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host}
-export SYSROOT_PATH=${SYSROOT_PATH:-$EMSDK/upstream/emscripten/cache/sysroot}
 
 mkdir -p build-wasm
 
@@ -28,10 +27,8 @@ emcmake cmake -S . -B build-wasm \
     -DWITH_ZLIB=no \
     -DCMAKE_INSTALL_PREFIX="$PREFIX" \
     -DCMAKE_FIND_ROOT_PATH="$PREFIX" \
-    -DSYSROOT_PATH="$SYSROOT_PATH" \
-    -DCMAKE_PREFIX_PATH="$PREFIX"\
+    -DCMAKE_PREFIX_PATH="$PREFIX" \
     -DLLVM_DIR="$PREFIX/lib/cmake/llvm" \
-    -DLLD_DIR="$PREFIX/lib/cmake/lld" \
-    -DBUILD_TESTING=OFF
+    -DLLD_DIR="$PREFIX/lib/cmake/lld"
 
 emmake make -C build-wasm install -j8
