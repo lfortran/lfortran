@@ -5201,3 +5201,7 @@ run = true
 filename = "no_main_program_3.f90"
 options = "--backend=cpp"
 run = true
+
+[[test]]
+filename = "implicit_interface_typing_combo_01.f90"
+asr_implicit_interface_and_typing = true
