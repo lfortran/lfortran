@@ -494,7 +494,7 @@ program continue_compilation_1
 
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
-    
+    print *, string(1:6)
     shape_ = [2, 3]
     matrix = reshape(source, shape_, pad=[0])
 
@@ -504,7 +504,7 @@ program continue_compilation_1
     print *, c%mymember
     ! c1 is Character
     print *, c1%mymember
-
+    print *, string(1:Z'100000003')
     print *, present(x,x)
     print *, present()
     print *, ieor(x)
