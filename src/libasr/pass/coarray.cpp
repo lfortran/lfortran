@@ -21,6 +21,22 @@ class PRIFInterface {
         Allocator &al;
         ASR::TranslationUnit_t &unit;
 
+        ASR::symbol_t* declare_variable(SymbolTable *symtab, const Location &loc,
+                                        const std::string &name, ASR::ttype_t *type,
+                                        ASR::intentType intent, ASR::symbol_t *type_decl,
+                                        ASR::abiType abi, ASR::accessType access,
+                                        ASR::presenceType presence, bool value_attr) {
+            ASRUtils::ASRBuilder b(al, loc);
+            b.VariableDeclaration(symtab, name, type, intent, type_decl, abi, value_attr);
+            ASR::symbol_t *sym = symtab->get_symbol(name);
+            LCOMPILERS_ASSERT(sym);
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            var->m_access = access;
+            var->m_presence = presence;
+            var->m_abi = abi;
+            return sym;
+        }
+
         ASR::symbol_t* get_or_create_prif_coarray_handle_struct(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string symbol_name = "prif_coarray_handle";
@@ -30,18 +46,13 @@ class PRIFInterface {
             }
 
             SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
-            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
-
-            ASR::symbol_t *info_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, struct_symtab, s2c(al, "info"), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default, cptr_type, nullptr,
-                    ASR::abiType::BindC, ASR::accessType::Private,
-                    ASR::presenceType::Required, false, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            struct_symtab->add_symbol(s2c(al, "info"), info_sym);
+            ASRUtils::ASRBuilder b(al, loc);
+            // info_sym might be required in future if we need to store additional information about the coarray handle. For now, it is not required as the PRIF runtime interface only requires a C pointer to the coarray data.
+            // ASR::ttype_t *cptr_type = b.CPtr();
+            // ASR::symbol_t *info_sym = declare_variable(
+            //     struct_symtab, loc, "info", cptr_type, ASR::intentType::Local,
+            //     nullptr, ASR::abiType::BindC, ASR::accessType::Private,
+            //     ASR::presenceType::Required, false);
 
             Vec<char*> members; members.reserve(al, 1);
             members.push_back(al, s2c(al, "info"));
@@ -67,15 +78,9 @@ class PRIFInterface {
                                      ASR::intentType intent, ASR::presenceType presence,
                                      bool value_attr) {
             ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
-            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, symtab, s2c(al, name), nullptr, 0,
-                    intent, nullptr, nullptr, ASR::storage_typeType::Default,
-                    struct_type, struct_sym, ASR::abiType::Source,
-                    ASR::accessType::Public, presence, value_attr, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            symtab->add_symbol(s2c(al, name), sym);
+            ASR::symbol_t *sym = declare_variable(
+                symtab, loc, name, struct_type, intent, struct_sym,
+                ASR::abiType::Source, ASR::accessType::Public, presence, value_attr);
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         }
 
@@ -90,9 +95,9 @@ class PRIFInterface {
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
             ASRUtils::ASRBuilder b(al, loc);
 
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *int32_type = int32;
+            ASR::ttype_t *int64_type = int64;
+            ASR::ttype_t *cptr_type = b.CPtr();
             ASR::expr_t *image_num = b.Variable(fn_symtab, "image_num", int32_type,
                                                ASR::intentType::In, nullptr,
                                                ASR::abiType::Source, true);
@@ -113,47 +118,24 @@ class PRIFInterface {
                 al, loc, 1, nullptr,
                 ASR::string_length_kindType::AssumedLength,
                 ASR::string_physical_typeType::DescriptorString));
-            ASR::ttype_t *errmsg_alloc_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
-                al, loc,
-                ASRUtils::TYPE(ASR::make_String_t(
-                    al, loc, 1, nullptr,
-                    ASR::string_length_kindType::DeferredLength,
-                    ASR::string_physical_typeType::DescriptorString))));
+            ASR::ttype_t *errmsg_alloc_type = allocatable_deferred_string();
 
-            ASR::symbol_t *stat_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, fn_symtab, s2c(al, "stat"), nullptr, 0,
-                    ASR::intentType::Out, nullptr, nullptr,
-                    ASR::storage_typeType::Default, int32_type, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Optional, false, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            fn_symtab->add_symbol(s2c(al, "stat"), stat_sym);
+            ASR::symbol_t *stat_sym = declare_variable(
+                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
             ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
 
-            ASR::symbol_t *errmsg_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, fn_symtab, s2c(al, "errmsg"), nullptr, 0,
-                    ASR::intentType::InOut, nullptr, nullptr,
-                    ASR::storage_typeType::Default, errmsg_type, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Optional, false, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            fn_symtab->add_symbol(s2c(al, "errmsg"), errmsg_sym);
+            ASR::symbol_t *errmsg_sym = declare_variable(
+                fn_symtab, loc, "errmsg", errmsg_type, ASR::intentType::InOut, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
             ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
 
-            ASR::symbol_t *errmsg_alloc_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, fn_symtab, s2c(al, "errmsg_alloc"), nullptr, 0,
-                    ASR::intentType::InOut, nullptr, nullptr,
-                    ASR::storage_typeType::Default, errmsg_alloc_type, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Optional, false, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            fn_symtab->add_symbol(s2c(al, "errmsg_alloc"), errmsg_alloc_sym);
+            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
+                fn_symtab, loc, "errmsg_alloc", errmsg_alloc_type, ASR::intentType::InOut, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
             ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
 
             Vec<ASR::expr_t*> args;
@@ -447,18 +429,13 @@ class PRIFInterface {
                 return existing;
             }
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = int32;
             // exit_code: integer(c_int), intent(out), optional
-            ASR::symbol_t *ec_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, fn_symtab, s2c(al, "exit_code"), nullptr, 0,
-                    ASR::intentType::Out, nullptr, nullptr,
-                    ASR::storage_typeType::Default, int32_type, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Optional, false, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            fn_symtab->add_symbol(s2c(al, "exit_code"), ec_sym);
+            ASR::symbol_t *ec_sym = declare_variable(
+                fn_symtab, loc, "exit_code", int32_type, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
             ASR::expr_t *ec_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ec_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
             args.push_back(al, ec_expr);
@@ -483,7 +460,7 @@ class PRIFInterface {
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1));
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::ttype_t *int32_type = int32;
             ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, loc, 1, nullptr,
                 ASR::string_length_kindType::AssumedLength,
@@ -491,28 +468,16 @@ class PRIFInterface {
             ASR::expr_t *quiet = b.Variable(fn_symtab, "quiet", logical_type,
                 ASR::intentType::In, nullptr, ASR::abiType::Source, true);
             // stop_code_int: integer(c_int), intent(in), optional
-            ASR::symbol_t *sci_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, fn_symtab, s2c(al, "stop_code_int"), nullptr, 0,
-                    ASR::intentType::In, nullptr, nullptr,
-                    ASR::storage_typeType::Default, int32_type, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Optional, true, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            fn_symtab->add_symbol(s2c(al, "stop_code_int"), sci_sym);
+            ASR::symbol_t *sci_sym = declare_variable(
+                fn_symtab, loc, "stop_code_int", int32_type, ASR::intentType::In, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, true);
             ASR::expr_t *sci = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sci_sym));
             // stop_code_char: character(*), intent(in), optional
-            ASR::symbol_t *scc_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, fn_symtab, s2c(al, "stop_code_char"), nullptr, 0,
-                    ASR::intentType::In, nullptr, nullptr,
-                    ASR::storage_typeType::Default, str_type, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Optional, true, false, false,
-                    nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, nullptr, 0));
-            fn_symtab->add_symbol(s2c(al, "stop_code_char"), scc_sym);
+            ASR::symbol_t *scc_sym = declare_variable(
+                fn_symtab, loc, "stop_code_char", str_type, ASR::intentType::In, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, true);
             ASR::expr_t *scc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, scc_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 3);
             args.push_back(al, quiet);
@@ -534,8 +499,8 @@ class PRIFInterface {
                                     Vec<ASR::stmt_t*> &new_body,
                                     ASR::stmt_t **old_body, size_t n_old_body) {
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *i64 = int64;
+            ASR::ttype_t *cptr = b.CPtr();
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
             ASR::symbol_t *alloc_sub = get_or_create_prif_allocate_coarray_sub(loc);
             for (auto &item : scope->get_scope()) {
@@ -547,29 +512,17 @@ class PRIFInterface {
                 // Create companion handle variable
                 std::string hname = vname + "__coarray_handle";
                 ASR::ttype_t *ht = ASRUtils::make_StructType_t_util(al, loc, handle_struct, true);
-                ASR::symbol_t *hsym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(
-                        al, loc, scope, s2c(al, hname), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default, ht, handle_struct,
-                        ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::presenceType::Required, false, false, false,
-                        nullptr, false, false, ASR::pass_attrType::NotMethod,
-                        nullptr, nullptr, 0));
-                scope->add_symbol(s2c(al, hname), hsym);
+                ASR::symbol_t *hsym = declare_variable(
+                    scope, loc, hname, ht, ASR::intentType::Local, handle_struct,
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false);
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym));
                 // Create companion data variable
                 std::string dname = vname + "__coarray_data";
-                ASR::symbol_t *dsym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(
-                        al, loc, scope, s2c(al, dname), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default, cptr, nullptr,
-                        ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::presenceType::Required, false, false, false,
-                        nullptr, false, false, ASR::pass_attrType::NotMethod,
-                        nullptr, nullptr, 0));
-                scope->add_symbol(s2c(al, dname), dsym);
+                ASR::symbol_t *dsym = declare_variable(
+                    scope, loc, dname, cptr, ASR::intentType::Local, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false);
                 ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym));
                 coarray_handle_map[vname] = {hexpr, dexpr};
                 // Build lcobounds and ucobounds from var->m_codims
