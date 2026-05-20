@@ -1898,7 +1898,15 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                     int repeat = atoi(repeat_str);
                     internal_free(repeat_str);
                     format_values_2 = (char**)internal_realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
-                    if (cformat[index] == '(') {
+                    if (tolower(cformat[index]) == 'h') {
+                        index++;
+                        if ((index + repeat) > format_len) {
+                            fprintf(stderr, "Error: Hollerith descriptor exceeds format string length\n");
+                            exit(1);
+                        }
+                        format_values_2[format_values_count++] = substring(cformat, start, index + repeat);
+                        index += repeat - 1;
+                    } else if (cformat[index] == '(') {
                         start = index;
                         index = find_matching_parentheses(format, format_len, index);
                         *item_start = format_values_count;
@@ -3106,6 +3114,18 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 if (result_len > content_end) content_end = result_len;
                 internal_free(inner_value);
                 internal_free(unescaped_value);
+            } else if (isdigit(value[0])) {
+                char *hollerith = strchr(value, 'h');
+                if (hollerith == NULL) {
+                    hollerith = strchr(value, 'H');
+                }
+                if (hollerith != NULL) {
+                    int64_t hollerith_len = (int64_t)strlen(hollerith + 1);
+                    result = write_to_result_at_pos(al, result, &result_extent, result_len,
+                        hollerith + 1, hollerith_len);
+                    result_len += hollerith_len;
+                    if (result_len > content_end) content_end = result_len;
+                }
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 // Advance position by 1 without overwriting any existing
                 // content. Only grow the buffer (padding with spaces) when
