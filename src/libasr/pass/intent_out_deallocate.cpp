@@ -444,20 +444,19 @@ public:
                     }
                 }
 
-                ASR::expr_t* var_expr = ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, arg_sym));
-                Vec<ASR::stmt_t*> cleanup;
-                cleanup.reserve(al, 1);
-                emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
-                    loc, logical_type, cleanup);
-                for (size_t k = 0; k < cleanup.size(); k++) {
-                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
-                        var_expr, arg_var->m_presence, cleanup[k]);
-                    dealloc_stmts.push_back(al, wrapped_stmt);
-                }
-            } else if (is_array_of_struct) {
-                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
+                // collect deallocation statements for all allocatable
+                // components nested at any depth within the struct hierarchy are handled recursively.
+                // @param parent_expr is the base access expression (e.g., arg, arg%member, etc.)
+                // @param parent_sym is the symbol (structSymbol) corresponding to parent_expr
+                // @param self pass self lambda to recurise call.
+                // TODO : Clean into regular function
+                auto collect_deallocs_of_struct = [&](auto self,
+                    ASR::Struct_t* st, ASR::expr_t* parent_expr, ASR::symbol_t* parent_sym) -> void {
+                    ASR::Struct_t* current_st = st;
+                    SymbolTable* sym_table = current_st->m_symtab;
+                    while (sym_table != nullptr) {
+                        for (auto& struct_member : sym_table->get_scope()) {
+                            if (!ASR::is_a<ASR::Variable_t>(*struct_member.second)) continue;
 
                 int n_dims = ASRUtils::extract_n_dims_from_ttype(arg_var->m_type);
 
