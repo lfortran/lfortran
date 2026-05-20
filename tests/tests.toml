@@ -2825,6 +2825,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "coarrays_03.f90"
+fortran = true
+pass = "coarray"
+
+[[test]]
 filename = "../integration_tests/program_03.f90"
 asr = true
 llvm = true
