@@ -2590,6 +2590,39 @@ public:
             V(c0, ct), V(im, ft), &fld1, 1);
     }
 
+    // z1 == z2 / z1 /= z2: compare both real and imaginary parts.
+    // Only Eq and NotEq are defined for complex in Fortran.
+    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_left); uint32_t lv = tmp;
+        visit_expr(*x.m_right); uint32_t rv = tmp;
+        lr_type_t *ct = get_type(ASRUtils::expr_type(x.m_left));
+        int kind = ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(x.m_left));
+        lr_type_t *ft = (kind == 4) ? ty_f32 : ty_f64;
+        uint32_t fld0 = 0, fld1 = 1;
+        uint32_t lre = lr_emit_extractvalue(s, ft, V(lv, ct), &fld0, 1);
+        uint32_t lim = lr_emit_extractvalue(s, ft, V(lv, ct), &fld1, 1);
+        uint32_t rre = lr_emit_extractvalue(s, ft, V(rv, ct), &fld0, 1);
+        uint32_t rim = lr_emit_extractvalue(s, ft, V(rv, ct), &fld1, 1);
+        if (x.m_op == ASR::cmpopType::Eq) {
+            uint32_t re_eq = lr_emit_fcmp(s, LR_FCMP_OEQ,
+                V(lre, ft), V(rre, ft));
+            uint32_t im_eq = lr_emit_fcmp(s, LR_FCMP_OEQ,
+                V(lim, ft), V(rim, ft));
+            tmp = lr_emit_and(s, ty_i1, V(re_eq, ty_i1), V(im_eq, ty_i1));
+        } else if (x.m_op == ASR::cmpopType::NotEq) {
+            uint32_t re_ne = lr_emit_fcmp(s, LR_FCMP_ONE,
+                V(lre, ft), V(rre, ft));
+            uint32_t im_ne = lr_emit_fcmp(s, LR_FCMP_ONE,
+                V(lim, ft), V(rim, ft));
+            tmp = lr_emit_or(s, ty_i1, V(re_ne, ty_i1), V(im_ne, ty_i1));
+        } else {
+            throw CodeGenError(
+                "liric: complex compare only supports == and /=");
+        }
+    }
+
     // z1 op z2 for complex z1, z2.  Inline Add/Sub/Mul/Div on the
     // {f,f} struct representation; sidestep the runtime helpers that
     // would force an alloca-and-out-param dance.  Pow is not handled
@@ -4828,6 +4861,35 @@ public:
             case ASR::cast_kindType::LogicalToLogical:
                 tmp = val;
                 break;
+            case ASR::cast_kindType::RealToComplex: {
+                // Pack real value into complex with 0.0 imaginary.
+                int64_t dst_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                lr_type_t *dst_ft = (dst_kind == 4) ? ty_f32 : ty_f64;
+                uint32_t re = val;
+                if (src_t != dst_ft) {
+                    re = (dst_ft == ty_f64)
+                        ? lr_emit_fpext(s, dst_ft, V(val, src_t))
+                        : lr_emit_fptrunc(s, dst_ft, V(val, src_t));
+                }
+                uint32_t fld0 = 0, fld1 = 1;
+                uint32_t c0 = lr_emit_insertvalue(s, dst_t,
+                    LR_UNDEF(dst_t), V(re, dst_ft), &fld0, 1);
+                tmp = lr_emit_insertvalue(s, dst_t,
+                    V(c0, dst_t), F(0.0, dst_ft), &fld1, 1);
+                break;
+            }
+            case ASR::cast_kindType::IntegerToComplex: {
+                // Convert integer to float then pack into complex.
+                int64_t dst_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                lr_type_t *dst_ft = (dst_kind == 4) ? ty_f32 : ty_f64;
+                uint32_t re = lr_emit_sitofp(s, dst_ft, V(val, src_t));
+                uint32_t fld0 = 0, fld1 = 1;
+                uint32_t c0 = lr_emit_insertvalue(s, dst_t,
+                    LR_UNDEF(dst_t), V(re, dst_ft), &fld0, 1);
+                tmp = lr_emit_insertvalue(s, dst_t,
+                    V(c0, dst_t), F(0.0, dst_ft), &fld1, 1);
+                break;
+            }
             case ASR::cast_kindType::ComplexToReal: {
                 // real(z) == ComplexRe(z): extract field 0; then adjust
                 // float width to the destination kind if it differs.
