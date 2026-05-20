@@ -367,6 +367,12 @@ semantic error: ‘shape’ argument of ‘reshape’ intrinsic has negative ele
 302 |     integer, parameter :: qval(2) = reshape([7, 8], -[z])
     |                                                     ^^^^ 
 
+semantic error: LEN parameters in parameterized derived types are not supported yet
+   --> tests/errors/continue_compilation_1.f90:305:9
+    |
+305 |         integer, len :: n
+    |         ^^^^^^^^^^^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
