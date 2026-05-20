@@ -7022,20 +7022,92 @@ found_offset:
                 tmp = lr_emit_add(s, rt, I(bound, rt), I(0, rt));
                 return;
             }
+            if (array_t->m_physical_type !=
+                    ASR::array_physical_typeType::DescriptorArray &&
+                    !const_dim) {
+                // FixedSize / Pointer array with runtime dim: chain
+                // selects over the n compile-time dims.
+                int64_t n_dims = (int64_t)array_t->n_dims;
+                visit_expr(*x.m_dim);
+                lr_type_t *dt = get_type(ASRUtils::expr_type(x.m_dim));
+                lr_type_t *rt = get_type(x.m_type);
+                uint32_t dim_v = (dt == rt) ? tmp
+                    : ((lr_type_width(s, dt) > lr_type_width(s, rt))
+                        ? lr_emit_trunc(s, rt, V(tmp, dt))
+                        : lr_emit_sext(s, rt, V(tmp, dt)));
+                uint32_t result = lr_emit_add(s, rt, I(0, rt), I(0, rt));
+                for (int64_t d = n_dims - 1; d >= 0; d--) {
+                    int64_t lbound = 1;
+                    if (array_t->m_dims[d].m_start) {
+                        ASRUtils::extract_value(
+                            array_t->m_dims[d].m_start, lbound);
+                    }
+                    int64_t length = 0;
+                    bool has_length = array_t->m_dims[d].m_length &&
+                        ASRUtils::extract_value(
+                            array_t->m_dims[d].m_length, length);
+                    int64_t bound = 0;
+                    if (x.m_bound == ASR::arrayboundType::LBound) {
+                        bound = (has_length && length == 0) ? 1 : lbound;
+                    } else {
+                        bound = (has_length && length == 0)
+                            ? 0 : (length + lbound - 1);
+                    }
+                    uint32_t is_d = lr_emit_icmp(s, LR_CMP_EQ,
+                        V(dim_v, rt), I((int64_t)(d + 1), rt));
+                    result = lr_emit_select(s, rt,
+                        V(is_d, ty_i1), I(bound, rt), V(result, rt));
+                }
+                tmp = result;
+                return;
+            }
         }
 
-        // Runtime path: read from descriptor.
+        // Runtime path: read from descriptor.  If the dim is also a
+        // runtime value, GEP into the descriptor with (dim-1)*DIM_BYTES
+        // + HEADER + DIM_{LBOUND,EXTENT}.
+        lr_type_t *rt = get_type(x.m_type);
+        uint32_t desc = desc_ptr_of(x.m_v);
         if (!const_dim) {
-            throw CodeGenError(
-                "liric: ArrayBound with runtime dim not supported");
+            visit_expr(*x.m_dim);
+            lr_type_t *dt = get_type(ASRUtils::expr_type(x.m_dim));
+            uint32_t dim_v = (dt == ty_i64)
+                ? tmp
+                : lr_emit_sext(s, ty_i64, V(tmp, dt));
+            uint32_t dim0 = lr_emit_sub(s, ty_i64,
+                V(dim_v, ty_i64), I(1, ty_i64));
+            uint32_t step = lr_emit_mul(s, ty_i64,
+                V(dim0, ty_i64), I(DESC_DIM_BYTES, ty_i64));
+            auto load_field = [&](int64_t field_off) {
+                uint32_t off = lr_emit_add(s, ty_i64,
+                    V(step, ty_i64),
+                    I(DESC_HEADER_BYTES + field_off, ty_i64));
+                lr_operand_desc_t gep[1] = {V(off, ty_i64)};
+                uint32_t p = lr_emit_gep(s, ty_i8,
+                    V(desc, ty_ptr), gep, 1);
+                return lr_emit_load(s, ty_i64, V(p, ty_ptr));
+            };
+            uint32_t lbound = load_field(DESC_DIM_LBOUND);
+            uint32_t res64;
+            if (x.m_bound == ASR::arrayboundType::LBound) {
+                res64 = lbound;
+            } else {
+                uint32_t extent = load_field(DESC_DIM_EXTENT);
+                uint32_t sum = lr_emit_add(s, ty_i64,
+                    V(lbound, ty_i64), V(extent, ty_i64));
+                res64 = lr_emit_sub(s, ty_i64,
+                    V(sum, ty_i64), I(1, ty_i64));
+            }
+            tmp = (rt == ty_i64)
+                ? res64
+                : lr_emit_trunc(s, rt, V(res64, ty_i64));
+            return;
         }
         int req_dim;
         ASRUtils::extract_value(x.m_dim, req_dim);
         req_dim--;
 
-        uint32_t desc = desc_ptr_of(x.m_v);
         uint32_t lbound = desc_dim_lbound(desc, req_dim);
-        lr_type_t *rt = get_type(x.m_type);
         uint32_t result;
         if (x.m_bound == ASR::arrayboundType::LBound) {
             result = lbound;
