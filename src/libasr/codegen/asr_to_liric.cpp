@@ -2669,6 +2669,17 @@ public:
         tmp = lr_emit_load(s, ty_ptr, V(tmp, ty_ptr));
     }
 
+    // GetPointer(arg): return the address of arg's storage.  Visit the
+    // arg as a target to skip the trailing load; the result is the
+    // ty_ptr-typed slot we'd otherwise dereference.  Used inside
+    // equivalence, c_loc, intrinsics that need by-pointer ABI, etc.
+    void visit_GetPointer(const ASR::GetPointer_t &x) {
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*x.m_arg);
+        is_target = was_target;
+    }
+
     // --- CPtrToPointer: store the c_ptr value into the Fortran ptr slot ---
 
     void visit_CPtrToPointer(const ASR::CPtrToPointer_t &x) {
