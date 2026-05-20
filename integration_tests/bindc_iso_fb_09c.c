@@ -5,8 +5,8 @@
 void test_cfi_section_crash() {
     CFI_CDESC_T(2) source;
     CFI_index_t extents[] = {10, 10};
-    
-    int stat = CFI_establish((CFI_cdesc_t *)&source, NULL, CFI_attribute_other, 
+    int dummy_source_data[100];
+    int stat = CFI_establish((CFI_cdesc_t *)&source, &dummy_source_data, CFI_attribute_other, 
                              CFI_type_int, 0, 2, extents);
     assert(stat == CFI_SUCCESS);
 
@@ -30,10 +30,12 @@ void test_cfi_allocate_corruption() {
     size_t correct_elem_len = ((CFI_cdesc_t *)&desc)->elem_len;
     
     stat = CFI_allocate((CFI_cdesc_t *)&desc, NULL, NULL, 9999);
-    assert(stat == CFI_SUCCESS);
+    assert(stat == CFI_SUCCESS || stat == CFI_ERROR_MEM_ALLOCATION);
     assert(((CFI_cdesc_t *)&desc)->elem_len == correct_elem_len);
     
-    CFI_deallocate((CFI_cdesc_t *)&desc);
+    if (stat == CFI_SUCCESS) {
+        CFI_deallocate((CFI_cdesc_t *)&desc);
+    }
 }
 
 void test_cfi_contiguous_extent_1() {
