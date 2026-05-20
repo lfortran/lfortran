@@ -2553,6 +2553,27 @@ public:
             V(c0, ct), F(x.m_im, ft), &fld1, 1);
     }
 
+    // real(z) / aimag(z): extract field 0/1 from the {f32,f32}/{f64,f64}
+    // complex value built by ComplexConstant/ComplexConstructor.
+    void visit_ComplexRe(const ASR::ComplexRe_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_arg);
+        uint32_t v = tmp;
+        lr_type_t *ct = get_type(ASRUtils::expr_type(x.m_arg));
+        lr_type_t *ft = get_type(x.m_type);
+        uint32_t fld0 = 0;
+        tmp = lr_emit_extractvalue(s, ft, V(v, ct), &fld0, 1);
+    }
+    void visit_ComplexIm(const ASR::ComplexIm_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_arg);
+        uint32_t v = tmp;
+        lr_type_t *ct = get_type(ASRUtils::expr_type(x.m_arg));
+        lr_type_t *ft = get_type(x.m_type);
+        uint32_t fld1 = 1;
+        tmp = lr_emit_extractvalue(s, ft, V(v, ct), &fld1, 1);
+    }
+
     // --- ComplexConstructor ---
 
     void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
@@ -4717,6 +4738,49 @@ public:
             case ASR::cast_kindType::LogicalToLogical:
                 tmp = val;
                 break;
+            case ASR::cast_kindType::ComplexToReal: {
+                // real(z) == ComplexRe(z): extract field 0; then adjust
+                // float width to the destination kind if it differs.
+                int64_t src_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(x.m_arg));
+                lr_type_t *src_ft = (src_kind == 4) ? ty_f32 : ty_f64;
+                uint32_t fld0 = 0;
+                uint32_t re = lr_emit_extractvalue(s, src_ft,
+                    V(val, src_t), &fld0, 1);
+                if (src_ft == dst_t) {
+                    tmp = re;
+                } else if (src_ft == ty_f32 && dst_t == ty_f64) {
+                    tmp = lr_emit_fpext(s, dst_t, V(re, src_ft));
+                } else {
+                    tmp = lr_emit_fptrunc(s, dst_t, V(re, src_ft));
+                }
+                break;
+            }
+            case ASR::cast_kindType::ComplexToComplex: {
+                if (src_t == dst_t) { tmp = val; break; }
+                int64_t src_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(x.m_arg));
+                int64_t dst_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                lr_type_t *src_ft = (src_kind == 4) ? ty_f32 : ty_f64;
+                lr_type_t *dst_ft = (dst_kind == 4) ? ty_f32 : ty_f64;
+                uint32_t fld0 = 0, fld1 = 1;
+                uint32_t re = lr_emit_extractvalue(s, src_ft,
+                    V(val, src_t), &fld0, 1);
+                uint32_t im = lr_emit_extractvalue(s, src_ft,
+                    V(val, src_t), &fld1, 1);
+                if (src_ft == ty_f32) {
+                    re = lr_emit_fpext(s, dst_ft, V(re, src_ft));
+                    im = lr_emit_fpext(s, dst_ft, V(im, src_ft));
+                } else {
+                    re = lr_emit_fptrunc(s, dst_ft, V(re, src_ft));
+                    im = lr_emit_fptrunc(s, dst_ft, V(im, src_ft));
+                }
+                uint32_t c0 = lr_emit_insertvalue(s, dst_t,
+                    LR_UNDEF(dst_t), V(re, dst_ft), &fld0, 1);
+                tmp = lr_emit_insertvalue(s, dst_t,
+                    V(c0, dst_t), V(im, dst_ft), &fld1, 1);
+                break;
+            }
             default:
                 throw CodeGenError(
                     std::string("liric: unsupported cast kind ")
