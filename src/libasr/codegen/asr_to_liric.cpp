@@ -7001,6 +7001,67 @@ found_offset:
         return lr_emit_load(s, ty_ptr, V(desc_ptr, ty_ptr));
     }
 
+    // reshape(arr, shape): for the common case where both source and
+    // result are contiguous (FixedSize / Pointer / Descriptor with
+    // matching element layout), the in-memory bytes are identical, so
+    // copy the linear element sequence into a fresh buffer with the
+    // result's static size.  Falls back to source pass-through when
+    // the result has no fixed size yet (deferred-shape allocatable).
+    void visit_ArrayReshape(const ASR::ArrayReshape_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+
+        ASR::ttype_t *src_t = ASRUtils::expr_type(x.m_array);
+        src_t = ASRUtils::type_get_past_allocatable_pointer(src_t);
+        ASR::ttype_t *res_t = ASRUtils::type_get_past_allocatable_pointer(
+            x.m_type);
+        ASR::Array_t *src_arr = ASR::is_a<ASR::Array_t>(*src_t)
+            ? ASR::down_cast<ASR::Array_t>(src_t) : nullptr;
+        ASR::Array_t *res_arr = ASR::is_a<ASR::Array_t>(*res_t)
+            ? ASR::down_cast<ASR::Array_t>(res_t) : nullptr;
+        if (!src_arr || !res_arr) {
+            throw CodeGenError("liric: reshape on non-array type");
+        }
+        ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(res_t);
+        elem_t = ASRUtils::type_get_past_allocatable_pointer(elem_t);
+        int64_t elem_sz = element_byte_size(elem_t);
+
+        int64_t src_n = ASRUtils::get_fixed_size_of_array(
+            src_arr->m_dims, src_arr->n_dims);
+        int64_t res_n = ASRUtils::get_fixed_size_of_array(
+            res_arr->m_dims, res_arr->n_dims);
+        if (res_n <= 0) res_n = src_n;
+        if (res_n <= 0) {
+            throw CodeGenError("liric: reshape with non-static target shape "
+                "not supported");
+        }
+        int64_t copy_n = (src_n > 0 && src_n < res_n) ? src_n : res_n;
+
+        // Materialise source pointer.
+        bool was_target = is_target;
+        is_target = true;
+        visit_expr(*x.m_array);
+        is_target = was_target;
+        uint32_t src_ptr = tmp;
+        if (src_arr->m_physical_type ==
+                ASR::array_physical_typeType::DescriptorArray) {
+            src_ptr = desc_base_addr(src_ptr);
+        }
+
+        // Allocate target buffer of res_n * elem_sz bytes.
+        uint32_t dst_ptr = emit_storage_alloca_nbytes(
+            (uint64_t)(res_n * elem_sz));
+
+        // memcpy(dst, src, copy_n * elem_sz).
+        lr_type_t *memcpy_params[] = {ty_ptr, ty_ptr, ty_i64};
+        declare_func("memcpy", ty_ptr, memcpy_params, 3, false);
+        lr_operand_desc_t margs[] = {
+            V(dst_ptr, ty_ptr), V(src_ptr, ty_ptr),
+            I(copy_n * elem_sz, ty_i64)
+        };
+        emit_call("memcpy", ty_ptr, margs, 3);
+        tmp = dst_ptr;
+    }
+
     // ArrayBroadcast: scalar -> n-element fixed-size array of copies.
     // Allocate a flat buffer of the result's fixed shape and fill every
     // slot with the same scalar value.  Mirrors the LLVM backend's
