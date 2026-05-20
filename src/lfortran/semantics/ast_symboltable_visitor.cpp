@@ -4651,8 +4651,12 @@ public:
 
                         ASRUtils::create_intrinsic_function create_func =
                             ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(arg);
-                        ASR::expr_t *call_value = ASRUtils::EXPR(create_func(al,
-                            x.m_args[i]->base.loc, call_args, diag));
+                        ASR::asr_t *call_value_asr = create_func(al,
+                            x.m_args[i]->base.loc, call_args, diag);
+                        if (call_value_asr == nullptr) {
+                            throw SemanticAbort();
+                        }
+                        ASR::expr_t *call_value = ASRUtils::EXPR(call_value_asr);
 
                         ASR::ttype_t *return_type = ASRUtils::duplicate_type(al,
                             ASRUtils::subs_expr_type(type_subs, f->m_return_var));
