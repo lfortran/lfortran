@@ -12,8 +12,8 @@
                                     5
                                     1_t_1_i
                                     3 i
-                                    t_1
-                                    []
+                                    derived_types_18_module_1
+                                    [t_1]
                                     i
                                     Public
                                 ),
@@ -32,8 +32,8 @@
                                     5
                                     1_t_2_r
                                     4 r
-                                    t_2
-                                    []
+                                    derived_types_18_module_1
+                                    [t_2]
                                     r
                                     Public
                                 ),
@@ -84,7 +84,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             type_2:
                                 (Variable
@@ -113,7 +113,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     derived_types_10
@@ -236,7 +236,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     t_1
@@ -285,7 +285,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     t_2

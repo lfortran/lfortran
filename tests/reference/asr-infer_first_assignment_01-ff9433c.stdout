@@ -24,7 +24,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 ),
             s:
                 (Variable
@@ -48,7 +48,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 ),
             x:
                 (Variable
@@ -72,7 +72,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 ),
             y:
                 (Variable
@@ -96,7 +96,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 ),
             z:
                 (Variable
@@ -120,7 +120,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 )
         })
     [(Assignment

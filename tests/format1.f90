@@ -68,14 +68,14 @@ program format_04
     print '(i0)', f, -f
     print 18, f, -f
     18 FORMAT (i0)
-    print '(d0.0,1x,d0.1,1x,d0.2)',a,b,c
+    print '(d1.1,1x,d0.1,1x,d0.2)',a,b,c
     print 19,a,b,c
-    19 FORMAT (d0. 0,1 x,d0.1,1x,d 0.2)
+    19 FORMAT (d1. 1,1 x,d0.1,1x,d 0.2)
     print 20, a, b, c
-    20 FORMAT (d 0. 0,1 x,d 0.1,1x, d 0.2)
-    print '(d0.0,1x,d0.1,1x,d0.2)',-a,-b,-c
+    20 FORMAT (d 1. 1,1 x,d 0.1,1x, d 0.2)
+    print '(d1.1,1x,d0.1,1x,d0.2)',-a,-b,-c
     print 21,-a,-b,-c
-    21 FORMAT (d 0.0,1x,d0.1,1x,d0.2)
+    21 FORMAT (d 1.1,1x,d0.1,1x,d0.2)
     print '("Hello")'
     print '( F13.3,1X,F9.6,1X, F0.2 )', r, s, t
     print 22, r, s, t

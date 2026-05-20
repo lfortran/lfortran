@@ -133,11 +133,25 @@ std::string get_line(std::string str, int n)
     return line;
 }
 
-void populate_span(diag::Span &s, const LocationManager &lm) {
-    lm.pos_to_linecol(lm.output_to_input_pos(s.loc.first, false),
-        s.first_line, s.first_column, s.filename);
-    lm.pos_to_linecol(lm.output_to_input_pos(s.loc.last, true),
-        s.last_line, s.last_column, s.filename);
+void populate_span(diag::Span &s, const LocationManager &lm,
+        bool skip_output_to_input = false) {
+    std::string first_filename, last_filename;
+    uint32_t first_pos = skip_output_to_input
+        ? s.loc.first : lm.output_to_input_pos(s.loc.first, false);
+    uint32_t last_pos = skip_output_to_input
+        ? s.loc.last : lm.output_to_input_pos(s.loc.last, true);
+    lm.pos_to_linecol(first_pos,
+        s.first_line, s.first_column, first_filename);
+    lm.pos_to_linecol(last_pos,
+        s.last_line, s.last_column, last_filename);
+    s.filename = first_filename;
+    if (first_filename != last_filename
+            || s.last_line < s.first_line
+            || (s.last_line == s.first_line
+                && s.last_column < s.first_column)) {
+        s.last_line = s.first_line;
+        s.last_column = s.first_column;
+    }
     std::string input;
     if (read_file(s.filename, input)) {
         for (uint32_t i = s.first_line; i <= s.last_line; i++) {
@@ -151,9 +165,13 @@ void populate_span(diag::Span &s, const LocationManager &lm) {
 
 // Loop over all labels and their spans, populate all of them
 void populate_spans(diag::Diagnostic &d, const LocationManager &lm) {
+    // Diagnostics emitted by the C preprocessor itself carry input-buffer
+    // offsets (not output-buffer offsets), so we must bypass the
+    // output->input remapping that LocationManager normally applies.
+    bool skip_output_to_input = (d.stage == diag::Stage::CPreprocessor);
     for (auto &l : d.labels) {
         for (auto &s : l.spans) {
-            populate_span(s, lm);
+            populate_span(s, lm, skip_output_to_input);
         }
     }
 }

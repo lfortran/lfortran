@@ -11,6 +11,7 @@ function main()
         end
         @label label_4
         j = j + i
+        @label label_5
     end
     @label label_6
     if j ≠ 53

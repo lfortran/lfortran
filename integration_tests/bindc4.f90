@@ -1,5 +1,5 @@
 program bindc4
-use iso_c_binding, only: c_associated, c_loc, c_ptr, c_f_pointer, c_null_ptr
+use iso_c_binding, only: c_associated, c_loc, c_ptr, c_f_pointer, c_null_ptr, c_intptr_t
 type(c_ptr) :: queries
 type(c_ptr) :: queries2 = c_null_ptr
 integer :: i, j
@@ -15,27 +15,27 @@ y => yv
 
 do i = lbound(x, 1), ubound(x, 1)
     do j = lbound(x, 2), ubound(x, 2)
-        print *, i, j, c_loc(x(i, j))
+        print *, i, j, transfer(c_loc(x(i, j)), 0_c_intptr_t)
     end do
 end do
 
 call c_f_pointer(queries, x, newshape)
 
-print *, c_loc(x), queries
+print *, transfer(c_loc(x), 0_c_intptr_t), transfer(queries, 0_c_intptr_t)
 
 do i = lbound(x, 1), ubound(x, 1)
     do j = lbound(x, 2), ubound(x, 2)
-        print *, i, j, c_loc(x(i, j))
+        print *, i, j, transfer(c_loc(x(i, j)), 0_c_intptr_t)
     end do
 end do
 
 call c_f_pointer(queries, x, [3, 4])
 
-print *, c_loc(x), queries
+print *, transfer(c_loc(x), 0_c_intptr_t), transfer(queries, 0_c_intptr_t)
 
 do i = lbound(x, 1), ubound(x, 1)
     do j = lbound(x, 2), ubound(x, 2)
-        print *, i, j, c_loc(x(i, j))
+        print *, i, j, transfer(c_loc(x(i, j)), 0_c_intptr_t)
     end do
 end do
 

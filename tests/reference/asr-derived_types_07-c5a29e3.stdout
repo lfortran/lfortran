@@ -17,8 +17,8 @@
                                                     13
                                                     1_toml_node_val
                                                     10 val
-                                                    toml_node
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_node]
                                                     val
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     13
                                                     1_toml_value_match_key
                                                     3 match_key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     match_key
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     13
                                                     1_toml_vector_lst
                                                     11 lst
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     lst
                                                     Public
                                                 ),
@@ -47,8 +47,8 @@
                                                     13
                                                     1_toml_vector_n
                                                     11 n
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     n
                                                     Public
                                                 ),
@@ -74,7 +74,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             key:
                                                 (Variable
@@ -98,7 +98,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             ptr:
                                                 (Variable
@@ -131,7 +131,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -182,7 +182,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     find
@@ -553,8 +553,8 @@
                                                     12
                                                     1_toml_vector_lst
                                                     11 lst
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     lst
                                                     Public
                                                 ),
@@ -563,8 +563,8 @@
                                                     12
                                                     1_toml_vector_n
                                                     11 n
-                                                    toml_vector
-                                                    []
+                                                    tomlf_structure_vector
+                                                    [toml_vector]
                                                     n
                                                     Public
                                                 ),
@@ -590,7 +590,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -641,7 +641,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     new_vector
@@ -799,7 +799,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_node
@@ -888,7 +888,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -912,7 +912,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_vector
@@ -980,8 +980,8 @@
                                                     8
                                                     1_toml_keyval_raw
                                                     7 raw
-                                                    toml_keyval
-                                                    []
+                                                    tomlf_type_keyval
+                                                    [toml_keyval]
                                                     raw
                                                     Public
                                                 ),
@@ -990,8 +990,8 @@
                                                     8
                                                     1_toml_value_key
                                                     3 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),
@@ -1024,7 +1024,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -1153,7 +1153,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_keyval
@@ -1234,7 +1234,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -1278,8 +1278,8 @@
                                                     5
                                                     1_toml_value_key
                                                     3 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),
@@ -1305,7 +1305,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             match:
                                                 (Variable
@@ -1329,7 +1329,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -1360,7 +1360,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     match_key
@@ -1482,7 +1482,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             match_key:
                                                 (StructMethodDeclaration

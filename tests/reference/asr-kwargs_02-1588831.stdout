@@ -28,8 +28,8 @@
                                                     4
                                                     1_logger_type_log_io_error
                                                     3 log_io_error
-                                                    logger_type
-                                                    []
+                                                    kwargs_02_stdlib_logger
+                                                    [logger_type]
                                                     log_io_error
                                                     Public
                                                 ),
@@ -55,7 +55,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -84,7 +84,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -108,7 +108,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     add_log_file
@@ -180,7 +180,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             filename:
                                                 (Variable
@@ -204,7 +204,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -233,7 +233,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -257,7 +257,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     log_io_error

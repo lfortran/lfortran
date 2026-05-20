@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             datetime:
                                                 (Variable
@@ -58,7 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             float:
                                                 (Variable
@@ -82,7 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             int:
                                                 (Variable
@@ -106,7 +106,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             invalid:
                                                 (Variable
@@ -130,7 +130,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -154,7 +154,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     enum_type
@@ -256,7 +256,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     derived_types_14_module
@@ -298,7 +298,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -322,7 +322,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     check
@@ -378,8 +378,8 @@
                                                     6
                                                     1_enum_type_boolean
                                                     5 boolean
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     boolean
                                                     Public
                                                 ),
@@ -388,8 +388,8 @@
                                                     6
                                                     1_enum_type_datetime
                                                     5 datetime
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     datetime
                                                     Public
                                                 ),
@@ -398,8 +398,8 @@
                                                     6
                                                     1_enum_type_float
                                                     5 float
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     float
                                                     Public
                                                 ),
@@ -408,8 +408,8 @@
                                                     6
                                                     1_enum_type_int
                                                     5 int
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     int
                                                     Public
                                                 ),
@@ -418,8 +418,8 @@
                                                     6
                                                     1_enum_type_invalid
                                                     5 invalid
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     invalid
                                                     Public
                                                 ),
@@ -428,8 +428,8 @@
                                                     6
                                                     1_enum_type_string
                                                     5 string
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     string
                                                     Public
                                                 ),
@@ -455,7 +455,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             vtype:
                                                 (Variable
@@ -479,7 +479,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_get_value_type

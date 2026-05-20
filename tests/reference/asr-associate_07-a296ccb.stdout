@@ -41,7 +41,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p2:
                                 (Variable
@@ -98,7 +98,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p3:
                                 (Variable
@@ -155,7 +155,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             t1:
                                 (Variable
@@ -179,7 +179,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             t2:
                                 (Variable
@@ -210,7 +210,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             t3:
                                 (Variable
@@ -241,7 +241,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     associate_07

@@ -17,8 +17,8 @@
                                                     13
                                                     1_git_target_t_object
                                                     12 object
-                                                    git_target_t
-                                                    []
+                                                    fpm_git
+                                                    [git_target_t]
                                                     object
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     13
                                                     1_git_target_t_url
                                                     12 url
-                                                    git_target_t
-                                                    []
+                                                    fpm_git
+                                                    [git_target_t]
                                                     url
                                                     Public
                                                 ),
@@ -54,7 +54,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -88,7 +88,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             url:
                                                 (Variable
@@ -112,7 +112,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     git_target_branch
@@ -207,7 +207,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             url:
                                                 (Variable
@@ -233,7 +233,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     git_target_t
@@ -313,7 +313,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             name:
                                                 (Variable
@@ -339,7 +339,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             path:
                                                 (Variable
@@ -365,7 +365,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     dependency_config_t
@@ -436,7 +436,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     error_t
@@ -537,7 +537,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             error:
                                                 (Variable
@@ -570,7 +570,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             root:
                                                 (Variable
@@ -594,7 +594,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             table:
                                                 (Variable
@@ -623,7 +623,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     new_dependencies
@@ -710,8 +710,8 @@
                                                     9
                                                     1_dependency_config_t_git
                                                     5 git
-                                                    dependency_config_t
-                                                    []
+                                                    fpm_manifest_dependency
+                                                    [dependency_config_t]
                                                     git
                                                     Public
                                                 ),
@@ -739,7 +739,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -786,7 +786,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             url:
                                                 (Variable
@@ -812,7 +812,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     new_dependency
@@ -995,7 +995,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_table

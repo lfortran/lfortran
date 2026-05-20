@@ -103,7 +103,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             messpr:
                                 (Function

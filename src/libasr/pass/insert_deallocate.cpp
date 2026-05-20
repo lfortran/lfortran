@@ -37,89 +37,6 @@ class CollectTempVarsVisitor : public ASR::BaseWalkVisitor<CollectTempVarsVisito
         }
 };
 
-// Insert implicit deallocate before Cycle, Return, or Exit in a loop
-class LoopDeallocateInserter : public ASR::CallReplacerOnExpressionsVisitor<LoopDeallocateInserter>
-{
-    Allocator &al;
-    ASR::stmt_t* node;
-    public:
-        LoopDeallocateInserter(Allocator& al_, ASR::stmt_t* node_) : al(al_), node(node_) {}
-
-        void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-            Vec<ASR::stmt_t*> new_body;
-            new_body.reserve(al, 1);
-            for (size_t i = 0; i < n_body; i++){
-                if (ASR::is_a<ASR::Cycle_t>(*m_body[i]) ||
-                    ASR::is_a<ASR::Return_t>(*m_body[i]) ||
-                    ASR::is_a<ASR::Exit_t>(*m_body[i])) {
-                    new_body.push_back(al, node);
-                }
-                new_body.push_back(al, m_body[i]);
-            }
-            m_body = new_body.p;
-            n_body = new_body.size();
-        }
-
-        // Don't nest into other loops
-        void visit_WhileLoop(const ASR::WhileLoop_t &/*x*/){
-        }
-
-        void visit_DoLoop(const ASR::DoLoop_t &/*x*/){
-        }
-};
-
-// Collects temporary variables in assignment targets inside loops and deallocates them when going out of the loop body
-class LoopTempVarDeallocateVisitor : public ASR::BaseWalkVisitor<LoopTempVarDeallocateVisitor>
-{
-    Allocator &al;
-    public:
-        LoopTempVarDeallocateVisitor(Allocator& al_) : al(al_) {}
-
-        template<typename T>
-        void collect_temp_vars_and_insert_deallocate_in_loop(T& xx) {
-            Vec<ASR::expr_t*> v;
-            v.reserve(al, 1);
-            CollectTempVarsVisitor c(al, v);
-            for (size_t i = 0; i < xx.n_body; i++) {
-                c.visit_stmt(*xx.m_body[i]);
-            }
-            if (v.size() > 0) {
-                ASR::stmt_t* implicit_deallocation_node = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
-                    al, xx.base.base.loc, v.p, v.size()));
-
-                // Insert ImplicitDeallocate after Cycle, Return, or Exit
-                LoopDeallocateInserter I(al, implicit_deallocation_node);
-                for (size_t i = 0; i < xx.n_body; i++) {
-                    I.visit_stmt(*xx.m_body[i]);
-                }
-
-                // Insert ImplicitDeallocate at the end of the loop body
-                Vec<ASR::stmt_t*> new_body;
-                new_body.reserve(al, 1);
-                for (size_t i = 0; i < xx.n_body; i++) {
-                    new_body.push_back(al, xx.m_body[i]);
-                }
-                new_body.push_back(al, implicit_deallocation_node);
-
-                xx.m_body = new_body.p;
-                xx.n_body = new_body.n;
-            }
-        }
-
-        void visit_WhileLoop(const ASR::WhileLoop_t &x){
-            ASR::WhileLoop_t &xx = const_cast<ASR::WhileLoop_t&>(x);
-            collect_temp_vars_and_insert_deallocate_in_loop(xx);
-
-            ASR::BaseWalkVisitor<LoopTempVarDeallocateVisitor>::visit_WhileLoop(x);
-        }
-
-        void visit_DoLoop(const ASR::DoLoop_t &x){
-            ASR::DoLoop_t &xx = const_cast<ASR::DoLoop_t&>(x);
-            collect_temp_vars_and_insert_deallocate_in_loop(xx);
-
-            ASR::BaseWalkVisitor<LoopTempVarDeallocateVisitor>::visit_DoLoop(x);
-        }
-};
 
 // Insert finalization calls before intrinsic assignment to non-pointer
 // variables of finalizable type (Fortran 2018 §7.5.6.3 ¶1):
@@ -145,6 +62,7 @@ public:
         if (ASRUtils::is_pointer(target_var->m_type)) return;
 
         bool is_alloc = ASRUtils::is_allocatable(target_var->m_type);
+        if (ASRUtils::is_array(target_var->m_type)) return;
 
         ASR::ttype_t* t = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_allocatable(target_var->m_type));
@@ -453,56 +371,84 @@ public:
                     }
                 }
 
-                SymbolTable* sym_table_of_struct = struct_type->m_symtab;
-                while (sym_table_of_struct != nullptr) {
-                    for (auto& struct_member : sym_table_of_struct->get_scope()) {
-                        if (ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
-                            ASRUtils::is_allocatable(ASRUtils::symbol_type(struct_member.second))) {
+                 // collect deallocation statements for all allocatable
+                // components nested at any depth within the struct hierarchy are handled recursively.
+                // @param parent_expr is the base access expression (e.g., arg, arg%member, etc.)
+                // @param parent_sym is the symbol (structSymbol) corresponding to parent_expr
+                // @param self pass self lambda to recurise call.
+                // TODO : Clean into regular function
+                auto collect_deallocs_of_struct = [&](auto self,
+                    ASR::Struct_t* st, ASR::expr_t* parent_expr, ASR::symbol_t* parent_sym) -> void {
+                    ASR::Struct_t* current_st = st;
+                    SymbolTable* sym_table = current_st->m_symtab;
+                    while (sym_table != nullptr) {
+                        for (auto& struct_member : sym_table->get_scope()) {
+                            if (!ASR::is_a<ASR::Variable_t>(*struct_member.second)) continue;
 
-                            // Create struct member access: arg%member
-                            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
-                            ASR::expr_t* member_expr = ASRUtils::EXPR(
-                                ASRUtils::getStructInstanceMember_t(al, loc,
-                                (ASR::asr_t*)var_expr, const_cast<ASR::symbol_t*>(arg_sym),
-                                struct_member.second, x.m_symtab));
+                            ASR::ttype_t* mem_type = ASRUtils::symbol_type(struct_member.second);
 
-                            // Create: if (allocated(arg%member)) deallocate(arg%member)
-                            Vec<ASR::expr_t*> allocated_args;
-                            allocated_args.reserve(al, 1);
-                            allocated_args.push_back(al, member_expr);
+                            if (ASRUtils::is_allocatable(mem_type)) {
+                                // Direct allocatable member: deallocate it
+                                ASR::expr_t* member_expr = ASRUtils::EXPR(
+                                    ASRUtils::getStructInstanceMember_t(al, loc,
+                                    (ASR::asr_t*)parent_expr, parent_sym,
+                                    struct_member.second, x.m_symtab));
 
-                            ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
-                                al, loc,
-                                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
-                                allocated_args.p, allocated_args.n, 0, logical_type, nullptr));
+                                Vec<ASR::expr_t*> allocated_args;
+                                allocated_args.reserve(al, 1);
+                                allocated_args.push_back(al, member_expr);
 
-                            // Create Deallocate statement for member
-                            Vec<ASR::expr_t*> dealloc_args;
-                            dealloc_args.reserve(al, 1);
-                            dealloc_args.push_back(al, member_expr);
-                            ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                                al, loc, dealloc_args.p, dealloc_args.n));
+                                ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
+                                    al, loc,
+                                    static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                                    allocated_args.p, allocated_args.n, 0, logical_type, nullptr));
 
-                            // Create If statement: if (allocated(arg%member)) deallocate(arg%member)
-                            Vec<ASR::stmt_t*> if_body;
-                            if_body.reserve(al, 1);
-                            if_body.push_back(al, dealloc_stmt);
-                            ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
-                                al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
+                                Vec<ASR::expr_t*> dealloc_args;
+                                dealloc_args.reserve(al, 1);
+                                dealloc_args.push_back(al, member_expr);
+                                ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                                    al, loc, dealloc_args.p, dealloc_args.n));
 
-                            // Wrap in optional presence check if needed (reuse var_expr from above)
-                            ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, var_expr, arg_var->m_presence, if_stmt);
-                            dealloc_stmts.push_back(al, wrapped_stmt);
+                                Vec<ASR::stmt_t*> if_body;
+                                if_body.reserve(al, 1);
+                                if_body.push_back(al, dealloc_stmt);
+                                ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                                    al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
+
+                                ASR::expr_t* root_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
+                                ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, root_var_expr, arg_var->m_presence, if_stmt);
+                                dealloc_stmts.push_back(al, wrapped_stmt);
+                            } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(mem_type))) {
+                                if (ASRUtils::is_array(mem_type)) continue;
+                                // Non-allocatable struct member: recurse into it
+                                ASR::Variable_t* mem_var = ASR::down_cast<ASR::Variable_t>(struct_member.second);
+                                if (!mem_var->m_type_declaration) continue;
+                                ASR::symbol_t* nested_struct_sym = ASRUtils::symbol_get_past_external(
+                                    mem_var->m_type_declaration);
+                                if (!ASR::is_a<ASR::Struct_t>(*nested_struct_sym)) continue;
+
+                                ASR::expr_t* member_expr = ASRUtils::EXPR(
+                                    ASRUtils::getStructInstanceMember_t(al, loc,
+                                    (ASR::asr_t*)parent_expr, parent_sym,
+                                    struct_member.second, x.m_symtab));
+
+                                 self(self,
+                                    ASR::down_cast<ASR::Struct_t>(nested_struct_sym),
+                                    member_expr, struct_member.second);
+                            }
+                        }
+                        if (current_st->m_parent != nullptr) {
+                            current_st = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(current_st->m_parent));
+                            sym_table = current_st->m_symtab;
+                        } else {
+                            sym_table = nullptr;
                         }
                     }
-                    if (struct_type->m_parent != nullptr) {
-                        struct_type = ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(struct_type->m_parent));
-                        sym_table_of_struct = struct_type->m_symtab;
-                    } else {
-                        sym_table_of_struct = nullptr;
-                    }
-                }
+                };
+
+                ASR::expr_t* base_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
+                collect_deallocs_of_struct(collect_deallocs_of_struct, struct_type, base_var_expr, arg_sym);
             }
         }
 
@@ -538,8 +484,6 @@ void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
     LHSFinalizationVisitor lhsf(al, unit.m_symtab);
     lhsf.visit_TranslationUnit(unit);
 
-    LoopTempVarDeallocateVisitor m(al);
-    m.visit_TranslationUnit(unit);
 
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

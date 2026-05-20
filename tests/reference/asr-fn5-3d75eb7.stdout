@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             line:
                                                 (Variable
@@ -58,7 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             pattern:
                                                 (Variable
@@ -82,7 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             strout:
                                                 (Variable
@@ -97,16 +97,10 @@
                                                     (String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(Var 3 length)
-                                                        (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(Var 3 line)]
-                                                                0
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                ()
-                                                            )
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(Var 3 line)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         )]
@@ -126,7 +120,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     atleast
@@ -141,20 +135,14 @@
                                                 (Integer 4)
                                                 ()
                                             )
-                                            (StringLen
-                                                (IntrinsicElementalFunction
-                                                    StringTrim
-                                                    [(FunctionParam
-                                                        0
-                                                        (String 1 () AssumedLength DescriptorString)
-                                                        ()
-                                                    )]
+                                            (IntrinsicElementalFunction
+                                                StringLenTrim
+                                                [(FunctionParam
                                                     0
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
-                                                )
+                                                )]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             )]
@@ -270,7 +258,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -294,7 +282,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             keywords:
                                                 (Variable
@@ -325,7 +313,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lfortran_iomsg:
                                                 (Variable
@@ -349,7 +337,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lfortran_iomsg1:
                                                 (Variable
@@ -373,7 +361,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             present_in:
                                                 (Variable
@@ -404,7 +392,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             shorts:
                                                 (Variable
@@ -435,7 +423,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             stop:
                                                 (Variable
@@ -459,7 +447,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             values:
                                                 (Variable
@@ -490,7 +478,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     print_dictionary
@@ -585,19 +573,13 @@
                                                         (Integer 4)
                                                         ()
                                                     )
-                                                    (StringLen
-                                                        (IntrinsicElementalFunction
-                                                            StringTrim
-                                                            [(StringConstant
-                                                                "KEYWORD"
-                                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                            )]
-                                                            0
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
+                                                    (IntrinsicElementalFunction
+                                                        StringLenTrim
+                                                        [(StringConstant
+                                                            "KEYWORD"
+                                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        )]
+                                                        0
                                                         (Integer 4)
                                                         ()
                                                     )]
@@ -713,24 +695,18 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (Var 4 i)
-                                                                    ())]
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (Var 4 i)
+                                                                ())]
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                                ColMajor
                                                                 ()
-                                                            )
+                                                            )]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         )]
@@ -833,24 +809,18 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        (StringLen
-                                                            (IntrinsicElementalFunction
-                                                                StringTrim
-                                                                [(ArrayItem
-                                                                    (Var 4 keywords)
-                                                                    [(()
-                                                                    (Var 4 i)
-                                                                    ())]
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                    ColMajor
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (Var 4 i)
+                                                                ())]
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                                ColMajor
                                                                 ()
-                                                            )
+                                                            )]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         )]

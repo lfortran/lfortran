@@ -247,7 +247,7 @@ program continue_compilation_1
     character(len=10, len=20) :: str_c_2
     character(len=10, 1) :: str_c_3
     character(1, len=20) :: str_c_4
-    character(:), allocatable :: x(2)
+    character(:), allocatable :: z_01(2)
     integer, dimension(:,:), allocatable :: arr_size
     logical :: mask_size(size(arr_size))
     integer, protected :: protected_attr_var
@@ -298,8 +298,8 @@ program continue_compilation_1
     contiguous :: contig_not_declared
     contiguous :: MyClass
     class(Derived), allocatable :: derived_cls
-
-
+    integer, parameter :: z(1) = 2
+    integer, parameter :: qval(2) = reshape([7, 8], -[z])
 
 
 
@@ -509,7 +509,7 @@ program continue_compilation_1
     print *, present()
     print *, ieor(x)
     print *, ieor()
-
+    print *, min(c, c)
     exit
 
     ! calling function with less arguments
@@ -647,11 +647,11 @@ program continue_compilation_1
     type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
     a(1) = .true.
     derived_cls = base_var
-
-
-
-
-
+    call print_len_non_char("  Hello World  ")
+    print  *, 9.99e+99
+    a5 = missing_required_arg_func()
+    integer :: m = 7
+    dimension :: m(3)
 
 
     contains
@@ -688,4 +688,49 @@ program continue_compilation_1
         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
         if (abs(arr1)(1) /= 2471095) error stop
     end subroutine
+
+    subroutine print_len_non_char(generic)
+        implicit none
+        class(*), intent(in) :: generic
+        integer :: a
+        a = 5
+        print *, len(generic)
+        print *, len(a)
+    end subroutine print_len_non_char
+
+    subroutine sub_write_unit_bad_type()
+        implicit none
+        real :: r
+        write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
+    end subroutine sub_write_unit_bad_type
+
+    subroutine sub_array_constant_character_to_integer()
+        implicit none
+        integer :: x(3)
+        x = [character(len=3) :: "aa", "bb", "aa"]
+    end subroutine sub_array_constant_character_to_integer
+
+    subroutine Z_01_sub()
+        integer,allocatable  :: x(3)
+        integer,pointer  :: y(3)
+    end subroutine
+
+    integer function missing_required_arg_func(stat)
+        integer, intent(out) :: stat
+        missing_required_arg_func = 0
+        stat = 0
+    end function
+    subroutine sub_common_block_nonconstant_lower_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(n:10)
+        common /common_nonconstant_lower_bound/ arr
+    end subroutine sub_common_block_nonconstant_lower_bound
+
+    subroutine sub_common_block_nonconstant_upper_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(1:n)
+        common /common_nonconstant_upper_bound/ arr
+    end subroutine sub_common_block_nonconstant_upper_bound
 end program
