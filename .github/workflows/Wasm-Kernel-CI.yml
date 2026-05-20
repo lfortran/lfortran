@@ -1,0 +1,95 @@
+name: Wasm Kernel CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  emscripten_wasm:
+    name: Emscripten WASM Kernel (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubu24
+            os: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # ── Step 1: Run build0.sh to generate parser/ASR headers ──
+      # build0.sh needs re2c, bison, and python with numpy, which are
+      # NOT part of the wasm-build environment. We use the standard
+      # lfortran CI environment for this step.
+      - name: Install build0 prerequisites
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: ci/environment_linux.yml
+          init-shell: bash
+          environment-name: lf
+
+      - name: Generate parser/ASR headers (build0.sh)
+        shell: bash -l {0}
+        run: |
+          set -ex
+          ./build0.sh
+
+      # ── Step 2: Set up the Emscripten/WASM build environment ──
+      - name: Install WASM build environment
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment-wasm-build.yml
+          init-shell: bash
+          environment-name: xeus-lfortran-wasm-build
+
+      - name: Setup ncpus
+        run: |
+          echo "ncpus=$(nproc --all)" >> $GITHUB_ENV
+
+      # ── Step 3: Create the WASM host environment and build ──
+      - name: Build WASM kernel
+        shell: bash -l {0}
+        run: |
+          set -ex
+
+          # Create the wasm host environment with emscripten-forge packages
+          micromamba create -f environment-wasm-host.yml \
+            --platform=emscripten-wasm32 \
+            -c https://prefix.dev/emscripten-forge-4x \
+            -c https://prefix.dev/conda-forge
+
+          export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
+          echo "PREFIX=$PREFIX" >> $GITHUB_ENV
+
+          # Run the wasm build script
+          ./wasm-build1.sh
+
+      # ── Step 4: Verify the build produced xlfortran.js/wasm ──
+      - name: Verify WASM artifacts
+        shell: bash -l {0}
+        run: |
+          set -ex
+          ls -la ${{ env.PREFIX }}/bin/xlfortran.js
+          ls -la ${{ env.PREFIX }}/bin/xlfortran.wasm
+
+      # ── Step 5: Test JupyterLite integration ──
+      - name: JupyterLite integration
+        shell: bash -l {0}
+        run: |
+          set -ex
+          micromamba create -n xeus-lite-host jupyterlite-xeus -c conda-forge
+          micromamba activate xeus-lite-host
+          jupyter lite build --XeusAddon.prefix=${{ env.PREFIX }}

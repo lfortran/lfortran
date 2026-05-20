@@ -1,0 +1,103 @@
+name: Build and Deploy JupyterLite
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+    - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build JupyterLite with LFortran WASM kernel
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # ── Step 1: Run build0.sh to generate parser/ASR headers ──
+      - name: Install build0 prerequisites
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: ci/environment_linux.yml
+          init-shell: bash
+          environment-name: lf
+
+      - name: Generate parser/ASR headers (build0.sh)
+        shell: bash -l {0}
+        run: |
+          set -ex
+          ./build0.sh
+
+      # ── Step 2: Set up the Emscripten/WASM build environment ──
+      - name: Install WASM build environment
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment-wasm-build.yml
+          init-shell: bash
+          environment-name: xeus-lfortran-wasm-build
+
+      - name: Setup ncpus
+        run: |
+          echo "ncpus=$(nproc --all)" >> $GITHUB_ENV
+
+      # ── Step 3: Create the WASM host environment and build ──
+      - name: Build WASM kernel
+        shell: bash -l {0}
+        run: |
+          set -ex
+
+          micromamba create -f environment-wasm-host.yml \
+            --platform=emscripten-wasm32 \
+            -c https://prefix.dev/emscripten-forge-4x \
+            -c https://prefix.dev/conda-forge
+
+          export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
+          echo "PREFIX=$PREFIX" >> $GITHUB_ENV
+
+          ./wasm-build1.sh
+
+      # ── Step 4: Build JupyterLite site ──
+      - name: Build JupyterLite
+        shell: bash -l {0}
+        run: |
+          set -ex
+          micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge
+          micromamba activate xeus-lite-host
+          jupyter lite build \
+              --XeusAddon.prefix=${{ env.PREFIX }} \
+              --output-dir dist
+
+      # ── Step 5: Upload artifact for deployment ──
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
