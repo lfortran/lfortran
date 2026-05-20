@@ -37,7 +37,7 @@ class PRIFInterface {
                     ASR::abiType::BindC, ASR::accessType::Private,
                     ASR::presenceType::Required, false, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             struct_symtab->add_symbol(s2c(al, "info"), info_sym);
 
             Vec<char*> members; members.reserve(al, 1);
@@ -71,7 +71,7 @@ class PRIFInterface {
                     struct_type, struct_sym, ASR::abiType::Source,
                     ASR::accessType::Public, presence, value_attr, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             symtab->add_symbol(s2c(al, name), sym);
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         }
@@ -125,7 +125,7 @@ class PRIFInterface {
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Optional, false, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             fn_symtab->add_symbol(s2c(al, "stat"), stat_sym);
             ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
 
@@ -137,7 +137,7 @@ class PRIFInterface {
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Optional, false, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             fn_symtab->add_symbol(s2c(al, "errmsg"), errmsg_sym);
             ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
 
@@ -149,7 +149,7 @@ class PRIFInterface {
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Optional, false, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             fn_symtab->add_symbol(s2c(al, "errmsg_alloc"), errmsg_alloc_sym);
             ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
 
@@ -454,7 +454,7 @@ class PRIFInterface {
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Optional, false, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             fn_symtab->add_symbol(s2c(al, "exit_code"), ec_sym);
             ASR::expr_t *ec_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ec_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
@@ -496,7 +496,7 @@ class PRIFInterface {
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Optional, true, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             fn_symtab->add_symbol(s2c(al, "stop_code_int"), sci_sym);
             ASR::expr_t *sci = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sci_sym));
             // stop_code_char: character(*), intent(in), optional
@@ -508,7 +508,7 @@ class PRIFInterface {
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Optional, true, false, false,
                     nullptr, false, false, ASR::pass_attrType::NotMethod,
-                    nullptr, 0, nullptr, 0, false));
+                    nullptr, nullptr, 0));
             fn_symtab->add_symbol(s2c(al, "stop_code_char"), scc_sym);
             ASR::expr_t *scc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, scc_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 3);
@@ -539,7 +539,7 @@ class PRIFInterface {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-                if (!var->m_is_coarray && var->n_codims == 0) continue;
+                if (var->n_codims == 0) continue;
                 std::string vname = var->m_name;
                 // Create companion handle variable
                 std::string hname = vname + "__coarray_handle";
@@ -552,7 +552,7 @@ class PRIFInterface {
                         ASR::abiType::Source, ASR::accessType::Public,
                         ASR::presenceType::Required, false, false, false,
                         nullptr, false, false, ASR::pass_attrType::NotMethod,
-                        nullptr, 0, nullptr, 0, false));
+                        nullptr, nullptr, 0));
                 scope->add_symbol(s2c(al, hname), hsym);
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym));
                 // Create companion data variable
@@ -565,12 +565,12 @@ class PRIFInterface {
                         ASR::abiType::Source, ASR::accessType::Public,
                         ASR::presenceType::Required, false, false, false,
                         nullptr, false, false, ASR::pass_attrType::NotMethod,
-                        nullptr, 0, nullptr, 0, false));
+                        nullptr, nullptr, 0));
                 scope->add_symbol(s2c(al, dname), dsym);
                 ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym));
                 coarray_handle_map[vname] = {hexpr, dexpr};
                 // Build lcobounds and ucobounds from var->m_codims
-                int64_t corank = var->m_corank > 0 ? var->m_corank : 1;
+                int64_t corank = var->n_codims > 0 ? var->n_codims : 1;
                 Vec<ASR::expr_t*> lco_elems; lco_elems.reserve(al, corank);
                 Vec<ASR::expr_t*> uco_elems; uco_elems.reserve(al, corank > 1 ? corank - 1 : 0);
                 for (int64_t ci = 0; ci < corank; ci++) {
@@ -758,7 +758,7 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-                if (var->m_is_coarray || var->n_codims > 0) return true;
+                if (var->n_codims > 0) return true;
             }
             return false;
         }
@@ -844,7 +844,7 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
         ASR::symbol_t *sym = item.second;
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-            if (var->m_is_coarray || var->n_codims > 0) {
+            if (var->n_codims > 0) {
                 has_coarrays = true;
                 break;
             }
@@ -853,7 +853,7 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
             for (auto &s : scope->get_scope()) {
                 if (ASR::is_a<ASR::Variable_t>(*s.second)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s.second);
-                    if (v->m_is_coarray || v->n_codims > 0) {
+                    if (v->n_codims > 0) {
                         has_coarrays = true;
                         break;
                     }
