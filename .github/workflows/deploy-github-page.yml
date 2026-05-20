@@ -42,11 +42,9 @@ jobs:
 
       # ── Step 2: Set up the Emscripten/WASM build environment ──
       - name: Install WASM build environment
-        uses: mamba-org/setup-micromamba@v2
-        with:
-          environment-file: environment-wasm-build.yml
-          init-shell: bash
-          environment-name: xeus-lfortran-wasm-build
+        shell: bash -l {0}
+        run: |
+          micromamba create -f environment-wasm-build.yml -y
 
       - name: Setup ncpus
         run: |
@@ -58,7 +56,7 @@ jobs:
         run: |
           set -ex
 
-          micromamba create -f environment-wasm-host.yml \
+          micromamba create -f environment-wasm-host.yml -y \
             --platform=emscripten-wasm32 \
             -c https://prefix.dev/emscripten-forge-4x \
             -c https://prefix.dev/conda-forge
@@ -66,16 +64,15 @@ jobs:
           export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
           echo "PREFIX=$PREFIX" >> $GITHUB_ENV
 
-          ./wasm-build1.sh
+          micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
 
       # ── Step 4: Build JupyterLite site ──
       - name: Build JupyterLite
         shell: bash -l {0}
         run: |
           set -ex
-          micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge
-          micromamba activate xeus-lite-host
-          jupyter lite build \
+          micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y
+          micromamba run -n xeus-lite-host jupyter lite build \
               --XeusAddon.prefix=${{ env.PREFIX }} \
               --output-dir dist
 
