@@ -4945,6 +4945,12 @@ public:
                 }
                 return;
             }
+            case ASRUtils::IntrinsicElementalFunctions::Exp:
+                emit_real_libm_unary(x, "expf", "exp");
+                return;
+            case ASRUtils::IntrinsicElementalFunctions::Exp2:
+                emit_real_libm_unary(x, "exp2f", "exp2");
+                return;
             default: break;
         }
         throw CodeGenError(std::string("liric: runtime intrinsic ")
@@ -4952,7 +4958,30 @@ public:
             + " not yet supported");
     }
 
-    // sqrt(x) -> libm sqrtf/sqrt
+    // Emit a single-arg real-typed libm call: pick float vs double variant
+    // by the arg's kind.  Common shape for sqrt/exp/log/trig.
+    void emit_real_libm_unary(const ASR::IntrinsicElementalFunction_t &x,
+                              const char *fname_f32,
+                              const char *fname_f64) {
+        if (x.n_args != 1) {
+            throw CodeGenError(std::string("liric: ")
+                + fname_f64 + "() expects one arg");
+        }
+        visit_expr(*x.m_args[0]);
+        uint32_t v = tmp;
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(x.m_args[0]));
+        lr_type_t *ft = (kind == 4) ? ty_f32 : ty_f64;
+        const char *fn = (kind == 4) ? fname_f32 : fname_f64;
+        lr_type_t *params[] = {ft};
+        declare_func(fn, ft, params, 1, false);
+        lr_operand_desc_t args[] = {V(v, ft)};
+        tmp = emit_call(fn, ft, args, 1);
+    }
+
+    // sqrt(x) -> libm sqrtf/sqrt.  RealSqrt is its own ASR node, separate
+    // from IntrinsicElementalFunction, so it doesn't share the helper above
+    // (different argument shape).
     void visit_RealSqrt(const ASR::RealSqrt_t &x) {
         if (x.m_value) { visit_expr(*x.m_value); return; }
         visit_expr(*x.m_arg);
