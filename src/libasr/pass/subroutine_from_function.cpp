@@ -516,8 +516,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             Allocator& al_,
             std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP,
             const LCompilers::PassOptions& pass_options_)
-            :al(al_), pass_options(pass_options_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP, pass_options_) // <--- PASSED IT TO REPLACER HERE
+            :al(al_), pass_options(pass_options_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP, pass_options_)
         {
+            (void)pass_options; 
             pass_result.n = 0;
             pass_result.reserve(al, 1);
             visit_expr_after_replacement = false;
