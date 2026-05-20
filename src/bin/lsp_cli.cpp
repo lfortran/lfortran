@@ -115,12 +115,12 @@ namespace LCompilers {
         test_output.SetArray();
 
         for (auto symbol : symbol_lists) {
-            // ExternalSymbol entries are compiler artifacts (mirror of
-            // `use`-imported symbols and synthetic member-access lookups).
-            // They should not appear in the document outline (see
-            // lfortran/lfortran-vscode-client#39). They remain in the
-            // underlying symbol list so completion can still reach them.
-            if (symbol.symbol_type == ASR::symbolType::ExternalSymbol) {
+            // Skip synthetic ExternalSymbol artifacts (member-access lookups,
+            // struct-instance shims) whose mangled names start with "1_".
+            // Real `use`-imported ExternalSymbols keep their source name and
+            // remain visible in the outline. See lfortran/lfortran-vscode-client#39.
+            if (symbol.symbol_type == ASR::symbolType::ExternalSymbol
+                    && symbol.symbol_name.rfind("1_", 0) == 0) {
                 continue;
             }
             uint32_t start_character = symbol.first_column;
