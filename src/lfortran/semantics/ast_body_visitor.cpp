@@ -3782,6 +3782,39 @@ public:
             }
         }
 
+        ASR::ttype_t* select_type = ASRUtils::expr_type(a_test);
+        auto check_case_expr_type = [&](ASR::expr_t* expr) {
+            if (!expr) {
+                return;
+            }
+            ASR::ttype_t* expr_type = ASRUtils::expr_type(expr);
+            if (ASRUtils::extract_type(select_type)->type != ASRUtils::extract_type(expr_type)->type) {
+                std::string type_str = ASRUtils::type_to_str_fortran_expr(expr_type, expr);
+                diag.add(Diagnostic(
+                    "Expression in case selector cannot be " + type_str,
+                    Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}));
+                throw SemanticAbort();
+            }
+        };
+        for (size_t i = 0; i < a_body_vec.size(); i++) {
+            ASR::case_stmt_t* case_stmt = a_body_vec[i];
+            switch (case_stmt->type) {
+                case ASR::case_stmtType::CaseStmt: {
+                    ASR::CaseStmt_t* case_expr = ASR::down_cast<ASR::CaseStmt_t>(case_stmt);
+                    for (size_t j = 0; j < case_expr->n_test; j++) {
+                        check_case_expr_type(case_expr->m_test[j]);
+                    }
+                    break;
+                }
+                case ASR::case_stmtType::CaseStmt_Range: {
+                    ASR::CaseStmt_Range_t* case_range = ASR::down_cast<ASR::CaseStmt_Range_t>(case_stmt);
+                    check_case_expr_type(case_range->m_end);
+                    check_case_expr_type(case_range->m_start);
+                    break;
+                }
+            }
+        }
+
         tmp = ASR::make_Select_t(al, x.base.base.loc, x.m_stmt_name, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
     }
