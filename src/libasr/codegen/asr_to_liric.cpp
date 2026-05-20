@@ -547,6 +547,21 @@ public:
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
         LIRIC_UNARY_REAL(x);
     }
+    // ~x  ==  x XOR -1  (matches the LLVM backend's CreateNot lowering).
+    void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_arg);
+        uint32_t v = tmp;
+        lr_type_t *t = get_type(x.m_type);
+        tmp = lr_emit_xor(s, t, V(v, t), I(-1, t));
+    }
+    void visit_UnsignedIntegerBitNot(const ASR::UnsignedIntegerBitNot_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_arg);
+        uint32_t v = tmp;
+        lr_type_t *t = get_type(x.m_type);
+        tmp = lr_emit_xor(s, t, V(v, t), I(-1, t));
+    }
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
         LIRIC_CMP_INT(x);
     }
@@ -6689,6 +6704,26 @@ found_offset:
     uint32_t desc_base_addr(uint32_t desc_ptr) {
         // base_addr is at offset 0, ty_ptr-sized.
         return lr_emit_load(s, ty_ptr, V(desc_ptr, ty_ptr));
+    }
+
+    // --- ArrayRank ---
+    //
+    // ASR records `n_dims` at the type level, including for descriptor
+    // arrays.  Lower as a compile-time integer constant of the requested
+    // kind.  This matches what asr_to_llvm does indirectly via
+    // `arr_descr->get_rank`, which for our descriptor layout would also
+    // return the static n_dims.
+
+    void visit_ArrayRank(const ASR::ArrayRank_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        ASR::ttype_t *vt = ASRUtils::expr_type(x.m_v);
+        vt = ASRUtils::type_get_past_allocatable_pointer(vt);
+        int64_t rank = 0;
+        if (ASR::is_a<ASR::Array_t>(*vt)) {
+            rank = (int64_t) ASR::down_cast<ASR::Array_t>(vt)->n_dims;
+        }
+        lr_type_t *t = get_type(x.m_type);
+        tmp = lr_emit_add(s, t, I(rank, t), I(0, t));
     }
 
     // --- ArrayBound ---
