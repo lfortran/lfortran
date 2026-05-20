@@ -4979,6 +4979,12 @@ public:
                     serial += "L" + std::to_string(
                         ASRUtils::extract_kind_from_ttype_t(at) * 8);
                     break;
+                case ASR::ttypeType::Complex: {
+                    std::string r = "R" + std::to_string(
+                        ASRUtils::extract_kind_from_ttype_t(at));
+                    serial += "{" + r + "," + r + "}";
+                    break;
+                }
                 case ASR::ttypeType::String: {
                     ASR::String_t *st = down_cast<ASR::String_t>(at);
                     serial += "S-";
