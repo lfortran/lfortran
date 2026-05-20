@@ -5208,6 +5208,8 @@ public:
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrSequence) {
                             // TODO: Implement it for CPP backend
+                        } else if (sa->m_attr == AST::simple_attributeType
+                                ::AttrAsynchronous) {                        
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute declaration not supported yet",
@@ -5648,6 +5650,9 @@ public:
                                     } else {
                                         assgnd_pointer.insert(sym);
                                     }
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrAsynchronous) {
+                                    // no-op: valid Fortran 2003, LFortran's runtime is synchronous
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",
@@ -7012,10 +7017,19 @@ public:
                                 is_volatile = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
                             } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
                                 // PDT kind parameter: treat as a Parameter variable
                                 is_kind_parameter = true;
                                 storage_type = ASR::storage_typeType::Parameter;
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrLen) {
+                                diag.add(Diagnostic(
+                                    "LEN parameters in parameterized derived types are not supported yet",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
+
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
