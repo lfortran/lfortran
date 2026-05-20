@@ -61,7 +61,7 @@
                     .false.
                     NotMethod
                     ()
-                    0
+                    []
                 )
         })
     []

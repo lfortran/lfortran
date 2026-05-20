@@ -1,13 +1,13 @@
 module mod_uop
     contains
     subroutine uop( sendbuf)
-        use iso_c_binding, only: c_loc, c_ptr, c_null_ptr, c_associated
+        use iso_c_binding, only: c_loc, c_ptr, c_null_ptr, c_associated, c_intptr_t
         real(8), dimension(:), intent(in), target :: sendbuf
         type(c_ptr) :: c_send
         c_send = c_null_ptr
         c_send = c_loc(sendbuf)
         
-        print *, 'C pointer: ', c_send
+        print *, 'C pointer: ', transfer(c_send, 0_c_intptr_t)
 
         if (.not. c_associated(c_send)) then
             error stop 'Error: c_send is null'

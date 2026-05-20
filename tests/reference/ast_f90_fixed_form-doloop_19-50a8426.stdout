@@ -1,0 +1,40 @@
+program doloop_19
+integer :: i, s
+s = 0
+do i = 1, 5
+    s = s + i
+end do
+if (s /= 15) then
+    error stop
+end if
+s = 0
+do i = 1, 5
+    if (i == 3) then
+        go to 1
+    end if
+    s = s + i
+1 end do
+if (s /= 12) then
+    error stop
+end if
+s = 0
+do i = 1, 5
+    if (i == 3) then
+        go to 2
+    end if
+    s = s + i
+2 end do
+if (s /= 12) then
+    error stop
+end if
+s = 0
+do i = 1, 5
+    if (i == 3) then
+        go to 3
+    end if
+    s = s + i
+3 end do
+if (s /= 12) then
+    error stop
+end if
+end program doloop_19

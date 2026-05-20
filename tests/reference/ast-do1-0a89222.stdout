@@ -194,10 +194,6 @@
                         "! nonlabeled do inside a labeled do"
                     )]
                 )
-            )
-            (Continue
-                50
-                ()
             )]
             ()
             (TriviaNode

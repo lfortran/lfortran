@@ -40,7 +40,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             factor:
                                 (Variable
@@ -70,7 +70,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             max_iter:
                                 (Variable
@@ -94,7 +94,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             method:
                                 (Variable
@@ -124,7 +124,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             tolerance:
                                 (Variable
@@ -154,7 +154,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             verbose:
                                 (Variable
@@ -184,7 +184,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     namelist_01

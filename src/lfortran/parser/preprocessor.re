@@ -513,7 +513,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "if" whitespace @t1 [^\n\x00]* @t2 newline {
+            "#" whitespace? "if" whitespace? @t1 [^\n\x00]* @t2 newline {
                 ConditionalDirective if_directive;
                 if_directive.active = branch_enabled;
                 if_directive.type = DirectiveType::If;
@@ -564,7 +564,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
             }
-            "#" whitespace? "elif" whitespace @t1 [^\n\x00]* @t2 newline  {
+            "#" whitespace? "elif" whitespace? @t1 [^\n\x00]* @t2 newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
                     loc.first = cur - string_start;
@@ -611,6 +611,30 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
 
                 interval_end_type_0(lm, output.size(), cur-string_start);
                 continue;
+            }
+            "#" whitespace? "warning" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
+                if (!branch_enabled) continue;
+                std::string msg = token(t1, t2);
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                diagnostics.add(diag::Diagnostic(
+                    "#warning " + msg, diag::Level::Warning,
+                    diag::Stage::CPreprocessor,
+                    { diag::Label("", {loc}) }));
+                interval_end_type_0(lm, output.size(), cur-string_start);
+                continue;
+            }
+            "#" whitespace? "error" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
+                if (!branch_enabled) continue;
+                std::string msg = token(t1, t2);
+                Location loc;
+                loc.first = tok - string_start;
+                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                throw PreprocessorError(diag::Diagnostic(
+                    "#error " + msg, diag::Level::Error,
+                    diag::Stage::CPreprocessor,
+                    { diag::Label("", {loc}) }));
             }
             "#" whitespace? "include" whitespace ["<] @t1 [^">\x00]* @t2 [">] [^\n\x00]* newline {
                 if (!branch_enabled) continue;
@@ -668,6 +692,18 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (!branch_enabled) continue;
                 std::string t = token(tok, cur);
                 if (macro_definitions.find(t) != macro_definitions.end()) {
+                    // Per C standard §6.10.3: a function-like macro name
+                    // not followed by ( is not treated as a macro invocation
+                    if (macro_definitions[t].function_like) {
+                        unsigned char *saved_cur = cur;
+                        while (*cur == ' ' || *cur == '\t') cur++;
+                        if (*cur != '(') {
+                            cur = saved_cur;
+                            output.append(t);
+                            continue;
+                        }
+                    }
+
                     // Prepare the start of the interval
                     interval_end_type_0(lm, output.size(), tok-string_start);
 
@@ -675,12 +711,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     std::string expansion;
                     if (macro_definitions[t].function_like) {
                         while (*cur == ' ' || *cur == '\t') cur++;
-                        if (*cur != '(') {
-                            Location loc;
-                            loc.first = cur - string_start;
-                            loc.last = loc.first;
-                            throw PreprocessorError("function-like macro invocation must have argument list", loc);
-                        }
                         std::vector<std::string> args;
                         args = parse_arguments(string_start, cur, false);
                         if (*cur != ')') {
@@ -990,6 +1020,8 @@ void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenTy
             end { type = CPPTokenType::TK_EOF; return; }
             newline { type = CPPTokenType::TK_EOF; return; }
             whitespace { continue; }
+            "//" [^\n\x00]* { continue; }
+            "/*" ([^*\x00] | "*"[^/\x00])* "*/" { continue; }
             "\\" whitespace? newline { continue; }
             "+" { type = CPPTokenType::TK_PLUS; return; }
             "-" { type = CPPTokenType::TK_MINUS; return; }
@@ -1198,12 +1230,11 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
         if (macro_definitions.find(str) != macro_definitions.end()) {
             std::string v;
             if (macro_definitions.at(str).function_like) {
+                unsigned char *saved_cur = cur;
                 while (*cur == ' ' || *cur == '\t') cur++;
                 if (*cur != '(') {
-                    Location loc;
-                    loc.first = cur - string_start;
-                    loc.last = loc.first;
-                    throw PreprocessorError("function-like macro invocation must have argument list", loc);
+                    cur = saved_cur;
+                    return 0;
                 }
                 std::vector<std::string> args;
                 args = parse_arguments(string_start, cur, false);

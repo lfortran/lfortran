@@ -17,8 +17,8 @@
                                                     4
                                                     1_toml_context_num
                                                     3 num
-                                                    toml_context
-                                                    []
+                                                    arrays_23
+                                                    [toml_context]
                                                     num
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     4
                                                     1_toml_context_ptr
                                                     3 ptr
-                                                    toml_context
-                                                    []
+                                                    arrays_23
+                                                    [toml_context]
                                                     ptr
                                                     Public
                                                 ),
@@ -63,7 +63,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lfortran_iomsg:
                                                 (Variable
@@ -87,7 +87,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             line_break:
                                                 (Variable
@@ -111,7 +111,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             message:
                                                 (Variable
@@ -137,7 +137,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             num:
                                                 (Variable
@@ -161,7 +161,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     add_context
@@ -391,7 +391,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             pos:
                                                 (Variable
@@ -415,7 +415,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             ptr:
                                                 (Variable
@@ -441,7 +441,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_context

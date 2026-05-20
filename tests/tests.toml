@@ -439,6 +439,14 @@ filename = "errors/cpp_err6.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/cpp_err7.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "warnings/cpp_warn1.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "errors/template_error_01a.f90"
 asr = true
 
@@ -628,6 +636,10 @@ filename = "preprocessor22.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor23.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true
@@ -786,6 +798,21 @@ llvm = true
 obj = true
 cpp = true
 x86 = true
+
+[[test]]
+filename = "errors/read_error_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "errors/read_error_02.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "read_iostat_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
 
 [[test]]
 filename = "program2.f90"
@@ -2968,6 +2995,13 @@ filename = "fixed_form_with_exit.f"
 ast = true
 
 [[test]]
+filename = "../integration_tests/doloop_19.f90"
+ast = true
+ast_f90 = true
+ast_fixed_form = true
+ast_f90_fixed_form = true
+
+[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 
@@ -3510,6 +3544,10 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_5.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_6.f"
 ast = true
 
 [[test]]
@@ -4056,6 +4094,10 @@ run = true
 
 [[test]]
 filename = "errors/scalar_allocation_check_06.f90"
+run = true
+
+[[test]]
+filename = "errors/scalar_allocation_check_07.f90"
 run = true
 
 [[test]]
@@ -5141,3 +5183,21 @@ asr = true
 [[test]]
 filename = "../integration_tests/arrays_107.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/read_83.f90"
+llvm = true
+
+[[test]]
+filename = "no_main_program_1.f90"
+run = true
+
+[[test]]
+filename = "no_main_program_2.f90"
+options = "--backend=c"
+run = true
+
+[[test]]
+filename = "no_main_program_3.f90"
+options = "--backend=cpp"
+run = true

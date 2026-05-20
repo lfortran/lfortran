@@ -24,8 +24,8 @@
                                                     4
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    string_17_string_module
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -51,7 +51,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -82,7 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     len_string
@@ -167,8 +167,8 @@
                                                     5
                                                     1_string_type_raw
                                                     3 raw
-                                                    string_type
-                                                    []
+                                                    string_17_string_module
+                                                    [string_type]
                                                     raw
                                                     Public
                                                 ),
@@ -202,7 +202,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -233,7 +233,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     maybe
@@ -354,7 +354,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     string_type

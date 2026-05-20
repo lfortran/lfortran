@@ -17,8 +17,8 @@
                                                     4
                                                     1_map_setiterator_i
                                                     3 i
-                                                    map_setiterator
-                                                    []
+                                                    gftl2_integer32complex32map
+                                                    [map_setiterator]
                                                     i
                                                     Public
                                                 ),
@@ -49,7 +49,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -78,7 +78,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             eq:
                                                 (Variable
@@ -102,7 +102,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     map_s_iter_equal
@@ -195,7 +195,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -224,7 +224,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             ne:
                                                 (Variable
@@ -248,7 +248,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     map_s_iter_not_equal
@@ -346,7 +346,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     map_setiterator
@@ -400,8 +400,8 @@
                                     6
                                     1_map_setiterator_i
                                     3 i
-                                    map_setiterator
-                                    []
+                                    gftl2_integer32complex32map
+                                    [map_setiterator]
                                     i
                                     Public
                                 ),
@@ -432,7 +432,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             iter2:
                                 (Variable
@@ -461,7 +461,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             map_s_iter_equal:
                                 (ExternalSymbol
