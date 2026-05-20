@@ -10140,11 +10140,6 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(root_v_type));
                 int64_t str_length;
                 if (ASRUtils::extract_value(s_type->m_len, str_length)) {
-                    if (start <= 0) {
-                        diag.add(Diagnostic("Substring `start` is less than one",
-                            Level::Error, Stage::Semantic, {Label("", {loc})}));
-                        throw SemanticAbort();
-                    }
                     if (end > str_length) {
                         diag.add(Diagnostic("Substring end index exceeds the string length",
                             Level::Error, Stage::Semantic, {Label("", {loc})}));
