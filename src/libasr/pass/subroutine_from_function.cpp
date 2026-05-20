@@ -284,7 +284,7 @@ class ReplaceFunctionCallWithSubroutineCall : public ASR::BaseExprReplacer<Repla
 private :
 
     Allocator & al;
-    const LCompilers::PassOptions& pass_options; // <--- WE ADDED THIS LINE
+    const LCompilers::PassOptions& pass_options; 
     int result_counter = 0;
     SymbolTable* &current_scope;
     Vec<ASR::stmt_t*> &pass_result;
