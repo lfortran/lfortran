@@ -970,6 +970,137 @@ public:
         lr_emit_store(s, V(d1, ty_str_desc), V(dst_ptr, ty_ptr));
     }
 
+    bool is_string_array_type(ASR::ttype_t *type,
+            ASR::Array_t **array_type = nullptr) {
+        type = ASRUtils::type_get_past_allocatable_pointer(type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) {
+            return false;
+        }
+        ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+        ASR::ttype_t *elem =
+            ASRUtils::type_get_past_allocatable_pointer(array->m_type);
+        elem = ASRUtils::type_get_past_array(elem);
+        if (!ASR::is_a<ASR::String_t>(*elem)) {
+            return false;
+        }
+        if (array_type) {
+            *array_type = array;
+        }
+        return true;
+    }
+
+    ASR::ttype_t *expr_storage_type(ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(expr);
+            ASR::symbol_t *sym =
+                ASRUtils::symbol_get_past_external(var->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                return ASR::down_cast<ASR::Variable_t>(sym)->m_type;
+            }
+        }
+        return ASRUtils::expr_type(expr);
+    }
+
+    void emit_copy_string_to_uninit_desc(uint32_t dst_ptr,
+                                         uint32_t src_desc) {
+        uint32_t fld0 = 0, fld1 = 1;
+        uint32_t src_data = lr_emit_extractvalue(s, ty_ptr,
+            V(src_desc, ty_str_desc), &fld0, 1);
+        uint32_t src_len = lr_emit_extractvalue(s, ty_i64,
+            V(src_desc, ty_str_desc), &fld1, 1);
+
+        uint32_t allocator = emit_call(
+            "_lfortran_get_default_allocator", ty_ptr, nullptr, 0);
+        lr_type_t *malloc_params[] = {ty_ptr, ty_i64};
+        declare_func("_lfortran_string_malloc_alloc", ty_ptr,
+            malloc_params, 2, false);
+        lr_operand_desc_t malloc_args[] = {
+            V(allocator, ty_ptr), V(src_len, ty_i64)
+        };
+        uint32_t dst_data = emit_call("_lfortran_string_malloc_alloc",
+            ty_ptr, malloc_args, 2);
+
+        lr_type_t *memcpy_params[] = {ty_ptr, ty_ptr, ty_i64};
+        declare_func("memcpy", ty_ptr, memcpy_params, 3, false);
+        lr_operand_desc_t memcpy_args[] = {
+            V(dst_data, ty_ptr), V(src_data, ty_ptr), V(src_len, ty_i64)
+        };
+        emit_call("memcpy", ty_ptr, memcpy_args, 3);
+
+        uint32_t d0 = lr_emit_insertvalue(s, ty_str_desc,
+            LR_UNDEF(ty_str_desc), V(dst_data, ty_ptr), &fld0, 1);
+        uint32_t d1 = lr_emit_insertvalue(s, ty_str_desc,
+            V(d0, ty_str_desc), V(src_len, ty_i64), &fld1, 1);
+        lr_emit_store(s, V(d1, ty_str_desc), V(dst_ptr, ty_ptr));
+    }
+
+    void emit_string_assignment_to_desc_slot(uint32_t dst_ptr,
+                                             uint32_t src_desc) {
+        uint32_t fld0 = 0;
+        uint32_t old_desc = lr_emit_load(s, ty_str_desc,
+            V(dst_ptr, ty_ptr));
+        uint32_t old_data = lr_emit_extractvalue(s, ty_ptr,
+            V(old_desc, ty_str_desc), &fld0, 1);
+        uint32_t data_null = lr_emit_icmp(s, LR_CMP_EQ,
+            V(old_data, ty_ptr), LR_NULL(ty_ptr));
+
+        uint32_t alloc_bb = lr_session_block(s);
+        uint32_t copy_bb = lr_session_block(s);
+        uint32_t done_bb = lr_session_block(s);
+        lr_emit_condbr(s, V(data_null, ty_i1), alloc_bb, copy_bb);
+
+        lr_error_t err;
+        lr_session_set_block(s, alloc_bb, &err);
+        emit_copy_string_to_uninit_desc(dst_ptr, src_desc);
+        lr_emit_br(s, done_bb);
+
+        lr_session_set_block(s, copy_bb, &err);
+        emit_string_copy_padded(old_desc, src_desc);
+        lr_emit_br(s, done_bb);
+
+        lr_session_set_block(s, done_bb, &err);
+    }
+
+    uint32_t emit_string_array_len(ASR::expr_t *arg,
+                                   ASR::Array_t *array_type) {
+        ASR::String_t *string_t =
+            ASRUtils::get_string_type(array_type->m_type);
+        int64_t fixed_len = 0;
+        bool has_fixed_len = string_t->m_len &&
+            ASRUtils::extract_value(string_t->m_len, fixed_len);
+        uint32_t fallback = emit_i64_const(has_fixed_len ? fixed_len : 0);
+
+        if (array_type->m_physical_type !=
+                ASR::array_physical_typeType::DescriptorArray) {
+            return fallback;
+        }
+
+        uint32_t desc = desc_ptr_of(arg);
+        uint32_t extent = desc_dim_extent(desc, 0);
+        uint32_t len_slot = lr_emit_alloca(s, ty_i64);
+        lr_emit_store(s, V(fallback, ty_i64), V(len_slot, ty_ptr));
+
+        uint32_t nonempty = lr_emit_icmp(s, LR_CMP_SGT,
+            V(extent, ty_i64), I(0, ty_i64));
+        uint32_t load_bb = lr_session_block(s);
+        uint32_t done_bb = lr_session_block(s);
+        lr_emit_condbr(s, V(nonempty, ty_i1), load_bb, done_bb);
+
+        lr_error_t err;
+        lr_session_set_block(s, load_bb, &err);
+        uint32_t base = desc_base_addr(desc);
+        uint32_t first_desc = lr_emit_load(s, ty_str_desc,
+            V(base, ty_ptr));
+        uint32_t fld1 = 1;
+        uint32_t len64 = lr_emit_extractvalue(s, ty_i64,
+            V(first_desc, ty_str_desc), &fld1, 1);
+        lr_emit_store(s, V(len64, ty_i64), V(len_slot, ty_ptr));
+        lr_emit_br(s, done_bb);
+
+        lr_session_set_block(s, done_bb, &err);
+        return lr_emit_load(s, ty_i64, V(len_slot, ty_ptr));
+    }
+
     bool target_is_dummy_argument(ASR::expr_t *target) {
         if (ASR::is_a<ASR::Var_t>(*target)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
@@ -991,11 +1122,14 @@ public:
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        ASR::ttype_t *target_expr_type = ASRUtils::expr_type(x.m_target);
+        ASR::ttype_t *target_expr_type = expr_storage_type(x.m_target);
+        ASR::ttype_t *target_naked =
+            ASRUtils::type_get_past_allocatable_pointer(target_expr_type);
+        bool target_is_array = ASR::is_a<ASR::Array_t>(*target_naked);
         ASR::ttype_t *target_type = ASRUtils::expr_type(x.m_target);
         target_type = ASRUtils::type_get_past_allocatable_pointer(target_type);
         target_type = ASRUtils::type_get_past_array(target_type);
-        if (ASR::is_a<ASR::String_t>(*target_type)) {
+        if (!target_is_array && ASR::is_a<ASR::String_t>(*target_type)) {
             if (is_string_section_target(x.m_target)) {
                 visit_expr(*x.m_value);
                 uint32_t rhs = tmp;
@@ -1013,6 +1147,8 @@ public:
             uint32_t dst = tmp;
             if (ASRUtils::is_allocatable(target_expr_type)) {
                 emit_allocatable_string_assignment(dst, rhs);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                emit_string_assignment_to_desc_slot(dst, rhs);
             } else {
                 uint32_t dst_desc = lr_emit_load(s, ty_str_desc,
                     V(dst, ty_ptr));
@@ -3598,11 +3734,17 @@ public:
 
     void visit_StringLen(const ASR::StringLen_t &x) {
         LIRIC_PASSTHROUGH(x)
-        visit_expr(*x.m_arg);
-        uint32_t desc = tmp;
-        uint32_t idx = 1;
-        uint32_t len64 = lr_emit_extractvalue(s, ty_i64,
-            V(desc, ty_str_desc), &idx, 1);
+        ASR::Array_t *array_type = nullptr;
+        uint32_t len64;
+        if (is_string_array_type(expr_storage_type(x.m_arg), &array_type)) {
+            len64 = emit_string_array_len(x.m_arg, array_type);
+        } else {
+            visit_expr(*x.m_arg);
+            uint32_t desc = tmp;
+            uint32_t idx = 1;
+            len64 = lr_emit_extractvalue(s, ty_i64,
+                V(desc, ty_str_desc), &idx, 1);
+        }
         lr_type_t *rt = get_type(x.m_type);
         if (rt == ty_i64) {
             tmp = len64;
