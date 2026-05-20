@@ -1,3 +1,7 @@
+#include <stdlib.h> 
+
+#define _lfortran_cfi_calloc calloc
+#define _lfortran_cfi_free free
 #include "../src/libasr/runtime/ISO_Fortran_binding.h"
 #include <assert.h>
 #include <stddef.h>
@@ -33,6 +37,7 @@ void test_cfi_allocate_corruption() {
     assert(stat == CFI_SUCCESS);
 
     size_t correct_elem_len = ((CFI_cdesc_t *)&desc)->elem_len;
+    
     CFI_index_t alloc_lower[] = {0};
     CFI_index_t alloc_upper[] = {9};
     
