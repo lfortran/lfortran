@@ -2633,6 +2633,7 @@ RUN(NAME associate_50 LABELS gfortran llvm)
 RUN(NAME associate_51 LABELS gfortran llvm)
 
 RUN(NAME associate_52 LABELS gfortran llvm)
+RUN(NAME associate_53 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3113,6 +3114,7 @@ RUN(NAME class_allocate_05 LABELS gfortran llvm)
 RUN(NAME class_allocate_06 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_allocate_07 LABELS gfortran llvm)
 RUN(NAME class_allocate_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME class_allocate_09 LABELS gfortran llvm)
 RUN(NAME class_optional_01 LABELS gfortran llvm)
 RUN(NAME empty_array_01 LABELS gfortran llvm)
 
