@@ -281,10 +281,10 @@ public :
 
 class ReplaceFunctionCallWithSubroutineCall : public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
 
-
 private :
 
     Allocator & al;
+    const LCompilers::PassOptions& pass_options; // <--- WE ADDED THIS LINE
     int result_counter = 0;
     SymbolTable* &current_scope;
     Vec<ASR::stmt_t*> &pass_result;
@@ -294,11 +294,13 @@ private :
 public:
 
     ReplaceFunctionCallWithSubroutineCall(
-        Allocator                                           &al_,
-        SymbolTable*                                        &current_scope,
-        Vec<ASR::stmt_t*>                                   &pass_result_,
-        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP) 
+        Allocator                                                   &al_,
+        SymbolTable* &current_scope,
+        Vec<ASR::stmt_t*>                                           &pass_result_,
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP,
+        const LCompilers::PassOptions& pass_options_) 
         :al(al_),
+         pass_options(pass_options_), 
          current_scope(current_scope),
          pass_result(pass_result_),
          Function__TO__ReturnType_MAP_(Function__TO__ReturnType_MAP) {}
@@ -471,6 +473,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
     private:
 
         Allocator& al;
+        const LCompilers::PassOptions& pass_options; 
         Vec<ASR::stmt_t*> pass_result;
         ReplaceFunctionCallWithSubroutineCall replacer;
         bool remove_original_statement = false;
@@ -511,8 +514,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
         ReplaceFunctionCallWithSubroutineCallVisitor(
             Allocator& al_,
-            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP)
-            :al(al_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP)
+            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP,
+            const LCompilers::PassOptions& pass_options_)
+            :al(al_), pass_options(pass_options_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP, pass_options_) // <--- PASSED IT TO REPLACER HERE
         {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
@@ -758,7 +762,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                         // destination's lower bounds must be reset to 1 (intrinsic-assignment
                         // semantics for an allocatable LHS receiving a function result).
                         assignment->m_move_allocation = true;
-                        assignment->m_realloc_lhs = true;
+                        assignment->m_realloc_lhs = pass_options.realloc_lhs_arrays;
                     }
                 } else {
                     ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
@@ -849,12 +853,14 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 };
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
-                                          const LCompilers::PassOptions& /*pass_options*/) {
+                                          const LCompilers::PassOptions& pass_options) {
     std::unordered_map<ASR::Function_t*, ASR::ttype_t*> Function__TO__ReturnType_MAP;
     CreateFunctionFromSubroutine v(al,Function__TO__ReturnType_MAP);
     v.visit_TranslationUnit(unit);
-    ReplaceFunctionCallWithSubroutineCallVisitor u(al, Function__TO__ReturnType_MAP);
+    
+    ReplaceFunctionCallWithSubroutineCallVisitor u(al, Function__TO__ReturnType_MAP, pass_options); 
     u.visit_TranslationUnit(unit);
+    
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }
