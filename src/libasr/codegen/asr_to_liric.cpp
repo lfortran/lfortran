@@ -7072,15 +7072,37 @@ found_offset:
 
         if (array_t->m_physical_type !=
                 ASR::array_physical_typeType::DescriptorArray) {
+            // Runtime dim on a FixedSize/Pointer array: dims are
+            // compile-time but the selector isn't.  Emit a chain of
+            // selects: (dim==1 ? ext_0 : (dim==2 ? ext_1 : ...)).
+            if (x.m_dim && !ASRUtils::is_value_constant(x.m_dim)) {
+                visit_expr(*x.m_dim);
+                lr_type_t *dt = get_type(ASRUtils::expr_type(x.m_dim));
+                lr_type_t *rt = get_type(x.m_type);
+                uint32_t dim_v = (dt == rt) ? tmp
+                    : ((lr_type_width(s, dt) > lr_type_width(s, rt))
+                        ? lr_emit_trunc(s, rt, V(tmp, dt))
+                        : lr_emit_sext(s, rt, V(tmp, dt)));
+                uint32_t result = lr_emit_add(s, rt, I(0, rt), I(0, rt));
+                for (int64_t d = n_dims - 1; d >= 0; d--) {
+                    int64_t extent = 1;
+                    if (array_t->m_dims[d].m_length) {
+                        ASRUtils::extract_value(
+                            array_t->m_dims[d].m_length, extent);
+                    }
+                    uint32_t is_d = lr_emit_icmp(s, LR_CMP_EQ,
+                        V(dim_v, rt), I((int64_t)(d + 1), rt));
+                    result = lr_emit_select(s, rt,
+                        V(is_d, ty_i1), I(extent, rt), V(result, rt));
+                }
+                tmp = result;
+                return;
+            }
             int64_t start_dim = 0;
             int64_t end_dim = n_dims;
             if (x.m_dim) {
                 int req_dim;
-                if (!ASRUtils::is_value_constant(x.m_dim) ||
-                        !ASRUtils::extract_value(x.m_dim, req_dim)) {
-                    throw CodeGenError(
-                        "liric: ArraySize with runtime dim not supported");
-                }
+                ASRUtils::extract_value(x.m_dim, req_dim);
                 start_dim = req_dim - 1;
                 end_dim = req_dim;
             }
@@ -7100,15 +7122,39 @@ found_offset:
 
         uint32_t desc = desc_ptr_of(x.m_v);
 
+        // Runtime-dim path: compute (dim - 1) * DIM_BYTES + DIM_EXTENT
+        // + HEADER and load extent[dim - 1] from the descriptor.
+        if (x.m_dim && !ASRUtils::is_value_constant(x.m_dim)) {
+            visit_expr(*x.m_dim);
+            lr_type_t *dt = get_type(ASRUtils::expr_type(x.m_dim));
+            uint32_t dim_v = (dt == ty_i64)
+                ? tmp
+                : lr_emit_sext(s, ty_i64, V(tmp, dt));
+            uint32_t dim0 = lr_emit_sub(s, ty_i64,
+                V(dim_v, ty_i64), I(1, ty_i64));
+            uint32_t step = lr_emit_mul(s, ty_i64,
+                V(dim0, ty_i64), I(DESC_DIM_BYTES, ty_i64));
+            uint32_t off = lr_emit_add(s, ty_i64,
+                V(step, ty_i64),
+                I(DESC_HEADER_BYTES + DESC_DIM_EXTENT, ty_i64));
+            lr_operand_desc_t gep[1] = {V(off, ty_i64)};
+            uint32_t p = lr_emit_gep(s, ty_i8,
+                V(desc, ty_ptr), gep, 1);
+            uint32_t ext = lr_emit_load(s, ty_i64, V(p, ty_ptr));
+            lr_type_t *rt2 = get_type(x.m_type);
+            if (rt2 == ty_i64) {
+                tmp = ext;
+            } else {
+                tmp = lr_emit_trunc(s, rt2, V(ext, ty_i64));
+            }
+            return;
+        }
+
         int64_t start_dim = 0;
         int64_t end_dim = n_dims;
         if (x.m_dim) {
             int req_dim;
-            if (!ASRUtils::is_value_constant(x.m_dim) ||
-                    !ASRUtils::extract_value(x.m_dim, req_dim)) {
-                throw CodeGenError(
-                    "liric: ArraySize with runtime dim not supported");
-            }
+            ASRUtils::extract_value(x.m_dim, req_dim);
             start_dim = req_dim - 1;
             end_dim = req_dim;
         }
