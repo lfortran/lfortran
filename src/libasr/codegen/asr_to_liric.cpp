@@ -467,7 +467,73 @@ public:
         LIRIC_BINOP_INT(x, lr_emit_udiv);
     }
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
-        LIRIC_BINOP_REAL(x);
+        if (x.m_op != ASR::binopType::Pow) {
+            LIRIC_BINOP_REAL(x);
+            return;
+        }
+        LIRIC_PASSTHROUGH(x)
+        // Real ** {Integer, Real}.  Expand small integer constant
+        // exponents to a chain of multiplies (matches LLVM backend's
+        // fast path) and fall through to libm pow/powf otherwise.
+        lr_type_t *t = get_type(x.m_type);
+        ASR::ttype_t *rt = ASRUtils::expr_type(x.m_right);
+        int64_t exponent_const = INT64_MAX;
+        bool exp_is_int = ASRUtils::is_integer(*rt);
+        bool exp_is_const = exp_is_int
+            && ASRUtils::extract_value(x.m_right, exponent_const);
+        if (exp_is_const) {
+            visit_expr(*x.m_left);
+            uint32_t base = tmp;
+            switch (exponent_const) {
+                case 0: tmp = (t == ty_f32) ? lr_emit_fadd(s, t,
+                                F(1.0f, t), F(0.0f, t))
+                            : lr_emit_fadd(s, t, F(1.0, t), F(0.0, t));
+                    return;
+                case 1: tmp = base; return;
+                case 2: tmp = lr_emit_fmul(s, t, V(base, t), V(base, t));
+                    return;
+                case 3: {
+                    uint32_t x2 = lr_emit_fmul(s, t, V(base, t), V(base, t));
+                    tmp = lr_emit_fmul(s, t, V(x2, t), V(base, t));
+                    return;
+                }
+                case 4: {
+                    uint32_t x2 = lr_emit_fmul(s, t, V(base, t), V(base, t));
+                    tmp = lr_emit_fmul(s, t, V(x2, t), V(x2, t));
+                    return;
+                }
+                default: break;
+            }
+            // Larger constants: fall through to libm path below; base
+            // is already in `tmp`, so re-stash and re-emit the exponent
+            // via the same code path used for runtime exponents.
+        }
+        visit_expr(*x.m_left);
+        uint32_t base = tmp;
+        visit_expr(*x.m_right);
+        uint32_t exp_val = tmp;
+        lr_type_t *exp_t = (t == ty_f32) ? ty_f32 : ty_f64;
+        if (exp_is_int) {
+            // Promote integer exponent to the matching float kind.
+            int64_t k = ASRUtils::extract_kind_from_ttype_t(rt);
+            lr_type_t *it = (k == 8) ? ty_i64 : ty_i32;
+            exp_val = (t == ty_f32)
+                ? lr_emit_sitofp(s, ty_f32, V(exp_val, it))
+                : lr_emit_sitofp(s, ty_f64, V(exp_val, it));
+        } else if (ASRUtils::is_real(*rt)) {
+            int64_t k = ASRUtils::extract_kind_from_ttype_t(rt);
+            lr_type_t *rt_lr = (k == 4) ? ty_f32 : ty_f64;
+            if (rt_lr != exp_t) {
+                exp_val = (exp_t == ty_f64)
+                    ? lr_emit_fpext(s, ty_f64, V(exp_val, ty_f32))
+                    : lr_emit_fptrunc(s, ty_f32, V(exp_val, ty_f64));
+            }
+        }
+        const char *fn = (t == ty_f32) ? "powf" : "pow";
+        lr_type_t *params[] = {t, exp_t};
+        declare_func(fn, t, params, 2, false);
+        lr_operand_desc_t args[] = {V(base, t), V(exp_val, exp_t)};
+        tmp = emit_call(fn, t, args, 2);
     }
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
         LIRIC_CONST_INT(x);
