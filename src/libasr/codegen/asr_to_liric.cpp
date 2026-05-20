@@ -2590,6 +2590,63 @@ public:
             V(c0, ct), V(im, ft), &fld1, 1);
     }
 
+    // sizeof(type) intrinsic: compile-time constant from
+    // storage_size_or_default, which already knows the canonical byte
+    // size for each ASR ttype.
+    void visit_SizeOfType(const ASR::SizeOfType_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        ASR::ttype_t *at = x.m_arg;
+        uint64_t nbytes = 0;
+        if (ASR::is_a<ASR::Array_t>(*at)) {
+            ASR::Array_t *array_t = ASR::down_cast<ASR::Array_t>(at);
+            int64_t total = ASRUtils::get_fixed_size_of_array(
+                array_t->m_dims, array_t->n_dims);
+            if (total <= 0) total = 1;
+            ASR::ttype_t *elem = ASRUtils::type_get_past_array(at);
+            nbytes = (uint64_t)total * (uint64_t)element_byte_size(elem);
+        } else {
+            nbytes = storage_size_or_default(at, get_type(at));
+        }
+        lr_type_t *rt = get_type(x.m_type);
+        tmp = lr_emit_add(s, rt, I((int64_t)nbytes, rt), I(0, rt));
+    }
+
+    // c_compiler_options() etc: return the compiler-options string set
+    // by the front-end.  Lower as a global cstring + length descriptor.
+    void visit_CompilerOptions(const ASR::CompilerOptions_t &x) {
+        std::string name = "_lr_compopts_" + std::to_string(
+            get_hash((ASR::asr_t *)&x));
+        size_t len = std::strlen(x.m_compiler_options_str);
+        lr_session_global(s, name.c_str(),
+            lr_type_array_s(s, ty_i8, len + 1),
+            true, x.m_compiler_options_str, len + 1);
+        uint32_t sym = lr_session_intern(s, name.c_str());
+        uint32_t fld0 = 0, fld1 = 1;
+        uint32_t c0 = lr_emit_insertvalue(s, ty_str_desc,
+            LR_UNDEF(ty_str_desc), LR_GLOBAL(sym, ty_ptr), &fld0, 1);
+        tmp = lr_emit_insertvalue(s, ty_str_desc,
+            V(c0, ty_str_desc), I((int64_t)len, ty_i64), &fld1, 1);
+    }
+
+    // -z: negate both fields of the {f,f} struct.
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_arg);
+        uint32_t v = tmp;
+        lr_type_t *ct = get_type(x.m_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        lr_type_t *ft = (kind == 4) ? ty_f32 : ty_f64;
+        uint32_t fld0 = 0, fld1 = 1;
+        uint32_t re = lr_emit_extractvalue(s, ft, V(v, ct), &fld0, 1);
+        uint32_t im = lr_emit_extractvalue(s, ft, V(v, ct), &fld1, 1);
+        uint32_t nre = lr_emit_fneg(s, ft, V(re, ft));
+        uint32_t nim = lr_emit_fneg(s, ft, V(im, ft));
+        uint32_t c0 = lr_emit_insertvalue(s, ct,
+            LR_UNDEF(ct), V(nre, ft), &fld0, 1);
+        tmp = lr_emit_insertvalue(s, ct,
+            V(c0, ct), V(nim, ft), &fld1, 1);
+    }
+
     // z1 == z2 / z1 /= z2: compare both real and imaginary parts.
     // Only Eq and NotEq are defined for complex in Fortran.
     void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
