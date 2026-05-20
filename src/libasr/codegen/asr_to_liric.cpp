@@ -7001,6 +7001,32 @@ found_offset:
         return lr_emit_load(s, ty_ptr, V(desc_ptr, ty_ptr));
     }
 
+    // ArrayBroadcast: scalar -> n-element fixed-size array of copies.
+    // Allocate a flat buffer of the result's fixed shape and fill every
+    // slot with the same scalar value.  Mirrors the LLVM backend's
+    // alloca + per-element store loop.
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(x.m_type);
+        elem_t = ASRUtils::type_get_past_allocatable_pointer(elem_t);
+        int64_t n_eles = ASRUtils::get_fixed_size_of_array(x.m_type);
+        if (n_eles <= 0) n_eles = 1;
+        int64_t elem_sz = element_byte_size(elem_t);
+
+        visit_expr(*x.m_array);
+        uint32_t val = tmp;
+        lr_type_t *et = get_type(elem_t);
+        uint32_t buf = emit_storage_alloca_nbytes(
+            (uint64_t)(n_eles * elem_sz));
+        for (int64_t i = 0; i < n_eles; i++) {
+            lr_operand_desc_t off[1] = {I(i * elem_sz, ty_i64)};
+            uint32_t p = lr_emit_gep(s, ty_i8,
+                V(buf, ty_ptr), off, 1);
+            lr_emit_store(s, V(val, et), V(p, ty_ptr));
+        }
+        tmp = buf;
+    }
+
     // --- ArrayRank ---
     //
     // ASR records `n_dims` at the type level, including for descriptor
