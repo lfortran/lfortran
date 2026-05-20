@@ -2810,8 +2810,11 @@ public:
 
     // --- ArrayItem (FixedSizeArray, single-dim only for now) ---
     //
-    // Compute row-major linear index from the supplied dim indices and
-    // GEP into the array storage.  FixedSizeArray only; other physical
+    // Compute column-major linear index (Fortran semantics) from the
+    // supplied dim indices and GEP into the array storage.  Matches the
+    // strides written by ArrayPhysicalCast (FixedSize -> Descriptor) and
+    // the linear element layout produced by ArrayConstant initialisation.
+    // FixedSizeArray and PointerArray paths handled here; other physical
     // types still throw a clear diagnostic.
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
@@ -2837,6 +2840,7 @@ public:
             uint32_t base = tmp;
 
             uint32_t lin = 0;
+            int64_t length_prod = 1;
             bool first = true;
             for (size_t r = 0; r < x.n_args; r++) {
                 ASR::array_index_t &ai = x.m_args[r];
@@ -2858,19 +2862,22 @@ public:
                 uint32_t off = lr_emit_sub(s, ty_i32,
                     V(idx, ty_i32), I(lbound, ty_i32));
                 if (first) {
+                    // contribution for dim 0 is off * 1 = off
                     lin = off;
                     first = false;
                 } else {
-                    int64_t length = 1;
-                    if (array_t->m_dims[r].m_length) {
-                        ASRUtils::extract_value(
-                            array_t->m_dims[r].m_length, length);
-                    }
-                    lin = lr_emit_mul(s, ty_i32,
-                        V(lin, ty_i32), I(length, ty_i32));
+                    // contribution for dim r is off * (length_0 * ... * length_{r-1})
+                    uint32_t contrib = lr_emit_mul(s, ty_i32,
+                        V(off, ty_i32), I(length_prod, ty_i32));
                     lin = lr_emit_add(s, ty_i32,
-                        V(lin, ty_i32), V(off, ty_i32));
+                        V(lin, ty_i32), V(contrib, ty_i32));
                 }
+                int64_t length = 1;
+                if (array_t->m_dims[r].m_length) {
+                    ASRUtils::extract_value(
+                        array_t->m_dims[r].m_length, length);
+                }
+                length_prod *= length;
             }
 
             uint32_t lin64 = lr_emit_sext(s, ty_i64, V(lin, ty_i32));
