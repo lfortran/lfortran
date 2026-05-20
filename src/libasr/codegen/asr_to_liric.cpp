@@ -165,7 +165,6 @@ public:
     CompilerOptions &co;
     diag::Diagnostics &diag;
     std::unordered_map<uint64_t, uint32_t> lr_symtab;
-    std::unordered_map<uint64_t, uint32_t> lr_param_ptr_globals;
     std::unordered_map<uint64_t, uint32_t> lr_globals;   // variable hash -> intern symbol id
     std::unordered_map<uint64_t, uint32_t> class_tag_slots;
     std::unordered_set<uint64_t> known_struct_hashes;
@@ -759,8 +758,25 @@ public:
     }
 
     uint64_t storage_size_for_variable(ASR::Variable_t *v) {
-        if (is_allocatable_struct_type(v->m_type) ||
-                ASRUtils::is_pointer(v->m_type)) {
+        if (is_allocatable_struct_type(v->m_type)) {
+            return 8;
+        }
+        // A Fortran pointer or allocatable to a deferred-shape array is a
+        // full descriptor (data ptr + bounds); a deferred-length allocatable
+        // string is a {ptr,i64} descriptor; a pointer/allocatable to a plain
+        // scalar is just an 8-byte data pointer.
+        if (ASRUtils::is_pointer(v->m_type) ||
+                ASRUtils::is_allocatable(v->m_type)) {
+            ASR::Array_t *array = nullptr;
+            if (is_descriptor_array_type(v->m_type, &array)) {
+                return DESC_HEADER_BYTES + DESC_DIM_BYTES *
+                    (array->n_dims > 0 ? array->n_dims : 1);
+            }
+            ASR::ttype_t *core =
+                ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+            if (ASR::is_a<ASR::String_t>(*core)) {
+                return 16;
+            }
             return 8;
         }
         ASR::Struct_t *st = struct_symbol_from_type_decl(
@@ -799,25 +815,6 @@ public:
     }
 
     uint32_t emit_storage_alloca_nbytes(uint64_t nbytes) {
-        if (nbytes > 8) {
-            uint32_t allocator = emit_call(
-                "_lfortran_get_default_allocator", ty_ptr, nullptr, 0);
-            lr_type_t *malloc_params[] = {ty_ptr, ty_i64};
-            declare_func("_lfortran_malloc_alloc", ty_ptr,
-                malloc_params, 2, false);
-            lr_operand_desc_t malloc_args[] = {
-                V(allocator, ty_ptr), I((int64_t)nbytes, ty_i64)
-            };
-            uint32_t slot = emit_call("_lfortran_malloc_alloc",
-                ty_ptr, malloc_args, 2);
-            lr_type_t *memset_params[] = {ty_ptr, ty_i32, ty_i64};
-            declare_func("memset", ty_ptr, memset_params, 3, false);
-            lr_operand_desc_t args[] = {
-                V(slot, ty_ptr), I(0, ty_i32), I((int64_t)nbytes, ty_i64)
-            };
-            emit_call("memset", ty_ptr, args, 3);
-            return slot;
-        }
         uint32_t slot = lr_emit_alloca(s, storage_type_for_bytes(nbytes));
         lr_type_t *memset_params[] = {ty_ptr, ty_i32, ty_i64};
         declare_func("memset", ty_ptr, memset_params, 3, false);
@@ -839,10 +836,6 @@ public:
     }
 
     uint32_t emit_temp_slot(lr_type_t *type) {
-        uint64_t nbytes = lr_type_size_or_default(type);
-        if (nbytes > 8) {
-            return emit_storage_alloca_nbytes(nbytes);
-        }
         return lr_emit_alloca(s, type);
     }
 
@@ -919,7 +912,6 @@ public:
         // Label/block bookkeeping is function-scoped; nested gotos
         // across function boundaries are not legal Fortran anyway.
         goto_blocks.clear();
-        lr_param_ptr_globals.clear();
 
         // Skip interface-only functions (no body), but emit bodies for
         // Intrinsic-abi functions so callers can link against them
@@ -957,21 +949,15 @@ public:
         proc_return = lr_session_block(s);
         lr_session_set_block(s, entry_block, &err);
 
-        // Map parameters
+        // Map parameters: each formal arg is passed as a pointer to its
+        // caller-side storage.  We keep the param vreg in lr_symtab; reads
+        // dereference it, writes go through the pointer.
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Var_t *arg_var = down_cast<ASR::Var_t>(x.m_args[i]);
             ASR::Variable_t *v = down_cast<ASR::Variable_t>(arg_var->m_v);
             uint32_t p = lr_session_param(s, i);
             uint64_t h = get_hash((ASR::asr_t *)v);
-            std::string pname = std::string("_lr_param_") + fn_name +
-                "_" + std::to_string(i) + "_" + v->m_name;
-            uint64_t zero = 0;
-            lr_session_global(s, pname.c_str(),
-                lr_type_array_s(s, ty_i8, 8), false, &zero, 8);
-            uint32_t psym = lr_session_intern(s, pname.c_str());
-            lr_emit_store(s, V(p, ty_ptr), LR_GLOBAL(psym, ty_ptr));
             lr_symtab[h] = p;
-            lr_param_ptr_globals[h] = psym;
         }
 
         // Allocate local variables
@@ -1117,18 +1103,6 @@ public:
 
         auto local_it = lr_symtab.find(h);
         if (local_it != lr_symtab.end()) {
-            auto param_it = lr_param_ptr_globals.find(h);
-            if (param_it != lr_param_ptr_globals.end()) {
-                uint32_t ptr = lr_emit_load(s, ty_ptr,
-                    LR_GLOBAL(param_it->second, ty_ptr));
-                if (is_target || is_array) {
-                    tmp = ptr;
-                } else {
-                    lr_type_t *t = load_type_for_var(v);
-                    tmp = lr_emit_load(s, t, V(ptr, ty_ptr));
-                }
-                return;
-            }
             uint32_t slot = local_it->second;
             if (is_target || is_array) {
                 tmp = slot;
