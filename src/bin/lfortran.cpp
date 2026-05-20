@@ -2765,6 +2765,8 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::mlir;
     } else if (opts.arg_backend == "liric") {
         backend = Backend::liric;
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
         // pass_array_by_data renames functions that take array args to
         // a per-element-type variant (e.g. add_strings_many becomes
         // add_strings_many_string_t____1).  It does this at the
@@ -2774,6 +2776,12 @@ int main_app(int argc, char *argv[]) {
         // direct backend handles the unmangled names fine.
         lfortran_pass_manager.passes_to_skip_with_llvm.push_back(
             "pass_array_by_data");
+        // This pass adds hidden logical arguments for optional dummy
+        // arguments at definition sites.  Direct LIRIC compiles modules
+        // separately, so callers loaded from .mod files still use the
+        // original public ABI.
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back(
+            "transform_optional_argument_functions");
     } else {
         std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir, liric." << std::endl;
         return 1;
