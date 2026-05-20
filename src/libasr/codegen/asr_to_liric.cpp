@@ -666,6 +666,22 @@ public:
 
     // --- Module ---
 
+    // Symbol-table walk no-ops.  Without overrides, the base visitor
+    // throws `visit_X() not implemented` whenever the walk lands on
+    // any of these kinds (e.g. block-data symtabs, re-exports, generic
+    // overloads, type-bound procedures).  None of them need direct
+    // codegen here: ExternalSymbol bodies live in another translation
+    // unit, GenericProcedure / CustomOperator / StructMethodDeclaration
+    // are resolved at call sites in visit_FunctionCall / SubroutineCall,
+    // and Variable storage is materialised when it's first used as an
+    // expression.
+    void visit_ExternalSymbol(const ASR::ExternalSymbol_t & /*x*/) {}
+    void visit_GenericProcedure(const ASR::GenericProcedure_t & /*x*/) {}
+    void visit_CustomOperator(const ASR::CustomOperator_t & /*x*/) {}
+    void visit_StructMethodDeclaration(
+            const ASR::StructMethodDeclaration_t & /*x*/) {}
+    void visit_Variable(const ASR::Variable_t & /*x*/) {}
+
     void visit_Module(const ASR::Module_t &x) {
         // Skip intrinsic modules: their function bodies come from the
         // dedicated liblfortran_runtime_fortran.a archive.
