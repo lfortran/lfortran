@@ -2759,6 +2759,20 @@ public:
             V(c0, ct), V(im, ft), &fld1, 1);
     }
 
+    // ichar(s) / iachar(s) -> StringOrd: load first byte of the string
+    // descriptor's data pointer and zero-extend to the result kind.
+    void visit_StringOrd(const ASR::StringOrd_t &x) {
+        if (x.m_value) { visit_expr(*x.m_value); return; }
+        visit_expr(*x.m_arg);
+        uint32_t desc = tmp;
+        uint32_t fld0 = 0;
+        uint32_t data = lr_emit_extractvalue(s, ty_ptr,
+            V(desc, ty_str_desc), &fld0, 1);
+        uint32_t byte = lr_emit_load(s, ty_i8, V(data, ty_ptr));
+        lr_type_t *rt = get_type(x.m_type);
+        tmp = lr_emit_zext(s, rt, V(byte, ty_i8));
+    }
+
     // c_loc(p) / PointerToCPtr: a c_ptr in this backend is the same
     // ty_ptr we already track for Fortran pointers, so this is just a
     // load through the pointer slot.  Mirrors what the LLVM backend
