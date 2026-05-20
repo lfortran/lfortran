@@ -1,16 +1,24 @@
 #include "../src/libasr/runtime/ISO_Fortran_binding.h"
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 void test_cfi_section_crash() {
     CFI_CDESC_T(2) source;
     CFI_index_t extents[] = {10, 10};
     int dummy_source_data[100];
+    
     int stat = CFI_establish((CFI_cdesc_t *)&source, &dummy_source_data, CFI_attribute_other, 
                              CFI_type_int, 0, 2, extents);
     assert(stat == CFI_SUCCESS);
 
+    
     CFI_CDESC_T(1) result;
+    memset(&result, 0, sizeof(result)); 
+    ((CFI_cdesc_t *)&result)->rank = 1;
+    ((CFI_cdesc_t *)&result)->type = CFI_type_int;
+    ((CFI_cdesc_t *)&result)->attribute = CFI_attribute_other;
+
     CFI_index_t lower[] = {0, 5};
     CFI_index_t upper[] = {9, 5};
     CFI_index_t strides[] = {1, 0}; 
@@ -21,6 +29,7 @@ void test_cfi_section_crash() {
 
 void test_cfi_allocate_corruption() {
     CFI_CDESC_T(1) desc;
+    memset(&desc, 0, sizeof(desc)); 
     CFI_index_t extents[] = {10};
     
     int stat = CFI_establish((CFI_cdesc_t *)&desc, NULL, CFI_attribute_allocatable, 
@@ -40,6 +49,7 @@ void test_cfi_allocate_corruption() {
 
 void test_cfi_contiguous_extent_1() {
     CFI_CDESC_T(2) desc;
+    memset(&desc, 0, sizeof(desc)); 
     CFI_index_t extents[] = {10, 1}; 
     int dummy_data[10]; 
     
