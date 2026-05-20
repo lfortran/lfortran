@@ -11,6 +11,9 @@
 
 namespace LCompilers {
 
+// PRIFInterface lowers coarray operations into PRIF runtime interface calls.
+// It creates the required PRIF function interfaces/wrappers and transforms
+// coarray accesses/allocations into runtime calls used by Caffeine.
 class PRIFInterface {
     public:
         std::map<std::string, std::pair<ASR::expr_t*, ASR::expr_t*>> coarray_handle_map;
