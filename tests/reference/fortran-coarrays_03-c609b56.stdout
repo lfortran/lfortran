@@ -15,12 +15,15 @@ contains
 
 subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc, coarray_handle,&
         &
-         allocated_memory)
+         allocated_memory, stat, errmsg, errmsg_alloc)
     type(c_ptr), intent(out) :: allocated_memory
     type(prif_coarray_handle), intent(out) :: coarray_handle
+    character(len=*, kind=1), intent(inout), optional :: errmsg
+    character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
     procedure(prif_coarray_cleanup_interface), pointer, intent(in) :: final_proc
     integer(8), dimension(:), intent(in), value :: lcobounds
     integer(8), intent(in), value :: size_in_bytes
+    integer(4), intent(out), optional :: stat
     integer(8), dimension(:), intent(in), value :: ucobounds
 end subroutine __module_prif_prif_allocate_coarray
 

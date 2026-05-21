@@ -404,7 +404,32 @@ class PRIFInterface {
                 handle_struct, ASR::intentType::Out, ASR::presenceType::Required, false);
             ASR::expr_t *alloc_mem = b.Variable(fn_symtab, "allocated_memory", cptr,
                 ASR::intentType::Out, nullptr, ASR::abiType::Source, false);
-            Vec<ASR::expr_t*> args; args.reserve(al, 6);
+
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::symbol_t *stat_sym = declare_variable(
+                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
+
+            ASR::ttype_t *errmsg_type = ASRUtils::TYPE(ASR::make_String_t(
+                al, loc, 1, nullptr,
+                ASR::string_length_kindType::AssumedLength,
+                ASR::string_physical_typeType::DescriptorString));
+            ASR::symbol_t *errmsg_sym = declare_variable(
+                fn_symtab, loc, "errmsg", errmsg_type, ASR::intentType::InOut, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
+
+            ASR::ttype_t *errmsg_alloc_type = allocatable_deferred_string();
+            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
+                fn_symtab, loc, "errmsg_alloc", errmsg_alloc_type, ASR::intentType::InOut, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 9);
             args.push_back(al, lcobounds);
             args.push_back(al, ucobounds);
             args.push_back(al, size_arg);
@@ -415,6 +440,9 @@ class PRIFInterface {
 #endif
             args.push_back(al, handle_var);
             args.push_back(al, alloc_mem);
+            args.push_back(al, stat);
+            args.push_back(al, errmsg);
+            args.push_back(al, errmsg_alloc);
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
                 args.p, args.n, nullptr, 0, nullptr,
@@ -601,19 +629,25 @@ class PRIFInterface {
                 ASR::expr_t *null_fptr = ASRUtils::EXPR(
                     ASR::make_PointerNullConstant_t(al, loc, cleanup_ft, nullptr));
                 // Build call args
-                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 6);
+                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 9);
                 ASR::call_arg_t a1; a1.loc=loc; a1.m_value=lcobounds_val;
                 ASR::call_arg_t a2; a2.loc=loc; a2.m_value=ucobounds_val;
                 ASR::call_arg_t a3; a3.loc=loc; a3.m_value=sz;
                 ASR::call_arg_t a4; a4.loc=loc; a4.m_value=null_fptr;
                 ASR::call_arg_t a5; a5.loc=loc; a5.m_value=hexpr;
                 ASR::call_arg_t a6; a6.loc=loc; a6.m_value=dexpr;
+                ASR::call_arg_t a7; a7.loc=loc; a7.m_value=nullptr;
+                ASR::call_arg_t a8; a8.loc=loc; a8.m_value=nullptr;
+                ASR::call_arg_t a9; a9.loc=loc; a9.m_value=nullptr;
                 call_args.push_back(al, a1);
                 call_args.push_back(al, a2);
                 call_args.push_back(al, a3);
                 call_args.push_back(al, a4);
                 call_args.push_back(al, a5);
                 call_args.push_back(al, a6);
+                call_args.push_back(al, a7);
+                call_args.push_back(al, a8);
+                call_args.push_back(al, a9);
                 ASR::stmt_t *call_stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(
                     al, loc, alloc_sub, nullptr,
                     call_args.p, call_args.n, nullptr, false));
