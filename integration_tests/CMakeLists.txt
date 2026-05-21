@@ -3119,6 +3119,7 @@ RUN(NAME class_allocate_07 LABELS gfortran llvm)
 RUN(NAME class_allocate_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_allocate_09 LABELS gfortran llvm)
 RUN(NAME class_optional_01 LABELS gfortran llvm)
+RUN(NAME class_array_deepcopy_01 LABELS gfortran llvm)
 RUN(NAME empty_array_01 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
