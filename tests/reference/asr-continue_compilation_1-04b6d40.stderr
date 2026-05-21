@@ -1084,6 +1084,12 @@ semantic error: The `mask` argument to `parity` must be logical, but got string[
 496 |     print *, parity(["a", "b"])
     |                     ^^^^^^^^^^ must be logical type
 
+semantic error: Substring end index exceeds the string length
+   --> tests/errors/continue_compilation_1.f90:497:14
+    |
+497 |     print *, string(1:6)
+    |              ^^^^^^^^^^^ 
+
 semantic error: `shape` array in reshape intrinsic should be of constant size
    --> tests/errors/continue_compilation_1.f90:499:30
     |
@@ -1107,6 +1113,12 @@ semantic error: Character variable 'c1' only has %len and %kind members, not 'my
     |
 506 |     print *, c1%mymember
     |              ^^^^^^^^^^^ 
+
+semantic error: Substring end index must be of type integer
+   --> tests/errors/continue_compilation_1.f90:507:23
+    |
+507 |     print *, string(1:Z'100000003')
+    |                       ^^^^^^^^^^^^ 
 
 semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
    --> tests/errors/continue_compilation_1.f90:508:14
