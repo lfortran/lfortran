@@ -6948,6 +6948,27 @@ public:
                 }
                 return llvm::ConstantStruct::get(complex_type, {re, im});
             }
+            case ASR::exprType::ArrayConstant: {
+                // Infer LLVM element/array type from the ASR expression
+                llvm::Type* elem_type = nullptr;
+                elem_type = llvm_utils->get_el_type(expr, ASRUtils::extract_type(ASRUtils::expr_type(expr)), module.get());
+                llvm::Constant* c = get_const_array(expr, elem_type);
+                return c;
+            }
+            case ASR::exprType::StringConstant: {
+                ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(expr);
+                llvm::Value* v = llvm_utils->declare_string_constant(sc);
+                if (!v) break;
+                if (llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(v)) {
+                    if (gv->hasInitializer()) {
+                        return gv->getInitializer();
+                    }
+                }
+                if (llvm::Constant* cc = llvm::dyn_cast<llvm::Constant>(v)) {
+                    return cc;
+                }
+                break;
+            }
             case ASR::exprType::StructConstant: {
                 std::vector<llvm::Constant*> field_values;
                 ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
