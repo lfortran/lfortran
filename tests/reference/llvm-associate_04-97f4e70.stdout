@@ -14,7 +14,7 @@ target datalayout = "..."
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define float @_lcompilers_cos_f32(float* %x) {
+define internal float @_lcompilers_cos_f32(float* %x) {
 .entry:
   %_lcompilers_cos_f32 = alloca float, align 4
   %0 = load float, float* %x, align 4

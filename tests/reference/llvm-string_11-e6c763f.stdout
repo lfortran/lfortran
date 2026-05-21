@@ -18,7 +18,7 @@ target datalayout = "..."
 @string_const.6 = private global %string_descriptor <{ i8* getelementptr inbounds ([24 x i8], [24 x i8]* @string_const_data.5, i32 0, i32 0), i64 24 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define i32 @_lcompilers_index_str(%string_descriptor* %str, %string_descriptor* %substr, i32* %back, i32* %kind) {
+define internal i32 @_lcompilers_index_str(%string_descriptor* %str, %string_descriptor* %substr, i32* %back, i32* %kind) {
 .entry:
   %StrSlice_StrView4 = alloca %string_descriptor, align 8
   %StrSlice_StrView = alloca %string_descriptor, align 8
@@ -178,7 +178,7 @@ FINALIZE_SYMTABLE__lcompilers_index_str:          ; preds = %return
   ret i32 %75
 }
 
-define i32 @_lcompilers_index_str1(%string_descriptor* %str, %string_descriptor* %substr, i32* %back, i32* %kind) {
+define internal i32 @_lcompilers_index_str1(%string_descriptor* %str, %string_descriptor* %substr, i32* %back, i32* %kind) {
 .entry:
   %StrSlice_StrView4 = alloca %string_descriptor, align 8
   %StrSlice_StrView = alloca %string_descriptor, align 8

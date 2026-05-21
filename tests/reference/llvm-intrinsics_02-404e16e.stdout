@@ -20,7 +20,7 @@ target datalayout = "..."
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define float @_lcompilers_sin_f32(float* %x) {
+define internal float @_lcompilers_sin_f32(float* %x) {
 .entry:
   %_lcompilers_sin_f32 = alloca float, align 4
   %0 = load float, float* %x, align 4
@@ -38,7 +38,7 @@ FINALIZE_SYMTABLE__lcompilers_sin_f32:            ; preds = %return
 
 declare float @_lfortran_ssin(float)
 
-define double @_lcompilers_sin_f64(double* %x) {
+define internal double @_lcompilers_sin_f64(double* %x) {
 .entry:
   %_lcompilers_sin_f64 = alloca double, align 8
   %0 = load double, double* %x, align 8

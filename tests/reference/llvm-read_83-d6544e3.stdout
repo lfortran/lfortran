@@ -39,7 +39,7 @@ target datalayout = "..."
 @string_const.14 = private global %string_descriptor <{ i8* getelementptr inbounds ([77 x i8], [77 x i8]* @string_const_data.13, i32 0, i32 0), i64 77 }>
 @16 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define void @_lcompilers_get_command_argument_(i32* %number, %string_descriptor* %value) {
+define internal void @_lcompilers_get_command_argument_(i32* %number, %string_descriptor* %value) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %command_argument_holder = alloca %string_descriptor, align 8
@@ -104,7 +104,7 @@ declare i32 @_lfortran_get_command_argument_length(i32)
 
 declare void @_lfortran_get_command_argument_value(i32, i8*)
 
-define i32 @_lcompilers_len_trim_str(%string_descriptor* %str) {
+define internal i32 @_lcompilers_len_trim_str(%string_descriptor* %str) {
 .entry:
   %StringItem = alloca %string_descriptor, align 8
   %result = alloca i32, align 4
@@ -175,7 +175,7 @@ FINALIZE_SYMTABLE__lcompilers_len_trim_str:       ; preds = %return
   ret i32 %23
 }
 
-define void @_lcompilers_trim_str(%string_descriptor* %str, %string_descriptor* %result) {
+define internal void @_lcompilers_trim_str(%string_descriptor* %str, %string_descriptor* %result) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %StrSlice_StrView = alloca %string_descriptor, align 8

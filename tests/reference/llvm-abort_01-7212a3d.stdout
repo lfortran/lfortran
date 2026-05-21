@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-define void @_lcompilers_abort_() {
+define internal void @_lcompilers_abort_() {
 .entry:
   call void @_lfortran_abort()
   br label %return
