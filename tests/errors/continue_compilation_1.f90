@@ -485,10 +485,10 @@ program continue_compilation_1
 
     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [1.0, 2.0])
     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
-
+    print *, a(b'01':2)
     print *, count(1)
     print *, count([2])
-
+    print *, a(1:2:b'10')
     a_real = [logical::]
     print *,size(a_real)
 
