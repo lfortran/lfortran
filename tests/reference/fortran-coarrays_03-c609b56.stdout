@@ -41,7 +41,7 @@ subroutine __module_prif_prif_get(image_num, coarray_handle, offset, current_ima
 end subroutine __module_prif_prif_get
 
 subroutine __module_prif_prif_init(exit_code)
-    integer(4), intent(out), optional :: exit_code
+    integer(4), intent(out) :: exit_code
 end subroutine __module_prif_prif_init
 
 subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)

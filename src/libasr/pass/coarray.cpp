@@ -467,7 +467,7 @@ class PRIFInterface {
             ASR::symbol_t *ec_sym = declare_variable(
                 fn_symtab, loc, "exit_code", int32_type, ASR::intentType::Out, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
+                ASR::presenceType::Required, false);
             ASR::expr_t *ec_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ec_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
             args.push_back(al, ec_expr);
