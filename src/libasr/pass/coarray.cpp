@@ -279,8 +279,11 @@ class PRIFInterface {
                                           ASR::expr_t *size_in_bytes) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            if (!ASR::is_a<ASR::ArrayItem_t>(*base_expr)) {
+            if (ASR::is_a<ASR::Var_t>(*base_expr)) {
                 return b.i2i_t(b.i32(0), int64_type);
+            }
+            else if (!ASR::is_a<ASR::ArrayItem_t>(*base_expr)) {
+                throw LCompilersException("compute_offset_bytes: unsupported coarray base expression");
             }
 
             ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(base_expr);
@@ -320,7 +323,9 @@ class PRIFInterface {
             auto [size_bytes, _align] = ASRUtils::compute_type_size_align(base_type);
             (void)_align;
             if (size_bytes <= 0) {
-                size_bytes = 0;
+                throw LCompilersException(
+                    "get_size_in_bytes_expr: runtime-sized types "
+                    "are not supported in coarray lowering");
             }
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, size_bytes, int64_type));
         }
@@ -537,6 +542,9 @@ class PRIFInterface {
                     }
                     lco_elems.push_back(al, b.i64(lb));
                     // Upper cobound: skip last dim (it's *)
+                    if (ci == corank - 1) {
+                        LCOMPILERS_ASSERT(var->m_codims[ci].m_end == nullptr);
+                    }
                     if (ci < corank - 1 && ci < (int64_t)var->n_codims
                         && var->m_codims[ci].m_end) {
                         int64_t ub = 0;
@@ -551,9 +559,11 @@ class PRIFInterface {
                 ad.m_length = b.i32(static_cast<int64_t>(lco_elems.n));
                 arr_d.push_back(al, ad);
                 ASR::ttype_t *lco_arr_t = ASRUtils::make_Array_t_util(al, loc, i64, arr_d.p, arr_d.n);
-                ASR::expr_t *lcobounds_val = ASRUtils::EXPR(ASR::make_ArrayConstructor_t(
-                    al, loc, lco_elems.p, lco_elems.n, lco_arr_t, nullptr,
-                    ASR::arraystorageType::ColMajor, nullptr));
+                std::vector<ASR::expr_t*> lco_vec;
+                for (size_t i = 0; i < lco_elems.n; i++) {
+                    lco_vec.push_back(lco_elems.p[i]);
+                }
+                ASR::expr_t *lcobounds_val = b.ArrayConstant(lco_vec, i64, false, lco_arr_t);
                 // ucobounds array
                 Vec<ASR::dimension_t> arr_d0; arr_d0.reserve(al, 1);
                 ASR::dimension_t ad0; ad0.loc = loc;
@@ -561,9 +571,11 @@ class PRIFInterface {
                 ad0.m_length = b.i32(static_cast<int64_t>(uco_elems.n));
                 arr_d0.push_back(al, ad0);
                 ASR::ttype_t *uco_arr_t = ASRUtils::make_Array_t_util(al, loc, i64, arr_d0.p, arr_d0.n);
-                ASR::expr_t *ucobounds_val = ASRUtils::EXPR(ASR::make_ArrayConstructor_t(
-                    al, loc, uco_elems.p, uco_elems.n, uco_arr_t, nullptr,
-                    ASR::arraystorageType::ColMajor, nullptr));
+                std::vector<ASR::expr_t*> uco_vec;
+                for (size_t i = 0; i < uco_elems.n; i++) {
+                    uco_vec.push_back(uco_elems.p[i]);
+                }
+                ASR::expr_t *ucobounds_val = b.ArrayConstant(uco_vec, i64, false, uco_arr_t);
                 // size_in_bytes
                 ASR::expr_t *sz = get_size_in_bytes_expr(loc, var->m_type);
                 // final_proc = null() (null procedure pointer for cleanup interface)
