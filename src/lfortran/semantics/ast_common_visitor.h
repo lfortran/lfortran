@@ -9932,6 +9932,14 @@ public:
         return 1; // default
     }
 
+    bool is_boz_integer_constant(ASR::expr_t* expr) {
+        if (!expr || !ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+            return false;
+        }
+        ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(expr);
+        return int_const->m_intboz_type != ASR::integerbozType::Decimal;
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -10071,6 +10079,11 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_left_expr->base.loc})}));
                         throw SemanticAbort();
                     }
+                    if (is_boz_integer_constant(m_left_expr)) {
+                        diag.add(Diagnostic("Substring start index must be of type integer",
+                            Level::Error, Stage::Semantic, {Label("", {m_left_expr->base.loc})}));
+                        throw SemanticAbort();
+                    }
                     ASR::IntegerConstant_t *m_left = ASR::down_cast<ASR::IntegerConstant_t>(m_left_expr);
                     start = m_left->m_n;
                 }
@@ -10094,6 +10107,11 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_right_expr->base.loc})}));
                         throw SemanticAbort();
                     }
+                    if (is_boz_integer_constant(m_right_expr)) {
+                        diag.add(Diagnostic("Substring end index must be of type integer",
+                            Level::Error, Stage::Semantic, {Label("", {m_right_expr->base.loc})}));
+                        throw SemanticAbort();
+                    }
                     ASR::IntegerConstant_t *m_right = ASR::down_cast<ASR::IntegerConstant_t>(m_right_expr);
                     end = m_right->m_n;
                 }
@@ -10106,8 +10124,27 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_step_expr->base.loc})}));
                         throw SemanticAbort();
                     }
+                    if (is_boz_integer_constant(m_step_expr)) {
+                        diag.add(Diagnostic("Substring stride must be of type integer",
+                            Level::Error, Stage::Semantic, {Label("", {m_step_expr->base.loc})}));
+                        throw SemanticAbort();
+                    }
                     ASR::IntegerConstant_t *m_step = ASR::down_cast<ASR::IntegerConstant_t>(m_step_expr);
                     step = m_step->m_n;
+                }
+            }
+            if (ASRUtils::is_character(*root_v_type) &&
+                !ASRUtils::is_array(root_v_type) &&
+                all_args_eval) {
+                ASR::String_t* s_type = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::type_get_past_allocatable_pointer(root_v_type));
+                int64_t str_length;
+                if (ASRUtils::extract_value(s_type->m_len, str_length)) {
+                    if (end > str_length) {
+                        diag.add(Diagnostic("Substring end index exceeds the string length",
+                            Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
                 }
             }
             if( v->type == ASR::symbolType::Variable ) {
