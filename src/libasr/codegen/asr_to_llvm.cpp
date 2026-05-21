@@ -7889,6 +7889,20 @@ public:
     void instantiate_function(const ASR::Function_t &x){
         llvm::DIScope* debug_current_scope_copy = debug_current_scope;
         uint32_t h = get_hash((ASR::asr_t*)&x);
+        auto get_function_linkage = [](const ASR::Function_t& fn) {
+            const std::string fn_name = fn.m_name;
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(fn);
+            const bool is_compiler_generated_helper =
+                fn_name.rfind("_lcompilers_", 0) == 0 &&
+                ftype->m_abi == ASR::abiType::Source &&
+                ftype->m_deftype == ASR::deftypeType::Implementation;
+
+            // Internal linkage is valid only for definitions; declarations must remain external.
+            if (is_compiler_generated_helper) {
+                return llvm::GlobalValue::InternalLinkage;
+            }
+            return llvm::GlobalValue::ExternalLinkage;
+        };
         llvm::Function *F = nullptr;
         std::string sym_name = x.m_name;
         if (sym_name == "main") {
@@ -7921,7 +7935,7 @@ public:
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, fn_name, module.get());
+                    get_function_linkage(x), fn_name, module.get());
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
@@ -7943,7 +7957,7 @@ public:
                             if ( arg->m_v == item.second ) {
                                 interface_as_arg = true;
                                 llvm::FunctionType* fntype = llvm_utils->get_function_type(*v, module.get());
-                                llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, v->m_name, module.get());
+                                llvm::Function* fn = llvm::Function::Create(fntype, get_function_linkage(x), v->m_name, module.get());
                                 uint32_t hash = get_hash((ASR::asr_t*)v);
                                 llvm_symtab_fn[hash] = fn;
                             }
@@ -7994,7 +8008,7 @@ public:
                     if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                         llvm_symtab_fn_names[fn_name] = h;
                         llvm::Function* F = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, fn_name, module.get());
+                            get_function_linkage(x), fn_name, module.get());
                         llvm_symtab_fn[h] = F;
                     } else {
                         uint32_t old_h = llvm_symtab_fn_names[fn_name];

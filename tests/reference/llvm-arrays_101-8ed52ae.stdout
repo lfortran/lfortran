@@ -40,7 +40,7 @@ target datalayout = "..."
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }>
 @31 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define float @_lcompilers_real_i32(i32* %x) {
+define internal float @_lcompilers_real_i32(i32* %x) {
 .entry:
   %_lcompilers_real_i32 = alloca float, align 4
   %0 = load i32, i32* %x, align 4

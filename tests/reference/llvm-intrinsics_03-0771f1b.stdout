@@ -20,7 +20,7 @@ target datalayout = "..."
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define double @_lcompilers_cos_f64(double* %x) {
+define internal double @_lcompilers_cos_f64(double* %x) {
 .entry:
   %_lcompilers_cos_f64 = alloca double, align 8
   %0 = load double, double* %x, align 8

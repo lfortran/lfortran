@@ -22,7 +22,7 @@ target datalayout = "..."
 @5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @6 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define i32 @_lcompilers_len_trim_str(%string_descriptor* %str) {
+define internal i32 @_lcompilers_len_trim_str(%string_descriptor* %str) {
 .entry:
   %StringItem = alloca %string_descriptor, align 8
   %result = alloca i32, align 4
@@ -93,7 +93,7 @@ FINALIZE_SYMTABLE__lcompilers_len_trim_str:       ; preds = %return
   ret i32 %23
 }
 
-define void @_lcompilers_trim_str(%string_descriptor* %str, %string_descriptor* %result) {
+define internal void @_lcompilers_trim_str(%string_descriptor* %str, %string_descriptor* %result) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %StrSlice_StrView = alloca %string_descriptor, align 8
