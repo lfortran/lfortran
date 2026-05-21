@@ -84,6 +84,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
 
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
+static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
@@ -4409,15 +4410,20 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     }
     return false;
 }
-
+/**
+ * Check if two derived types are :
+ * 1) the same, or
+ * 2) one is parent of another, or
+ * 3) both are unlimited polymorphic types
+ */
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    auto is_upoly = [](ASR::Struct_t* s) {
-        return s->m_struct_signature != nullptr &&
-            ASR::down_cast<ASR::StructType_t>(
-                s->m_struct_signature)->m_is_unlimited_polymorphic;
-    };
     return a == b || is_parent(a, b) || is_parent(b, a) ||
-        (is_upoly(a) && is_upoly(b));
+        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b));
+}
+
+// Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
+inline bool can_pass_derviedtype_arg_to_parameter(ASR::Struct_t* arg, ASR::Struct_t* param) {
+    return arg == param || is_parent(param, arg) || is_unlimited_polymorphic_type(param);
 }
 
 // Helper: check if IntegerBinOp is identity (x+0, 0+x, x-0)
