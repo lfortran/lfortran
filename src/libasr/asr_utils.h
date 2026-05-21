@@ -571,14 +571,32 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
     switch (s.type) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
-            std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration, true);
-            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
+            ASR::ttype_t *base_type = ASRUtils::extract_type(v->m_type);
+            std::string res = type_to_str_fortran_symbol(base_type, v->m_type_declaration, true);
+            if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(base_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
                 } else {
                     res = "class(" + res + ")";
                 }
+            }
+            // Add dimension attribute for array types
+            ASR::ttype_t *type_past_alloc = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) {
+                ASR::Array_t *array_t = ASR::down_cast<ASR::Array_t>(type_past_alloc);
+                res += ", dimension(";
+                for (size_t i = 0; i < array_t->n_dims; i++) {
+                    if (i > 0) res += ", ";
+                    res += ":";
+                }
+                res += ")";
+            }
+            // Add allocatable/pointer attributes
+            if (ASR::is_a<ASR::Allocatable_t>(*v->m_type)) {
+                res += ", allocatable";
+            } else if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
+                res += ", pointer";
             }
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
