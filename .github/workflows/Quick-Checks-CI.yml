@@ -414,6 +414,7 @@ jobs:
             micromamba run -n xeus-lfortran-wasm-build node src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         shell: bash -l {0}
         run: |
             ci/upload_lfortran_wasm.sh
