@@ -654,6 +654,10 @@ program continue_compilation_1
     dimension :: m(3)
     open(newunit=u, file="test.dat", status="replace", asynchronous=1)
     open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
+    select case (bad_x)
+        case ('3' : 1.)
+    end select
+
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
