@@ -641,7 +641,7 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
 
     std::vector<const char *> LinkerArgs = {
         "wasm-ld", "-shared",
-        "--import-memory", "--stack-first", "--allow-undefined",
+        "--import-memory", "--experimental-pic", "--stack-first", "--allow-undefined",
         objFile.c_str(), "-o", wasmFile.c_str()
     };
     // Capture lld stderr to suppress the "not yet stable" noise and include
