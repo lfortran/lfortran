@@ -47,12 +47,11 @@ class PRIFInterface {
 
             SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
             ASRUtils::ASRBuilder b(al, loc);
-            // info_sym might be required in future if we need to store additional information about the coarray handle. For now, it is not required as the PRIF runtime interface only requires a C pointer to the coarray data.
-            // ASR::ttype_t *cptr_type = b.CPtr();
-            // ASR::symbol_t *info_sym = declare_variable(
-            //     struct_symtab, loc, "info", cptr_type, ASR::intentType::Local,
-            //     nullptr, ASR::abiType::BindC, ASR::accessType::Private,
-            //     ASR::presenceType::Required, false);
+            ASR::ttype_t *cptr_type = b.CPtr();
+            declare_variable(
+                struct_symtab, loc, "info", cptr_type, ASR::intentType::Local,
+                nullptr, ASR::abiType::BindC, ASR::accessType::Private,
+                ASR::presenceType::Required, false);
 
             Vec<char*> members; members.reserve(al, 1);
             members.push_back(al, s2c(al, "info"));
