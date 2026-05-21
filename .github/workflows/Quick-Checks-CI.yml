@@ -356,6 +356,7 @@ jobs:
         run: |
           set -ex
           micromamba create -f environment-wasm-build.yml -y
+          micromamba install -n xeus-lfortran-wasm-build re2c bison -c conda-forge -y
 
       - name: Show Emscripten and Node Info
         shell: bash -l {0}
