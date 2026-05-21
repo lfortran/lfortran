@@ -107,6 +107,4 @@ endif()
 #    LIBRARY DESTINATION lib
 #)
 
-if (NOT EMSCRIPTEN)
-    add_subdirectory(tests)
-endif()
+add_subdirectory(tests)

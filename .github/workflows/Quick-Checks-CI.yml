@@ -350,57 +350,32 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
-      - name : Remove existing node
-        shell: bash -e -l {0}
-        run : |
-            which node
-            node -v
-            sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
-
-      - name: Setup Emscripten SDK
+      # ── Set up Emscripten 4 from conda instead of outdated emsdk 3.1.35 ──
+      - name: Install Emscripten 4 environment
         shell: bash -l {0}
         run: |
           set -ex
-
-          mkdir -p $HOME/ext
-          cd $HOME/ext
-          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/4.0.13.tar.gz
-          tar -xvf emsdk.tar.gz
-          mv emsdk-4.0.13 emsdk
-          export EMSDK_PATH=$HOME/ext/emsdk
-          echo $EMSDK_PATH
-          cd $EMSDK_PATH
-          ./emsdk install 3.1.35
-          ./emsdk activate 3.1.35
-          ./emsdk install node-18.20.3-64bit
-          ./emsdk activate node-18.20.3-64bit
+          micromamba create -f environment-wasm-build.yml -y
 
       - name: Show Emscripten and Node Info
         shell: bash -l {0}
         run: |
             set -ex
-            # Activate PATH and other environment variables in the current terminal
-            source $HOME/ext/emsdk/emsdk_env.sh
-            emcc -v
-            em++ -v
-            which node
-            node -v
+            micromamba run -n xeus-lfortran-wasm-build emcc -v
+            micromamba run -n xeus-lfortran-wasm-build em++ -v
+            micromamba run -n xeus-lfortran-wasm-build node -v
 
       - name: Build to WASM
         shell: bash -l {0}
         run: |
             set -ex
-            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-            ./build_to_wasm.sh
+            micromamba run -n xeus-lfortran-wasm-build ./build_to_wasm.sh
 
       - name: Test built lfortran.wasm
         shell: bash -l {0}
         run: |
             set -ex
-            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-            which node
-            node -v
-            node src/lfortran/tests/test_lfortran.js
+            micromamba run -n xeus-lfortran-wasm-build node src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
         shell: bash -l {0}
