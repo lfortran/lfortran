@@ -6,5 +6,4 @@ dependencies:
   - xeus-lite
   - xeus
   - nlohmann_json
-  - zlib
   - llvm
