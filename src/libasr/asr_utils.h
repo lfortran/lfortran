@@ -6,6 +6,8 @@
 #include <set>
 #include <limits>
 #include <optional>
+#include <vector>
+#include <utility>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
