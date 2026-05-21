@@ -3362,46 +3362,6 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
         }
 };
 
-class ExprReferencesSymbolVisitor:
-    public ASR::BaseWalkVisitor<ExprReferencesSymbolVisitor> {
-public:
-    ASR::symbol_t* target_sym;
-    bool found;
-
-    ExprReferencesSymbolVisitor(ASR::symbol_t* sym) :
-        target_sym(sym), found(false) {}
-
-    void visit_Var(const ASR::Var_t& x) {
-        if (x.m_v == target_sym) {
-            found = true;
-        }
-    }
-};
-
-static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym) {
-    if (!expr) return false;
-    ExprReferencesSymbolVisitor visitor(sym);
-    visitor.visit_expr(*expr);
-    return visitor.found;
-}
-
-class HasFunctionParamVisitor : public ASR::BaseWalkVisitor<HasFunctionParamVisitor> {
-public:
-    bool found;
-    
-    HasFunctionParamVisitor() : found(false) {}
-
-    void visit_FunctionParam(const ASR::FunctionParam_t & /*x*/) {
-        found = true;
-    }
-};
-
-static inline bool expr_has_function_param(ASR::expr_t* expr) {
-    if (!expr) return false;
-    HasFunctionParamVisitor v;
-    v.visit_expr(*expr);
-    return v.found;
-}
 
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
@@ -3410,6 +3370,7 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     Allocator& al;
     ASR::call_arg_t* m_args;
     size_t n_args;
+    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> replacements;
 
     public:
     ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
@@ -3421,12 +3382,26 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
             if (n >= n_args) {
                 LCOMPILERS_ASSERT("FunctionParam param number not in range.");
             };
+            
+            replacements.push_back({current_expr, *current_expr});
             *current_expr = m_args[n].m_value;
         }
     }
 
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
         if (!t) return nullptr;
+        replacements.clear(); 
+
+        ASR::expr_t** current_copy = current_expr;
+        current_expr = &t;
+        
+        replace_expr(t);
+        current_expr = current_copy;
+
+        if (replacements.empty()) {
+            return t; 
+        }
+
 
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
@@ -3435,10 +3410,10 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
         ASR::expr_t* tc = duplicator.duplicate_expr(t);
         LCOMPILERS_ASSERT(duplicator.success);
 
-        ASR::expr_t** current_copy = current_expr;
-        current_expr = &tc;
-        replace_expr(tc);
-        current_expr = current_copy;
+        for (auto& rep : replacements) {
+            *(rep.first) = rep.second; 
+        }
+        replacements.clear();
 
         return tc;
     }
