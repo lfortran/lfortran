@@ -6959,13 +6959,9 @@ public:
                 ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(expr);
                 llvm::Value* v = llvm_utils->declare_string_constant(sc);
                 if (!v) break;
-                if (llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(v)) {
-                    if (gv->hasInitializer()) {
-                        return gv->getInitializer();
-                    }
-                }
-                if (llvm::Constant* cc = llvm::dyn_cast<llvm::Constant>(v)) {
-                    return cc;
+                llvm::GlobalVariable* gv = llvm::cast<llvm::GlobalVariable>(v);
+                if (gv->hasInitializer()) {
+                    return gv->getInitializer();
                 }
                 break;
             }
