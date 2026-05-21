@@ -122,11 +122,7 @@ public:
 
 private:
     std::unique_ptr<llvm::LLVMContext> context;
-    // SmallString stored as std::string because SmallString is not in scope here
     std::string TempDir;
-    std::vector<void*> loaded_modules;
-    // LLVM cl options to re-apply after lld wipes them (mirrors xeus-cpp Wasm.cpp)
-    std::vector<std::string> stored_llvm_args;
 };
 
 #endif // __EMSCRIPTEN__

@@ -650,16 +650,6 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     llvm::raw_string_ostream lld_errs_stream(lld_errs);
     const ::lld::DriverDef WasmDriver = {::lld::Flavor::Wasm, &::lld::wasm::link};
     ::lld::Result Result = ::lld::lldMain(LinkerArgs, llvm::outs(), lld_errs_stream, {WasmDriver});
-    // lld::wasm::link calls cl::ResetAllOptionOccurrences() which clears all
-    // LLVM command-line option state (e.g. -wasm-enable-eh). Re-parse the
-    // stored args so the next TargetMachine creation sees the correct state.
-    if (!stored_llvm_args.empty()) {
-        std::vector<const char *> arg_ptrs;
-        arg_ptrs.push_back("xlfortran (restoring LLVM options)");
-        for (const std::string &arg : stored_llvm_args)
-            arg_ptrs.push_back(arg.c_str());
-        llvm::cl::ParseCommandLineOptions(arg_ptrs.size(), arg_ptrs.data());
-    }
     if (Result.retCode)
         throw LCompilersException("WasmLFortranExecutor: wasm-ld failed for "
                                   + stem + ": " + lld_errs_stream.str());
@@ -667,17 +657,15 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     void *handle = dlopen(wasmFile.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (!handle)
         throw LCompilersException(std::string("WasmLFortranExecutor: dlopen failed: ") + dlerror());
-    loaded_modules.push_back(handle);
+    (void)handle;
 }
 
 intptr_t WasmLFortranExecutor::get_symbol_address(const std::string &name)
 {
-    for (auto it = loaded_modules.rbegin(); it != loaded_modules.rend(); ++it) {
-        void *sym = dlsym(*it, name.c_str());
-        if (sym)
-            return reinterpret_cast<intptr_t>(sym);
-    }
-    throw LCompilersException("WasmLFortranExecutor: symbol not found: " + name);
+    void *sym = dlsym(RTLD_DEFAULT, name.c_str());
+    if (!sym)
+        throw LCompilersException("WasmLFortranExecutor: symbol not found: " + name);
+    return reinterpret_cast<intptr_t>(sym);
 }
 
 #endif // __EMSCRIPTEN__
