@@ -13,7 +13,8 @@ Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
     abi abi, access access, presence presence, bool value_attr,
     bool target_attr, bool contiguous_attr, string? bindc_name,
     bool is_volatile, bool is_protected,
-    pass_attr pass_attr, identifier? self_argument)
+    pass_attr pass_attr, identifier? self_argument,
+    codimension* codims)
 ```
 
 ### Arguments
@@ -76,6 +77,11 @@ dummy argument of the procedure interface receives the passed object:
 - a name (e.g. `"pt"`) — the passed object goes to the dummy argument with
   that name, which may be at any position in the argument list
 
+`codims` optional codimension bounds for coarray variables. Each entry follows
+the same structure as a `dimension` (start and length). When omitted, the
+variable is not a coarray. The number of codimension entries (`n_codims`) serves
+as the corank of the variable, and `n_codims > 0` indicates the variable is a
+coarray.
 
 ### Return values
 
@@ -119,9 +125,29 @@ end type
 For type-bound procedures declared with `contains` (not procedure pointer
 components), see [StructMethodDeclaration](StructMethodDeclaration.md).
 
+### Coarray Variables
+
+In Fortran, coarrays enable data access and communication across multiple images
+(processes/threads) in a parallel program. A coarray variable has codimensions
+declared with the `[...]` notation:
+
+```fortran
+integer :: scalar_coarray[*]      ! rank 0, corank 1
+integer :: array_coarray(10)[*]   ! rank 1, corank 1
+integer :: matrix[*,*]            ! rank 0, corank 2
+integer :: scalar_not_coarray         ! rank 0, corank 0
+integer :: array_not_coarray(10)      ! rank 1, corank 0
+```
+
+The corank of a `Variable` is derived from its `codims` array — it is the
+number of codimension entries (`n_codims`). For non-coarray variables, `codims`
+is empty and the corank is 0. When accessing coarray elements in expressions,
+the number of coindices in a `CoarrayRef` node must match the variable's corank.
+
 `Variable` represents declarations of variables. `Var` nodes represent instances
 of variables in code. To represent the use of a variable in an expression,
-employ the ASR `expr Var` node.
+employ the ASR `expr Var` node. To reference a coarray with explicit image
+selectors, use the `CoarrayRef` node.
 
 ## Examples
 
@@ -194,7 +220,55 @@ ASR:
 )
 
 ```
+
+## Coarray Example
+
+```fortran
+program coarray_test
+    implicit none
+    integer :: x[*]
+    x = 42
+    if (this_image() == 1) then
+        print *, x[2]  ! Access x on image 2
+    end if
+end program coarray_test
+```
+
+ASR (simplified):
+
+```fortran
+(Variable
+    2
+    x
+    Local
+    ()
+    ()
+    Default
+    (Integer 4 [])
+    Source
+    Public
+    Required
+    .false.
+    [(data_or_star ...)]  ! codims with n_codims=1 (one codimension entry)
+)
+```
+
+In the assignment `x[2] = ...`, the coarray reference is represented as:
+
+```fortran
+(CoarrayRef
+    (Var 2 x)
+    [(array_index (left (IntegerConstant 2)) (right ()) (step ()))]
+    (Integer 4 [])
+    ()
+)
+```
+
+The single codimension entry in the Variable's `codims` (i.e. `n_codims=1`)
+matches the single coindex `[2]` in the `CoarrayRef` expression.
+
 ## See Also
 
 [Var](../expression_nodes/Var.md),
+[CoarrayRef](../expression_nodes/CoarrayRef.md),
 [StructMethodDeclaration](StructMethodDeclaration.md)

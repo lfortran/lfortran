@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             __libasr_created_dummy_variable_1:
                                 (Variable
@@ -53,7 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             __libasr_created_dummy_variable_2:
                                 (Variable
@@ -77,7 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
@@ -103,7 +103,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             __libasr_created_variable_pointer_1:
                                 (Variable
@@ -129,7 +129,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             __libasr_created_variable_pointer_2:
                                 (Variable
@@ -155,7 +155,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             f1:
                                 (ExternalSymbol
@@ -191,7 +191,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             lfortran_tmp:
                                 (Variable
@@ -217,7 +217,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             lfortran_tmp1:
                                 (Variable
@@ -243,7 +243,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             my_sub:
                                 (ExternalSymbol
@@ -448,7 +448,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -474,7 +474,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -498,7 +498,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     f1
@@ -562,7 +562,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     my_sub

@@ -17,8 +17,8 @@
                                                     6
                                                     1_toml_date_day
                                                     4 day
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     day
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     6
                                                     1_toml_date_month
                                                     4 month
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     month
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     6
                                                     1_toml_date_year
                                                     4 year
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     year
                                                     Public
                                                 ),
@@ -64,7 +64,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lhs:
                                                 (Variable
@@ -90,7 +90,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             rhs:
                                                 (Variable
@@ -121,7 +121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     date_to_string
@@ -204,6 +204,7 @@
                                         ()
                                         ()
                                         ()
+                                        ()
                                     )]
                                     ()
                                     Private
@@ -216,13 +217,13 @@
                                     (SymbolTable
                                         8
                                         {
-                                            1_toml_date_date_to_string:
+                                            1_toml_date_to_string:
                                                 (ExternalSymbol
                                                     8
-                                                    1_toml_date_date_to_string
+                                                    1_toml_date_to_string
                                                     4 to_string
-                                                    toml_date
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_date]
                                                     to_string
                                                     Public
                                                 ),
@@ -231,8 +232,8 @@
                                                     8
                                                     1_toml_datetime_date
                                                     5 date
-                                                    toml_datetime
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_datetime]
                                                     date
                                                     Public
                                                 ),
@@ -241,18 +242,18 @@
                                                     8
                                                     1_toml_datetime_time
                                                     5 time
-                                                    toml_datetime
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_datetime]
                                                     time
                                                     Public
                                                 ),
-                                            1_toml_time_time_to_string:
+                                            1_toml_time_to_string:
                                                 (ExternalSymbol
                                                     8
-                                                    1_toml_time_time_to_string
+                                                    1_toml_time_to_string
                                                     3 to_string
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     to_string
                                                     Public
                                                 ),
@@ -280,7 +281,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             rhs:
                                                 (Variable
@@ -334,7 +335,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             temporary:
                                                 (Variable
@@ -360,7 +361,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             time_to_string:
                                                 (ExternalSymbol
@@ -448,7 +449,7 @@
                                             ()
                                         )
                                         [(SubroutineCall
-                                            8 1_toml_date_date_to_string
+                                            8 1_toml_date_to_string
                                             ()
                                             [((Var 8 lhs))
                                             ((StructInstanceMember
@@ -513,7 +514,7 @@
                                                 ()
                                             )
                                             [(SubroutineCall
-                                                8 1_toml_time_time_to_string
+                                                8 1_toml_time_to_string
                                                 ()
                                                 [((Var 8 temporary))
                                                 ((StructInstanceMember
@@ -678,8 +679,8 @@
                                                     9
                                                     1_toml_time_hour
                                                     3 hour
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     hour
                                                     Public
                                                 ),
@@ -688,8 +689,8 @@
                                                     9
                                                     1_toml_time_millisec
                                                     3 millisec
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     millisec
                                                     Public
                                                 ),
@@ -698,8 +699,8 @@
                                                     9
                                                     1_toml_time_minute
                                                     3 minute
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     minute
                                                     Public
                                                 ),
@@ -708,8 +709,8 @@
                                                     9
                                                     1_toml_time_second
                                                     3 second
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     second
                                                     Public
                                                 ),
@@ -718,8 +719,8 @@
                                                     9
                                                     1_toml_time_zone
                                                     3 zone
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     zone
                                                     Public
                                                 ),
@@ -745,7 +746,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             millisec:
                                                 (Variable
@@ -769,7 +770,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             minute:
                                                 (Variable
@@ -793,7 +794,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             second:
                                                 (Variable
@@ -817,7 +818,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -854,7 +855,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             zone:
                                                 (Variable
@@ -878,7 +879,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     new_toml_time
@@ -1054,8 +1055,8 @@
                                                     7
                                                     1_toml_time_hour
                                                     3 hour
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     hour
                                                     Public
                                                 ),
@@ -1064,8 +1065,8 @@
                                                     7
                                                     1_toml_time_millisec
                                                     3 millisec
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     millisec
                                                     Public
                                                 ),
@@ -1074,8 +1075,8 @@
                                                     7
                                                     1_toml_time_minute
                                                     3 minute
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     minute
                                                     Public
                                                 ),
@@ -1084,8 +1085,8 @@
                                                     7
                                                     1_toml_time_second
                                                     3 second
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     second
                                                     Public
                                                 ),
@@ -1094,8 +1095,8 @@
                                                     7
                                                     1_toml_time_zone
                                                     3 zone
-                                                    toml_time
-                                                    []
+                                                    tomlf_datetime
+                                                    [toml_time]
                                                     zone
                                                     Public
                                                 ),
@@ -1121,7 +1122,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lfortran_iomsg1:
                                                 (Variable
@@ -1145,7 +1146,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lhs:
                                                 (Variable
@@ -1171,7 +1172,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             rhs:
                                                 (Variable
@@ -1208,7 +1209,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     time_to_string
@@ -1321,6 +1322,7 @@
                                             ()
                                             ()
                                             ()
+                                            ()
                                         )]
                                         [(Allocate
                                             [((Var 7 lhs)
@@ -1371,6 +1373,7 @@
                                             ()
                                             ()
                                             .true.
+                                            ()
                                             ()
                                             ()
                                             ()
@@ -1456,7 +1459,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             month:
                                                 (Variable
@@ -1480,7 +1483,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1515,7 +1518,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -1584,7 +1587,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             time:
                                                 (Variable
@@ -1623,7 +1626,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1716,7 +1719,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             millisec:
                                                 (Variable
@@ -1742,7 +1745,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             minute:
                                                 (Variable
@@ -1766,7 +1769,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             second:
                                                 (Variable
@@ -1790,7 +1793,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
@@ -1827,7 +1830,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             ~assign:
                                                 (CustomOperator

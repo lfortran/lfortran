@@ -40,7 +40,7 @@ program daio4
   inquire (42, recl=irl)
   if (irl /= -1) error stop
 
-  open (42, file='fort.42', access='stream')
+  open (42, file='file_48.dat', access='stream')
   inquire (42, recl=irl)
   if (irl /= -2) error stop
 

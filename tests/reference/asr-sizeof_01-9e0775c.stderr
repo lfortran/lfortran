@@ -2,4 +2,4 @@ warning: `sizeof` is an LFortran extension
  --> tests/warnings/sizeof_01.f90:6:9
   |
 6 |     s = sizeof(x)
-  |         ^^^^^^^^^ use `c_sizeof` from `iso_c_binding` for portable code
+  |         ^^^^^^^^^ use the `storage_size` intrinsic function. Alternatively, use `c_sizeof` from `iso_c_binding` for `bind(c)` types

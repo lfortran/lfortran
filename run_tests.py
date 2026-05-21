@@ -35,6 +35,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_json = is_included("ast_json")
     ast_no_prescan = is_included("ast_no_prescan")
     ast_f90 = is_included("ast_f90")
+    ast_fixed_form = is_included("ast_fixed_form")
+    ast_f90_fixed_form = is_included("ast_f90_fixed_form")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
@@ -235,6 +237,19 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
+    if ast_fixed_form:
+        # Force fixed-form parsing of the file, regardless of its extension.
+        # Used to exercise the fixed-form parser on a source whose layout is
+        # valid in both free and fixed form.
+        run_test(
+            filename,
+            "ast_fixed_form",
+            "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
     if ast_f90:
         if filename.endswith(".f"):
             # Use fixed form
@@ -256,6 +271,17 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
+
+    if ast_f90_fixed_form:
+        # See ast_fixed_form above.
+        run_test(
+            filename,
+            "ast_f90_fixed_form",
+            "lfortran --fixed-form --show-ast-f90 --no-indent --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
 
     if lookup_name:
         run_test(

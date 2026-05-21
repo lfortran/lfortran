@@ -1979,7 +1979,7 @@ namespace Shape {
                 new_args[0].m_value);
         } else {
             fill_func_arg("source", ASRUtils::duplicate_type_with_empty_dims(al,
-                arg_types[0]));
+                ASRUtils::type_get_past_pointer(arg_types[0])));
         }
         ASR::expr_t* result = nullptr;
         result = declare(fn_name, return_type, Out);
@@ -2027,6 +2027,79 @@ namespace Shape {
 } // namespace Shape
 
 namespace Cshift {
+    static inline int get_cshift_actual_dim(int rank, int curr_idx,
+            int shifting_dim) {
+        int actual_dim = -1;
+        int count = 0;
+        for (int i = 1; i <= rank; i++) {
+            if (i == shifting_dim) continue;
+            if (count == curr_idx) {
+                actual_dim = i;
+                break;
+            }
+            count++;
+        }
+        return actual_dim;
+    }
+
+    static inline ASR::stmt_t* create_do_loop_helper_cshift_array_shift(
+            Allocator &al, const Location &loc,
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* j,
+            ASR::expr_t* i, ASR::expr_t* shift_val, ASR::expr_t* shift,
+            ASR::expr_t* array, ASR::expr_t* res, int curr_idx,
+            int shifting_dim, int index_kind) {
+        ASRBuilder b(al, loc);
+        int rank = (int)do_loop_variables.size() + 1;
+        int actual_dim = get_cshift_actual_dim(rank, curr_idx, shifting_dim);
+        if (curr_idx == (int)do_loop_variables.size() - 1) {
+            std::vector<ASR::expr_t*> array_vars(rank);
+            std::vector<ASR::expr_t*> res_vars(rank);
+
+            array_vars[shifting_dim - 1] = j;
+            res_vars[shifting_dim - 1] = i;
+
+            int k = 0;
+            for (int idim = 0; idim < rank; idim++) {
+                if (idim == shifting_dim - 1) continue;
+                array_vars[idim] = do_loop_variables[k];
+                res_vars[idim] = do_loop_variables[k];
+                k++;
+            }
+
+            ASR::stmt_t* copy_current_element = b.Assignment(
+                b.ArrayItem_01(res, res_vars), b.ArrayItem_01(array, array_vars));
+            ASR::expr_t* lbound = b.GetLBound(array, shifting_dim, index_kind);
+            ASR::expr_t* shift_start = b.Add(lbound, shift_val);
+            return b.DoLoop(do_loop_variables[curr_idx],
+                b.GetLBound(array, actual_dim, index_kind),
+                b.GetUBound(array, actual_dim, index_kind), {
+                    b.Assignment(shift_val, b.ArrayItem_01(shift, do_loop_variables)),
+                    b.If(b.Lt(shift_val, b.i_idx(0, index_kind)), {
+                        b.Assignment(shift_val, b.Add(shift_val,
+                            b.GetUBound(array, shifting_dim, index_kind)))
+                    }, {}),
+                    b.Assignment(i, lbound),
+                    b.DoLoop(j, shift_start,
+                        b.GetUBound(array, shifting_dim, index_kind), {
+                            copy_current_element,
+                            b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))
+                        }, nullptr),
+                    b.DoLoop(j, lbound,
+                        b.Sub(shift_start, b.i_idx(1, index_kind)), {
+                            copy_current_element,
+                            b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))
+                        }, nullptr)
+                }, nullptr);
+        }
+        return b.DoLoop(do_loop_variables[curr_idx],
+            b.GetLBound(array, actual_dim, index_kind),
+            b.GetUBound(array, actual_dim, index_kind), {
+                create_do_loop_helper_cshift_array_shift(al, loc,
+                    do_loop_variables, j, i, shift_val, shift, array, res,
+                    curr_idx + 1, shifting_dim, index_kind)
+            }, nullptr);
+    }
+
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
         ASRUtils::require_impl(x.n_args == 2 || x.n_args == 3,
@@ -2111,6 +2184,11 @@ namespace Cshift {
         int array_dim = -1;
         extract_value(array_dims[0].m_length, array_dim);
         ASRUtils::require_impl(array_rank > 0, "The argument `array` in `cshift` must be of rank > 0", array->base.loc, diag);
+        int shift_rank = extract_n_dims_from_ttype(type_shift);
+        if (shift_rank != 0 && shift_rank != array_rank - 1) {
+            append_error(diag, "The argument `shift` in `cshift` must be scalar or have rank one less than `array`", shift->base.loc);
+            return nullptr;
+        }
         ASRBuilder b(al, loc);
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, array_rank);
         int overload_id = 2;
@@ -2153,10 +2231,15 @@ namespace Cshift {
                 shifting_dim = (int)dim_val;
             }
         }
-        declare_basic_variables("_lcompilers_cshift");
-        if (shifting_dim != 1) {
-            fn_name += "_dim" + std::to_string(shifting_dim);
+        bool is_shift_array = ASRUtils::is_array(arg_types[1]);
+        std::string cshift_fn_name = "_lcompilers_cshift";
+        if (is_shift_array) {
+            cshift_fn_name += "_array_shift";
         }
+        if (shifting_dim != 1) {
+            cshift_fn_name += "_dim" + std::to_string(shifting_dim);
+        }
+        declare_basic_variables(cshift_fn_name);
         fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("shift", arg_types[1]);
         ASR::ttype_t* return_type_ = return_type;
@@ -2201,6 +2284,25 @@ namespace Cshift {
         ASR::expr_t *j = declare("j", b.int_type(index_kind), Local);
         int n_dims = extract_n_dims_from_ttype(return_type);
         ASR::expr_t* shift_val = declare("shift_val", b.int_type(index_kind), Local);
+        std::vector<ASR::expr_t*> do_loop_variables;
+        for(int i=0; i<n_dims-1; i++) {
+            ASR::expr_t* var = declare("i_" + std::to_string(i), b.int_type(index_kind), Local);
+            do_loop_variables.push_back(var);
+        }
+        if (is_shift_array) {
+            body.push_back(al, create_do_loop_helper_cshift_array_shift(al, loc,
+                do_loop_variables, j, i, shift_val, args[1], args[0], result, 0,
+                shifting_dim, index_kind));
+            body.push_back(al, b.Return());
+            ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep,
+                    args, body, nullptr, ASR::abiType::Source,
+                    ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, fn_sym);
+            Vec<ASR::call_arg_t> new_args; new_args.reserve(al, 2);
+            new_args.push_back(al, m_args[0]);
+            new_args.push_back(al, m_args[1]);
+            return b.Call(fn_sym, new_args, return_type, nullptr);
+        }
         body.push_back(al, b.Assignment(shift_val, args[1]));
         body.push_back(al, b.If(b.Lt(args[1], b.i_idx(0, index_kind)), {
             b.Assignment(shift_val, b.Add(shift_val, b.GetUBound(args[0], shifting_dim, index_kind)))
@@ -2208,11 +2310,6 @@ namespace Cshift {
             b.Assignment(shift_val, shift_val)
         }
         ));
-        std::vector<ASR::expr_t*> do_loop_variables;
-        for(int i=0; i<n_dims-1; i++) {
-            ASR::expr_t* var = declare("i_" + std::to_string(i), b.int_type(index_kind), Local);
-            do_loop_variables.push_back(var);
-        }
         body.push_back(al, b.Assignment(i, b.GetLBound(args[0], shifting_dim, index_kind)));
         ASR::stmt_t *do_loop = PassUtils::create_do_loop_helper_cshift(al, loc, do_loop_variables, j, i, args[0], result, 0, shifting_dim);
         
@@ -2744,15 +2841,12 @@ namespace Eoshift {
         extract_value(array_dims[0].m_length, array_dim);
         ASRUtils::require_impl(array_rank > 0, "The argument `array` in `eoshift` must be of rank > 0", array->base.loc, diag);
         ASRBuilder b(al, loc);
-        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
+        Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, array_rank);
         int overload_id = 2;
-        if (!is_dim_present) {
-            result_dims.push_back(al, b.set_dim(array_dims[0].m_start, array_dims[0].m_length));
-            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
-        } else {
-            result_dims.push_back(al, b.set_dim(dim, dim));
-            ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
+        for (int i = 0; i < array_rank; i++) {
+            result_dims.push_back(al, b.set_dim(array_dims[i].m_start, array_dims[i].m_length));
         }
+        ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
             ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
         }
@@ -2772,8 +2866,11 @@ namespace Eoshift {
                 final_boundary = b.StringConstant("  ", boundary_type);
             }
         }
-        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 3);
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 4);
         m_args.push_back(al, array); m_args.push_back(al, shift); m_args.push_back(al, final_boundary);
+        if (is_dim_present) {
+            m_args.push_back(al, dim);
+        }
         ASR::expr_t *value = nullptr;
         if (all_args_evaluated(m_args)) {
             value = eval_Eoshift(al, loc, ret_type, m_args, diag);
@@ -2788,34 +2885,21 @@ namespace Eoshift {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/,
             int index_kind) {
+        int shifting_dim = 1;
+        if (m_args.size() == 4) {
+            int64_t dim_val = -1;
+            if (ASRUtils::extract_value(m_args[3].m_value, dim_val)) {
+                shifting_dim = (int)dim_val;
+            }
+        }
         declare_basic_variables("_lcompilers_eoshift");
+        if (shifting_dim != 1) {
+            fn_name += "_dim" + std::to_string(shifting_dim);
+        }
         fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("shift", arg_types[1]);
         fill_func_arg("boundary", arg_types[2]);
         ASR::ttype_t* return_type_ = return_type;
-        /*
-            Eoshift(array, shift, boundary, dim)
-            int i = 0
-            do j = shift, size(array)
-                result[i] = array[j]
-                i = i + 1
-            end do
-            do j = 1, shift
-                result[i] = array[j]
-                i = i + 1
-            end do
-
-            if (shift >= 0) then
-                i = size(array) - shift + 1
-            else
-                i = 1
-            end if
-
-            do j = 1, shift
-                result(i) = boundary
-                i = i + 1
-            end do
-        */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(return_type_);
@@ -2841,60 +2925,64 @@ namespace Eoshift {
         ASR::expr_t *j = declare("j", b.int_type(index_kind), Local);
         ASR::expr_t* abs_shift = declare("z", b.int_type(index_kind), Local);
         ASR::expr_t* abs_shift_val = declare("k", b.int_type(index_kind), Local);
-        ASR::expr_t* shift_val = declare("shift_val", b.int_type(index_kind), Local);;
-        ASR::expr_t* final_boundary = declare("final_boundary", character(2), Local);   //TODO: It does not handle character type
+        ASR::expr_t* shift_val = declare("shift_val", b.int_type(index_kind), Local);
         ASR::expr_t* boundary = args[2];
+
+        int n_dims = extract_n_dims_from_ttype(return_type);
+        std::vector<ASR::expr_t*> do_loop_variables;
+        for (int idx = 0; idx < n_dims - 1; idx++) {
+            ASR::expr_t* var = declare("i_" + std::to_string(idx), b.int_type(index_kind), Local);
+            do_loop_variables.push_back(var);
+        }
 
         body.push_back(al, b.Assignment(shift_val, args[1]));
         body.push_back(al, b.Assignment(abs_shift, shift_val));
         body.push_back(al, b.Assignment(abs_shift_val, shift_val));
 
         body.push_back(al, b.If(b.Lt(args[1], b.i_idx(0, index_kind)), {
-            b.Assignment(shift_val, b.Add(shift_val, b.GetUBound(args[0], 1, index_kind))),
+            b.Assignment(shift_val, b.Add(shift_val, b.GetUBound(args[0], shifting_dim, index_kind))),
             b.Assignment(abs_shift, b.Mul(abs_shift, b.i_idx(-1, index_kind)))
         }, {
             b.Assignment(shift_val, shift_val)
         }
         ));
-        body.push_back(al, b.Assignment(i, b.i_idx(1, index_kind)));
-        body.push_back(al, b.DoLoop(j, b.Add(shift_val, b.i_idx(1, index_kind)), b.GetUBound(args[0], 1, index_kind), {
-            b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
-            b.Assignment(i, b.Add(i, b.i_idx(1, index_kind))),
-        }, nullptr));
-        body.push_back(al, b.DoLoop(j, b.GetLBound(args[0], 1, index_kind), shift_val, {
-            b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
-            b.Assignment(i, b.Add(i, b.i_idx(1, index_kind))),
-        }, nullptr));
+        body.push_back(al, b.Assignment(i, b.GetLBound(args[0], shifting_dim, index_kind)));
+
+        ASR::stmt_t *do_loop_copy = PassUtils::create_do_loop_helper_cshift(al, loc,
+            do_loop_variables, j, i, args[0], result, 0, shifting_dim);
+
+        ASR::expr_t* lbound_s = b.GetLBound(args[0], shifting_dim, index_kind);
+        ASR::expr_t* shift_start = b.Add(lbound_s, shift_val);
+
+        body.push_back(al, b.DoLoop(j, shift_start, b.GetUBound(args[0], shifting_dim, index_kind),
+            {do_loop_copy, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
+        body.push_back(al, b.DoLoop(j, lbound_s, b.Sub(shift_start, b.i_idx(1, index_kind)),
+            {do_loop_copy, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
 
         body.push_back(al, b.If(b.GtE(abs_shift_val, b.i_idx(0, index_kind)), {
-            b.Assignment(i, b.GetUBound(args[0], 1, index_kind)),
+            b.Assignment(i, b.GetUBound(args[0], shifting_dim, index_kind)),
             b.Assignment(i, b.Sub(i, abs_shift)),
             b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))
         }, {
-            b.Assignment(i, b.i_idx(1, index_kind))
+            b.Assignment(i, b.GetLBound(args[0], shifting_dim, index_kind))
         }
         ));
 
-        if(is_character(*expr_type(b.ArrayItem_01(args[0], {b.i_idx(1, index_kind)}))) && is_logical(*expr_type(args[2]))){
-            body.push_back(al, b.Assignment(final_boundary, b.StringConstant("  ", expr_type(b.ArrayItem_01(args[0], {b.i_idx(1, index_kind)})))));
-            body.push_back(al, b.DoLoop(j, b.i_idx(1, index_kind), abs_shift, {
-            b.Assignment(b.ArrayItem_01(result, {i}), final_boundary),
-            b.Assignment(i, b.Add(i, b.i_idx(1, index_kind))),
-        }, nullptr));
+        ASR::stmt_t *do_loop_fill = PassUtils::create_do_loop_helper_eoshift_fill(al, loc,
+            do_loop_variables, i, boundary, args[0], result, 0, shifting_dim);
 
-        }
-        else{
-            body.push_back(al, b.DoLoop(j, b.i_idx(1, index_kind), abs_shift, {
-            b.Assignment(b.ArrayItem_01(result, {i}), boundary),
-            b.Assignment(i, b.Add(i, b.i_idx(1, index_kind))),
-        }, nullptr));
-        }
+        body.push_back(al, b.DoLoop(j, b.i_idx(1, index_kind), abs_shift,
+            {do_loop_fill, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
 
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
-        return b.Call(fn_sym, m_args, return_type, nullptr);
+        Vec<ASR::call_arg_t> new_args; new_args.reserve(al, 3);
+        new_args.push_back(al, m_args[0]);
+        new_args.push_back(al, m_args[1]);
+        new_args.push_back(al, m_args[2]);
+        return b.Call(fn_sym, new_args, return_type, nullptr);
     }
 
 } // namespace Eoshift
@@ -3133,7 +3221,9 @@ namespace IanyIall {
                                         ASRUtils::expr_type(f->m_args[0]));
                 bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                         ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
-                if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
+                bool same_pointer_type = (ASRUtils::is_pointer(arg_type) ==
+                                        ASRUtils::is_pointer(ASRUtils::expr_type(f->m_args[0])));
+                if (same_allocatable_type && same_pointer_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
                         ASRUtils::expr_type(new_args[0].m_value), f->m_args[0], new_args[0].m_value, true) && orig_array_rank == rank) {
                     return builder.Call(s, new_args, return_type, nullptr);
                 } else {
@@ -3495,7 +3585,9 @@ namespace AnyAll {
                                         ASRUtils::expr_type(f->m_args[0]));
                 bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                         ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
-                if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
+                bool same_pointer_type = (ASRUtils::is_pointer(arg_type) ==
+                                        ASRUtils::is_pointer(ASRUtils::expr_type(f->m_args[0])));
+                if (same_allocatable_type && same_pointer_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
                         ASRUtils::expr_type(new_args[0].m_value), f->m_args[0], new_args[0].m_value, true) && orig_array_rank == rank) {
                     return builder.Call(s, new_args, logical_return_type, nullptr);
                 } else {

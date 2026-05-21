@@ -41,7 +41,8 @@ class ASRBuilder {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
-            ASR::Public, ASR::presenceType::Required, a_value_attr));
+            ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
+            nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
@@ -52,7 +53,8 @@ class ASRBuilder {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
-            ASR::Public, ASR::presenceType::Required, a_value_attr));
+            ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
+            nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return;
     }
@@ -63,7 +65,8 @@ class ASRBuilder {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
-            ASR::Public, ASR::presenceType::Required, a_value_attr));
+            ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
+            nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
@@ -1006,8 +1009,15 @@ class ASRBuilder {
         for (auto &x: elements) m_eles.push_back(al, x);
 
         ASR::ttype_t *fixed_size_type = Array({(int64_t) elements.size()}, base_type);
-        ASR::expr_t *arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
-            m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
+        ASR::expr_t *arr_constant;
+        if (elements.size() == 0) {
+            // Zero-size array: create an empty ArrayConstant directly
+            arr_constant = EXPR(ASR::make_ArrayConstant_t(al, loc,
+                0, nullptr, fixed_size_type, ASR::arraystorageType::ColMajor));
+        } else {
+            arr_constant = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                m_eles.p, m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
+        }
 
         // Set multi-dimensional type
         if (array_type) {

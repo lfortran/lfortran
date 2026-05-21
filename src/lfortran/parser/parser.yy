@@ -382,6 +382,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 
 %type <vec_ast> intrinsic_type_spec_list
 %type <ast> union_type_decl
+%type <n> enddo
 
 // Nonterminal tokens
 
@@ -640,7 +641,7 @@ script_unit
     | implicit_statement
     | var_decl           %dprec 9
     | derived_type_decl
-    | union_type_decl 
+    | union_type_decl
     | enum_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
@@ -1205,8 +1206,8 @@ implicit_spec_list
   We are using kind_arg_list rather than letter_spec_list to avoid conflicts
   in the parser.  The kind_args are translated into letter_specs in the
   IMPLICIT_SPEC macro.
-*/		
-   
+*/
+
 implicit_spec
     : KW_INTEGER "(" kind_arg_list ")" "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Integer, $3, @$), $6, @$); }
@@ -1215,7 +1216,7 @@ implicit_spec
 	    WARN_INTEGERSTAR($3, @2);}
     | KW_INTEGER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Integer, @$), $3, @$); }
-	    
+
     | KW_CHARACTER "(" kind_arg_list ")" "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Character, $3, @$), $6, @$); }
     | KW_CHARACTER "*" TK_INTEGER "(" kind_arg_list ")" {
@@ -1250,7 +1251,7 @@ implicit_spec
 	    WARN_COMPLEXSTAR($3, @2);}
     | KW_COMPLEX "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
-	    
+
     | KW_DOUBLE KW_PRECISION "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $4, @$); }
     | KW_DOUBLE_PRECISION "(" kind_arg_list ")" {
@@ -1272,7 +1273,7 @@ implicit_spec
 implicit_none_spec_star
     : implicit_none_spec_star "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
-    | %empty { LIST_NEW($$); }	 
+    | %empty { LIST_NEW($$); }
     ;
 
 implicit_none_spec
@@ -1429,6 +1430,7 @@ common_block_object
 
 data_set_list
     : data_set_list "," data_set { $$ = $1; LIST_ADD($$, $3); }
+    | data_set_list data_set { $$ = $1; LIST_ADD($$, $2); }
     | data_set { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
@@ -1914,7 +1916,8 @@ read_statement
     | KW_READ "(" write_arg_list ")" "," expr_list { $$ = READ($3, $6, @$); }
     | KW_READ "(" write_arg_list ")" { $$ = READ0($3, @$); }
     | KW_READ TK_INTEGER "," expr_list { $$ = READ2($2, $4, @$); }
-    | KW_READ "*" "," expr_list { $$ = READ3($4, @$); }
+    | KW_READ "*" "," expr_list_opt { $$ = READ3($4, @$); }
+    | KW_READ "*" { $$ = READ6(@$); }
     | KW_READ TK_INTEGER { $$ = READ4($2, @$); }
     | KW_READ TK_STRING "," expr_list { $$ = READ5($2, $4, @$); }
     ;
@@ -2055,9 +2058,9 @@ case_statements
     ;
 
 case_statement
-    : KW_CASE "(" case_conditions ")" sep statements {
-            $$ = CASE_STMT($3, TRIVIA_AFTER($5, @$), $6, @$); }
-    | KW_CASE KW_DEFAULT sep statements { $$ = CASE_STMT_DEFAULT(TRIVIA_AFTER($3, @$), $4, @$); }
+    : KW_CASE "(" case_conditions ")" id_opt sep statements {
+            $$ = CASE_STMT($3, TRIVIA_AFTER($6, @$), $7, @$); }
+    | KW_CASE KW_DEFAULT id_opt sep statements { $$ = CASE_STMT_DEFAULT(TRIVIA_AFTER($4, @$), $5, @$); }
     ;
 
 case_conditions
@@ -2132,15 +2135,15 @@ while_statement
 // sr-conflict (2x): "KW_DO sep" being either a do_statement or an expr
 do_statement
     : KW_DO sep statements enddo {
-            $$ = DO1(TRIVIA_AFTER($2, @$), $3, @$); }
+            $$ = DO1(TRIVIA_AFTER($2, @$), $3, $4, @$); }
     | KW_DO comma_opt id "=" expr "," expr sep statements enddo {
-            $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
+            $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, $10, @$); }
     | KW_DO comma_opt id "=" expr "," expr "," expr sep statements enddo {
-            $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, @$); }
+            $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, $12, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
-            $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, @$); }
+            $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, $11, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
-            $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, @$); }
+            $$ = DO3_LABEL(INTEGER3($2), $4, $6, $8, $10, TRIVIA_AFTER($11, @$), $12, $13, @$); }
     | KW_DO comma_opt KW_CONCURRENT "(" concurrent_control_list ")"
         concurrent_locality_star sep statements enddo {
             $$ = DO_CONCURRENT1($5, $7, TRIVIA_AFTER($8, @$), $9, @$); }
@@ -2157,9 +2160,13 @@ concurrent_control_list
 
 concurrent_control
     : id "=" expr ":" expr {
-            $$ = CONCURRENT_CONTROL1($1, $3, $5,     @$); }
+            $$ = CONCURRENT_CONTROL1(nullptr, $1, $3, $5, @$); }
     | id "=" expr ":" expr ":" expr {
-            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, @$); }
+            $$ = CONCURRENT_CONTROL2(nullptr, $1, $3, $5, $7, @$); }
+    | declaration_type_spec "::" id "=" expr ":" expr {
+            $$ = CONCURRENT_CONTROL1($1, $3, $5, $7, @$); }
+    | declaration_type_spec "::" id "=" expr ":" expr ":" expr {
+            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, $9, @$); }
     ;
 
 concurrent_locality_star
@@ -2229,10 +2236,10 @@ inout
     ;
 
 enddo
-    : KW_END_DO
-    | TK_LABEL KW_END_DO
-    | KW_ENDDO { WARN_ENDDO(@$); }
-    | TK_LABEL KW_ENDDO {}
+    : KW_END_DO              { $$ = 0; }
+    | TK_LABEL KW_END_DO     { $$ = $1; }
+    | KW_ENDDO               { $$ = 0; WARN_ENDDO(@$); }
+    | TK_LABEL KW_ENDDO      { $$ = $1; }
     ;
 
 endforall

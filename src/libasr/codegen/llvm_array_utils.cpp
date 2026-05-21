@@ -477,6 +477,12 @@ namespace LCompilers {
             llvm::Value* offset_val = llvm_utils->create_gep2(arr_type, arr, FIELD_OFFSET);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
                                     offset_val);
+            // Ensure the descriptor's rank field is initialized. For module-level
+            // allocatable variables under separate compilation, the descriptor lives
+            // in .bss (zero-initialized) and the rank may otherwise remain 0, which
+            // breaks subsequent walks over the array's elements (e.g. nullifying
+            // allocatable components of every element).
+            set_rank(arr_type, arr, llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)));
             llvm::Value* dim_des_val = get_pointer_to_dimension_descriptor_array(arr_type, arr);
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             for( int r = 0; r < n_dims; r++ ) {
@@ -626,16 +632,19 @@ namespace LCompilers {
             for( int r = 0; r < n_dims; r++ ) {
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
                 llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_STRIDE);
-                llvm::Value* stride = this->get_stride(
-                    this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                llvm::Value* source_dim_des = this->get_pointer_to_dimension_descriptor(
+                    source_dim_des_arr,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, r)));
+                llvm::Value* stride = this->get_stride(source_dim_des);
                 builder->CreateStore(stride, s_val);
                 llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, DIM_LOWER_BOUND);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
-                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
-                llvm::Value* dim_size = this->get_dimension_size(
-                   this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
-                    llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                // Preserve the source descriptor's lower bound; previously this
+                // hardcoded 1, which silently dropped explicit lower bounds when
+                // an assumed-shape array was forwarded through a chain of calls.
+                llvm::Value* lower_bound = this->get_lower_bound(source_dim_des);
+                builder->CreateStore(lower_bound, l_val);
+                llvm::Value* dim_size = this->get_dimension_size(source_dim_des);
                 builder->CreateStore(dim_size, dim_size_ptr);
             }
         }
@@ -700,6 +709,7 @@ namespace LCompilers {
             int j = 0;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
+                    if (j < target_rank) {
                     llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
@@ -728,6 +738,7 @@ namespace LCompilers {
                     builder->CreateStore(dim_length,
                                          get_dimension_size(target_dim_des, false));
                     j++;
+                    }
                 }
             }
             LCOMPILERS_ASSERT(j == target_rank);
@@ -792,6 +803,7 @@ namespace LCompilers {
             llvm::Value* stride = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
+                    if (j < target_rank) {
                     llvm::Value* ubsi = builder->CreateSExtOrTrunc(load_if_pointer(ubs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* lbsi = builder->CreateSExtOrTrunc(load_if_pointer(lbs[i], index_type, builder, llvm_utils), index_type);
                     llvm::Value* dsi = builder->CreateSExtOrTrunc(load_if_pointer(ds[i], index_type, builder, llvm_utils), index_type);
@@ -816,6 +828,7 @@ namespace LCompilers {
                     builder->CreateStore(dim_length,
                                          get_dimension_size(target_dim_des, false));
                     j++;
+                    }
                 }
                 // Convert dimension info to index_type to match descriptor stride format
                 stride = builder->CreateMul(stride,
@@ -1565,7 +1578,8 @@ namespace LCompilers {
         // Move the data pointer from dest to src
         // And set the src's data pointer to null to prevent double deallocation
         void SimpleCMODescriptor::copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-            llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) {
+            llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type,
+            bool reset_lower_bound) {
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
             llvm::Value* src_data_ptr = this->get_pointer_to_data(src_ty, src);
@@ -1616,6 +1630,19 @@ namespace LCompilers {
                                     src_dim_val, llvm::MaybeAlign(),
                                     llvm::ConstantInt::get(
                                     context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+            // Per Fortran intrinsic-assignment semantics, when an allocatable
+            // LHS receives a value via move-allocation from a temporary that
+            // holds the result of a function returning an allocatable array,
+            // the resulting bounds in the LHS must have lower bound 1 in
+            // every dimension. The extent and stride are preserved.
+            //
+            // For `move_alloc`, however, the lower bounds of the source must
+            // be preserved on the destination. The caller passes
+            // `reset_lower_bound=false` in that case.
+            if (reset_lower_bound) {
+                llvm::Value* dest_lb = llvm_utils->create_gep2(dim_des, dest_dim_val, DIM_LOWER_BOUND);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 1)), dest_lb);
+            }
             r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             builder->CreateStore(r_val, r);
             builder->CreateBr(loophead);
@@ -1987,6 +2014,10 @@ namespace LCompilers {
             int32_t type_code_val = 2;
             if (ASR::is_a<ASR::Integer_t>(*val_type)){
                 type_code_val = (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind <= 4) ? 2 : 3;
+            } else if (ASR::is_a<ASR::String_t>(*val_type)) {
+                type_code_val = 0;
+            } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+                type_code_val = 1;
             } else if (ASR::is_a<ASR::Real_t>(*val_type)){
                 type_code_val = (ASR::down_cast<ASR::Real_t>(val_type)->m_kind == 4) ? 4 : 5;
             } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {

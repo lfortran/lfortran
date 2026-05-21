@@ -60,7 +60,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             inner:
                                                 (Function
@@ -89,7 +89,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
+                                                                    []
                                                                 )
                                                         })
                                                     inner
@@ -121,6 +121,7 @@
                                                         ()
                                                         .false.
                                                         3 nml
+                                                        ()
                                                         ()
                                                         ()
                                                     )]
@@ -159,7 +160,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     outer

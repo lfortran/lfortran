@@ -395,6 +395,10 @@ public:
         if ( check_external && x.m_realloc_lhs ) {
             ASR::expr_t* a_target = x.m_target;
             bool is_allocatable = ASRUtils::is_allocatable(a_target);
+            if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
+                is_allocatable = ASRUtils::is_allocatable(
+                    ASRUtils::get_past_array_physical_cast(a_target));
+            }
             if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
                 ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
                 is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
@@ -786,6 +790,12 @@ public:
                 require(x.m_intent != ASR::Local,
                     "CChar-string-physical type shouldn't be used with local variables");
             }
+            if(str->m_len_kind == ASR::AssumedLength && 
+                x.m_storage !=ASR::Parameter &&
+                !ASRUtils::is_pointer(x.m_type) /*Tolerate pointer*/){
+                require(x.m_intent != ASR::Local,
+                    "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT).");
+            }
         }
         if (x.m_symbolic_value)
             visit_expr(*x.m_symbolic_value);
@@ -911,6 +921,19 @@ public:
             if (!name_matches && m != nullptr && x.n_scope_names > 0) {
                 name_matches = (x_m_module_name == std::string(m->m_name));
             }
+            // When the direct owner is a Struct, m_module_name refers
+            // to the enclosing Module, not the Struct itself. Walk up
+            // to the parent Module to verify the match.
+            if (!name_matches && sm != nullptr) {
+                ASR::symbol_t* struct_parent = ASRUtils::get_asr_owner((ASR::symbol_t*)sm);
+                if (struct_parent != nullptr && ASR::is_a<ASR::Module_t>(*struct_parent)) {
+                    ASR::Module_t* parent_mod = ASR::down_cast<ASR::Module_t>(struct_parent);
+                    if (x_m_module_name == std::string(parent_mod->m_name)) {
+                        name_matches = true;
+                        m = parent_mod;
+                    }
+                }
+            }
             require(name_matches,
                 "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
@@ -956,10 +979,32 @@ public:
             s = ASRUtils::symbol_get_past_external(x.m_v);
         }
 
-        // Allow any string variable that is either external or is not defined in this scope to pass FunctionType verification
-        if (is_a<ASR::Variable_t>(*s) && (is_a<ASR::ExternalSymbol_t>(*x.m_v) ||
-            (_is_return_type_string && !current_symtab->get_symbol(x_mv_name)))) {
+        // Allow any variable that is either external, is not defined in this scope,
+        // or is not a function argument (e.g., COMMON variables used as dimension bounds)
+        // to pass FunctionType verification.
+        // When check_external is false (e.g. during modfile deserialization),
+        // s is not dereferenced past ExternalSymbol, so we must also accept
+        // ExternalSymbol directly — its target cannot be verified yet.
+        if (is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
             non_global_symbol_visited = false;
+        } else if (is_a<ASR::Variable_t>(*s) &&
+            (_is_return_type_string && !current_symtab->get_symbol(x_mv_name))) {
+            non_global_symbol_visited = false;
+        } else if (is_a<ASR::Variable_t>(*s) && current_symtab &&
+                   ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) &&
+                   ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_symtab->asr_owner)) {
+            // Check if this variable is a function argument — only those should
+            // have been replaced by FunctionParam and thus trigger an error
+            ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_symtab->asr_owner);
+            bool is_arg = false;
+            for (size_t i = 0; i < func->n_args; i++) {
+                if (ASR::is_a<ASR::Var_t>(*func->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v == x.m_v) {
+                    is_arg = true;
+                    break;
+                }
+            }
+            non_global_symbol_visited = is_arg;
         } else {
             non_global_symbol_visited = true;
         }
@@ -1532,13 +1577,17 @@ public:
             "Type of ArrayConstant must be an array");
 
         int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        ASR::ttype_t* inner = ASRUtils::type_get_past_array(x.m_type);
         if (ASRUtils::is_character(*x.m_type)) {
             ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
             int64_t len;
             require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
-        } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(x.m_type))) {
+        } else if (ASR::is_a<ASR::StructType_t>(*inner)) {
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(ASR::expr_t*);
+        } else if (ASR::is_a<ASR::CPtr_t>(*inner)) {
+          // C_PTR and C_FUNPTR have no fortran kind parameter.
+          n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(void*);
         }
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
@@ -1581,7 +1630,10 @@ public:
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
+        bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+        _inside_array_physical_cast_type = false;
         visit_ttype(*x.m_type);
+        _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         if (x.m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
             require(x.n_dims == 0, "Assumed-rank arrays must have 0 dimensions");
             return ;

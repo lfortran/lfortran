@@ -12,8 +12,8 @@
                                     8
                                     1_string_t_s
                                     3 s
-                                    string_t
-                                    []
+                                    modules_48_fpm_strings
+                                    [string_t]
                                     s
                                     Public
                                 ),
@@ -41,7 +41,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             char_str:
                                 (Variable
@@ -65,7 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             char_str_alloc:
                                 (Variable
@@ -91,7 +91,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             char_str_hash1:
                                 (Variable
@@ -115,7 +115,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             char_str_hash2:
                                 (Variable
@@ -139,7 +139,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             char_str_hash3:
                                 (Variable
@@ -163,7 +163,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             char_str_hash4:
                                 (Variable
@@ -187,7 +187,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             fnv_1a:
                                 (ExternalSymbol
@@ -293,7 +293,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     modules_48
@@ -754,7 +754,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             fnv_prime_32:
                                                 (Variable
@@ -778,7 +778,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             hash:
                                                 (Variable
@@ -802,7 +802,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -826,7 +826,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             input:
                                                 (Variable
@@ -850,7 +850,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             seed:
                                                 (Variable
@@ -874,7 +874,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     fnv_1a_char
@@ -979,8 +979,8 @@
                                                     5
                                                     1_string_t_s
                                                     3 s
-                                                    string_t
-                                                    []
+                                                    modules_48_fpm_strings
+                                                    [string_t]
                                                     s
                                                     Public
                                                 ),
@@ -1006,7 +1006,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -1030,7 +1030,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             input:
                                                 (Variable
@@ -1066,7 +1066,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             seed:
                                                 (Variable
@@ -1090,7 +1090,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     fnv_1a_string_t
@@ -1282,7 +1282,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             int:
                                                 (Variable
@@ -1312,7 +1312,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             line:
                                                 (Variable
@@ -1336,7 +1336,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lout:
                                                 (Variable
@@ -1360,7 +1360,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lower:
                                                 (Variable
@@ -1390,7 +1390,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             name:
                                                 (Variable
@@ -1416,7 +1416,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             upper:
                                                 (Variable
@@ -1446,7 +1446,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     is_fortran_name
@@ -1612,8 +1612,8 @@
                                                     7
                                                     1_string_t_s
                                                     3 s
-                                                    string_t
-                                                    []
+                                                    modules_48_fpm_strings
+                                                    [string_t]
                                                     s
                                                     Public
                                                 ),
@@ -1641,7 +1641,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             delim:
                                                 (Variable
@@ -1665,7 +1665,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             delim_str:
                                                 (Variable
@@ -1691,7 +1691,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -1715,7 +1715,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             strings:
                                                 (Variable
@@ -1751,7 +1751,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     string_cat
@@ -1961,7 +1961,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     string_t
