@@ -504,15 +504,26 @@ class PRIFInterface {
                                     Vec<ASR::stmt_t*> &new_body,
                                     ASR::stmt_t **old_body, size_t n_old_body) {
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *i64 = int64;
-            ASR::ttype_t *cptr = b.CPtr();
-            ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
-            ASR::symbol_t *alloc_sub = get_or_create_prif_allocate_coarray_sub(loc);
+            bool initialized = false;
+            ASR::ttype_t *i64 = nullptr;
+            ASR::ttype_t *cptr = nullptr;
+            ASR::symbol_t *handle_struct = nullptr;
+            ASR::symbol_t *alloc_sub = nullptr;
             for (auto &item : scope->get_scope()) {
                 ASR::symbol_t *sym = item.second;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
                 if (var->n_codims == 0) continue;
+
+                LCOMPILERS_ASSERT_MSG(!(ASRUtils::is_allocatable(var->m_type) || ASRUtils::is_pointer(var->m_type)), "Allocatable and pointer coarrays are not yet supported");
+                
+                if (!initialized) {
+                    i64 = int64;
+                    cptr = b.CPtr();
+                    handle_struct = get_or_create_prif_coarray_handle_struct(loc);
+                    alloc_sub = get_or_create_prif_allocate_coarray_sub(loc);
+                    initialized = true;
+                }
                 std::string vname = var->m_name;
                 // Create companion handle variable
                 std::string hname = vname + "__coarray_handle";
@@ -663,15 +674,11 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
         Allocator &al;
         PRIFInterface &prif;
         SymbolTable *current_scope = nullptr;
-        bool allow_coarray_ref = true;
 
         CoarrayPrifReplacer(Allocator &al_, PRIFInterface &prif_)
             : al(al_), prif(prif_) {}
 
         void replace_CoarrayRef(ASR::CoarrayRef_t *x) {
-            if (!allow_coarray_ref) {
-                return;
-            }
             ASR::expr_t *call = prif.make_prif_get_call(
                 x->base.base.loc, x->m_var, x->m_coindices,
                 x->n_coindices, x->m_type);
@@ -694,16 +701,9 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
 
         void visit_Assignment(const ASR::Assignment_t &x) {
             ASR::Assignment_t &xx = const_cast<ASR::Assignment_t &>(x);
-            bool allow_copy = replacer.allow_coarray_ref;
-            replacer.allow_coarray_ref = false;
-            ASR::expr_t **current_expr_copy_0 = current_expr;
-            current_expr = &(xx.m_target);
-            call_replacer();
-            current_expr = current_expr_copy_0;
-            if (xx.m_target && visit_expr_after_replacement) {
+            if (xx.m_target) {
                 visit_expr(*xx.m_target);
             }
-            replacer.allow_coarray_ref = allow_copy;
 
             ASR::expr_t **current_expr_copy_1 = current_expr;
             current_expr = &(xx.m_value);
@@ -718,6 +718,11 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
         }
 };
 
+// CoarrayInitVisitor traverses the AST and inserts initialization
+// code for coarrays in each scope (Program, Function, Module).
+// It creates companion handle and data variables for each coarray,
+// and emits a call to prif_allocate_coarray. It also ensures the
+// global PRIF runtime initialization and cleanup routines are called.
 class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
     private:
     public:
@@ -725,6 +730,10 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
         PRIFInterface &prif;
         CoarrayInitVisitor(Allocator &al_, PRIFInterface &prif_)
             : al(al_), prif(prif_) {}
+
+        void visit_Module(const ASR::Module_t &/*x*/) {
+            LCOMPILERS_ASSERT_MSG(false, "Coarrays in modules are not yet supported");
+        }
 
         void visit_Program(const ASR::Program_t &x) {
             ASR::Program_t &xx = const_cast<ASR::Program_t &>(x);
@@ -788,6 +797,11 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
     // Phase 1: Create companion vars and allocation calls for coarrays
     CoarrayInitVisitor init_v(al, prif);
     init_v.visit_TranslationUnit(unit);
+
+    if (prif.coarray_handle_map.empty()) {
+        return;
+    }
+
     // Phase 2: Replace CoarrayRef with prif_get calls using real handles
     CoarrayPrifVisitor v(al, prif);
     v.visit_TranslationUnit(unit);
