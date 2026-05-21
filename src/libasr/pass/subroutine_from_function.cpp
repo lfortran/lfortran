@@ -293,9 +293,9 @@ private :
 public:
 
     ReplaceFunctionCallWithSubroutineCall(
-        Allocator                                            &al_,
-        SymbolTable*                                         &current_scope,
-        Vec<ASR::stmt_t*>                                    &pass_result_,
+        Allocator                                           &al_,
+        SymbolTable*                                        &current_scope,
+        Vec<ASR::stmt_t*>                                   &pass_result_,
         std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP) 
         :al(al_),
          current_scope(current_scope),
