@@ -914,13 +914,13 @@ semantic error: Arguments to min0 must be of real, integer or character type
 518 |     print *, min(min_max, min_max)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Arguments to min0 must be of real, integer or character type
+semantic error: Arguments to max0 must be of real, integer or character type
    --> tests/errors/continue_compilation_2.f90:520:14
     |
 520 |     print *, max(.true., .false.)
     |              ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Arguments to min0 must be of real, integer or character type
+semantic error: Arguments to max0 must be of real, integer or character type
    --> tests/errors/continue_compilation_2.f90:521:14
     |
 521 |     print *, max(min_max, min_max)

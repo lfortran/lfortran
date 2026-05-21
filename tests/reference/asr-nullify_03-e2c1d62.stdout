@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             rp1d:
                                 (Struct
@@ -67,9 +65,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     rp1d
@@ -130,9 +126,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -167,9 +161,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             hdf32:
                                                 (Variable
@@ -193,9 +185,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ndim:
                                                 (Variable
@@ -219,9 +209,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             scales:
                                                 (Variable
@@ -262,9 +250,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     sds
@@ -345,8 +331,8 @@
                                     5
                                     1_rp1d_f
                                     3 f
-                                    rp1d
-                                    []
+                                    module_nullify_03
+                                    [rp1d]
                                     f
                                     Public
                                 ),
@@ -355,8 +341,8 @@
                                     5
                                     1_sds_scales
                                     4 scales
-                                    sds
-                                    []
+                                    module_nullify_03
+                                    [sds]
                                     scales
                                     Public
                                 ),
@@ -434,9 +420,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             sds:
                                 (ExternalSymbol

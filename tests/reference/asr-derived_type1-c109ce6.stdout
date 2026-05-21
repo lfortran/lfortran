@@ -12,8 +12,8 @@
                                     2
                                     1_enum_escape_newline
                                     3 newline
-                                    enum_escape
-                                    []
+                                    derived_type1
+                                    [enum_escape]
                                     newline
                                     Public
                                 ),
@@ -56,9 +56,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     enum_escape
@@ -126,9 +124,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             tfc:
                                 (Variable
@@ -161,9 +157,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             toml_escape:
                                 (Variable
@@ -216,9 +210,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     derived_type1

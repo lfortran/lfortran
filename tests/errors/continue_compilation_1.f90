@@ -298,13 +298,13 @@ program continue_compilation_1
     contiguous :: contig_not_declared
     contiguous :: MyClass
     class(Derived), allocatable :: derived_cls
-
-
-
-
-
-
-
+    integer, parameter :: z(1) = 2
+    integer, parameter :: qval(2) = reshape([7, 8], -[z])
+    integer :: u
+    type matrix(n)
+        integer, len :: n
+        real :: data(n)
+    end type
 
 
 
@@ -494,7 +494,7 @@ program continue_compilation_1
 
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
-    
+    print *, string(1:6)
     shape_ = [2, 3]
     matrix = reshape(source, shape_, pad=[0])
 
@@ -504,12 +504,12 @@ program continue_compilation_1
     print *, c%mymember
     ! c1 is Character
     print *, c1%mymember
-
+    print *, string(1:Z'100000003')
     print *, present(x,x)
     print *, present()
     print *, ieor(x)
     print *, ieor()
-
+    print *, min(c, c)
     exit
 
     ! calling function with less arguments
@@ -648,12 +648,12 @@ program continue_compilation_1
     a(1) = .true.
     derived_cls = base_var
     call print_len_non_char("  Hello World  ")
-
-
-
-
-
-
+    print  *, 9.99e+99
+    a5 = missing_required_arg_func()
+    integer :: m = 7
+    dimension :: m(3)
+    open(newunit=u, file="test.dat", status="replace", asynchronous=1)
+    open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
@@ -714,4 +714,23 @@ program continue_compilation_1
         integer,allocatable  :: x(3)
         integer,pointer  :: y(3)
     end subroutine
+
+    integer function missing_required_arg_func(stat)
+        integer, intent(out) :: stat
+        missing_required_arg_func = 0
+        stat = 0
+    end function
+    subroutine sub_common_block_nonconstant_lower_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(n:10)
+        common /common_nonconstant_lower_bound/ arr
+    end subroutine sub_common_block_nonconstant_lower_bound
+
+    subroutine sub_common_block_nonconstant_upper_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(1:n)
+        common /common_nonconstant_upper_bound/ arr
+    end subroutine sub_common_block_nonconstant_upper_bound
 end program

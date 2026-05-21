@@ -66,9 +66,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             package:
                                                 (Variable
@@ -99,9 +97,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -158,9 +154,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     add_project
@@ -276,9 +270,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             main:
                                                 (Variable
@@ -302,9 +294,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             root:
                                                 (Variable
@@ -328,9 +318,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -387,9 +375,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     add_project_dependencies
@@ -493,9 +479,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -521,9 +505,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     dependency_config_t
@@ -584,9 +566,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             proj_dir:
                                                 (Variable
@@ -612,9 +592,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             revision:
                                                 (Variable
@@ -640,9 +618,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             update:
                                                 (Variable
@@ -672,9 +648,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     dependency_node_t
@@ -765,9 +739,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             dep:
                                                 (Variable
@@ -810,9 +782,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             dep_dir:
                                                 (Variable
@@ -838,9 +808,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ndep:
                                                 (Variable
@@ -864,9 +832,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -890,9 +856,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             update:
                                                 (GenericProcedure
@@ -934,9 +898,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     dependency_tree_t
@@ -1020,9 +982,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     error_t
@@ -1075,9 +1035,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     package_config_t
@@ -1137,9 +1095,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -1163,9 +1119,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -1222,9 +1176,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     update_dependency
@@ -1349,9 +1301,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             c_compile_flags:
                                                 (Variable
@@ -1377,9 +1327,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             cxx_compile_flags:
                                                 (Variable
@@ -1405,9 +1353,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             deps:
                                                 (Variable
@@ -1464,9 +1410,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             fortran_compile_flags:
                                                 (Variable
@@ -1492,9 +1436,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             include_tests:
                                                 (Variable
@@ -1524,9 +1466,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             link_flags:
                                                 (Variable
@@ -1552,9 +1492,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             package_name:
                                                 (Variable
@@ -1580,9 +1518,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fpm_model_t
@@ -1706,8 +1642,8 @@
                                                     5
                                                     1_dependency_tree_t_add_project
                                                     10 add_project
-                                                    1_dependency_tree_t
-                                                    []
+                                                    fpm_dependency_modules_33
+                                                    [dependency_tree_t]
                                                     add_project
                                                     Public
                                                 ),
@@ -1716,8 +1652,8 @@
                                                     5
                                                     1_fpm_model_t_deps
                                                     18 deps
-                                                    fpm_model_t
-                                                    []
+                                                    fpm_model_modules_33
+                                                    [fpm_model_t]
                                                     deps
                                                     Public
                                                 ),
@@ -1752,9 +1688,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             model:
                                                 (Variable
@@ -1835,9 +1769,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             package:
                                                 (Variable
@@ -1868,9 +1800,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     build_model

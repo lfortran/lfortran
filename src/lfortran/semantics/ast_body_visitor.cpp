@@ -346,7 +346,19 @@ public:
                 } else if (AST::is_a<AST::Write_t>(*x)) {
                     process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements);
                 } else if (AST::is_a<AST::Read_t>(*x)) {
-                    process_format_statement<ASR::FileRead_t>(old_tmp, label, al, format_statements);
+                    // For READ, set m_fmt to the resolved format string
+                    // directly instead of wrapping values in StringFormat.
+                    ASR::FileRead_t *read_stmt = ASR::down_cast2<ASR::FileRead_t>(old_tmp);
+                    ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, read_stmt->base.base.loc, 1,
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, read_stmt->base.base.loc,
+                            format_statements[label].size(),
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, read_stmt->base.base.loc, 4)))),
+                        ASR::string_length_kindType::ExpressionLength,
+                        ASR::string_physical_typeType::DescriptorString));
+                    read_stmt->m_fmt = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, read_stmt->base.base.loc,
+                        s2c(al, format_statements[label]), fmt_type));
                 }
             }
         }
@@ -359,7 +371,7 @@ public:
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
             *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr, *a_sign = nullptr,
-            *a_decimal = nullptr, *a_round = nullptr, *a_pad = nullptr;
+            *a_decimal = nullptr, *a_round = nullptr, *a_pad = nullptr, *a_asynchronous = nullptr;
         int64_t err_label = -1;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -873,6 +885,25 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == std::string("asynchronous")) {
+                if (a_asynchronous != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `asynchronous` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_asynchronous = ASRUtils::EXPR(tmp);
+                if (!ASRUtils::is_character(*ASRUtils::expr_type(a_asynchronous))) {
+                    diag.add(Diagnostic(
+                        "`asynchronous` must be of type String",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
             else {
                 const std::unordered_set<std::string> unsupported_args {"fileopt"};
@@ -924,7 +955,7 @@ public:
             a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, iostat_sym));
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad, a_asynchronous);
         tmp_vec.push_back(tmp);
         if (err_label != -1) {
             emit_err_label_jump(err_label, a_iostat, x.base.base.loc, tmp_vec);
@@ -1176,7 +1207,7 @@ public:
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
     // For constant bounds: (vals(i), i=1,3) -> vals(1), vals(2), vals(3)
     // For variable bounds: (vals(i), i=1,n) -> vals(1:n)
-    void expand_implied_do_for_read(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& out) {
+    void expand_implied_do_for_read(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& out, std::vector<ASR::stmt_t*>& post_stmts) {
         int64_t start_val, end_val, inc_val = 1;
         bool constant_bounds = true;
 
@@ -1198,11 +1229,11 @@ public:
         if (constant_bounds && inc_val != 0) {
             // Expand to individual elements
             ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var);
-            for (int64_t idx = start_val;
+            int64_t idx = start_val;
+            for (;
                  (inc_val > 0) ? (idx <= end_val) : (idx >= end_val);
                  idx += inc_val) {
-                ASR::ttype_t* int_type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, idl->m_var->base.loc, 4));
+                ASR::ttype_t* int_type = ASRUtils::expr_type(idl->m_var);
                 ASR::expr_t* idx_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, idl->m_var->base.loc, idx, int_type));
                 for (size_t j = 0; j < idl->n_values; j++) {
@@ -1212,7 +1243,7 @@ public:
                             ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
                         ASR::ImpliedDoLoop_t* substituted_idl =
                             substitute_loop_var_in_idl(inner_idl, loop_var, idx_const);
-                        expand_implied_do_for_read(substituted_idl, out);
+                        expand_implied_do_for_read(substituted_idl, out, post_stmts);
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
                         // Replace loop variable with constant index
                         ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(value);
@@ -1223,6 +1254,15 @@ public:
                         out.push_back(al, value);
                     }
                 }
+            }
+            if (compiler_options.use_loop_variable_after_loop ||
+                    compiler_options.po.use_loop_variable_after_loop) {
+                ASR::ttype_t* int_type = ASRUtils::expr_type(idl->m_var);
+                ASR::expr_t* final_idx_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, idl->m_var->base.loc, idx, int_type));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, idl->m_var->base.loc, idl->m_var, final_idx_const, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+                post_stmts.push_back(assign_stmt);
             }
         } else {
             out.push_back(al, ASRUtils::EXPR((ASR::asr_t*)idl));
@@ -1425,8 +1465,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos, *a_rec, *a_pad;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = a_rec = a_pad = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos, *a_rec, *a_pad, *a_asynchronous;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = a_rec = a_pad = a_asynchronous = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         ASR::symbol_t *a_nml = nullptr;
         std::string read_write = "";
@@ -1537,7 +1577,7 @@ public:
                 nullptr, ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false, 
                 false, false, nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
+                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                 current_scope->add_symbol(fmt_string_name, fmt_string_sym);
                 ASR::expr_t* fmt_string_var = ASRUtils::EXPR(ASR::make_Var_t(
                     al, a_fmt->base.loc, fmt_string_sym));
@@ -1559,7 +1599,7 @@ public:
                     current_scope, s2c(al, loop_var), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, int_type, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false, false, false, nullptr,
-                    false, false, ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
+                    false, false, ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                 current_scope->add_symbol(loop_var, loop_var_sym);
                 ASR::expr_t* loop_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, a_fmt->base.loc, loop_var_sym));
 
@@ -1768,10 +1808,10 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_id = ASRUtils::EXPR(tmp);
-                ASR::ttype_t* a_status_type = ASRUtils::expr_type(a_id);
-                if (!ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_pointer(a_status_type))) {
+                ASR::ttype_t* a_id_type = ASRUtils::expr_type(a_id);
+                if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_id_type))) {
                         diag.add(Diagnostic(
-                            "`status` must be of type String",
+                            "`id` must be of type Integer",
                             Level::Error, Stage::Semantic, {
                                 Label("",{loc})
                             }));
@@ -1907,7 +1947,7 @@ public:
                         body.push_back(al, ASRUtils::STMT(
                             ASR::make_FileWrite_t(al, loc, 0, a_unit,
                             nullptr, nullptr, nullptr,
-                            nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr)));
+                            nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr, a_asynchronous)));
                         newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
                                 body.size(), nullptr, 0));
                     }
@@ -2029,6 +2069,25 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == std::string("asynchronous")) {
+                if (a_asynchronous != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `asynchronous` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_asynchronous = ASRUtils::EXPR(tmp);
+                if (!ASRUtils::is_character(*ASRUtils::expr_type(a_asynchronous))) {
+                    diag.add(Diagnostic(
+                        "`asynchronous` must be of type String",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         if (a_rec && a_unit && ASRUtils::is_character(*ASRUtils::expr_type(a_unit))) {
@@ -2060,6 +2119,7 @@ public:
         } else if (_type == AST::stmtType::Write) {
             a_fmt_constant = a_fmt;
         }
+        std::vector<ASR::stmt_t*> post_stmts;
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             if (AST::is_a<AST::Name_t>(*m_values[i])) {
                 AST::Name_t* name_expr = AST::down_cast<AST::Name_t>(m_values[i]);
@@ -2094,7 +2154,7 @@ public:
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec);
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec, post_stmts);
             } else {
                 a_values_vec.push_back(al, expr);
             }
@@ -2318,7 +2378,7 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 if (_type == AST::stmtType::Write) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
-                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec, a_pos);
+                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec, a_pos, a_asynchronous);
                     print_statements[tmp] = std::make_pair(&w->base, label);
                 } else if (_type == AST::stmtType::Read) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
@@ -2330,6 +2390,17 @@ public:
                     tmp_vec.push_back(tmp);
                     tmp = nullptr;
                     emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
+                }
+                if (!post_stmts.empty()) {
+                    if (tmp != nullptr) {
+                        tmp_vec.push_back(tmp);
+                        tmp = nullptr;
+                    }
+                    for (ASR::stmt_t* s : post_stmts) {
+                        tmp_vec.push_back((ASR::asr_t*)s);
+                    }
+                }
+                if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
                     tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
                 }
                 return;
@@ -2351,7 +2422,7 @@ public:
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
-            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos);
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos, a_asynchronous);
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -2367,19 +2438,14 @@ public:
             }
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos, a_asynchronous);
         } else if( _type == AST::stmtType::Read ) {
             if (formatted && a_fmt_constant) {
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                    ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, 1, nullptr,
-                        ASR::string_length_kindType::DeferredLength,
-                        ASR::string_physical_typeType::DescriptorString))));
-                ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt->base.loc,
-                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
-                    type, nullptr));
-                a_values_vec.reserve(al, 1);
-                a_values_vec.push_back(al, string_format);
+                // For READ, do not wrap values in StringFormat (which is for
+                // output/WRITE). Instead, use the resolved format string as
+                // m_fmt directly so that the read target variables are passed
+                // as-is to the codegen, avoiding creation of temporaries.
+                a_fmt = a_fmt_constant;
             }
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad);
@@ -2416,6 +2482,9 @@ public:
                         body.p, body.size(), nullptr, 0));
                 }
             }
+        }
+        for (ASR::stmt_t* s : post_stmts) {
+            tmp_vec.push_back((ASR::asr_t*)s);
         }
         tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
         tmp = nullptr;
@@ -2805,6 +2874,8 @@ public:
                 create_associate_stmt = true;
                 ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
                 tmp_type = sim->m_type;
+            } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
+                create_associate_stmt = true;
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
@@ -3479,6 +3550,11 @@ public:
                     // Create assignment statement only for non-struct types
                     // All validation was already done above before creating the Allocate ASR node
                     if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
+                        ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                        if (ASRUtils::is_assumed_rank_array(tgt_t)) {
+                            continue;
+                        }
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* source_copy = expr_duplicator.duplicate_expr(source);
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(
@@ -6175,7 +6251,7 @@ public:
         }
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
-        ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
+        ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
         if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
             value->type == ASR::exprType::ArrayConstant ) {
             diag.add(Diagnostic(
@@ -6266,7 +6342,7 @@ public:
                         }
                     }
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                        value_type, target_type, diag);
+                                    ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value)),target_type, diag);
                     }
                 }
             }
@@ -6431,6 +6507,21 @@ public:
                     alloc_arg.n_dims = alloc_dims.n;
                     alloc_arg.m_len_expr = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*val_elem_type)) {
+                        ASR::symbol_t* struct_sym =
+                            ASRUtils::get_struct_sym_from_struct_expr(value);
+                        if (struct_sym != nullptr && current_scope != nullptr) {
+                            ASR::symbol_t* in_scope_sym =
+                                current_scope->resolve_symbol(
+                                    ASRUtils::symbol_name(struct_sym));
+                            if (in_scope_sym != nullptr &&
+                                ASRUtils::symbol_get_past_external(in_scope_sym)
+                                    == struct_sym) {
+                                struct_sym = in_scope_sym;
+                            }
+                        }
+                        alloc_arg.m_sym_subclass = struct_sym;
+                    }
                     alloc_arg.m_type = val_elem_type;
                     Vec<ASR::alloc_arg_t> alloc_args;
                     alloc_args.reserve(al, 1);
@@ -7682,7 +7773,7 @@ public:
                             if (args.empty()) {
                                 diag.add(diag::Diagnostic(
                                     "Required argument `" + std::string(v->m_name) +
-                                    "` is missing in function call",
+                                    "` is missing in procedure call",
                                     diag::Level::Error, diag::Stage::Semantic, {
                                         diag::Label("", {x.base.base.loc})
                                     }));
@@ -7693,7 +7784,7 @@ public:
                             diag.add(diag::Diagnostic(
                                 "Required argument `" + std::string(v->m_name) +
                                 "` at position " + std::to_string(i + 1) +
-                                " is missing in function call",
+                                " is missing in procedure call",
                                 diag::Level::Error, diag::Stage::Semantic, {
                                     diag::Label("", {args_loc})
                                 }));
@@ -7830,7 +7921,7 @@ public:
                                                     nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                     nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                    ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
+                                                    ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                                             passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                             new_args.push_back(al, ASRUtils::EXPR(
                                                 ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -7950,7 +8041,7 @@ public:
                                             nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                             nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                             ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                            ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
+                                            ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                                     param_func->m_symtab->add_symbol(arg_name, arg_sym);
                                     new_args.push_back(al, ASRUtils::EXPR(
                                         ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -7982,7 +8073,7 @@ public:
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                 nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
+                                                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                         new_args.push_back(al, ASRUtils::EXPR(
                                             ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
@@ -8092,7 +8183,7 @@ public:
         args.reserve(al, 1);
         args.push_back(al, space);
         return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr, nullptr);
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr, nullptr, nullptr);
     }
 
     void visit_Print(const AST::Print_t &x) {
@@ -8228,7 +8319,7 @@ public:
         all_loops_blocks_nesting++;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
-        ASR::ttype_t *test_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(test));
+        ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(test));
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
                 ASRUtils::type_to_str_with_kind(test_type, test) + " instead",
@@ -8503,12 +8594,25 @@ public:
                     break;
                 }
             }
+            if (!already_targeted && x.n_body > 0) {
+                AST::stmt_t *last_stmt = x.m_body[x.n_body - 1];
+                if (last_stmt->type == AST::stmtType::DoLoop) {
+                    AST::DoLoop_t *inner_do = AST::down_cast<AST::DoLoop_t>(last_stmt);
+                    if (inner_do->m_do_label == x.m_do_label) {
+                        // The inner loop shares this label and will emit the target.
+                        // Flag it true so the outer loop doesn't emit a duplicate!
+                        already_targeted = true; 
+                    }
+                }
+            }
+            
             if (!already_targeted) {
                 ASR::asr_t *gt = ASR::make_GoToTarget_t(al, x.base.base.loc,
                     x.m_do_label, s2c(al, std::to_string(x.m_do_label)));
                 body.push_back(al, ASR::down_cast<ASR::stmt_t>(gt));
             }
         }
+        
         if(pragma_in_block) {
             nesting_lvl_inside_pragma--;
         }
@@ -8569,7 +8673,25 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+            std::string var_name = to_lower(h.m_var);
+            ASR::expr_t *var = nullptr;
+            if (h.m_type) {
+                AST::decl_attribute_t *decl_type = h.m_type;
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, decl_type, false, false,
+                                                    dims, nullptr, type_declaration, ASR::abiType::Source);
+                ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, var_name),
+                        nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                        type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false,
+                        false, false, nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
+                current_scope->add_symbol(var_name, var_sym);
+                var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));                                    
+            } else {
+                var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, var_name));
+            }
             visit_expr(*h.m_start);
             ASR::expr_t *start = ASRUtils::EXPR(tmp);
             visit_expr(*h.m_end);
@@ -8610,6 +8732,12 @@ public:
                         red.m_op = ASR::reduction_opType::ReduceMIN;
                     } else if ( op == AST::reduce_opType::ReduceMul ) {
                         red.m_op = ASR::reduction_opType::ReduceMul;
+                    } else if ( op == AST::reduce_opType::ReduceIAND ) {
+                        red.m_op = ASR::reduction_opType::ReduceIAND;
+                    } else if ( op == AST::reduce_opType::ReduceIOR ) {
+                        red.m_op = ASR::reduction_opType::ReduceIOR;
+                    } else if ( op == AST::reduce_opType::ReduceIEOR ) {
+                        red.m_op = ASR::reduction_opType::ReduceIEOR;
                     } else {
                         diag.add(Diagnostic(
                             "Unknown reduction operation",
@@ -9562,7 +9690,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
                                                 nullptr, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false));
+                                                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
                                         new_args.push_back(al, ASRUtils::EXPR(
                                             ASR::make_Var_t(al, call->base.base.loc, arg_sym)));
