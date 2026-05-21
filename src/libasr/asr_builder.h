@@ -5,7 +5,12 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/runtime/lfortran_float128.h>
 
+#include <cstdint>
+#include <cstring>
+#include <iomanip>
+#include <sstream>
 namespace LCompilers::ASRUtils {
 
 class ASRBuilder {
@@ -296,6 +301,16 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* f_t(double x, ASR::ttype_t* t) {
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {
+            std::ostringstream ss;
+            ss << std::setprecision(17) << x;
+            lf_float128 *p = (lf_float128*)al.alloc(sizeof(lf_float128));
+            *p = lf_float128_from_str(ss.str().c_str());
+            uintptr_t addr = (uintptr_t)p;
+            double r;
+            std::memcpy(&r, &addr, sizeof(addr));
+            return EXPR(ASR::make_RealConstant_t(al, loc, r, t));
+        }
         return EXPR(ASR::make_RealConstant_t(al, loc, x, t));
     }
 
@@ -405,9 +420,11 @@ class ASRBuilder {
 
     inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
         ASR::expr_t* value = ASRUtils::expr_value(x);
-        if ( value != nullptr ) {
+        if ( value != nullptr  &&  ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) != 16) {
             double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
             value = i_t(val, t);
+        }else{
+            value = nullptr;
         }
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, value, nullptr));
     }
@@ -447,9 +464,11 @@ class ASRBuilder {
             return x;
         }
         ASR::expr_t* value = ASRUtils::expr_value(x);
-        if ( value != nullptr ) {
+        if ( value != nullptr && kind_x != 16 && kind_t != 16 ) {
             double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
             value = f_t(val, t);
+        } else {
+            value = nullptr;
         }
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, value, nullptr));
     }
@@ -660,6 +679,7 @@ class ASRBuilder {
                 double left_value = 0, right_value = 0;
                 ASR::expr_t* value = nullptr;
                 if( ASRUtils::extract_value(left, left_value) &&
+                    ASRUtils::extract_kind_from_ttype_t(type) != 16 &&
                     ASRUtils::extract_value(right, right_value) ) {
                     double mul_value = left_value * right_value;
                     value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, mul_value, type));
