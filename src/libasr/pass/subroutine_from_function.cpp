@@ -293,9 +293,9 @@ private :
 public:
 
     ReplaceFunctionCallWithSubroutineCall(
-        Allocator                                                   &al_,
-        SymbolTable* &current_scope,
-        Vec<ASR::stmt_t*>                                           &pass_result_,
+        Allocator                                              &al_,
+        SymbolTable*                                           &current_scope,
+        Vec<ASR::stmt_t*>                                      &pass_result_,
         std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP) 
         :al(al_),
          current_scope(current_scope),
@@ -757,11 +757,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                         
                         assignment->m_move_allocation = true;
                      
-                        if (ASRUtils::is_character(*ASRUtils::expr_type(target))) {
-                            assignment->m_realloc_lhs = pass_options.realloc_lhs_arrays;
-                        } else {
-                            assignment->m_realloc_lhs = true;
-                        }
+                        assignment->m_realloc_lhs = pass_options.realloc_lhs_arrays;
                     }
                 } else {
                     ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
