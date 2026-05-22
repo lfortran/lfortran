@@ -1054,6 +1054,12 @@ semantic error: reshape accepts `order` array as a permutation of elements from 
 487 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
     |                                                          ^^^^^^ 
 
+semantic error: Substring start index must be of type integer
+   --> tests/errors/continue_compilation_1.f90:488:16
+    |
+488 |     print *, a(b'01':2)
+    |                ^^^^^ 
+
 semantic error: `mask` argument to `count` intrinsic must be a logical array
    --> tests/errors/continue_compilation_1.f90:489:20
     |
@@ -1065,6 +1071,12 @@ semantic error: `mask` argument to `count` intrinsic must be a logical array
     |
 490 |     print *, count([2])
     |                    ^^^ 
+
+semantic error: Substring stride must be of type integer
+   --> tests/errors/continue_compilation_1.f90:491:20
+    |
+491 |     print *, a(1:2:b'10')
+    |                    ^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:492:5

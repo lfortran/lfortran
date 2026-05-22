@@ -1,0 +1,13 @@
+{
+    "basename": "run-read_eof_01-5964a70",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/read_eof_01.f90",
+    "infile_hash": "90b7703396fbd5ac62cd22200d9813776af534a52b0747b417de6d40",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-read_eof_01-5964a70.stderr",
+    "stderr_hash": "3fa69c8320000a33b79e00bc5a77361cd3d14bb37538f4a0d220d5fb",
+    "returncode": 1
+}
