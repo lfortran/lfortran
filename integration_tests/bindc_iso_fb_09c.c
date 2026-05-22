@@ -1,8 +1,4 @@
-#include <stdlib.h> 
-
-#define _lfortran_cfi_calloc calloc
-#define _lfortran_cfi_free free
-#include "../src/libasr/runtime/ISO_Fortran_binding.h"
+#include "ISO_Fortran_binding.h"
 #include <assert.h>
 #include <stddef.h>
 
