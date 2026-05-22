@@ -560,6 +560,13 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        bool wrap_in_interface = false;
+        if (type->m_deftype == ASR::deftypeType::Interface && !is_interface) {
+            wrap_in_interface = true;
+            r += "interface\n";
+            inc_indent();
+            r += indent;
+        }
         current_pass_self_args.clear();
         SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
             (ASR::symbol_t*) &x);
@@ -724,6 +731,11 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        if (wrap_in_interface) {
+            dec_indent();
+            r += indent;
+            r += "end interface\n";
+        }
         current_pass_self_args.clear();
         src = r;
     }
