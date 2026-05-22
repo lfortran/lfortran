@@ -3030,9 +3030,13 @@ class TransformVariableInitialiser:
         }
 
         const Location& loc = x.base.base.loc;
+        static const std::string marker_prefix = "__lcompilers_marker_";
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
             std::string dep_name = x.m_dependencies[i];
-            visit_symbol(*(current_scope->resolve_symbol(dep_name)));
+            if (dep_name.rfind(marker_prefix, 0) == 0) continue;
+            ASR::symbol_t* dep_sym = current_scope->resolve_symbol(dep_name);
+            if (dep_sym == nullptr) continue;
+            visit_symbol(*dep_sym);
         }
 
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
