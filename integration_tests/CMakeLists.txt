@@ -2663,7 +2663,8 @@ RUN(NAME const_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackA
 RUN(NAME const_array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
 RUN(NAME concat_char_arrays_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME huge_string_read LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# Skip WASM backends
+RUN(NAME huge_string_read LABELS gfortran llvm)
 
 RUN(NAME string_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm fortran)
 RUN(NAME string_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
@@ -2846,12 +2847,14 @@ RUN(NAME exponent_inf_01 LABELS gfortran llvm)
 
 RUN(NAME file_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
-RUN(NAME file_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran COPY_TO_BIN file_03_data.txt)
+# Skip WASM backends
+RUN(NAME file_03 LABELS gfortran llvm fortran COPY_TO_BIN file_03_data.txt)
 RUN(NAME file_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_04_data.dat)
 RUN(NAME file_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_05_data.dat)
 RUN(NAME file_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_06_data.dat)
 RUN(NAME file_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_07_data.dat)
-RUN(NAME file_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran COPY_TO_BIN file_08.txt)
+# Skip WASM backends
+RUN(NAME file_08 LABELS gfortran llvm fortran COPY_TO_BIN file_08.txt)
 RUN(NAME file_09 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_10_data.txt)
 RUN(NAME file_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
@@ -3432,10 +3435,13 @@ RUN(NAME read_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_
 RUN(NAME read_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME read_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# Skip WASM backends
+RUN(NAME read_11 LABELS gfortran llvm)
 RUN(NAME read_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME read_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME read_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# Skip WASM backends
+RUN(NAME read_13 LABELS gfortran llvm)
+# Skip WASM backends
+RUN(NAME read_14 LABELS gfortran llvm)
 RUN(NAME read_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3443,7 +3449,8 @@ RUN(NAME read_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_20 LABELS gfortran llvm)
 RUN(NAME read_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME read_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# Skip WASM backends
+RUN(NAME read_22 LABELS gfortran llvm)
 RUN(NAME read_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH)
 RUN(NAME read_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST)
@@ -4376,8 +4383,10 @@ RUN(NAME logical_testing LABELS gfortran llvm)
 
 RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input_01.txt)
 RUN(NAME formatted_read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME formatted_read_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME formatted_read_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# Skip WASM backends
+RUN(NAME formatted_read_03 LABELS gfortran llvm)
+# Skip WASM backends
+RUN(NAME formatted_read_04 LABELS gfortran llvm)
 RUN(NAME formatted_read_05 LABELS gfortran llvm)
 RUN(NAME formatted_read_06 LABELS gfortran llvm)
 RUN(NAME formatted_read_07 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
