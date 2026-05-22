@@ -17,10 +17,6 @@ namespace LCompilers {
 class PRIFInterface {
     public:
         std::map<std::string, std::pair<ASR::expr_t*, ASR::expr_t*>> coarray_handle_map;
-    private:
-        Allocator &al;
-        ASR::TranslationUnit_t &unit;
-
         ASR::symbol_t* declare_variable(SymbolTable *symtab, const Location &loc,
                                         const std::string &name, ASR::ttype_t *type,
                                         ASR::intentType intent, ASR::symbol_t *type_decl,
@@ -36,6 +32,12 @@ class PRIFInterface {
             var->m_abi = abi;
             return sym;
         }
+
+    private:
+        Allocator &al;
+        ASR::TranslationUnit_t &unit;
+
+
 
         ASR::symbol_t* get_or_create_prif_coarray_handle_struct(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
@@ -774,10 +776,18 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             new_body.reserve(al, xx.n_body + 16);
             Location loc = xx.base.base.loc;
 
-            // Insert prif_init() call first — exit_code is optional (absent)
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::symbol_t *ec_sym = prif.declare_variable(
+                xx.m_symtab, loc, "exit_code", int32_type, ASR::intentType::Local, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *ec_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ec_sym));
+
+            // Insert prif_init() call first
             ASR::symbol_t *init_sub = prif.get_or_create_prif_init_sub(loc);
             Vec<ASR::call_arg_t> init_args; init_args.reserve(al, 1);
-            ASR::call_arg_t ec_arg; ec_arg.loc = loc; ec_arg.m_value = nullptr;
+            ASR::call_arg_t ec_arg; ec_arg.loc = loc; ec_arg.m_value = ec_expr;
             init_args.push_back(al, ec_arg);
             new_body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
                 al, loc, init_sub, nullptr, init_args.p, init_args.n, nullptr, false)));
