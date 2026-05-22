@@ -343,23 +343,21 @@ if (WITH_ENZYME)
         GIT_REPOSITORY https://github.com/EnzymeAD/Enzyme.git
         GIT_TAG        v0.0.263
         SOURCE_SUBDIR  enzyme)
-    FetchContent_MakeAvailable(Enzyme)
     # Enzyme is vendored third-party code; do not escalate warnings to
     # errors on it. Enzyme's CI tops at LLVM 16, so newer LLVM versions
     # surface deprecation warnings (e.g. ListInit::getValues -> getElements)
     # and signed/unsigned compare warnings in enzyme-tblgen that would
-    # otherwise break the build under -Werror.
-    function(_lfortran_disable_werror_recursive _dir)
-        get_directory_property(_targets DIRECTORY ${_dir} BUILDSYSTEM_TARGETS)
-        foreach(_t IN LISTS _targets)
-            target_compile_options(${_t} PRIVATE -Wno-error)
-        endforeach()
-        get_directory_property(_subdirs DIRECTORY ${_dir} SUBDIRECTORIES)
-        foreach(_s IN LISTS _subdirs)
-            _lfortran_disable_werror_recursive(${_s})
-        endforeach()
-    endfunction()
-    _lfortran_disable_werror_recursive(${enzyme_SOURCE_DIR}/enzyme)
+    # otherwise break the build under -Werror. Strip -Werror from the
+    # flags Enzyme's subdirectory inherits; restore afterwards. The
+    # narrower -Werror=<name> flags Enzyme adds in its own CMakeLists
+    # keep their original behaviour.
+    set(_lfortran_saved_cxx_flags "${CMAKE_CXX_FLAGS}")
+    set(_lfortran_saved_c_flags "${CMAKE_C_FLAGS}")
+    string(REGEX REPLACE "(^| )-Werror( |$)" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REGEX REPLACE "(^| )-Werror( |$)" " " CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}")
+    FetchContent_MakeAvailable(Enzyme)
+    set(CMAKE_CXX_FLAGS "${_lfortran_saved_cxx_flags}")
+    set(CMAKE_C_FLAGS   "${_lfortran_saved_c_flags}")
     set(LFORTRAN_ENZYME_PLUGIN "$<TARGET_FILE:LLVMEnzyme-${LLVM_VERSION_MAJOR}>"
         CACHE INTERNAL "Path to built Enzyme opt plugin")
 endif()
