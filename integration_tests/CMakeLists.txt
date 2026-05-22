@@ -2516,7 +2516,7 @@ RUN(NAME allocate_65 LABELS gfortran llvm)
 RUN(NAME allocate_66 LABELS gfortran llvm)
 RUN(NAME allocate_67 LABELS gfortran llvm)
 RUN(NAME allocate_68 LABELS gfortran llvm)
-RUN(NAME allocate_69 LABELS gfortran llvm )
+RUN(NAME allocate_69 LABELS gfortran llvm)
 RUN(NAME allocate_70 LABELS gfortran llvm)
 RUN(NAME allocate_71 LABELS gfortran llvm)
 
