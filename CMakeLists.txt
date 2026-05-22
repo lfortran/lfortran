@@ -347,13 +347,19 @@ if (WITH_ENZYME)
     # Enzyme is vendored third-party code; do not escalate warnings to
     # errors on it. Enzyme's CI tops at LLVM 16, so newer LLVM versions
     # surface deprecation warnings (e.g. ListInit::getValues -> getElements)
-    # that would otherwise break the build under -Werror.
-    get_directory_property(_enzyme_targets
-        DIRECTORY ${enzyme_SOURCE_DIR}/enzyme
-        BUILDSYSTEM_TARGETS)
-    foreach(_tgt IN LISTS _enzyme_targets)
-        target_compile_options(${_tgt} PRIVATE -Wno-error)
-    endforeach()
+    # and signed/unsigned compare warnings in enzyme-tblgen that would
+    # otherwise break the build under -Werror.
+    function(_lfortran_disable_werror_recursive _dir)
+        get_directory_property(_targets DIRECTORY ${_dir} BUILDSYSTEM_TARGETS)
+        foreach(_t IN LISTS _targets)
+            target_compile_options(${_t} PRIVATE -Wno-error)
+        endforeach()
+        get_directory_property(_subdirs DIRECTORY ${_dir} SUBDIRECTORIES)
+        foreach(_s IN LISTS _subdirs)
+            _lfortran_disable_werror_recursive(${_s})
+        endforeach()
+    endfunction()
+    _lfortran_disable_werror_recursive(${enzyme_SOURCE_DIR}/enzyme)
     set(LFORTRAN_ENZYME_PLUGIN "$<TARGET_FILE:LLVMEnzyme-${LLVM_VERSION_MAJOR}>"
         CACHE INTERNAL "Path to built Enzyme opt plugin")
 endif()
