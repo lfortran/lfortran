@@ -113,9 +113,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                     continue;
                 }
 
-                ASR::ttype_t* element_t = ASRUtils::type_get_past_array(
-                    m_type);
-                if (!ASR::is_a<ASR::StructType_t>(*element_t)) continue;
+                if (ASRUtils::is_array(m_type)) continue;
+                if (!ASR::is_a<ASR::StructType_t>(*m_type)) continue;
                 if (!m_var->m_type_declaration) continue;
                 ASR::symbol_t* m_decl_sym = ASRUtils::symbol_get_past_external(
                     m_var->m_type_declaration);
@@ -123,14 +122,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 ASR::Struct_t* m_struct = ASR::down_cast<ASR::Struct_t>(
                     m_decl_sym);
 
-                if (ASRUtils::is_array(m_type)) {
-                    int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type);
-                    emit_array_of_struct_cleanup_stmts(member_expr, m_struct,
-                        n_dims, current_scope, loc, logical_type, out_stmts);
-                } else {
-                    emit_struct_cleanup_stmts(member_expr, m_struct,
-                        current_scope, loc, logical_type, out_stmts);
-                }
+                emit_struct_cleanup_stmts(member_expr, m_struct,
+                    current_scope, loc, logical_type, out_stmts);
             }
             if (st->m_parent != nullptr) {
                 st = ASR::down_cast<ASR::Struct_t>(
