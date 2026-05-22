@@ -329,6 +329,25 @@ if (WITH_LLVM)
     endif()
 endif()
 
+# Enzyme (automatic differentiation via LLVM plugin, opt-in)
+set(WITH_ENZYME no CACHE BOOL "Fetch and build Enzyme as an opt plugin for autodiff")
+if (WITH_ENZYME)
+    if (NOT WITH_LLVM)
+        message(FATAL_ERROR "WITH_ENZYME requires WITH_LLVM=ON")
+    endif()
+    if (LLVM_VERSION_MAJOR LESS 15)
+        message(FATAL_ERROR "WITH_ENZYME requires LLVM >= 15 (Enzyme requirement); have ${LLVM_VERSION_MAJOR}")
+    endif()
+    include(FetchContent)
+    FetchContent_Declare(Enzyme
+        GIT_REPOSITORY https://github.com/EnzymeAD/Enzyme.git
+        GIT_TAG        v0.0.263
+        SOURCE_SUBDIR  enzyme)
+    FetchContent_MakeAvailable(Enzyme)
+    set(LFORTRAN_ENZYME_PLUGIN "$<TARGET_FILE:LLVMEnzyme-${LLVM_VERSION_MAJOR}>"
+        CACHE INTERNAL "Path to built Enzyme opt plugin")
+endif()
+
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
@@ -431,6 +450,7 @@ message("WITH_LINKH: ${WITH_LINKH}")
 message("WITH_MACHO: ${WITH_MACHO}")
 message("HAVE_LFORTRAN_DEMANGLE: ${HAVE_LFORTRAN_DEMANGLE}")
 message("WITH_LLVM: ${WITH_LLVM}")
+message("WITH_ENZYME: ${WITH_ENZYME}")
 message("WITH_ZSTD: ${WITH_ZSTD}")
 message("USE_DYNAMIC_ZSTD: ${USE_DYNAMIC_ZSTD}")
 message("WITH_MLIR: ${WITH_MLIR}")
