@@ -6816,7 +6816,9 @@ namespace SubstrIndex {
                     found = .false.
                 end if
 
-                do while (i < len_str .and. found)
+                ! Only iterate while a full-length match can still fit:
+                ! the last valid starting position is len_str - len_sub + 1.
+                do while (i <= len_str - len_sub + 1 .and. found)
                     k = 0
                     j = 1
                     do while (j <= len_sub .and. found)
@@ -6848,7 +6850,7 @@ namespace SubstrIndex {
             b.Assignment(found, b.bool_t(0, arg_types[2]))
         }, {}));
 
-        body.push_back(al, b.While(b.And(b.Lt(i, b.Add(b.StringLen(args[0]), b.i32(1))), b.Eq(found, b.bool_t(1, arg_types[2]))), {
+        body.push_back(al, b.While(b.And(b.LtE(i, b.Sub(b.Add(b.StringLen(args[0]), b.i32(1)), b.StringLen(args[1]))), b.Eq(found, b.bool_t(1, arg_types[2]))), {
             b.Assignment(k, b.i_t(0, return_type)),
             b.Assignment(j, b.i_t(1, return_type)),
             b.While(b.And(b.LtE(j, b.StringLen(args[1])), b.Eq(found, b.bool_t(1, arg_types[2]))), {
@@ -7437,7 +7439,7 @@ namespace Max {
             if (!ASR::is_a<ASR::Integer_t>(*arg_type_idx) 
                 && !ASR::is_a<ASR::Real_t>(*arg_type_idx) 
                 && !ASR::is_a<ASR::String_t>(*arg_type_idx)) { 
-                append_error(diag, "Arguments to min0 must be of real, integer or character type", loc);
+                append_error(diag, "Arguments to max0 must be of real, integer or character type", loc);
                 return nullptr;
             }
         }

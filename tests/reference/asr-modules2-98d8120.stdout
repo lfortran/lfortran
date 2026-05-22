@@ -62,7 +62,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
@@ -189,8 +189,8 @@
                                                     15
                                                     1_toml_array_list
                                                     14 list
-                                                    toml_array
-                                                    []
+                                                    tomlf_type_array
+                                                    [toml_array]
                                                     list
                                                     Public
                                                 ),
@@ -209,8 +209,8 @@
                                                     15
                                                     1_toml_structure_destroy
                                                     12 destroy
-                                                    1_toml_structure
-                                                    []
+                                                    tomlf_structure_base
+                                                    [toml_structure]
                                                     destroy
                                                     Public
                                                 ),
@@ -219,8 +219,8 @@
                                                     15
                                                     1_toml_value_key
                                                     5 key
-                                                    toml_value
-                                                    []
+                                                    tomlf_type_value
+                                                    [toml_value]
                                                     key
                                                     Public
                                                 ),
@@ -258,7 +258,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -439,7 +439,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     new_array
@@ -523,7 +523,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_array
@@ -621,7 +621,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     destroy
@@ -695,7 +695,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_value

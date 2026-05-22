@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             map:
                                                 (Variable
@@ -63,7 +63,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     map_open_entry
@@ -173,7 +173,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             key:
                                                 (Variable
@@ -197,7 +197,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             map:
                                                 (Variable
@@ -226,7 +226,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     map_open_entry
@@ -294,8 +294,8 @@
                                     7
                                     1_open_hashmap_type_map_entry
                                     3 map_entry
-                                    open_hashmap_type
-                                    []
+                                    mod_submodule_04
+                                    [open_hashmap_type]
                                     map_entry
                                     Public
                                 ),
@@ -321,7 +321,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             map:
                                 (Variable
@@ -350,7 +350,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             open_hashmap_type:
                                 (ExternalSymbol

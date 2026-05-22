@@ -17,8 +17,8 @@
                                                     4
                                                     1_t_1_i
                                                     3 i
-                                                    t_1
-                                                    []
+                                                    derived_types_15_module_1
+                                                    [t_1]
                                                     i
                                                     Public
                                                 ),
@@ -44,7 +44,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -68,7 +68,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -97,7 +97,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     multiply
@@ -158,8 +158,8 @@
                                                     5
                                                     1_t_1_i
                                                     3 i
-                                                    t_1
-                                                    []
+                                                    derived_types_15_module_1
+                                                    [t_1]
                                                     i
                                                     Public
                                                 ),
@@ -185,7 +185,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -209,7 +209,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -238,7 +238,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     sqrt_subtract
@@ -339,7 +339,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             multiply:
                                                 (StructMethodDeclaration
@@ -401,8 +401,8 @@
                                     6
                                     1_t_1_i
                                     3 i
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     i
                                     Public
                                 ),
@@ -411,8 +411,8 @@
                                     6
                                     1_t_1_multiply
                                     3 multiply
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     multiply
                                     Public
                                 ),
@@ -421,8 +421,8 @@
                                     6
                                     1_t_1_sqrt_subtract
                                     3 sqrt_subtract
-                                    t_1
-                                    []
+                                    derived_types_15_module_1
+                                    [t_1]
                                     sqrt_subtract
                                     Public
                                 ),
@@ -463,7 +463,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     name

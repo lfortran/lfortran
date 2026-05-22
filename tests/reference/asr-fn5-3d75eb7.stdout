@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             line:
                                                 (Variable
@@ -58,7 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             pattern:
                                                 (Variable
@@ -82,7 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             strout:
                                                 (Variable
@@ -120,7 +120,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     atleast
@@ -258,7 +258,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -282,7 +282,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             keywords:
                                                 (Variable
@@ -313,7 +313,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lfortran_iomsg:
                                                 (Variable
@@ -337,7 +337,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             lfortran_iomsg1:
                                                 (Variable
@@ -361,7 +361,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             present_in:
                                                 (Variable
@@ -392,7 +392,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             shorts:
                                                 (Variable
@@ -423,7 +423,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             stop:
                                                 (Variable
@@ -447,7 +447,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             values:
                                                 (Variable
@@ -478,7 +478,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     print_dictionary
@@ -612,6 +612,7 @@
                                         ()
                                         ()
                                         .true.
+                                        ()
                                         ()
                                         ()
                                         ()
@@ -860,6 +861,7 @@
                                         ()
                                         ()
                                         .true.
+                                        ()
                                         ()
                                         ()
                                         ()

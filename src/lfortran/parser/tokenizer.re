@@ -343,10 +343,10 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'end' whitespace 'block' { KW(END_BLOCK) }
             'endblock' { KW(ENDBLOCK) }
 
-            'end' whitespace 'block' whitespace 'data' { KW(END_BLOCK_DATA) }
-            'endblock' whitespace 'data' { KW(END_BLOCK_DATA) }
-            'end' whitespace 'blockdata' { KW(END_BLOCK_DATA) }
-            'endblockdata' { KW(ENDBLOCKDATA) }
+            'end' whitespace 'block' whitespace 'data' / [^a-zA-Z0-9_] { KW(END_BLOCK_DATA) }
+            'endblock' whitespace 'data' / [^a-zA-Z0-9_] { KW(END_BLOCK_DATA) }
+            'end' whitespace 'blockdata' / [^a-zA-Z0-9_] { KW(END_BLOCK_DATA) }
+            'endblockdata' / [^a-zA-Z0-9_] { KW(ENDBLOCKDATA) }
 
             'end' whitespace 'subroutine' { KW(END_SUBROUTINE) }
             'endsubroutine' { KW(ENDSUBROUTINE) }
@@ -844,6 +844,10 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | ':'
                 ;
 
+            hollerith_string
+                = int 'H' [^\s,)'\"\x00]+
+                ;
+
             * {
                 token_loc(loc, cur, tok, string_start);
                 std::string t = token(tok, cur);
@@ -908,6 +912,7 @@ void lex_format(unsigned char *&cur, Location &loc,
             '-' | '+' { continue; }
             (int)? whitespace? data_edit_desc { continue; }
             control_edit_desc { continue; }
+            (int)? whitespace? hollerith_string { continue; }
         */
     }
 }

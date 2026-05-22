@@ -35,7 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p1:
                                 (Variable
@@ -65,7 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p2:
                                 (Variable
@@ -95,7 +95,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p3:
                                 (Variable
@@ -128,7 +128,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p4:
                                 (Variable
@@ -161,7 +161,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p5:
                                 (Variable
@@ -194,7 +194,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p6:
                                 (Variable
@@ -227,7 +227,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             p7:
                                 (Variable
@@ -260,7 +260,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     intrinsics_13

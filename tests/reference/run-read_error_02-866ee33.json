@@ -1,0 +1,13 @@
+{
+    "basename": "run-read_error_02-866ee33",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/read_error_02.f90",
+    "infile_hash": "0fd50e46eba7079f2de793d0cb4739fabfa8874d8a26ebbc087d8783",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-read_error_02-866ee33.stderr",
+    "stderr_hash": "779288eb815a37e8653ec38e1052dba7c4c3537f8fe7255fa94b5ad5",
+    "returncode": 1
+}

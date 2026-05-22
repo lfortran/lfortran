@@ -395,6 +395,10 @@ public:
         if ( check_external && x.m_realloc_lhs ) {
             ASR::expr_t* a_target = x.m_target;
             bool is_allocatable = ASRUtils::is_allocatable(a_target);
+            if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
+                is_allocatable = ASRUtils::is_allocatable(
+                    ASRUtils::get_past_array_physical_cast(a_target));
+            }
             if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
                 ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
                 is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
@@ -786,6 +790,12 @@ public:
                 require(x.m_intent != ASR::Local,
                     "CChar-string-physical type shouldn't be used with local variables");
             }
+            if(str->m_len_kind == ASR::AssumedLength && 
+                x.m_storage !=ASR::Parameter &&
+                !ASRUtils::is_pointer(x.m_type) /*Tolerate pointer*/){
+                require(x.m_intent != ASR::Local,
+                    "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT).");
+            }
         }
         if (x.m_symbolic_value)
             visit_expr(*x.m_symbolic_value);
@@ -910,6 +920,19 @@ public:
             bool name_matches = (x_m_module_name == asr_owner_name);
             if (!name_matches && m != nullptr && x.n_scope_names > 0) {
                 name_matches = (x_m_module_name == std::string(m->m_name));
+            }
+            // When the direct owner is a Struct, m_module_name refers
+            // to the enclosing Module, not the Struct itself. Walk up
+            // to the parent Module to verify the match.
+            if (!name_matches && sm != nullptr) {
+                ASR::symbol_t* struct_parent = ASRUtils::get_asr_owner((ASR::symbol_t*)sm);
+                if (struct_parent != nullptr && ASR::is_a<ASR::Module_t>(*struct_parent)) {
+                    ASR::Module_t* parent_mod = ASR::down_cast<ASR::Module_t>(struct_parent);
+                    if (x_m_module_name == std::string(parent_mod->m_name)) {
+                        name_matches = true;
+                        m = parent_mod;
+                    }
+                }
             }
             require(name_matches,
                 "ExternalSymbol::m_module_name `" + x_m_module_name
@@ -1554,13 +1577,17 @@ public:
             "Type of ArrayConstant must be an array");
 
         int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        ASR::ttype_t* inner = ASRUtils::type_get_past_array(x.m_type);
         if (ASRUtils::is_character(*x.m_type)) {
             ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
             int64_t len;
             require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
-        } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(x.m_type))) {
+        } else if (ASR::is_a<ASR::StructType_t>(*inner)) {
             n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(ASR::expr_t*);
+        } else if (ASR::is_a<ASR::CPtr_t>(*inner)) {
+          // C_PTR and C_FUNPTR have no fortran kind parameter.
+          n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(void*);
         }
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);

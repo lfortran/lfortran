@@ -42,7 +42,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             integer_add_subrout:
                                                 (StructMethodDeclaration
@@ -77,7 +77,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             real_add_subrout:
                                                 (StructMethodDeclaration
@@ -122,8 +122,8 @@
                                                     4
                                                     1_complextype_i
                                                     3 i
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     i
                                                     Public
                                                 ),
@@ -132,8 +132,8 @@
                                                     4
                                                     1_complextype_r
                                                     3 r
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     r
                                                     Public
                                                 ),
@@ -159,7 +159,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -183,7 +183,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             sum:
                                                 (Variable
@@ -213,7 +213,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             this:
                                                 (Variable
@@ -243,7 +243,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     integer_add_subrout
@@ -361,8 +361,8 @@
                                                     5
                                                     1_complextype_i
                                                     3 i
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     i
                                                     Public
                                                 ),
@@ -371,8 +371,8 @@
                                                     5
                                                     1_complextype_r
                                                     3 r
-                                                    complextype
-                                                    []
+                                                    complex_module
+                                                    [complextype]
                                                     r
                                                     Public
                                                 ),
@@ -398,7 +398,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -422,7 +422,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             sum:
                                                 (Variable
@@ -452,7 +452,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             this:
                                                 (Variable
@@ -482,7 +482,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     real_add_subrout
@@ -606,8 +606,8 @@
                                     6
                                     1_complextype_i
                                     3 i
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     i
                                     Public
                                 ),
@@ -616,8 +616,8 @@
                                     6
                                     1_complextype_integer_add_subrout
                                     3 integer_add_subrout
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     integer_add_subrout
                                     Public
                                 ),
@@ -626,8 +626,8 @@
                                     6
                                     1_complextype_r
                                     3 r
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     r
                                     Public
                                 ),
@@ -636,8 +636,8 @@
                                     6
                                     1_complextype_real_add_subrout
                                     3 real_add_subrout
-                                    complextype
-                                    []
+                                    complex_module
+                                    [complextype]
                                     real_add_subrout
                                     Public
                                 ),
@@ -669,7 +669,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -699,7 +699,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             complextype:
                                 (ExternalSymbol
@@ -733,7 +733,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             fptwo:
                                 (Variable
@@ -757,7 +757,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             fpzero:
                                 (Variable
@@ -781,7 +781,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             ione:
                                 (Variable
@@ -805,7 +805,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             izero:
                                 (Variable
@@ -829,7 +829,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             negfpone:
                                 (Variable
@@ -853,7 +853,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     generic_name_01

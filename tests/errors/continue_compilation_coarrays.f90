@@ -22,4 +22,7 @@ program continue_compilation_coarrays
     integer :: z[*], a
     a = z[1:5:2]
 
+    real :: cod[4]
+    print *,cod[5]
+
 end program continue_compilation_coarrays

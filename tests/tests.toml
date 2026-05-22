@@ -800,6 +800,21 @@ cpp = true
 x86 = true
 
 [[test]]
+filename = "errors/read_error_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "errors/read_error_02.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "read_iostat_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
 filename = "program2.f90"
 ast = true
 
@@ -4082,6 +4097,10 @@ filename = "errors/scalar_allocation_check_06.f90"
 run = true
 
 [[test]]
+filename = "errors/scalar_allocation_check_07.f90"
+run = true
+
+[[test]]
 filename = "errors/matmul_unallocated_01.f90"
 run = true
 
@@ -5168,3 +5187,21 @@ asr = true
 [[test]]
 filename = "../integration_tests/read_83.f90"
 llvm = true
+
+[[test]]
+filename = "no_main_program_1.f90"
+run = true
+
+[[test]]
+filename = "no_main_program_2.f90"
+options = "--backend=c"
+run = true
+
+[[test]]
+filename = "no_main_program_3.f90"
+options = "--backend=cpp"
+run = true
+
+[[test]]
+filename = "errors/read_eof_01.f90"
+run = true
