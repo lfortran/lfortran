@@ -654,6 +654,9 @@ program continue_compilation_1
     dimension :: m(3)
     open(newunit=u, file="test.dat", status="replace", asynchronous=1)
     open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
+    integer :: eoshift_bad_shift(2, 2)
+    eoshift_bad_shift = 1
+    b1 = eoshift(b1, eoshift_bad_shift)
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
