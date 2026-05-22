@@ -38,6 +38,29 @@ static inline bool variable_is_converted_function_result(
     return false;
 }
 
+static inline bool struct_owns_heap_resources(ASR::Struct_t* st) {
+    while (st != nullptr) {
+        SymbolTable* sym_table = st->m_symtab;
+        if (sym_table != nullptr) {
+            for (auto& m : sym_table->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+                ASR::ttype_t* mem_t = ASRUtils::symbol_type(m.second);
+                if (ASRUtils::is_allocatable(mem_t) ||
+                        ASRUtils::is_pointer(mem_t)) {
+                    return true;
+                }
+            }
+        }
+        if (st->m_parent != nullptr) {
+            st = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(st->m_parent));
+        } else {
+            st = nullptr;
+        }
+    }
+    return false;
+}
+
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
@@ -308,6 +331,29 @@ public:
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
 
                 if (variable_is_converted_function_result(arg_var)) {
+                    if (struct_type->n_member_functions > 0 &&
+                            !struct_owns_heap_resources(struct_type)) {
+                        std::string dummy_name =
+                            xx.m_symtab->get_unique_name(
+                                "__libasr_created__exit_final_dummy");
+                        ASR::ttype_t* dummy_type =
+                            ASRUtils::duplicate_type(al, arg_var->m_type);
+                        ASR::symbol_t* dummy_sym =
+                            ASR::down_cast<ASR::symbol_t>(
+                                ASRUtils::make_Variable_t_util(
+                                    al, loc, xx.m_symtab,
+                                    s2c(al, dummy_name), nullptr, 0,
+                                    ASR::intentType::Local,
+                                    nullptr, nullptr,
+                                    ASR::storage_typeType::Default,
+                                    dummy_type,
+                                    arg_var->m_type_declaration,
+                                    ASR::abiType::Source,
+                                    ASR::accessType::Public,
+                                    ASR::presenceType::Required,
+                                    false));
+                        xx.m_symtab->add_symbol(dummy_name, dummy_sym);
+                    }
                     continue;
                 }
 
