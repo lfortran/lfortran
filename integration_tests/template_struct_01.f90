@@ -3,12 +3,12 @@ module template_struct_01_m
   private
   public :: struct_t, test_template
 
-  requirement r(t)
-      type, deferred :: t
+  requirement r{t}
+      deferred type :: t
   end requirement
 
-  template struct_t(t)
-      require :: r(t)
+  template struct_t{t}
+      require r{t}
       private
       public :: tuple
 
@@ -36,10 +36,10 @@ module template_struct_01_m
 contains
 
   subroutine test_template()
-      instantiate struct_t(integer), &
+      instantiate struct_t{integer}, &
           only: int_tuple => tuple, get_int_fst => get_fst, &
                 get_int_snd => get_snd
-      instantiate struct_t(real), &
+      instantiate struct_t{real}, &
           only: real_tuple => tuple, get_real_fst => get_fst, &
                 get_real_snd => get_snd
       type(int_tuple) :: ti

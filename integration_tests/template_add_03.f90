@@ -3,16 +3,16 @@ module template_add_03_m
     private
     public :: add_t, test_template
 
-    requirement r(t, f)
-        type, deferred :: t
+    requirement r{t, f}
+        deferred type :: t
         function f(x, y) result(z)
             type(t), intent(in) :: x, y
             type(t) :: z
         end function
     end requirement
 
-    template add_t(t, f)
-        require :: r(t, f)
+    template add_t{t, f}
+        require r{t, f}
         private
         public :: add_generic
     contains
@@ -26,7 +26,7 @@ module template_add_03_m
 contains
 
     subroutine test_template()
-        instantiate add_t(real, operator(+)), only: add_real => add_generic
+        instantiate add_t{real, operator(+)}, only: add_real => add_generic
         real :: x, y
         x = 5.1
         y = 7.2

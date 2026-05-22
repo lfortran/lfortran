@@ -1,9 +1,9 @@
 module template_03_m
 
-    requirement op(T, U, V, op)
-      type, deferred :: T
-      type, deferred :: U
-      type, deferred :: V
+    requirement op{T, U, V, op}
+      deferred type :: T
+      deferred type :: U
+      deferred type :: V
       interface
         elemental function op(a, b)
           type(T), intent(in) :: a
@@ -13,10 +13,10 @@ module template_03_m
       end interface
     end requirement
     
-    template axpy_tmpl(T, U, V, W, plus, times)
+    template axpy_tmpl{T, U, V, W, plus, times}
       public :: axpy
-      require :: op(V, W, V, plus)
-      require :: op(T, U, W, times)
+      require op{V, W, V, plus}
+      require op{T, U, W, times}
     contains
       subroutine axpy(a, x, y)
         type(T), intent(in) :: a
@@ -33,7 +33,7 @@ module template_03_m
     
     subroutine f()
         integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
-        instantiate axpy_tmpl(real, integer, real, real, operator(+), operator(*))
+        instantiate axpy_tmpl{real, integer, real, real, operator(+), operator(*)}
         real :: a
         integer :: x(3)
         real :: y(3)

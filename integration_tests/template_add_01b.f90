@@ -3,8 +3,8 @@ module template_add_01b_m
     private
     public :: add_t, test_template
 
-    requirement R(T, F)
-        type, deferred :: T
+    requirement R{T, F}
+        deferred type :: T
         interface operator (+)
             procedure F
         end interface
@@ -14,8 +14,8 @@ module template_add_01b_m
         end function
     end requirement
 
-    template add_t(T, F)
-        require :: R(T, F)
+    template add_t{T, F}
+        require R{T, F}
         private
         public :: add_generic
     contains
@@ -34,15 +34,10 @@ module template_add_01b_m
 
 contains
 
-    integer function func_arg_int(x, y) result(z)
-        integer, intent(in) :: x, y
-        z = x + y
-    end function
-
     subroutine test_template()
         integer :: n1, n2
 
-        instantiate add_t(integer, func_arg_int), only: add_integer => add_generic, add_integer2 => add_generic2
+        instantiate add_t{integer, operator(+)}, only: add_integer => add_generic, add_integer2 => add_generic2
         n1 = add_integer(5, 9)
         n2 = add_integer2(5, 9, 10)
         print*, "The result is", n1

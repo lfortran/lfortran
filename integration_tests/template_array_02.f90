@@ -21,7 +21,7 @@ module template_array_02_m
     public :: test_template
 
     requirement operations{t, plus_t, zero_t}
-        deffered type :: t
+        deferred type :: t
 
         pure function plus_t(l, r) result(rs)
             type(t), intent(in) :: l, r

@@ -3,10 +3,10 @@ module template_simple_01_m
     private
     public :: generic_sum, test_template
 
-    requirement operator_r(T, U, V, binary_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
+    requirement operator_r{T, U, V, binary_func}
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
         pure elemental function binary_func(lhs, rhs) result(res)
             type(T), intent(in) :: lhs
             type(U), intent(in) :: rhs
@@ -14,8 +14,8 @@ module template_simple_01_m
         end function
     end requirement
 
-    requirement cast_r(T, cast)
-        type, deferred :: T
+    requirement cast_r{T, cast}
+        deferred type :: T
         pure elemental function cast(arg) result(res)
             integer, intent(in) :: arg
             type(T) :: res
@@ -27,17 +27,18 @@ contains
     pure elemental function cast_integer(arg) result(res)
         integer, intent(in) :: arg
         integer :: res
-        res = 0
+        res = arg
     end function
 
     pure elemental function cast_real(arg) result(res)
         integer, intent(in) :: arg
         real :: res
-        res = 0.0
+        res = arg
     end function
 
-    pure function generic_sum {T, add, cast} (arr) result(res)
-        require :: operator_r(T, T, T, add), cast_r(T, cast)
+    template pure function generic_sum {T, add, cast} (arr) result(res)
+        require operator_r{T, T, T, add}
+        require cast_r{T, cast}
         type(T), intent(in) :: arr(:)
         type(T) :: res
         integer :: n, i
@@ -52,8 +53,8 @@ contains
     end function
 
     subroutine test_template()
-        instantiate generic_sum(integer, operator(+), cast_integer), only: generic_sum_integer => generic_sum
-        instantiate generic_sum(real, operator(+), cast_real), only: generic_sum_real => generic_sum
+        instantiate generic_sum{integer, operator(+), cast_integer}, only: generic_sum_integer => generic_sum
+        instantiate generic_sum{real, operator(+), cast_real}, only: generic_sum_real => generic_sum
         integer :: a_i(10), i, s_i
         real :: a_r(10), s_r
         do i = 1, size(a_i)

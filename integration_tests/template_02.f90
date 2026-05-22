@@ -1,16 +1,16 @@
 module template_02_m
   implicit none
 
-  requirement eq(t, ne)
-    type, deferred :: t
+  requirement eq{t, ne}
+    deferred type :: t
     function ne(lhs, rhs)
       type(t), intent(in) :: lhs, rhs
       logical :: ne
     end function
   end requirement
 
-  template change_positions_tmpl(t, ne)
-    require :: eq(t, ne)
+  template change_positions_tmpl{t, ne}
+    require eq{t, ne}
     private
     public :: change_positions_t
   contains
@@ -42,9 +42,9 @@ end module
 program template_02
   use template_02_m
   implicit none
-  instantiate change_positions_tmpl(integer, operator(/=)), &
+  instantiate change_positions_tmpl{integer, operator(/=)}, &
     only: change_positions_int => change_positions_t
-  instantiate change_positions_tmpl(character, operator(/=)), &
+  instantiate change_positions_tmpl{character, operator(/=)}, &
     only: change_positions_chr => change_positions_t
   print *, change_positions_int([3, 3, 6, 2, 2, 2, 1])
   print *, change_positions_chr(["a", "a", "b", "p", "p", "p", "o"])

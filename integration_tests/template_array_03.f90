@@ -54,7 +54,7 @@ module template_array_03_m
     contains
 
         subroutine mymatmul_t(i, j, k, a, b, r)
-            integer, parameter, intent(in) :: i, j, k
+            integer, intent(in) :: i, j, k
             type(t), intent(in) :: a(i,j), b(j,k)
             type(t), intent(out) :: r(i,k)
             integer :: x, y, z

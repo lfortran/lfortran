@@ -4,16 +4,17 @@ module template_matrix_01_m
     private
     public :: matrix_t
 
-    requirement elemental_op(t, op)
-        type, deferred :: t
+    requirement elemental_op{t, op}
+        deferred type :: t
         pure elemental function op(l, r) result(rs)
             type(t), intent(in) :: l, r
             type(t) :: rs
         end function
     end requirement
 
-    template matrix_t(t, plus, times, n)
-        require :: elemental_op(t, plus), elemental_op(t, times)
+    template matrix_t{t, plus, times, n}
+        require elemental_op{t, plus}
+        require elemental_op{t, times}
         integer :: n
         
         private
@@ -58,7 +59,7 @@ use template_matrix_01_m
 integer, parameter :: n = 2
 integer :: i, j
 
-instantiate matrix_t(integer, operator(+), operator(*), n), &
+instantiate matrix_t{integer, operator(+), operator(*), n}, &
     only: int_matrix => matrix, &
           int_add_matrix => add_matrix, &
           int_mul_matrix => mul_matrix

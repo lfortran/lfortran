@@ -3,10 +3,10 @@ module template_simple_02_m
     private
     public :: generic_sum, test_template
 
-    requirement operator_r(T, U, V, binary_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
+    requirement operator_r{T, U, V, binary_func}
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
         pure elemental function binary_func(lhs, rhs) result(res)
             type(T), intent(in) :: lhs
             type(U), intent(in) :: rhs
@@ -14,8 +14,8 @@ module template_simple_02_m
         end function
     end requirement
 
-    requirement cast_r(T, cast)
-        type, deferred :: T
+    requirement cast_r{T, cast}
+        deferred type :: T
         pure elemental function cast(arg) result(res)
             integer, intent(in) :: arg
             type(T) :: res
@@ -27,17 +27,18 @@ contains
     pure elemental function cast_integer(arg) result(res)
         integer, intent(in) :: arg
         integer :: res
-        res = 0
+        res = arg
     end function
 
     pure elemental function cast_real(arg) result(res)
         integer, intent(in) :: arg
         real :: res
-        res = 0.0
+        res = arg
     end function
 
-    pure function generic_sum {T, add, cast} (arr) result(res)
-        require :: operator_r(T, T, T, add), cast_r(T, cast)
+    template pure function generic_sum {T, add, cast} (arr) result(res)
+        require operator_r{T, T, T, add}
+        require cast_r{T, cast}
         type(T), intent(in) :: arr(:)
         type(T) :: res
         integer :: n, i

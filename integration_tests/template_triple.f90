@@ -52,7 +52,7 @@ module Math_integer_m
     end requirement
 
     template triple_tmpl{T, plus_T}
-      require :: magma_r{T, plus_T}
+      require magma_r{T, plus_T}
       private
       public :: triple_l, triple_r
     contains

@@ -27,10 +27,10 @@ module template_travel_02_travel
     private 
     public :: travel_tmpl
 
-    requirement operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        type, deferred :: D
-        type, deferred :: T
-        type, deferred :: S
+    requirement operations{D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
+        deferred type :: D
+        deferred type :: T
+        deferred type :: S
 
         pure function plus_D(l, r) result(total)
             type(D), intent(in) :: l, R
@@ -55,8 +55,8 @@ module template_travel_02_travel
         end function
     end requirement
 
-    template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        require :: operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
+    template travel_tmpl{D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
+        require operations{D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
         private
         public :: avg_S_from_T
     contains
@@ -75,9 +75,9 @@ module template_travel_02_travel
         end function
     end template
 
-    template travel_tmpl2(T, plus, div)
-        require :: operations(T, T, T, plus, plus, div, div)
-        instantiate travel_tmpl(T, T, T, plus, plus, div, div)
+    template travel_tmpl2{T, plus, div}
+        require :: operations{T, T, T, plus, plus, div, div}
+        instantiate travel_tmpl{T, T, T, plus, plus, div, div}
     end template
 
 end module
@@ -91,7 +91,7 @@ module template_travel_02_m
 contains
 
     subroutine test_template()
-        instantiate travel_tmpl2(real, add_real, slash_real), &
+        instantiate travel_tmpl2{real, add_real, slash_real}, &
             only: avg_real_S_from_S => avg_S_from_S
         real :: s
         s = avg_real_S_from_S(1.1, 0.5, 2.0, 0.75)
