@@ -330,31 +330,31 @@ public:
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
 
-                if (variable_is_converted_function_result(arg_var)) {
-                    if (struct_type->n_member_functions > 0 &&
-                            !struct_owns_heap_resources(struct_type)) {
-                        std::string dummy_name =
-                            xx.m_symtab->get_unique_name(
-                                "__libasr_created__exit_final_dummy");
-                        ASR::ttype_t* dummy_type =
-                            ASRUtils::duplicate_type(al, arg_var->m_type);
-                        ASR::symbol_t* dummy_sym =
-                            ASR::down_cast<ASR::symbol_t>(
-                                ASRUtils::make_Variable_t_util(
-                                    al, loc, xx.m_symtab,
-                                    s2c(al, dummy_name), nullptr, 0,
-                                    ASR::intentType::Local,
-                                    nullptr, nullptr,
-                                    ASR::storage_typeType::Default,
-                                    dummy_type,
-                                    arg_var->m_type_declaration,
-                                    ASR::abiType::Source,
-                                    ASR::accessType::Public,
-                                    ASR::presenceType::Required,
-                                    false));
-                        xx.m_symtab->add_symbol(dummy_name, dummy_sym);
-                    }
-                    continue;
+                bool is_converted_function_result =
+                    variable_is_converted_function_result(arg_var);
+                if (is_converted_function_result &&
+                        struct_type->n_member_functions > 0 &&
+                        !struct_owns_heap_resources(struct_type)) {
+                    std::string dummy_name =
+                        xx.m_symtab->get_unique_name(
+                            "__libasr_created__exit_final_dummy");
+                    ASR::ttype_t* dummy_type =
+                        ASRUtils::duplicate_type(al, arg_var->m_type);
+                    ASR::symbol_t* dummy_sym =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(
+                                al, loc, xx.m_symtab,
+                                s2c(al, dummy_name), nullptr, 0,
+                                ASR::intentType::Local,
+                                nullptr, nullptr,
+                                ASR::storage_typeType::Default,
+                                dummy_type,
+                                arg_var->m_type_declaration,
+                                ASR::abiType::Source,
+                                ASR::accessType::Public,
+                                ASR::presenceType::Required,
+                                false));
+                    xx.m_symtab->add_symbol(dummy_name, dummy_sym);
                 }
 
                 // Call user-defined FINAL procedures for non-allocatable
@@ -363,7 +363,8 @@ public:
                 //    nonallocatable, INTENT(OUT) dummy argument of a type
                 //    for which a final subroutine is defined, the
                 //    finalization occurs before the procedure body executes."
-                if (struct_type->n_member_functions > 0) {
+                if (!is_converted_function_result &&
+                        struct_type->n_member_functions > 0) {
                     ASR::expr_t* var_expr = ASRUtils::EXPR(
                         ASR::make_Var_t(al, loc, arg_sym));
                     for (size_t fi = 0; fi < struct_type->n_member_functions; fi++) {
