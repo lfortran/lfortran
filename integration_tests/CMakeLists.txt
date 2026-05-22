@@ -1108,6 +1108,8 @@ RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 
 RUN(NAME format_quotes_01 LABELS gfortran llvm)
 
+RUN(NAME list_directed_stdin_eof_01 LABELS gfortran llvm COPY_TO_BIN list_directed_stdin_eof_01_data.txt)
+
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
 RUN(NAME format_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
