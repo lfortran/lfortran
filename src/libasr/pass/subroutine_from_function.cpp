@@ -754,11 +754,15 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     assignment->m_value = target;
 
                     if (value_and_target_allocatable_array) {
-                        
                         assignment->m_move_allocation = true;
                      
-                        assignment->m_realloc_lhs = pass_options.realloc_lhs_arrays;
+                        if (ASRUtils::is_character(*ASRUtils::expr_type(target))) {
+                            assignment->m_realloc_lhs = pass_options.realloc_lhs_arrays;
+                        } else {
+                            assignment->m_realloc_lhs = true;
+                        }
                     }
+                    
                 } else {
                     ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                     associate->m_value = target;
