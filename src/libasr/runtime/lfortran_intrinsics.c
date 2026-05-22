@@ -6880,11 +6880,10 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         int pad_mode;
         int32_t unit_recl = 0;
         FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim_mode, &blank_zero, &unit_recl, &sign_mode, &decimal_mode, &encoding_mode, &round_mode_val, &pad_mode);
-        if (get_file_name_from_unit(unit_num, &unit_file_bin) != NULL) {
-            *exists = true;
-        } else {
-            *exists = false;
+        if (exists != NULL) {
+            *exists = (unit_num >= 0);
         }
+
         if (number != NULL) {
             if (fp != NULL) {
                 *number = unit_num;
