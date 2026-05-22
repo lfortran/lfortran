@@ -329,9 +329,6 @@ if (WITH_LLVM)
     endif()
 endif()
 
-# Helper: configure the Fortran kernelspec.
-# On Emscripten, processes wasm_kernel.json.in; otherwise kernel.json.in.
-# Mirrors xeus-cpp's configure_kernel() pattern.
 function(configure_lfortran_kernel)
     if(EMSCRIPTEN)
         set(prefix "wasm_")
