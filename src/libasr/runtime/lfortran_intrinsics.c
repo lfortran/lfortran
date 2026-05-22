@@ -49,13 +49,8 @@ typedef enum {
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
 /* ---- real(16) / binary128 support ---- */
-/*
- * All lf_float128 types, arithmetic, conversions, comparisons, math,
- * formatting, and ARM64 ABI shims live in lf_float128_to_str.c.
- * This single include works on every platform (Linux/macOS/Windows/WASM).
- */
+#include "lfortran_float128_quadmath.h"
 #include "lfortran_float128.c"
-
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
 /* ----------------------------------------------------- */
@@ -11035,7 +11030,7 @@ LFORTRAN_API void _lfortran_formatted_read(
     char* pad, int64_t pad_len,
     ...)
 {
-    InputSource inputSource;
+    InputSource inputSource = {};
     bool unit_file_bin, blank_zero;
     int pad_mode;
     inputSource.access_id = 0;

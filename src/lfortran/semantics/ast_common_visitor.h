@@ -15,7 +15,7 @@
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
-#include <libasr/runtime/lfortran_float128.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 #include <cstdint>
 #include <cstring>
 #include <string>

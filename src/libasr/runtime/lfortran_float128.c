@@ -30,7 +30,8 @@
  *   P. ARM64 sret shims
  */
 
-#include "lfortran_float128.h"
+#include "lfortran_float128_llvm.h"
+#include "lfortran_float128_quadmath.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>

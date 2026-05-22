@@ -68,7 +68,7 @@
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/gpu_utils.h>
-#include <libasr/runtime/lfortran_float128.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 namespace LCompilers {
 
 using ASR::is_a;

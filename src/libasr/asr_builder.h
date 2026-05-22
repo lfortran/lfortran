@@ -5,7 +5,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/pass_utils.h>
-#include <libasr/runtime/lfortran_float128.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 
 #include <cstdint>
 #include <cstring>
