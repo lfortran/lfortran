@@ -471,14 +471,9 @@ public:
             llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
             llvm::IRBuilder<> entry_builder(context);
             entry_builder.SetInsertPoint(&entry_block, std::next(alloca->getIterator()));
-            uint64_t type_size = module->getDataLayout().getTypeAllocSize(type);
-            entry_builder.CreateMemSet(alloca, entry_builder.getInt8(0), type_size,
-#if LLVM_VERSION_MAJOR >= 11
-                llvm::MaybeAlign(alloca->getAlign()));
-#else
-                llvm::MaybeAlign(alloca->getAlignment()));
-#endif
+            entry_builder.CreateStore(llvm::ConstantAggregateZero::get(type), alloca);
         }
+
         pool.push_back(alloca);
         idx++;
         return alloca;
@@ -496,6 +491,9 @@ public:
     void finalize_list_call_arg_allocas() {
         for (auto& kv : list_call_arg_to_finalize) {
             list_api->free_data_using_type(kv.second, kv.first, module.get());
+            llvm::AllocaInst* alloca_inst = llvm::cast<llvm::AllocaInst>(kv.first);
+            llvm::Type* alloc_type = alloca_inst->getAllocatedType();
+            builder->CreateStore(llvm::ConstantAggregateZero::get(alloc_type), kv.first);
         }
         list_call_arg_to_finalize.clear();
     }
@@ -6949,6 +6947,23 @@ public:
                     }
                 }
                 return llvm::ConstantStruct::get(complex_type, {re, im});
+            }
+            case ASR::exprType::ArrayConstant: {
+                // Infer LLVM element/array type from the ASR expression
+                llvm::Type* elem_type = nullptr;
+                elem_type = llvm_utils->get_el_type(expr, ASRUtils::extract_type(ASRUtils::expr_type(expr)), module.get());
+                llvm::Constant* c = get_const_array(expr, elem_type);
+                return c;
+            }
+            case ASR::exprType::StringConstant: {
+                ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(expr);
+                llvm::Value* v = llvm_utils->declare_string_constant(sc);
+                if (!v) break;
+                llvm::GlobalVariable* gv = llvm::cast<llvm::GlobalVariable>(v);
+                if (gv->hasInitializer()) {
+                    return gv->getInitializer();
+                }
+                break;
             }
             case ASR::exprType::StructConstant: {
                 std::vector<llvm::Constant*> field_values;
@@ -23107,14 +23122,12 @@ public:
                                             arg_type);
                                         std::string tc = ASRUtils::get_type_code(
                                             list_t->m_type, false, false);
-                                        // Always free old data before deepcopy.
-                                        // The alloca is zero-initialized at entry, so
-                                        // the null-guarded free is a no-op on first use.
-                                        list_api->free_data_using_type(
-                                            tc, target, module.get());
+                                        list_api->free_data_using_type(tc, target, module.get());
+                                        llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                         list_call_arg_to_finalize[target] = tc;
+                                    } else {
+                                        llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                     }
-                                    llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, arg_type, module.get());
                                     // Free source temp data for ListConstant only.
                                     // Other non-Var sources (e.g., ListItem) may hold
                                     // shallow-copy data pointers shared with a parent

@@ -361,6 +361,18 @@ semantic error: Contiguous attribute can only be applied to variables
 299 |     contiguous :: MyClass
     |                   ^^^^^^^ 
 
+semantic error: ‘shape’ argument of ‘reshape’ intrinsic has negative element (-2)
+   --> tests/errors/continue_compilation_1.f90:302:53
+    |
+302 |     integer, parameter :: qval(2) = reshape([7, 8], -[z])
+    |                                                     ^^^^ 
+
+semantic error: LEN parameters in parameterized derived types are not supported yet
+   --> tests/errors/continue_compilation_1.f90:305:9
+    |
+305 |         integer, len :: n
+    |         ^^^^^^^^^^^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
@@ -1042,6 +1054,12 @@ semantic error: reshape accepts `order` array as a permutation of elements from 
 487 |     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
     |                                                          ^^^^^^ 
 
+semantic error: Substring start index must be of type integer
+   --> tests/errors/continue_compilation_1.f90:488:16
+    |
+488 |     print *, a(b'01':2)
+    |                ^^^^^ 
+
 semantic error: `mask` argument to `count` intrinsic must be a logical array
    --> tests/errors/continue_compilation_1.f90:489:20
     |
@@ -1053,6 +1071,12 @@ semantic error: `mask` argument to `count` intrinsic must be a logical array
     |
 490 |     print *, count([2])
     |                    ^^^ 
+
+semantic error: Substring stride must be of type integer
+   --> tests/errors/continue_compilation_1.f90:491:20
+    |
+491 |     print *, a(1:2:b'10')
+    |                    ^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:492:5
@@ -1071,6 +1095,12 @@ semantic error: The `mask` argument to `parity` must be logical, but got string[
     |
 496 |     print *, parity(["a", "b"])
     |                     ^^^^^^^^^^ must be logical type
+
+semantic error: Substring end index exceeds the string length
+   --> tests/errors/continue_compilation_1.f90:497:14
+    |
+497 |     print *, string(1:6)
+    |              ^^^^^^^^^^^ 
 
 semantic error: `shape` array in reshape intrinsic should be of constant size
    --> tests/errors/continue_compilation_1.f90:499:30
@@ -1096,6 +1126,12 @@ semantic error: Character variable 'c1' only has %len and %kind members, not 'my
 506 |     print *, c1%mymember
     |              ^^^^^^^^^^^ 
 
+semantic error: Substring end index must be of type integer
+   --> tests/errors/continue_compilation_1.f90:507:23
+    |
+507 |     print *, string(1:Z'100000003')
+    |                       ^^^^^^^^^^^^ 
+
 semantic error: Incorrect number of arguments passed to the 'present' intrinsic. It accepts exactly 1 arguments.
    --> tests/errors/continue_compilation_1.f90:508:14
     |
@@ -1119,6 +1155,12 @@ semantic error: Incorrect number of arguments passed to the 'ieor' intrinsic. It
     |
 511 |     print *, ieor()
     |              ^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_1.f90:512:14
+    |
+512 |     print *, min(c, c)
+    |              ^^^^^^^^^ 
 
 semantic error: `exit` statements cannot be outside of loops or blocks
    --> tests/errors/continue_compilation_1.f90:513:5
@@ -1484,6 +1526,18 @@ semantic error: Missing actual argument for argument 'stat'
     |
 652 |     a5 = missing_required_arg_func()
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `asynchronous` must be of type String
+   --> tests/errors/continue_compilation_1.f90:655:69
+    |
+655 |     open(newunit=u, file="test.dat", status="replace", asynchronous=1)
+    |                                                                     ^ 
+
+semantic error: Duplicate value of `asynchronous` found
+   --> tests/errors/continue_compilation_1.f90:656:89
+    |
+656 |     open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
+    |                                                                                         ^^^^ 
 
 semantic error: No matching `operator(-)` found for this operand type
    --> tests/errors/continue_compilation_1.f90:662:18

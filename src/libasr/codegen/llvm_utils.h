@@ -2638,12 +2638,11 @@ class ASRToLLVMVisitor;
             llvm::BasicBlock *const entry = llvm::BasicBlock::Create(builder_->getContext(), "entry", fn);
             builder_->SetInsertPoint(entry);
 
-            // Convert the pointer to the appropiate type + Call finalize on it
             llvm::Value* const i8_ptr_arg = &fn->args().begin()[0];
             llvm::Type*  const llvm_type = get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(type), struct_sym);
             LCOMPILERS_ASSERT_MSG(!llvm_type->isPointerTy(), "Expected a not pointer type")
             llvm::Value* const correctly_typed_ptr = builder_->CreateBitCast(i8_ptr_arg, llvm_type->getPointerTo());
-            finalize(correctly_typed_ptr, type, struct_sym, false);
+            check_userDefinedFinalizer_then_finalize(correctly_typed_ptr, type, struct_sym, false);
 
 
             // Set terminal block + Revert

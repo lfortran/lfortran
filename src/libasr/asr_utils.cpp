@@ -1672,7 +1672,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
                                 ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0])));
-                                if (!is_derived_type_similar(left_struct, left_arg_sym)) {
+                                if (!can_pass_derviedtype_arg_to_parameter(left_struct, left_arg_sym /*param*/)) {
                                     break;
                                 }
                             }
@@ -1680,7 +1680,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1])));
-                                if (!is_derived_type_similar(right_struct, right_arg_sym)) {
+                                if (!can_pass_derviedtype_arg_to_parameter(right_struct, right_arg_sym /*param*/)) {
                                     break;
                                 }
                             }
@@ -2466,7 +2466,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
                                 ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0])));
-                                if (!is_derived_type_similar(left_struct, left_arg_sym)) {
+                                if (!can_pass_derviedtype_arg_to_parameter(left_struct, left_arg_sym)) {
                                     break;
                                 }
                             }
@@ -2474,7 +2474,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1])));
-                                if (!is_derived_type_similar(right_struct, right_arg_sym)) {
+                                if (!can_pass_derviedtype_arg_to_parameter(right_struct, right_arg_sym)) {
                                     break;
                                 }
                             }
@@ -2683,7 +2683,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(left))));
                                 ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0]))));
-                                if (!is_derived_type_similar(left_sym, left_arg_sym)) {
+                                if (!can_pass_derviedtype_arg_to_parameter(left_sym, left_arg_sym)) {
                                     break;
                                 }
                             }
@@ -2694,7 +2694,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(
                                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1]))));
-                                if (!is_derived_type_similar(right_sym, right_arg_sym)) {
+                                if (!can_pass_derviedtype_arg_to_parameter(right_sym, right_arg_sym)) {
                                     break;
                                 }
                             }

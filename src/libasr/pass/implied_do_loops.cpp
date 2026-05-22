@@ -1129,7 +1129,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false, false, false,
                 nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false);
+                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0);
             current_scope->add_symbol(accum_name,
                 ASR::down_cast<ASR::symbol_t>(accum_var_asr));
             ASR::expr_t* accum_ref = ASRUtils::EXPR(ASR::make_Var_t(
@@ -1214,7 +1214,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 } else {
                     // this will be file_write
                     LCOMPILERS_ASSERT(file_write);
-                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr));
+                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr, nullptr));
                 }
                 do_loop_body.push_back(al, stmt);
             }

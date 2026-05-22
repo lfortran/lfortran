@@ -543,6 +543,7 @@ RUN(NAME slash_init_01 LABELS gfortran llvm)
 
 RUN(NAME max_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME max_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
+RUN(NAME max_03 LABELS  llvm llvm_wasm llvm_wasm_emcc) #gfortran does not support reduce()
 RUN(NAME min_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME min_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME minmax_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
@@ -707,6 +708,7 @@ RUN(NAME types_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm fortran
 
 # GFortran + LFortran C++
 RUN(NAME doconcurrentloop_01 LABELS gfortran cpp)
+RUN(NAME doconcurrentloop_03 LABELS llvm llvm_wasm llvm_wasm_emcc fortran) # type-spec in concurrent-header is not yet implemented by gfortran.
 
 RUN(NAME arrays_01 LABELS gfortran cpp llvm llvmStackArray wasm)
 RUN(NAME arrays_01_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
@@ -1106,6 +1108,8 @@ RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 
 RUN(NAME format_quotes_01 LABELS gfortran llvm)
 
+RUN(NAME list_directed_stdin_eof_01 LABELS gfortran llvm COPY_TO_BIN list_directed_stdin_eof_01_data.txt)
+
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
 RUN(NAME format_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1208,6 +1212,7 @@ RUN(NAME format_101 LABELS gfortran llvm)
 RUN(NAME format_102 LABELS gfortran llvm)
 RUN(NAME format_103 LABELS gfortran llvm)
 RUN(NAME format_104 LABELS gfortran llvm)
+RUN(NAME format_105 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1771,6 +1776,9 @@ RUN(NAME intrinsics_459 LABELS gfortran llvm) # minval over array with runtime b
 RUN(NAME intrinsics_460 LABELS gfortran llvm) # random_seed put/get round-trip
 RUN(NAME intrinsics_461 LABELS gfortran llvm) # MVbits with array (treated as elemental function)
 RUN(NAME intrinsics_462 LABELS gfortran llvm) # nested spread over array section preserves result shape
+RUN(NAME intrinsics_463 LABELS llvm) # get_command (optional keyword arguments) -- gfortran on CI fails, other gfortran versions pass
+RUN(NAME intrinsics_464 LABELS gfortran llvm) # cshift with array shift
+RUN(NAME intrinsics_465 LABELS gfortran llvm) # index() must not read past declared length of deferred-length string
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
@@ -1958,6 +1966,7 @@ RUN(NAME case_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME case_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME case_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME case_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME select_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_type_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2102,6 +2111,8 @@ RUN(NAME implicit_interface_36 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
 RUN(NAME implicit_interface_37 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --legacy-array-sections)
 RUN(NAME implicit_interface_38 LABELS gfortran llvm EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_38b.f90)
 
+RUN(NAME implicit_interface_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
+
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_03 LABELS gfortran llvmImplicit)
@@ -2113,6 +2124,7 @@ RUN(NAME implicit_typing_08 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --implicit-typing --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME implicit_typing_10 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_11 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_12 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2165,6 +2177,7 @@ RUN(NAME operator_overloading_36 LABELS gfortran llvm_submodule EXTRAFILES
     operator_overloading_36_mod_base.f90 operator_overloading_36_mod_base_sub.f90)
 RUN(NAME operator_overloading_37 LABELS gfortran llvm)
 RUN(NAME operator_overloading_38 LABELS gfortran llvm)
+RUN(NAME operator_overloading_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2434,6 +2447,7 @@ RUN(NAME derived_types_apply_clip_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME derived_types_143 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME derived_types_144 LABELS gfortran llvm)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2629,6 +2643,7 @@ RUN(NAME associate_50 LABELS gfortran llvm)
 RUN(NAME associate_51 LABELS gfortran llvm)
 
 RUN(NAME associate_52 LABELS gfortran llvm)
+RUN(NAME associate_53 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2940,6 +2955,7 @@ RUN(NAME inquire_11 LABELS gfortran llvm)
 RUN(NAME inquire_12 LABELS gfortran llvm)
 RUN(NAME inquire_13 LABELS gfortran llvm)
 RUN(NAME inquire_14 LABELS llvm EXTRA_ARGS --cpp)
+RUN(NAME asynchronous_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 RUN(NAME test_endfile_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3109,7 +3125,9 @@ RUN(NAME class_allocate_05 LABELS gfortran llvm)
 RUN(NAME class_allocate_06 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_allocate_07 LABELS gfortran llvm)
 RUN(NAME class_allocate_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME class_allocate_09 LABELS gfortran llvm)
 RUN(NAME class_optional_01 LABELS gfortran llvm)
+RUN(NAME class_array_deepcopy_01 LABELS gfortran llvm)
 RUN(NAME empty_array_01 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -3411,6 +3429,7 @@ RUN(NAME finalization_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_04 LABELS gfortran llvm)
 RUN(NAME finalization_05 LABELS gfortran llvm)
 RUN(NAME finalization_06 LABELS gfortran llvm)
+RUN(NAME finalization_07 LABELS gfortran llvm)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)
