@@ -344,6 +344,16 @@ if (WITH_ENZYME)
         GIT_TAG        v0.0.263
         SOURCE_SUBDIR  enzyme)
     FetchContent_MakeAvailable(Enzyme)
+    # Enzyme is vendored third-party code; do not escalate warnings to
+    # errors on it. Enzyme's CI tops at LLVM 16, so newer LLVM versions
+    # surface deprecation warnings (e.g. ListInit::getValues -> getElements)
+    # that would otherwise break the build under -Werror.
+    get_directory_property(_enzyme_targets
+        DIRECTORY ${enzyme_SOURCE_DIR}/enzyme
+        BUILDSYSTEM_TARGETS)
+    foreach(_tgt IN LISTS _enzyme_targets)
+        target_compile_options(${_tgt} PRIVATE -Wno-error)
+    endforeach()
     set(LFORTRAN_ENZYME_PLUGIN "$<TARGET_FILE:LLVMEnzyme-${LLVM_VERSION_MAJOR}>"
         CACHE INTERNAL "Path to built Enzyme opt plugin")
 endif()
