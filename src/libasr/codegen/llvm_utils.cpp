@@ -10282,12 +10282,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
             // Non-upoly class arrays also use ONE-wrapper layout:
             // a single wrapper {vptr, data_ptr} where data_ptr points to
-            // a contiguous buffer of N elements. Use compile-time elem_size.
+            // a contiguous buffer of N elements.
             if (is_src_class && is_dest_class) {
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                llvm::DataLayout dl(module->getDataLayout());
-                uint64_t elem_size = dl.getTypeAllocSize(actual_struct_type);
                 llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
 
                 // Extract source wrapper fields
@@ -10299,6 +10297,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 src_raw_data = builder->CreateBitCast(src_raw_data,
                     llvm::Type::getInt8Ty(context)->getPointerTo());
 
+                llvm::Value* elem_size_val =
+                    llvm_utils->get_class_type_size_from_vptr(src_vptr);
+
                 // Get copy function from vtable
                 llvm::Value* fn = llvm_utils->CreateLoad2(
                     llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(),
@@ -10307,8 +10308,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
                 // Allocate dest data buffer = num_elements * elem_size
                 llvm::Value* num_elems_64 = builder->CreateSExtOrTrunc(num_elements, i64_ty);
-                llvm::Value* total_bytes = builder->CreateMul(num_elems_64,
-                    llvm::ConstantInt::get(i64_ty, elem_size));
+                llvm::Value* total_bytes = builder->CreateMul(num_elems_64, elem_size_val);
                 llvm::Value* dest_raw_data = llvm_utils->allocate_zeroed_bytes(total_bytes);
 
                 // Ensure dest has a wrapper allocated
@@ -10335,8 +10335,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm_utils->CreateLoad2(i64_ty, ui), num_elems_64);
                 }, [&]() {
                     llvm::Value* ui_val = llvm_utils->CreateLoad2(i64_ty, ui);
-                    llvm::Value* byte_offset = builder->CreateMul(ui_val,
-                        llvm::ConstantInt::get(i64_ty, elem_size));
+                    llvm::Value* byte_offset = builder->CreateMul(ui_val, elem_size_val);
                     llvm::Value* src_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), src_raw_data, byte_offset);
                     llvm::Value* dest_elem = builder->CreateGEP(

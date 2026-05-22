@@ -1,0 +1,5 @@
+semantic error: The argument `shift` in `eoshift` must be scalar or have rank one less than `array`
+ --> tests/errors/mre_eoshift_shift_rank.f90:5:20
+  |
+5 |     a = eoshift(a, shifts)
+  |                    ^^^^^^ 

@@ -1,33 +1,28 @@
 program intrinsics_465
-   implicit none
+implicit none
+character(:), allocatable :: s
+character(132) :: raw
 
-   call test_eoshift_rank2_dim1()
-   call test_eoshift_rank2_dim2()
+raw = '   "output": ["node_6_output"],   '
+s = trim(adjustl(raw))
+if (index(s, '"output"') /= 1) then
+   print *, "first index =", index(s, '"output"')
+   error stop "index of needle in first value should be 1"
+end if
 
-   print *, "All tests passed."
+raw = '   "opType": "Flatten"   '
+s = trim(adjustl(raw))
+if (len(s) /= 19) then
+   print *, "len(s) =", len(s)
+   error stop "deferred-length assignment should give len 19"
+end if
+if (index(s, '"output"') /= 0) then
+   print *, "stale index =", index(s, '"output"')
+   error stop "index() must not read past the declared length of string"
+end if
 
-contains
-
-   subroutine test_eoshift_rank2_dim1()
-      integer :: a(2, 3), r(2, 3)
-      integer :: shifts(3)
-      a = reshape([1, 2, 3, 4, 5, 6], [2, 3])
-      shifts = [1, 0, -1]
-      r = eoshift(a, shifts)
-      if (r(1,1) /= 2 .or. r(2,1) /= 0) error stop 1
-      if (r(1,2) /= 3 .or. r(2,2) /= 4) error stop 2
-      if (r(1,3) /= 0 .or. r(2,3) /= 5) error stop 3
-   end subroutine
-
-   subroutine test_eoshift_rank2_dim2()
-      integer :: a(3, 2), r(3, 2)
-      integer :: shifts(3)
-      a = reshape([1, 2, 3, 4, 5, 6], [3, 2])
-      shifts = [1, -1, 1]
-      r = eoshift(a, shifts, dim=2)
-      if (r(1,1) /= 4 .or. r(1,2) /= 0) error stop 4
-      if (r(2,1) /= 0 .or. r(2,2) /= 2) error stop 5
-      if (r(3,1) /= 6 .or. r(3,2) /= 0) error stop 6
-   end subroutine
-
-end program
+if (index(s, '"opType"') /= 1) then
+   print *, "opType index =", index(s, '"opType"')
+   error stop "index of opType in new value should be 1"
+end if
+end program intrinsics_465

@@ -1,0 +1,13 @@
+{
+    "basename": "run-mre_eoshift_shift_rank-47aacdf",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/mre_eoshift_shift_rank.f90",
+    "infile_hash": "77296cc14eb756dc3a021d060da11b841f5768847f1a58aade784a94",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-mre_eoshift_shift_rank-47aacdf.stderr",
+    "stderr_hash": "4e03438f236b27fe88646c07fbb57caa2d895a0db9432cfb72a2377c",
+    "returncode": 1
+}

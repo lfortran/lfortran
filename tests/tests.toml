@@ -5201,3 +5201,11 @@ run = true
 filename = "no_main_program_3.f90"
 options = "--backend=cpp"
 run = true
+
+[[test]]
+filename = "errors/read_eof_01.f90"
+run = true
+
+[[test]]
+filename = "errors/mre_eoshift_shift_rank.f90"
+continue_compilation = true
