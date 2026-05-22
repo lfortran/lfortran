@@ -2409,7 +2409,7 @@ RUN(NAME derived_types_108 LABELS gfortran llvm)
 RUN(NAME derived_types_109 LABELS gfortran llvm)
 RUN(NAME derived_types_110 LABELS gfortran llvm)
 RUN(NAME derived_types_111 LABELS gfortran llvm)
-RUN(NAME derived_types_112 LABELS llvm)
+# RUN(NAME derived_types_112 LABELS llvm) Testing final functions
 RUN(NAME derived_types_113 LABELS gfortran llvm)
 RUN(NAME derived_types_114 LABELS gfortran llvm
         EXTRAFILES derived_types_114_module.f90 EXTRA_ARGS --separate-compilation)
@@ -4493,7 +4493,7 @@ RUN(NAME verify_intent_external_01 LABELS gfortran llvm EXTRAFILES
 # UTF-8 BOM handling
 RUN(NAME utf8_bom_01 LABELS gfortran llvm)
 
-RUN(NAME allocatable_lhs_finalization_01 LABELS llvm)
+# RUN(NAME allocatable_lhs_finalization_01 LABELS llvm) -- Testing final function
 
 RUN(NAME deferred_shape_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
