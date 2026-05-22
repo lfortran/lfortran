@@ -7890,9 +7890,6 @@ public:
                                             SymbolTable* parent_scope = callee_scope->parent ? callee_scope->parent : callee_scope;
                                             std::string var_name = v->m_name;
                                             ASR::ttype_t* return_type = param_ft->m_return_var_type;
-                                            if (!return_type) {
-                                                return_type = ASRUtils::TYPE(ASR::make_Real_t(al, passed_arg->base.loc, 8));
-                                            }
                                             ASR::ttype_t* iface_type = create_or_update_implicit_interface(
                                                 v, passed_arg->base.loc,
                                                 passed_ft->m_arg_types, passed_ft->n_arg_types,
@@ -7908,6 +7905,7 @@ public:
                                         // Update the passed Function's interface with the parameter's arg types.
                                         passed_ft->m_arg_types = param_ft->m_arg_types;
                                         passed_ft->n_arg_types = param_ft->n_arg_types;
+                                        passed_ft->m_return_var_type = param_ft->m_return_var_type;
 
                                         // Create matching argument variables in the passed Function's symtab
                                         Vec<ASR::expr_t*> new_args;
@@ -7928,10 +7926,18 @@ public:
                                         }
                                         passed_func->m_args = new_args.p;
                                         passed_func->n_args = new_args.size();
+                                        if (param_ft->m_return_var_type == nullptr) {
+                                            passed_func->m_return_var = nullptr;
+                                        }
                                     } else if (passed_ft->n_arg_types == 0 && param_ft->n_arg_types == 0) {
                                         // Both have no arg_types - may need post-processing
                                         // if callee's param gets types after we visit callee's body
                                         needs_implicit_interface_postprocessing = true;
+                                    }
+                                    if (param_ft->m_return_var_type == nullptr
+                                            && passed_ft->m_return_var_type != nullptr) {
+                                        passed_ft->m_return_var_type = nullptr;
+                                        passed_func->m_return_var = nullptr;
                                     }
                                 }
                             }
@@ -8060,6 +8066,7 @@ public:
                                     ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
                                     passed_ft->m_arg_types = param_ft->m_arg_types;
                                     passed_ft->n_arg_types = param_ft->n_arg_types;
+                                    passed_ft->m_return_var_type = param_ft->m_return_var_type;
 
                                     // Create matching argument variables in the passed Function's symtab
                                     Vec<ASR::expr_t*> new_args;
@@ -8080,11 +8087,28 @@ public:
                                     }
                                     passed_func->m_args = new_args.p;
                                     passed_func->n_args = new_args.size();
+                                    if (param_ft->m_return_var_type == nullptr) {
+                                        passed_func->m_return_var = nullptr;
+                                    }
                                 }
                             } else if (passed_ft && passed_ft->n_arg_types == 0 && param_ft->n_arg_types == 0) {
                                 // Both have no arg_types - may need post-processing
                                 // if callee's param gets types after we visit callee's body
+                                if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                    passed_ft->m_return_var_type = param_ft->m_return_var_type;
+                                    if (param_ft->m_return_var_type == nullptr) {
+                                        passed_func->m_return_var = nullptr;
+                                    }
+                                }
                                 needs_implicit_interface_postprocessing = true;
+                            }
+                            if (passed_ft && param_ft && param_ft->m_return_var_type == nullptr) {
+                                if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                    passed_ft->m_return_var_type = nullptr;
+                                    passed_func->m_return_var = nullptr;
+                                }
                             }
                         }
                     }
@@ -9676,6 +9700,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                 // Reverse propagation: param has type info, passed doesn't
                                 passed_ft->m_arg_types = param_ft->m_arg_types;
                                 passed_ft->n_arg_types = param_ft->n_arg_types;
+                                passed_ft->m_return_var_type = param_ft->m_return_var_type;
+                                if (param_ft->m_return_var_type == nullptr) {
+                                    passed_func->m_return_var = nullptr;
+                                }
 
                                 // Create argument variables in passed Function's symtab
                                 Vec<ASR::expr_t*> new_args;
