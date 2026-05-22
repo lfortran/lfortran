@@ -353,11 +353,19 @@ if (WITH_ENZYME)
     # keep their original behaviour.
     set(_lfortran_saved_cxx_flags "${CMAKE_CXX_FLAGS}")
     set(_lfortran_saved_c_flags "${CMAKE_C_FLAGS}")
+    if (TARGET LLVMSupport)
+        get_target_property(_lfortran_saved_llvmsupport_link_libs LLVMSupport
+            INTERFACE_LINK_LIBRARIES)
+    endif()
     string(REGEX REPLACE "(^| )-Werror( |$)" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REGEX REPLACE "(^| )-Werror( |$)" " " CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}")
     FetchContent_MakeAvailable(Enzyme)
     set(CMAKE_CXX_FLAGS "${_lfortran_saved_cxx_flags}")
     set(CMAKE_C_FLAGS   "${_lfortran_saved_c_flags}")
+    if (TARGET LLVMSupport AND _lfortran_saved_llvmsupport_link_libs)
+        set_property(TARGET LLVMSupport PROPERTY INTERFACE_LINK_LIBRARIES
+            ${_lfortran_saved_llvmsupport_link_libs})
+    endif()
     set(LFORTRAN_ENZYME_PLUGIN "$<TARGET_FILE:LLVMEnzyme-${LLVM_VERSION_MAJOR}>"
         CACHE INTERNAL "Path to built Enzyme opt plugin")
 endif()
