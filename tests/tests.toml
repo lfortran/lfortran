@@ -1612,7 +1612,7 @@ run = true
 
 [[test]]
 filename = "finalize_01.f90"
-pass = "insert_deallocate"
+pass = "intent_out_deallocate"
 llvm = true
 
 [[test]]
