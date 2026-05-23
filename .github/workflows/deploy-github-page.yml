@@ -19,6 +19,9 @@ concurrency:
 jobs:
   build:
     name: Build JupyterLite with LFortran WASM kernel
+    defaults:
+      run:
+        shell: bash -l {0}
     runs-on: ubuntu-24.04
 
     steps:
@@ -35,21 +38,18 @@ jobs:
           environment-name: lf
 
       - name: Generate parser/ASR headers (build0.sh)
-        shell: bash -l {0}
         run: |
           set -ex
           ./build0.sh
 
       # ── Step 2: Set up the Emscripten/WASM build environment ──
       - name: Install WASM build environment
-        shell: bash -l {0}
         run: |
           micromamba create -f environment-wasm-build.yml -y
 
 
       # ── Step 3: Create the WASM host environment and build ──
       - name: Build WASM kernel
-        shell: bash -l {0}
         run: |
           set -ex
 
@@ -65,7 +65,6 @@ jobs:
 
       # ── Step 4: Build JupyterLite site ──
       - name: Build JupyterLite
-        shell: bash -l {0}
         run: |
           set -ex
           micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y

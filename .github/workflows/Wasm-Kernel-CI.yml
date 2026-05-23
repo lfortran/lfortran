@@ -16,6 +16,9 @@ concurrency:
 jobs:
   emscripten_wasm:
     name: Emscripten WASM Kernel (${{ matrix.name }})
+    defaults:
+      run:
+        shell: bash -l {0}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -42,21 +45,18 @@ jobs:
           environment-name: lf
 
       - name: Generate parser/ASR headers (build0.sh)
-        shell: bash -l {0}
         run: |
           set -ex
           ./build0.sh
 
       # ── Step 2: Set up the Emscripten/WASM build environment ──
       - name: Install WASM build environment
-        shell: bash -l {0}
         run: |
           micromamba create -f environment-wasm-build.yml -y
 
 
       # ── Step 3: Create the WASM host environment and build ──
       - name: Build WASM kernel
-        shell: bash -l {0}
         run: |
           set -ex
 
@@ -74,7 +74,6 @@ jobs:
 
       # ── Step 4: Verify the build produced xlfortran.js/wasm ──
       - name: Verify WASM artifacts
-        shell: bash -l {0}
         run: |
           set -ex
           ls -la ${{ env.PREFIX }}/bin/xlfortran.js
@@ -82,7 +81,6 @@ jobs:
 
       # ── Step 5: Test JupyterLite integration ──
       - name: JupyterLite integration
-        shell: bash -l {0}
         run: |
           set -ex
           micromamba create -n xeus-lite-host jupyterlite-xeus -c conda-forge -y
