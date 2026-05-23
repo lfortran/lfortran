@@ -27,6 +27,26 @@
         )
         (Declaration
             (AttrType
+                TypeReal
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(x
+            [(1
+            6
+            DimensionExpr)]
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
                 TypeInteger
                 []
                 ()
@@ -68,6 +88,19 @@
             ()
         )]
         [(DataStmt
+            0
+            [(DataStmtSet
+                [x]
+                [1
+                2
+                3
+                4
+                6
+                6]
+            )]
+            ()
+        )
+        (DataStmt
             0
             [(DataStmtSet
                 [j]
@@ -535,6 +568,101 @@
             0
             ()
             [(String "5" ())]
+            ()
+        )
+        (If
+            0
+            ()
+            (BoolOp
+                (BoolOp
+                    (BoolOp
+                        (BoolOp
+                            (BoolOp
+                                (/= (FuncCallOrArray
+                                    x
+                                    []
+                                    [(()
+                                    1
+                                    ()
+                                    0)]
+                                    []
+                                    []
+                                    []
+                                ) (Real "1.0"))
+                                Or
+                                (/= (FuncCallOrArray
+                                    x
+                                    []
+                                    [(()
+                                    2
+                                    ()
+                                    0)]
+                                    []
+                                    []
+                                    []
+                                ) (Real "2.0"))
+                            )
+                            Or
+                            (/= (FuncCallOrArray
+                                x
+                                []
+                                [(()
+                                3
+                                ()
+                                0)]
+                                []
+                                []
+                                []
+                            ) (Real "3.0"))
+                        )
+                        Or
+                        (/= (FuncCallOrArray
+                            x
+                            []
+                            [(()
+                            4
+                            ()
+                            0)]
+                            []
+                            []
+                            []
+                        ) (Real "4.0"))
+                    )
+                    Or
+                    (/= (FuncCallOrArray
+                        x
+                        []
+                        [(()
+                        5
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    ) (Real "6.0"))
+                )
+                Or
+                (/= (FuncCallOrArray
+                    x
+                    []
+                    [(()
+                    6
+                    ()
+                    0)]
+                    []
+                    []
+                    []
+                ) (Real "6.0"))
+            )
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
             ()
         )]
         []

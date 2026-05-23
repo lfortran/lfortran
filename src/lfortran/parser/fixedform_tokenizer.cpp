@@ -1113,6 +1113,14 @@ struct FixedFormRecursiveDescent {
 
     bool lex_body_statement(unsigned char *&cur, bool continue_compilation = false) {
         int64_t l = eat_label(cur);
+        unsigned char *do_pos = nullptr;
+        if (is_named_do_loop(cur, do_pos)) {
+            t.cur = cur;
+            tokenize_until(do_pos);
+            cur = do_pos;
+            lex_do(cur);
+            return true;
+        }
         // handle derived type tokenization
         // this needs to be done before 'lex_declaration'
         if (next_is(cur, "type::")) {
@@ -1389,9 +1397,7 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "enddo")) {
             // end one nesting of loop
             // TODO: add continue label
-            push_token_no_advance(cur, "end_do");
-            push_token_no_advance(cur, "\n");
-            next_line(cur);
+            lex_enddo_line(cur);
             LCOMPILERS_ASSERT(label_last(do_label))
             do_labels.pop_back();
             return true;
@@ -1502,6 +1508,16 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool is_named_do_loop(unsigned char *cur, unsigned char *&do_pos) {
+        unsigned char *tmp = cur;
+        if (!try_name(tmp)) return false;
+        if (!try_next(tmp, ":")) return false;
+        unsigned char *tmp2 = tmp;
+        if (!is_do_loop(tmp2)) return false;
+        do_pos = tmp;
+        return true;
+    }
+
     bool label_last(int64_t label) {
         if (do_labels.size() > 0) {
             if (do_labels[do_labels.size()-1] == label) {
@@ -1518,9 +1534,7 @@ struct FixedFormRecursiveDescent {
 
         while (true) {
             if (next_is(cur, "enddo")) {
-                push_token_no_advance(cur, "enddo");
-                push_token_no_advance(cur, "\n");
-                next_line(cur);
+                lex_enddo_line(cur);
                 break;
             } else if (!lex_body_statement(cur)) {
                 Location loc;
@@ -1559,13 +1573,28 @@ struct FixedFormRecursiveDescent {
             // DoLoop AST node as `do_label`, so we just emit `end_do`
             // directly here -- no synthetic `<label> continue` line.
             (void)continue_label;
-            push_token_no_advance(cur, "end_do");
-            push_token_no_advance(cur, "\n");
-            next_line(cur);
+            lex_enddo_line(cur);
             return true;
         } else {
             return false;
         }
+    }
+
+    void lex_enddo_line(unsigned char *&cur) {
+        LCOMPILERS_ASSERT(next_is(cur, "enddo"))
+        push_token_no_advance(cur, "end_do");
+        cur += 5;
+        t.cur = cur;
+        unsigned char *name_start = cur;
+        if (try_name(cur)) {
+            std::string name = tostr(name_start, cur);
+            push_token_no_advance_token(name_start, name, TK_NAME);
+            t.cur = cur;
+        }
+        if (*cur == '\n') {
+            push_token_no_advance(cur, "\n");
+        }
+        next_line(cur);
     }
 
     void lex_do_regular(unsigned char *&cur) {

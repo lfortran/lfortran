@@ -3303,6 +3303,8 @@ public:
             this->visit_expr(*a->m_value[curr_value++]);
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
             current_variable_type_ = temp_current_variable_type_;
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                ASRUtils::expr_type(value), array_type->m_type, diag);
             if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                 diag.add(Diagnostic(
                     "Type mismatch during data initialization",
@@ -3438,6 +3440,8 @@ public:
                         }
                     }
                 }
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                    ASRUtils::expr_type(value), array_type->m_type, diag);
                 if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                     diag.add(Diagnostic(
                         "Type mismatch during data initialization",
