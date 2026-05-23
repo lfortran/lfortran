@@ -261,6 +261,17 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 #define VAR_DECL_PRAGMA(text, trivia, l) \
         VAR_DECL_PRAGMA2(p.m_a, l, text, trivia_cast(trivia), p.diag)
 
+static inline ast_t* VAR_DECL_OMP_PRAGMA2(Allocator &al, Location &loc,
+        const LCompilers::Str &text, trivia_t *trivia)
+{
+    return make_DeclarationPragma_t(al, loc,
+        LCompilers::LFortran::AST::OMPPragma,
+        LCompilers::s2c(al, text.str()), trivia);
+}
+
+#define VAR_DECL_OMP_PRAGMA(text, trivia, l) \
+        VAR_DECL_OMP_PRAGMA2(p.m_a, l, text, trivia_cast(trivia))
+
 #define VAR_DECL_EQUIVALENCE(args, trivia, l) make_Declaration_t(p.m_a, l, \
         nullptr, EQUIVALENCE(p.m_a, l, args.p, args.n), 1, \
         nullptr, 0, trivia_cast(trivia))
