@@ -56,13 +56,15 @@ namespace LCompilers::LLanguageServer {
             int parent_index
         ) -> void {
             for (auto &a : x->m_symtab->get_scope()) {
-                // Skip ExternalSymbol entries that are compiler artifacts for
-                // member-access resolution (their target is owned by a Struct,
-                // Enum, or Union, not by a Module/Program/Function). These are
-                // never user-written declarations and would otherwise pollute
-                // the document outline. See lfortran-vscode-client#39.
-                // ExternalSymbols whose target lives in a Module/Program (i.e.
-                // genuine `use`-imports) pass this check and remain visible.
+                std::size_t index = symbol_lists.size();
+                LCompilers::document_symbols &loc = symbol_lists.emplace_back();
+                loc.parent_index = parent_index;
+                loc.symbol_name = a.first;
+                loc.symbol_type = a.second->type;
+                // Mark ExternalSymbols whose target is owned by a Struct/Enum/
+                // Union as synthetic member-access artifacts. Outline consumers
+                // skip these; completion still surfaces them. See
+                // lfortran-vscode-client#39.
                 if ( LCompilers::ASR::is_a<LCompilers::ASR::ExternalSymbol_t>(*a.second) ) {
                     LCompilers::ASR::symbol_t *target =
                         LCompilers::ASRUtils::symbol_get_past_external(a.second);
@@ -73,15 +75,10 @@ namespace LCompilers::LLanguageServer {
                                 && ( LCompilers::ASR::is_a<LCompilers::ASR::Struct_t>(*owner)
                                     || LCompilers::ASR::is_a<LCompilers::ASR::Enum_t>(*owner)
                                     || LCompilers::ASR::is_a<LCompilers::ASR::Union_t>(*owner) ) ) {
-                            continue;
+                            loc.is_synthetic_member = true;
                         }
                     }
                 }
-                std::size_t index = symbol_lists.size();
-                LCompilers::document_symbols &loc = symbol_lists.emplace_back();
-                loc.parent_index = parent_index;
-                loc.symbol_name = a.first;
-                loc.symbol_type = a.second->type;
                 lm.pos_to_linecol(
                     a.second->base.loc.first,
                     loc.first_line,
