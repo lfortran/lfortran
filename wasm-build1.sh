@@ -31,4 +31,9 @@ emcmake cmake -S . -B build-wasm \
     -DLLVM_DIR="$PREFIX/lib/cmake/llvm" \
     -DLLD_DIR="$PREFIX/lib/cmake/lld"
 
-emmake make -C build-wasm install -j8
+if [ "$(uname)" = "Darwin" ]; then
+    CORES=$(sysctl -n hw.ncpu)
+else
+    CORES=$(nproc)
+fi
+emmake make -C build-wasm install -j$CORES
