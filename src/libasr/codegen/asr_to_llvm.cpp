@@ -11433,28 +11433,6 @@ public:
                 }
             }
             return;
-        } else if( is_target_struct && is_value_struct ) {
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
-            this->visit_expr(*x.m_value);
-            llvm::Value* value_struct = tmp;
-            bool is_assignment_target_copy = is_assignment_target;
-            is_assignment_target = true;
-            this->visit_expr(*x.m_target);
-            is_assignment_target = is_assignment_target_copy;
-            llvm::Value* target_struct = tmp;
-            ptr_loads = ptr_loads_copy;
-            if (ASRUtils::is_allocatable(asr_target_type)) {
-                llvm::Type* tar_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
-                target_struct = llvm_utils->CreateLoad2(tar_type, target_struct);
-            }
-            if (ASRUtils::is_allocatable(asr_value_type)) {
-                llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, asr_value_type, module.get());
-                value_struct = llvm_utils->CreateLoad2(val_type, value_struct);
-            }
-            llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
-                asr_value_type, ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), true);
-            return ;
         } else if ((is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)) {
             if (ASRUtils::is_allocatable(asr_target_type)) {
                 check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);

@@ -10406,6 +10406,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 copy_dimension_descriptors(llvm_array_type, src, dest, module);
             }
         } else {
+            call_struct_finalize_fn(dest, dest_ty, 
+                ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(src_expr)))); /*Assume src and dest are same*/
             if (ASRUtils::is_class_type(ASRUtils::extract_type(dest_ty))) {
                 if (!ASRUtils::is_value_constant(src_expr)) {
                     // Store Vptr from src to dest
@@ -10855,6 +10859,30 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 }
             }
         }
+
+    }
+    void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
+        if( struct_sym->n_member_functions == 0) return;
+        if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
+        llvm_utils->validate_llvm_SSA(
+            llvm_utils->get_type_from_ttype_t_util(ty, &struct_sym->base, llvm_utils->module)->getPointerTo(),
+            ptr);
+
+        ASR::symbol_t* final_sym {};
+        for(size_t i = 0 ; i < struct_sym->n_member_functions; i++){
+            std::string fn_name = struct_sym->m_member_functions[i];
+            ASR::Function_t * fn = ASR::down_cast<ASR::Function_t>(struct_sym->m_symtab->
+                                    parent->get_symbol(struct_sym->m_member_functions[i]));  
+            if(ASRUtils::is_array(ASRUtils::EXPR2VAR(fn->m_args[0])->m_type)){
+                continue; // We only handle rank 0 finalizer
+            }
+            LCOMPILERS_ASSERT_MSG(final_sym == nullptr, "while looking for rank-0-final fn -- found multiple ones")
+            final_sym =  ASRUtils::symbol_get_past_external(&fn->base);
+        }
+        uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+        LCOMPILERS_ASSERT(llvm_symtab_fn.find(fh) != llvm_symtab_fn.end())
+        llvm::Function* final_fn = llvm_symtab_fn[fh];
+        builder->CreateCall(final_fn, {ptr});
     }
 
 } // namespace LCompilers
