@@ -178,6 +178,8 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
             p.m_a, l, bind_opt(x))
 #define EXTENDS(x, l) make_AttrExtends_t( \
             p.m_a, l, name2char(x))
+#define IMPLEMENTS(x, l) make_AttrImplements_t( \
+            p.m_a, l, name2char(x))
 #define DIMENSION(x, l) make_AttrDimension_t( \
             p.m_a, l, \
             x.p, x.size())
@@ -923,17 +925,16 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
 {
-        std::string s_id = down_cast2<Name_t>(id)->m_id;
-        std::string s_lower = LCompilers::to_lower(s_id);
-        if (s_lower == "min" ) {
+    std::string s_id = down_cast2<Name_t>(id)->m_id;
+    if (s_id == "MIN") {
         return reduce_opType::ReduceMIN;
-        } else if (s_lower == "max") {
+    } else if (s_id == "MAX") {
         return reduce_opType::ReduceMAX;
-        } else if (s_lower == "iand") {
+    } else if (s_id == "IAND" || s_id == "iand") {
         return reduce_opType::ReduceIAND;
-        } else if (s_lower == "ior") {
+    } else if (s_id == "IOR" || s_id == "ior") {
         return reduce_opType::ReduceIOR;
-        } else if (s_lower == "ieor") {
+    } else if (s_id == "IEOR" || s_id == "ieor") {
         return reduce_opType::ReduceIEOR;
     } else {
         diagnostics.add(LCompilers::diag::Diagnostic(
@@ -2169,19 +2170,11 @@ static inline void drop_trailing_matching_continue(
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
         EXPR(mask), down_cast<stmt_t>(assign), nullptr)
 
-#define CONCURRENT_CONTROL1(t, i, a, b, l) \
-    make_ConcurrentControl_t(p.m_a, l, \
-        ((t) ? \
-            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
-            : nullptr), \
-        name2char(i), EXPR(a), EXPR(b), nullptr)
+#define CONCURRENT_CONTROL1(i, a, b, l) make_ConcurrentControl_t(p.m_a, l, \
+        nullptr, name2char(i), EXPR(a), EXPR(b), nullptr)
 
-#define CONCURRENT_CONTROL2(t, i, a, b, c, l) \
-    make_ConcurrentControl_t(p.m_a, l, \
-        ((t) ? \
-            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
-            : nullptr), \
-        name2char(i), EXPR(a), EXPR(b), EXPR(c))
+#define CONCURRENT_CONTROL2(i, a, b, c, l) make_ConcurrentControl_t(p.m_a, l, \
+        nullptr, name2char(i), EXPR(a), EXPR(b), EXPR(c))
 
 
 #define CONCURRENT_LOCAL(var_list, l) make_ConcurrentLocal_t(p.m_a, l, \
@@ -2656,6 +2649,7 @@ return make_Submodule_t(al, a_loc,
 #define INTERFACE_HEADER_DEFOP(op, l) make_InterfaceHeaderDefinedOperator_t( \
         p.m_a, l, def_op_to_str(p.m_a, op))
 #define ABSTRACT_INTERFACE_HEADER(l) make_AbstractInterfaceHeader_t(p.m_a, l)
+#define ABSTRACT_NAMED_INTERFACE_HEADER(x, l) make_AbstractInterfaceHeaderName_t(p.m_a, l, name2char(x))
 #define INTERFACE_HEADER_WRITE(x, l) make_InterfaceHeaderWrite_t(p.m_a, l, name2char(x))
 #define INTERFACE_HEADER_READ(x, l) make_InterfaceHeaderRead_t(p.m_a, l, name2char(x))
 
@@ -2773,6 +2767,8 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         trivia_cast(trivia))
 #define FINAL_NAME(name, trivia, l) make_FinalName_t(p.m_a, l, name2char(name), \
+        trivia_cast(trivia))
+#define INITIAL_NAME(name, trivia, l) make_InitialName_t(p.m_a, l, name2char(name), \
         trivia_cast(trivia))
 #define PRIVATE(syms, trivia, l) make_Private_t(p.m_a, l, trivia_cast(trivia))
 

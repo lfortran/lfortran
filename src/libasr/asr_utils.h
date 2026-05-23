@@ -5077,6 +5077,10 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
         is_class_same = (sym_target == sym_value);
         is_class_same = is_class_same || tar_is_upoly;
         is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
+        for (size_t i = 0; i < val_struct->n_implements && !is_class_same; i++) {
+            ASR::symbol_t* iface = ASRUtils::symbol_get_past_external(val_struct->m_implements[i]);
+            is_class_same = (iface == (ASR::symbol_t*)tar_struct);
+        }
     }
     return is_class_same;
 }
@@ -5094,6 +5098,10 @@ inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::sym
         is_class_same = (target == value)
             || tar_is_upoly
             || ASRUtils::is_parent(tar_struct, val_struct);
+        for (size_t i = 0; i < val_struct->n_implements && !is_class_same; i++) {
+            ASR::symbol_t* iface = ASRUtils::symbol_get_past_external(val_struct->m_implements[i]);
+            is_class_same = (iface == target);
+        }
     }
     return is_class_same;
 }
@@ -5401,7 +5409,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, nullptr, 0,
-            nullptr, nullptr, nullptr, 0);
+            nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, false);
@@ -6266,7 +6274,9 @@ class SymbolDuplicator {
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent,
-            struct_type_t->m_kind_params, struct_type_t->n_kind_params));
+            struct_type_t->m_kind_params, struct_type_t->n_kind_params,
+            struct_type_t->m_is_sealed, struct_type_t->m_implements, struct_type_t->n_implements,
+            struct_type_t->m_initial_proc));
     }
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(

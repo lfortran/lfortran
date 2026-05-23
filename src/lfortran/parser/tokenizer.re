@@ -441,10 +441,12 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'if' { KW(IF) }
             'images' { KW(IMAGES) }
             'implicit' { KW(IMPLICIT) }
+            'implements' { KW(IMPLEMENTS) }
             'import' { KW(IMPORT) }
             'impure' { KW(IMPURE) }
             'in' { KW(IN) }
             'include' { KW(INCLUDE) }
+            'initial' { KW(INITIAL) }
             'inout' { KW(INOUT) }
             'in' whitespace 'out' { KW(IN_OUT) }
             'inquire' { KW(INQUIRE) }
@@ -500,6 +502,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'return' { KW(RETURN) }
             'rewind' { KW(REWIND) }
             'save' { KW(SAVE) }
+            'sealed' { KW(SEALED) }
             'select' { KW(SELECT) }
             'selectcase' { KW(SELECT_CASE) }
             'selectrank' { KW(SELECT_RANK) }
@@ -844,10 +847,6 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | ':'
                 ;
 
-            hollerith_string
-                = int 'H' [^\s,)'\"\x00]+
-                ;
-
             * {
                 token_loc(loc, cur, tok, string_start);
                 std::string t = token(tok, cur);
@@ -912,7 +911,6 @@ void lex_format(unsigned char *&cur, Location &loc,
             '-' | '+' { continue; }
             (int)? whitespace? data_edit_desc { continue; }
             control_edit_desc { continue; }
-            (int)? whitespace? hollerith_string { continue; }
         */
     }
 }

@@ -854,6 +854,14 @@ public:
         if (x.m_is_abstract) {
             r += ", abstract";
         }
+        if (x.m_is_sealed) {
+            r += ", sealed";
+        }
+        for (size_t i = 0; i < x.n_implements; i++) {
+            r += ", implements(";
+            r += ASRUtils::symbol_name(x.m_implements[i]);
+            r += ")";
+        }
         r += " :: ";
         r.append(x.m_name);
         handle_line_truncation(r, 2);

@@ -812,6 +812,20 @@ public:
         s = r;
     }
 
+    void visit_InitialName(const InitialName_t &x) {
+        std::string r;
+        r += syn(gr::String);
+        r.append("initial :: ");
+        r += syn();
+        r.append(x.m_name);
+        if(x.m_trivia){
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
+        s = r;
+    }
+
     void visit_Private(const Private_t &x) {
         std::string r;
         r += syn(gr::Type);
@@ -862,7 +876,7 @@ public:
 
     void visit_Interface(const Interface_t &x) {
         std::string r;
-        if(x.m_header->type == AbstractInterfaceHeader) {
+        if(x.m_header->type == AbstractInterfaceHeader || x.m_header->type == AbstractInterfaceHeaderName) {
             r += "abstract ";
         }
         r += syn(gr::UnitHeader);
@@ -925,6 +939,12 @@ public:
     void visit_AbstractInterfaceHeader
             (const AbstractInterfaceHeader_t &/* x */) {
         s = "";
+    }
+
+    void visit_AbstractInterfaceHeaderName
+            (const AbstractInterfaceHeaderName_t &x) {
+        s = " :: ";
+        s.append(x.m_name);
     }
 
     void visit_InterfaceHeaderWrite(const InterfaceHeaderWrite_t &x) {
@@ -1671,6 +1691,17 @@ public:
         std::string r;
         r += syn(gr::Type);
         r += "extends";
+        r += syn();
+        r += "(";
+        r.append(x.m_name);
+        r += ")";
+        s = r;
+    }
+
+    void visit_AttrImplements(const AttrImplements_t &x) {
+        std::string r;
+        r += syn(gr::Type);
+        r += "implements";
         r += syn();
         r += "(";
         r.append(x.m_name);

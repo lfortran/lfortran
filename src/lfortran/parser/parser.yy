@@ -281,6 +281,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_IF
 %token <string> KW_IMAGES
 %token <string> KW_IMPLICIT
+%token <string> KW_IMPLEMENTS
 %token <string> KW_IMPORT
 %token <string> KW_IMPURE
 %token <string> KW_IN
@@ -288,6 +289,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_INOUT
 %token <string> KW_IN_OUT
 %token <string> KW_INQUIRE
+%token <string> KW_INITIAL
 %token <string> KW_INSTANTIATE
 %token <string> KW_INTEGER
 %token <string> KW_INTENT
@@ -338,6 +340,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_RETURN
 %token <string> KW_REWIND
 %token <string> KW_SAVE
+%token <string> KW_SEALED
 %token <string> KW_SELECT
 %token <string> KW_SELECT_CASE
 %token <string> KW_SELECT_RANK
@@ -641,7 +644,7 @@ script_unit
     | implicit_statement
     | var_decl           %dprec 9
     | derived_type_decl
-    | union_type_decl
+    | union_type_decl 
     | enum_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
@@ -699,6 +702,7 @@ interface_stmt
     | KW_INTERFACE KW_OPERATOR "(" TK_DEF_OP ")" {
         $$ = INTERFACE_HEADER_DEFOP($4, @$); }
     | KW_ABSTRACT KW_INTERFACE { $$ = ABSTRACT_INTERFACE_HEADER(@$); }
+    | KW_ABSTRACT KW_INTERFACE "::" id { $$ = ABSTRACT_NAMED_INTERFACE_HEADER($4, @$); }
     | KW_INTERFACE KW_WRITE "(" id ")" { $$ = INTERFACE_HEADER_WRITE($4, @$); }
     | KW_INTERFACE KW_READ "(" id ")" { $$ = INTERFACE_HEADER_READ($4, @$); }
     ;
@@ -855,6 +859,7 @@ procedure_decl
     | KW_GENERIC access_spec_list KW_READ "(" id ")" "=>" id_list sep {
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
+    | KW_INITIAL "::" id sep { $$ = INITIAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
     ;
 
@@ -1206,8 +1211,8 @@ implicit_spec_list
   We are using kind_arg_list rather than letter_spec_list to avoid conflicts
   in the parser.  The kind_args are translated into letter_specs in the
   IMPLICIT_SPEC macro.
-*/
-
+*/		
+   
 implicit_spec
     : KW_INTEGER "(" kind_arg_list ")" "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Integer, $3, @$), $6, @$); }
@@ -1216,7 +1221,7 @@ implicit_spec
 	    WARN_INTEGERSTAR($3, @2);}
     | KW_INTEGER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Integer, @$), $3, @$); }
-
+	    
     | KW_CHARACTER "(" kind_arg_list ")" "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Character, $3, @$), $6, @$); }
     | KW_CHARACTER "*" TK_INTEGER "(" kind_arg_list ")" {
@@ -1251,7 +1256,7 @@ implicit_spec
 	    WARN_COMPLEXSTAR($3, @2);}
     | KW_COMPLEX "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
-
+	    
     | KW_DOUBLE KW_PRECISION "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $4, @$); }
     | KW_DOUBLE_PRECISION "(" kind_arg_list ")" {
@@ -1273,7 +1278,7 @@ implicit_spec
 implicit_none_spec_star
     : implicit_none_spec_star "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
-    | %empty { LIST_NEW($$); }
+    | %empty { LIST_NEW($$); }	 
     ;
 
 implicit_none_spec
@@ -1550,6 +1555,8 @@ var_modifier
     | KW_VALUE { $$ = SIMPLE_ATTR(Value, @$); }
     | KW_VOLATILE { $$ = SIMPLE_ATTR(Volatile, @$); }
     | KW_EXTENDS "(" id ")" { $$ = EXTENDS($3, @$); }
+    | KW_IMPLEMENTS "(" id ")" { $$ = IMPLEMENTS($3, @$); }
+    | KW_SEALED { $$ = SIMPLE_ATTR(Sealed, @$); }
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
@@ -2058,9 +2065,9 @@ case_statements
     ;
 
 case_statement
-    : KW_CASE "(" case_conditions ")" id_opt sep statements {
-            $$ = CASE_STMT($3, TRIVIA_AFTER($6, @$), $7, @$); }
-    | KW_CASE KW_DEFAULT id_opt sep statements { $$ = CASE_STMT_DEFAULT(TRIVIA_AFTER($4, @$), $5, @$); }
+    : KW_CASE "(" case_conditions ")" sep statements {
+            $$ = CASE_STMT($3, TRIVIA_AFTER($5, @$), $6, @$); }
+    | KW_CASE KW_DEFAULT sep statements { $$ = CASE_STMT_DEFAULT(TRIVIA_AFTER($3, @$), $4, @$); }
     ;
 
 case_conditions
@@ -2160,13 +2167,9 @@ concurrent_control_list
 
 concurrent_control
     : id "=" expr ":" expr {
-            $$ = CONCURRENT_CONTROL1(nullptr, $1, $3, $5, @$); }
+            $$ = CONCURRENT_CONTROL1($1, $3, $5,     @$); }
     | id "=" expr ":" expr ":" expr {
-            $$ = CONCURRENT_CONTROL2(nullptr, $1, $3, $5, $7, @$); }
-    | declaration_type_spec "::" id "=" expr ":" expr {
-            $$ = CONCURRENT_CONTROL1($1, $3, $5, $7, @$); }
-    | declaration_type_spec "::" id "=" expr ":" expr ":" expr {
-            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, $9, @$); }
+            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, @$); }
     ;
 
 concurrent_locality_star

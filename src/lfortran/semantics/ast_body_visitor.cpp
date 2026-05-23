@@ -6393,6 +6393,9 @@ public:
                         );
                         throw SemanticAbort();
                     }
+                } else if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                           ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type)) &&
+                           ASRUtils::check_class_assignment_compatibility(target, value)) {
                 } else {
                         diag.semantic_error_label(
                             "Type mismatch in assignment, the types must be compatible",
@@ -7884,7 +7887,7 @@ public:
                                                     f->m_function_signature);
                                                 callee_ft->m_arg_types[i + offset] = v->m_type;
                                             }
-                                        } else {
+                } else {
                                             // No interface yet, create one with the passed function's type info.
                                             SymbolTable* callee_scope = f->m_symtab;
                                             SymbolTable* parent_scope = callee_scope->parent ? callee_scope->parent : callee_scope;

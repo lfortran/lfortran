@@ -4322,7 +4322,7 @@ public:
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
-                nullptr, 0, nullptr, nullptr, nullptr, 0));
+                nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
             struct_->m_struct_signature = struct_type;
@@ -8791,7 +8791,7 @@ public:
             new_data_member_names.p, new_data_member_names.size(),
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
-            nullptr, 0, nullptr, new_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0, false, nullptr, 0, nullptr);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -9307,7 +9307,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -9612,7 +9612,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -9844,18 +9844,34 @@ public:
             size_t n_kwargs, ASR::symbol_t *v, bool is_const = false) {
         Vec<ASR::call_arg_t> vals;
         visit_expr_list(m_args, n_args, vals);
-        visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
 
-        // For PDTs with kind parameters, resolve to the instantiated type
-        // and re-cast args to concrete member types (not sentinel types).
         ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
-        if (struct_type->n_kind_params > 0) {
-            std::string pdt_name = struct_type->m_name;
+        if (struct_type->m_initial_proc != nullptr) {
+            std::string init_proc_name(struct_type->m_initial_proc);
+            ASR::symbol_t* init_sym = current_scope->resolve_symbol(init_proc_name);
+            if (init_sym != nullptr) {
+                ASR::symbol_t* init_sym_resolved = ASRUtils::symbol_get_past_external(init_sym);
+                if (ASR::is_a<ASR::Function_t>(*init_sym_resolved)) {
+                    ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
+                    ASR::asr_t* func_call = ASRUtils::make_FunctionCall_t_util(al, loc,
+                        init_sym, init_sym,
+                        vals.p, vals.size(),
+                        der, nullptr, nullptr);
+                    return func_call;
+                }
+            }
+        }
+
+        visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
+
+        ASR::Struct_t* struct_type2 = ASR::down_cast<ASR::Struct_t>(v_orig);
+        if (struct_type2->n_kind_params > 0) {
+            std::string pdt_name = struct_type2->m_name;
             std::vector<int64_t> kind_vals;
-            for (size_t i = 0; i < struct_type->n_kind_params; i++) {
-                std::string kp_name(struct_type->m_kind_params[i]);
-                ASR::symbol_t* kp_sym = struct_type->m_symtab->get_symbol(kp_name);
+            for (size_t i = 0; i < struct_type2->n_kind_params; i++) {
+                std::string kp_name(struct_type2->m_kind_params[i]);
+                ASR::symbol_t* kp_sym = struct_type2->m_symtab->get_symbol(kp_name);
                 ASR::Variable_t* kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
                 int64_t kind_val = ASR::down_cast<ASR::IntegerConstant_t>(
                     ASRUtils::expr_value(kp_var->m_symbolic_value))->m_n;

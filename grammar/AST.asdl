@@ -82,6 +82,7 @@ interface_header
     | InterfaceHeaderOperator(intrinsicop op)
     | InterfaceHeaderDefinedOperator(string operator_name)
     | AbstractInterfaceHeader()
+    | AbstractInterfaceHeaderName(identifier name)
     | InterfaceHeaderWrite(identifier id)
     | InterfaceHeaderRead(identifier id)
 
@@ -275,6 +276,7 @@ procedure_decl
     | GenericWrite(decl_attribute* attr, identifier id, identifier* names, trivia? trivia)
     | GenericRead(decl_attribute* attr, identifier id, identifier* names, trivia? trivia)
     | FinalName(identifier name, trivia? trivia)
+    | InitialName(identifier name, trivia? trivia)
     | Private(trivia? trivia)
 
 decl_attribute
@@ -284,6 +286,7 @@ decl_attribute
     | AttrCommon(common_block* blks)
     | AttrEquivalence(equi* args)
     | AttrExtends(identifier name)
+    | AttrImplements(identifier name)
     | AttrIntent(attr_intent intent)
     | AttrNamelist(identifier name)
     | AttrPass(identifier? name)
@@ -322,6 +325,7 @@ simple_attribute
     | AttrRecursive
     | AttrNonRecursive
     | AttrSave
+    | AttrSealed
     | AttrSequence
     | AttrTarget
     | AttrValue
