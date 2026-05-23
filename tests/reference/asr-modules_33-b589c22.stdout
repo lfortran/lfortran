@@ -532,6 +532,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             dependency_node_t:
                                 (Struct
@@ -679,6 +682,9 @@
                                     ()
                                     7 dependency_config_t
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             dependency_tree_t:
                                 (Struct
@@ -952,6 +958,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             error_t:
                                 (Struct
@@ -1005,6 +1014,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             package_config_t:
                                 (Struct
@@ -1058,6 +1070,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             update_dependency:
                                 (Function
@@ -1598,6 +1613,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     fpm_model_modules_33

@@ -115,6 +115,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             bar_b:
                                 (Struct
@@ -164,6 +167,9 @@
                                     ()
                                     2 bar_a
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             bar_c:
                                 (Struct
@@ -213,6 +219,9 @@
                                     ()
                                     2 bar_b
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             foo:
                                 (Variable
@@ -306,6 +315,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             foo_b:
                                 (Struct
@@ -365,6 +377,9 @@
                                     ()
                                     2 foo_a
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             foo_c:
                                 (Struct
@@ -424,6 +439,9 @@
                                     ()
                                     2 foo_b
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     main

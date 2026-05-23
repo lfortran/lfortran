@@ -223,6 +223,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             struct_instance_arrblock:
                                 (Variable
@@ -377,6 +380,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             struct_instance_myblock:
                                 (Variable

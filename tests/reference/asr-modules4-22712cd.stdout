@@ -129,6 +129,9 @@
                                     ()
                                     15 toml_structure
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_structure:
                                 (Struct
@@ -165,6 +168,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     tomlf_structure_base
@@ -614,6 +620,9 @@
                                     ()
                                     4 toml_value
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_ordered:
                                 (ExternalSymbol
@@ -931,6 +940,9 @@
                                     ()
                                     20 toml_value
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_value:
                                 (Struct
@@ -995,6 +1007,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     tomlf_type_keyval
@@ -1140,6 +1155,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     tomlf_type_value

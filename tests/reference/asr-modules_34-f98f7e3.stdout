@@ -155,6 +155,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             version_t:
                                 (ExternalSymbol
@@ -782,6 +785,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     fpm_versioning_modules_34

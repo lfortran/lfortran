@@ -81,6 +81,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     derived_type_collection
@@ -183,6 +186,9 @@
                                     ()
                                     4 point
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             cp:
                                 (Variable
@@ -362,6 +368,9 @@
                                     ()
                                     4 point
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             ~select_type_block_:
                                 (Block

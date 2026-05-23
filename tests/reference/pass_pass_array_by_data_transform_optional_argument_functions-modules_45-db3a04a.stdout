@@ -316,6 +316,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             get_flags:
                                 (Function
@@ -2361,6 +2364,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     modules_45_fpm_manifest_profile

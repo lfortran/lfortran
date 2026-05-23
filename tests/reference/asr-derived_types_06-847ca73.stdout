@@ -1550,6 +1550,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_datetime:
                                 (Struct
@@ -1691,6 +1694,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_time:
                                 (Struct
@@ -1870,6 +1876,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             ~toml_time:
                                 (GenericProcedure

@@ -257,6 +257,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             t_2:
                                 (Struct
@@ -306,6 +309,9 @@
                                     ()
                                     2 t_1
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     derived_types_18_module_1

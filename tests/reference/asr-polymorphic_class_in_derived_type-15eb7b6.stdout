@@ -109,6 +109,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             ~unlimited_polymorphic_type:
                                 (Struct
@@ -135,6 +138,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     fortuno_types

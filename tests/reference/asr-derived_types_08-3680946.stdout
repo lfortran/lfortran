@@ -655,6 +655,9 @@
                                     ()
                                     2 shape
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             shape:
                                 (Struct
@@ -793,6 +796,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     shape_mod

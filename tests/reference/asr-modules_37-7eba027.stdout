@@ -74,9 +74,7 @@
                                                                     Default
                                                                     (Pointer
                                                                         (StructType
-                                                                            [(Allocatable
-                                                                                (String 1 () DeferredLength DescriptorString)
-                                                                            )]
+                                                                            []
                                                                             []
                                                                             .true.
                                                                             .false.
@@ -125,9 +123,7 @@
                                                             9 1_build_target_ptr_ptr
                                                             (Pointer
                                                                 (StructType
-                                                                    [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )]
+                                                                    []
                                                                     []
                                                                     .true.
                                                                     .false.
@@ -488,9 +484,7 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                [(Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                []
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -501,9 +495,7 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                [(Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                []
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -514,15 +506,13 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            [(Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )]
+                                                            []
                                                             []
                                                             .true.
                                                             .false.
                                                         )
                                                     )
-                                                    2 build_target_t
+                                                    6 build_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -562,6 +552,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             build_target_t:
                                 (Struct
@@ -615,6 +608,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             cmd_build:
                                 (Function
@@ -800,6 +796,9 @@
                                     ()
                                     2 fpm_cmd_settings
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             fpm_cmd_settings:
                                 (Struct
@@ -855,6 +854,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             fpm_model_t:
                                 (Struct
@@ -881,6 +883,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             string_t:
                                 (Struct
@@ -934,6 +939,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     modules_37_fpm_backend

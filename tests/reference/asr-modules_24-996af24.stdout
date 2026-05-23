@@ -325,6 +325,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_tokenizer:
                                 (Struct
@@ -408,6 +411,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_tokenizer_:
                                 (Struct
@@ -434,6 +440,9 @@
                                     ()
                                     2 toml_tokenizer
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     tomlf_de_tokenizer_24
