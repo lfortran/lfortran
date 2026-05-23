@@ -65,7 +65,11 @@
 #    include <llvm/Support/Host.h>
 #endif
 
+#ifndef WITH_LIRIC
 #include <libasr/codegen/KaleidoscopeJIT.h>
+#else
+#include <llvm/ExecutionEngine/Orc/KaleidoscopeJIT.h>
+#endif
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/codegen/asr_to_cpp.h>
