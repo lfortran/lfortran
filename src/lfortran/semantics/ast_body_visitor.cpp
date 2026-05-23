@@ -5899,6 +5899,14 @@ public:
                             ASRUtils::expr_type(temp));
                         if( temp_type->type == ASR::ttypeType::Array ) {
                             int64_t arr_size = ASRUtils::get_fixed_size_of_array(temp_type);
+                            int64_t start, end;
+                            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*temp)) {
+                                ASR::ImpliedDoLoop_t* impl_do = ASR::down_cast<ASR::ImpliedDoLoop_t>(temp);
+                                if (ASRUtils::extract_value(ASRUtils::expr_value(impl_do->m_start), start) &&
+                                    ASRUtils::extract_value(ASRUtils::expr_value(impl_do->m_end), end)) {
+                                    arr_size *= end - start + 1;
+                                }
+                            }
                             if (arr_size < 0) {
                                 flat_size = -1;
                             } else if (flat_size >= 0) {

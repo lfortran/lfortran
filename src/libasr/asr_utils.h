@@ -7676,9 +7676,71 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
 
-    return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
-            ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
-            value, a_storage_format, a_struct_var);
+    if (is_array_item_constant && all_expr_evaluated) {
+        return (ASR::asr_t*) value;
+    }
+
+    ASR::asr_t* arr_ctor_asr = ASR::make_ArrayConstructor_t(
+        al, a_loc, a_args, n_args, a_type, value, a_storage_format, a_struct_var);
+    ASR::ArrayConstructor_t* arr_ctor = ASR::down_cast<ASR::ArrayConstructor_t>(
+        ASRUtils::EXPR(arr_ctor_asr));
+    int64_t ctor_size_val = 0;
+    bool size_known = false;
+    bool all_scalars = true;
+    bool can_compute_size = true;
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t* arg = a_args[i];
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstructor_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+            all_scalars = false;
+        }
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            all_scalars = false;
+            if (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(arg))) {
+                can_compute_size = false;
+                break;
+            }
+        }
+    }
+    if (all_scalars) {
+        ctor_size_val = static_cast<int64_t>(n_args);
+        size_known = true;
+    } else if (can_compute_size) {
+        ASR::expr_t* ctor_size_expr = ASRUtils::get_ArrayConstructor_size(al, arr_ctor);
+        if (ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
+            size_known = true;
+        }
+    }
+    if (size_known && ctor_size_val > 0) {
+        ASR::ttype_t* ctor_type = ASRUtils::type_get_past_pointer(arr_ctor->m_type);
+        if (ASR::is_a<ASR::Array_t>(*ctor_type)) {
+            ASR::Array_t* ctor_arr = ASR::down_cast<ASR::Array_t>(ctor_type);
+            if (ctor_arr->n_dims == 1) {
+                int64_t dim_len = 0;
+                bool has_len = ctor_arr->m_dims[0].m_length != nullptr &&
+                    ASRUtils::extract_value(ASRUtils::expr_value(ctor_arr->m_dims[0].m_length), dim_len);
+                if (!has_len) {
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim = ctor_arr->m_dims[0];
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+                    if (dim.m_start == nullptr) {
+                        dim.m_start = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, a_loc, 1, int_type));
+                    }
+                    dim.m_length = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, a_loc, ctor_size_val, int_type));
+                    dims.push_back(al, dim);
+                    arr_ctor->m_type = ASRUtils::TYPE(ASR::make_Array_t(
+                        al, a_loc, ctor_arr->m_type, dims.p, dims.size(),
+                        ctor_arr->m_physical_type));
+                }
+            }
+        }
+    }
+
+    return arr_ctor_asr;
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
