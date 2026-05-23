@@ -1,4 +1,4 @@
-module derived_types_146_mod
+module derived_types_145_mod
    integer, save :: count = 0
    type tt
       integer :: a
@@ -13,8 +13,8 @@ module derived_types_146_mod
       print *, "finalize called -- ", count
    end subroutine
 end module 
-program derived_types_146
-   use derived_types_146_mod
+program derived_types_145
+   use derived_types_145_mod
    type(tt),allocatable :: x(:), y(:)
    allocate(x(10))
    allocate(y(10))
