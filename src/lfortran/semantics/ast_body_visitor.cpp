@@ -2828,16 +2828,22 @@ public:
                         pnc->m_type = var->m_type;
                     }
                     if (ASR::is_a<ASR::Var_t>(*value)) {
-                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(value)->m_v);
+                        ASR::symbol_t *val_sym_raw = ASR::down_cast<ASR::Var_t>(value)->m_v;
+                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(val_sym_raw);
                         if (ASR::is_a<ASR::Function_t>(*val_sym)) {
-                            var->m_type_declaration = val_sym;
+                            // Use the original symbol (which may be an
+                            // ExternalSymbol) so that m_type_declaration
+                            // stays within the current module boundary.
+                            var->m_type_declaration = val_sym_raw;
                         } else if (ASR::is_a<ASR::Variable_t>(*val_sym)) {
                             ASR::Variable_t *val_var = ASR::down_cast<ASR::Variable_t>(val_sym);
-                            ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
-                                val_var->m_type_declaration);
-                            if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
-                                var->m_type_declaration = val_type_decl;
+                            if (val_var->m_type_declaration) {
+                                ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
+                                    val_var->m_type_declaration);
+                                if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
+                                    // Preserve the ExternalSymbol wrapper if present.
+                                    var->m_type_declaration = val_var->m_type_declaration;
+                                }
                             }
                         }
                     }
