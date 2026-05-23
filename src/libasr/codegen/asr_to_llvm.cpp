@@ -4469,10 +4469,13 @@ public:
             this->visit_expr(*x.m_value);
             return;
         }
+        int ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
         this->visit_expr(*x.m_array);
         llvm::Value* array = tmp;
         this->visit_expr(*x.m_shape);
         llvm::Value* shape = tmp;
+        ptr_loads = ptr_loads_copy;
         ASR::ttype_t* x_m_array_type = ASRUtils::expr_type(x.m_array);
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(x_m_array_type);
         switch( array_physical_type ) {
@@ -4497,6 +4500,10 @@ public:
                 if (x.m_order != nullptr) {
                     this->visit_expr(*x.m_order);
                     order = tmp;
+                }
+
+                if (LLVM::is_llvm_pointer(*x_m_array_type)) {
+                    array = llvm_utils->CreateLoad2(array_type->getPointerTo(), array);
                 }
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
