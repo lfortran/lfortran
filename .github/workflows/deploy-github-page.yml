@@ -46,9 +46,6 @@ jobs:
         run: |
           micromamba create -f environment-wasm-build.yml -y
 
-      - name: Setup ncpus
-        run: |
-          echo "ncpus=$(nproc --all)" >> $GITHUB_ENV
 
       # ── Step 3: Create the WASM host environment and build ──
       - name: Build WASM kernel
