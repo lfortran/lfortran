@@ -3386,7 +3386,21 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
     visitor.visit_expr(*expr);
     return visitor.found;
 }
+class HasFunctionParamVisitor : public ASR::BaseExprVisitor<HasFunctionParamVisitor> {
+public:
+    bool has_param = false;
+    
+    void visit_FunctionParam(const ASR::FunctionParam_t & /*x*/) {
+        has_param = true;
+    }
+};
 
+inline bool expr_has_function_param(ASR::expr_t *t) {
+    if (!t) return false;
+    HasFunctionParamVisitor v;
+    v.visit_expr(t);
+    return v.has_param;
+}
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
