@@ -4730,3 +4730,7 @@ RUN(NAME gpu_metal_192 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_193 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_194 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_195 LABELS gfortran llvm metal)
+
+RUN(NAME traits_01 LABELS gfortran llvm)
+RUN(NAME traits_02 LABELS llvm)
+RUN(NAME traits_03 LABELS gfortran llvm)
