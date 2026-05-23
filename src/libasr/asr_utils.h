@@ -3414,18 +3414,17 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
 
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
         if (!t) return nullptr;
-        replacements.clear(); 
 
+        if (!expr_has_function_param(t)) {
+            return t;
+        }
+
+        replacements.clear(); 
         ASR::expr_t** current_copy = current_expr;
         current_expr = &t;
         
         replace_expr(t);
         current_expr = current_copy;
-
-        if (replacements.empty()) {
-            return t; 
-        }
-
 
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
@@ -8030,32 +8029,45 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // type is a proper Array, not a bare element type.
                     dimensions = &dimension_;
                 } else if (current_scope) {
-                    // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                    // Self is already in a_args (at the PASS position), so
-                    // FunctionParam indices align 1:1 with a_args indices.
-                    ReplaceFunctionParamWithArg r(al, a_args, n_args);
-                    SetChar temp_function_dependencies;
-                    CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
-                    bool valid_symbols = true;
-                    for (size_t i = 0; i < dimension_.size(); i++) {
-                        dimension_.p[i].loc = arg->base.loc;
-                        dimension_.p[i].m_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
-                        dimension_.p[i].m_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
-                        valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+                      // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
+                      // Self is already in a_args (at the PASS position), so
+                      // FunctionParam indices align 1:1 with a_args indices.
+                      ReplaceFunctionParamWithArg r(al, a_args, n_args);
+                      SetChar temp_function_dependencies;
+                      CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
+    
+                      // 1. Initialize the caller's duplicator
+                      ASRUtils::ExprStmtDuplicator caller_dup(al);
+                      caller_dup.allow_procedure_calls = true;
+                      caller_dup.success = true;
 
-                        if (!valid_symbols) {
+                      bool valid_symbols = true;
+                      for (size_t i = 0; i < dimension_.size(); i++) {
+                          dimension_.p[i].loc = arg->base.loc;
+        
+                          // 2. Safely extract the replaced memory (optimized or mutated)
+                          ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
+                          ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
+        
+                          // 3. Caller takes responsibility for duplication to prevent the DAG crash
+                          dimension_.p[i].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
+                          dimension_.p[i].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
+
+                          valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+
+                          if (!valid_symbols) {
                             break;
+                          }
                         }
-                    }
-                    // If the symbols are valid then include the dimension in ArrayPhysicalCast
-                    if (valid_symbols) {
-                        dimensions = &dimension_;
-                        if (current_function_dependencies.has_value()) {
+                          // If the symbols are valid then include the dimension in ArrayPhysicalCast
+                       if (valid_symbols) {
+                          dimensions = &dimension_;
+                           if (current_function_dependencies.has_value()) {
                             for (size_t j = 0; j < temp_function_dependencies.n; j++) {
                                 current_function_dependencies->get().push_back(al, temp_function_dependencies[j]);
                             }
-                        }
-                    } else {
+                          }
+                        } else {
                         dimensions = nullptr;
                     }
                 }

@@ -1760,14 +1760,26 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
                                     if (n_ret_dims > 0) {
-                                        ReplaceFunctionParamWithArg r(al, call_args1, n_call_args1);
-                                        for (size_t di = 0; di < n_ret_dims; di++) {
-                                            if (ret_dims[di].m_length) {
-                                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
-                                            }
-                                            if (ret_dims[di].m_start) {
-                                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
-                                            }
+                                       // Keep whichever 'r' initialization is currently there, for example:
+                                       ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n); // OR call_args1, n_call_args1
+
+                                       // 1. Initialize the caller's duplicator OUTSIDE the loop
+                                       ASRUtils::ExprStmtDuplicator caller_dup(al);
+                                       caller_dup.allow_procedure_calls = true;
+                                       caller_dup.success = true;
+
+                                       for (size_t di = 0; di < n_ret_dims; di++) {
+                                          if (ret_dims[di].m_length) {
+                                          // 2. Extract and safely duplicate m_length
+                                          ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                                          ret_dims[di].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
+                                           }
+        
+                                          if (ret_dims[di].m_start) {
+                                          // 3. Extract and safely duplicate m_start
+                                          ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                                          ret_dims[di].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
+                                           }
                                         }
                                     }
                                 }
@@ -1861,13 +1873,25 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                     ASR::dimension_t* ret_dims = nullptr;
                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
                     if (n_ret_dims > 0) {
-                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n);
-                        for (size_t di = 0; di < n_ret_dims; di++) {
-                            if (ret_dims[di].m_length) {
-                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                       // Keep whichever 'r' initialization is currently there, for example:
+                       ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n); // OR call_args1, n_call_args1
+
+                       // 1. Initialize the caller's duplicator OUTSIDE the loop
+                       ASRUtils::ExprStmtDuplicator caller_dup(al);
+                       caller_dup.allow_procedure_calls = true;
+                       caller_dup.success = true;
+
+                       for (size_t di = 0; di < n_ret_dims; di++) {
+                           if (ret_dims[di].m_length) {
+                              // 2. Extract and safely duplicate m_length
+                              ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                              ret_dims[di].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
                             }
+        
                             if (ret_dims[di].m_start) {
-                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                               // 3. Extract and safely duplicate m_start
+                               ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                               ret_dims[di].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
                             }
                         }
                     }
@@ -2746,17 +2770,29 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
-                                    if (n_ret_dims > 0) {
-                                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n);
-                                        for (size_t di = 0; di < n_ret_dims; di++) {
-                                            if (ret_dims[di].m_length) {
-                                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
-                                            }
-                                            if (ret_dims[di].m_start) {
-                                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
-                                            }
+                                     if (n_ret_dims > 0) {
+                                        // Keep whichever 'r' initialization is currently there, for example:
+                                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n); // OR call_args1, n_call_args1
+
+                                        // 1. Initialize the caller's duplicator OUTSIDE the loop
+                                        ASRUtils::ExprStmtDuplicator caller_dup(al);
+                                        caller_dup.allow_procedure_calls = true;
+                                        caller_dup.success = true;
+
+                                     for (size_t di = 0; di < n_ret_dims; di++) {
+                                         if (ret_dims[di].m_length) {
+                                            // 2. Extract and safely duplicate m_length
+                                            ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                                            ret_dims[di].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
+                                         }
+        
+                                         if (ret_dims[di].m_start) {
+                                            // 3. Extract and safely duplicate m_start
+                                            ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                                            ret_dims[di].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
+                                         }
                                         }
-                                    }
+                                     }
                                 }
                             }
                             asr = ASRUtils::make_FunctionCall_t_util(
