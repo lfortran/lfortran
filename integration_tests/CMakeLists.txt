@@ -1108,6 +1108,8 @@ RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 
 RUN(NAME format_quotes_01 LABELS gfortran llvm)
 
+RUN(NAME list_directed_stdin_eof_01 LABELS gfortran llvm COPY_TO_BIN list_directed_stdin_eof_01_data.txt)
+
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
 RUN(NAME format_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1777,6 +1779,7 @@ RUN(NAME intrinsics_462 LABELS gfortran llvm) # nested spread over array section
 RUN(NAME intrinsics_463 LABELS llvm) # get_command (optional keyword arguments) -- gfortran on CI fails, other gfortran versions pass
 RUN(NAME intrinsics_464 LABELS gfortran llvm) # cshift with array shift
 RUN(NAME intrinsics_465 LABELS gfortran llvm) # index() must not read past declared length of deferred-length string
+RUN(NAME intrinsics_466 LABELS gfortran llvm) # eoshift with array-valued shift
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
@@ -2953,6 +2956,7 @@ RUN(NAME inquire_11 LABELS gfortran llvm)
 RUN(NAME inquire_12 LABELS gfortran llvm)
 RUN(NAME inquire_13 LABELS gfortran llvm)
 RUN(NAME inquire_14 LABELS llvm EXTRA_ARGS --cpp)
+RUN(NAME inquire_unit_exist LABELS gfortran llvm)
 RUN(NAME asynchronous_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
@@ -4460,6 +4464,7 @@ RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_structs_01 LABELS gfortran llvm)
+RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
 RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_neg_extent_01 LABELS gfortran llvm)
 

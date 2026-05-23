@@ -6880,11 +6880,11 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         int pad_mode;
         int32_t unit_recl = 0;
         FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim_mode, &blank_zero, &unit_recl, &sign_mode, &decimal_mode, &encoding_mode, &round_mode_val, &pad_mode);
-        if (get_file_name_from_unit(unit_num, &unit_file_bin) != NULL) {
-            *exists = true;
-        } else {
-            *exists = false;
+        
+        if (exists != NULL) {
+            *exists = (unit_num >= 0 || fp != NULL);
         }
+
         if (number != NULL) {
             if (fp != NULL) {
                 *number = unit_num;
@@ -8572,27 +8572,23 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
 {
     if (iostat) *iostat = 0;
 
+    bool unit_file_bin;
+    int access_id = 0;
+    bool read_access = true, write_access = false;
+    int delim_value = 0;
+    FILE *filep;
+
     if (unit_num == -1) {
-        if (!fgets(*p, p_len + 1, stdin)) {
-            if (iostat) { *iostat = -1; return; }
-            printf("Runtime error: End of file!\n");
+        filep = stdin;
+        unit_file_bin = false;
+    } else {
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
+                                           &access_id, &read_access, &write_access, &delim_value, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        if (!filep) {
+            if (iostat) { *iostat = 1; return; }
+            printf("No file found with given unit\n");
             exit(1);
         }
-        size_t len = strcspn(*p, "\n");
-        pad_with_spaces(*p, len, p_len);
-        return;
-    }
-
-    bool unit_file_bin;
-    int access_id;
-    bool read_access, write_access;
-    int delim_value;
-    FILE *filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
-                                             &access_id, &read_access, &write_access, &delim_value, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    if (!filep) {
-        if (iostat) { *iostat = 1; return; }
-        printf("No file found with given unit\n");
-        exit(1);
     }
 
     if (unit_file_bin) {
