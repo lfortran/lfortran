@@ -115,14 +115,6 @@ namespace LCompilers {
         test_output.SetArray();
 
         for (auto symbol : symbol_lists) {
-            // Skip synthetic ExternalSymbol artifacts (member-access lookups,
-            // struct-instance shims) whose mangled names start with "1_".
-            // Real `use`-imported ExternalSymbols keep their source name and
-            // remain visible in the outline. See lfortran/lfortran-vscode-client#39.
-            if (symbol.symbol_type == ASR::symbolType::ExternalSymbol
-                    && symbol.symbol_name.rfind("1_", 0) == 0) {
-                continue;
-            }
             uint32_t start_character = symbol.first_column;
             uint32_t start_line = symbol.first_line;
             uint32_t end_character = symbol.last_column;
