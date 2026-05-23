@@ -29,7 +29,7 @@ set(LFORTRAN_SRC
     ${LFORTRAN_SRC}
 )
 
-if (NOT EMSCRIPTEN)
+if (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM)
 
 add_executable(lfortran ${LFORTRAN_SRC})
 target_include_directories(lfortran PRIVATE "tpl")
@@ -117,7 +117,7 @@ install(TARGETS lfortran
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-endif() # NOT EMSCRIPTEN
+endif() # NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM
 
 if (WITH_BENCHMARKS)
     add_executable(parse parse.cpp)
