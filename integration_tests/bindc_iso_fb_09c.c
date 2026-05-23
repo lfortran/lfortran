@@ -38,7 +38,6 @@ void test_cfi_allocate_corruption() {
     CFI_index_t alloc_upper[] = {9};
     
     stat = CFI_allocate((CFI_cdesc_t *)&desc, alloc_lower, alloc_upper, 9999);
-    // Allowing 13 (INVALID_ELEM_LEN) just in case another compiler is overly strict, though LFortran returns SUCCESS/MEM_ALLOCATION
     assert(stat == CFI_SUCCESS || stat == CFI_ERROR_MEM_ALLOCATION || stat == 13);
     assert(((CFI_cdesc_t *)&desc)->elem_len == correct_elem_len);
     
