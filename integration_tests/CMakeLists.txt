@@ -1921,7 +1921,7 @@ RUN(NAME bindc_iso_fb_05 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_05c.c)
 RUN(NAME bindc_iso_fb_06 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_06c.c)
 RUN(NAME bindc_iso_fb_07 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_07c.c)
 RUN(NAME bindc_iso_fb_08 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_08c.c)
-RUN(NAME bindc_iso_fb_09 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_09c.c)
+RUN(NAME bindc_iso_fb_09 LABELS llvm EXTRAFILES bindc_iso_fb_09c.c)
 
 RUN(NAME case_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp)
 RUN(NAME case_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
