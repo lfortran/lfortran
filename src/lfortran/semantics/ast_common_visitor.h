@@ -10778,9 +10778,12 @@ public:
             if (ASR::is_a<ASR::Pointer_t>(*expr_type)) {
                 expr_type = ASRUtils::type_get_past_pointer(expr_type);
             }
-            if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){
-                if(!ASRUtils::is_value_constant(expr)) 
+            ASR::ttype_t* expr_type_no_alloc =
+                ASRUtils::type_get_past_allocatable_pointer(expr_type);
+            if (ASRUtils::is_array(expr_type_no_alloc)) {
+                if (!ASRUtils::is_fixed_size_array(expr_type_no_alloc)) {
                     use_descriptorArray = true;
+                }
             }
             if (type == nullptr) {
                 type = expr_type;
