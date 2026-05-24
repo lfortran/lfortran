@@ -1364,16 +1364,97 @@ public:
             body.p, body.size(), nullptr, 0));
     }
 
-    void collect_labels() {
-        labels.clear();
-        if (starting_m_body == nullptr) return;
-        for (size_t i = 0; i < starting_n_body; ++i) {
-            int64_t label = stmt_label(starting_m_body[i]);
+    void collect_labels_from_body(AST::stmt_t** m_body, size_t n_body) {
+        for (size_t i = 0; i < n_body; ++i) {
+            int64_t label = stmt_label(m_body[i]);
             if (label != 0) {
                 labels.insert(std::to_string(label));
             }
+            // Recurse into compound statements
+            if (AST::is_a<AST::If_t>(*m_body[i])) {
+                AST::If_t* s = AST::down_cast<AST::If_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+                collect_labels_from_body(s->m_orelse, s->n_orelse);
+            } else if (AST::is_a<AST::DoLoop_t>(*m_body[i])) {
+                AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            } else if (AST::is_a<AST::WhileLoop_t>(*m_body[i])) {
+                AST::WhileLoop_t* s = AST::down_cast<AST::WhileLoop_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            } else if (AST::is_a<AST::DoConcurrentLoop_t>(*m_body[i])) {
+                AST::DoConcurrentLoop_t* s = AST::down_cast<AST::DoConcurrentLoop_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            } else if (AST::is_a<AST::ForAll_t>(*m_body[i])) {
+                AST::ForAll_t* s = AST::down_cast<AST::ForAll_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            } else if (AST::is_a<AST::Where_t>(*m_body[i])) {
+                AST::Where_t* s = AST::down_cast<AST::Where_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+                collect_labels_from_body(s->m_orelse, s->n_orelse);
+            } else if (AST::is_a<AST::Select_t>(*m_body[i])) {
+                AST::Select_t* s = AST::down_cast<AST::Select_t>(m_body[i]);
+                for (size_t j = 0; j < s->n_body; ++j) {
+                    if (AST::is_a<AST::CaseStmt_t>(*s->m_body[j])) {
+                        AST::CaseStmt_t* cs = AST::down_cast<AST::CaseStmt_t>(s->m_body[j]);
+                        collect_labels_from_body(cs->m_body, cs->n_body);
+                    } else if (AST::is_a<AST::CaseStmt_Default_t>(*s->m_body[j])) {
+                        AST::CaseStmt_Default_t* cs = AST::down_cast<AST::CaseStmt_Default_t>(s->m_body[j]);
+                        collect_labels_from_body(cs->m_body, cs->n_body);
+                    }
+                }
+            } else if (AST::is_a<AST::SelectRank_t>(*m_body[i])) {
+                AST::SelectRank_t* s = AST::down_cast<AST::SelectRank_t>(m_body[i]);
+                for (size_t j = 0; j < s->n_body; ++j) {
+                    if (AST::is_a<AST::RankExpr_t>(*s->m_body[j])) {
+                        AST::RankExpr_t* rs = AST::down_cast<AST::RankExpr_t>(s->m_body[j]);
+                        collect_labels_from_body(rs->m_body, rs->n_body);
+                    } else if (AST::is_a<AST::RankStar_t>(*s->m_body[j])) {
+                        AST::RankStar_t* rs = AST::down_cast<AST::RankStar_t>(s->m_body[j]);
+                        collect_labels_from_body(rs->m_body, rs->n_body);
+                    } else if (AST::is_a<AST::RankDefault_t>(*s->m_body[j])) {
+                        AST::RankDefault_t* rs = AST::down_cast<AST::RankDefault_t>(s->m_body[j]);
+                        collect_labels_from_body(rs->m_body, rs->n_body);
+                    }
+                }
+            } else if (AST::is_a<AST::SelectType_t>(*m_body[i])) {
+                AST::SelectType_t* s = AST::down_cast<AST::SelectType_t>(m_body[i]);
+                for (size_t j = 0; j < s->n_body; ++j) {
+                    if (AST::is_a<AST::TypeStmtName_t>(*s->m_body[j])) {
+                        AST::TypeStmtName_t* ts = AST::down_cast<AST::TypeStmtName_t>(s->m_body[j]);
+                        collect_labels_from_body(ts->m_body, ts->n_body);
+                    } else if (AST::is_a<AST::TypeStmtType_t>(*s->m_body[j])) {
+                        AST::TypeStmtType_t* ts = AST::down_cast<AST::TypeStmtType_t>(s->m_body[j]);
+                        collect_labels_from_body(ts->m_body, ts->n_body);
+                    } else if (AST::is_a<AST::ClassStmt_t>(*s->m_body[j])) {
+                        AST::ClassStmt_t* ts = AST::down_cast<AST::ClassStmt_t>(s->m_body[j]);
+                        collect_labels_from_body(ts->m_body, ts->n_body);
+                    } else if (AST::is_a<AST::ClassDefault_t>(*s->m_body[j])) {
+                        AST::ClassDefault_t* ts = AST::down_cast<AST::ClassDefault_t>(s->m_body[j]);
+                        collect_labels_from_body(ts->m_body, ts->n_body);
+                    }
+                }
+            } else if (AST::is_a<AST::AssociateBlock_t>(*m_body[i])) {
+                AST::AssociateBlock_t* s = AST::down_cast<AST::AssociateBlock_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            } else if (AST::is_a<AST::Block_t>(*m_body[i])) {
+                AST::Block_t* s = AST::down_cast<AST::Block_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            } else if (AST::is_a<AST::ChangeTeam_t>(*m_body[i])) {
+                AST::ChangeTeam_t* s = AST::down_cast<AST::ChangeTeam_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            } else if (AST::is_a<AST::Critical_t>(*m_body[i])) {
+                AST::Critical_t* s = AST::down_cast<AST::Critical_t>(m_body[i]);
+                collect_labels_from_body(s->m_body, s->n_body);
+            }
         }
     }
+
+    void collect_labels() {
+        labels.clear();
+        if (starting_m_body == nullptr) return;
+        collect_labels_from_body(starting_m_body, starting_n_body);
+    }
+
 
     // Returns true if parsing succeeded, false if should continue to next kwarg
     bool parse_read_label_kwarg(const char* kwarg_name, int64_t& label,
