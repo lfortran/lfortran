@@ -1,13 +1,13 @@
 {
-    "basename": "llvm-class_01-82031c0",
-    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
-    "infile": "tests/../integration_tests/class_01.f90",
-    "infile_hash": "d56b80167c24a798a3f70abbc77b31570b560e826ce6b96ab9476bab",
-    "outfile": null,
-    "outfile_hash": null,
-    "stdout": "llvm-class_01-82031c0.stdout",
-    "stdout_hash": "b78533f938453da6836df7277c749551768ce05840ff655f9197f4a9",
-    "stderr": "llvm-class_01-82031c0.stderr",
-    "stderr_hash": "83b7bc133c115994c08e9afc99edb6e1e19ce354b399bf4374f7b855",
-    "returncode": 0
+  "basename": "llvm-class_01-82031c0",
+  "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+  "infile": "tests/../integration_tests/class_01.f90",
+  "infile_hash": "d56b80167c24a798a3f70abbc77b31570b560e826ce6b96ab9476bab",
+  "outfile": null,
+  "outfile_hash": null,
+  "stdout": "llvm-class_01-82031c0.stdout",
+  "stdout_hash": "51a581f9a487ba5c20cf333004eebda0f25b7050a9dd8fef3c44b454",
+  "stderr": "llvm-class_01-82031c0.stderr",
+  "stderr_hash": "83b7bc133c115994c08e9afc99edb6e1e19ce354b399bf4374f7b855",
+  "returncode": 0
 }
