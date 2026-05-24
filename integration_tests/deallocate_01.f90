@@ -24,13 +24,13 @@ program deallocate_01
 use m_deallocate_01
 implicit none
 type(object_t), allocatable :: obj
-integer :: initial
+integer :: count0
 
-initial = finalizations
+count0 = finalizations
 allocate(obj)
 obj%dummy = 42
 deallocate(obj)
 
-if (finalizations - initial /= 1) error stop
+if (finalizations - count0 /= 1) error stop
 
 end program
