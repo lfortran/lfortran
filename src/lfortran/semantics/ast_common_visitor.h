@@ -15656,6 +15656,12 @@ public:
         }
         current_scope = al.make_new<SymbolTable>(sym_scope);
 
+        // Evaluate call arguments in the caller scope so temporaries land
+        // in the correct symbol table.
+        SymbolTable *call_scope = parent_scope;
+        SymbolTable *current_scope_copy = current_scope;
+        current_scope = call_scope;
+
         Vec<ASR::call_arg_t> c_args;
         c_args.reserve(al, x.n_args + 1);
         bool has_alt_returns = false;
@@ -15668,6 +15674,9 @@ public:
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             c_args.push_back(al, {expr->base.loc, expr});
         }
+        // Restore interface scope for symbol creation below.
+        current_scope = current_scope_copy;
+
         // Reserve spot for compiler's `__lfortran_alt_ret` 
         if (has_alt_returns) {
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
