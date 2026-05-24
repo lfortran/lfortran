@@ -3206,11 +3206,26 @@ public:
                     }
                     if (!proc_name.empty() && current_scope->get_symbol(proc_name) != nullptr) {
                         ASR::symbol_t* proc_sym = current_scope->get_symbol(proc_name);
+                        bool is_nopass = true;
+                        ASR::symbol_t* proc_resolved = ASRUtils::symbol_get_past_external(proc_sym);
+                        if (ASR::is_a<ASR::Function_t>(*proc_resolved)) {
+                            ASR::Function_t* proc_func = ASR::down_cast<ASR::Function_t>(proc_resolved);
+                            if (proc_func->n_args > 0 && ASR::is_a<ASR::Var_t>(*proc_func->m_args[0])) {
+                                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                                    proc_func->m_args[0])->m_v;
+                                if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                                    ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                                    ASR::symbol_t* arg_type_decl = arg->m_type_declaration == nullptr ?
+                                        nullptr : ASRUtils::symbol_get_past_external(arg->m_type_declaration);
+                                    is_nopass = arg_type_decl != iface_sym;
+                                }
+                            }
+                        }
                         ASR::asr_t* method_asr = ASR::make_StructMethodDeclaration_t(
                             al, x.base.base.loc, iface_symtab,
                             s2c(al, proc_name), nullptr,
                             s2c(al, proc_name), proc_sym,
-                            ASR::abiType::Source, true, false);
+                            ASR::abiType::Source, true, is_nopass);
                         iface_symtab->add_symbol(proc_name,
                             ASR::down_cast<ASR::symbol_t>(method_asr));
                     }
@@ -4021,7 +4036,8 @@ public:
         ASR::ttype_t* var_type = ASRUtils::expr_type(var_expr);
         // Get past pointer type if present
         var_type = ASRUtils::type_get_past_pointer(var_type);
-        if (ASRUtils::is_class_type(var_type)) {
+        if (ASRUtils::is_class_type(var_type) ||
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var_type))) {
             ASR::symbol_t* var_type_clss_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr));
             while (var_type_clss_sym) {
                 if (var_type_clss_sym == clss_sym ||
@@ -4216,11 +4232,28 @@ public:
         return 0;
     }
 
-    bool method_signatures_match(ASR::StructMethodDeclaration_t* iface_decl,
-            ASR::StructMethodDeclaration_t* impl_decl) {
-        if (iface_decl->m_is_nopass != impl_decl->m_is_nopass) {
-            return false;
+    int get_interface_self_arg_index(ASR::Struct_t* iface, ASR::Function_t* func) {
+        if (func->n_args == 0 || !ASR::is_a<ASR::Var_t>(*func->m_args[0])) {
+            return -1;
         }
+        ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[0])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+            return -1;
+        }
+        ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(arg_sym);
+        if (arg->m_type_declaration == nullptr) {
+            return -1;
+        }
+        ASR::symbol_t* arg_type_decl = ASRUtils::symbol_get_past_external(arg->m_type_declaration);
+        if (arg_type_decl == ASR::down_cast<ASR::symbol_t>((ASR::asr_t*) iface)) {
+            return 0;
+        }
+        return -1;
+    }
+
+    bool method_signatures_match(ASR::Struct_t* iface,
+            ASR::StructMethodDeclaration_t* iface_decl,
+            ASR::StructMethodDeclaration_t* impl_decl) {
         ASR::symbol_t* iface_proc = ASRUtils::symbol_get_past_external(iface_decl->m_proc);
         ASR::symbol_t* impl_proc = ASRUtils::symbol_get_past_external(impl_decl->m_proc);
         if (!ASR::is_a<ASR::Function_t>(*iface_proc) ||
@@ -4246,7 +4279,7 @@ public:
                     impl_ft->m_return_var_type, nullptr, nullptr)) {
             return false;
         }
-        int iface_pass_arg = get_pass_arg_index(iface_decl, iface_func);
+        int iface_pass_arg = get_interface_self_arg_index(iface, iface_func);
         int impl_pass_arg = get_pass_arg_index(impl_decl, impl_func);
         std::vector<ASR::ttype_t*> iface_arg_types, impl_arg_types;
         for (size_t i = 0; i < iface_ft->n_arg_types; i++) {
@@ -4306,7 +4339,7 @@ public:
                     }
                     ASR::symbol_t* impl_method = ASRUtils::symbol_get_past_external(impl_method_sym);
                     if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*impl_method) ||
-                            !method_signatures_match(decl,
+                            !method_signatures_match(iface, decl,
                                 ASR::down_cast<ASR::StructMethodDeclaration_t>(impl_method))) {
                         diag.add(diag::Diagnostic(
                             std::string(st->m_name) + " implements " +

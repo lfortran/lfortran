@@ -25428,19 +25428,18 @@ public:
         this->visit_expr_wrapper(x.m_dt, is_pointer);
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_dt = tmp;
+        llvm::Value* llvm_vtable_dt = llvm_dt;
+        llvm::Value* llvm_self_dt = llvm_dt;
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)))) {
+            llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_dt, ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
+            llvm_self_dt = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_gep2(class_type, llvm_dt, 1));
+        }
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_StructMethodDeclaration(
             ASRUtils::symbol_get_past_external(x.m_name));
         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
             ASRUtils::get_struct_sym_from_struct_expr(x.m_dt));
-        llvm::FunctionType* fnTy = llvm_utils->get_function_type(
-            *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym)),
-            module.get());
-        llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
-        llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
-        llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
-
-        // Convert function args
-        std::vector<llvm::Value*> args;
         struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
         ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
         ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
@@ -25453,11 +25452,37 @@ public:
         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(class_proc->m_proc));
+        llvm::FunctionType* fnTy = llvm_utils->get_function_type(
+            *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym)),
+            module.get());
+        bool trait_operation_abi = class_proc->m_is_nopass &&
+            ASR::is_a<ASR::Struct_t>(*struct_sym) &&
+            ASR::down_cast<ASR::Struct_t>(struct_sym)->m_is_abstract &&
+            ASR::down_cast<ASR::Struct_t>(struct_sym)->m_is_sealed;
+        if (trait_operation_abi) {
+            std::vector<llvm::Type*> fn_args;
+            fn_args.push_back(llvm_utils->i8_ptr);
+            for (llvm::Type* arg_type : fnTy->params()) {
+                fn_args.push_back(arg_type);
+            }
+            fnTy = llvm::FunctionType::get(fnTy->getReturnType(), fn_args, false);
+        }
+        llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+        llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+        llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
+
+        // Convert function args
+        std::vector<llvm::Value*> args;
         if (!class_proc->m_is_nopass) {
+            llvm::Value* pass_dt = ASRUtils::is_class_type(
+                ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0]))) ?
+                llvm_vtable_dt : llvm_self_dt;
             llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[0], 
                 ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0])), module.get());
-            llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
-            args.push_back(llvm_dt);
+            pass_dt = builder->CreateBitCast(pass_dt, target_struct_type->getPointerTo());
+            args.push_back(pass_dt);
+        } else if (trait_operation_abi) {
+            args.push_back(llvm_self_dt);
         }
         std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
         args.insert(args.end(), args2.begin(), args2.end());
@@ -25479,8 +25504,9 @@ public:
             } else {
                 llvm_dt = tmp;
             }
+            llvm_vtable_dt = llvm_dt;
         }
-        llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
+        llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_vtable_dt, fnPtrPtrPtrTy);
         vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
 
         // Get function pointer from VTable
@@ -25498,19 +25524,18 @@ public:
         this->visit_expr_wrapper(x.m_dt, is_pointer);
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_dt = tmp;
+        llvm::Value* llvm_vtable_dt = llvm_dt;
+        llvm::Value* llvm_self_dt = llvm_dt;
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)))) {
+            llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_dt, ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
+            llvm_self_dt = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_gep2(class_type, llvm_dt, 1));
+        }
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_StructMethodDeclaration(
             ASRUtils::symbol_get_past_external(x.m_name));
         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
             ASRUtils::get_struct_sym_from_struct_expr(x.m_dt));
-        llvm::FunctionType* fnTy = llvm_utils->get_function_type(
-            *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym)),
-            module.get());
-        llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
-        llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
-        llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
-
-        // Convert function args
-        std::vector<llvm::Value*> args;
         struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
         ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
         ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
@@ -25523,22 +25548,48 @@ public:
         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(class_proc->m_proc));
+        llvm::FunctionType* fnTy = llvm_utils->get_function_type(
+            *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym)),
+            module.get());
+        bool trait_operation_abi = class_proc->m_is_nopass &&
+            ASR::is_a<ASR::Struct_t>(*struct_sym) &&
+            ASR::down_cast<ASR::Struct_t>(struct_sym)->m_is_abstract &&
+            ASR::down_cast<ASR::Struct_t>(struct_sym)->m_is_sealed;
+        if (trait_operation_abi) {
+            std::vector<llvm::Type*> fn_args;
+            fn_args.push_back(llvm_utils->i8_ptr);
+            for (llvm::Type* arg_type : fnTy->params()) {
+                fn_args.push_back(arg_type);
+            }
+            fnTy = llvm::FunctionType::get(fnTy->getReturnType(), fn_args, false);
+        }
+        llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
+        llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
+        llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
+
+        // Convert function args
+        std::vector<llvm::Value*> args;
         if (!class_proc->m_is_nopass) {
+            llvm::Value* pass_dt = ASRUtils::is_class_type(
+                ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0]))) ?
+                llvm_vtable_dt : llvm_self_dt;
             llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[0],
                 ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0])), module.get());
-            llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
+            pass_dt = builder->CreateBitCast(pass_dt, target_struct_type->getPointerTo());
 
             // If the parameter is a POINTER, we need an extra level of indirection
             if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(func->m_args[0]))) {
                 // Allocate space for a pointer on the stack
                 llvm::Value* ptr_storage = llvm_utils->CreateAlloca(*builder, target_struct_type->getPointerTo());
                 // Store the loaded class descriptor pointer into it
-                builder->CreateStore(llvm_dt, ptr_storage);
+                builder->CreateStore(pass_dt, ptr_storage);
                 // Pass the address of the storage (which is now a pointer-to-pointer)
                 args.push_back(ptr_storage);
             } else {
-                args.push_back(llvm_dt);
+                args.push_back(pass_dt);
             }
+        } else if (trait_operation_abi) {
+            args.push_back(llvm_self_dt);
         }
         std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
         args.insert(args.end(), args2.begin(), args2.end());
@@ -25560,8 +25611,9 @@ public:
             } else {
                 llvm_dt = tmp;
             }
+            llvm_vtable_dt = llvm_dt;
         }
-        llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_dt, fnPtrPtrPtrTy);
+        llvm::Value* vtable_ptr = builder->CreateBitCast(llvm_vtable_dt, fnPtrPtrPtrTy);
         vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
 
         // Get function pointer from VTable

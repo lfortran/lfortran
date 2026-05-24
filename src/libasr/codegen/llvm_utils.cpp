@@ -9587,6 +9587,73 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return gep;
     }
 
+    bool LLVMStruct::needs_trait_operation_wrapper(ASR::Struct_t* struct_t,
+        ASR::StructMethodDeclaration_t* method_decl)
+    {
+        if (!method_decl->m_is_nopass) {
+            return false;
+        }
+        for (size_t i = 0; i < struct_t->n_implements; i++) {
+            ASR::symbol_t* iface_sym = ASRUtils::symbol_get_past_external(
+                struct_t->m_implements[i]);
+            if (!ASR::is_a<ASR::Struct_t>(*iface_sym)) {
+                continue;
+            }
+            ASR::Struct_t* iface = ASR::down_cast<ASR::Struct_t>(iface_sym);
+            ASR::symbol_t* iface_method_sym = iface->m_symtab->get_symbol(method_decl->m_name);
+            if (iface_method_sym == nullptr) {
+                continue;
+            }
+            ASR::symbol_t* iface_method = ASRUtils::symbol_get_past_external(iface_method_sym);
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*iface_method) &&
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(iface_method)->m_is_nopass) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    llvm::Function* LLVMStruct::get_trait_operation_wrapper(ASR::Struct_t* struct_t,
+        ASR::StructMethodDeclaration_t* method_decl, llvm::Function* impl_fn,
+        llvm::Module* module)
+    {
+        ASR::Function_t* impl_asr = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(method_decl->m_proc));
+        llvm::FunctionType* impl_type = llvm_utils->get_function_type(*impl_asr, module);
+        std::vector<llvm::Type*> wrapper_args;
+        wrapper_args.push_back(llvm_utils->i8_ptr);
+        for (llvm::Type* arg_type : impl_type->params()) {
+            wrapper_args.push_back(arg_type);
+        }
+        llvm::FunctionType* wrapper_type = llvm::FunctionType::get(
+            impl_type->getReturnType(), wrapper_args, false);
+        std::string wrapper_name = "__lfortran_trait_op_wrapper_" +
+            std::string(struct_t->m_name) + "_" + std::string(method_decl->m_name);
+        llvm::Function* wrapper = module->getFunction(wrapper_name);
+        if (wrapper != nullptr) {
+            return wrapper;
+        }
+        wrapper = llvm::Function::Create(wrapper_type,
+            llvm::Function::InternalLinkage, wrapper_name, module);
+        llvm::IRBuilderBase::InsertPoint insert_point = builder->saveIP();
+        llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", wrapper);
+        builder->SetInsertPoint(entry);
+        std::vector<llvm::Value*> call_args;
+        auto arg_it = wrapper->arg_begin();
+        ++arg_it;
+        for (; arg_it != wrapper->arg_end(); ++arg_it) {
+            call_args.push_back(&*arg_it);
+        }
+        llvm::Value* ret = builder->CreateCall(impl_type, impl_fn, call_args);
+        if (impl_type->getReturnType()->isVoidTy()) {
+            builder->CreateRetVoid();
+        } else {
+            builder->CreateRet(ret);
+        }
+        builder->restoreIP(insert_point);
+        return wrapper;
+    }
+
     void LLVMStruct::collect_vtable_function_impls(ASR::symbol_t *struct_sym, 
         std::vector<llvm::Constant*>& impls, llvm::Module* module)
     {
@@ -9619,18 +9686,22 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm_symtab_fn[h] = fn;
                     }
                     llvm::Function* F = llvm_symtab_fn[h];
+                    llvm::Function* vtable_fn = F;
+                    if (needs_trait_operation_wrapper(struct_t, method_decl)) {
+                        vtable_fn = get_trait_operation_wrapper(struct_t, method_decl, F, module);
+                    }
                     if (struct_t->m_parent) {
                         ASR::symbol_t* par = ASRUtils::symbol_get_past_external(struct_t->m_parent);
                         // Case: If current method is overriding any methods from parent class
                         if ((struct_vtab_function_offset.find(par) != struct_vtab_function_offset.end()) &&
                               (struct_vtab_function_offset[par].find(method_decl->m_name) != struct_vtab_function_offset[par].end()) ) {
-                            impls[struct_vtab_function_offset[par][method_decl->m_name] + 2] = llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr);
+                            impls[struct_vtab_function_offset[par][method_decl->m_name] + 2] = llvm::ConstantExpr::getBitCast(vtable_fn, llvm_utils->i8_ptr);
                             struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];
                             continue;
                         }
                     }
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
-                    impls.push_back(llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr));
+                    impls.push_back(llvm::ConstantExpr::getBitCast(vtable_fn, llvm_utils->i8_ptr));
                 }
             }
         }

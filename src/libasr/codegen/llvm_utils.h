@@ -2795,6 +2795,13 @@ class ASRToLLVMVisitor;
             void store_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Value* ptr, llvm::Module* module);
             llvm::Constant* get_intrinsic_type_vptr(ASR::ttype_t* ttype, int kind, llvm::Module* module);
 
+            bool needs_trait_operation_wrapper(ASR::Struct_t* struct_t,
+                                            ASR::StructMethodDeclaration_t* method_decl);
+            llvm::Function* get_trait_operation_wrapper(ASR::Struct_t* struct_t,
+                                            ASR::StructMethodDeclaration_t* method_decl,
+                                            llvm::Function* impl_fn,
+                                            llvm::Module* module);
+
             void collect_vtable_function_impls(ASR::symbol_t* struct_sym,
                                             std::vector<llvm::Constant*>& impls,
                                             llvm::Module* module);
