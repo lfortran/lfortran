@@ -2638,12 +2638,11 @@ class ASRToLLVMVisitor;
             llvm::BasicBlock *const entry = llvm::BasicBlock::Create(builder_->getContext(), "entry", fn);
             builder_->SetInsertPoint(entry);
 
-            // Convert the pointer to the appropiate type + Call finalize on it
             llvm::Value* const i8_ptr_arg = &fn->args().begin()[0];
             llvm::Type*  const llvm_type = get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(type), struct_sym);
             LCOMPILERS_ASSERT_MSG(!llvm_type->isPointerTy(), "Expected a not pointer type")
             llvm::Value* const correctly_typed_ptr = builder_->CreateBitCast(i8_ptr_arg, llvm_type->getPointerTo());
-            finalize(correctly_typed_ptr, type, struct_sym, false);
+            check_userDefinedFinalizer_then_finalize(correctly_typed_ptr, type, struct_sym, false);
 
 
             // Set terminal block + Revert
@@ -2861,6 +2860,17 @@ class ASRToLLVMVisitor;
                 llvm::Value* array_data_ptr, llvm::Value* size,
                 ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module,
                 llvm::Value* string_len = nullptr);
+            /**
+             * Description : Invoke a call to struct's FINAL procedure
+             * Details :-
+             * - Loop on struct's m_member looking for final function with rank-0
+             * - Invoke a call to it
+             * @param ptr llvm SSA to struct (struct_name*)
+             * @param ty  type of the struct
+             * @param struct_sym struct symbol of targetted symbol
+             * NOTICE : It doesn't handle arrays
+            */
+            void call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
     };
 
     class LLVMTuple {

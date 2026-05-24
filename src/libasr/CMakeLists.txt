@@ -69,7 +69,7 @@ set(SRC
     pass/pass_list_expr.cpp
     pass/pass_compare.cpp
     pass/unique_symbols.cpp
-    pass/insert_deallocate.cpp
+    pass/intent_out_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/replace_with_compile_time_values.cpp
     pass/gpu_offload.cpp

@@ -84,6 +84,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
 
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
+static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
@@ -571,14 +572,32 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
     switch (s.type) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
-            std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration, true);
-            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
+            ASR::ttype_t *base_type = ASRUtils::extract_type(v->m_type);
+            std::string res = type_to_str_fortran_symbol(base_type, v->m_type_declaration, true);
+            if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(base_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
                 } else {
                     res = "class(" + res + ")";
                 }
+            }
+            // Add dimension attribute for array types
+            ASR::ttype_t *type_past_alloc = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) {
+                ASR::Array_t *array_t = ASR::down_cast<ASR::Array_t>(type_past_alloc);
+                res += ", dimension(";
+                for (size_t i = 0; i < array_t->n_dims; i++) {
+                    if (i > 0) res += ", ";
+                    res += ":";
+                }
+                res += ")";
+            }
+            // Add allocatable/pointer attributes
+            if (ASR::is_a<ASR::Allocatable_t>(*v->m_type)) {
+                res += ", allocatable";
+            } else if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
+                res += ", pointer";
             }
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
@@ -4391,15 +4410,20 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     }
     return false;
 }
-
+/**
+ * Check if two derived types are :
+ * 1) the same, or
+ * 2) one is parent of another, or
+ * 3) both are unlimited polymorphic types
+ */
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    auto is_upoly = [](ASR::Struct_t* s) {
-        return s->m_struct_signature != nullptr &&
-            ASR::down_cast<ASR::StructType_t>(
-                s->m_struct_signature)->m_is_unlimited_polymorphic;
-    };
     return a == b || is_parent(a, b) || is_parent(b, a) ||
-        (is_upoly(a) && is_upoly(b));
+        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b));
+}
+
+// Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
+inline bool can_pass_derviedtype_arg_to_parameter(ASR::Struct_t* arg, ASR::Struct_t* param) {
+    return arg == param || is_parent(param, arg) || is_unlimited_polymorphic_type(param);
 }
 
 // Helper: check if IntegerBinOp is identity (x+0, 0+x, x-0)
@@ -7652,9 +7676,71 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
 
-    return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
-            ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
-            value, a_storage_format, a_struct_var);
+    if (is_array_item_constant && all_expr_evaluated) {
+        return (ASR::asr_t*) value;
+    }
+
+    ASR::asr_t* arr_ctor_asr = ASR::make_ArrayConstructor_t(
+        al, a_loc, a_args, n_args, a_type, value, a_storage_format, a_struct_var);
+    ASR::ArrayConstructor_t* arr_ctor = ASR::down_cast<ASR::ArrayConstructor_t>(
+        ASRUtils::EXPR(arr_ctor_asr));
+    int64_t ctor_size_val = 0;
+    bool size_known = false;
+    bool all_scalars = true;
+    bool can_compute_size = true;
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t* arg = a_args[i];
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstructor_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+            all_scalars = false;
+        }
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            all_scalars = false;
+            if (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(arg))) {
+                can_compute_size = false;
+                break;
+            }
+        }
+    }
+    if (all_scalars) {
+        ctor_size_val = static_cast<int64_t>(n_args);
+        size_known = true;
+    } else if (can_compute_size) {
+        ASR::expr_t* ctor_size_expr = ASRUtils::get_ArrayConstructor_size(al, arr_ctor);
+        if (ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
+            size_known = true;
+        }
+    }
+    if (size_known && ctor_size_val > 0) {
+        ASR::ttype_t* ctor_type = ASRUtils::type_get_past_pointer(arr_ctor->m_type);
+        if (ASR::is_a<ASR::Array_t>(*ctor_type)) {
+            ASR::Array_t* ctor_arr = ASR::down_cast<ASR::Array_t>(ctor_type);
+            if (ctor_arr->n_dims == 1) {
+                int64_t dim_len = 0;
+                bool has_len = ctor_arr->m_dims[0].m_length != nullptr &&
+                    ASRUtils::extract_value(ASRUtils::expr_value(ctor_arr->m_dims[0].m_length), dim_len);
+                if (!has_len) {
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim = ctor_arr->m_dims[0];
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+                    if (dim.m_start == nullptr) {
+                        dim.m_start = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, a_loc, 1, int_type));
+                    }
+                    dim.m_length = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, a_loc, ctor_size_val, int_type));
+                    dims.push_back(al, dim);
+                    arr_ctor->m_type = ASRUtils::TYPE(ASR::make_Array_t(
+                        al, a_loc, ctor_arr->m_type, dims.p, dims.size(),
+                        ctor_arr->m_physical_type));
+                }
+            }
+        }
+    }
+
+    return arr_ctor_asr;
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
