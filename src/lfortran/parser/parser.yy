@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    238 // shift/reduce conflicts
+%expect    209 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -403,8 +403,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> block_data
 %type <ast> temp_decl
 %type <vec_ast> temp_decl_star
-%type <ast> decl
-%type <vec_ast> decl_star
 %type <ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
@@ -431,7 +429,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> end_function
 %type <ast> use_statement
 %type <ast> use_statement1
-%type <vec_ast> use_statement_star
+
 %type <ast> use_symbol
 %type <vec_ast> use_symbol_list
 %type <ast> use_modifier
@@ -539,9 +537,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> format_statement
 %type <ast> data_statement
 %type <ast> form_team_statement
-%type <ast> decl_statement
+
 %type <vec_ast> statements
-%type <vec_ast> decl_statements
+%type <vec_ast> body_statements
+%type <ast> body_statement
 %type <vec_ast> contains_block_opt
 %type <vec_ast> sub_or_func_plus
 %type <vec_ast> sub_or_func_star
@@ -575,10 +574,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_struct_member> struct_member_star
 %type <ast> bind
 %type <ast> bind_opt
-%type <vec_ast> import_statement_star
+
 %type <ast> import_statement
 %type <ast> implicit_statement
-%type <vec_ast> implicit_statement_star
+
 %type <ast> implicit_spec
 %type <vec_ast> implicit_spec_list
 %type <ast> implicit_none_spec
@@ -656,30 +655,27 @@ script_unit
 //
 
 module
-    : KW_MODULE id sep use_statement_star implicit_statement_star
-        decl_star contains_block_opt end_module sep {
-            LLOC(@$, @8); $$ = MODULE($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, $8, @$); }
+    : KW_MODULE id sep body_statements
+        contains_block_opt end_module sep {
+            LLOC(@$, @6); $$ = MODULE($2, TRIVIA($3, $7, @$), $4, $5, $6, @$); }
     ;
 
 submodule
-    : KW_SUBMODULE "(" id ")" id sep use_statement_star implicit_statement_star
-        decl_star contains_block_opt end_submodule sep {
-            LLOC(@$, @11); $$ = SUBMODULE($3, $5, TRIVIA($6, $12, @$), $7, $8, $9, $10, $11, @$); }
-    | KW_SUBMODULE "(" id ":" id ")" id sep use_statement_star
-        implicit_statement_star decl_star
+    : KW_SUBMODULE "(" id ")" id sep body_statements
         contains_block_opt end_submodule sep {
-            LLOC(@$, @13); $$ = SUBMODULE1($3, $5, $7, TRIVIA($8, $14, @$), $9, $10, $11, $12, $13, @$); }
+            LLOC(@$, @9); $$ = SUBMODULE($3, $5, TRIVIA($6, $10, @$), $7, $8, $9, @$); }
+    | KW_SUBMODULE "(" id ":" id ")" id sep body_statements
+        contains_block_opt end_submodule sep {
+            LLOC(@$, @11); $$ = SUBMODULE1($3, $5, $7, TRIVIA($8, $12, @$), $9, $10, $11, @$); }
     ;
 
 block_data
-    : KW_BLOCK KW_DATA sep use_statement_star implicit_statement_star
-        decl_statements end_blockdata sep {
-            $$ = BLOCKDATA(TRIVIA($3, $8, @$), $4, $5, SPLIT_DECL(p.m_a, $6),
-                SPLIT_STMT(p.m_a, $6), @$); }
-    | KW_BLOCK KW_DATA id sep use_statement_star implicit_statement_star
-        decl_statements end_blockdata sep {
-            $$ = BLOCKDATA1($3, TRIVIA($4, $9, @$), $5, $6, SPLIT_DECL(p.m_a, $7),
-                SPLIT_STMT(p.m_a, $7), @$); }
+    : KW_BLOCK KW_DATA sep body_statements
+        end_blockdata sep {
+            $$ = BLOCKDATA(TRIVIA($3, $6, @$), $4, @$); }
+    | KW_BLOCK KW_DATA id sep body_statements
+        end_blockdata sep {
+            $$ = BLOCKDATA1($3, TRIVIA($4, $7, @$), $5, @$); }
     ;
 
 interface_decl
@@ -916,9 +912,9 @@ proc_modifier
 
 
 program
-    : KW_PROGRAM id sep use_statement_star implicit_statement_star decl_statements
+    : KW_PROGRAM id sep body_statements
         contains_block_opt end_program sep {
-      LLOC(@$, @8); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, $8, @$); }
+      LLOC(@$, @6); $$ = PROGRAM($2, TRIVIA($3, $7, @$), $4, $5, $6, @$); }
     ;
 
 end_program
@@ -989,98 +985,93 @@ end_team
     ;
 
 subroutine
-    : KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
-    import_statement_star implicit_statement_star decl_statements
+    : KW_SUBROUTINE id sub_args bind_opt sep body_statements
         contains_block_opt
         end_subroutine sep {
-            LLOC(@$, @11); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $12, @$), $6,
-                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, $11, @$); }
+            LLOC(@$, @8); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $9, @$), $6,
+                $7, $8, @$); }
     | KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
-    sep decl_statements end_subroutine sep {
+    sep body_statements end_subroutine sep {
             LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE($2, $4, $6, $7,
-                TRIVIA($8, $11, @$), SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), @$); }
-    | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep use_statement_star
-    import_statement_star implicit_statement_star decl_statements
+                TRIVIA($8, $11, @$), $9, @$); }
+    | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep body_statements
         contains_block_opt
         end_subroutine sep {
-            LLOC(@$, @12); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $13, @$),
-                $7, $8, $9, SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
+            LLOC(@$, @9); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $10, @$),
+                $7, $8, $9, @$); }
     | fn_mod_plus KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
-    sep decl_statements end_subroutine sep {
+    sep body_statements end_subroutine sep {
             LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
-                TRIVIA($9, $12, @$), SPLIT_DECL(p.m_a, $10), SPLIT_STMT(p.m_a, $10), @$); }
+                TRIVIA($9, $12, @$), $10, @$); }
     ;
 
 procedure
-    : fn_mod_plus KW_PROCEDURE id sub_args sep use_statement_star
-    import_statement_star implicit_statement_star decl_statements
+    : fn_mod_plus KW_PROCEDURE id sub_args sep body_statements
         contains_block_opt
         end_procedure sep {
-            LLOC(@$, @12); $$ = PROCEDURE($1, $3, $4, TRIVIA($5, $12, @$), $6,
-                $7, $8, SPLIT_DECL(p.m_a, $9), SPLIT_STMT(p.m_a, $9), $10, @$); }
+            LLOC(@$, @9); $$ = PROCEDURE($1, $3, $4, TRIVIA($5, $9, @$), $6,
+                $7, @$); }
     ;
 
 function
     : KW_FUNCTION id "(" id_list_opt ")"
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep body_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @12); $$ = FUNCTION0($2, $4, nullptr, nullptr,
-                TRIVIA($6, $13, @$), $7, $8, $9, SPLIT_DECL(p.m_a, $10),
-                SPLIT_STMT(p.m_a, $10), $11, $12, @$); }
+            LLOC(@$, @9); $$ = FUNCTION0($2, $4, nullptr, nullptr,
+                TRIVIA($6, $10, @$), $7, $8, $9, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep body_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @14); $$ = FUNCTION0($2, $4, $7, $6, TRIVIA($8, $15, @$),
-                $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, $14, @$); }
+            LLOC(@$, @11); $$ = FUNCTION0($2, $4, $7, $6, TRIVIA($8, $12, @$),
+                $9, $10, $11, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep body_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @14); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $15, @$),
-                $9, $10, $11, SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, $14, @$); }
+            LLOC(@$, @11); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $12, @$),
+                $9, $10, $11, @$); }
     | KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
-        sep decl_statements
+        sep body_statements
         end_function sep {
             LLOC(@$, @13); $$ = TEMPLATED_FUNCTION0($2, $4, $7, $9, $10,
-                TRIVIA($11, $14, @$), SPLIT_DECL(p.m_a, $12), SPLIT_STMT(p.m_a, $12), $13, @$); }
+                TRIVIA($11, $14, @$), $12, $13, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep body_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @13); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
-                TRIVIA($7, $14, @$), $8, $9, $10, SPLIT_DECL(p.m_a, $11),
-                SPLIT_STMT(p.m_a, $11), $12, $13, @$); }
+            LLOC(@$, @10); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
+                TRIVIA($7, $11, @$), $8, $9, $10, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep body_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @15); $$ = FUNCTION($1, $3, $5, $8, $7, TRIVIA($9, $16, @$),
-                $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, $15, @$); }
+            LLOC(@$, @12); $$ = FUNCTION($1, $3, $5, $8, $7, TRIVIA($9, $13, @$),
+                $10, $11, $12, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
-        sep use_statement_star import_statement_star implicit_statement_star decl_statements
+        sep body_statements
         contains_block_opt
         end_function sep {
-            LLOC(@$, @15); $$ = FUNCTION($1, $3, $5, $7, $8, TRIVIA($9, $16, @$),
-                $10, $11, $12, SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, $15, @$); }
+            LLOC(@$, @12); $$ = FUNCTION($1, $3, $5, $7, $8, TRIVIA($9, $13, @$),
+                $10, $11, $12, @$); }
     | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
-        sep decl_statements
+        sep body_statements
         end_function sep {
             LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
-                TRIVIA($12, $15, @$), SPLIT_DECL(p.m_a, $13), SPLIT_STMT(p.m_a, $13), $14, @$); }
+                TRIVIA($12, $15, @$), $13, $14, @$); }
     ;
 
 fn_mod_plus
@@ -1113,20 +1104,28 @@ temp_decl
     | instantiate
     ;
 
-decl_star
-    : decl_star decl { $$ = $1; LIST_ADD($$, $2); }
+
+
+body_statements
+    : body_statements body_statement { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    | body_statements error sep_one { $$ = $1; }
     ;
 
-decl
-    : var_decl
+body_statement
+    : use_statement
+    | implicit_statement
+    | import_statement
+    | var_decl
     | interface_decl
     | derived_type_decl
     | union_type_decl
+    | enum_decl
+    | statement
     | template_decl
     | requirement_decl
-    | enum_decl
-    | data_statement sep { $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
+    | instantiate
+    | require_decl
     ;
 
 contains_block_opt
@@ -1184,10 +1183,7 @@ result
     : KW_RESULT "(" id ")" { $$ = $3; }
     ;
 
-implicit_statement_star
-    : implicit_statement_star implicit_statement { $$ = $1; LIST_ADD($$, $2); }
-    | %empty { LIST_NEW($$); }
-    ;
+
 
 implicit_statement
     : KW_IMPLICIT KW_NONE sep { $$ = IMPLICIT_NONE(TRIVIA_AFTER($3, @$), @$); }
@@ -1281,10 +1277,7 @@ implicit_none_spec
     | KW_TYPE { $$ = IMPLICIT_NONE_TYPE(@$); }
     ;
 
-use_statement_star
-    : use_statement_star use_statement { $$ = $1; LIST_ADD($$, $2); }
-    | %empty { LIST_NEW($$); }
-    ;
+
 
 use_statement
     : use_statement1 sep { $$ = $1; TRIVIA2_($$, TRIVIA_AFTER($2, @$)); }
@@ -1300,10 +1293,7 @@ use_statement1
             $$ = USE4($2, $3, $5, nullptr, @$); }
     ;
 
-import_statement_star
-    : import_statement_star import_statement { $$ = $1; LIST_ADD($$, $2); }
-    | %empty { LIST_NEW($$); }
-    ;
+
 
 import_statement
     : KW_IMPORT sep { $$ = IMPORT0(Default, TRIVIA_AFTER($2, @$), @$); }
@@ -1714,24 +1704,7 @@ sep_one
     | ";" { $$ = SEMICOLON(@$); }
     ;
 
-decl_statements
-    : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
-    | %empty { LIST_NEW($$); }
-    | decl_statements error sep_one { $$ = $1; }
-    ;
 
-decl_statement
-    : var_decl
-    | interface_decl
-    | derived_type_decl
-    | union_type_decl
-    | enum_decl
-    | statement
-    | template_decl
-    | requirement_decl
-    | instantiate
-    | require_decl
-    ;
 
 statement
     : statement1 sep { $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
@@ -1839,8 +1812,8 @@ associate_block
     ;
 
 block_statement
-    : KW_BLOCK sep use_statement_star import_statement_star decl_statements
-        end_block { $$ = BLOCK(TRIVIA_AFTER($2, @$), $3, $4, SPLIT_DECL(p.m_a, $5), SPLIT_STMT(p.m_a, $5), @$); }
+    : KW_BLOCK sep body_statements
+        end_block { $$ = BLOCK(TRIVIA_AFTER($2, @$), $3, @$); }
     ;
 
 allocate_statement
