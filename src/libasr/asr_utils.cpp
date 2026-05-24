@@ -2906,6 +2906,21 @@ bool is_op_overloaded(ASR::logicalbinopType op, std::string& intrinsic_op_name,
 template <typename T>
 bool argument_types_match(const Vec<ASR::call_arg_t>& args,
         const T &sub) {
+    auto is_implicit_procedure = [](ASR::symbol_t* sym) -> bool {
+        if (!sym) return false;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_type_declaration) {
+                ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                if (ASR::is_a<ASR::Function_t>(*type_decl)) {
+                    std::string decl_name = ASR::down_cast<ASR::Function_t>(type_decl)->m_name;
+                    return (decl_name.find("__") == 0 && decl_name.find("_iface_implicit") != std::string::npos);
+                }
+            }
+        }
+        return false;
+    };
+
     if (args.size() <= sub.n_args) {
         size_t i;
         for (i = 0; i < args.size(); i++) {
@@ -2958,19 +2973,24 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 } else {
                     // Implicit interface procedures (procedure() with no arg types)
                     // are compatible with any explicit interface — skip types_equal.
-                    bool arg_is_implicit_procedure = false;
-                    if (ASR::is_a<ASR::FunctionType_t>(*arg1) &&
-                        ASR::is_a<ASR::FunctionType_t>(*arg2)) {
-                        ASR::FunctionType_t* arg1_func_type =
-                            ASR::down_cast<ASR::FunctionType_t>(arg1);
-                        ASR::FunctionType_t* arg2_func_type =
-                            ASR::down_cast<ASR::FunctionType_t>(arg2);
-                        arg_is_implicit_procedure =
-                            (arg1_func_type->n_arg_types == 0 &&
-                             arg1_func_type->m_deftype == ASR::deftypeType::Interface) ||
-                            (arg2_func_type->n_arg_types == 0 &&
-                             arg2_func_type->m_deftype == ASR::deftypeType::Interface);
+                    ASR::symbol_t* actual_sym = nullptr;
+                    if (args[i].m_value) {
+                        if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                            actual_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*args[i].m_value)) {
+                            actual_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[i].m_value)->m_m);
+                        }
                     }
+
+                    bool arg_is_implicit_procedure = is_implicit_procedure(sub_arg_sym) || is_implicit_procedure(actual_sym);
+                    
+                    if (!arg_is_implicit_procedure && ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                        ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                        if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                            arg_is_implicit_procedure = true;
+                        }
+                    }
+
                     if (!arg_is_implicit_procedure &&
                         !types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
                         return false;
@@ -2987,14 +3007,24 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::ttype_t *arg2 = f->m_function_signature;
 
                 // Check if actual argument is an implicit interface procedure
-                // (FunctionType with no arg types and Interface deftype).
+                // (e.g. procedure() dummy passed down).
                 // Implicit interfaces are compatible with any explicit interface
                 // - actual compatibility is checked at call site.
-                bool arg1_is_implicit = false;
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
-                    ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    arg1_is_implicit = (ft->n_arg_types == 0 &&
-                        ft->m_deftype == ASR::deftypeType::Interface);
+                ASR::symbol_t* actual_sym = nullptr;
+                if (args[i].m_value) {
+                    if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                        actual_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*args[i].m_value)) {
+                        actual_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[i].m_value)->m_m);
+                    }
+                }
+                bool arg1_is_implicit = is_implicit_procedure(actual_sym);
+
+                if (!arg1_is_implicit && ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                        arg1_is_implicit = true;
+                    }
                 }
 
                 if (!arg1_is_implicit) {

@@ -22774,13 +22774,14 @@ public:
                         LCOMPILERS_ASSERT(tmp != nullptr)
                     }
                     bool orig_arg_is_implicit_procedure = false;
-                    if (orig_arg &&
-                            ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type)) {
-                        ASR::FunctionType_t* orig_arg_ft =
-                            ASR::down_cast<ASR::FunctionType_t>(orig_arg->m_type);
-                        orig_arg_is_implicit_procedure =
-                            orig_arg_ft->n_arg_types == 0 &&
-                            orig_arg_ft->m_deftype == ASR::deftypeType::Interface;
+                    if (orig_arg && orig_arg->m_type_declaration) {
+                        ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(orig_arg->m_type_declaration);
+                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
+                            std::string decl_name = ASR::down_cast<ASR::Function_t>(type_decl)->m_name;
+                            if (decl_name.find("__") == 0 && decl_name.find("_iface_implicit") != std::string::npos) {
+                                orig_arg_is_implicit_procedure = true;
+                            }
+                        }
                     }
                     if (orig_arg_is_implicit_procedure &&
                             ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
