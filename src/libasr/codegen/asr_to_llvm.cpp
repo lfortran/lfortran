@@ -22747,7 +22747,24 @@ public:
                     } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
                                 ASR::is_a<ASR::Function_t>(*var_sym) &&
                                 ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface ) {
-                        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+                        if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                            llvm::FunctionType* function_type =
+                                llvm_utils->get_function_type(*fn, module.get());
+                            ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(fn);
+                            std::string fn_name = compute_llvm_function_name(
+                                fn->m_name, ftype, compiler_options, mangle_prefix,
+                                parent_function);
+                            if (llvm_symtab_fn_names.find(fn_name) ==
+                                    llvm_symtab_fn_names.end()) {
+                                llvm_symtab_fn_names[fn_name] = h;
+                                llvm_symtab_fn[h] = llvm::Function::Create(
+                                    function_type, llvm::Function::ExternalLinkage,
+                                    fn_name, module.get());
+                            } else {
+                                uint32_t old_h = llvm_symtab_fn_names[fn_name];
+                                llvm_symtab_fn[h] = llvm_symtab_fn[old_h];
+                            }
+                        }
                         tmp = llvm_symtab_fn[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
                     } else {
@@ -22755,6 +22772,27 @@ public:
                         LCOMPILERS_ASSERT(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end());
                         tmp = llvm_symtab_fn_arg[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
+                    }
+                    bool orig_arg_is_implicit_procedure = false;
+                    if (orig_arg &&
+                            ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type)) {
+                        ASR::FunctionType_t* orig_arg_ft =
+                            ASR::down_cast<ASR::FunctionType_t>(orig_arg->m_type);
+                        orig_arg_is_implicit_procedure =
+                            orig_arg_ft->n_arg_types == 0 &&
+                            orig_arg_ft->m_deftype == ASR::deftypeType::Interface;
+                    }
+                    if (orig_arg_is_implicit_procedure &&
+                            ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
+                            orig_arg_intent != ASR::intentType::InOut &&
+                            orig_arg_intent != ASR::intentType::Out &&
+                            !ASRUtils::is_pointer(orig_arg->m_type)) {
+                        llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                            orig_arg->m_type, module.get());
+                        if (tmp->getType() != expected_type) {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
                     }
                     // If the target parameter is a procedure pointer,
                     // wrap the function pointer in an alloca

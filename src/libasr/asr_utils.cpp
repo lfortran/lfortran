@@ -2955,8 +2955,26 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                             return false;
                         }
                     }
-                } else if (!types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
-                    return false;
+                } else {
+                    // Implicit interface procedures (procedure() with no arg types)
+                    // are compatible with any explicit interface — skip types_equal.
+                    bool arg_is_implicit_procedure = false;
+                    if (ASR::is_a<ASR::FunctionType_t>(*arg1) &&
+                        ASR::is_a<ASR::FunctionType_t>(*arg2)) {
+                        ASR::FunctionType_t* arg1_func_type =
+                            ASR::down_cast<ASR::FunctionType_t>(arg1);
+                        ASR::FunctionType_t* arg2_func_type =
+                            ASR::down_cast<ASR::FunctionType_t>(arg2);
+                        arg_is_implicit_procedure =
+                            (arg1_func_type->n_arg_types == 0 &&
+                             arg1_func_type->m_deftype == ASR::deftypeType::Interface) ||
+                            (arg2_func_type->n_arg_types == 0 &&
+                             arg2_func_type->m_deftype == ASR::deftypeType::Interface);
+                    }
+                    if (!arg_is_implicit_procedure &&
+                        !types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
+                        return false;
+                    }
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
                 if (args[i].m_value == nullptr) {
