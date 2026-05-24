@@ -1,0 +1,9 @@
+semantic error: concrete is not an abstract interface.
+  --> tests/errors/traits_invalid_implements_01.f90:8:4 - 11:1
+   |
+ 8 |       type, implements(Concrete) :: Bad
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+11 |    
+   | ...^ 

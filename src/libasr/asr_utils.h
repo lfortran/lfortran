@@ -5060,6 +5060,28 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
     return types_equal(x, y, x_expr, y_expr, check_for_dimensions);
 }
 
+inline bool struct_implements_interface(ASR::Struct_t* value_struct, ASR::symbol_t* target) {
+    ASR::Struct_t* current_struct = value_struct;
+    while (current_struct != nullptr) {
+        for (size_t i = 0; i < current_struct->n_implements; i++) {
+            ASR::symbol_t* iface = ASRUtils::symbol_get_past_external(
+                current_struct->m_implements[i]);
+            if (iface == target) {
+                return true;
+            }
+        }
+        if (current_struct->m_parent == nullptr) {
+            break;
+        }
+        ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(current_struct->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) {
+            break;
+        }
+        current_struct = ASR::down_cast<ASR::Struct_t>(parent);
+    }
+    return false;
+}
+
 inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_t* value) {
     ASR::ttype_t* tar_ext = ASRUtils::extract_type(ASRUtils::expr_type(target));
     ASR::ttype_t* val_ext = ASRUtils::extract_type(ASRUtils::expr_type(value));
@@ -5077,10 +5099,7 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
         is_class_same = (sym_target == sym_value);
         is_class_same = is_class_same || tar_is_upoly;
         is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
-        for (size_t i = 0; i < val_struct->n_implements && !is_class_same; i++) {
-            ASR::symbol_t* iface = ASRUtils::symbol_get_past_external(val_struct->m_implements[i]);
-            is_class_same = (iface == (ASR::symbol_t*)tar_struct);
-        }
+        is_class_same = is_class_same || struct_implements_interface(val_struct, sym_target);
     }
     return is_class_same;
 }
@@ -5098,10 +5117,7 @@ inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::sym
         is_class_same = (target == value)
             || tar_is_upoly
             || ASRUtils::is_parent(tar_struct, val_struct);
-        for (size_t i = 0; i < val_struct->n_implements && !is_class_same; i++) {
-            ASR::symbol_t* iface = ASRUtils::symbol_get_past_external(val_struct->m_implements[i]);
-            is_class_same = (iface == target);
-        }
+        is_class_same = is_class_same || struct_implements_interface(val_struct, target);
     }
     return is_class_same;
 }

@@ -2599,6 +2599,15 @@ public:
                         throw SemanticAbort();
                     }
                     ASR::symbol_t* iface_sym = current_scope->get_symbol(iface_name);
+                    ASR::symbol_t* resolved_iface_sym = ASRUtils::symbol_get_past_external(iface_sym);
+                    if (!ASR::is_a<ASR::Struct_t>(*resolved_iface_sym) ||
+                            !is_trait_interface(ASR::down_cast<ASR::Struct_t>(resolved_iface_sym))) {
+                        diag.add(diag::Diagnostic(
+                            iface_name + " is not an abstract interface.",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
+                    }
                     implements_list.push_back(al, iface_sym);
                     break;
                 }
@@ -4189,6 +4198,79 @@ public:
         pending_proc_ptr_inits.clear();
     }
 
+    bool is_trait_interface(ASR::Struct_t* st) {
+        return st->m_is_abstract && st->m_is_sealed;
+    }
+
+    int get_pass_arg_index(ASR::StructMethodDeclaration_t* decl, ASR::Function_t* func) {
+        if (decl->m_is_nopass) return -1;
+        if (decl->m_self_argument == nullptr) return 0;
+        std::string pass_arg = std::string(decl->m_self_argument);
+        for (size_t i = 0; i < func->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*func->m_args[i])) continue;
+            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+            if (ASRUtils::symbol_name(arg_sym) == pass_arg) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    bool method_signatures_match(ASR::StructMethodDeclaration_t* iface_decl,
+            ASR::StructMethodDeclaration_t* impl_decl) {
+        if (iface_decl->m_is_nopass != impl_decl->m_is_nopass) {
+            return false;
+        }
+        ASR::symbol_t* iface_proc = ASRUtils::symbol_get_past_external(iface_decl->m_proc);
+        ASR::symbol_t* impl_proc = ASRUtils::symbol_get_past_external(impl_decl->m_proc);
+        if (!ASR::is_a<ASR::Function_t>(*iface_proc) ||
+                !ASR::is_a<ASR::Function_t>(*impl_proc)) {
+            return false;
+        }
+        ASR::Function_t* iface_func = ASR::down_cast<ASR::Function_t>(iface_proc);
+        ASR::Function_t* impl_func = ASR::down_cast<ASR::Function_t>(impl_proc);
+        ASR::FunctionType_t* iface_ft = ASR::down_cast<ASR::FunctionType_t>(
+            iface_func->m_function_signature);
+        ASR::FunctionType_t* impl_ft = ASR::down_cast<ASR::FunctionType_t>(
+            impl_func->m_function_signature);
+        if (iface_ft->m_elemental != impl_ft->m_elemental ||
+                (iface_ft->m_pure && !impl_ft->m_pure)) {
+            return false;
+        }
+        if ((iface_ft->m_return_var_type == nullptr) !=
+                (impl_ft->m_return_var_type == nullptr)) {
+            return false;
+        }
+        if (iface_ft->m_return_var_type != nullptr &&
+                !ASRUtils::types_equal(iface_ft->m_return_var_type,
+                    impl_ft->m_return_var_type, nullptr, nullptr)) {
+            return false;
+        }
+        int iface_pass_arg = get_pass_arg_index(iface_decl, iface_func);
+        int impl_pass_arg = get_pass_arg_index(impl_decl, impl_func);
+        std::vector<ASR::ttype_t*> iface_arg_types, impl_arg_types;
+        for (size_t i = 0; i < iface_ft->n_arg_types; i++) {
+            if ((int)i != iface_pass_arg) {
+                iface_arg_types.push_back(iface_ft->m_arg_types[i]);
+            }
+        }
+        for (size_t i = 0; i < impl_ft->n_arg_types; i++) {
+            if ((int)i != impl_pass_arg) {
+                impl_arg_types.push_back(impl_ft->m_arg_types[i]);
+            }
+        }
+        if (iface_arg_types.size() != impl_arg_types.size()) {
+            return false;
+        }
+        for (size_t i = 0; i < iface_arg_types.size(); i++) {
+            if (!ASRUtils::types_equal(iface_arg_types[i], impl_arg_types[i],
+                    nullptr, nullptr)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void validate_implements() {
         for (auto &item : current_scope->get_scope()) {
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(item.second);
@@ -4198,12 +4280,21 @@ public:
                 ASR::symbol_t* iface_sym = ASRUtils::symbol_get_past_external(st->m_implements[i]);
                 if (!ASR::is_a<ASR::Struct_t>(*iface_sym)) continue;
                 ASR::Struct_t* iface = ASR::down_cast<ASR::Struct_t>(iface_sym);
+                if (!is_trait_interface(iface)) {
+                    diag.add(diag::Diagnostic(
+                        std::string(st->m_name) + " implements non-interface type '" +
+                        std::string(iface->m_name) + "'",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {sym->base.loc})}));
+                    throw SemanticAbort();
+                }
                 for (auto &method_item : iface->m_symtab->get_scope()) {
                     ASR::symbol_t* m = ASRUtils::symbol_get_past_external(method_item.second);
                     if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*m)) continue;
                     ASR::StructMethodDeclaration_t* decl = ASR::down_cast<ASR::StructMethodDeclaration_t>(m);
                     if (!decl->m_is_deferred) continue;
-                    if (st->m_symtab->get_symbol(method_item.first) == nullptr) {
+                    ASR::symbol_t* impl_method_sym = st->m_symtab->get_symbol(method_item.first);
+                    if (impl_method_sym == nullptr) {
                         diag.add(diag::Diagnostic(
                             std::string(st->m_name) + " implements " +
                             std::string(iface->m_name) +
@@ -4211,6 +4302,19 @@ public:
                             method_item.first + "'",
                             diag::Level::Error, diag::Stage::Semantic, {
                                 diag::Label("", {sym->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                    ASR::symbol_t* impl_method = ASRUtils::symbol_get_past_external(impl_method_sym);
+                    if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*impl_method) ||
+                            !method_signatures_match(decl,
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(impl_method))) {
+                        diag.add(diag::Diagnostic(
+                            std::string(st->m_name) + " implements " +
+                            std::string(iface->m_name) +
+                            " but method '" + method_item.first +
+                            "' has an incompatible signature",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {impl_method_sym->base.loc})}));
                         throw SemanticAbort();
                     }
                 }

@@ -1,0 +1,5 @@
+semantic error: badvalue implements ivalue but method 'get_value' has an incompatible signature
+  --> tests/errors/traits_invalid_implements_02.f90:13:7
+   |
+13 |       procedure :: get_value => get_value_real
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -2,7 +2,7 @@ diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
 index 300dbffdb..79dbf0b14 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -2550,177 +2550,4 @@ id_opt
+@@ -2550,180 +2550,4 @@ id_opt
  
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }
@@ -90,12 +90,14 @@ index 300dbffdb..79dbf0b14 100644
 -    | KW_IF { $$ = SYMBOL($1, @$); }
 -    | KW_IMAGES { $$ = SYMBOL($1, @$); }
 -    | KW_IMPLICIT { $$ = SYMBOL($1, @$); }
+-    | KW_IMPLEMENTS { $$ = SYMBOL($1, @$); }
 -    | KW_IMPORT { $$ = SYMBOL($1, @$); }
 -    | KW_IMPURE { $$ = SYMBOL($1, @$); }
 -    | KW_IN { $$ = SYMBOL($1, @$); }
 -    | KW_INCLUDE { $$ = SYMBOL($1, @$); }
 -    | KW_INOUT { $$ = SYMBOL($1, @$); }
 -    | KW_INQUIRE { $$ = SYMBOL($1, @$); }
+-    | KW_INITIAL { $$ = SYMBOL($1, @$); }
 -    | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
 -    | KW_INTEGER { $$ = SYMBOL($1, @$); }
 -    | KW_INTENT { $$ = SYMBOL($1, @$); }
@@ -148,6 +150,7 @@ index 300dbffdb..79dbf0b14 100644
 -    | KW_RETURN { $$ = SYMBOL($1, @$); }
 -    | KW_REWIND { $$ = SYMBOL($1, @$); }
 -    | KW_SAVE { $$ = SYMBOL($1, @$); }
+-    | KW_SEALED { $$ = SYMBOL($1, @$); }
 -    | KW_SELECT { $$ = SYMBOL($1, @$); }
 -    | KW_SELECT_CASE { $$ = SYMBOL($1, @$); }
 -    | KW_SELECT_RANK { $$ = SYMBOL($1, @$); }

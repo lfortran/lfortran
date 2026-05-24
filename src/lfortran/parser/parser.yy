@@ -14,8 +14,8 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    238 // shift/reduce conflicts
-%expect-rr 180 // reduce/reduce conflicts
+%expect    239 // shift/reduce conflicts
+%expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -2703,12 +2703,14 @@ id
     | KW_IF { $$ = SYMBOL($1, @$); }
     | KW_IMAGES { $$ = SYMBOL($1, @$); }
     | KW_IMPLICIT { $$ = SYMBOL($1, @$); }
+    | KW_IMPLEMENTS { $$ = SYMBOL($1, @$); }
     | KW_IMPORT { $$ = SYMBOL($1, @$); }
     | KW_IMPURE { $$ = SYMBOL($1, @$); }
     | KW_IN { $$ = SYMBOL($1, @$); }
     | KW_INCLUDE { $$ = SYMBOL($1, @$); }
     | KW_INOUT { $$ = SYMBOL($1, @$); }
     | KW_INQUIRE { $$ = SYMBOL($1, @$); }
+    | KW_INITIAL { $$ = SYMBOL($1, @$); }
     | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
     | KW_INTEGER { $$ = SYMBOL($1, @$); }
     | KW_INTENT { $$ = SYMBOL($1, @$); }
@@ -2761,6 +2763,7 @@ id
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }
     | KW_SAVE { $$ = SYMBOL($1, @$); }
+    | KW_SEALED { $$ = SYMBOL($1, @$); }
     | KW_SELECT { $$ = SYMBOL($1, @$); }
     | KW_SELECT_CASE { $$ = SYMBOL($1, @$); }
     | KW_SELECT_RANK { $$ = SYMBOL($1, @$); }

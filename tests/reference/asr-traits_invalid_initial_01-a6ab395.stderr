@@ -1,0 +1,5 @@
+semantic error: Initial procedure 'make_point' is not defined
+  --> tests/errors/traits_invalid_initial_01.f90:19:8
+   |
+19 |    p = Point(1)
+   |        ^^^^^^^^ 'make_point' is not a valid initial procedure

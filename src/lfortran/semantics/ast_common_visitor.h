@@ -9849,18 +9849,55 @@ public:
         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
         if (struct_type->m_initial_proc != nullptr) {
             std::string init_proc_name(struct_type->m_initial_proc);
-            ASR::symbol_t* init_sym = current_scope->resolve_symbol(init_proc_name);
-            if (init_sym != nullptr) {
-                ASR::symbol_t* init_sym_resolved = ASRUtils::symbol_get_past_external(init_sym);
-                if (ASR::is_a<ASR::Function_t>(*init_sym_resolved)) {
-                    ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
-                    ASR::asr_t* func_call = ASRUtils::make_FunctionCall_t_util(al, loc,
-                        init_sym, init_sym,
-                        vals.p, vals.size(),
-                        der, nullptr, nullptr);
-                    return func_call;
+            SymbolTable* init_scope = ASRUtils::symbol_parent_symtab(v_orig);
+            ASR::symbol_t* init_sym = init_scope ? init_scope->resolve_symbol(init_proc_name) : nullptr;
+            if (init_sym == nullptr ||
+                    !ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(init_sym))) {
+                diag.semantic_error_label(
+                    "Initial procedure '" + init_proc_name + "' is not defined",
+                    {loc},
+                    "'" + init_proc_name + "' is not a valid initial procedure");
+                throw SemanticAbort();
+            }
+            ASR::Function_t* init_func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(init_sym));
+            diag::Diagnostics diags;
+            visit_kwargs(vals, kwargs, n_kwargs, init_func->m_args, init_func->n_args,
+                loc, init_func, diags);
+            if (diags.has_error()) {
+                diag.diagnostics.insert(diag.diagnostics.end(),
+                    diags.diagnostics.begin(), diags.diagnostics.end());
+                throw SemanticAbort();
+            }
+            ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
+            ASR::FunctionType_t* init_ft = ASR::down_cast<ASR::FunctionType_t>(
+                init_func->m_function_signature);
+            if (init_ft->m_return_var_type == nullptr ||
+                    !ASRUtils::types_equal(init_ft->m_return_var_type, der, nullptr, nullptr)) {
+                diag.semantic_error_label(
+                    "Initial procedure '" + init_proc_name + "' must return type '" +
+                        std::string(struct_type->m_name) + "'",
+                    {loc},
+                    "initial procedure return type mismatch");
+                throw SemanticAbort();
+            }
+            ASR::symbol_t* init_call_sym = init_sym;
+            if (ASRUtils::symbol_parent_symtab(init_sym)->get_counter() !=
+                    current_scope->get_counter()) {
+                ASR::symbol_t* init_func_sym = ASR::down_cast<ASR::symbol_t>(
+                    (ASR::asr_t*) init_func);
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(init_func_sym);
+                if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                    std::string local_sym = current_scope->get_unique_name(init_proc_name);
+                    init_call_sym = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(al, loc, current_scope,
+                            s2c(al, local_sym), init_func_sym,
+                            ASRUtils::symbol_name(owner), nullptr, 0,
+                            s2c(al, init_proc_name), ASR::accessType::Private));
+                    current_scope->add_symbol(local_sym, init_call_sym);
                 }
             }
+            return create_Function(loc, vals, init_call_sym);
         }
 
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
