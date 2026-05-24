@@ -3386,21 +3386,7 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
     visitor.visit_expr(*expr);
     return visitor.found;
 }
-class HasFunctionParamVisitor : public ASR::BaseWalkVisitor<HasFunctionParamVisitor> {
-public:
-    bool has_param = false;
-    
-    void visit_FunctionParam(const ASR::FunctionParam_t & /*x*/) {
-        has_param = true;
-    }
-};
 
-inline bool expr_has_function_param(ASR::expr_t *t) {
-    if (!t) return false;
-    HasFunctionParamVisitor v;
-    v.visit_expr(*t); 
-    return v.has_param;
-}
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
@@ -3417,9 +3403,7 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     void replace_FunctionParam(ASR::FunctionParam_t *x) {
         if (current_expr) {
             size_t n = x->m_param_number;
-            if (n >= n_args) {
-                LCOMPILERS_ASSERT("FunctionParam param number not in range.");
-            };
+            LCOMPILERS_ASSERT_MSG(n < n_args,"FunctionParam param number not in range.");
             
             replacements.push_back({current_expr, *current_expr});
             *current_expr = m_args[n].m_value;
@@ -3427,13 +3411,9 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     }
 
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
-        if (!t) return nullptr;
+        
 
-        if (!expr_has_function_param(t)) {
-            return t;
-        }
-
-        replacements.clear(); 
+        LCOMPILERS_ASSERT(replacements.empty()) 
         ASR::expr_t** current_copy = current_expr;
         current_expr = &t;
         
@@ -8064,9 +8044,8 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                           ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
         
                           // 3. Caller takes responsibility for duplication to prevent the DAG crash
-                          dimension_.p[i].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
-                          dimension_.p[i].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
-
+                          dimension_.p[i].m_length = (replaced_length == dimension_.p[i].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
+                          dimension_.p[i].m_start = (replaced_start == dimension_.p[i].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                           valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
 
                           if (!valid_symbols) {

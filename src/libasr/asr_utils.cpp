@@ -1772,13 +1772,13 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                           if (ret_dims[di].m_length) {
                                           // 2. Extract and safely duplicate m_length
                                           ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
-                                          ret_dims[di].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
+                                          ret_dims[di].m_length = (replaced_length == ret_dims[di].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
                                            }
         
                                           if (ret_dims[di].m_start) {
                                           // 3. Extract and safely duplicate m_start
                                           ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
-                                          ret_dims[di].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
+                                          ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                                            }
                                         }
                                     }
@@ -1885,13 +1885,13 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                            if (ret_dims[di].m_length) {
                               // 2. Extract and safely duplicate m_length
                               ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
-                              ret_dims[di].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
+                              ret_dims[di].m_length = (replaced_length == ret_dims[di].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
                             }
         
                             if (ret_dims[di].m_start) {
                                // 3. Extract and safely duplicate m_start
                                ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
-                               ret_dims[di].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
+                               ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                             }
                         }
                     }
@@ -2783,14 +2783,13 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                          if (ret_dims[di].m_length) {
                                             // 2. Extract and safely duplicate m_length
                                             ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
-                                            ret_dims[di].m_length = replaced_length ? caller_dup.duplicate_expr(replaced_length) : nullptr;
+                                            ret_dims[di].m_length = (replaced_length == ret_dims[di].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
                                          }
         
                                          if (ret_dims[di].m_start) {
                                             // 3. Extract and safely duplicate m_start
                                             ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
-                                            ret_dims[di].m_start = replaced_start ? caller_dup.duplicate_expr(replaced_start) : nullptr;
-                                         }
+                                            ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                                         }
                                      }
                                 }
