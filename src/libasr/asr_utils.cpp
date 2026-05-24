@@ -1779,10 +1779,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                           // 3. Extract and safely duplicate m_start
                                           ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
                                           ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
-                                          }
+                                           }
                                         }
                                     }
                                 }
+                            }
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
                                                             call_args1, n_call_args1,
                                                             return_type,
