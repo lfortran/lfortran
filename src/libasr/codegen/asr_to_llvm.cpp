@@ -22773,28 +22773,6 @@ public:
                         tmp = llvm_symtab_fn_arg[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
                     }
-                    bool orig_arg_is_implicit_procedure = false;
-                    if (orig_arg && orig_arg->m_type_declaration) {
-                        ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(orig_arg->m_type_declaration);
-                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
-                            std::string decl_name = ASR::down_cast<ASR::Function_t>(type_decl)->m_name;
-                            if (decl_name.find("__") == 0 && decl_name.find("_iface_implicit") != std::string::npos) {
-                                orig_arg_is_implicit_procedure = true;
-                            }
-                        }
-                    }
-                    if (orig_arg_is_implicit_procedure &&
-                            ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
-                            orig_arg_intent != ASR::intentType::InOut &&
-                            orig_arg_intent != ASR::intentType::Out &&
-                            !ASRUtils::is_pointer(orig_arg->m_type)) {
-                        llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
-                            orig_arg->m_type, module.get());
-                        if (tmp->getType() != expected_type) {
-                            tmp = builder->CreateBitCast(tmp, expected_type);
-                        }
-                    }
                     // If the target parameter is a procedure pointer,
                     // wrap the function pointer in an alloca
                     if (orig_arg &&
