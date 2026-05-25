@@ -15665,6 +15665,8 @@ public:
         Vec<ASR::call_arg_t> c_args;
         c_args.reserve(al, x.n_args + 1);
         bool has_alt_returns = false;
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
         for (size_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
                 has_alt_returns = true;
@@ -15674,6 +15676,7 @@ public:
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             c_args.push_back(al, {expr->base.loc, expr});
         }
+        current_function_dependencies = current_function_dependencies_copy;
         // Restore interface scope for symbol creation below.
         current_scope = current_scope_copy;
 
