@@ -8129,8 +8129,11 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 }
 
                 //TO DO : Add appropriate errors in 'asr_uttils.h'.
-                LCOMPILERS_ASSERT_MSG(dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims,
-                    orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false),
+                bool orig_is_explicit_shape = ASRUtils::is_fixed_size_array(
+                    orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
+                LCOMPILERS_ASSERT_MSG(orig_is_explicit_shape ||
+                    dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims,
+                        orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false),
                     "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
                     + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 

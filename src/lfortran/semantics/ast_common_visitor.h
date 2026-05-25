@@ -11725,7 +11725,9 @@ public:
                                 break;
                             }
                         }
-                        if( rhs_size_known && lhs_ele < rhs_ele ){
+                        bool dummy_is_explicit_shape = ASRUtils::is_fixed_size_array(
+                            arr_rhs->m_dims, arr_rhs->n_dims);
+                        if( rhs_size_known && lhs_ele < rhs_ele && !dummy_is_explicit_shape ){
                             diag.add(Diagnostic("Array passed into function has `" + std::to_string(lhs_ele) +
                                 "` elements but function expects `" + std::to_string(rhs_ele) + "`.",
                                 Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
