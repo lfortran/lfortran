@@ -1,4 +1,4 @@
-module char_28_mod
+module char_28_fail_mod
 implicit none
 interface operator (.exclude.)
    module procedure char_exclude
@@ -23,10 +23,10 @@ do i = 1, size(values)
 end do
 end function char_exclude
 
-end module char_28_mod
+end module char_28_fail_mod
 
 program char_28
-use char_28_mod, only: operator(.exclude.)
+use char_28_fail_mod, only: operator(.exclude.)
 implicit none
 
 character(len=3), allocatable :: res(:)
