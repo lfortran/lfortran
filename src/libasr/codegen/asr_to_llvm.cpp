@@ -20621,17 +20621,21 @@ public:
             func();
             ptr_loads = saved;
         };
-        LCOMPILERS_ASSERT(x.m_target->type == ASR::exprType::ArrayItem);
-        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+        LCOMPILERS_ASSERT(x.m_target->type == ASR::exprType::ArrayItem ||  x.m_target->type == ASR::exprType::Var);
         is_assignment_target = true;
         visit_expr(*x.m_target);
         is_assignment_target = false;
         llvm::Value* target_ptr = tmp;
 
-        visit_expr_wrapper(array_item->m_args[0].m_right, true);
-        llvm::Value* array_index = tmp;
-        llvm::Value* zero_based_idx = builder->CreateSub(array_index,
-            llvm::ConstantInt::get(array_index->getType(), 1));
+        llvm::Value* zero_based_idx;
+        if (x.m_target->type == ASR::exprType::ArrayItem) {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+            visit_expr_wrapper(array_item->m_args[0].m_right, true);
+            llvm::Value* array_index = tmp;
+            zero_based_idx = builder->CreateSub(array_index,llvm::ConstantInt::get(array_index->getType(), 1));
+        } else {
+            zero_based_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+        }
         
         // Calculate byte offset: index * element_length
         // For character(len=2): element 0 at byte 0, element 1 at byte 2, etc.
