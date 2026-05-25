@@ -3303,6 +3303,8 @@ public:
             this->visit_expr(*a->m_value[curr_value++]);
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
             current_variable_type_ = temp_current_variable_type_;
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                ASRUtils::expr_type(value), array_type->m_type, diag);
             if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                 diag.add(Diagnostic(
                     "Type mismatch during data initialization",
@@ -3438,6 +3440,8 @@ public:
                         }
                     }
                 }
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                    ASRUtils::expr_type(value), array_type->m_type, diag);
                 if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                     diag.add(Diagnostic(
                         "Type mismatch during data initialization",
@@ -10778,9 +10782,12 @@ public:
             if (ASR::is_a<ASR::Pointer_t>(*expr_type)) {
                 expr_type = ASRUtils::type_get_past_pointer(expr_type);
             }
-            if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type))){
-                if(!ASRUtils::is_value_constant(expr)) 
+            ASR::ttype_t* expr_type_no_alloc =
+                ASRUtils::type_get_past_allocatable_pointer(expr_type);
+            if (ASRUtils::is_array(expr_type_no_alloc)) {
+                if (!ASRUtils::is_fixed_size_array(expr_type_no_alloc)) {
                     use_descriptorArray = true;
+                }
             }
             if (type == nullptr) {
                 type = expr_type;
@@ -15652,6 +15659,12 @@ public:
         }
         current_scope = al.make_new<SymbolTable>(sym_scope);
 
+        // Evaluate call arguments in the caller scope so temporaries land
+        // in the correct symbol table.
+        SymbolTable *call_scope = parent_scope;
+        SymbolTable *current_scope_copy = current_scope;
+        current_scope = call_scope;
+
         Vec<ASR::call_arg_t> c_args;
         c_args.reserve(al, x.n_args + 1);
         bool has_alt_returns = false;
@@ -15664,6 +15677,9 @@ public:
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             c_args.push_back(al, {expr->base.loc, expr});
         }
+        // Restore interface scope for symbol creation below.
+        current_scope = current_scope_copy;
+
         // Reserve spot for compiler's `__lfortran_alt_ret` 
         if (has_alt_returns) {
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,

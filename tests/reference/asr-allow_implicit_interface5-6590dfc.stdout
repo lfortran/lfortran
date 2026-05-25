@@ -59,30 +59,6 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            rt:
-                                                (Variable
-                                                    4
-                                                    rt
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
                                                 )
                                         })
                                     klvna

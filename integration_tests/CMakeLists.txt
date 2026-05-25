@@ -414,6 +414,7 @@ RUN(NAME program_cmake_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 
 RUN(NAME program_cmake_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 
 RUN(NAME internal_subr_host_vars_01 LABELS gfortran llvm)
+RUN(NAME internal_subr_assumed_size_01 LABELS gfortran llvm)
 RUN(NAME nested_callback_arrays LABELS gfortran llvm)
 RUN(NAME nested_callback_interface_01 LABELS gfortran llvm)
 
@@ -462,6 +463,8 @@ RUN(NAME fixed_form_io_keyword_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form G
 RUN(NAME fixed_form_io_keyword_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_goto LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_stmt_func_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_do_name_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --use-loop-variable-after-loop GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_where_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME print_arr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran mlir)
 RUN(NAME print_arr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -823,6 +826,7 @@ RUN(NAME arrays_reshape_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_reshape_40 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_41 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME arrays_reshape_42 LABELS gfortran llvm)
+RUN(NAME arrays_reshape_43 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
@@ -2113,6 +2117,7 @@ RUN(NAME implicit_interface_37 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
 RUN(NAME implicit_interface_38 LABELS gfortran llvm EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_38b.f90)
 
 RUN(NAME implicit_interface_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
+RUN(NAME implicit_interface_41 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -2449,6 +2454,7 @@ RUN(NAME derived_types_apply_clip_01 LABELS gfortran llvm
 RUN(NAME derived_types_143 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME derived_types_144 LABELS gfortran llvm)
+RUN(NAME derived_types_145 LABELS llvm)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4339,6 +4345,9 @@ RUN(NAME separate_compilation_class_star_04 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME separate_compilation_external_symbol_01 LABELS gfortran llvm
     EXTRAFILES separate_compilation_external_symbol_01a.f90)
+RUN(NAME separate_compilation_external_symbol_02 LABELS gfortran llvm
+    EXTRAFILES separate_compilation_external_symbol_02a.f90
+    EXTRA_ARGS --implicit-interface)
 RUN(NAME class_star_pointer_01 LABELS gfortran llvm)
 
 RUN(NAME separate_compilation_14 LABELS gfortran llvm EXTRAFILES separate_compilation_14a.f90)
@@ -4533,7 +4542,7 @@ RUN(NAME merge_str_01 LABELS gfortran llvm)
 RUN(NAME io_direct_slash LABELS gfortran llvm)
 
 #test for coarray
-RUN(NAME coarray_01 LABELS gfortran llvm GFORTRAN_ARGS -fcoarray=single)
+RUN(NAME coarray_01 LABELS gfortran GFORTRAN_ARGS -fcoarray=single)
 
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)

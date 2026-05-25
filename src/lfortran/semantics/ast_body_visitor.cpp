@@ -2828,16 +2828,22 @@ public:
                         pnc->m_type = var->m_type;
                     }
                     if (ASR::is_a<ASR::Var_t>(*value)) {
-                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(value)->m_v);
+                        ASR::symbol_t *val_sym_raw = ASR::down_cast<ASR::Var_t>(value)->m_v;
+                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(val_sym_raw);
                         if (ASR::is_a<ASR::Function_t>(*val_sym)) {
-                            var->m_type_declaration = val_sym;
+                            // Use the original symbol (which may be an
+                            // ExternalSymbol) so that m_type_declaration
+                            // stays within the current module boundary.
+                            var->m_type_declaration = val_sym_raw;
                         } else if (ASR::is_a<ASR::Variable_t>(*val_sym)) {
                             ASR::Variable_t *val_var = ASR::down_cast<ASR::Variable_t>(val_sym);
-                            ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
-                                val_var->m_type_declaration);
-                            if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
-                                var->m_type_declaration = val_type_decl;
+                            if (val_var->m_type_declaration) {
+                                ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
+                                    val_var->m_type_declaration);
+                                if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
+                                    // Preserve the ExternalSymbol wrapper if present.
+                                    var->m_type_declaration = val_var->m_type_declaration;
+                                }
                             }
                         }
                     }
@@ -2897,6 +2903,8 @@ public:
                 }
                 tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
             } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
+                create_associate_stmt = true;
+            } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
                 create_associate_stmt = true;
             }
 
@@ -5899,6 +5907,14 @@ public:
                             ASRUtils::expr_type(temp));
                         if( temp_type->type == ASR::ttypeType::Array ) {
                             int64_t arr_size = ASRUtils::get_fixed_size_of_array(temp_type);
+                            int64_t start, end;
+                            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*temp)) {
+                                ASR::ImpliedDoLoop_t* impl_do = ASR::down_cast<ASR::ImpliedDoLoop_t>(temp);
+                                if (ASRUtils::extract_value(ASRUtils::expr_value(impl_do->m_start), start) &&
+                                    ASRUtils::extract_value(ASRUtils::expr_value(impl_do->m_end), end)) {
+                                    arr_size *= end - start + 1;
+                                }
+                            }
                             if (arr_size < 0) {
                                 flat_size = -1;
                             } else if (flat_size >= 0) {
