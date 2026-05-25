@@ -597,7 +597,8 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, diag::Diagnostics &diagnostics,
+    LCompilers::PassManager& pass_manager)
 {
     // SRC -> AST -> ASR -> Fortran
     SymbolTable *old_symbol_table = symbol_table;
@@ -605,8 +606,9 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        LCompilers::PassManager pass_manager;
-        pass_manager.use_fortran_passes();
+        if (!pass_manager.has_user_defined_passes()) {
+            pass_manager.use_fortran_passes();
+        }
         pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
