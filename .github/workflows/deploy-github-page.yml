@@ -70,6 +70,12 @@ jobs:
           micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y
           micromamba run -n xeus-lite-host jupyter lite build \
               --XeusAddon.prefix=${{ env.PREFIX }} \
+              --contents share/lfortran/nb/Demo1.ipynb \
+              --contents share/lfortran/nb/Demo2.ipynb \
+              --contents share/lfortran/nb/Demo1.ipynb \
+              --contents share/lfortran/nb/Hello World.ipynb \
+              --contents share/lfortran/nb/Operators Control Flow.ipynb \
+              --contents share/lfortran/nb/Variables.ipynb \
               --output-dir dist
 
       # ── Step 5: Upload artifact for deployment ──
