@@ -1472,7 +1472,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
                 x_m_args_vec.push_back(al, array_var_temporary);
             } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i])) &&
-                       !is_directly_addressable_expr(x_m_args[i]) ) {
+                       !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i])) &&
+                       !(ASR::is_a<ASR::ArrayItem_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i])) &&
+                         !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i])) &&
+                         !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i]))) ) {
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i]), name_hint, al, current_body,
                     current_scope, exprs_with_target, realloc_lhs);
@@ -1539,6 +1544,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        !ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                         !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                         !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
+                       !(ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                          !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                          !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
