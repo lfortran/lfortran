@@ -8687,6 +8687,7 @@ public:
         all_loops_blocks_nesting += 1;
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
+        AST::decl_attribute_t *current_type = nullptr;
         for(size_t i=0;i<x.n_control;i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             if (! h.m_var) {
@@ -8716,7 +8717,10 @@ public:
             std::string var_name = to_lower(h.m_var);
             ASR::expr_t *var = nullptr;
             if (h.m_type) {
-                AST::decl_attribute_t *decl_type = h.m_type;
+                current_type = h.m_type;
+            }
+            if (current_type) {
+                AST::decl_attribute_t *decl_type = current_type;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 1);
                 ASR::symbol_t *type_declaration;
