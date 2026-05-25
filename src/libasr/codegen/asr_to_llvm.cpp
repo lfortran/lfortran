@@ -4291,6 +4291,11 @@ public:
                 // LLVM globals add a pointer level, so load to get data pointer
                 llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
                 array = llvm_utils->CreateLoad2(array_type, array);
+            } else if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray &&
+                       !LLVM::is_llvm_pointer(*x_mv_type) &&
+                       llvm::isa<llvm::GlobalVariable>(array)) {
+                llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_mv_type_, module.get());
+                array = llvm_utils->CreateLoad2(array_type, array);
             }
             if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, x.m_v);
@@ -10370,6 +10375,9 @@ public:
                             break;
                         }
                         case ASR::array_physical_typeType::PointerArray: {
+                            break;
+                        }
+                        case ASR::array_physical_typeType::UnboundedPointerArray: {
                             break;
                         }
                         default: {
