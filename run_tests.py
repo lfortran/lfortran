@@ -102,7 +102,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
 
-    if pass_ is not None:
+    if pass_ is not None and not fortran:
         pass_list = pass_.split(",")
 
         for _pass in pass_list:
@@ -113,7 +113,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "where",
                         "nested_vars", "intent_out_deallocate", "openmp",
-                        "array_struct_temporary"] and
+                        "array_struct_temporary", "coarray"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -385,7 +385,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     verify_hash,
                     extra_args)
 
-                if pass_ is not None:
+                if pass_ is not None and not fortran:
                     if fast:
                         cmd = "lfortran --pass=" + pass_ + \
                             " --show-asr --no-color --fast {infile} -o {outfile}"
@@ -665,7 +665,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
-    if pass_ is not None:
+    if pass_ is not None and not fortran:
         cmd = "lfortran "
         if is_cumulative_pass:
             cmd += "--cumulative "
@@ -742,14 +742,34 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if fortran:
-        run_test(
-            filename,
-            "fortran",
-            "lfortran --show-fortran --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        extra_args_fortran = extra_args
+        if pass_ is not None:
+            pass_name = pass_.split(",")[0].strip()
+            cmd = (
+                "sh -c 'lfortran --dump-all-passes-fortran --no-color {infile} "
+                + extra_args_fortran +
+                " >/dev/null 2>/dev/null || true' "
+                + "2>/dev/null; "
+                + "cat pass_fortran_*_" + pass_name + ".f90; "
+                + "rm -f pass_fortran_*_*.f90"
+            )
+            run_test(
+                filename,
+                "fortran",
+                cmd,
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args=None)
+        else:
+            run_test(
+                filename,
+                "fortran",
+                "lfortran --show-fortran --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if bin_:
         run_test(filename, "bin", "lfortran --no-color {infile} -o {outfile}",
