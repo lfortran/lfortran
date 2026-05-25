@@ -73,7 +73,6 @@ jobs:
               --contents share/lfortran/nb/Demo1.ipynb \
               --contents share/lfortran/nb/Demo2.ipynb \
               --contents share/lfortran/nb/Demo1.ipynb \
-              --contents share/lfortran/nb/Hello World.ipynb \
               --contents share/lfortran/nb/Variables.ipynb \
               --output-dir dist
 
