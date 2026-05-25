@@ -742,13 +742,11 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if fortran:
-        extra_args_fortran = extra_args
         if pass_ is not None:
-            pass_name = pass_.split(",")[0].strip()
             cmd = (
                 "lfortran --pass=" + pass_ +
                 " --show-fortran --no-color {infile} -o {outfile} " +
-                extra_args_fortran
+                extra_args
             )
             run_test(
                 filename,
