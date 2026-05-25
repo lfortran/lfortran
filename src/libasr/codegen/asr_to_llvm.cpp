@@ -24901,8 +24901,12 @@ public:
                     ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(function);
                     ASR::Variable_t *func_arg_variable = ASRUtils::expr_to_variable_or_null(function->m_args[i]);
                     LCOMPILERS_ASSERT(func_arg_variable != nullptr);
+                    bool is_type_bound_receiver = x.m_dt &&
+                        i == 0 &&
+                        x.m_dt == alloc_check_expr;
                     if (!ASRUtils::is_allocatable(ft->m_arg_types[i]) &&
-                        ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out) {
+                        ASRUtils::symbol_intent((ASR::symbol_t *)func_arg_variable) != ASRUtils::intent_out &&
+                        !is_type_bound_receiver) {
                         llvm::Value* is_unallocated = expr_is_unallocated(alloc_check_expr);
                         llvm::Value* arg_number = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1));
                         llvm::Value* subroutine_name = LCompilers::create_global_string_ptr(
@@ -25455,6 +25459,39 @@ public:
         std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
         args.insert(args.end(), args2.begin(), args2.end());
 
+        bool use_declared_binding_for_unallocated = ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_dt));
+        llvm::BasicBlock *vtable_dispatchBB = nullptr;
+        llvm::BasicBlock *mergeBB = nullptr;
+        if (use_declared_binding_for_unallocated) {
+            llvm::Function *current_fn = builder->GetInsertBlock()->getParent();
+            llvm::Value* is_unallocated = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(llvm_dt, llvm::Type::getInt64Ty(context)),
+                builder->CreatePtrToInt(
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(llvm_dt->getType())),
+                    llvm::Type::getInt64Ty(context)));
+            llvm::BasicBlock *declared_bindingBB = llvm::BasicBlock::Create(
+                context, "declared_binding", current_fn);
+            vtable_dispatchBB = llvm::BasicBlock::Create(context, "vtable_dispatch");
+            mergeBB = llvm::BasicBlock::Create(context, "method_dispatch_cont");
+            builder->CreateCondBr(is_unallocated, declared_bindingBB, vtable_dispatchBB);
+
+            builder->SetInsertPoint(declared_bindingBB);
+            uint32_t h = get_hash((ASR::asr_t*)func_sym);
+            if (!class_proc->m_is_deferred && llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
+                builder->CreateCall(llvm_symtab_fn[h], args);
+            } else {
+                llvm_utils->generate_runtime_error(
+                    llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1),
+                    "Cannot call deferred method on unallocated polymorphic variable",
+                    {LLVMUtils::RuntimeLabel("unallocated receiver", {x.base.base.loc})},
+                    infile, location_manager);
+            }
+            builder->CreateBr(mergeBB);
+
+            start_new_block(vtable_dispatchBB);
+        }
+
         // Get VTable pointer
         if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
@@ -25481,6 +25518,10 @@ public:
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         builder->CreateCall(fnTy, fn, args);
+        if (use_declared_binding_for_unallocated) {
+            builder->CreateBr(mergeBB);
+            start_new_block(mergeBB);
+        }
         return;
     }
 
@@ -25536,6 +25577,62 @@ public:
         std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
         args.insert(args.end(), args2.begin(), args2.end());
 
+        bool use_declared_binding_for_unallocated = ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_dt));
+        llvm::BasicBlock *vtable_dispatchBB = nullptr;
+        llvm::BasicBlock *mergeBB = nullptr;
+        llvm::Value* ret_val_ptr = nullptr;
+        if (use_declared_binding_for_unallocated) {
+            llvm::Type* ret_llvm_ty = nullptr;
+            if (func->m_return_var) {
+                ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
+                    ret_llvm_ty = llvm_utils->get_type_from_ttype_t_util(x.m_dt, ret_ty, module.get());
+                } else {
+                    ret_llvm_ty = fnTy->getReturnType();
+                }
+                if (ret_llvm_ty && !ret_llvm_ty->isVoidTy()) {
+                    ret_val_ptr = llvm_utils->CreateAlloca(*builder, ret_llvm_ty);
+                }
+            }
+
+            llvm::Function *current_fn = builder->GetInsertBlock()->getParent();
+            llvm::Value* is_unallocated = builder->CreateICmpEQ(
+                builder->CreatePtrToInt(llvm_dt, llvm::Type::getInt64Ty(context)),
+                builder->CreatePtrToInt(
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(llvm_dt->getType())),
+                    llvm::Type::getInt64Ty(context)));
+            llvm::BasicBlock *declared_bindingBB = llvm::BasicBlock::Create(
+                context, "declared_binding", current_fn);
+            vtable_dispatchBB = llvm::BasicBlock::Create(context, "vtable_dispatch");
+            mergeBB = llvm::BasicBlock::Create(context, "method_dispatch_cont");
+            builder->CreateCondBr(is_unallocated, declared_bindingBB, vtable_dispatchBB);
+
+            builder->SetInsertPoint(declared_bindingBB);
+            uint32_t h = get_hash((ASR::asr_t*)func_sym);
+            if (!class_proc->m_is_deferred && llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
+                tmp = builder->CreateCall(llvm_symtab_fn[h], args);
+                if (func->m_return_var) {
+                    ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                    if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
+                        tmp = llvm_utils->complex_function_return_abi_to_internal(tmp, ret_ty);
+                    }
+                }
+                if (ret_val_ptr) {
+                    builder->CreateStore(tmp, ret_val_ptr);
+                }
+            } else {
+                llvm_utils->generate_runtime_error(
+                    llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1),
+                    "Cannot call deferred method on unallocated polymorphic variable",
+                    {LLVMUtils::RuntimeLabel("unallocated receiver", {x.base.base.loc})},
+                    infile, location_manager);
+            }
+            builder->CreateBr(mergeBB);
+
+            start_new_block(vtable_dispatchBB);
+        }
+
         // Get Runtime VTable Pointer
         if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_dt);
@@ -25566,6 +25663,16 @@ public:
             ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
                 tmp = llvm_utils->complex_function_return_abi_to_internal(tmp, ret_ty);
+            }
+        }
+        if (use_declared_binding_for_unallocated) {
+            if (ret_val_ptr) {
+                builder->CreateStore(tmp, ret_val_ptr);
+            }
+            builder->CreateBr(mergeBB);
+            start_new_block(mergeBB);
+            if (ret_val_ptr) {
+                tmp = llvm_utils->CreateLoad2(ret_val_ptr->getType()->getPointerElementType(), ret_val_ptr);
             }
         }
         return;
