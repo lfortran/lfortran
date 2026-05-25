@@ -6411,6 +6411,11 @@ namespace Unpack {
         ASR::ttype_t *type_mask = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(mask)));
         ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_vector);
 
+        ASR::ttype_t *type_field = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(field)));
+        if (!ASRUtils::is_array(type_field)) {
+            return nullptr;
+        }
+
         int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
         int dim_mask = ASRUtils::get_fixed_size_of_array(type_mask);
         int dim_vector = ASRUtils::get_fixed_size_of_array(type_vector);
@@ -6568,10 +6573,13 @@ namespace Unpack {
         int vector_rank = extract_dimensions_from_ttype(type_vector, vector_dims);
         int mask_rank = extract_dimensions_from_ttype(type_mask, mask_dims);
         int field_rank = extract_dimensions_from_ttype(type_field, field_dims);
+        bool field_is_scalar = (field_rank == 0);
         int vector_dim = -1, mask_dim = -1, field_dim = -1;
         extract_value(vector_dims[0].m_length, vector_dim);
         extract_value(mask_dims[0].m_length, mask_dim);
-        extract_value(field_dims[0].m_length, field_dim);
+        if (!field_is_scalar) {
+            extract_value(field_dims[0].m_length, field_dim);
+        }
         if (vector_rank != 1) {
             append_error(diag, "`unpack` accepts vector of rank 1 only, provided an array "
                 "with rank, " + std::to_string(vector_rank), vector->base.loc);
@@ -6580,12 +6588,12 @@ namespace Unpack {
         if (mask_rank == 0) {
             append_error(diag, "The argument `mask` in `unpack` must be an array and not a scalar", mask->base.loc);
         }
-        if (field_rank != mask_rank) {
+        if (!field_is_scalar && field_rank != mask_rank) {
             append_error(diag, "The argument `field` must be of rank " + std::to_string(mask_rank) +
                 ", provided an array with rank, " + std::to_string(field_rank), mask->base.loc);
             return nullptr;
         }
-        if (!dimension_expr_equal(field_dims[0].m_length,
+        if (!field_is_scalar && !dimension_expr_equal(field_dims[0].m_length,
                 mask_dims[0].m_length)) {
             append_error(diag, "The argument `field` must be of dimension "
                 + std::to_string(mask_dim) + ", provided an array "
