@@ -22744,29 +22744,9 @@ public:
                     if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
                         tmp = llvm_symtab_fn[h];
-                    } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
-                                ASR::is_a<ASR::Function_t>(*var_sym) &&
-                                ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface ) {
-                        if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                            llvm::FunctionType* function_type =
-                                llvm_utils->get_function_type(*fn, module.get());
-                            ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(fn);
-                            std::string fn_name = compute_llvm_function_name(
-                                fn->m_name, ftype, compiler_options, mangle_prefix,
-                                parent_function);
-                            if (llvm_symtab_fn_names.find(fn_name) ==
-                                    llvm_symtab_fn_names.end()) {
-                                llvm_symtab_fn_names[fn_name] = h;
-                                llvm_symtab_fn[h] = llvm::Function::Create(
-                                    function_type, llvm::Function::ExternalLinkage,
-                                    fn_name, module.get());
-                            } else {
-                                uint32_t old_h = llvm_symtab_fn_names[fn_name];
-                                llvm_symtab_fn[h] = llvm_symtab_fn[old_h];
-                            }
-                        }
+                    } else if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface) {
+                        LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
                         tmp = llvm_symtab_fn[h];
-                        LCOMPILERS_ASSERT(tmp != nullptr)
                     } else {
                         // Must be an argument/chained procedure pass
                         LCOMPILERS_ASSERT(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end());
