@@ -186,13 +186,15 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
     public:
     ASR::expr_t* result_var_; // Declared in array_struct_temporary
     SymbolTable* current_scope;
+    bool was_temp_created;
 
     ReplaceFunctionCallReturningArray(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
     al(al_), pass_result(pass_result_), result_counter(0),
     func2intrinsicid(func2intrinsicid_),
     result_var_(nullptr),
-    current_scope(nullptr) {}
+    current_scope(nullptr),
+    was_temp_created(false) {}
 
     // Not called from anywhere but kept for future use.
     // Especially if we don't find alternatives to allocatables
@@ -293,10 +295,114 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             return;
         }
 
-        if( !this->result_var_ ) {
-            // No result variable (e.g., parameter initialization);
-            // the value is compile-time constant, skip replacement.
-            return;
+        ASR::expr_t* effective_result_var = this->result_var_;
+        // Check if result_var_ is usable: it must be set AND its type must
+        // be compatible (i.e., it must be an array of the same element type).
+        // When the intrinsic is nested (e.g., index(tokens, spread(...))),
+        // result_var_ points to the outer assignment target which has an
+        // incompatible type.
+        bool need_temp = !effective_result_var;
+        if( effective_result_var ) {
+            ASR::ttype_t* res_type = ASRUtils::expr_type(effective_result_var);
+            ASR::ttype_t* call_type = x->m_type;
+            if( !ASRUtils::is_array(res_type) || !ASRUtils::is_array(call_type) ||
+                !ASRUtils::types_equal(
+                    ASRUtils::extract_type(res_type),
+                    ASRUtils::extract_type(call_type), nullptr, nullptr, true) ) {
+                need_temp = true;
+                effective_result_var = nullptr;
+            }
+        }
+        if( need_temp && !effective_result_var ) {
+            this->was_temp_created = true;
+            // No result variable from an assignment context. This happens
+            // when an array-returning intrinsic is used as a nested argument
+            // (e.g., index(tokens, spread(text, 1, 1))). Create a temporary
+            // allocatable variable to hold the result.
+            ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable(x->m_type);
+            // AssumedLength strings are only valid for dummy variables;
+            // convert to DeferredLength for the temporary.
+            ASR::ttype_t* element_type = ASRUtils::extract_type(base_type);
+            if( ASR::is_a<ASR::String_t>(*element_type) ) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(element_type);
+                if( str_t->m_len_kind == ASR::string_length_kindType::AssumedLength ) {
+                    element_type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, x->base.base.loc, str_t->m_kind, nullptr,
+                        ASR::string_length_kindType::DeferredLength,
+                        str_t->m_physical_type));
+                    ASR::dimension_t* dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(base_type, dims);
+                    if( n_dims > 0 ) {
+                        base_type = ASRUtils::make_Array_t_util(al, x->base.base.loc,
+                            element_type, dims, n_dims);
+                    } else {
+                        base_type = element_type;
+                    }
+                }
+            }
+            ASR::ttype_t* tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                al, x->base.base.loc, base_type));
+            effective_result_var = PassUtils::create_var(result_counter,
+                "_intrinsic_array_tmp_", x->base.base.loc, tmp_type,
+                al, current_scope);
+
+            // Allocate the temp variable with dimensions from the return type.
+            ASR::dimension_t* ret_dims = nullptr;
+            size_t ret_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::type_get_past_allocatable(x->m_type), ret_dims);
+            ASR::alloc_arg_t alloc_arg;
+            // For deferred-length strings, provide the string length
+            // from the source argument (first arg of spread).
+            if( ASR::is_a<ASR::String_t>(*element_type) &&
+                ASR::down_cast<ASR::String_t>(element_type)->m_len_kind ==
+                    ASR::string_length_kindType::DeferredLength &&
+                x->n_args > 0 && x->m_args[0].m_value ) {
+                alloc_arg.m_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                    al, x->base.base.loc, x->m_args[0].m_value,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4)),
+                    nullptr));
+            } else {
+                alloc_arg.m_len_expr = nullptr;
+            }
+            alloc_arg.m_type = nullptr;
+            alloc_arg.loc = x->base.base.loc;
+            alloc_arg.m_a = effective_result_var;
+            alloc_arg.m_sym_subclass = nullptr;
+            Vec<ASR::dimension_t> alloc_dims;
+            alloc_dims.reserve(al, ret_n_dims);
+            ASR::ttype_t* i32_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, x->base.base.loc, 4));
+            for( size_t d = 0; d < ret_n_dims; d++ ) {
+                ASR::dimension_t adim;
+                adim.loc = x->base.base.loc;
+                adim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, x->base.base.loc, 1, i32_type));
+                // Use the dimension from the original return type if available,
+                // otherwise use ArraySize to compute at runtime.
+                if( ret_dims[d].m_length ) {
+                    adim.m_length = ret_dims[d].m_length;
+                } else if( x->n_args > 0 && x->m_args[0].m_value ) {
+                    // Fallback: use ArraySize of the first arg for that dimension
+                    adim.m_length = ASRUtils::EXPR(
+                        ASRUtils::make_ArraySize_t_util(al, x->base.base.loc,
+                            x->m_args[0].m_value,
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, x->base.base.loc, d + 1, i32_type)),
+                            i32_type, nullptr));
+                } else {
+                    adim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x->base.base.loc, 1, i32_type));
+                }
+                alloc_dims.push_back(al, adim);
+            }
+            alloc_arg.m_dims = alloc_dims.p;
+            alloc_arg.n_dims = alloc_dims.size();
+            Vec<ASR::alloc_arg_t> alloc_args;
+            alloc_args.reserve(al, 1);
+            alloc_args.push_back(al, alloc_arg);
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
+                al, x->base.base.loc, alloc_args.p, alloc_args.size(),
+                nullptr, nullptr, nullptr)));
         }
 
         Vec<ASR::call_arg_t> new_args;
@@ -308,9 +414,8 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             new_args.push_back(al, new_arg);
         }
         ASR::call_arg_t new_arg;
-        LCOMPILERS_ASSERT(this->result_var_)
-        new_arg.loc = this->result_var_->base.loc;
-        new_arg.m_value = this->result_var_;
+        new_arg.loc = effective_result_var->base.loc;
+        new_arg.m_value = effective_result_var;
         new_args.push_back(al, new_arg);
 
 
@@ -318,6 +423,11 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
             new_args.size(), x->m_dt, nullptr, false));
         pass_result.push_back(al, subrout_call);
+        if( need_temp ) {
+            // For nested intrinsic calls, replace the FunctionCall expression
+            // with the temp variable so the parent expression uses it.
+            *current_expr = effective_result_var;
+        }
     }
 };
 
@@ -359,6 +469,7 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
             for (size_t i=0; i<n_body; i++) {
                 pass_result.n = 0;
                 pass_result.reserve(al, 1);
+                replacer.was_temp_created = false;
                 Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
                 parent_body = &body;
                 visit_stmt(*m_body[i]);
@@ -366,6 +477,9 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
                 if( pass_result.size() > 0 ) {
                     for (size_t j=0; j < pass_result.size(); j++) {
                         body.push_back(al, pass_result[j]);
+                    }
+                    if( replacer.was_temp_created ) {
+                        body.push_back(al, m_body[i]);
                     }
                 } else {
                     body.push_back(al, m_body[i]);
