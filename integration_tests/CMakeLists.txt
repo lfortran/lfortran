@@ -2470,6 +2470,7 @@ RUN(NAME derived_types_143 LABELS gfortran llvm
 RUN(NAME derived_types_144 LABELS gfortran llvm)
 RUN(NAME derived_types_145 LABELS llvm)
 RUN(NAME derived_types_146 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME derived_types_147 LABELS gfortran llvm)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
