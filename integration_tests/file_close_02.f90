@@ -6,6 +6,11 @@ program file_close_02
    character(len=16) :: file_name
    integer :: u = 10
    logical :: ex
+   type :: file_t
+      integer :: lun
+      integer :: iostat
+   end type file_t
+   type(file_t) :: tmp
 
    file_name = "file_close_02.txt"
 
@@ -29,4 +34,10 @@ program file_close_02
    inquire(file=file_name, exist=ex)
    print *, "deleted (lowercase literal)?", .not. ex
    if (ex) error stop
+
+   tmp%lun = u
+   tmp%iostat = 1
+   open(unit=tmp%lun, file=file_name, status='replace')
+   close(unit=tmp%lun, status='DELETE', iostat=tmp%iostat)
+   if (tmp%iostat /= 0) error stop
 end program file_close_02

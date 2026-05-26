@@ -3128,10 +3128,11 @@ public:
                 ASRUtils::symbol_get_past_external(struct_member_sym));
             ASR::ttype_t* member_type = mem_var->m_type;
 
-            if (offset_within_member > 0 && ASR::is_a<ASR::Array_t>(*member_type)) {
-                // Target variable is at a non-zero offset within an array member.
-                // Create StructInstanceMember with the member's array type, then
-                // wrap with ArrayItem to index the correct element.
+            ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable_pointer(target_var->m_type);
+            bool target_is_array = ASRUtils::is_array(target_type);
+            if (ASR::is_a<ASR::Array_t>(*member_type) && (!target_is_array || offset_within_member > 0)) {
+                // Target variable maps into an array member. Create a struct
+                // member with the array type, then index to the correct element.
                 ASR::asr_t* struct_member = ASR::make_StructInstanceMember_t(
                     al, target->base.loc, ASRUtils::EXPR(struct_var_),
                     member_sym, member_type, nullptr);
@@ -15668,6 +15669,8 @@ public:
         Vec<ASR::call_arg_t> c_args;
         c_args.reserve(al, x.n_args + 1);
         bool has_alt_returns = false;
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
         for (size_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
                 has_alt_returns = true;
@@ -15677,6 +15680,7 @@ public:
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             c_args.push_back(al, {expr->base.loc, expr});
         }
+        current_function_dependencies = current_function_dependencies_copy;
         // Restore interface scope for symbol creation below.
         current_scope = current_scope_copy;
 
