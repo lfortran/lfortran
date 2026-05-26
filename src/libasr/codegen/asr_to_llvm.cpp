@@ -7949,8 +7949,11 @@ public:
             );
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
-                F = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, fn_name, module.get());
+                auto linkage = llvm::Function::ExternalLinkage;
+                if (fn_name.rfind("_lcompilers_", 0) == 0 || fn_name.rfind("__lcompilers", 0) == 0) {
+                    linkage = llvm::Function::LinkOnceODRLinkage;
+                }
+                F = llvm::Function::Create(function_type, linkage, fn_name, module.get());
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
