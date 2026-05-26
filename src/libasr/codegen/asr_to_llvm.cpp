@@ -7950,9 +7950,6 @@ public:
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
                 auto linkage = llvm::Function::ExternalLinkage;
-                if (fn_name.rfind("_lcompilers_", 0) == 0 || fn_name.rfind("__lcompilers", 0) == 0) {
-                    linkage = llvm::Function::LinkOnceODRLinkage;
-                }
                 F = llvm::Function::Create(function_type, linkage, fn_name, module.get());
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
@@ -8457,8 +8454,15 @@ public:
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
                 }
-                
+
                 define_function_exit(x);
+
+                std::string fn_name = x.m_name;
+                if (!compiler_options.interactive &&
+                    (fn_name.rfind("_lcompilers_", 0) == 0 || fn_name.rfind("__lcompilers", 0) == 0)) {
+                    builder->GetInsertBlock()->getParent()->setLinkage(
+                        llvm::Function::LinkOnceODRLinkage);
+                }
             }
         } else if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic &&
                    ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
