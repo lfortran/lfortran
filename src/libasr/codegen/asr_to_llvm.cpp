@@ -8458,7 +8458,7 @@ public:
                 define_function_exit(x);
 
                 std::string fn_name = x.m_name;
-                if (!compiler_options.interactive &&
+                if (compiler_options.separate_compilation &&
                     (fn_name.rfind("_lcompilers_", 0) == 0 || fn_name.rfind("__lcompilers", 0) == 0)) {
                     builder->GetInsertBlock()->getParent()->setLinkage(
                         llvm::Function::LinkOnceODRLinkage);
