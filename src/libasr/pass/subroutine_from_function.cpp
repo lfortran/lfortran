@@ -489,6 +489,109 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         ReplaceFunctionCallWithSubroutineCall replacer;
         bool remove_original_statement = false;
         Vec<ASR::stmt_t*>* parent_body = nullptr;
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*>&
+            Function__TO__ReturnType_MAP_;
+
+        static bool struct_hierarchy_has_finalizer(ASR::Struct_t* st) {
+            while (st != nullptr) {
+                if (st->n_member_functions > 0) return true;
+                if (st->m_parent == nullptr) return false;
+                st = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(st->m_parent));
+            }
+            return false;
+        }
+        ASR::ttype_t* get_original_return_type(ASR::Function_t* func) {
+            auto it = Function__TO__ReturnType_MAP_.find(func);
+            if (it != Function__TO__ReturnType_MAP_.end()) {
+                return it->second;
+            }
+            ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(
+                func->m_function_signature);
+            return ft->m_return_var_type;
+        }
+
+        static bool is_compiler_generated_temp(ASR::expr_t* e) {
+            if (e == nullptr) return false;
+            if (!ASR::is_a<ASR::Var_t>(*e)) return false;
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (sym == nullptr) return false;
+            std::string name = ASRUtils::symbol_name(sym);
+            return name.find("__libasr_created__") == 0 ||
+                   name.find("__libasr__created__") == 0;
+        }
+
+        static ASR::Struct_t* get_struct_from_expr(ASR::expr_t* e) {
+            if (e == nullptr) return nullptr;
+            ASR::ttype_t* bare = ASRUtils::extract_type(
+                ASRUtils::expr_type(e));
+            if (!ASR::is_a<ASR::StructType_t>(*bare)) return nullptr;
+            ASR::symbol_t* struct_sym =
+                ASRUtils::get_struct_sym_from_struct_expr(e);
+            if (struct_sym == nullptr) return nullptr;
+            struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+            if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) return nullptr;
+            return ASR::down_cast<ASR::Struct_t>(struct_sym);
+        }
+
+        void emit_final_calls_on(ASR::expr_t* target_expr,
+                ASR::Struct_t* struct_type, const Location& loc,
+                Vec<ASR::stmt_t*>& out) {
+            ASR::Struct_t* st = struct_type;
+            while (st != nullptr) {
+                for (size_t fi = 0; fi < st->n_member_functions; fi++) {
+                    std::string final_proc_name =
+                        st->m_member_functions[fi];
+                    ASR::symbol_t* final_sym =
+                        st->m_symtab->parent->get_symbol(final_proc_name);
+                    if (!final_sym) continue;
+
+                    ASR::symbol_t* local_final_sym =
+                        current_scope->resolve_symbol(final_proc_name);
+                    if (!local_final_sym) {
+                        std::string module_name = "";
+                        ASR::asr_t* owner =
+                            st->m_symtab->parent->asr_owner;
+                        if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
+                            module_name = ASRUtils::symbol_name(
+                                ASR::down_cast<ASR::symbol_t>(owner));
+                        }
+                        std::string unique_name =
+                            current_scope->get_unique_name(final_proc_name);
+                        ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
+                            al, loc, current_scope,
+                            s2c(al, unique_name), final_sym,
+                            s2c(al, module_name), nullptr, 0,
+                            s2c(al, final_proc_name),
+                            ASR::accessType::Private);
+                        current_scope->add_symbol(unique_name,
+                            ASR::down_cast<ASR::symbol_t>(ext));
+                        local_final_sym =
+                            ASR::down_cast<ASR::symbol_t>(ext);
+                    }
+
+                    Vec<ASR::call_arg_t> call_args;
+                    call_args.reserve(al, 1);
+                    ASR::call_arg_t a;
+                    a.loc = loc;
+                    a.m_value = target_expr;
+                    call_args.push_back(al, a);
+
+                    ASR::stmt_t* call_stmt = ASRUtils::STMT(
+                        ASR::make_SubroutineCall_t(al, loc,
+                            local_final_sym, local_final_sym,
+                            call_args.p, call_args.n, nullptr, false));
+                    out.push_back(al, call_stmt);
+                }
+                if (st->m_parent != nullptr) {
+                    st = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(st->m_parent));
+                } else {
+                    st = nullptr;
+                }
+            }
+        }
 
         bool expr_same(ASR::expr_t *a, ASR::expr_t *b) {
             if (a->type != b->type) {
@@ -526,7 +629,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         ReplaceFunctionCallWithSubroutineCallVisitor(
             Allocator& al_,
             std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP)
-            :al(al_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP)
+            :al(al_),
+             replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP),
+             Function__TO__ReturnType_MAP_(Function__TO__ReturnType_MAP)
         {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
@@ -650,6 +755,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(fc->m_name);
+            ASR::Struct_t* return_struct_with_finalizer = nullptr;
             if(ASR::is_a<ASR::Function_t>(*func_sym)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
                 ASR::ttype_t* func_type = func->m_function_signature;
@@ -657,6 +763,27 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     ASR::FunctionType_t* func_type_type = ASR::down_cast<ASR::FunctionType_t>(func_type);
                     if (func_type_type->m_abi == ASR::abiType::BindC) {
                         return false; // Skip transformation for bind(C) functions
+                    }
+                }
+
+                if (ASR::is_a<ASR::Assignment_t>(xx) &&
+                        !is_compiler_generated_temp(target)) {
+                    ASR::ttype_t* ret_t = get_original_return_type(func);
+                    if (ret_t != nullptr) {
+                        ASR::ttype_t* bare = ASRUtils::extract_type(ret_t);
+                        if (ASR::is_a<ASR::StructType_t>(*bare)) {
+                            // Use the target expression to recover the
+                            // Struct symbol (StructType_t itself does not
+                            // carry the declaration symbol).
+                            ASR::Struct_t* ret_struct =
+                                get_struct_from_expr(target);
+                            if (ret_struct != nullptr &&
+                                    struct_hierarchy_has_finalizer(
+                                        ret_struct)) {
+                                return_struct_with_finalizer = ret_struct;
+                                use_temp_var_for_return = true;
+                            }
+                        }
                     }
                 }
             }
@@ -693,7 +820,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 bool type_to_class_mismatch = ASRUtils::is_class_type(target_unwrapped) &&
                     !ASRUtils::is_class_type(value_unwrapped);
 
-                if (class_to_type_mismatch || type_to_class_mismatch) {
+                if (class_to_type_mismatch || type_to_class_mismatch ||
+                        return_struct_with_finalizer != nullptr) {
                     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
@@ -708,6 +836,12 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                                 struct_sym = ASRUtils::get_struct_sym_from_struct_expr(
                                     func_local->m_args[func_local->n_args - 1]);
                             }
+                        }
+                    } else if (return_struct_with_finalizer != nullptr) {
+                        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
+                        if (struct_sym == nullptr) {
+                            struct_sym = (ASR::symbol_t*)
+                                return_struct_with_finalizer;
                         }
                     } else {
                         struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
@@ -774,6 +908,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                         assignment->m_move_allocation = true;
                         assignment->m_realloc_lhs = true;
                     }
+                    (void)return_struct_with_finalizer;
                 } else {
                     ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                     associate->m_value = target;
