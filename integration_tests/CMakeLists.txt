@@ -3535,6 +3535,7 @@ RUN(NAME read_92 LABELS gfortran llvm)
 
 RUN(NAME read_93 LABELS gfortran llvm)
 RUN(NAME read_94 LABELS gfortran llvm EXTRAFILES read_94.c)
+RUN(NAME read_95 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
