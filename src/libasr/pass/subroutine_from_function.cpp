@@ -385,6 +385,20 @@ private :
                 new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
             }
         }
+        /* Handle Case `character(*) :: str` (AssumedLength) -- Create `character(:), allocatable :: str` */
+        {
+            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
+                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::AssumedLength
+                                            && !ASRUtils::is_allocatable(new_type)
+                                            && !ASRUtils::is_pointer(new_type);
+            if(allocatable_needed){
+                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
+                str->m_len = nullptr;
+                str->m_len_kind = ASR::DeferredLength;
+                str->m_physical_type = ASR::DescriptorString;
+                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
+            }
+        }
         return new_type;
     }
 
