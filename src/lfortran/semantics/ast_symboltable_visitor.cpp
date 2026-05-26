@@ -2144,7 +2144,7 @@ public:
                     ASR::string_length_kindType len_kind = ASR::string_length_kindType::ExpressionLength;
                     if (a_len == -3) {
                         len_kind = ASR::string_length_kindType::AssumedLength;
-                    } else if (a_len == -1) {
+                    } else if (a_len == -1 && len_expr == nullptr) {
                         len_kind = ASR::string_length_kindType::DeferredLength;
                     }
                     type = ASRUtils::TYPE(ASR::make_String_t( al, x.base.base.loc, 1,
