@@ -6506,12 +6506,12 @@ public:
         } else {
             return;
         }
-        bool top_struct_has_finalizer = false;
+        bool struct_has_finalizer = false;
         {
             ASR::Struct_t* s = struct_sym;
             while (s) {
                 if (s->n_member_functions > 0) {
-                    top_struct_has_finalizer = true;
+                    struct_has_finalizer = true;
                     break;
                 }
                 if (s->m_parent) {
@@ -6684,7 +6684,7 @@ public:
                     }
                 }
                 if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val &&
-                    !(is_intent_out && top_struct_has_finalizer)) {
+                    !(is_intent_out && struct_has_finalizer)) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     if( v->m_symbolic_value ) {
                         ASR::expr_t* init_value = ASRUtils::expr_value(v->m_symbolic_value);
