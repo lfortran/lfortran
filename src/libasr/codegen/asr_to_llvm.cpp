@@ -5183,9 +5183,7 @@ public:
                     }
                     tmp = llvm_utils->get_array_descriptor_ptr(tmp, array_type, false);
                     tmp = llvm_utils->create_gep2(array_type, tmp, 0);
-                    if (tmp->getType()->isPointerTy() && tmp->getType()->getPointerElementType()->isPointerTy()) {
-                        tmp = llvm_utils->CreateLoad2(tmp->getType()->getPointerElementType(), tmp);
-                    }
+                    tmp = llvm_utils->load_pointer_element(tmp, array_type);
                     base_t = elem_t;
                 }
             }

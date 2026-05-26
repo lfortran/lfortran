@@ -1956,6 +1956,11 @@ namespace LCompilers {
 #endif
     }
 
+    llvm::Value* LLVMUtils::load_pointer_element(llvm::Value* tmp, llvm::Type* array_type) {
+        llvm::Type* loaded_type = llvm::cast<llvm::StructType>(array_type)->getElementType(0);
+        return CreateLoad2(loaded_type, tmp);
+    }
+
     llvm::Value* LLVMUtils::CreateBitCastForStore(llvm::Value* value, [[maybe_unused]] llvm::Value* target_ptr) {
 #if LLVM_VERSION_MAJOR < 15
         if (value->getType()->isPointerTy() && target_ptr->getType()->isPointerTy()) {
