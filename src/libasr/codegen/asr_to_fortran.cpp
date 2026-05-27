@@ -342,7 +342,7 @@ public:
     }
 
     /********************************** Unit **********************************/
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
         std::vector<std::string> build_order
             = ASRUtils::determine_module_dependencies(x);
@@ -362,6 +362,30 @@ public:
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
+            }
+        }
+
+        // Emit Struct/Enum/Union definitions from Tanslational Unit scope
+        std::map<std::string, std::vector<std::string>> struct_deps;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_deps[item.first] = struct_deps_vec;
+            }
+        }
+        if (!struct_deps.empty()) {
+            std::vector<std::string> tu_struct_deps = ASRUtils::order_deps(struct_deps);
+            for (auto &item : tu_struct_deps) {
+                ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+                visit_symbol(*struct_sym);
+                r += src;
+                r += "\n";
             }
         }
 

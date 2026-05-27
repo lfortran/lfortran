@@ -3763,6 +3763,13 @@ public:
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::ThisImage: {
+                // Non-coarray fallback: single image, always 1
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1, true));
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::NumImages: {
+                // Non-coarray fallback: single image, always 1
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1, true));
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::Expm1: {
