@@ -7927,13 +7927,23 @@ public:
         } else {
             llvm::FunctionType* function_type = llvm_utils->get_function_type(x, module.get());
             if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface && !ASRUtils::get_FunctionType(x)->m_module ) {
-                ASR::FunctionType_t* asr_function_type = ASRUtils::get_FunctionType(x);
-                for( size_t i = 0; i < asr_function_type->n_arg_types; i++ ) {
-                    if( ASRUtils::is_class_type(asr_function_type->m_arg_types[i]) ) {
-                        if (compiler_options.emit_debug_info) {
-                            debug_current_scope = debug_current_scope_copy;
+                // Skip pre-declaration only for submodule interfaces with class(*) args,
+                // not for program-scoped interfaces (where m_module is also false).
+                bool parent_is_program = false;
+                if (x.m_symtab->parent && x.m_symtab->parent->asr_owner &&
+                        x.m_symtab->parent->asr_owner->type == ASR::asrType::symbol) {
+                    parent_is_program = ASR::is_a<ASR::Program_t>(
+                        *ASR::down_cast<ASR::symbol_t>(x.m_symtab->parent->asr_owner));
+                }
+                if (!parent_is_program) {
+                    ASR::FunctionType_t* asr_function_type = ASRUtils::get_FunctionType(x);
+                    for( size_t i = 0; i < asr_function_type->n_arg_types; i++ ) {
+                        if( ASRUtils::is_class_type(asr_function_type->m_arg_types[i]) ) {
+                            if (compiler_options.emit_debug_info) {
+                                debug_current_scope = debug_current_scope_copy;
+                            }
+                            return ;
                         }
-                        return ;
                     }
                 }
             }
