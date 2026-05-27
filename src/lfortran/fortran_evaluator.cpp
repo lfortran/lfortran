@@ -166,44 +166,44 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // LLVM -> Machine code -> Execution
 #ifdef __EMSCRIPTEN__
-    WasmLFortranExecutor &executor = get_wasm_executor();
-    executor.add_module(std::move(m), eval_count);
+    WasmLFortranExecutor &e = get_wasm_executor();
+    e.add_module(std::move(m), eval_count);
 #else
-    LLVMEvaluator &executor = get_llvm_evaluator();
-    executor.add_module(std::move(m));
+    LLVMEvaluator &e = get_llvm_evaluator();
+    e.add_module(std::move(m));
 #endif
     if (return_type == "integer4") {
-        int r = executor.execfn<int32_t>(run_fn);
+        int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = executor.execfn<int64_t>(run_fn);
+        int64_t r = e.execfn<int64_t>(run_fn);
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = executor.execfn<float>(run_fn);
+        float r = e.execfn<float>(run_fn);
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = executor.execfn<double>(run_fn);
+        double r = e.execfn<double>(run_fn);
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
-        std::complex<float> r = executor.execfn<std::complex<float>>(run_fn);
+        std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
     } else if (return_type == "complex8") {
-        std::complex<double> r = executor.execfn<std::complex<double>>(run_fn);
+        std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        int32_t r = executor.execfn<int32_t>(run_fn);
+        int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
         result.b = (r != 0);
     } else if (return_type == "void") {
-        executor.execfn<void>(run_fn);
+        e.execfn<void>(run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = EvalResult::none;
