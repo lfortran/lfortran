@@ -2006,6 +2006,7 @@ public:
     bool _declaring_variable = false;
     bool _processing_common_block_object = false;
     bool is_implicit_interface = false;
+    int array_initializer_depth = 0;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
@@ -10766,6 +10767,11 @@ public:
         bool use_descriptorArray = false; // Set to true if any argument has no fixed size (array arguments).
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         size_t n_elements = 0;
+        struct ArrayInitializerDepthGuard {
+            int &depth;
+            ArrayInitializerDepthGuard(int &depth) : depth(depth) { depth++; }
+            ~ArrayInitializerDepthGuard() { depth--; }
+        } array_initializer_depth_guard(array_initializer_depth);
         for (size_t i=0; i<x.n_args; i++) {
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
@@ -16122,6 +16128,8 @@ public:
         std::string idl_var_name_lower = to_lower(x.m_var);
         bool idl_var_pre_existing = (current_scope->resolve_symbol(idl_var_name_lower) != nullptr);
         idl_nesting_level++;
+        std::string idl_var_name = to_lower(x.m_var);
+        ASR::symbol_t* pre_existing_sym = current_scope->resolve_symbol(idl_var_name);
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
         a_start = a_end = a_increment = nullptr;
@@ -16180,6 +16188,23 @@ public:
                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
+        }
+        // Hide the implied-do control variable from the enclosing scope when
+        // it was implicitly created just for this array-constructor implied-do
+        // (issue #11448). Without this, implicit typing leaks the loop
+        // variable into the surrounding program/subprogram scope, allowing
+        // contained procedures to incorrectly resolve their own implicit
+        // variable to that loop variable.
+        if (pre_existing_sym == nullptr && array_initializer_depth > 0
+                && a_sym != nullptr
+                && ASR::is_a<ASR::Variable_t>(*a_sym)
+                && current_scope->get_symbol(idl_var_name) == a_sym) {
+            current_scope->erase_symbol(idl_var_name);
+            std::string hidden = current_scope->get_unique_name(
+                "__lcompilers_implied_do_" + idl_var_name);
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(a_sym);
+            v->m_name = s2c(al, hidden);
+            current_scope->add_symbol(hidden, a_sym);
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         if( !unique_type ) {
