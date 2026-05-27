@@ -342,7 +342,7 @@ public:
     }
 
     /********************************** Unit **********************************/
-void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
         std::vector<std::string> build_order
             = ASRUtils::determine_module_dependencies(x);
@@ -365,7 +365,7 @@ void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
             }
         }
 
-        // Emit Struct/Enum/Union definitions from Tanslational Unit scope
+        // Emit Struct/Enum/Union definitions from Translational Unit scope
         std::map<std::string, std::vector<std::string>> struct_deps;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
