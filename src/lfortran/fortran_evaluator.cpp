@@ -166,46 +166,44 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // LLVM -> Machine code -> Execution
 #ifdef __EMSCRIPTEN__
-    WasmLFortranExecutor &exec = get_wasm_executor();
-    exec.add_module(std::move(m), eval_count);
-    auto sym_addr = [&](const std::string &fn) { return exec.get_symbol_address(fn); };
+    WasmLFortranExecutor &executor = get_wasm_executor();
+    executor.add_module(std::move(m), eval_count);
 #else
-    LLVMEvaluator &e = get_llvm_evaluator();
-    e.add_module(std::move(m));
-    auto sym_addr = [&](const std::string &fn) { return e.get_symbol_address(fn); };
+    LLVMEvaluator &executor = get_llvm_evaluator();
+    executor.add_module(std::move(m));
 #endif
     if (return_type == "integer4") {
-        int32_t r = reinterpret_cast<int32_t(*)()>(sym_addr(run_fn))();
+        int r = executor.execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = reinterpret_cast<int64_t(*)()>(sym_addr(run_fn))();
+        int64_t r = executor.execfn<int64_t>(run_fn);
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = reinterpret_cast<float(*)()>(sym_addr(run_fn))();
+        float r = executor.execfn<float>(run_fn);
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = reinterpret_cast<double(*)()>(sym_addr(run_fn))();
+        double r = executor.execfn<double>(run_fn);
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
-        std::complex<float> r = reinterpret_cast<std::complex<float>(*)()>(sym_addr(run_fn))();
+        std::complex<float> r = executor.execfn<std::complex<float>>(run_fn);
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
     } else if (return_type == "complex8") {
-        std::complex<double> r = reinterpret_cast<std::complex<double>(*)()>(sym_addr(run_fn))();
+        std::complex<double> r = executor.execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;
         result.c64.re = r.real();
         result.c64.im = r.imag();
     } else if (return_type == "logical") {
-        int32_t r = reinterpret_cast<int32_t(*)()>(sym_addr(run_fn))();
+        int32_t r = executor.execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
         result.b = (r != 0);
     } else if (return_type == "void") {
-        reinterpret_cast<void(*)()>(sym_addr(run_fn))();
+        executor.execfn<void>(run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = EvalResult::none;
