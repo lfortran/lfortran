@@ -10291,6 +10291,28 @@ public:
                 } else {
                   final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
+                  
+                  // ADDED FIX: Inherit array dimensions from parent object if present.
+                  ASR::expr_t* base_obj = v_Var;
+                  while (base_obj && ASR::is_a<ASR::StructMember_t>(*base_obj)) {
+                      base_obj = ASR::down_cast<ASR::StructMember_t>(base_obj)->m_v;
+                  }
+                  if (base_obj) {
+                      ASR::ttype_t* base_type = ASRUtils::expr_type(base_obj);
+                      if (base_type && ASRUtils::is_array(base_type)) {
+                          ASR::dimension_t* m_dims;
+                          int n_dims = ASRUtils::extract_dimensions_from_ttype(base_type, m_dims);
+                          if (n_dims > 0) {
+                              Vec<ASR::dimension_t> inherited_dims;
+                              inherited_dims.reserve(al, n_dims);
+                              for (int i = 0; i < n_dims; ++i) {
+                                  inherited_dims.push_back(al, m_dims[i]);
+                              }
+                              // Wrap the scalar type back into an array using the parent's dimensions
+                              final_type = ASRUtils::duplicate_type(al, final_type, &inherited_dims);
+                          }
+                      }
+                  }
                 }
                 if ( current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
                     !ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) &&
@@ -12244,8 +12266,16 @@ public:
     // If `fn` is intrinsic, it will also try to evaluate it into the `value`
     // member of the returned `FunctionCall`.
     ASR::asr_t* create_FunctionCall(const Location &loc,
-                ASR::symbol_t *fn, Vec<ASR::call_arg_t>& args) {
+                    ASR::symbol_t *fn, Vec<ASR::call_arg_t>& args) {
+        if (fn == nullptr) {
+            throw SemanticError("Cannot resolve function call: no matching specific procedure found for the provided arguments.", loc);
+        }
+
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(fn);
+        if (f2 == nullptr) {
+            throw SemanticError("Cannot resolve function call: underlying symbol is null.", loc);
+        }
+
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(loc, args, fn);
         } else {
