@@ -10285,15 +10285,12 @@ public:
                         r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
             }  else {
                 ASR::ttype_t* final_type;
-                bool inherited_array = false;
-                
                 if (is_arg_array) {
                   ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
                   final_type = ASRUtils::duplicate_type(al, op_type, &res_dims_vec);
                 } else {
                   final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
-                  
                   
                   ASR::expr_t* base_obj = v_Var;
                   while (base_obj && ASR::is_a<ASR::StructInstanceMember_t>(*base_obj)) {
@@ -10312,7 +10309,6 @@ public:
                                   inherited_dims.push_back(al, m_dims[i]);
                               }
                               final_type = ASRUtils::duplicate_type(al, final_type, &inherited_dims);
-                              inherited_array = true;
                           }
                       }
                   }
