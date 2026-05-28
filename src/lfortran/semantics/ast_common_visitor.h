@@ -3309,6 +3309,22 @@ public:
     }
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
+        if (ASR::is_a<ASR::ArraySection_t>(*object)) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(object);
+            for (size_t i = 0; i < section->n_args; i++) {
+                ASR::array_index_t& arg = section->m_args[i];
+                if ((arg.m_left && !ASRUtils::is_value_constant(ASRUtils::expr_value(arg.m_left))) ||
+                    (arg.m_right && !ASRUtils::is_value_constant(ASRUtils::expr_value(arg.m_right))) ||
+                    (arg.m_step && !ASRUtils::is_value_constant(ASRUtils::expr_value(arg.m_step)))) {
+                    diag.add(Diagnostic(
+                        "nonconstant array section in DATA statement",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {object->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+        }
         ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(obj_type));
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_ttype);
@@ -3520,10 +3536,35 @@ public:
             ASR::Variable_t* v2 = nullptr;
             if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
                 ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
-                v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-            } else {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(mem->m_m);
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    diag.add(Diagnostic(
+                        "nonconstant array section in DATA statement",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {object->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                v2 = ASR::down_cast<ASR::Variable_t>(sym);
+            } else if (ASR::is_a<ASR::Var_t>(*object)) {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
-                v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(v->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    diag.add(Diagnostic(
+                        "nonconstant array section in DATA statement",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {object->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                v2 = ASR::down_cast<ASR::Variable_t>(sym);
+            } else {
+                diag.add(Diagnostic(
+                    "nonconstant array section in DATA statement",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {object->base.loc})
+                    }));
+                throw SemanticAbort();
             }
             // For pointer types (e.g. equivalenced arrays), don't set m_value
             // as it causes issues in LLVM codegen - create assignment instead
