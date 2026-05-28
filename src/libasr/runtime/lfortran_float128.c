@@ -1677,7 +1677,7 @@ int64_t     __fixtfdi(lf_float128 a)                { return __fixtfdi_lf_impl(a
  * byval C structs. Keep the portable implementation struct-based internally,
  * but export the compiler-rt symbols with the ABI LLVM expects.
  * ======================================================================== */
-#if defined(__wasm32__)
+#if defined(__wasm32__) && !defined(__EMSCRIPTEN__)
 
 #define LF_WASM_TF2_ATTR __attribute__((weak))
 
