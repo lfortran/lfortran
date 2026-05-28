@@ -10285,6 +10285,8 @@ public:
                         r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
             }  else {
                 ASR::ttype_t* final_type;
+                bool inherited_array = false;
+                
                 if (is_arg_array) {
                   ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
                   final_type = ASRUtils::duplicate_type(al, op_type, &res_dims_vec);
@@ -10292,14 +10294,13 @@ public:
                   final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
                   
+                  
                   ASR::expr_t* base_obj = v_Var;
                   while (base_obj && ASR::is_a<ASR::StructInstanceMember_t>(*base_obj)) {
                       base_obj = ASR::down_cast<ASR::StructInstanceMember_t>(base_obj)->m_v;
                   }
                   if (base_obj) {
-                      ASR::ttype_t* base_type = ASRUtils::type_get_past_pointer(
-                                                  ASRUtils::type_get_past_allocatable(
-                                                      ASRUtils::expr_type(base_obj)));
+                      ASR::ttype_t* base_type = ASRUtils::expr_type(base_obj);
                                                       
                       if (base_type && ASRUtils::is_array(base_type)) {
                           ASR::dimension_t* m_dims;
@@ -10311,6 +10312,7 @@ public:
                                   inherited_dims.push_back(al, m_dims[i]);
                               }
                               final_type = ASRUtils::duplicate_type(al, final_type, &inherited_dims);
+                              inherited_array = true;
                           }
                       }
                   }
