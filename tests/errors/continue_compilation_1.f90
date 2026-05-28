@@ -30,7 +30,7 @@ module continue_compilation_1_mod
         module procedure assign_bad_lhs
         module procedure assign_bad_rhs
     end interface
-    
+
     interface operator(.op.)
         function op_clash_f(x) result(y)
             integer, intent(in) :: x
@@ -753,4 +753,11 @@ program continue_compilation_1
         call cpu_time(*1)
 1       continue
     end subroutine 
+    
+    subroutine sub_data_nonconstant_array_section()
+        implicit none
+        integer :: i
+        integer :: values(3)
+        data (values(i+1:i+2:i), i = 0, 1) /1, 2, 3/
+    end subroutine sub_data_nonconstant_array_section
 end program

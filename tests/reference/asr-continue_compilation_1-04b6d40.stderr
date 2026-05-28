@@ -1603,14 +1603,8 @@ semantic error: Type mismatch in assignment, the types must be compatible
 713 |         x = [character(len=3) :: "aa", "bb", "aa"]
     |         ^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (integer[:] and string[:])
 
-semantic error: case value must be scalar
-   --> tests/errors/continue_compilation_1.f90:745:16
+semantic error: nonconstant array section in DATA statement
+   --> tests/errors/continue_compilation_1.f90:744:14
     |
-745 |         case (:[2])
-    |                ^^^ 
-
-semantic error: Alternate return arguments are not permitted in calls to the 'cpu_time' intrinsic.
-   --> tests/errors/continue_compilation_1.f90:753:9
-    |
-753 |         call cpu_time(*1)
-    |         ^^^^^^^^^^^^^^^^^ 
+744 |         data (values(i+1:i+2:i), i = 0, 1) /1, 2, 3/
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
