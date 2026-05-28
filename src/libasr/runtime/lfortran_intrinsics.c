@@ -49,6 +49,14 @@ typedef enum {
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
 
+/* ---- real(16) / binary128 support ---- */
+/*
+ * All lf_float128 types, arithmetic, conversions, comparisons, math,
+ * formatting, and ARM64 ABI shims live in lf_float128_to_str.c.
+ * This single include works on every platform (Linux/macOS/Windows/WASM).
+ */
+#include "lfortran_float128.c"
+
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
 /* ----------------------------------------------------- */
@@ -1280,7 +1288,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     char exponent[12];
     if (width_digits == 0) {
-        sprintf(exponent, "%+02d", exponent_value);
+        // No zero-padding for w=0 formats (ES0.8 etc.): emscripten/WASM
+        // renders %+02d as "-043" instead of "-43" for exponent_value=-43.
+        sprintf(exponent, "%+d", exponent_value);
     } else {
         int exp_width = exp + 1;
         if (exp_width > 10) exp_width = 10;
@@ -1372,7 +1382,12 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                 val_str[digits + scale] = '\0';
             }
         }
-        strncat(formatted_value, val_str, digits);
+        // When scale<=0 the mantissa is "0." followed by |scale| zeros then
+        // (digits+scale) significant digits.  We must copy exactly digits+scale
+        // characters from val_str, not the full `digits` count.
+        int sig = digits + scale;
+        if (sig < 0) sig = 0;
+        strncat(formatted_value, val_str, sig);
     } else {
         char* temp = substring(val_str, 0, scale);
         strcat(formatted_value, temp);
@@ -1415,7 +1430,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     if (rounding_carry) {
         exponent_value++;
         if (width_digits == 0) {
-            sprintf(exponent, "%+02d", exponent_value);
+            sprintf(exponent, "%+d", exponent_value);
         } else {
             int exp_width = exp + 1;
             if (exp_width > 10) exp_width = 10;
@@ -1444,7 +1459,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
                 strcat(formatted_value, "0");
             }
-            strncat(formatted_value, val_str, digits);
+            int sig_carry = digits + scale;
+            if (sig_carry < 0) sig_carry = 0;
+            strncat(formatted_value, val_str, sig_carry);
             exp_length = new_exp_length;
         }
     }
@@ -1959,6 +1976,7 @@ typedef enum primitive_types{
     LOGICAL_32_TYPE = 15,
     LOGICAL_16_TYPE = 16,
     LOGICAL_64_TYPE = 17,
+    FLOAT_128_TYPE = 18,
 } Primitive_Types;
 
 static inline bool is_logical_type(Primitive_Types t) {
@@ -1998,6 +2016,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
             break;
         case FLOAT_32_TYPE:
         case FLOAT_64_TYPE:
+        case FLOAT_128_TYPE:
             return 'f';
             break;
         case CHAR_PTR_TYPE:
@@ -2111,6 +2130,47 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             memcpy(&tmp, arg_ptr, sizeof(double));
             raw = tmp;
             break;
+        }
+        case FLOAT_128_TYPE: {
+            /* fp128 hex: handle separately .
+             * Build the full 32-hex-digit string directly from the 16 raw bytes. */
+            byte_count = 16;
+            unsigned char fp128_bytes[16];
+            memcpy(fp128_bytes, arg_ptr, 16);
+            int total_hex = 32;
+            char *hex_full = (char*)internal_malloc((total_hex + 1) * sizeof(char));
+            for (int _b = 15; _b >= 0; _b--) {
+                snprintf(hex_full + (15 - _b) * 2, 3, "%02X", fp128_bytes[_b]);
+            }
+            hex_full[total_hex] = '\0';
+            /* strip leading zeros, respect min_digits and width */
+            int _s = 0;
+            while (_s < total_hex - 1 && hex_full[_s] == '0') _s++;
+            int _dlen = total_hex - _s;
+            if (_dlen < 1) _dlen = 1;
+            if (min_digits < 1) min_digits = 1;
+            int _olen = _dlen > min_digits ? _dlen : min_digits;
+            char *_out = (char*)internal_malloc((_olen + (width > 0 ? width : 0) + 2) * sizeof(char));
+            int _lz = _olen - _dlen;
+            for (int _i = 0; _i < _lz; _i++) _out[_i] = '0';
+            memcpy(_out + _lz, hex_full + _s, _dlen);
+            _out[_olen] = '\0';
+            internal_free(hex_full);
+            if (width > 0 && _olen > width) {
+                char *stars = (char*)internal_malloc((width + 1) * sizeof(char));
+                memset(stars, '*', width);
+                stars[width] = '\0';
+                *result = stars;
+            } else if (width > _olen) {
+                char *padded = (char*)internal_malloc((width + 1) * sizeof(char));
+                memset(padded, ' ', width - _olen);
+                memcpy(padded + (width - _olen), _out, _olen + 1);
+                internal_free(_out);
+                *result = padded;
+            } else {
+                *result = _out;
+            }
+            return; /* early return: skip the generic uint64 path below */
         }
         default:
             fprintf(stderr, "Unsupported type for Z edit descriptor\n");
@@ -2425,7 +2485,8 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(char*) + sizeof(int64_t)/*String Descriptor*/,
         sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
-        sizeof(int64_t)/*LOGICAL_64*/};
+        sizeof(int64_t)/*LOGICAL_64*/,
+        16/*FLOAT_128: 16 bytes = 128 bits*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -2497,6 +2558,18 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
     case 'R':
         switch (s_info->serialization_string[s_info->current_stop++])
         {
+        case '1':
+            /* Must be R16 -- consume the '6' */
+            if (s_info->serialization_string[s_info->current_stop] == '6') {
+                s_info->current_stop++;
+                *PrimitiveType = FLOAT_128_TYPE;
+            } else {
+                fprintf(stderr, "RunTime - compiler internal error"
+                    " : Unidentified Print Types Serialization --> %s\n",
+                        s_info->serialization_string);
+                exit(1);
+            }
+            break;
         case '8':
             *PrimitiveType = FLOAT_64_TYPE;
             break;
@@ -2504,7 +2577,7 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             *PrimitiveType = FLOAT_32_TYPE;
             break;
         default:
-            fprintf(stderr, "RunTime - compiler" 
+            fprintf(stderr, "RunTime - compiler"
             "internal error : Unidentified Print Types Serialization --> %s\n",
                     s_info->serialization_string);
             exit(1);
@@ -2663,6 +2736,8 @@ static void format_float_fortran(char* result, float val) {
     sprintf(result, format_str, val);
 }
 
+static void format_double_fortran(char* result, double val);
+
 static void format_double_fortran(char* result, double val) {
     if (isnan(val)) {
         sprintf(result, "NaN");
@@ -2819,6 +2894,22 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
         case CPTR_VOID_PTR_TYPE:
             sprintf(result, "%p",*(void**)arg);
             break;
+        case FLOAT_128_TYPE: {
+            lf_float128 val128;
+            memcpy(&val128, arg, 16);
+            if (s_info->current_arg_info.is_complex) {
+                char real_str[256], imag_str[256];
+                format_float128_fortran(real_str, val128);
+                move_to_next_element(s_info, false);
+                lf_float128 imag128;
+                memcpy(&imag128, s_info->current_arg_info.current_arg, 16);
+                format_float128_fortran(imag_str, imag128);
+                sprintf(result, "(%s,%s)", real_str, imag_str);
+            } else {
+                format_float128_fortran(result, val128);
+            }
+            break;
+        }
         default :
             fprintf(stderr, "Unknown type");
             exit(1);
@@ -3267,6 +3358,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     case  FLOAT_32_TYPE:
                         double_val = (double)*(float*)s_info.current_arg_info.current_arg; 
                         break;
+                    case FLOAT_128_TYPE: {
+                        lf_float128 q128;
+                        memcpy(&q128, s_info.current_arg_info.current_arg, 16);
+                        double_val = lf_f128_to_double(q128);
+                        break;
+                    }
                     case CHAR_PTR_TYPE:
                     case STRING_DESCRIPTOR_TYPE:
                         char_val = *(char**)s_info.current_arg_info.current_arg;

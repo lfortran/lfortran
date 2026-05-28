@@ -1,6 +1,8 @@
 #include "libasr/assert.h"
 #include "libasr/string_utils.h"
 #include <iostream>
+#include <cstdint>
+#include <cstring>
 #include <llvm/IR/Value.h>
 #include <memory>
 #include <set>
@@ -66,7 +68,7 @@
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/gpu_utils.h>
-
+#include <libasr/runtime/lfortran_float128.h>
 namespace LCompilers {
 
 using ASR::is_a;
@@ -3098,10 +3100,14 @@ public:
         llvm::Value *c = tmp;
         int64_t kind_value = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
         std::string func_name;
-        if (kind_value ==4) {
+        if (kind_value == 4) {
             func_name = "llvm.sqrt.f32";
-        } else {
+        } else if (kind_value == 8) {
             func_name = "llvm.sqrt.f64";
+        } else if (kind_value == 16) {
+            func_name = "llvm.sqrt.f128";
+        } else {
+            throw CodeGenError("sqrt for real kind " + std::to_string(kind_value) + " is not supported yet.");
         }
         llvm::Type *type = llvm_utils->getFPType(kind_value);
         llvm::Function *fn_sqrt = module->getFunction(func_name);
@@ -14723,14 +14729,17 @@ public:
                     // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
                     if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
 #if LLVM_VERSION_MAJOR <= 12
-                        func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
-                        #else
-                        func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
-                        #endif
+                        func_name = (return_kind == 4) ? "llvm.powi.f32" :
+                                    (return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f128";
+#else
+                        func_name = (return_kind == 4) ? "llvm.powi.f32.i32" :
+                                    (return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f128.i32";
+#endif
                         right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
                         exponent_type = llvm::Type::getInt32Ty(context);
                     } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
-                        func_name = (return_kind == 4) ? "llvm.pow.f32" : "llvm.pow.f64";
+                        func_name = (return_kind == 4) ? "llvm.pow.f32" :
+                                    (return_kind == 8) ? "llvm.pow.f64" : "llvm.pow.f128";
                         right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
                         exponent_type = base_type;
                     } else {
@@ -14953,6 +14962,16 @@ public:
                 tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
                 break;
             }
+            case 16 : {
+                uintptr_t addr;
+                std::memcpy(&addr, &val, sizeof(addr));
+                lf_float128 *p = (lf_float128*)addr;
+                char buf[64];
+                lf_float128_to_str(buf, p->bytes);
+                llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
+                tmp = llvm::ConstantFP::get(context, apf);
+                break;
+            }
             default : {
                 break;
             }
@@ -14978,6 +14997,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (16) :
+                    el_type = llvm::Type::getFP128Ty(context); break;
                 default :
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
@@ -15036,6 +15057,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (16) :
+                    el_type = llvm::Type::getFP128Ty(context); break;
                 default :
                     throw CodeGenError("ConstArray real kind not supported yet");
             }
@@ -15915,10 +15938,11 @@ public:
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
                 {
-                    if( arg_kind == 4 && dest_kind == 8 ) {
-                        tmp = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(context));
-                    } else if( arg_kind == 8 && dest_kind == 4 ) {
-                        tmp = builder->CreateFPTrunc(tmp, llvm::Type::getFloatTy(context));
+                    llvm::Type *dest_type = llvm_utils->getFPType(dest_kind, false);
+                    if (dest_kind > arg_kind) {
+                        tmp = builder->CreateFPExt(tmp, dest_type);
+                    } else if (dest_kind < arg_kind) {
+                        tmp = builder->CreateFPTrunc(tmp, dest_type);
                     } else {
                         std::string msg = "Conversion from " + std::to_string(arg_kind) +
                                           " to " + std::to_string(dest_kind) + " not implemented yet.";

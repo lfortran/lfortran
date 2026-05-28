@@ -92,7 +92,20 @@ static inline std::string extract_real(const char *s) {
     std::string x = s;
     x = replace(x, "d", "e");
     x = replace(x, "D", "E");
+    // Fortran quad-precision exponent letter (e.g. 1.5q10 == 1.5e10 in real(16))
+    x = replace(x, "q", "e");
+    x = replace(x, "Q", "E");
     return x;
+}
+
+
+static inline std::string extract_real_16_str(const char *s) {
+    std::string r = extract_real(s);         // normalise d/D/q/Q → e/E
+    auto pos = r.rfind('_');
+    if (pos != std::string::npos) {
+        r = r.substr(0, pos);
+    }
+    return r;
 }
 
 static inline double extract_real_4(const char *s) {
@@ -2404,6 +2417,7 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
             switch (r->m_kind) {
                 case 4: { res = "f32"; break; }
                 case 8: { res = "f64"; break; }
+                case 16: { res = "f128"; break; }
                 default: { throw LCompilersException("Float kind not supported"); }
             }
             return res;
@@ -4228,6 +4242,10 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
         if (*p == 'd' || *p == 'D') {
             // Double precision
             return 8;
+        }
+        if (*p == 'q' || *p == 'Q') {
+            // Quad precision (real(16))
+            return 16;
         }
         p++;
     }
