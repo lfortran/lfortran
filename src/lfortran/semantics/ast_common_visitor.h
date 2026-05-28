@@ -10297,19 +10297,19 @@ public:
                       base_obj = ASR::down_cast<ASR::StructInstanceMember_t>(base_obj)->m_v;
                   }
                   if (base_obj) {
-                      ASR::ttype_t* base_type = ASRUtils::expr_type(base_obj);
+                      ASR::ttype_t* base_type = ASRUtils::type_get_past_pointer(
+                                                  ASRUtils::type_get_past_allocatable(
+                                                      ASRUtils::expr_type(base_obj)));
                                                       
-                      if (base_type && ASRUtils::is_array(base_type)) {
-                          ASR::dimension_t* m_dims;
-                          int n_dims = ASRUtils::extract_dimensions_from_ttype(base_type, m_dims);
-                          if (n_dims > 0) {
-                              Vec<ASR::dimension_t> inherited_dims;
-                              inherited_dims.reserve(al, n_dims);
-                              for (int i = 0; i < n_dims; ++i) {
-                                  inherited_dims.push_back(al, m_dims[i]);
-                              }
-                              final_type = ASRUtils::duplicate_type(al, final_type, &inherited_dims);
+                      ASR::dimension_t* m_dims = nullptr;
+                      int n_dims = ASRUtils::extract_dimensions_from_ttype(base_type, m_dims);
+                      if (n_dims > 0) {
+                          Vec<ASR::dimension_t> inherited_dims;
+                          inherited_dims.reserve(al, n_dims);
+                          for (int i = 0; i < n_dims; ++i) {
+                              inherited_dims.push_back(al, m_dims[i]);
                           }
+                          final_type = ASRUtils::duplicate_type(al, final_type, &inherited_dims);
                       }
                   }
                 }
