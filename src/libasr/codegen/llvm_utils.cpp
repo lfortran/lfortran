@@ -10468,19 +10468,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
             {
                 // Extract inner struct pointer from class wrapper if needed.
-                // We check the actual LLVM type rather than ASR flags because
-                // the ASR type parameters may not correctly reflect the actual
-                // LLVM types of src/dest in all codegen paths.
+                // Note: due to parameter naming conventions in deepcopy,
+                // is_dest_class actually reflects the source's ASR type, and
+                // is_src_class reflects the destination's ASR type.
                 llvm::Type* class_llvm_type = llvm_utils->getClassType(struct_sym, false);
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                if (src->getType()->isPointerTy() &&
-                    src->getType()->getPointerElementType() == class_llvm_type) {
+                if (is_dest_class) {
                     src = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(class_llvm_type, src, 1));
                 }
-                if (dest->getType()->isPointerTy() &&
-                    dest->getType()->getPointerElementType() == class_llvm_type) {
+                if (is_src_class) {
                     dest = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
                         llvm_utils->create_gep2(class_llvm_type, dest, 1));
                 }
