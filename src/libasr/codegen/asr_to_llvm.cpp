@@ -25581,8 +25581,8 @@ public:
         llvm::BasicBlock *vtable_dispatchBB = nullptr;
         llvm::BasicBlock *mergeBB = nullptr;
         llvm::Value* ret_val_ptr = nullptr;
+        llvm::Type* ret_llvm_ty = nullptr;
         if (use_declared_binding_for_unallocated) {
-            llvm::Type* ret_llvm_ty = nullptr;
             if (func->m_return_var) {
                 ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
@@ -25672,7 +25672,7 @@ public:
             builder->CreateBr(mergeBB);
             start_new_block(mergeBB);
             if (ret_val_ptr) {
-                tmp = llvm_utils->CreateLoad2(ret_val_ptr->getType()->getPointerElementType(), ret_val_ptr);
+                tmp = llvm_utils->CreateLoad2(ret_llvm_ty, ret_val_ptr);
             }
         }
         return;
