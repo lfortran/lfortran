@@ -10283,7 +10283,7 @@ public:
                 }
                 return ASR::make_StringSection_t(al, loc, array_item, l,
                         r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
-            } else {
+            }  else {
                 ASR::ttype_t* final_type;
                 if (is_arg_array) {
                   ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
@@ -10292,10 +10292,9 @@ public:
                   final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
                   
-                  // ADDED FIX: Inherit array dimensions from parent object if present.
                   ASR::expr_t* base_obj = v_Var;
-                  while (base_obj && ASR::is_a<ASR::StructMember_t>(*base_obj)) {
-                      base_obj = ASR::down_cast<ASR::StructMember_t>(base_obj)->m_v;
+                  while (base_obj && ASR::is_a<ASR::StructInstanceMember_t>(*base_obj)) {
+                      base_obj = ASR::down_cast<ASR::StructInstanceMember_t>(base_obj)->m_v;
                   }
                   if (base_obj) {
                       ASR::ttype_t* base_type = ASRUtils::expr_type(base_obj);
@@ -10308,7 +10307,7 @@ public:
                               for (int i = 0; i < n_dims; ++i) {
                                   inherited_dims.push_back(al, m_dims[i]);
                               }
-                              // Wrap the scalar type back into an array using the parent's dimensions
+
                               final_type = ASRUtils::duplicate_type(al, final_type, &inherited_dims);
                           }
                       }
