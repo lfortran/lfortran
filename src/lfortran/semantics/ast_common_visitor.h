@@ -11725,9 +11725,14 @@ public:
                                 break;
                             }
                         }
-                        bool dummy_is_explicit_shape = ASRUtils::is_fixed_size_array(
-                            arr_rhs->m_dims, arr_rhs->n_dims);
-                        if( rhs_size_known && lhs_ele < rhs_ele && !dummy_is_explicit_shape ){
+                        ASR::ttype_t* rhs_element_type = ASRUtils::type_get_past_array(orig_arg_type);
+                        bool dummy_is_assumed_len_character_explicit_shape =
+                            ASR::is_a<ASR::String_t>(*rhs_element_type) &&
+                            ASR::down_cast<ASR::String_t>(rhs_element_type)->m_len_kind ==
+                                ASR::string_length_kindType::AssumedLength &&
+                            ASRUtils::is_fixed_size_array(arr_rhs->m_dims, arr_rhs->n_dims);
+                        if( rhs_size_known && lhs_ele < rhs_ele &&
+                            !dummy_is_assumed_len_character_explicit_shape ){
                             diag.add(Diagnostic("Array passed into function has `" + std::to_string(lhs_ele) +
                                 "` elements but function expects `" + std::to_string(rhs_ele) + "`.",
                                 Level::Error, Stage::Semantic, {Label("", {args.p[i].loc})}));
