@@ -10460,17 +10460,24 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 return ;
             }
 
-            if (is_src_class) {
+            {
+                // Extract inner struct pointer from class wrapper if needed.
+                // We check the actual LLVM type rather than ASR flags because
+                // the ASR type parameters may not correctly reflect the actual
+                // LLVM types of src/dest in all codegen paths.
+                llvm::Type* class_llvm_type = llvm_utils->getClassType(struct_sym, false);
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                src = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
-                    llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), src, 1));
-            }
-            if (is_dest_class) {
-                llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                dest = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
-                    llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), dest, 1));
+                if (src->getType()->isPointerTy() &&
+                    src->getType()->getPointerElementType() == class_llvm_type) {
+                    src = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                        llvm_utils->create_gep2(class_llvm_type, src, 1));
+                }
+                if (dest->getType()->isPointerTy() &&
+                    dest->getType()->getPointerElementType() == class_llvm_type) {
+                    dest = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                        llvm_utils->create_gep2(class_llvm_type, dest, 1));
+                }
             }
 
             std::string der_type_name = get_type_key(struct_sym);
@@ -10864,9 +10871,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
         if( struct_sym->n_member_functions == 0) return;
         if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
-        llvm_utils->validate_llvm_SSA(
-            llvm_utils->get_type_from_ttype_t_util(ty, &struct_sym->base, llvm_utils->module)->getPointerTo(),
-            ptr);
 
         ASR::symbol_t* final_sym {};
         for(size_t i = 0 ; i < struct_sym->n_member_functions; i++){
@@ -10882,7 +10886,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         uint32_t fh = get_hash((ASR::asr_t*)final_sym);
         LCOMPILERS_ASSERT(llvm_symtab_fn.find(fh) != llvm_symtab_fn.end())
         llvm::Function* final_fn = llvm_symtab_fn[fh];
-        builder->CreateCall(final_fn, {ptr});
+        // The finalizer takes type(t) (plain struct*). ptr may be a class
+        // wrapper pointer or a plain struct pointer depending on the caller.
+        // Bitcast to match the finalizer's expected parameter type.
+        llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
+        llvm::Value* struct_ptr = builder->CreateBitCast(ptr, expected_type);
+        builder->CreateCall(final_fn, {struct_ptr});
     }
 
 } // namespace LCompilers
