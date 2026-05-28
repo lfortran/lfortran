@@ -12267,13 +12267,18 @@ public:
     // member of the returned `FunctionCall`.
     ASR::asr_t* create_FunctionCall(const Location &loc,
                     ASR::symbol_t *fn, Vec<ASR::call_arg_t>& args) {
+        
         if (fn == nullptr) {
-            throw SemanticError("Cannot resolve function call: no matching specific procedure found for the provided arguments.", loc);
+            diag.add(Diagnostic("Cannot resolve function call: no matching specific procedure found for the provided arguments.", 
+                                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
         }
 
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(fn);
         if (f2 == nullptr) {
-            throw SemanticError("Cannot resolve function call: underlying symbol is null.", loc);
+            diag.add(Diagnostic("Cannot resolve function call: underlying symbol is null.", 
+                                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
         }
 
         if (ASR::is_a<ASR::Function_t>(*f2)) {
