@@ -111,6 +111,9 @@ jobs:
             export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
             export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
             export WIN=0
+            if [[ "${{ matrix.os }}" == *ubuntu* && "${{ matrix.llvm-version }}" == "21" ]]; then
+                export WITH_ENZYME=yes
+            fi
             shell ci/build.sh
 
       - name: Build (Windows)
@@ -155,6 +158,23 @@ jobs:
             if [[ "$OSTYPE" != darwin* ]]; then
                 ./run_tests.py -b llvm -f --std=f23 -nf16 $J_FLAG
             fi
+
+      - name: Test Enzyme autodiff integration (Linux, LLVM 21)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        run: |
+            BUILD_DIR=$(find . -maxdepth 3 -type d -name test-bld | head -1)
+            PLUGIN=$(find "$BUILD_DIR" -name 'LLVMEnzyme-*.so' | head -1)
+            if [[ -z "$PLUGIN" ]]; then
+                echo "ERROR: LLVMEnzyme plugin not found in $BUILD_DIR"
+                find "$BUILD_DIR" -name 'LLVMEnzyme*' | head -5
+                exit 1
+            fi
+            export LFORTRAN="$CONDA_PREFIX/bin/lfortran"
+            export LLVMENZYME_PLUGIN="$PLUGIN"
+            export OPT="$(command -v opt)"
+            integration_tests/run_autodiff_test.sh \
+                integration_tests/autodiff_01_square.f90
 
       - name: Test Metal GPU backend (macOS)
         shell: bash -e -l {0}
