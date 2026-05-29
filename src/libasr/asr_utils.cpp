@@ -8,6 +8,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 #include <libasr/modfile.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
@@ -3141,34 +3142,50 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
     if (ASRUtils::expr_value(a_arg)) {
         // calculate value
         if (a_kind == ASR::cast_kindType::RealToInteger) {
-            int64_t v = ASR::down_cast<ASR::RealConstant_t>(
-                        ASRUtils::expr_value(a_arg))->m_r;
-            value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
+                        ASRUtils::expr_value(a_arg));
+            // kind=16 m_r is a pointer-encoded payload, not a double — skip
+            // compile-time folding and let the runtime fptosi handle it.
+            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
+                int64_t v = rc->m_r;
+                value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::RealToReal) {
-            double v = ASR::down_cast<ASR::RealConstant_t>(
-                       ASRUtils::expr_value(a_arg))->m_r;
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
+                       ASRUtils::expr_value(a_arg));
             int src_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a_arg));
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+            // Skip compile-time folding when either side is real(16): m_r is
+            // a pointer payload for kind=16 (see real_constant_get_r16_bytes),
+            // and folding through double would silently truncate. Runtime
+            // cast handles it.
             if (src_kind != 16 && dest_kind != 16) {
                 value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_RealConstant_t(al, a_loc, v, a_type));
-            } else if (src_kind == 16 && dest_kind == 16) {
-                value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_RealConstant_t(al, a_loc, v, a_type));
+                        ASR::make_RealConstant_t(al, a_loc, rc->m_r, a_type));
             }
         } else if (a_kind == ASR::cast_kindType::RealToComplex) {
-            double double_value = ASR::down_cast<ASR::RealConstant_t>(
-                                  ASRUtils::expr_value(a_arg))->m_r;
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, a_loc,
-                        double_value, 0, a_type));
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
+                                  ASRUtils::expr_value(a_arg));
+            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(
+                            al, a_loc, rc->m_r, 0, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::IntegerToReal) {
             // TODO: Clashes with the pow functions
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_arg))->m_n;
-            // skip constant folding for kind=16 (pointer-in-double not safe here)
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
             if (dest_kind != 16) {
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
+            } else {
+                // int -> real(16) is always exact for int64; build the binary128
+                // bytes directly on the arena and pack them into m_r.
+                uint8_t* bytes = (uint8_t*)al.alloc(16);
+                lf_float128 v = lf_f128_from_double((double)int_value);
+                std::memcpy(bytes, v.bytes, 16);
+                double m_r = ASRUtils::real_constant_pack_r16(bytes);
+                value = ASR::down_cast<ASR::expr_t>(
+                    ASR::make_RealConstant_t(al, a_loc, m_r, a_type));
             }
         } else if (a_kind == ASR::cast_kindType::IntegerToComplex) {
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(

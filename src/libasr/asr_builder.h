@@ -7,7 +7,6 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
 
-#include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
@@ -301,17 +300,7 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* f_t(double x, ASR::ttype_t* t) {
-        if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {
-            std::ostringstream ss;
-            ss << std::setprecision(17) << x;
-            lf_float128 *p = (lf_float128*)al.alloc(sizeof(lf_float128));
-            *p = lf_float128_from_str(ss.str().c_str());
-            uintptr_t addr = (uintptr_t)p;
-            double r;
-            std::memcpy(&r, &addr, sizeof(addr));
-            return EXPR(ASR::make_RealConstant_t(al, loc, r, t));
-        }
-        return EXPR(ASR::make_RealConstant_t(al, loc, x, t));
+        return ASRUtils::make_RealConstant_util(al, loc, x, t);
     }
 
     inline ASR::expr_t* f32(double x) {
@@ -420,10 +409,10 @@ class ASRBuilder {
 
     inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
         ASR::expr_t* value = ASRUtils::expr_value(x);
-        if ( value != nullptr  &&  ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) != 16) {
+        if ( value != nullptr  && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) != 16) {
             double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
             value = i_t(val, t);
-        }else{
+        } else {
             value = nullptr;
         }
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, value, nullptr));

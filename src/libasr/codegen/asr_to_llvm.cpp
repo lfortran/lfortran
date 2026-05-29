@@ -1,7 +1,5 @@
 #include "libasr/assert.h"
 #include "libasr/string_utils.h"
-#include <cstdint>
-#include <cstring>
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
@@ -68,7 +66,6 @@
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/gpu_utils.h>
-#include <libasr/runtime/lfortran_float128_quadmath.h>
 namespace LCompilers {
 
 using ASR::is_a;
@@ -14965,25 +14962,29 @@ public:
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        double val = x.m_r;
         int a_kind = ((ASR::Real_t*)(&(x.m_type->base)))->m_kind;
+        // For kind 4/8, x.m_r is the IEEE-754 double approximation/value.
+        // For kind 16, x.m_r is a pointer-encoded payload; we MUST go through
+        // real_constant_get_r16_bytes() rather than reading it as a double.
         switch( a_kind ) {
 
             case 4 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)val));
+                tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)x.m_r));
                 break;
             }
             case 8 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
+                tmp = llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
                 break;
             }
             case 16 : {
-                uintptr_t addr;
-                std::memcpy(&addr, &val, sizeof(addr));
-                lf_float128 *p = (lf_float128*)addr;
-                char buf[64];
-                lf_float128_to_str(buf, p->bytes);
-                llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
+                const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);
+                uint64_t lo, hi;
+                std::memcpy(&lo, bytes,     sizeof(lo));
+                std::memcpy(&hi, bytes + 8, sizeof(hi));
+                // APInt(numBits, ArrayRef<uint64_t>{lo, hi}) — low word first.
+                uint64_t words[2] = { lo, hi };
+                llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+                llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
                 tmp = llvm::ConstantFP::get(context, apf);
                 break;
             }
