@@ -1778,6 +1778,8 @@ public:
         {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
+        // Legacy F77 alias for command_argument_count (no args).
+        {"iargc", IntrinsicSignature({}, 0, 0)},
         {"rand", IntrinsicSignature({"flag"}, 0, 1)},
         {"this_image", IntrinsicSignature({}, 0, 0)},
         {"num_images", IntrinsicSignature({}, 0, 0)},
@@ -1794,6 +1796,10 @@ public:
         {"abort", IntrinsicSignature({}, 0, 0)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
         {"get_command_argument", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
+        // Legacy F77 alias for get_command_argument. Standard form is
+        // `call getarg(pos, value)`; the extra optional args are accepted
+        // by extension to share the get_command_argument signature.
+        {"getarg", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
         {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
         {"date_and_time", IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)},
         {"get_environment_variable", IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)},
