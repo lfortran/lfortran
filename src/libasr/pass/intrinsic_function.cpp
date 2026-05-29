@@ -43,6 +43,64 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_), in_debugcheck(in_debugcheck_), in_ttype(in_ttype_),
         index_kind(index_kind_) {}
 
+    void replace_ArrayItem(ASR::ArrayItem_t* x) {
+        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x->m_v)) {
+            ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>::replace_ArrayItem(x);
+            return;
+        }
+
+        ASR::IntrinsicElementalFunction_t* intrinsic_func =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x->m_v);
+        ASRUtils::impl_function instantiate_function =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_instantiate_function(
+                intrinsic_func->m_intrinsic_id);
+        if (instantiate_function == nullptr || (in_debugcheck && !in_ttype)) {
+            return;
+        }
+
+        bool has_array_arg = false;
+        Vec<ASR::call_arg_t> new_args; new_args.reserve(al, intrinsic_func->n_args);
+        Vec<ASR::ttype_t*> arg_types; arg_types.reserve(al, intrinsic_func->n_args);
+        for (size_t i = 0; i < intrinsic_func->n_args; i++) {
+            ASR::expr_t* arg = intrinsic_func->m_args[i];
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, m_dims);
+            if (n_dims > 0) {
+                if (n_dims != x->n_args) {
+                    ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>::replace_ArrayItem(x);
+                    return;
+                }
+                has_array_arg = true;
+                Vec<ASR::array_index_t> idx; idx.reserve(al, x->n_args);
+                for (size_t j = 0; j < x->n_args; j++) {
+                    idx.push_back(al, x->m_args[j]);
+                }
+                arg = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
+                    arg->base.loc, arg, idx.p, idx.n, arg_type,
+                    x->m_storage_format, nullptr));
+                arg_type = ASRUtils::expr_type(arg);
+            }
+
+            ASR::call_arg_t call_arg;
+            call_arg.loc = arg->base.loc;
+            call_arg.m_value = arg;
+            new_args.push_back(al, call_arg);
+            arg_types.push_back(al, arg_type);
+        }
+
+        if (!has_array_arg) {
+            ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>::replace_ArrayItem(x);
+            return;
+        }
+
+        ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
+            global_scope, arg_types, x->m_type, new_args,
+            intrinsic_func->m_overload_id, index_kind);
+        if (current_expr_) {
+            *current_expr = current_expr_;
+        }
+    }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_value) {
