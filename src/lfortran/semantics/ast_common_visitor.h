@@ -10283,7 +10283,7 @@ public:
                 }
                 return ASR::make_StringSection_t(al, loc, array_item, l,
                         r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
-            }  else {
+            } else {
                 ASR::ttype_t* final_type;
                 if (is_arg_array) {
                   ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
@@ -10313,6 +10313,7 @@ public:
                       }
                   }
                 }
+
                 if ( current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
                     !ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) &&
                     !ASRUtils::is_array(ASRUtils::expr_type(v_Var))) {
@@ -10320,6 +10321,7 @@ public:
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
+
                 if (!_processing_common_block_object) {
                     // Compile-time bounds check for fixed-size arrays
                     ASR::ttype_t* arr_type = ASRUtils::type_get_past_pointer(
@@ -10327,7 +10329,6 @@ public:
                     ASR::dimension_t* m_dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
                     for (size_t i = 0; i < std::min(n_dims, args.size()); i++) {
-                        // Only check scalar indices (m_left=null, m_step=null, m_right=index)
                         if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
                             continue;
                         }
@@ -10336,7 +10337,6 @@ public:
                         ASR::expr_t* idx_value = ASRUtils::expr_value(idx_expr);
                         int64_t idx = 0;
                         if (idx_value && ASRUtils::extract_value(idx_value, idx)) {
-                            // Get lower bound (default 1)
                             int64_t lb = 1;
                             if (m_dims[i].m_start) {
                                 ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
@@ -10344,7 +10344,6 @@ public:
                                     ASRUtils::extract_value(start_val, lb);
                                 }
                             }
-                            // Get upper bound if length is known
                             if (m_dims[i].m_length) {
                                 ASR::expr_t* len_val = ASRUtils::expr_value(m_dims[i].m_length);
                                 int64_t len = 0;
@@ -10364,11 +10363,16 @@ public:
                         }
                     }
                 }
-                return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                    v_Var, args.p, args.size(), final_type,
-                    ASR::arraystorageType::ColMajor, arr_ref_val)));
-            }
-        } else {
+                
+                if (ASRUtils::is_array(final_type)) {
+                    return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
+                        v_Var, args.p, args.size(), final_type, arr_ref_val)));
+                } else {
+                    return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+                        v_Var, args.p, args.size(), final_type,
+                        ASR::arraystorageType::ColMajor, arr_ref_val)));
+                }
+            } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
             if (ASR::is_a<ASR::Pointer_t>(*v_type)) {
                 v_type = ASR::down_cast<ASR::Pointer_t>(v_type)->m_type;
