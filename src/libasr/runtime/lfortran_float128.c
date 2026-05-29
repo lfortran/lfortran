@@ -1668,6 +1668,10 @@ lf_float128 __floatditf(int64_t a)                  { return __floatditf_lf_impl
 lf_float128 __floatunditf(uint64_t a)               { return __floatunditf_lf_impl(a); }
 int32_t     __fixtfsi(lf_float128 a)                { return __fixtfsi_lf_impl(a); }
 int64_t     __fixtfdi(lf_float128 a)                { return __fixtfdi_lf_impl(a); }
+/* On non-Apple-ARM64 platforms the fp128 SIMD ABI and the struct ABI coincide
+ * (both pass 16 bytes contiguously), so lf_sqrtq/lf_powq are thin wrappers. */
+lf_float128 lf_sqrtq(lf_float128 a)                 { return lf_f128_sqrt(a); }
+lf_float128 lf_powq(lf_float128 a, lf_float128 b)   { return lf_f128_pow(a, b); }
 #endif
 
 /* ========================================================================
@@ -1894,10 +1898,45 @@ void pub(void) {                                             \
     );                                                       \
 }
 
+/* fp128->double: arg q0 -> x0/x1; result already in d0 from the impl */
+#define _LF_SHIM_TO_DOUBLE(pub, impl)                        \
+__attribute__((naked))                                       \
+void pub(void) {                                             \
+    __asm__ volatile(                                        \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
+        "mov x29, sp\n\t"                                    \
+        "fmov x0, d0\n\t"                                    \
+        "mov  x1, v0.d[1]\n\t"                               \
+        "bl  " _LF_SYM(impl) "\n\t"                         \
+        "ldp x29, x30, [sp], #16\n\t"                       \
+        "ret\n\t"                                            \
+    );                                                       \
+}
+
+/* fp128->float: arg q0 -> x0/x1; result already in s0 from the impl */
+#define _LF_SHIM_TO_FLOAT(pub, impl)                         \
+__attribute__((naked))                                       \
+void pub(void) {                                             \
+    __asm__ volatile(                                        \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
+        "mov x29, sp\n\t"                                    \
+        "fmov x0, d0\n\t"                                    \
+        "mov  x1, v0.d[1]\n\t"                               \
+        "bl  " _LF_SYM(impl) "\n\t"                         \
+        "ldp x29, x30, [sp], #16\n\t"                       \
+        "ret\n\t"                                            \
+    );                                                       \
+}
+
 _LF_SHIM2(__addtf3,          __addtf3_lf_impl)
 _LF_SHIM2(__subtf3,          __subtf3_lf_impl)
 _LF_SHIM2(__multf3,          __multf3_lf_impl)
 _LF_SHIM2(__divtf3,          __divtf3_lf_impl)
+/* SIMD-ABI public entry points for the transcendentals called by LLVM-emitted
+ * `call fp128 @lf_sqrtq(fp128)` / `lf_powq(fp128, fp128)`. They bridge to the
+ * struct-ABI implementations in lf_f128_sqrt / lf_f128_pow. */
+_LF_SHIM1(lf_sqrtq,          lf_f128_sqrt)
+_LF_SHIM2(lf_powq,           lf_f128_pow)
 _LF_SHIM1(__negtf2,          __negtf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extendsftf2,   __extendsftf2_lf_impl)
@@ -1906,11 +1945,15 @@ _LF_SHIM_FROM_SCALAR(__floatditf,     __floatditf_lf_impl)
 _LF_SHIM_FROM_SCALAR(__floatunditf,   __floatunditf_lf_impl)
 _LF_SHIM_TO_INT(__fixtfsi,            __fixtfsi_lf_impl)
 _LF_SHIM_TO_INT(__fixtfdi,            __fixtfdi_lf_impl)
+_LF_SHIM_TO_DOUBLE(__trunctfdf2,      __trunctfdf2_lf_impl)
+_LF_SHIM_TO_FLOAT(__trunctfsf2,       __trunctfsf2_lf_impl)
 
 #undef _LF_SHIM2
 #undef _LF_SHIM1
 #undef _LF_SHIM_FROM_SCALAR
 #undef _LF_SHIM_TO_INT
+#undef _LF_SHIM_TO_DOUBLE
+#undef _LF_SHIM_TO_FLOAT
 #undef _LF_SYM
 
 #endif /* __aarch64__ */
