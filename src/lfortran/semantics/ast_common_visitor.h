@@ -10293,10 +10293,14 @@ public:
                         ASRUtils::type_get_past_allocatable(type));
                   
                   ASR::expr_t* base_obj = v_Var;
+                  bool is_struct_member = false; 
+                  
                   while (base_obj && ASR::is_a<ASR::StructInstanceMember_t>(*base_obj)) {
                       base_obj = ASR::down_cast<ASR::StructInstanceMember_t>(base_obj)->m_v;
+                      is_struct_member = true;
                   }
-                  if (base_obj) {
+                  
+                  if (is_struct_member && base_obj) {
                       ASR::ttype_t* base_type = ASRUtils::type_get_past_pointer(
                                                   ASRUtils::type_get_past_allocatable(
                                                       ASRUtils::expr_type(base_obj)));
