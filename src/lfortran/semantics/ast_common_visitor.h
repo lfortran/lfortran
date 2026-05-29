@@ -10249,7 +10249,7 @@ public:
 
                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                                            1, int_type));
+                                                            1, int_type));
                 ASR::expr_t *l = nullptr, *r = nullptr, *step = nullptr;
                 if (m_subargs[0].m_start) {
                     this->visit_expr(*(m_subargs[0].m_start));
@@ -10372,7 +10372,8 @@ public:
                         v_Var, args.p, args.size(), final_type,
                         ASR::arraystorageType::ColMajor, arr_ref_val)));
                 }
-            } else {
+            }
+        } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
             if (ASR::is_a<ASR::Pointer_t>(*v_type)) {
                 v_type = ASR::down_cast<ASR::Pointer_t>(v_type)->m_type;
