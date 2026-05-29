@@ -364,13 +364,19 @@ static inline ASR::expr_t* get_past_array_broadcast(ASR::expr_t* x) {
 
 static inline ASR::ttype_t *type_get_past_array(ASR::ttype_t *f)
 {
-    if (ASR::is_a<ASR::Array_t>(*f)) {
-        ASR::Array_t *e = ASR::down_cast<ASR::Array_t>(f);
-        LCOMPILERS_ASSERT(!ASR::is_a<ASR::Array_t>(*e->m_type));
-        return e->m_type;
-    } else {
-        return f;
+    // Unwrap nested Array_t layers until we reach the element type.
+    // Some constructs (e.g., array constructors with nested constructors)
+    // may produce Array_t whose element type is itself an Array_t. The
+    // previous implementation asserted that this could not happen which
+    // caused crashes for valid Fortran constructs (see examples/expr2.f90).
+    ASR::ttype_t *cur = f;
+    while (ASR::is_a<ASR::Array_t>(*cur)) {
+        ASR::Array_t *e = ASR::down_cast<ASR::Array_t>(cur);
+        // Move past this array layer to its element type and continue.
+        cur = e->m_type;
+        if (cur == nullptr) break;
     }
+    return cur;
 }
 
 static inline ASR::ttype_t* extract_type(ASR::ttype_t *f) {

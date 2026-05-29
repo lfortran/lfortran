@@ -33,6 +33,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return pass_options.descriptor_index_64 ? 8 : 4;
     }
 
+    void replace_ImpliedDoLoop(ASR::ImpliedDoLoop_t* /*x*/) {
+        // Do not traverse children of ImpliedDoLoop.
+    }
+
     ASR::expr_t* get_first_scalar_expr(ASR::expr_t* expr) {
         // Visitor to replace loop variable with its starting value in an expression
         class ReplaceLoopVarWithStart : public ASR::BaseExprReplacer<ReplaceLoopVarWithStart> {
@@ -608,7 +612,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if (result_var != nullptr &&
             resultvar2value.find(result_var) != resultvar2value.end() &&
             resultvar2value[result_var] == &(x->base)) {
-            is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+            is_result_var_fixed_size = ASR::is_a<ASR::Var_t>(*result_var) && ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
@@ -1072,7 +1076,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
             dim.push_back(al, d);
 
-            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+            ASR::ttype_t* array_type = ASRUtils::expr_type(value);
             ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, value->base.loc,
                                         args.p, args.n, array_type, ASR::arraystorageType::ColMajor);
             return array_constant;
