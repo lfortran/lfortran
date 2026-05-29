@@ -265,6 +265,7 @@ namespace LCompilers::CommandLineInterface {
         // Language-related flags (affecting Fortran language behavior, typing, and interfaces)
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing")->group(group_language_options);
         app.add_flag("--fixed-form-infer", opts.fixed_form_infer, "Use heuristics to infer if a file is in fixed form")->group(group_language_options);
+        app.add_flag("--free-form", opts.free_form, "Use free form Fortran source parsing")->group(group_language_options);
         app.add_option("--std", opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
@@ -457,7 +458,6 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.logical_casting = false;
 
             // legacy options
-            compiler_options.fixed_form = true;
             compiler_options.legacy_array_sections = true;
             compiler_options.use_loop_variable_after_loop = true;
             compiler_options.separate_compilation = true;
@@ -562,10 +562,18 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException("Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time");
         }
 
-        // Decide if a file is fixed format based on the extension
-        // Gfortran does the same thing
-        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
-            compiler_options.fixed_form = true;
+        if (compiler_options.fixed_form && opts.free_form) {
+            throw lc::LCompilersException("Cannot use --fixed-form and --free-form at the same time");
+        }
+
+        // Decide source form based on explicit flags or file extension (like gfortran)
+        if (opts.free_form) {
+            compiler_options.fixed_form = false;
+        } else if (!compiler_options.fixed_form) {
+            // Not explicitly set by --fixed-form; infer from extension
+            if (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F")) {
+                compiler_options.fixed_form = true;
+            }
         }
 
         if (opts.disable_implicit_typing) {

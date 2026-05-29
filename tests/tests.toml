@@ -3699,6 +3699,10 @@ asr_implicit_interface_and_typing = true
 fixed_free_equal_asr = true
 
 [[test]]
+filename = "../integration_tests/fixed_form_std_f23.f"
+run = true
+
+[[test]]
 filename = "implicit_check.f90"
 ast = true
 asr_implicit_interface_and_typing = true
