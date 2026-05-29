@@ -2463,6 +2463,7 @@ RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation
 RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTRAFILES multi_file_member_access_02_mod.f90)
 RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_02 LABELS gfortran llvm)
+RUN(NAME type_bound_generic_member_access_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3237,6 +3238,7 @@ RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 # RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_06 LABELS llvm llvm_wasm llvm_wasm_emcc wasm fortran)
+RUN(NAME template_07 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc)             # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_add_01c LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -3537,6 +3539,7 @@ RUN(NAME read_92 LABELS gfortran llvm)
 RUN(NAME read_93 LABELS gfortran llvm)
 RUN(NAME read_94 LABELS gfortran llvm EXTRAFILES read_94.c)
 RUN(NAME read_95 LABELS gfortran llvm)
+RUN(NAME read_96 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4744,3 +4747,15 @@ RUN(NAME gpu_metal_192 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_193 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_194 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_195 LABELS gfortran llvm metal)
+
+RUN(NAME real128_arith_01 LABELS gfortran llvm)
+RUN(NAME real128_arith_02 LABELS gfortran llvm)
+RUN(NAME real128_arith_03 LABELS gfortran llvm)
+RUN(NAME real128_arith_04 LABELS gfortran llvm)
+RUN(NAME real128_arith_05 LABELS gfortran)
+RUN(NAME real128_arith_06 LABELS gfortran llvm)
+#RUN(NAME real128_arith_07 LABELS gfortran llvm) #seg fault
+RUN(NAME real128_arith_08 LABELS gfortran)  #todo : fix this test
+RUN(NAME real128_arith_09 LABELS gfortran)
+RUN(NAME real128_arith_10 LABELS gfortran llvm)
+RUN(NAME real128_literal_01 LABELS gfortran llvm)

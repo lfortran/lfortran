@@ -15,6 +15,9 @@
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
+#include <cstdint>
+#include <cstring>
 #include <string>
 #include <sstream>
 #include <set>
@@ -9080,7 +9083,7 @@ public:
             }
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind !=16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Real",
                     Level::Error, Stage::Semantic, {
@@ -18840,6 +18843,11 @@ public:
             r = ASRUtils::extract_real_4(x.m_n);
         } else if ( r_kind == 8 ) {
             r = ASRUtils::extract_real_8(x.m_n);
+        } else if ( r_kind == 16 ) {
+            lf_float128 *p = (lf_float128*)al.alloc(sizeof(lf_float128));
+            *p = lf_float128_from_str(ASRUtils::extract_real_16_str(x.m_n).c_str());
+            uintptr_t addr = (uintptr_t)p;
+            std::memcpy(&r, &addr, sizeof(addr));
         } else {
             diag.add(Diagnostic("Kind not supported",
                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
