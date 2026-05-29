@@ -4745,3 +4745,15 @@ RUN(NAME gpu_metal_192 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_193 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_194 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_195 LABELS gfortran llvm metal)
+
+RUN(NAME real128_arith_01 LABELS gfortran llvm)
+RUN(NAME real128_arith_02 LABELS gfortran llvm)
+RUN(NAME real128_arith_03 LABELS gfortran llvm)
+RUN(NAME real128_arith_04 LABELS gfortran llvm)
+RUN(NAME real128_arith_05 LABELS gfortran)
+RUN(NAME real128_arith_06 LABELS gfortran llvm)
+#RUN(NAME real128_arith_07 LABELS gfortran llvm) #seg fault
+RUN(NAME real128_arith_08 LABELS gfortran)  #todo : fix this test
+RUN(NAME real128_arith_09 LABELS gfortran)
+RUN(NAME real128_arith_10 LABELS gfortran llvm)
+RUN(NAME real128_literal_01 LABELS gfortran llvm)
