@@ -17125,6 +17125,11 @@ public:
                         llvm::Value* widened = builder->CreateZExt(loaded,
                             llvm_utils->getIntType(kind));
                         builder->CreateStore(widened, elem_ptr);
+                    } else if (ASRUtils::is_character(*elem_type)) {
+                        llvm::Value* str_data, *str_len;
+                        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(
+                            ASRUtils::get_string_type(elem_type), elem_ptr, true);
+                        builder->CreateCall(read_fn, {str_data, str_len, unit_val, iostat});
                     } else {
                         builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
                     }
