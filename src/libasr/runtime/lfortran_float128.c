@@ -1927,6 +1927,11 @@ _LF_SHIM_TO_INT(__fixtfdi,            __fixtfdi_lf_impl)
 
 lf_float128 lf_f128_from_double(double d)  { return (__float128)d; }
 double       lf_f128_to_double(lf_float128 v) { return (double)v; }
+lf_float128 lf_f128_add(lf_float128 a, lf_float128 b) { return a + b; }
+lf_float128 lf_f128_sub(lf_float128 a, lf_float128 b) { return a - b; }
+lf_float128 lf_f128_mul(lf_float128 a, lf_float128 b) { return a * b; }
+lf_float128 lf_f128_div(lf_float128 a, lf_float128 b) { return a / b; }
+lf_float128 lf_f128_neg(lf_float128 a) { return -a; }
 int lf_f128_isnan   (lf_float128 v) { return isnanq(v); }
 int lf_f128_isinf   (lf_float128 v) { return isinfq(v); }
 int lf_f128_signbit (lf_float128 v) {
@@ -1960,6 +1965,11 @@ LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) { return (isnanq(a)||is
 
 lf_float128 lf_f128_from_double(double d)     { return __extenddftf2_lf_impl(d); }
 double       lf_f128_to_double(lf_float128 v) { return __trunctfdf2_lf_impl(v); }
+lf_float128 lf_f128_add(lf_float128 a, lf_float128 b) { return __addtf3_lf_impl(a, b); }
+lf_float128 lf_f128_sub(lf_float128 a, lf_float128 b) { return __subtf3_lf_impl(a, b); }
+lf_float128 lf_f128_mul(lf_float128 a, lf_float128 b) { return __multf3_lf_impl(a, b); }
+lf_float128 lf_f128_div(lf_float128 a, lf_float128 b) { return __divtf3_lf_impl(a, b); }
+lf_float128 lf_f128_neg(lf_float128 a) { return __negtf2_lf_impl(a); }
 int lf_f128_isnan   (lf_float128 v) { return f128_is_nan(v); }
 int lf_f128_isinf   (lf_float128 v) { return f128_is_inf(v); }
 int lf_f128_signbit (lf_float128 v) { return f128_sign(v); }
