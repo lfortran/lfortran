@@ -1124,18 +1124,31 @@ static bool should_round_up_digits(const char *digits, int round_pos,
     return digits[round_pos] >= '5';
 }
 
-static long long round_scaled_value(double value, char rounding_mode,
-                                    bool is_negative) {
+static long long pow10_ll(int n) {
+    long long result = 1;
+    for (int i = 0; i < n; i++) {
+        result *= 10;
+    }
+    return result;
+}
+
+static long long round_scaled_digits(const char *digits, int drop_digits,
+                                     char rounding_mode, bool is_negative) {
+    long long value = atoll(digits);
+    long long divisor = pow10_ll(drop_digits);
+    long long quotient = value / divisor;
+    long long remainder = value % divisor;
+
     if (rounding_mode == 'u') {
-        return (long long)(is_negative ? floor(value) : ceil(value));
+        return quotient + (!is_negative && remainder != 0);
     }
     if (rounding_mode == 'd') {
-        return (long long)(is_negative ? ceil(value) : floor(value));
+        return quotient + (is_negative && remainder != 0);
     }
     if (rounding_mode == 'z') {
-        return (long long)floor(value);
+        return quotient;
     }
-    return (long long)round(value);
+    return quotient + (remainder * 2 >= divisor);
 }
 
 void handle_decimal(char* format, double val, int scale, char** result, char* c,
@@ -1350,8 +1363,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             if (digits + scale - zeros <= 15) {
                 val_str[15] = '\0';
                 int expected_len = digits + scale + zeros;
-                double scaled = (double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale));
-                long long t = round_scaled_value(scaled, rounding_mode, is_negative);
+                int drop_digits = strlen(val_str) - digits - scale;
+                long long t = round_scaled_digits(val_str, drop_digits, rounding_mode, is_negative);
                 sprintf(val_str, "%lld", t);
                 if (expected_len > 0 && (int)strlen(val_str) > expected_len) {
                     rounding_carry = true;
@@ -1387,8 +1400,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             if (digits + scale <= 15) {
                 new_str[15] = '\0';
                 zeros = strspn(new_str, "0");
-                double scaled = (double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits));
-                long long t = round_scaled_value(scaled, rounding_mode, is_negative);
+                int drop_digits = strlen(new_str) - digits;
+                long long t = round_scaled_digits(new_str, drop_digits, rounding_mode, is_negative);
                 sprintf(new_str, "%lld", t);
                 int index = zeros;
                 while(index--) {

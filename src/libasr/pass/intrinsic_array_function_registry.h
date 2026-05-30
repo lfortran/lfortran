@@ -434,7 +434,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         result += find_sum(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
-                    } else {
+                    } else if (kind == 8) {
                         double result = 0.0;
                         result += find_sum(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
@@ -500,7 +500,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         result = find_product(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
-                    } else {
+                    } else if (kind == 8) {
                         double result = 1.0;
                         result = find_product(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
@@ -595,7 +595,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         result = find_minval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
-                    } else {
+                    } else if (kind == 8) {
                         double result = std::numeric_limits<double>::max();
                         result = find_minval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
@@ -625,7 +625,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         result = find_maxval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
-                    } else {
+                    } else if (kind == 8) {
                         double result = std::numeric_limits<double>::min();
                         result = find_maxval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
@@ -6768,12 +6768,12 @@ namespace DotProduct {
                 std::vector<float> a(dim), b(dim);
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 float result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0f);
-                return make_ConstantWithType(make_RealConstant_t, result, return_type, loc);
+                return ASRUtils::make_RealConstant_util(al, loc, result, return_type);
             } else if (kind == 8) {
                 std::vector<double> a(dim), b(dim);
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 double result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
-                return make_ConstantWithType(make_RealConstant_t, result, return_type, loc);
+                return ASRUtils::make_RealConstant_util(al, loc, result, return_type);
             } else {
                 append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
                 return nullptr;
@@ -6939,7 +6939,7 @@ namespace DotProduct {
                 b.Assignment(result, b.Add(result, EXPR(ASR::make_ComplexBinOp_t(al, loc, func_call_conjg, ASR::binopType::Mul, b.ArrayItem_01(args[1], {i}), return_type, nullptr))))
             }, nullptr));
         } else if (is_real(*return_type)) {
-            body.push_back(al, b.Assignment(result, make_ConstantWithType(make_RealConstant_t, 0.0, return_type, loc)));
+            body.push_back(al, b.Assignment(result, ASRUtils::make_RealConstant_util(al, loc, 0.0, return_type)));
             body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
                 b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.r2r_t(b.ArrayItem_01(args[1], {i}), ASRUtils::type_get_past_array(arg_types[0])))))
             }, nullptr));
