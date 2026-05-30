@@ -6,6 +6,8 @@
 #include <set>
 #include <limits>
 #include <optional>
+#include <cstdint>
+#include <cstring>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
@@ -19,6 +21,7 @@
 #include <libasr/asr_expr_type_visitor.h>
 #include <libasr/asr_expr_value_visitor.h>
 #include <libasr/asr_walk_visitor.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 
 #include <complex>
 #include <string>
@@ -106,6 +109,58 @@ static inline std::string extract_real_16_str(const char *s) {
     }
     return r;
 }
+
+// --- real(16) value access ---------------------------------------------------
+//
+// The `RealConstant_t.m_r` field is a 64-bit payload whose meaning depends on
+// the constant's kind:
+//   kind=4,8:  m_r is the IEEE-754 double approximation / exact value.
+//   kind=16:   m_r is bit-cast from a `uint8_t*` pointing at 16 arena-allocated
+//              bytes that hold the binary128 representation. Reading m_r as a
+//              `double` for kind=16 is undefined behaviour.
+//
+// All access to m_r MUST go through these kind-aware helpers (and through
+// `extract_value<double>`, which refuses for kind=16). Constructing a kind=16
+// constant from a decimal string is `make_RealConstant_r16_from_str`.
+
+// Read the 16 raw bytes of a kind=16 RealConstant (binary128, little-endian).
+// Asserts that the constant is kind=16. Lifetime: tied to the ASR allocator
+// that built the node.
+static inline const uint8_t* real_constant_get_r16_bytes(
+        const ASR::RealConstant_t* c) {
+    uintptr_t addr;
+    std::memcpy(&addr, &c->m_r, sizeof(addr));
+    return reinterpret_cast<const uint8_t*>(addr);
+}
+
+// Pack 16 bytes into the m_r payload (compose the pointer-encoded double).
+// Used by the literal handler and by f_t when constructing kind=16 constants.
+static inline double real_constant_pack_r16(const uint8_t* bytes) {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(bytes);
+    double m_r;
+    std::memcpy(&m_r, &addr, sizeof(addr));
+    return m_r;
+}
+
+// Read the binary128 value of a kind=16 RealConstant.
+static inline lf_float128 real_constant_get_r16(const ASR::RealConstant_t* c) {
+    lf_float128 v;
+    std::memcpy(v.bytes, real_constant_get_r16_bytes(c), 16);
+    return v;
+}
+
+// Build a kind=16 RealConstant from a binary128 value: allocate 16 bytes on the
+// ASR arena, copy the bytes in, and pack the pointer into m_r. This is the only
+// supported way to materialise a computed (non-literal) kind=16 constant.
+static inline ASR::expr_t* make_RealConstant_r16(Allocator& al,
+        const Location& loc, lf_float128 v, ASR::ttype_t* type) {
+    uint8_t* bytes = static_cast<uint8_t*>(al.alloc(16));
+    std::memcpy(bytes, v.bytes, 16);
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+        al, loc, real_constant_pack_r16(bytes), type));
+}
+
+// ----------------------------------------------------------------------------
 
 static inline double extract_real_4(const char *s) {
     std::string r_str = ASRUtils::extract_real(s);
@@ -367,6 +422,19 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
             return -1;
         }
     }
+}
+
+// Kind-aware RealConstant constructor from a `double`. For kind 4/8 the value
+// is stored directly; for kind=16 the double is widened to binary128 and the
+// pointer-encoded payload is produced via make_RealConstant_r16. This is the
+// single supported way to build a real constant from a host double when the
+// kind may be 16 (e.g. intrinsic-generated literals such as 0.0, 1.0, pi).
+static inline ASR::expr_t* make_RealConstant_util(Allocator& al,
+        const Location& loc, double value, ASR::ttype_t* type) {
+    if (extract_kind_from_ttype_t(type) == 16) {
+        return make_RealConstant_r16(al, loc, lf_f128_from_double(value), type);
+    }
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, value, type));
 }
 
 static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
@@ -2104,6 +2172,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
         }
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
+            // kind=16 (real128) cannot be represented in `double m_r` — m_r
+            // is a pointer-encoded payload (see real_constant_get_r16_bytes).
+            // Refuse extraction so that constant-folding passes leave the
+            // value alone instead of dereferencing the pointer as a double.
+            if (ASRUtils::extract_kind_from_ttype_t(const_real->m_type) == 16) {
+                return false;
+            }
             if constexpr (std::is_same<T, double>::value){
                 value = (T) const_real->m_r;
             }
@@ -2614,7 +2689,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 0, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, asr_type));
+            return ASRUtils::make_RealConstant_util(al, asr_type->base.loc, 0.0, asr_type);
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 0.0, 0.0, asr_type));
@@ -2647,7 +2722,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 1, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
+            return ASRUtils::make_RealConstant_util(al, asr_type->base.loc, 1.0, asr_type);
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 0.0, asr_type));
@@ -7642,6 +7717,23 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
+    // Compile-time aggregation of real(16) arrays into a packed ArrayConstant
+    // is not supported: set_ArrayConstant_data / fetch_ArrayConstant_value only
+    // pack float/double element buffers, whereas a kind=16 RealConstant stores
+    // its binary128 value behind a pointer in m_r (see real_constant_get_r16_bytes
+    // in asr_utils.h). Let the array initialise at runtime instead — emits an
+    // ArrayConstructor that lowers element-by-element via fp128 store.
+    {
+        ASR::ttype_t* elt_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(a_type));
+        if (ASRUtils::is_array(elt_type)) {
+            elt_type = ASR::down_cast<ASR::Array_t>(elt_type)->m_type;
+        }
+        if (ASRUtils::is_real(*elt_type) &&
+            ASRUtils::extract_kind_from_ttype_t(elt_type) == 16) {
+            all_expr_evaluated = false;
+        }
+    }
     bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||

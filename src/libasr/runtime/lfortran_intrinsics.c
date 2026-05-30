@@ -1124,18 +1124,18 @@ static bool should_round_up_digits(const char *digits, int round_pos,
     return digits[round_pos] >= '5';
 }
 
-static long long round_scaled_value(double value, char rounding_mode,
+static long long round_scaled_value(long double value, char rounding_mode,
                                     bool is_negative) {
     if (rounding_mode == 'u') {
-        return (long long)(is_negative ? floor(value) : ceil(value));
+        return (long long)(is_negative ? floorl(value) : ceill(value));
     }
     if (rounding_mode == 'd') {
-        return (long long)(is_negative ? ceil(value) : floor(value));
+        return (long long)(is_negative ? ceill(value) : floorl(value));
     }
     if (rounding_mode == 'z') {
-        return (long long)floor(value);
+        return (long long)floorl(value);
     }
-    return (long long)round(value);
+    return (long long)roundl(value);
 }
 
 void handle_decimal(char* format, double val, int scale, char** result, char* c,
@@ -1350,7 +1350,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             if (digits + scale - zeros <= 15) {
                 val_str[15] = '\0';
                 int expected_len = digits + scale + zeros;
-                double scaled = (double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale));
+                long double scaled = (long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale));
                 long long t = round_scaled_value(scaled, rounding_mode, is_negative);
                 sprintf(val_str, "%lld", t);
                 if (expected_len > 0 && (int)strlen(val_str) > expected_len) {
@@ -1387,7 +1387,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             if (digits + scale <= 15) {
                 new_str[15] = '\0';
                 zeros = strspn(new_str, "0");
-                double scaled = (double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits));
+                long double scaled = (long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits));
                 long long t = round_scaled_value(scaled, rounding_mode, is_negative);
                 sprintf(new_str, "%lld", t);
                 int index = zeros;

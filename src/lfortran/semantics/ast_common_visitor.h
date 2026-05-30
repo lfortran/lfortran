@@ -16,8 +16,6 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
-#include <cstdint>
-#include <cstring>
 #include <string>
 #include <sstream>
 #include <set>
@@ -389,6 +387,14 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
         this->visit_expr(*x.m_arg);
+        if (ASR::is_a<ASR::RealConstant_t>(*value)
+                && ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {
+            lf_float128 v = ASRUtils::real_constant_get_r16(
+                ASR::down_cast<ASR::RealConstant_t>(value));
+            value = ASRUtils::make_RealConstant_r16(al, x.base.base.loc,
+                lf_f128_neg(v), x.m_type);
+            return;
+        }
         double arg_val;
         if (ASR::is_a<ASR::RealConstant_t>(*value)) {
             arg_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
@@ -580,6 +586,31 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
         if (!ASR::is_a<ASR::RealConstant_t>(*left_value) ||
             !ASR::is_a<ASR::RealConstant_t>(*right_value)) {
             return nullptr;
+        }
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(left_value)) == 16) {
+            lf_float128 lv = ASRUtils::real_constant_get_r16(
+                ASR::down_cast<ASR::RealConstant_t>(left_value));
+            lf_float128 rv = ASRUtils::real_constant_get_r16(
+                ASR::down_cast<ASR::RealConstant_t>(right_value));
+            int c = lf_f128_cmp(lv, rv);
+            bool result;
+            switch (asr_op) {
+                case (ASR::cmpopType::Eq):    { result = lf_f128_eq(lv, rv); break; }
+                case (ASR::cmpopType::NotEq): { result = !lf_f128_eq(lv, rv); break; }
+                case (ASR::cmpopType::Gt):    { result = (c > 0); break; }
+                case (ASR::cmpopType::GtE):   { result = (c >= 0); break; }
+                case (ASR::cmpopType::Lt):    { result = (c < 0); break; }
+                case (ASR::cmpopType::LtE):   { result = (c <= 0); break; }
+                default: {
+                    diag.add(diag::Diagnostic(
+                        "Comparison operator not implemented",
+                        Level::Error, Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            return ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+                al, loc, result, logical_type));
         }
         double left_val = ASR::down_cast<ASR::RealConstant_t>(left_value)->m_r;
         double right_val = ASR::down_cast<ASR::RealConstant_t>(right_value)->m_r;
@@ -17317,14 +17348,36 @@ public:
     ASR::expr_t* visit_BinOp_helper(ASR::expr_t* left, ASR::expr_t* right, ASR::binopType op, const Location& loc, ASR::ttype_t* dest_type) {
         LCOMPILERS_ASSERT((left != nullptr) && (right != nullptr));
         if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::RealConstant_t>(*right)) {
-            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
-            double right_value = ASR::down_cast<ASR::RealConstant_t>(right)->m_r;
+            ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(right);
+            if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+                lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+                lf_float128 rv = ASRUtils::real_constant_get_r16(rc);
+                lf_float128 res;
+                switch (op) {
+                    case ASR::Add: res = lf_f128_add(lv, rv); break;
+                    case ASR::Sub: res = lf_f128_sub(lv, rv); break;
+                    case ASR::Mul: res = lf_f128_mul(lv, rv); break;
+                    case ASR::Div: res = lf_f128_div(lv, rv); break;
+                    case ASR::Pow: res = lf_f128_pow(lv, rv); break;
+                    default: LCOMPILERS_ASSERT(false); res = lv;
+                }
+                return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+            }
+            double left_value = lc->m_r;
+            double right_value = rc->m_r;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
             perform_binop(left_value, right_value, op), dest_type));
         } else if (ASR::is_a<ASR::RealConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)){
             LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
-            double left_value = ASR::down_cast<ASR::RealConstant_t>(left)->m_r;
+            ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
             int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+            if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+                lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
+                lf_float128 res = lf_f128_pow(lv, lf_f128_from_double((double)right_value));
+                return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+            }
+            double left_value = lc->m_r;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
                     std::pow(left_value, right_value), dest_type));
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
@@ -18887,17 +18940,23 @@ public:
         } else if ( r_kind == 8 ) {
             r = ASRUtils::extract_real_8(x.m_n);
         } else if ( r_kind == 16 ) {
-            lf_float128 *p = (lf_float128*)al.alloc(sizeof(lf_float128));
-            *p = lf_float128_from_str(ASRUtils::extract_real_16_str(x.m_n).c_str());
-            uintptr_t addr = (uintptr_t)p;
-            std::memcpy(&r, &addr, sizeof(addr));
+            // kind=16 (real128) cannot fit in `double m_r`. Allocate 16 bytes
+            // on the ASR arena, parse the literal into them via the runtime
+            // helper, then pack the pointer into m_r. All consumers MUST read
+            // through real_constant_get_r16_bytes() — interpreting m_r as a
+            // double for kind=16 is undefined.
+            uint8_t* bytes = (uint8_t*)al.alloc(16);
+            lf_float128 v = lf_float128_from_str(
+                ASRUtils::extract_real_16_str(x.m_n).c_str());
+            std::memcpy(bytes, v.bytes, 16);
+            r = ASRUtils::real_constant_pack_r16(bytes);
         } else {
             diag.add(Diagnostic("Kind not supported",
                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
-        if (std::isinf(r)) {
+        if (r_kind != 16 && std::isinf(r)) {
             diag.add(Diagnostic(
                 "Real constant overflows its kind (" + std::to_string(r_kind) + ")",
                 Level::Warning, Stage::Semantic, {Label("", {x.base.base.loc})}));
