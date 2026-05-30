@@ -8938,13 +8938,22 @@ public:
             if (x.m_tgt) {
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
-                this->visit_expr_wrapper(x.m_tgt, true);
+                ASR::ttype_t* tgt_type = ASRUtils::expr_type(x.m_tgt);
+                bool tgt_is_array_or_member =
+                    (ASR::is_a<ASR::ArrayItem_t>(*x.m_tgt) ||
+                     ASR::is_a<ASR::StructInstanceMember_t>(*x.m_tgt)) &&
+                    !ASRUtils::is_array(tgt_type) &&
+                    !ASR::is_a<ASR::Pointer_t>(*tgt_type);
+                if (tgt_is_array_or_member) {
+                    this->visit_expr(*x.m_tgt);
+                } else {
+                    this->visit_expr_wrapper(x.m_tgt, true);
+                }
                 ptr_loads = ptr_loads_copy;
                 // ASR::Variable_t *t = EXPR2VAR(x.m_tgt);
                 // uint32_t t_h = get_hash((ASR::asr_t*)t);
                 // nptr = llvm_symtab[t_h];
                 nptr = tmp;
-                ASR::ttype_t* tgt_type = ASRUtils::expr_type(x.m_tgt);
                 // Load the pointer value for simple Var targets.
                 // StructInstanceMember/ArrayItem targets are already
                 // loaded by visit_expr_wrapper with load_ref=true.
