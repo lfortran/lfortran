@@ -10300,7 +10300,6 @@ public:
                       is_struct_member = true;
                   }
                   
-                  
                   if (is_struct_member && base_obj) {
                       ASR::ttype_t* base_type = ASRUtils::type_get_past_pointer(
                                                   ASRUtils::type_get_past_allocatable(
@@ -10369,11 +10368,12 @@ public:
                     }
                 }
                 
-             
+               
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), final_type,
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
             }
+        }
         } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
             if (ASR::is_a<ASR::Pointer_t>(*v_type)) {
