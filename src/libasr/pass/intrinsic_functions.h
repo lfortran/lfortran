@@ -4724,10 +4724,22 @@ namespace Real {
     static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
-            double i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
-            return ASRUtils::make_RealConstant_util(al, loc, i, t1);
+            int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_from_int64(i), t1);
+            }
+            return ASRUtils::make_RealConstant_util(al, loc, (double)i, t1);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
             ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]));
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(t1);
+            if (src_kind == 16) {
+                lf_float128 v = ASRUtils::real_constant_get_r16(r);
+                if (dest_kind == 16) {
+                    return ASRUtils::make_RealConstant_r16(al, loc, v, t1);
+                }
+                return ASRUtils::make_RealConstant_util(al, loc, lf_f128_to_double(v), t1);
+            }
             return ASRUtils::make_RealConstant_util(al, loc, r->m_r, t1);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
