@@ -2724,6 +2724,12 @@ public:
                     llvm::Type* dt_type_poly = llvm_utils->get_type_from_ttype_t_util(sm->m_v,
                         ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(caller_type)),
                         module.get());
+                    if (!dt->getType()->isPointerTy()) {
+                        llvm::Value* dt_val = dt;
+                        llvm::Value* alloca_tmp = builder->CreateAlloca(dt_val->getType());
+                        builder->CreateStore(dt_val, alloca_tmp);
+                        dt = alloca_tmp;
+                    }
                     llvm::Value* dt_ptr = llvm_utils->create_gep2(dt_type_poly, dt, 1);
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt_ptr);
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v) &&
