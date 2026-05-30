@@ -148,6 +148,9 @@ endif()
 if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
     target_link_libraries(lfortran_utils p::llvm)
+    if (EMSCRIPTEN)
+        target_link_libraries(asr lldWasm lldCommon)
+    endif()
 endif()
 
 # Install the dwarf_convert.py and dat_convert.py
