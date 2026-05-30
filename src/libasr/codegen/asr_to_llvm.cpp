@@ -11502,7 +11502,8 @@ public:
                 }
             }
             return;
-        } else if ((is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)) {
+        } else if ((is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)
+                   && !ASRUtils::is_array(asr_target_type)) {
             if (ASRUtils::is_allocatable(asr_target_type)) {
                 check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
             }
@@ -24045,6 +24046,9 @@ public:
         }
         llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 dest_arg, dest_type, module.get());
+        if (ASRUtils::is_array(dest_type)) {
+            return builder->CreateBitCast(class_value, dest_llvm_type);
+        }
         return builder->CreateBitCast(class_value, dest_llvm_type->getPointerTo());
     }
 
