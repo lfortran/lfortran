@@ -10368,7 +10368,7 @@ public:
                     }
                 }
                 
-               
+                
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), final_type,
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
@@ -12280,6 +12280,7 @@ public:
         }
 
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(fn);
+        
         if (f2 == nullptr) {
             diag.add(Diagnostic("Cannot resolve function call: underlying symbol is null.", 
                                 Level::Error, Stage::Semantic, {Label("", {loc})}));
