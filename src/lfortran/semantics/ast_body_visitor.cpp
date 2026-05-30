@@ -1366,12 +1366,84 @@ public:
     void collect_labels() {
         labels.clear();
         if (starting_m_body == nullptr) return;
-        for (size_t i = 0; i < starting_n_body; ++i) {
-            int64_t label = stmt_label(starting_m_body[i]);
+
+        auto collect_labels_in_stmts = [&](AST::stmt_t** body, size_t n_body,
+                                           const auto& collect_labels_in_stmt_ref) -> void {
+            if (!body) return;
+            for (size_t i = 0; i < n_body; ++i) {
+                collect_labels_in_stmt_ref(body[i], collect_labels_in_stmt_ref);
+            }
+        };
+
+        auto collect_labels_in_stmt = [&](AST::stmt_t* stmt,
+                                     const auto& collect_labels_in_stmt_ref) -> void {
+            if (!stmt) return;
+            int64_t label = stmt_label(stmt);
             if (label != 0) {
                 labels.insert(std::to_string(label));
             }
-        }
+
+            switch (stmt->type) {
+                case AST::stmtType::If: {
+                    AST::If_t* s = AST::down_cast<AST::If_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::DoLoop: {
+                    AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Where: {
+                    AST::Where_t* s = AST::down_cast<AST::Where_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::WhileLoop: {
+                    AST::WhileLoop_t* s = AST::down_cast<AST::WhileLoop_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::AssociateBlock: {
+                    AST::AssociateBlock_t* s = AST::down_cast<AST::AssociateBlock_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Block: {
+                    AST::Block_t* s = AST::down_cast<AST::Block_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Select: {
+                    AST::Select_t* s = AST::down_cast<AST::Select_t>(stmt);
+                    for (size_t i = 0; i < s->n_body; ++i) {
+                        AST::case_stmt_t* c = s->m_body[i];
+                        if (!c) continue;
+                        switch (c->type) {
+                            case AST::case_stmtType::CaseStmt: {
+                                AST::CaseStmt_t* cs = AST::down_cast<AST::CaseStmt_t>(c);
+                                collect_labels_in_stmts(cs->m_body, cs->n_body, collect_labels_in_stmt_ref);
+                                break;
+                            }
+                            case AST::case_stmtType::CaseStmt_Default: {
+                                AST::CaseStmt_Default_t* cs = AST::down_cast<AST::CaseStmt_Default_t>(c);
+                                collect_labels_in_stmts(cs->m_body, cs->n_body, collect_labels_in_stmt_ref);
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        };
+
+        collect_labels_in_stmts(starting_m_body, starting_n_body, collect_labels_in_stmt);
     }
 
     // Returns true if parsing succeeded, false if should continue to next kwarg
