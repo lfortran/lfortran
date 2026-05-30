@@ -1961,32 +1961,47 @@ _LF_SHIM_TO_FLOAT(__trunctfsf2,       __trunctfsf2_lf_impl)
 /* ========================================================================
  * Q. Linux / HAVE_REAL128 path helpers
  *
- * On Linux with __float128 (LFORTRAN_HAVE_REAL128=1), lf_float128 is a
- * typedef for __float128 (defined in lf_float128_to_str.h).  These wrappers
- * expose the same API used by lfortran_intrinsics.c on that path.
+ * On Linux with __float128 (LFORTRAN_HAVE_REAL128=1), keep the public
+ * lf_float128 byte representation and convert at the quadmath boundary.
+ * These wrappers expose the same API used by lfortran_intrinsics.c.
  * ======================================================================== */
 
 #if LFORTRAN_HAVE_REAL128
 
-lf_float128 lf_f128_from_double(double d)  { return (__float128)d; }
-double       lf_f128_to_double(lf_float128 v) { return (double)v; }
-lf_float128 lf_f128_add(lf_float128 a, lf_float128 b) { return a + b; }
-lf_float128 lf_f128_sub(lf_float128 a, lf_float128 b) { return a - b; }
-lf_float128 lf_f128_mul(lf_float128 a, lf_float128 b) { return a * b; }
-lf_float128 lf_f128_div(lf_float128 a, lf_float128 b) { return a / b; }
-lf_float128 lf_f128_neg(lf_float128 a) { return -a; }
-int lf_f128_isnan   (lf_float128 v) { return isnanq(v); }
-int lf_f128_isinf   (lf_float128 v) { return isinfq(v); }
+static __float128 lf_f128_to_quad(lf_float128 v) {
+    __float128 q;
+    memcpy(&q, v.bytes, 16);
+    return q;
+}
+
+static lf_float128 lf_f128_from_quad(__float128 q) {
+    lf_float128 v;
+    memcpy(v.bytes, &q, 16);
+    return v;
+}
+
+lf_float128 lf_f128_from_double(double d)  { return lf_f128_from_quad((__float128)d); }
+lf_float128 lf_f128_from_int64(int64_t i)  { return lf_f128_from_quad((__float128)i); }
+double       lf_f128_to_double(lf_float128 v) { return (double)lf_f128_to_quad(v); }
+lf_float128 lf_f128_add(lf_float128 a, lf_float128 b) { return lf_f128_from_quad(lf_f128_to_quad(a) + lf_f128_to_quad(b)); }
+lf_float128 lf_f128_sub(lf_float128 a, lf_float128 b) { return lf_f128_from_quad(lf_f128_to_quad(a) - lf_f128_to_quad(b)); }
+lf_float128 lf_f128_mul(lf_float128 a, lf_float128 b) { return lf_f128_from_quad(lf_f128_to_quad(a) * lf_f128_to_quad(b)); }
+lf_float128 lf_f128_div(lf_float128 a, lf_float128 b) { return lf_f128_from_quad(lf_f128_to_quad(a) / lf_f128_to_quad(b)); }
+lf_float128 lf_f128_neg(lf_float128 a) { return lf_f128_from_quad(-lf_f128_to_quad(a)); }
+int lf_f128_isnan   (lf_float128 v) { return isnanq(lf_f128_to_quad(v)); }
+int lf_f128_isinf   (lf_float128 v) { return isinfq(lf_f128_to_quad(v)); }
 int lf_f128_signbit (lf_float128 v) {
-    uint64_t hi; memcpy(&hi, (const char*)&v + 8, 8); return (int)(hi >> 63);
+    uint64_t hi; memcpy(&hi, v.bytes + 8, 8); return (int)(hi >> 63);
 }
 int lf_f128_cmp(lf_float128 a, lf_float128 b) {
-    if (isnanq(a) || isnanq(b)) return 1;
-    return (a > b) - (a < b);
+    __float128 aq = lf_f128_to_quad(a), bq = lf_f128_to_quad(b);
+    if (isnanq(aq) || isnanq(bq)) return 1;
+    return (aq > bq) - (aq < bq);
 }
 int lf_f128_eq(lf_float128 a, lf_float128 b) {
-    if (isnanq(a) || isnanq(b)) return 0;
-    return a == b;
+    __float128 aq = lf_f128_to_quad(a), bq = lf_f128_to_quad(b);
+    if (isnanq(aq) || isnanq(bq)) return 0;
+    return aq == bq;
 }
 
 /* Compiler-rt comparison ABI (weak on ELF so libgcc can override) */
@@ -2002,11 +2017,12 @@ LF_TF2_ATTR int __lttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,
 LF_TF2_ATTR int __letf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
 LF_TF2_ATTR int __gttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
 LF_TF2_ATTR int __getf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) { return (isnanq(a)||isnanq(b))?1:0; }
+LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) { return (lf_f128_isnan(a)||lf_f128_isnan(b))?1:0; }
 
 #else /* !LFORTRAN_HAVE_REAL128 — expose the struct-based helpers used by intrinsics.c */
 
 lf_float128 lf_f128_from_double(double d)     { return __extenddftf2_lf_impl(d); }
+lf_float128 lf_f128_from_int64(int64_t i)     { return __floatditf_lf_impl(i); }
 double       lf_f128_to_double(lf_float128 v) { return __trunctfdf2_lf_impl(v); }
 lf_float128 lf_f128_add(lf_float128 a, lf_float128 b) { return __addtf3_lf_impl(a, b); }
 lf_float128 lf_f128_sub(lf_float128 a, lf_float128 b) { return __subtf3_lf_impl(a, b); }
@@ -2041,7 +2057,7 @@ int lf_f128_eq(lf_float128 a, lf_float128 b) {
 void format_float128_fortran(char *result, lf_float128 val) {
 #if LFORTRAN_HAVE_REAL128
     char buf[64];
-    int n = quadmath_snprintf(buf, sizeof(buf), "%.33Qe", val);
+    int n = quadmath_snprintf(buf, sizeof(buf), "%.33Qe", lf_f128_to_quad(val));
     if (n < 0 || n >= (int)sizeof(buf)) { snprintf(result, 64, "NaN"); return; }
     char *ep = strchr(buf, 'e'); if (!ep) ep = strchr(buf, 'E');
     if (ep) {

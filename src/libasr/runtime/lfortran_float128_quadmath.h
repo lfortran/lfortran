@@ -77,6 +77,7 @@ static inline void lf_f128_to_str(char *buf, lf_float128 v) {
 
 /* ── Conversions ─────────────────────────────────────────────────────────── */
 lf_float128 lf_f128_from_double(double d);
+lf_float128 lf_f128_from_int64(int64_t i);
 double       lf_f128_to_double(lf_float128 v);
 
 /* ── Basic arithmetic (kind-aware compile-time folding) ──────────────────── */

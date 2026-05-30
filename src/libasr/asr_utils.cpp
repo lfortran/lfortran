@@ -3181,7 +3181,7 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
                 // int -> real(16) is always exact for int64; build the binary128
                 // bytes directly on the arena and pack them into m_r.
                 uint8_t* bytes = (uint8_t*)al.alloc(16);
-                lf_float128 v = lf_f128_from_double((double)int_value);
+                lf_float128 v = lf_f128_from_int64(int_value);
                 std::memcpy(bytes, v.bytes, 16);
                 double m_r = ASRUtils::real_constant_pack_r16(bytes);
                 value = ASR::down_cast<ASR::expr_t>(
