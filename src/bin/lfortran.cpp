@@ -22,6 +22,7 @@
 #include <libasr/codegen/asr_to_py.h>
 #include <libasr/codegen/asr_to_x86.h>
 #include <libasr/codegen/asr_to_wasm.h>
+#include <libasr/codegen/asr_to_liric.h>
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
@@ -98,7 +99,7 @@ namespace lsi = LCompilers::LLanguageServer::Interface;
 #endif
 
 enum Backend {
-    llvm, c, cpp, x86, wasm, fortran, mlir
+    llvm, c, cpp, x86, wasm, fortran, mlir, liric
 };
 
 std::string get_system_temp_dir()
@@ -1514,6 +1515,93 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
     return 0;
 }
 
+#ifdef HAVE_LFORTRAN_LIRIC
+int compile_to_object_file_liric(const std::string &infile,
+        const std::string &outfile, bool time_report,
+        CompilerOptions &compiler_options,
+        LCompilers::PassManager &pass_manager,
+        int liric_backend = 2)
+{
+    std::string input;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::FortranEvaluator fe(compiler_options);
+    Allocator al(64*1024*1024);
+    LCompilers::LFortran::AST::TranslationUnit_t* ast;
+    LCompilers::ASR::TranslationUnit_t* asr;
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+    input = read_file_ok(infile);
+    auto t1 = std::chrono::high_resolution_clock::now();
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+
+    // Src -> AST
+    {
+        LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
+            result = fe.get_ast2(input, lm, diagnostics);
+        std::cerr << diagnostics.render(lm, compiler_options);
+        if (!result.ok) return 1;
+        ast = result.result;
+    }
+    auto t2 = std::chrono::high_resolution_clock::now();
+
+    // AST -> ASR
+    {
+        diagnostics.diagnostics.clear();
+        LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+            result = fe.get_asr3(*ast, diagnostics, lm);
+        std::cerr << diagnostics.render(lm, compiler_options);
+        if (!result.ok) return 2;
+        asr = result.result;
+    }
+    auto t3 = std::chrono::high_resolution_clock::now();
+
+    {
+        int err = save_mod_files(*asr, compiler_options, lm);
+        if (err) return err;
+    }
+
+    // ASR passes: intrinsic instantiation, array/string lowering, ...
+    // Without this the codegen sees raw IntrinsicElementalFunction /
+    // IntrinsicImpureFunction nodes that no backend can lower directly.
+    pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
+
+    if (std::getenv("LF_DUMP_POSTPASS")) {
+        std::cerr << LCompilers::pickle(*asr, false, true, false) << std::endl;
+    }
+
+    // ASR -> liric object
+    {
+        diagnostics.diagnostics.clear();
+        LCompilers::Result<int>
+            result = LCompilers::asr_to_liric(*asr, al, outfile,
+                compiler_options, diagnostics, liric_backend);
+        std::cerr << diagnostics.render(lm, compiler_options);
+        if (!result.ok) return 3;
+    }
+    auto t4 = std::chrono::high_resolution_clock::now();
+
+    if (time_report) {
+        auto ms = [](auto a, auto b) {
+            return std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+        };
+        std::cout << "Time report:" << std::endl;
+        std::cout << "File reading:" << std::setw(5) << ms(t0,t1) << std::endl;
+        std::cout << "Src -> AST:  " << std::setw(5) << ms(t1,t2) << std::endl;
+        std::cout << "AST -> ASR:  " << std::setw(5) << ms(t2,t3) << std::endl;
+        std::cout << "ASR -> liric:" << std::setw(5) << ms(t3,t4) << std::endl;
+        std::cout << "Total:       " << std::setw(5) << ms(t0,t4) << std::endl;
+    }
+    return 0;
+}
+#endif /* HAVE_LFORTRAN_LIRIC */
+
 int compile_to_binary_wasm(const std::string &infile, const std::string &outfile,
         bool time_report,
         CompilerOptions &compiler_options)
@@ -1997,7 +2085,8 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm || backend == Backend::mlir) {
+    if (backend == Backend::llvm || backend == Backend::mlir
+            || backend == Backend::liric) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -2668,8 +2757,27 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::fortran;
     } else if (opts.arg_backend == "mlir") {
         backend = Backend::mlir;
+    } else if (opts.arg_backend == "liric") {
+        backend = Backend::liric;
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
+        // pass_array_by_data renames functions that take array args to
+        // a per-element-type variant (e.g. add_strings_many becomes
+        // add_strings_many_string_t____1).  It does this at the
+        // definition site but does not rewrite cross-module call
+        // sites consistently in the direct backend, so the linker
+        // ends up with undefined references.  Skip the pass; the
+        // direct backend handles the unmangled names fine.
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back(
+            "pass_array_by_data");
+        // This pass adds hidden logical arguments for optional dummy
+        // arguments at definition sites.  Direct LIRIC compiles modules
+        // separately, so callers loaded from .mod files still use the
+        // original public ABI.
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back(
+            "transform_optional_argument_functions");
     } else {
-        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
+        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir, liric." << std::endl;
         return 1;
     }
 
@@ -2873,6 +2981,17 @@ int main_app(int argc, char *argv[]) {
                 << std::endl;
             return 1;
 #endif
+        } else if (backend == Backend::liric) {
+#ifdef HAVE_LFORTRAN_LIRIC
+            result = compile_to_object_file_liric(opts.arg_file, outfile,
+                compiler_options.time_report, compiler_options,
+                lfortran_pass_manager);
+#else
+            std::cerr << "The -c option with `--backend=liric` requires the "
+                "liric backend to be enabled. Recompile with `-DWITH_LIRIC=ON`."
+                << std::endl;
+            return 1;
+#endif
         } else {
             throw LCompilers::LCompilersException("Unsupported backend.");
         }
@@ -2931,6 +3050,17 @@ int main_app(int argc, char *argv[]) {
                 std::cerr << "Compiling Fortran files to object files using "
                     "`--backend=mlir` requires the MLIR backend to be enabled. "
                     "Recompile with `WITH_MLIR=yes`." << std::endl;
+                return 1;
+#endif
+            } else if (backend == Backend::liric) {
+#ifdef HAVE_LFORTRAN_LIRIC
+                err = compile_to_object_file_liric(arg_file, tmp_o,
+                    compiler_options.time_report, compiler_options,
+                    lfortran_pass_manager);
+#else
+                std::cerr << "Compiling Fortran files to object files using "
+                    "`--backend=liric` requires the liric backend to be enabled. "
+                    "Recompile with `-DWITH_LIRIC=ON`." << std::endl;
                 return 1;
 #endif
             } else {
