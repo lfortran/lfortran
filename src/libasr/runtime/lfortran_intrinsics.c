@@ -13313,13 +13313,11 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 LFORTRAN_API void _lfortran_get_environment_variable(fchar *name, int32_t name_len, char* receiver) {
     char* C_name = to_c_string(name , name_len);
     if (C_name == NULL || ! getenv(C_name)) {
-        receiver[0] = '\0';
         internal_free(C_name);
         return;
     }
     int32_t len = strlen(getenv(C_name));
     memcpy(receiver, getenv(C_name), len);
-    receiver[len] = '\0';
     internal_free(C_name);
 }
 
@@ -13332,6 +13330,23 @@ LFORTRAN_API int32_t _lfortran_get_environment_variable_status(fchar *name, int3
     internal_free(C_name);
     if (value == NULL) {
         return 1;
+    }
+    return 0;
+}
+
+LFORTRAN_API int32_t _lfortran_get_environment_variable_status_value(
+        fchar *name, int32_t name_len, int32_t value_len) {
+    char* C_name = to_c_string(name, name_len);
+    if (C_name == NULL) {
+        return 2;
+    }
+    char *value = getenv(C_name);
+    internal_free(C_name);
+    if (value == NULL) {
+        return 1;
+    }
+    if (value_len < (int32_t) strlen(value)) {
+        return -1;
     }
     return 0;
 }
