@@ -692,14 +692,11 @@ jobs:
           tags: ${{ steps.image-tags.outputs.tags }}
 
   build_xlfortran_jupyterlite:
-    name: Build xlfortran JupyterLite WASM kernel
+    name: Build xlfortran JupyterLite kernel and run tests
     runs-on: ubuntu-24.04
     if: >-
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -728,6 +725,12 @@ jobs:
           export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
           echo "PREFIX=$PREFIX" >> $GITHUB_ENV
           micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
+
+      - name: Run WASM evaluator tests
+        run: |
+          set -ex
+          micromamba run -n xeus-lfortran-wasm-build \
+            node build-wasm/src/lfortran/tests/test_lfortran.js
 
       - name: Build JupyterLite site
         run: |
