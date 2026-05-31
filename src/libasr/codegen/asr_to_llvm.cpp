@@ -66,6 +66,7 @@
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/gpu_utils.h>
+#include <libasr/codegen/codegen_asr_utils.h>
 namespace LCompilers {
 
 using ASR::is_a;
@@ -82,21 +83,12 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
+// Backend-neutral ASR classification now lives in codegen_asr_utils.h so
+// the Liric backend can share one definition.
+using CodeGen::is_external_interface_function;
+
 // Helper functions for LLVM function name mangling
 namespace {
-
-/**
- * Check if a function is an external interface function.
- * External interface functions are functions with:
- * - Interface deftype
- * - Not intrinsic ABI
- * - Not in a module
- */
-static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
-    return ftype->m_deftype == ASR::deftypeType::Interface &&
-           ftype->m_abi != ASR::abiType::Intrinsic &&
-           !ftype->m_module;
-}
 
 /**
  * Compute the final mangled LLVM function name.
