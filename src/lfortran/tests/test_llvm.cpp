@@ -1426,3 +1426,18 @@ TEST_CASE("FortranEvaluator pass_array_by_data on global random_number") {
     CHECK(r.ok);
 }
 #endif
+
+#ifdef __EMSCRIPTEN__
+TEST_CASE("WasmLFortranExecutor basic") {
+    // Directly exercise WasmLFortranExecutor bypassing FortranEvaluator
+    LCompilers::WasmLFortranExecutor we;
+    auto m = we.parse_module2(R"""(
+define i64 @__lfortran_evaluate_1()
+{
+    ret i64 42
+}
+    )""", "test.ll");
+    we.add_module(std::move(m), 1);
+    CHECK(we.execfn<int64_t>("__lfortran_evaluate_1") == 42);
+}
+#endif

@@ -110,6 +110,7 @@ public:
     ~WasmLFortranExecutor();
 
     void add_module(std::unique_ptr<LLVMModule> m, int eval_count);
+    std::unique_ptr<LLVMModule> parse_module2(const std::string &source, const std::string &filename);
     intptr_t get_symbol_address(const std::string &name);
     llvm::LLVMContext &get_context();
 

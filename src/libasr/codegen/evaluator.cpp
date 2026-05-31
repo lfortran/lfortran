@@ -603,6 +603,17 @@ llvm::LLVMContext &WasmLFortranExecutor::get_context()
     return *context;
 }
 
+std::unique_ptr<LLVMModule> WasmLFortranExecutor::parse_module2(
+    const std::string &source, const std::string &/*filename*/)
+{
+    llvm::SMDiagnostic err;
+    auto mod = llvm::parseAssemblyString(source, err, *context);
+    if (!mod)
+        throw LCompilersException("WasmLFortranExecutor::parse_module2: Invalid LLVM IR: "
+                                  + err.getMessage().str());
+    return std::make_unique<LLVMModule>(std::move(mod));
+}
+
 void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_count)
 {
     std::unique_ptr<llvm::Module> mod = std::move(lm->m_m);
