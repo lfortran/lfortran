@@ -697,6 +697,9 @@ jobs:
     if: >-
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v6
         with:
