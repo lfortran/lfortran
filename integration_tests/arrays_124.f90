@@ -1,7 +1,13 @@
 program test
+  implicit none
   character(:), allocatable :: c(:)
+  
   c = ["apple", "mango", "peach"]
+  if (.not. allocated(c)) error stop 1
+  
   deallocate(c)
-  print *, len(c)
-  print *, c, "d"
+  
+  if (allocated(c)) error stop 2
+  
+  print *, "PASS"
 end program
