@@ -1628,7 +1628,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // Buffering the function return into a temporary avoids overwriting LHS allocatables
         // during pass_subroutine_from_function.
         if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
-            ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
+            ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) && 
+            !xx.m_overloaded) { 
+
+            this->visit_expr(*xx.m_value);
 
             std::string name_hint = "_struct_func_assign_";
             ASR::expr_t* struct_var_temporary =
@@ -1689,7 +1692,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
         lhs_var = nullptr;
     }
-    
+
     void visit_Where(const ASR::Where_t &x) {
         bool inside_where_copy = inside_where;
         if( !inside_where ) {
