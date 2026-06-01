@@ -208,19 +208,27 @@ namespace LCompilers {
             std::vector<llvm::Type*> els_8 = {
                 llvm::Type::getDoubleTy(context),
                 llvm::Type::getDoubleTy(context)};
+            std::vector<llvm::Type*> els_16 = {
+                llvm::Type::getFP128Ty(context),
+                llvm::Type::getFP128Ty(context)};
             std::vector<llvm::Type*> els_4_ptr = {
                 llvm::Type::getFloatTy(context)->getPointerTo(),
                 llvm::Type::getFloatTy(context)->getPointerTo()};
             std::vector<llvm::Type*> els_8_ptr = {
                 llvm::Type::getDoubleTy(context)->getPointerTo(),
                 llvm::Type::getDoubleTy(context)->getPointerTo()};
+            std::vector<llvm::Type*> els_16_ptr = {
+                llvm::Type::getFP128Ty(context)->getPointerTo(),
+                llvm::Type::getFP128Ty(context)->getPointerTo()};
             std::vector<llvm::Type*> string_descriptor_members {
                 llvm::Type::getInt8Ty(context)->getPointerTo(), /* char* */
                 llvm::Type::getInt64Ty(context)  /*length*/ };
             complex_type_4 = llvm::StructType::create(context, els_4, "complex_4", true);
             complex_type_8 = llvm::StructType::create(context, els_8, "complex_8", true);
+            complex_type_16 = llvm::StructType::create(context, els_16, "complex_16", true);
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
+            complex_type_16_ptr = llvm::StructType::create(context, els_16_ptr, "complex_16_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
             llvm::Type *i32Ty = llvm::Type::getInt32Ty(context);
             llvm::FunctionType *fnTy = llvm::FunctionType::get(i32Ty, {}, true);
@@ -635,8 +643,11 @@ namespace LCompilers {
             case 8:
                 type = complex_type_8;
                 break;
+            case 16:
+                type = complex_type_16;
+                break;
             default:
-                throw CodeGenError("Only 32 and 64 bits complex kinds are supported.");
+                throw CodeGenError("Only 32, 64 and 128 bits complex kinds are supported.");
         }
         if( type != nullptr ) {
             if( get_pointer ) {

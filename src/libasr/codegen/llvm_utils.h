@@ -270,8 +270,8 @@ class ASRToLLVMVisitor;
             std::map<uint64_t, llvm::Value*> &llvm_symtab; // llvm_symtab_value
 
 
-            llvm::StructType *complex_type_4, *complex_type_8;
-            llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
+            llvm::StructType *complex_type_4, *complex_type_8, *complex_type_16;
+            llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr, *complex_type_16_ptr;
             llvm::PointerType *character_type;
             llvm::Type* string_descriptor; /* <{ i8* --DATA-- , i64 --LENGTH-- }> */
             llvm::Type* vptr_type;
