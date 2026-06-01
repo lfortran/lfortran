@@ -30,6 +30,9 @@
 #else
 namespace LCompilers {
     class LLVMEvaluator {};
+#ifdef __EMSCRIPTEN__
+    class WasmLFortranExecutor {};
+#endif
 }
 #endif
 
@@ -60,6 +63,15 @@ LLVMEvaluator &FortranEvaluator::get_llvm_evaluator() {
     }
     return *e;
 }
+
+#ifdef __EMSCRIPTEN__
+WasmLFortranExecutor &FortranEvaluator::get_wasm_executor() {
+    if (!wasm_exec) {
+        wasm_exec = std::make_unique<WasmLFortranExecutor>();
+    }
+    return *wasm_exec;
+}
+#endif
 #endif
 
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
@@ -153,8 +165,13 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     // LLVM -> Machine code -> Execution
+#ifdef __EMSCRIPTEN__
+    WasmLFortranExecutor &e = get_wasm_executor();
+    e.add_module(std::move(m), eval_count);
+#else
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
+#endif
     if (return_type == "integer4") {
         int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
@@ -398,11 +415,17 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
 
+#ifdef __EMSCRIPTEN__
+    llvm::LLVMContext &ctx = get_wasm_executor().get_context();
+#else
+    llvm::LLVMContext &ctx = get_llvm_evaluator().get_context();
+#endif
+
     // ASR -> LLVM
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
-            get_llvm_evaluator().get_context(), al, pass_manager,
+            ctx, al, pass_manager,
             compiler_options, run_fn, "", infile, lm);
     if (res.ok) {
         m = std::move(res.result);
@@ -412,12 +435,14 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     }
 
     if (compiler_options.po.fast) {
+#ifndef __EMSCRIPTEN__
         auto t1 = std::chrono::high_resolution_clock::now();
         get_llvm_evaluator().opt(*m->m_m);
         auto t2 = std::chrono::high_resolution_clock::now();
         if (compiler_options.po.time_report && time_opt) {
             *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         }
+#endif
     }
 
     return m;
@@ -597,7 +622,8 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, diag::Diagnostics &diagnostics,
+    LCompilers::PassManager& pass_manager)
 {
     // SRC -> AST -> ASR -> Fortran
     SymbolTable *old_symbol_table = symbol_table;
@@ -605,8 +631,9 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        LCompilers::PassManager pass_manager;
-        pass_manager.use_fortran_passes();
+        if (!pass_manager.has_user_defined_passes()) {
+            pass_manager.use_fortran_passes();
+        }
         pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {

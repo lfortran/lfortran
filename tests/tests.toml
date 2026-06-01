@@ -2843,7 +2843,7 @@ ast_f90 = true
 filename = "coarrays_03.f90"
 fortran = true
 pass = "coarray"
-options = "--coarray=true"
+options = "--coarray=true --show-fortran"
 
 [[test]]
 filename = "../integration_tests/program_03.f90"

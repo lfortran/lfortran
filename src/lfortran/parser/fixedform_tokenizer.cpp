@@ -1160,6 +1160,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "where(")) {
+            lex_where(cur);
+            return true;
+        }
+
         if (next_is(cur, "selectrank(")) {
             lex_selectrank(cur);
             return true;
@@ -1688,6 +1693,53 @@ struct FixedFormRecursiveDescent {
         }
         push_token_advance(cur, "endselect");
         tokenize_line(cur);
+    }
+
+    void lex_where(unsigned char *&cur) {
+        unsigned char *probe = cur;
+        if (!try_next(probe, "where")) {
+            return;
+        }
+        bool is_block = false;
+        if (try_next(probe, "(")) {
+            if (try_expr(probe, false) && *probe == ')') {
+                probe++;
+                is_block = next_is_eol(probe);
+            }
+        }
+
+        push_token_advance(cur, "where");
+        tokenize_line(cur);
+        if (!is_block) {
+            return;
+        }
+
+        while (true) {
+            if (next_is(cur, "elsewhere")) {
+                push_token_advance(cur, "elsewhere");
+                tokenize_line(cur);
+                continue;
+            }
+            if (next_is(cur, "endwhere")) {
+                push_token_advance(cur, "endwhere");
+                tokenize_line(cur);
+                break;
+            }
+            if (next_is(cur, "end_where")) {
+                push_token_advance(cur, "end_where");
+                tokenize_line(cur);
+                break;
+            }
+            if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = cur - string_start;
+                loc.last = cur - string_start;
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside where block",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
+            }
+        }
     }
 
     bool if_advance_or_terminate(unsigned char *&cur) {

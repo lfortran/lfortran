@@ -35,30 +35,6 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            con:
-                                                (Variable
-                                                    7
-                                                    con
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
                                                 )
                                         })
                                     calcfc
@@ -152,30 +128,6 @@
                                                     (Real 8)
                                                     ()
                                                     BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            con:
-                                                (Variable
-                                                    6
-                                                    con
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    Source
                                                     Public
                                                     Required
                                                     .false.

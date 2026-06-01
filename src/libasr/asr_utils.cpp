@@ -8,6 +8,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 #include <libasr/modfile.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
@@ -2926,6 +2927,28 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 }
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = v->m_type;
+
+                // Check if formal argument is an implicit interface procedure (e.g. procedure() :: f)
+                // If it is, it accepts any explicit interface procedure as actual argument.
+                if (v->m_type_declaration) {
+                    ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                    if (ASR::is_a<ASR::Function_t>(*type_decl)) {
+                        std::string decl_name = ASR::down_cast<ASR::Function_t>(type_decl)->m_name;
+                        if (decl_name.find("__") == 0 && decl_name.find("_iface_implicit") != std::string::npos) {
+                            continue;
+                        }
+                    }
+                }
+
+                // Check if actual argument is an implicit interface procedure (e.g. external :: f)
+                // If it is, it is compatible with any explicit interface formal argument.
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                        continue;
+                    }
+                }
+
                 ASR::symbol_t* s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
                 ASR::symbol_t* s2 = nullptr;
                 ASR::ttype_t* arg2_ext = ASRUtils::extract_type(arg2);
@@ -2955,8 +2978,10 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                             return false;
                         }
                     }
-                } else if (!types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
-                    return false;
+                } else {
+                    if (!types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
+                        return false;
+                    }
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
                 if (args[i].m_value == nullptr) {
@@ -2968,23 +2993,19 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
 
-                // Check if actual argument is an implicit interface procedure
-                // (FunctionType with no arg types and Interface deftype).
-                // Implicit interfaces are compatible with any explicit interface
-                // - actual compatibility is checked at call site.
-                bool arg1_is_implicit = false;
+                // Check if actual argument is an implicit interface procedure (e.g. external :: f)
+                // If it is, it is compatible with any explicit interface formal argument.
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
-                    ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    arg1_is_implicit = (ft->n_arg_types == 0 &&
-                        ft->m_deftype == ASR::deftypeType::Interface);
+                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                        continue;
+                    }
                 }
 
-                if (!arg1_is_implicit) {
-                    Allocator al(512);
-                    if (!types_equal(arg1, arg2, args[i].m_value,
-                        ASRUtils::get_expr_from_sym(al, &f->base), false)) {
-                        return false;
-                    }
+                Allocator al(512);
+                if (!types_equal(arg1, arg2, args[i].m_value,
+                    ASRUtils::get_expr_from_sym(al, &f->base), false)) {
+                    return false;
                 }
             }
         }
@@ -3121,24 +3142,51 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
     if (ASRUtils::expr_value(a_arg)) {
         // calculate value
         if (a_kind == ASR::cast_kindType::RealToInteger) {
-            int64_t v = ASR::down_cast<ASR::RealConstant_t>(
-                        ASRUtils::expr_value(a_arg))->m_r;
-            value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
+                        ASRUtils::expr_value(a_arg));
+            // kind=16 m_r is a pointer-encoded payload, not a double — skip
+            // compile-time folding and let the runtime fptosi handle it.
+            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
+                int64_t v = rc->m_r;
+                value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::RealToReal) {
-            double v = ASR::down_cast<ASR::RealConstant_t>(
-                       ASRUtils::expr_value(a_arg))->m_r;
-            value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, a_loc, v, a_type));
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
+                       ASRUtils::expr_value(a_arg));
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a_arg));
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+            // Skip compile-time folding when either side is real(16): m_r is
+            // a pointer payload for kind=16 (see real_constant_get_r16_bytes),
+            // and folding through double would silently truncate. Runtime
+            // cast handles it.
+            if (src_kind != 16 && dest_kind != 16) {
+                value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_RealConstant_t(al, a_loc, rc->m_r, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::RealToComplex) {
-            double double_value = ASR::down_cast<ASR::RealConstant_t>(
-                                  ASRUtils::expr_value(a_arg))->m_r;
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, a_loc,
-                        double_value, 0, a_type));
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
+                                  ASRUtils::expr_value(a_arg));
+            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(
+                            al, a_loc, rc->m_r, 0, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::IntegerToReal) {
             // TODO: Clashes with the pow functions
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_arg))->m_n;
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+            if (dest_kind != 16) {
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
+            } else {
+                // int -> real(16) is always exact for int64; build the binary128
+                // bytes directly on the arena and pack them into m_r.
+                uint8_t* bytes = (uint8_t*)al.alloc(16);
+                lf_float128 v = lf_f128_from_int64(int_value);
+                std::memcpy(bytes, v.bytes, 16);
+                double m_r = ASRUtils::real_constant_pack_r16(bytes);
+                value = ASR::down_cast<ASR::expr_t>(
+                    ASR::make_RealConstant_t(al, a_loc, m_r, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::IntegerToComplex) {
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                 ASRUtils::expr_value(a_arg))->m_n;
