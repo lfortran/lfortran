@@ -1568,6 +1568,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        
         // Handle case where LHS is StructInstanceMember over an array
         // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
         if (ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) {
@@ -1592,22 +1593,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+        
         // e.g.; a = [b, a], where 'a' is an allocatable
         if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
             ASRUtils::is_allocatable(xx.m_target)
         ) {
-            // TODO: dealing with StructType would need thinking similar to the
-            // way `traverse_args` handles it, the only reason to not
-            // add it is because there is currently no integration test
-            // for it
             if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
                 ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
                 bool create_temp_var_for_rhs = false;
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
                 ArrayVarCollector array_var_collector(al, array_vars);
                 array_var_collector.visit_expr(*xx.m_value);
-                // after collecting variables from RHS, we check whether
-                // there is any common variable
+                
                 for (size_t i=0; i < array_vars.size(); i++) {
                     ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(array_vars[i]);
                     if (v->m_v == v1->m_v) {
@@ -1623,31 +1620,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             }
         }
 
-        // Handle function calls returning derived types to prevent memory aliasing
-        // when the arguments alias the left-hand side (e.g., varr = ff(varr)).
-        // Buffering the function return into a temporary avoids overwriting LHS allocatables
-        // during pass_subroutine_from_function.
-        if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
-            ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) && 
-            !xx.m_overloaded) { 
-
-            this->visit_expr(*xx.m_value);
-
-            std::string name_hint = "_struct_func_assign_";
-            ASR::expr_t* struct_var_temporary =
-                create_and_allocate_temporary_variable_for_struct(
-                    xx.m_value, name_hint, al, current_body,
-                    current_scope, exprs_with_target, realloc_lhs);
-            xx.m_value = struct_var_temporary;
-        }
-
         // Handle struct-type RHS that aliases the LHS, e.g.:
         //   chain2%next = chain2
-        // where the RHS expression contains the LHS as a sub-component (or
-        // shares a root variable with the LHS). Without a temporary, the
-        // deep-copy of the RHS into the LHS clobbers parts of the RHS
-        // mid-copy (especially via reallocation of nested allocatable
-        // components), producing incorrect results / segfaults.
         {
             std::function<ASR::symbol_t*(ASR::expr_t*)> get_root_var =
                 [&](ASR::expr_t* e) -> ASR::symbol_t* {
@@ -1684,13 +1658,30 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+        
         ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
         lhs_var = lhs_array_var;
+        
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
+        
         lhs_var = nullptr;
+
+        // Handle function calls returning SCALAR derived types to prevent memory aliasing
+        if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
+            ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) && 
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) && 
+            !xx.m_overloaded) { 
+
+            std::string name_hint = "_struct_func_assign_";
+            ASR::expr_t* struct_var_temporary =
+                create_and_allocate_temporary_variable_for_struct(
+                    xx.m_value, name_hint, al, current_body,
+                    current_scope, exprs_with_target, realloc_lhs);
+            xx.m_value = struct_var_temporary;
+        }
     }
 
     void visit_Where(const ASR::Where_t &x) {
