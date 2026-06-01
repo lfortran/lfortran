@@ -1,4 +1,3 @@
-! Fortran code after applying the pass: coarray
 program test
 implicit none
 integer(4) :: exit_code
@@ -73,4 +72,3 @@ interface
 end interface
 
 end program test
-

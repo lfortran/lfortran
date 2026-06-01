@@ -931,7 +931,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
+int emit_fortran(const std::string &infile, LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options) {
     std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
@@ -943,7 +943,7 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (src.ok) {
         std::cout << src.result;
@@ -1863,7 +1863,7 @@ int compile_to_object_file_c(const std::string &infile,
 
 int compile_to_binary_fortran(const std::string &infile,
         const std::string &outfile,
-        CompilerOptions &compiler_options) {
+        CompilerOptions &compiler_options, LCompilers::PassManager& pass_manager) {
     std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
@@ -1875,7 +1875,7 @@ int compile_to_binary_fortran(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!src.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -2817,7 +2817,7 @@ int main_app(int argc, char *argv[]) {
         return emit_julia(opts.arg_file, compiler_options);
     }
     if (opts.show_fortran) {
-        return emit_fortran(opts.arg_file, compiler_options);
+        return emit_fortran(opts.arg_file, lfortran_pass_manager, compiler_options);
     }
     if (opts.arg_S) {
         if (backend == Backend::llvm) {
@@ -2863,7 +2863,7 @@ int main_app(int argc, char *argv[]) {
         } else if (backend == Backend::wasm) {
             result = compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::fortran) {
-            result = compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
+            result = compile_to_binary_fortran(opts.arg_file, outfile, compiler_options, lfortran_pass_manager);
         } else if (backend == Backend::mlir) {
 #ifdef HAVE_LFORTRAN_MLIR
             result = handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
@@ -2920,7 +2920,7 @@ int main_app(int argc, char *argv[]) {
                 err = compile_to_object_file_c(arg_file, tmp_o, opts.arg_v,
                         false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options, true, &found_main);
             } else if (backend == Backend::fortran) {
-                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options, lfortran_pass_manager);
             } else if (backend == Backend::wasm) {
                 err = compile_to_binary_wasm(arg_file, outfile,
                         compiler_options.time_report, compiler_options);
