@@ -2782,7 +2782,29 @@ public:
                     tmp = llvm_utils->CreateLoad2(
                         llvm_utils->string_descriptor->getPointerTo(), tmp);
                 }
-                llvm_utils->free_strings(tmp_expr, tmp);
+                
+                if (dims > 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
+                    llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
+                    llvm_utils->create_if_else(cond, [=]() {
+                        
+                        llvm_utils->free_strings(tmp_expr, tmp);
+                        
+                        llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
+                            ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(cur_type)),
+                            module.get(), abt);
+                        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(cur_type)));
+                        llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
+                        
+                        
+                        arr_descr->reset_is_allocated_flag(typ, tmp, llvm_data_type);
+                    }, [](){});
+                } else {
+                    llvm_utils->free_strings(tmp_expr, tmp);
+                }
+                
             } else {
                 if (dims == 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
                     llvm::Type* llvm_data_type;
