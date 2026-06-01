@@ -1669,11 +1669,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         
         lhs_var = nullptr;
 
-        // Handle function calls returning SCALAR derived types to prevent memory aliasing
         if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
             ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) && 
             !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) && 
-            !xx.m_overloaded) { 
+            !xx.m_overloaded &&
+            is_common_symbol_present_in_lhs_and_rhs(al, xx.m_target, xx.m_value)) { 
 
             std::string name_hint = "_struct_func_assign_";
             ASR::expr_t* struct_var_temporary =
