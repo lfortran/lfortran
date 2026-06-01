@@ -600,8 +600,11 @@ namespace LCompilers {
                 case 8:
                     type_ptr =  llvm::Type::getDoubleTy(context)->getPointerTo();
                     break;
+                case 16:
+                    type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
+                    break;
                 default:
-                    throw CodeGenError("Only 32 and 64 bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64 and 128 bits real kinds are supported.");
             }
         } else {
             switch(a_kind)
@@ -612,8 +615,11 @@ namespace LCompilers {
                 case 8:
                     type_ptr = llvm::Type::getDoubleTy(context);
                     break;
+                case 16:
+                    type_ptr = llvm::Type::getFP128Ty(context);
+                    break;
                 default:
-                    throw CodeGenError("Only 32 and 64 bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64 and 128bits real kinds are supported.");
             }
         }
         return type_ptr;
@@ -10282,12 +10288,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
             // Non-upoly class arrays also use ONE-wrapper layout:
             // a single wrapper {vptr, data_ptr} where data_ptr points to
-            // a contiguous buffer of N elements. Use compile-time elem_size.
+            // a contiguous buffer of N elements.
             if (is_src_class && is_dest_class) {
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                llvm::DataLayout dl(module->getDataLayout());
-                uint64_t elem_size = dl.getTypeAllocSize(actual_struct_type);
                 llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
 
                 // Extract source wrapper fields
@@ -10299,6 +10303,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 src_raw_data = builder->CreateBitCast(src_raw_data,
                     llvm::Type::getInt8Ty(context)->getPointerTo());
 
+                llvm::Value* elem_size_val =
+                    llvm_utils->get_class_type_size_from_vptr(src_vptr);
+
                 // Get copy function from vtable
                 llvm::Value* fn = llvm_utils->CreateLoad2(
                     llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(),
@@ -10307,8 +10314,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
                 // Allocate dest data buffer = num_elements * elem_size
                 llvm::Value* num_elems_64 = builder->CreateSExtOrTrunc(num_elements, i64_ty);
-                llvm::Value* total_bytes = builder->CreateMul(num_elems_64,
-                    llvm::ConstantInt::get(i64_ty, elem_size));
+                llvm::Value* total_bytes = builder->CreateMul(num_elems_64, elem_size_val);
                 llvm::Value* dest_raw_data = llvm_utils->allocate_zeroed_bytes(total_bytes);
 
                 // Ensure dest has a wrapper allocated
@@ -10335,8 +10341,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm_utils->CreateLoad2(i64_ty, ui), num_elems_64);
                 }, [&]() {
                     llvm::Value* ui_val = llvm_utils->CreateLoad2(i64_ty, ui);
-                    llvm::Value* byte_offset = builder->CreateMul(ui_val,
-                        llvm::ConstantInt::get(i64_ty, elem_size));
+                    llvm::Value* byte_offset = builder->CreateMul(ui_val, elem_size_val);
                     llvm::Value* src_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), src_raw_data, byte_offset);
                     llvm::Value* dest_elem = builder->CreateGEP(
@@ -10407,6 +10412,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 copy_dimension_descriptors(llvm_array_type, src, dest, module);
             }
         } else {
+            call_struct_finalize_fn(dest, dest_ty, 
+                ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(src_expr)))); /*Assume src and dest are same*/
             if (ASRUtils::is_class_type(ASRUtils::extract_type(dest_ty))) {
                 if (!ASRUtils::is_value_constant(src_expr)) {
                     // Store Vptr from src to dest
@@ -10856,6 +10865,30 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 }
             }
         }
+
+    }
+    void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
+        if( struct_sym->n_member_functions == 0) return;
+        if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
+        llvm_utils->validate_llvm_SSA(
+            llvm_utils->get_type_from_ttype_t_util(ty, &struct_sym->base, llvm_utils->module)->getPointerTo(),
+            ptr);
+
+        ASR::symbol_t* final_sym {};
+        for(size_t i = 0 ; i < struct_sym->n_member_functions; i++){
+            std::string fn_name = struct_sym->m_member_functions[i];
+            ASR::Function_t * fn = ASR::down_cast<ASR::Function_t>(struct_sym->m_symtab->
+                                    parent->get_symbol(struct_sym->m_member_functions[i]));  
+            if(ASRUtils::is_array(ASRUtils::EXPR2VAR(fn->m_args[0])->m_type)){
+                continue; // We only handle rank 0 finalizer
+            }
+            LCOMPILERS_ASSERT_MSG(final_sym == nullptr, "while looking for rank-0-final fn -- found multiple ones")
+            final_sym =  ASRUtils::symbol_get_past_external(&fn->base);
+        }
+        uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+        LCOMPILERS_ASSERT(llvm_symtab_fn.find(fh) != llvm_symtab_fn.end())
+        llvm::Function* final_fn = llvm_symtab_fn[fh];
+        builder->CreateCall(final_fn, {ptr});
     }
 
 } // namespace LCompilers

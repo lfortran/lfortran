@@ -8,6 +8,8 @@
 #include <optional>
 #include <vector>
 #include <utility>
+#include <cstdint>
+#include <cstring>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
@@ -21,6 +23,7 @@
 #include <libasr/asr_expr_type_visitor.h>
 #include <libasr/asr_expr_value_visitor.h>
 #include <libasr/asr_walk_visitor.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 
 #include <complex>
 #include <string>
@@ -86,6 +89,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
 
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
+static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
@@ -93,8 +97,72 @@ static inline std::string extract_real(const char *s) {
     std::string x = s;
     x = replace(x, "d", "e");
     x = replace(x, "D", "E");
+    // Fortran quad-precision exponent letter (e.g. 1.5q10 == 1.5e10 in real(16))
+    x = replace(x, "q", "e");
+    x = replace(x, "Q", "E");
     return x;
 }
+
+static inline std::string extract_real_16_str(const char *s) {
+    std::string r = extract_real(s);         // normalise d/D/q/Q → e/E
+    auto pos = r.rfind('_');
+    if (pos != std::string::npos) {
+        r = r.substr(0, pos);
+    }
+    return r;
+}
+
+// --- real(16) value access ---------------------------------------------------
+//
+// The `RealConstant_t.m_r` field is a 64-bit payload whose meaning depends on
+// the constant's kind:
+//   kind=4,8:  m_r is the IEEE-754 double approximation / exact value.
+//   kind=16:   m_r is bit-cast from a `uint8_t*` pointing at 16 arena-allocated
+//              bytes that hold the binary128 representation. Reading m_r as a
+//              `double` for kind=16 is undefined behaviour.
+//
+// All access to m_r MUST go through these kind-aware helpers (and through
+// `extract_value<double>`, which refuses for kind=16). Constructing a kind=16
+// constant from a decimal string is `make_RealConstant_r16_from_str`.
+
+// Read the 16 raw bytes of a kind=16 RealConstant (binary128, little-endian).
+// Asserts that the constant is kind=16. Lifetime: tied to the ASR allocator
+// that built the node.
+static inline const uint8_t* real_constant_get_r16_bytes(
+        const ASR::RealConstant_t* c) {
+    uintptr_t addr;
+    std::memcpy(&addr, &c->m_r, sizeof(addr));
+    return reinterpret_cast<const uint8_t*>(addr);
+}
+
+// Pack 16 bytes into the m_r payload (compose the pointer-encoded double).
+// Used by the literal handler and by f_t when constructing kind=16 constants.
+static inline double real_constant_pack_r16(const uint8_t* bytes) {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(bytes);
+    double m_r;
+    std::memcpy(&m_r, &addr, sizeof(addr));
+    return m_r;
+}
+
+// Read the binary128 value of a kind=16 RealConstant.
+static inline lf_float128 real_constant_get_r16(const ASR::RealConstant_t* c) {
+    lf_float128 v;
+    std::memcpy(v.bytes, real_constant_get_r16_bytes(c), 16);
+    return v;
+}
+
+// Build a kind=16 RealConstant from a binary128 value: allocate 16 bytes on the
+// ASR arena, copy the bytes in, and pack the pointer into m_r. This is the only
+// supported way to materialise a computed (non-literal) kind=16 constant.
+static inline ASR::expr_t* make_RealConstant_r16(Allocator& al,
+        const Location& loc, lf_float128 v, ASR::ttype_t* type) {
+    uint8_t* bytes = static_cast<uint8_t*>(al.alloc(16));
+    std::memcpy(bytes, v.bytes, 16);
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+        al, loc, real_constant_pack_r16(bytes), type));
+}
+
+// ----------------------------------------------------------------------------
 
 static inline double extract_real_4(const char *s) {
     std::string r_str = ASRUtils::extract_real(s);
@@ -358,6 +426,19 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
     }
 }
 
+// Kind-aware RealConstant constructor from a `double`. For kind 4/8 the value
+// is stored directly; for kind=16 the double is widened to binary128 and the
+// pointer-encoded payload is produced via make_RealConstant_r16. This is the
+// single supported way to build a real constant from a host double when the
+// kind may be 16 (e.g. intrinsic-generated literals such as 0.0, 1.0, pi).
+static inline ASR::expr_t* make_RealConstant_util(Allocator& al,
+        const Location& loc, double value, ASR::ttype_t* type) {
+    if (extract_kind_from_ttype_t(type) == 16) {
+        return make_RealConstant_r16(al, loc, lf_f128_from_double(value), type);
+    }
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, value, type));
+}
+
 static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
     if (type == nullptr) {
         return;
@@ -573,14 +654,32 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
     switch (s.type) {
         case ASR::symbolType::Variable: {
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
-            std::string res = type_to_str_fortran_symbol(v->m_type, v->m_type_declaration, true);
-            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
-                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(v->m_type);
+            ASR::ttype_t *base_type = ASRUtils::extract_type(v->m_type);
+            std::string res = type_to_str_fortran_symbol(base_type, v->m_type_declaration, true);
+            if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+                const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(base_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
                 } else {
                     res = "class(" + res + ")";
                 }
+            }
+            // Add dimension attribute for array types
+            ASR::ttype_t *type_past_alloc = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+            if (ASR::is_a<ASR::Array_t>(*type_past_alloc)) {
+                ASR::Array_t *array_t = ASR::down_cast<ASR::Array_t>(type_past_alloc);
+                res += ", dimension(";
+                for (size_t i = 0; i < array_t->n_dims; i++) {
+                    if (i > 0) res += ", ";
+                    res += ":";
+                }
+                res += ")";
+            }
+            // Add allocatable/pointer attributes
+            if (ASR::is_a<ASR::Allocatable_t>(*v->m_type)) {
+                res += ", allocatable";
+            } else if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
+                res += ", pointer";
             }
             // Collect attributes
             if (v->m_storage == ASR::storage_typeType::Parameter) {
@@ -2075,6 +2174,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
         }
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
+            // kind=16 (real128) cannot be represented in `double m_r` — m_r
+            // is a pointer-encoded payload (see real_constant_get_r16_bytes).
+            // Refuse extraction so that constant-folding passes leave the
+            // value alone instead of dereferencing the pointer as a double.
+            if (ASRUtils::extract_kind_from_ttype_t(const_real->m_type) == 16) {
+                return false;
+            }
             if constexpr (std::is_same<T, double>::value){
                 value = (T) const_real->m_r;
             }
@@ -2387,6 +2493,7 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
             switch (r->m_kind) {
                 case 4: { res = "f32"; break; }
                 case 8: { res = "f64"; break; }
+                case 16: { res = "f128"; break; }
                 default: { throw LCompilersException("Float kind not supported"); }
             }
             return res;
@@ -2584,7 +2691,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 0, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, asr_type));
+            return ASRUtils::make_RealConstant_util(al, asr_type->base.loc, 0.0, asr_type);
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 0.0, 0.0, asr_type));
@@ -2617,7 +2724,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 1, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
+            return ASRUtils::make_RealConstant_util(al, asr_type->base.loc, 1.0, asr_type);
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 0.0, asr_type));
@@ -3593,14 +3700,13 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
     char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
     ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr,
-    int64_t a_corank = 0, ASR::codimension_t* a_codims = nullptr,
-    size_t n_codims = 0, bool a_is_coarray = false
+    ASR::codimension_t* a_codims = nullptr, size_t n_codims = 0
 ) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
         a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
-        a_pass_attr, a_self_argument, a_corank, a_codims, n_codims, a_is_coarray
+        a_pass_attr, a_self_argument, a_codims, n_codims
     );
 }
 
@@ -4221,6 +4327,10 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
             // Double precision
             return 8;
         }
+        if (*p == 'q' || *p == 'Q') {
+            // Quad precision (real(16))
+            return 16;
+        }
         p++;
     }
     return 4;
@@ -4402,15 +4512,20 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     }
     return false;
 }
-
+/**
+ * Check if two derived types are :
+ * 1) the same, or
+ * 2) one is parent of another, or
+ * 3) both are unlimited polymorphic types
+ */
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    auto is_upoly = [](ASR::Struct_t* s) {
-        return s->m_struct_signature != nullptr &&
-            ASR::down_cast<ASR::StructType_t>(
-                s->m_struct_signature)->m_is_unlimited_polymorphic;
-    };
     return a == b || is_parent(a, b) || is_parent(b, a) ||
-        (is_upoly(a) && is_upoly(b));
+        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b));
+}
+
+// Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
+inline bool can_pass_derviedtype_arg_to_parameter(ASR::Struct_t* arg, ASR::Struct_t* param) {
+    return arg == param || is_parent(param, arg) || is_unlimited_polymorphic_type(param);
 }
 
 // Helper: check if IntegerBinOp is identity (x+0, 0+x, x-0)
@@ -6062,7 +6177,7 @@ class SymbolDuplicator {
                 variable->m_presence, variable->m_value_attr, variable->m_target_attr,
                 variable->m_contiguous_attr, variable->m_bindc_name, variable->m_is_volatile,
                 variable->m_is_protected, variable->m_pass_attr, variable->m_self_argument,
-                variable->m_corank, variable->m_codims, variable->n_codims, variable->m_is_coarray
+                variable->m_codims, variable->n_codims
             ));
     }
 
@@ -7021,7 +7136,7 @@ static inline bool is_coarray(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
-        return v->m_is_coarray || v->m_corank > 0;
+        return v->n_codims > 0;
     }
     return false;
 }
@@ -7029,7 +7144,7 @@ static inline bool is_coarray(ASR::symbol_t* s) {
 static inline int64_t symbol_corank(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
-        return ASR::down_cast<ASR::Variable_t>(s)->m_corank;
+        return ASR::down_cast<ASR::Variable_t>(s)->n_codims;
     }
     return 0;
 }
@@ -7612,6 +7727,23 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
+    // Compile-time aggregation of real(16) arrays into a packed ArrayConstant
+    // is not supported: set_ArrayConstant_data / fetch_ArrayConstant_value only
+    // pack float/double element buffers, whereas a kind=16 RealConstant stores
+    // its binary128 value behind a pointer in m_r (see real_constant_get_r16_bytes
+    // in asr_utils.h). Let the array initialise at runtime instead — emits an
+    // ArrayConstructor that lowers element-by-element via fp128 store.
+    {
+        ASR::ttype_t* elt_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(a_type));
+        if (ASRUtils::is_array(elt_type)) {
+            elt_type = ASR::down_cast<ASR::Array_t>(elt_type)->m_type;
+        }
+        if (ASRUtils::is_real(*elt_type) &&
+            ASRUtils::extract_kind_from_ttype_t(elt_type) == 16) {
+            all_expr_evaluated = false;
+        }
+    }
     bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
@@ -7663,9 +7795,71 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
 
-    return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
-            ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
-            value, a_storage_format, a_struct_var);
+    if (is_array_item_constant && all_expr_evaluated) {
+        return (ASR::asr_t*) value;
+    }
+
+    ASR::asr_t* arr_ctor_asr = ASR::make_ArrayConstructor_t(
+        al, a_loc, a_args, n_args, a_type, value, a_storage_format, a_struct_var);
+    ASR::ArrayConstructor_t* arr_ctor = ASR::down_cast<ASR::ArrayConstructor_t>(
+        ASRUtils::EXPR(arr_ctor_asr));
+    int64_t ctor_size_val = 0;
+    bool size_known = false;
+    bool all_scalars = true;
+    bool can_compute_size = true;
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t* arg = a_args[i];
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstructor_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+            all_scalars = false;
+        }
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            all_scalars = false;
+            if (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(arg))) {
+                can_compute_size = false;
+                break;
+            }
+        }
+    }
+    if (all_scalars) {
+        ctor_size_val = static_cast<int64_t>(n_args);
+        size_known = true;
+    } else if (can_compute_size) {
+        ASR::expr_t* ctor_size_expr = ASRUtils::get_ArrayConstructor_size(al, arr_ctor);
+        if (ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
+            size_known = true;
+        }
+    }
+    if (size_known && ctor_size_val > 0) {
+        ASR::ttype_t* ctor_type = ASRUtils::type_get_past_pointer(arr_ctor->m_type);
+        if (ASR::is_a<ASR::Array_t>(*ctor_type)) {
+            ASR::Array_t* ctor_arr = ASR::down_cast<ASR::Array_t>(ctor_type);
+            if (ctor_arr->n_dims == 1) {
+                int64_t dim_len = 0;
+                bool has_len = ctor_arr->m_dims[0].m_length != nullptr &&
+                    ASRUtils::extract_value(ASRUtils::expr_value(ctor_arr->m_dims[0].m_length), dim_len);
+                if (!has_len) {
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim = ctor_arr->m_dims[0];
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+                    if (dim.m_start == nullptr) {
+                        dim.m_start = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, a_loc, 1, int_type));
+                    }
+                    dim.m_length = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, a_loc, ctor_size_val, int_type));
+                    dims.push_back(al, dim);
+                    arr_ctor->m_type = ASRUtils::TYPE(ASR::make_Array_t(
+                        al, a_loc, ctor_arr->m_type, dims.p, dims.size(),
+                        ctor_arr->m_physical_type));
+                }
+            }
+        }
+    }
+
+    return arr_ctor_asr;
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
@@ -7909,7 +8103,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                         ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false,
                                         false, false, nullptr, false, false,
-                                        ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false);
+                                        ASR::pass_attrType::NotMethod, nullptr);
 
                         ASR::symbol_t* cast_sym = ASR::down_cast<ASR::symbol_t>(cast_);
                         current_scope->add_symbol(cast_sym_name, cast_sym);

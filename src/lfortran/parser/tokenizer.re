@@ -844,6 +844,10 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | ':'
                 ;
 
+            hollerith_string
+                = int 'H' [^\s,)'\"\x00]+
+                ;
+
             * {
                 token_loc(loc, cur, tok, string_start);
                 std::string t = token(tok, cur);
@@ -908,6 +912,7 @@ void lex_format(unsigned char *&cur, Location &loc,
             '-' | '+' { continue; }
             (int)? whitespace? data_edit_desc { continue; }
             control_edit_desc { continue; }
+            (int)? whitespace? hollerith_string { continue; }
         */
     }
 }

@@ -51,7 +51,7 @@
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/unique_symbols.h>
-#include <libasr/pass/insert_deallocate.h>
+#include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
@@ -60,6 +60,7 @@
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
+#include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -119,9 +120,10 @@ namespace LCompilers {
             {"gpu_offload", &pass_replace_gpu_offload},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
-            {"insert_deallocate", &pass_insert_deallocate},
+            {"intent_out_deallocate", &pass_intent_out_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
-            {"array_struct_temporary", &pass_array_struct_temporary}
+            {"array_struct_temporary", &pass_array_struct_temporary},
+            {"coarray", &pass_replace_coarray}
         };
 
         bool apply_default_passes;
@@ -250,6 +252,7 @@ namespace LCompilers {
                 "implied_do_loops",
                 "gpu_offload",
                 "array_struct_temporary",
+                "coarray",
                 "transform_optional_argument_functions",
                 "select_case",
                 "nested_vars",
@@ -274,7 +277,7 @@ namespace LCompilers {
                 "while_else",
                 "unused_functions",
                 "unique_symbols",
-                "insert_deallocate",
+                "intent_out_deallocate",
             };
             _optimization_passes = {
                 "replace_with_compile_time_values",

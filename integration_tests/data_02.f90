@@ -1,6 +1,8 @@
 program data2
     implicit none
     integer :: j
+    real :: x(6)
+    data x /1,2,3,4,2*6/
     data j / 5 /
     integer :: i, iarx(3,1), iary(3,1)
     print *, "1", j
@@ -26,4 +28,6 @@ program data2
     print *, "4"
     data(iary(i,1),i=1,3)/  1, 9, 1950 /
     print *, "5"
+    if (x(1) /= 1.0 .or. x(2) /= 2.0 .or. x(3) /= 3.0 .or. x(4) /= 4.0 &
+    & .or. x(5) /= 6.0 .or. x(6) /= 6.0) error stop
 end program

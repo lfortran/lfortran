@@ -252,12 +252,6 @@ semantic error: Parameter attribute cannot be used with Target attribute
 224 |     integer, parameter, target :: foo=4
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind 16 is not supported for Real
-   --> tests/errors/continue_compilation_2.f90:227:5
-    |
-227 |     real*16 :: unsupported_kind
-    |     ^^^^^^^ 
-
 semantic error: Argument was not specified
    --> tests/errors/continue_compilation_2.f90:229:33
     |
@@ -920,13 +914,13 @@ semantic error: Arguments to min0 must be of real, integer or character type
 518 |     print *, min(min_max, min_max)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Arguments to min0 must be of real, integer or character type
+semantic error: Arguments to max0 must be of real, integer or character type
    --> tests/errors/continue_compilation_2.f90:520:14
     |
 520 |     print *, max(.true., .false.)
     |              ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Arguments to min0 must be of real, integer or character type
+semantic error: Arguments to max0 must be of real, integer or character type
    --> tests/errors/continue_compilation_2.f90:521:14
     |
 521 |     print *, max(min_max, min_max)

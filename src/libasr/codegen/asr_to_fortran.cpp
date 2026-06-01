@@ -560,6 +560,13 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        bool wrap_in_interface = false;
+        if (type->m_deftype == ASR::deftypeType::Interface && !is_interface) {
+            wrap_in_interface = true;
+            r += "interface\n";
+            inc_indent();
+            r += indent;
+        }
         current_pass_self_args.clear();
         SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
             (ASR::symbol_t*) &x);
@@ -724,6 +731,11 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        if (wrap_in_interface) {
+            dec_indent();
+            r += indent;
+            r += "end interface\n";
+        }
         current_pass_self_args.clear();
         src = r;
     }
@@ -1772,10 +1784,13 @@ public:
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         size_t start_idx = is_method ? 1 : 0;
+        bool first_arg = true;
         for (size_t i = start_idx; i < x.n_args; i ++) {
+            if (!x.m_args[i].m_value) continue;
+            if (!first_arg) r += ", ";
             visit_expr(*x.m_args[i].m_value);
             r += src;
-            if (i < x.n_args-1) r += ", ";
+            first_arg = false;
         }
 
         r += ")";
@@ -2907,6 +2922,14 @@ public:
         r += "%";
         r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
         src = r;
+    }
+    
+    void visit_CoarrayRef(const ASR::CoarrayRef_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_expr(*x.m_var);
     }
 
     // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}

@@ -65,6 +65,25 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
+static inline void set_stmt_name(stmt_t &stmt, char *name) {
+    switch (stmt.type) {
+        case stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
+        case stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
+        case stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
+        case stmtType::WhileLoop:         ((WhileLoop_t&)stmt).m_stmt_name = name; break;
+        case stmtType::ChangeTeam:        ((ChangeTeam_t&)stmt).m_stmt_name = name; break;
+        case stmtType::ForAll:            ((ForAll_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Select:            ((Select_t&)stmt).m_stmt_name = name; break;
+        case stmtType::SelectRank:        ((SelectRank_t&)stmt).m_stmt_name = name; break;
+        case stmtType::SelectType:        ((SelectType_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Where:             ((Where_t&)stmt).m_stmt_name = name; break;
+        case stmtType::DoConcurrentLoop:  ((DoConcurrentLoop_t&)stmt).m_stmt_name = name; break;
+        default: LCOMPILERS_ASSERT_MSG(false, "Unknown statement type in set_stmt_name"); break;
+    }
+}
+
 static inline bool streql(const char *s1, const char *s2)
 {
 #if defined(_MSC_VER)
@@ -923,16 +942,17 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
 {
-    std::string s_id = down_cast2<Name_t>(id)->m_id;
-    if (s_id == "MIN") {
+        std::string s_id = down_cast2<Name_t>(id)->m_id;
+        std::string s_lower = LCompilers::to_lower(s_id);
+        if (s_lower == "min" ) {
         return reduce_opType::ReduceMIN;
-    } else if (s_id == "MAX") {
+        } else if (s_lower == "max") {
         return reduce_opType::ReduceMAX;
-    } else if (s_id == "IAND" || s_id == "iand") {
+        } else if (s_lower == "iand") {
         return reduce_opType::ReduceIAND;
-    } else if (s_id == "IOR" || s_id == "ior") {
+        } else if (s_lower == "ior") {
         return reduce_opType::ReduceIOR;
-    } else if (s_id == "IEOR" || s_id == "ieor") {
+        } else if (s_lower == "ieor") {
         return reduce_opType::ReduceIEOR;
     } else {
         diagnostics.add(LCompilers::diag::Diagnostic(
@@ -1816,7 +1836,7 @@ return make_Program_t(al, a_loc,
 
 #define STMT_NAME(id_first, id_last, stmt) \
         stmt; \
-        ((If_t*)stmt)->m_stmt_name = name2char(id_first); \
+        set_stmt_name(*(stmt_t*)(stmt), name2char(id_first)); \
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
         if (LCompilers::to_lower(first) != LCompilers::to_lower(last)) { \
@@ -2168,10 +2188,18 @@ static inline void drop_trailing_matching_continue(
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
         EXPR(mask), down_cast<stmt_t>(assign), nullptr)
 
-#define CONCURRENT_CONTROL1(i, a, b, l) make_ConcurrentControl_t(p.m_a, l, \
+#define CONCURRENT_CONTROL1(t, i, a, b, l) \
+    make_ConcurrentControl_t(p.m_a, l, \
+        ((t) ? \
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
+            : nullptr), \
         name2char(i), EXPR(a), EXPR(b), nullptr)
 
-#define CONCURRENT_CONTROL2(i, a, b, c, l) make_ConcurrentControl_t(p.m_a, l, \
+#define CONCURRENT_CONTROL2(t, i, a, b, c, l) \
+    make_ConcurrentControl_t(p.m_a, l, \
+        ((t) ? \
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
+            : nullptr), \
         name2char(i), EXPR(a), EXPR(b), EXPR(c))
 
 
