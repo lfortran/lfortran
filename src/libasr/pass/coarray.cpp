@@ -39,8 +39,25 @@ class PRIFInterface {
         Allocator &al;
         ASR::TranslationUnit_t &unit;
 
-
-
+        ASR::symbol_t* get_or_create_dummy_struct(const Location &loc, std::string &struct_name) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string symbol_name = struct_name;
+            if (ASR::symbol_t *existing = global_scope->get_symbol(symbol_name)) return existing;
+            SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::asr_t *struct_asr = ASR::make_Struct_t(
+                al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
+                nullptr, 0, nullptr, 0, nullptr, 0,
+                ASR::abiType::Source, ASR::accessType::Public,
+                false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+            ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
+            ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
+            struct_t->m_struct_signature = struct_type;
+            global_scope->add_symbol(symbol_name, struct_sym);
+            return struct_sym;
+        }
+        
         ASR::symbol_t* get_or_create_prif_coarray_handle_struct(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string symbol_name = "prif_coarray_handle";
@@ -465,7 +482,6 @@ class PRIFInterface {
 
             SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
             ASRUtils::ASRBuilder b(al, loc);
-
             ASR::asr_t *struct_asr = ASR::make_Struct_t(
                 al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0,
@@ -476,8 +492,10 @@ class PRIFInterface {
             ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
             struct_t->m_struct_signature = struct_type;
             global_scope->add_symbol(symbol_name, struct_sym);
-            ASR::ttype_t *cptr_type = b.CPtr();
-            declare_variable(struct_symtab, loc, "info", cptr_type, ASR::intentType::Local, nullptr, ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required, false);
+            std::string type_info_symbol_name = "__module_prif_prif_dummy_team_descriptor";
+            ASR::symbol_t* type_info_sym = get_or_create_dummy_struct(loc, type_info_symbol_name);
+            ASR::ttype_t* type_info_type = ASRUtils::make_StructType_t_util(al, loc, type_info_sym, true);
+            declare_variable(struct_symtab, loc, "info", type_info_type, ASR::intentType::Local, type_info_sym, ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required, false);
 
             Vec<char*> members; members.reserve(al, 1);
             members.push_back(al, s2c(al, "info"));
