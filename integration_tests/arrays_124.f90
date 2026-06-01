@@ -1,6 +1,6 @@
 program test
   character(:), allocatable :: c(:)
-  c = ["assem", "mehat", "fathy"]
+  c = ["apple", "mango", "peach"]
   deallocate(c)
   print *, len(c)
   print *, c, "d"
