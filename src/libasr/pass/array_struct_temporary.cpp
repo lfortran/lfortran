@@ -1656,9 +1656,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 xx.m_value = struct_var_temporary;
             }
         }
+        
+        ASR::expr_t* lhs_array_var = nullptr;
+        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
+            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
+        }
+        lhs_var = lhs_array_var;
+        
+    
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
+        
+        lhs_var = nullptr;
 
-        // Handle function calls returning SCALAR derived types to prevent memory aliasing,
-        // BUT ONLY if the function's arguments actually alias the LHS (e.g., varr = ff(varr)).
         if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
             ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) && 
             !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) && 
@@ -1681,8 +1690,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             }
             
             if (aliases) {
-                this->visit_expr(*xx.m_value);
-                
                 std::string name_hint = "_struct_func_assign_";
                 ASR::expr_t* struct_var_temporary =
                     create_and_allocate_temporary_variable_for_struct(
@@ -1691,16 +1698,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 xx.m_value = struct_var_temporary;
             }
         }
-        
-        ASR::expr_t* lhs_array_var = nullptr;
-        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
-            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
-        }
-        lhs_var = lhs_array_var;
-        
-        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
-        
-        lhs_var = nullptr;
     }
 
     void visit_Where(const ASR::Where_t &x) {
