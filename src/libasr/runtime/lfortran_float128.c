@@ -458,13 +458,22 @@ static int f128_cmp_internal(lf_float128 a, lf_float128 b) {
 }
 
 #if !defined(__wasm32__)
-int __eqtf2   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) == 0 ? 0 : 1; }
-int __netf2   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) != 0 ? 1 : 0; }
-int __lttf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __letf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __gttf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __getf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __unordtf2(lf_float128 a, lf_float128 b) { return (f128_is_nan(a)||f128_is_nan(b))?1:0; }
+int __eqtf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) == 0 ? 0 : 1; }
+int __netf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) != 0 ? 1 : 0; }
+int __lttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __letf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __gttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __getf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __unordtf2_lf_impl(lf_float128 a, lf_float128 b) { return (f128_is_nan(a)||f128_is_nan(b))?1:0; }
+#if !defined(__aarch64__)
+int __eqtf2   (lf_float128 a, lf_float128 b) { return __eqtf2_lf_impl(a, b); }
+int __netf2   (lf_float128 a, lf_float128 b) { return __netf2_lf_impl(a, b); }
+int __lttf2   (lf_float128 a, lf_float128 b) { return __lttf2_lf_impl(a, b); }
+int __letf2   (lf_float128 a, lf_float128 b) { return __letf2_lf_impl(a, b); }
+int __gttf2   (lf_float128 a, lf_float128 b) { return __gttf2_lf_impl(a, b); }
+int __getf2   (lf_float128 a, lf_float128 b) { return __getf2_lf_impl(a, b); }
+int __unordtf2(lf_float128 a, lf_float128 b) { return __unordtf2_lf_impl(a, b); }
+#endif
 #endif
 
 /* ========================================================================
@@ -976,6 +985,12 @@ static lf_float128 f128_log10e(void) {
         0x0000BCB7B1526E50U, 0xE32A6AB7555F5A68U);
 }
 
+/* log10(2) = 0.3010299956639811952137388947244930267682... */
+static lf_float128 f128_log10_2(void) {
+    return f128_const(0, 16381,
+        0x000034413509F79FU, 0xEF311F12B35816FAU);
+}
+
 /* log2(e) = 1/ln(2) -- same as inv_ln2 */
 
 /* pi = 3.14159265358979... */
@@ -1111,6 +1126,12 @@ lf_float128 lf_f128_log2(lf_float128 a) {
 }
 
 lf_float128 lf_f128_log10(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (!p.is_nan && !p.is_inf && !p.is_zero && !p.sign
+            && u128_eq(p.mant, u128_shl(u128_one(), 112))) {
+        return __multf3_lf_impl(__floatditf_lf_impl((int64_t)p.exp),
+            f128_log10_2());
+    }
     return __multf3_lf_impl(lf_f128_log(a), f128_log10e());
 }
 
@@ -1928,6 +1949,23 @@ void pub(void) {                                             \
     );                                                       \
 }
 
+/* fp128,fp128->int: args q0,q1 -> x0/x1,x2/x3; int result already in x0/w0 */
+#define _LF_SHIM_CMP2(pub, impl)                             \
+__attribute__((naked))                                       \
+void pub(void) {                                             \
+    __asm__ volatile(                                        \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
+        "mov x29, sp\n\t"                                    \
+        "fmov x0, d0\n\t"                                    \
+        "mov  x1, v0.d[1]\n\t"                               \
+        "fmov x2, d1\n\t"                                    \
+        "mov  x3, v1.d[1]\n\t"                               \
+        "bl  " _LF_SYM(impl) "\n\t"                         \
+        "ldp x29, x30, [sp], #16\n\t"                       \
+        "ret\n\t"                                            \
+    );                                                       \
+}
+
 _LF_SHIM2(__addtf3,          __addtf3_lf_impl)
 _LF_SHIM2(__subtf3,          __subtf3_lf_impl)
 _LF_SHIM2(__multf3,          __multf3_lf_impl)
@@ -1947,6 +1985,13 @@ _LF_SHIM_TO_INT(__fixtfsi,            __fixtfsi_lf_impl)
 _LF_SHIM_TO_INT(__fixtfdi,            __fixtfdi_lf_impl)
 _LF_SHIM_TO_DOUBLE(__trunctfdf2,      __trunctfdf2_lf_impl)
 _LF_SHIM_TO_FLOAT(__trunctfsf2,       __trunctfsf2_lf_impl)
+_LF_SHIM_CMP2(__eqtf2,                __eqtf2_lf_impl)
+_LF_SHIM_CMP2(__netf2,                __netf2_lf_impl)
+_LF_SHIM_CMP2(__lttf2,                __lttf2_lf_impl)
+_LF_SHIM_CMP2(__letf2,                __letf2_lf_impl)
+_LF_SHIM_CMP2(__gttf2,                __gttf2_lf_impl)
+_LF_SHIM_CMP2(__getf2,                __getf2_lf_impl)
+_LF_SHIM_CMP2(__unordtf2,             __unordtf2_lf_impl)
 
 #undef _LF_SHIM2
 #undef _LF_SHIM1
@@ -1954,6 +1999,7 @@ _LF_SHIM_TO_FLOAT(__trunctfsf2,       __trunctfsf2_lf_impl)
 #undef _LF_SHIM_TO_INT
 #undef _LF_SHIM_TO_DOUBLE
 #undef _LF_SHIM_TO_FLOAT
+#undef _LF_SHIM_CMP2
 #undef _LF_SYM
 
 #endif /* __aarch64__ */

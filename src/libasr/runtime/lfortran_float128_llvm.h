@@ -64,7 +64,7 @@ int64_t      __fixtfdi(lf_float128 a);
 #endif
 
 /* ── Comparisons (return int, no sret on any platform) ─────────────────── */
-#if !defined(__wasm32__)
+#if !defined(__aarch64__) && !defined(__wasm32__)
 int __eqtf2   (lf_float128 a, lf_float128 b);
 int __netf2   (lf_float128 a, lf_float128 b);
 int __lttf2   (lf_float128 a, lf_float128 b);

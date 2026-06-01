@@ -5314,6 +5314,16 @@ public:
         current_der_type_name = get_type_key(x.m_dt_sym);
     }
 
+    llvm::Constant* make_fp128_constant_from_bytes(const uint8_t* bytes) {
+        uint64_t lo = 0, hi = 0;
+        std::memcpy(&lo, bytes, sizeof(lo));
+        std::memcpy(&hi, bytes + 8, sizeof(hi));
+        uint64_t words[2] = { lo, hi };
+        llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+        llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
+        return llvm::ConstantFP::get(context, apf);
+    }
+
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
         ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -5342,6 +5352,9 @@ public:
                 } else if (a_kind == 8) {
                     arr_elements.push_back(llvm::ConstantFP::get(
                         context, llvm::APFloat((double) real_const->m_r)));
+                } else if (a_kind == 16) {
+                    const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(real_const);
+                    arr_elements.push_back(make_fp128_constant_from_bytes(bytes));
                 }
             } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
                 ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
@@ -6946,6 +6959,9 @@ public:
                     return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
                 } else if (llvm_type->isDoubleTy()) {
                     return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                } else if (llvm_type->isFP128Ty()) {
+                    const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(rc);
+                    return make_fp128_constant_from_bytes(bytes);
                 }
                 break;
             }
@@ -14996,14 +15012,7 @@ public:
             }
             case 16 : {
                 const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);
-                uint64_t lo, hi;
-                std::memcpy(&lo, bytes,     sizeof(lo));
-                std::memcpy(&hi, bytes + 8, sizeof(hi));
-                // APInt(numBits, ArrayRef<uint64_t>{lo, hi}) — low word first.
-                uint64_t words[2] = { lo, hi };
-                llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
-                llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
-                tmp = llvm::ConstantFP::get(context, apf);
+                tmp = make_fp128_constant_from_bytes(bytes);
                 break;
             }
             default : {
@@ -15129,7 +15138,15 @@ public:
         } else if (ASRUtils::is_real(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                values.push_back(llvm::ConstantFP::get(el_type, down_cast<ASR::RealConstant_t>(el)->m_r));
+                ASR::RealConstant_t* rc = down_cast<ASR::RealConstant_t>(el);
+                if (el_type->isFloatTy()) {
+                    values.push_back(llvm::ConstantFP::get(el_type, static_cast<float>(rc->m_r)));
+                } else if (el_type->isDoubleTy()) {
+                    values.push_back(llvm::ConstantFP::get(el_type, rc->m_r));
+                } else if (el_type->isFP128Ty()) {
+                    const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(rc);
+                    values.push_back(make_fp128_constant_from_bytes(bytes));
+                }
             }
         } else if (ASRUtils::is_logical(*x_m_type)) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x_m_type);
