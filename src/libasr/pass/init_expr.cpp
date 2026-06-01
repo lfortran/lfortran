@@ -142,6 +142,18 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
 
+            // Collect leading CPtrToPointer statements from the existing body
+            // first (e.g. equivalence pointer setup). These must execute before
+            // any init-expr assignments that index into the pointer arrays.
+            size_t i = 0;
+            for (; i < n_body; i++) {
+                if (ASR::is_a<ASR::CPtrToPointer_t>(*m_body[i])) {
+                    body.push_back(al, m_body[i]);
+                } else {
+                    break;
+                }
+            }
+
             if( symtab2decls.find(current_scope) != symtab2decls.end() ) {
                 Vec<ASR::stmt_t*>& decls = symtab2decls[current_scope];
                 for (size_t j = 0; j < decls.size(); j++) {
@@ -150,7 +162,7 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
                 symtab2decls.erase(current_scope);
             }
 
-            for (size_t i = 0; i < n_body; i++) {
+            for (; i < n_body; i++) {
                 body.push_back(al, m_body[i]);
             }
             m_body = body.p;
