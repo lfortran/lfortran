@@ -432,6 +432,8 @@ RUN(NAME ilp64_logical_read_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer
 RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
+RUN(NAME label_01 LABELS gfortran llvm)
+
 RUN(NAME print_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp llvm2 wasm fortran mlir)
 RUN(NAME print_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm fortran)
 RUN(NAME print_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
@@ -3326,6 +3328,7 @@ RUN(NAME implied_do_loops36 LABELS gfortran llvm)
 
 RUN(NAME implied_do_loops37 LABELS gfortran llvm)
 RUN(NAME implied_do_loops38 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
+RUN(NAME implied_do_loops39 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
@@ -3838,6 +3841,7 @@ RUN(NAME character_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME character_32 LABELS gfortran llvm)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4752,10 +4756,12 @@ RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
 RUN(NAME real128_arith_03 LABELS gfortran llvm)
 RUN(NAME real128_arith_04 LABELS gfortran llvm)
-RUN(NAME real128_arith_05 LABELS gfortran)
+RUN(NAME real128_arith_05 LABELS gfortran llvm)
 RUN(NAME real128_arith_06 LABELS gfortran llvm)
-#RUN(NAME real128_arith_07 LABELS gfortran llvm) #seg fault
-RUN(NAME real128_arith_08 LABELS gfortran)  #todo : fix this test
-RUN(NAME real128_arith_09 LABELS gfortran)
+RUN(NAME real128_arith_07 LABELS gfortran)
+RUN(NAME real128_arith_08 LABELS gfortran llvm)
+RUN(NAME real128_arith_09 LABELS gfortran llvm)
 RUN(NAME real128_arith_10 LABELS gfortran llvm)
+RUN(NAME real128_int_to_real_01 LABELS gfortran llvm)
+RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)

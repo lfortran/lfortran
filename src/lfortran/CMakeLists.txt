@@ -38,6 +38,9 @@ set(CWRAPPER_SRC
       fortran_kernel.cpp
     )
   endif()
+  # For WASM build, fortran_kernel.cpp is compiled directly into the xlfortran
+  # executable (not into lfortran_lib) to avoid duplicate symbols and to prevent
+  # xeus/embind undefined refs from bleeding into other WASM targets.
   if (WITH_JSON)
     set(SRC ${SRC}
       ast_to_json.cpp
@@ -76,6 +79,9 @@ if (WITH_LIBUNWIND)
 endif()
 if (WITH_XEUS)
     target_link_libraries(lfortran_lib xeus xeus-zmq)
+endif()
+if (XEUS_LFORTRAN_WASM_BUILD)
+    target_link_libraries(lfortran_lib xeus-static)
 endif()
 if (WITH_JSON)
     target_link_libraries(lfortran_lib p::rapidjson)

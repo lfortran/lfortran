@@ -1,7 +1,5 @@
 #include "libasr/assert.h"
 #include "libasr/string_utils.h"
-#include <cstdint>
-#include <cstring>
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
@@ -68,7 +66,6 @@
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/gpu_utils.h>
-#include <libasr/runtime/lfortran_float128_quadmath.h>
 namespace LCompilers {
 
 using ASR::is_a;
@@ -1786,8 +1783,13 @@ public:
         {
             std::string target_triple = llvm::sys::getDefaultTargetTriple();
             std::string Error;
+#if LLVM_VERSION_MAJOR >= 21
+            const llvm::Target *target =
+                llvm::TargetRegistry::lookupTarget(llvm::Triple(target_triple), Error);
+#else
             const llvm::Target *target =
                 llvm::TargetRegistry::lookupTarget(target_triple, Error);
+#endif
             if (target) {
                 llvm::TargetOptions opt;
                 auto TM = target->createTargetMachine(
@@ -3105,7 +3107,14 @@ public:
         } else if (kind_value == 8) {
             func_name = "llvm.sqrt.f64";
         } else if (kind_value == 16) {
-            func_name = "llvm.sqrt.f128";
+            // Don't lower to llvm.sqrt.f128: on platforms where
+            // `long double` != fp128 (notably Apple ARM64), LLVM will lower
+            // that intrinsic to `sqrtl`, which reads only 64 bits of the
+            // 128-bit operand and silently returns a wrong result (often 0).
+            // Call into our portable runtime instead. `lf_sqrtq` uses the
+            // LLVM fp128 SIMD ABI on Apple ARM64 (via a naked shim) and
+            // forwards to the struct-ABI `lf_f128_sqrt` implementation.
+            func_name = "lf_sqrtq";
         } else {
             throw CodeGenError("sqrt for real kind " + std::to_string(kind_value) + " is not supported yet.");
         }
@@ -14737,19 +14746,30 @@ public:
                     llvm::Type *exponent_type = nullptr;
                     std::string func_name;
                     // Choose the appropriate llvm_pow* intrinsic function + Set the exponent type.
+                    // For real(16) we cannot use llvm.pow{,i}.f128: on platforms where
+                    // `long double` != fp128 (Apple ARM64), LLVM lowers those to
+                    // `powl`, which silently truncates to 64-bit precision and returns
+                    // garbage. Route to our portable runtime instead.
                     if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+                        if (return_kind == 16) {
+                            // No integer-exponent fp128 runtime; promote the
+                            // integer exponent to fp128 (sitofp) and call
+                            // lf_powq (SIMD-ABI shim around lf_f128_pow).
+                            func_name = "lf_powq";
+                            right_val = builder->CreateSIToFP(right_val, base_type);
+                            exponent_type = base_type;
+                        } else {
 #if LLVM_VERSION_MAJOR <= 12
-                       func_name = (return_kind == 4) ? "llvm.powi.f32" :
-                                    (return_kind == 8) ? "llvm.powi.f64" : "llvm.powi.f128";
-                    #else
-                        func_name = (return_kind == 4) ? "llvm.powi.f32.i32" :
-                                    (return_kind == 8) ? "llvm.powi.f64.i32" : "llvm.powi.f128.i32";
-                    #endif
-                        right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
-                        exponent_type = llvm::Type::getInt32Ty(context);
+                            func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
+#else
+                            func_name = (return_kind == 4) ? "llvm.powi.f32.i32" : "llvm.powi.f64.i32";
+#endif
+                            right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context)); // `llvm.powi` only has `i32` exponent.
+                            exponent_type = llvm::Type::getInt32Ty(context);
+                        }
                     } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
                         func_name = (return_kind == 4) ? "llvm.pow.f32" :
-                                     (return_kind == 8) ? "llvm.pow.f64" : "llvm.pow.f128";
+                                     (return_kind == 8) ? "llvm.pow.f64" : "lf_powq";
                         right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
                         exponent_type = base_type;
                     } else {
@@ -14960,25 +14980,29 @@ public:
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
-        double val = x.m_r;
         int a_kind = ((ASR::Real_t*)(&(x.m_type->base)))->m_kind;
+        // For kind 4/8, x.m_r is the IEEE-754 double approximation/value.
+        // For kind 16, x.m_r is a pointer-encoded payload; we MUST go through
+        // real_constant_get_r16_bytes() rather than reading it as a double.
         switch( a_kind ) {
 
             case 4 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)val));
+                tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)x.m_r));
                 break;
             }
             case 8 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
+                tmp = llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
                 break;
             }
             case 16 : {
-                uintptr_t addr;
-                std::memcpy(&addr, &val, sizeof(addr));
-                lf_float128 *p = (lf_float128*)addr;
-                char buf[64];
-                lf_float128_to_str(buf, p->bytes);
-                llvm::APFloat apf(llvm::APFloat::IEEEquad(), llvm::StringRef(buf));
+                const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);
+                uint64_t lo, hi;
+                std::memcpy(&lo, bytes,     sizeof(lo));
+                std::memcpy(&hi, bytes + 8, sizeof(hi));
+                // APInt(numBits, ArrayRef<uint64_t>{lo, hi}) — low word first.
+                uint64_t words[2] = { lo, hi };
+                llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+                llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
                 tmp = llvm::ConstantFP::get(context, apf);
                 break;
             }
@@ -20879,16 +20903,30 @@ public:
         std::string global_name = "__lfortran_gpu_source_" + kernel_name;
         llvm::Value *gpu_src;
         if (!compiler_options.gpu_metal_source.empty()) {
+#if LLVM_VERSION_MAJOR >= 20
+            gpu_src = builder->CreateGlobalString(
+                compiler_options.gpu_metal_source, global_name);
+#else
             gpu_src = builder->CreateGlobalStringPtr(
                 compiler_options.gpu_metal_source, global_name);
+#endif
         } else if (!compiler_options.gpu_cuda_source.empty()) {
             // CUDA kernels are pre-compiled; pass empty string
+#if LLVM_VERSION_MAJOR >= 20
+            gpu_src = builder->CreateGlobalString("", global_name);
+        } else {
+            gpu_src = builder->CreateGlobalString("", global_name);
+        }
+
+        llvm::Value *entry_name = builder->CreateGlobalString(kernel_name);
+#else
             gpu_src = builder->CreateGlobalStringPtr("", global_name);
         } else {
             gpu_src = builder->CreateGlobalStringPtr("", global_name);
         }
 
         llvm::Value *entry_name = builder->CreateGlobalStringPtr(kernel_name);
+#endif
 
         // 3. lfortran_gpu_load_kernel(ctx, source, entry_point) -> kernel
         llvm::FunctionType *load_ft = llvm::FunctionType::get(

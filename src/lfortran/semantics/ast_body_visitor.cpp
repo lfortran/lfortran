@@ -1366,12 +1366,84 @@ public:
     void collect_labels() {
         labels.clear();
         if (starting_m_body == nullptr) return;
-        for (size_t i = 0; i < starting_n_body; ++i) {
-            int64_t label = stmt_label(starting_m_body[i]);
+
+        auto collect_labels_in_stmts = [&](AST::stmt_t** body, size_t n_body,
+                                           const auto& collect_labels_in_stmt_ref) -> void {
+            if (!body) return;
+            for (size_t i = 0; i < n_body; ++i) {
+                collect_labels_in_stmt_ref(body[i], collect_labels_in_stmt_ref);
+            }
+        };
+
+        auto collect_labels_in_stmt = [&](AST::stmt_t* stmt,
+                                     const auto& collect_labels_in_stmt_ref) -> void {
+            if (!stmt) return;
+            int64_t label = stmt_label(stmt);
             if (label != 0) {
                 labels.insert(std::to_string(label));
             }
-        }
+
+            switch (stmt->type) {
+                case AST::stmtType::If: {
+                    AST::If_t* s = AST::down_cast<AST::If_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::DoLoop: {
+                    AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Where: {
+                    AST::Where_t* s = AST::down_cast<AST::Where_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::WhileLoop: {
+                    AST::WhileLoop_t* s = AST::down_cast<AST::WhileLoop_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::AssociateBlock: {
+                    AST::AssociateBlock_t* s = AST::down_cast<AST::AssociateBlock_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Block: {
+                    AST::Block_t* s = AST::down_cast<AST::Block_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Select: {
+                    AST::Select_t* s = AST::down_cast<AST::Select_t>(stmt);
+                    for (size_t i = 0; i < s->n_body; ++i) {
+                        AST::case_stmt_t* c = s->m_body[i];
+                        if (!c) continue;
+                        switch (c->type) {
+                            case AST::case_stmtType::CaseStmt: {
+                                AST::CaseStmt_t* cs = AST::down_cast<AST::CaseStmt_t>(c);
+                                collect_labels_in_stmts(cs->m_body, cs->n_body, collect_labels_in_stmt_ref);
+                                break;
+                            }
+                            case AST::case_stmtType::CaseStmt_Default: {
+                                AST::CaseStmt_Default_t* cs = AST::down_cast<AST::CaseStmt_Default_t>(c);
+                                collect_labels_in_stmts(cs->m_body, cs->n_body, collect_labels_in_stmt_ref);
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        };
+
+        collect_labels_in_stmts(starting_m_body, starting_n_body, collect_labels_in_stmt);
     }
 
     // Returns true if parsing succeeded, false if should continue to next kwarg
@@ -2283,23 +2355,32 @@ public:
                     })) {
                 overloaded_stmt = ASRUtils::STMT(asr);
             }
-            // If no overload found and single struct value, then expand struct components
-            // (recursively for nested structs)
-            if (overloaded_stmt == nullptr &&
-                a_values_vec.size() == 1) {
-                ASR::expr_t* expr = a_values_vec[0];
-                ASR::ttype_t* type = ASRUtils::expr_type(expr);
-                type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(type));
-                if (ASR::is_a<ASR::StructType_t>(*type)) {
-                    a_values_vec.n = 0;
-                    std::function<void(ASR::expr_t*)> expand_struct_expr;
-                    expand_struct_expr = [&](ASR::expr_t* struct_expr) {
+            // If no overload found, expand any struct-typed values into their
+            // member components (recursively for nested structs).
+            if (overloaded_stmt == nullptr && a_values_vec.size() >= 1) {
+                // Check if any value has struct type
+                bool has_struct = false;
+                for (size_t vi = 0; vi < a_values_vec.size(); vi++) {
+                    ASR::ttype_t* vtype = ASRUtils::expr_type(a_values_vec[vi]);
+                    vtype = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(vtype));
+                    if (ASR::is_a<ASR::StructType_t>(*vtype)) {
+                        has_struct = true;
+                        break;
+                    }
+                }
+                if (has_struct) {
+                    // Helper lambda: expand a struct expression into its member
+                    // expressions, recursively handling nested structs.
+                    // Appends the expanded (leaf) expressions to `expanded`.
+                    std::function<void(ASR::expr_t*, Vec<ASR::expr_t*>&)> expand_struct_expr;
+                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
+                                             Vec<ASR::expr_t*>& expanded) {
                         ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
                         stype = ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(stype));
                         if (!ASR::is_a<ASR::StructType_t>(*stype)) {
-                            a_values_vec.push_back(al, struct_expr);
+                            expanded.push_back(al, struct_expr);
                             return;
                         }
                         ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
@@ -2307,7 +2388,7 @@ public:
                         ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
                         if (struct_def->n_members == 0) {
-                            a_values_vec.push_back(al, struct_expr);
+                            expanded.push_back(al, struct_expr);
                             return;
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
@@ -2322,10 +2403,48 @@ public:
                                     al, struct_expr->base.loc, struct_expr,
                                     member_sym, member_var->m_type, nullptr));
                             // Recursively expand if the member is itself a struct
-                            expand_struct_expr(member_expr);
+                            expand_struct_expr(member_expr, expanded);
                         }
                     };
-                    expand_struct_expr(expr);
+
+                    Vec<ASR::expr_t*> new_values_vec;
+                    new_values_vec.reserve(al, a_values_vec.size() * 4);
+                    for (size_t vi = 0; vi < a_values_vec.size(); vi++) {
+                        ASR::expr_t* expr = a_values_vec[vi];
+                        ASR::ttype_t* etype = ASRUtils::expr_type(expr);
+                        etype = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(etype));
+                        if (!ASR::is_a<ASR::StructType_t>(*etype)) {
+                            // Non-struct value, keep as-is
+                            new_values_vec.push_back(al, expr);
+                        } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                            // For ImpliedDoLoop with struct values like:
+                            //   read(*, *) (recs(i), i = 1, n)
+                            // We expand struct members INSIDE the loop values.
+                            // Before: ImpliedDoLoop(values=[recs(i)], ...)
+                            // After:  ImpliedDoLoop(values=[recs(i)%x, recs(i)%y, ...], ...)
+                            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                            Vec<ASR::expr_t*> idl_new_values;
+                            idl_new_values.reserve(al, idl->n_values * 4);
+                            for (size_t iv = 0; iv < idl->n_values; iv++) {
+                                expand_struct_expr(idl->m_values[iv], idl_new_values);
+                            }
+                            ASR::ttype_t* new_type = idl->m_type;
+                            if (idl_new_values.size() > 0) {
+                                new_type = ASRUtils::expr_type(idl_new_values[0]);
+                            }
+                            ASR::expr_t* new_idl = ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(
+                                al, idl->base.base.loc, idl_new_values.p, idl_new_values.size(),
+                                idl->m_var, idl->m_start, idl->m_end, idl->m_increment,
+                                new_type, idl->m_value));
+                            new_values_vec.push_back(al, new_idl);
+                        } else {
+                            // Direct struct value (e.g., pts(1) from constant-bound
+                            // implied do loop expansion): expand into members.
+                            expand_struct_expr(expr, new_values_vec);
+                        }
+                    }
+                    a_values_vec = new_values_vec;
                 }
             }
 
