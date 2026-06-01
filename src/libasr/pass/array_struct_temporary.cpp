@@ -1622,6 +1622,22 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+
+        // Handle function calls returning derived types to prevent memory aliasing
+        // when the arguments alias the left-hand side (e.g., varr = ff(varr)).
+        // Buffering the function return into a temporary avoids overwriting LHS allocatables
+        // during pass_subroutine_from_function.
+        if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
+            ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
+
+            std::string name_hint = "_struct_func_assign_";
+            ASR::expr_t* struct_var_temporary =
+                create_and_allocate_temporary_variable_for_struct(
+                    xx.m_value, name_hint, al, current_body,
+                    current_scope, exprs_with_target, realloc_lhs);
+            xx.m_value = struct_var_temporary;
+        }
+
         // Handle struct-type RHS that aliases the LHS, e.g.:
         //   chain2%next = chain2
         // where the RHS expression contains the LHS as a sub-component (or
@@ -1673,7 +1689,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
         lhs_var = nullptr;
     }
-
+    
     void visit_Where(const ASR::Where_t &x) {
         bool inside_where_copy = inside_where;
         if( !inside_where ) {
