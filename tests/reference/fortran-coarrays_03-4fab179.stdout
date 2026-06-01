@@ -1,4 +1,3 @@
-! Fortran code after applying the pass: coarray
 type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
