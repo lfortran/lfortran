@@ -2047,21 +2047,6 @@ public:
                         llvm::Value* target_struct = builder->CreateBitCast(
                             target_struct_i8, target_struct_type->getPointerTo());
 
-                        // When m_is_cstruct=true, deepcopy overwrites the inner
-                        // struct pointer in the class wrapper. Free it first.
-                        if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
-                            ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
-                                ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a));
-                            ASR::Struct_t* target_struct_sym = ASR::down_cast<ASR::Struct_t>(target_sym);
-                            llvm::Type* class_wrapper_type = llvm_utils->getClassType(
-                                target_struct_sym, false);
-                            llvm::Value* wrapper_as_class = builder->CreateBitCast(
-                                target_struct, class_wrapper_type->getPointerTo());
-                            llvm::Value* inner_ptr = llvm_utils->CreateLoad2(
-                                target_struct_type->getPointerTo(),
-                                llvm_utils->create_gep2(class_wrapper_type, wrapper_as_class, 1));
-                            llvm_utils->lfortran_free(inner_ptr);
-                        }
 
                         // Only deepcopy for source=, not for mold=
                         // mold= allocates with type but doesn't copy data
@@ -5112,6 +5097,11 @@ public:
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type_, module.get());
+                
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
+                    tmp = llvm_utils->CreateLoad2(type->getPointerTo(), tmp);
+                }
+                
                 tmp = llvm_utils->CreateLoad2(
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
             }
