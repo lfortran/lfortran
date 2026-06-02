@@ -2474,6 +2474,7 @@ def_unary_operand
     ;
 
 // ### primary
+expr
     : designator { $$ = $1; }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
@@ -2549,7 +2550,7 @@ def_unary_operand
     | expr ".neqv." expr { $$ = NEQV($1, $3, @$); }
     | expr TK_DEF_OP expr { $$ = DEFOP($1, $2, $3, @$); }
     ;
-
+    
 struct_member_star
     : struct_member_star struct_member { $$ = $1; PLIST_ADD($$, $2); }
     | struct_member { LIST_NEW($$); PLIST_ADD($$, $1); }
