@@ -1425,7 +1425,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 int result_size = ASRUtils::get_fixed_size_of_array(type);
                 std::vector<ASR::expr_t*> zeros;
                 for (int i = 0; i < result_size; i++) {
-                    zeros.push_back(b.i32(0));
+                    zeros.push_back(b.i_t(0, extract_type(type)));
                 }
                 return b.ArrayConstant(zeros, extract_type(type), false);
             }
@@ -1526,7 +1526,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             int result_size = ASRUtils::get_fixed_size_of_array(type);
             if (result_size == 1 || orig_n_dims <= 1) {
                 // 1D array or scalar result
-                return b.ArrayConstant({b.i32(index + 1)}, extract_type(type), false);
+                return b.ArrayConstant({b.i_t(index + 1, extract_type(type))}, extract_type(type), false);
             } else {
                 // Multi-dimensional array: convert flat index to per-dimension
                 // indices using column-major (Fortran) ordering.
@@ -1545,7 +1545,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 for (int d = 0; d < n_orig_dims; d++) {
                     int dim_idx = remaining % dim_sizes[d];
                     remaining = remaining / dim_sizes[d];
-                    indices.push_back(b.i32(dim_idx + 1)); // 1-based
+                    indices.push_back(b.i_t(dim_idx + 1, extract_type(type))); // 1-based
                 }
                 return b.ArrayConstant(indices, extract_type(type), false);
             }
