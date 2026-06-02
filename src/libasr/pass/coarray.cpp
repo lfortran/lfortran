@@ -495,7 +495,8 @@ class PRIFInterface {
             std::string type_info_symbol_name = "__module_prif_prif_dummy_team_descriptor";
             ASR::symbol_t* type_info_sym = get_or_create_dummy_struct(loc, type_info_symbol_name);
             ASR::ttype_t* type_info_type = ASRUtils::make_StructType_t_util(al, loc, type_info_sym, true);
-            declare_variable(struct_symtab, loc, "info", type_info_type, ASR::intentType::Local, type_info_sym, ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required, false);
+            ASR::ttype_t *info_ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type_info_type ));
+            declare_variable(struct_symtab, loc, "info", info_ptr_type, ASR::intentType::Local, type_info_sym, ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required, false);
 
             Vec<char*> members; members.reserve(al, 1);
             members.push_back(al, s2c(al, "info"));

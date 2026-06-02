@@ -2,7 +2,7 @@ type :: __module_prif_prif_dummy_team_descriptor
 end type __module_prif_prif_dummy_team_descriptor
 
 type :: __module_prif_prif_team_type
-    type(__module_prif_prif_dummy_team_descriptor) :: info
+    type(__module_prif_prif_dummy_team_descriptor), pointer :: info
 end type __module_prif_prif_team_type
 
 program coarrays_04
