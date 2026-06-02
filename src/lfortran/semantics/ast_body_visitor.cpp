@@ -4043,7 +4043,20 @@ public:
                     SymbolTable* current_scope_copy = current_scope;
                     current_scope = parent_scope;
                     AST::RankDefault_t* rank_default = AST::down_cast<AST::RankDefault_t>(x.m_body[i]);
+                    bool had_entry = false;
+                    size_t saved_rank = 0;
+                    if (!array_var_name.empty()) {
+                        auto it = assumed_rank_arrays.find(array_var_name);
+                        if (it != assumed_rank_arrays.end()) {
+                            had_entry = true;
+                            saved_rank = it->second;
+                            assumed_rank_arrays.erase(it);
+                        }
+                    }
                     transform_stmts(select_rank_default, rank_default->n_body, rank_default->m_body);
+                    if (had_entry) {
+                        assumed_rank_arrays[array_var_name] = saved_rank;
+                    }
                     current_scope = current_scope_copy;
                     break;
                 }
