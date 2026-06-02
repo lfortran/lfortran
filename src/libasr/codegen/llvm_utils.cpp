@@ -10466,22 +10466,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 return ;
             }
 
-            {
-                // Extract inner struct pointer from class wrapper if needed.
-                // Note: due to parameter naming conventions in deepcopy,
-                // is_dest_class actually reflects the source's ASR type, and
-                // is_src_class reflects the destination's ASR type.
-                llvm::Type* class_llvm_type = llvm_utils->getClassType(struct_sym, false);
+            if (is_src_class) {
                 llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
                     struct_sym->m_struct_signature, &struct_sym->base, module);
-                if (is_dest_class) {
-                    src = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
-                        llvm_utils->create_gep2(class_llvm_type, src, 1));
-                }
-                if (is_src_class) {
-                    dest = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
-                        llvm_utils->create_gep2(class_llvm_type, dest, 1));
-                }
+                src = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                    llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), src, 1));
+            }
+            if (is_dest_class) {
+                llvm::Type* actual_struct_type = llvm_utils->get_type_from_ttype_t_util(
+                     struct_sym->m_struct_signature, &struct_sym->base, module);
+                dest = llvm_utils->CreateLoad2(actual_struct_type->getPointerTo(),
+                    llvm_utils->create_gep2(llvm_utils->getClassType(struct_sym, false), dest, 1));
             }
 
             std::string der_type_name = get_type_key(struct_sym);
@@ -10875,7 +10870,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
         if( struct_sym->n_member_functions == 0) return;
         if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
-
+        llvm_utils->validate_llvm_SSA(
+            llvm_utils->get_type_from_ttype_t_util(ty, &struct_sym->base, llvm_utils->module)->getPointerTo(),
+            ptr);
         ASR::symbol_t* final_sym {};
         for(size_t i = 0 ; i < struct_sym->n_member_functions; i++){
             std::string fn_name = struct_sym->m_member_functions[i];
