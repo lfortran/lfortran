@@ -2005,6 +2005,25 @@ namespace Shape {
             // For assumed-rank, loop from 1 to rank(source) inclusive.
             ASR::expr_t* rank_expr = ASRUtils::EXPR(ASR::make_ArrayRank_t(al, loc,
                 args[0], b.int_type(index_kind), nullptr));
+            if (ASRUtils::is_allocatable(return_type)) {
+                Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, 1);
+                ASR::dimension_t alloc_dim;
+                alloc_dim.loc = loc;
+                alloc_dim.m_start = b.i_idx(1, index_kind);
+                alloc_dim.m_length = rank_expr;
+                alloc_dims.push_back(al, alloc_dim);
+                Vec<ASR::expr_t*> alloc_args; alloc_args.reserve(al, 1);
+                alloc_args.push_back(al, result);
+                ASR::ttype_t* bool_type = logical;
+                ASR::expr_t* allocated_call = ASRUtils::EXPR(
+                    ASR::make_IntrinsicImpureFunction_t(al, loc,
+                        static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                        alloc_args.p, alloc_args.n, 0, bool_type, nullptr));
+                ASR::expr_t* not_allocated = ASRUtils::EXPR(
+                    ASR::make_LogicalNot_t(al, loc, allocated_call, bool_type, nullptr));
+                body.push_back(al, b.If(not_allocated,
+                    { b.Allocate(result, alloc_dims) }, {}));
+            }
             body.push_back(al, b.While(b.LtE(i, rank_expr), {
                 b.Assignment(b.ArrayItem_01(result, {i}),
                     b.ArraySize(args[0], i, extract_type(return_type))),
