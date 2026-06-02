@@ -1023,7 +1023,7 @@ ast_t* implied_do_loop(Allocator &al, Location &loc,
         ast_t* incr) {
     return make_ImpliedDoLoop_t(al, loc,
             EXPRS(ex_list), ex_list.size(),
-            (AST::decl_attribute_t*)vartype,
+            (decl_attribute_t*)vartype,
             name2char(i),
             EXPR(low),
             EXPR(high),
@@ -1090,7 +1090,7 @@ ast_t* implied_do3(Allocator &al, Location &loc,
     implied_do2(p.m_a, l, ex1, ex2, type, i, low, high, incr)
 #define IMPLIED_DO_LOOP6(ex1, ex2, ex_list, type, i, low, high, incr, l) \
     implied_do3(p.m_a, l, ex1, ex2, ex_list, type, i, low, high, incr)
-    
+
 char *str2str_null(Allocator &al, const LCompilers::Str &s) {
     if (s.p == nullptr) {
         LCOMPILERS_ASSERT(s.n == 0)
