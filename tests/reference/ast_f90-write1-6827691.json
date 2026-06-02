@@ -5,9 +5,9 @@
     "infile_hash": "75eba9b93bd747fb18efbf173e1d35340019e1c62f38efc3a4cbcf22",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "ast_f90-write1-6827691.stdout",
-    "stdout_hash": "b7350e07cee74319a8cc97e0ef84988f663a50cc1f3785a676127c46",
+    "stdout": null,
+    "stdout_hash": null,
     "stderr": null,
     "stderr_hash": null,
-    "returncode": 0
+    "returncode": 3221226105
 }
