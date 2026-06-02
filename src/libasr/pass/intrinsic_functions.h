@@ -5407,7 +5407,7 @@ namespace SelectedRealKind {
             kind = 4;
         } else if (p < 16 && r < 308 && radix == 2) {
             kind = 8;
-        } else if (p <= 33 && r <= 4931 && radix == 2) {
+        } else if (p > 16 && p <= 33 && r <= 4931 && radix == 2) {
             kind = 16;
         } else if (radix != 2) {
             kind = -5;
@@ -5438,7 +5438,7 @@ namespace SelectedRealKind {
             b.If( b.And(b.And(b.Lt(p, b.i_t(16, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
                 b.Assignment(result, b.i32(8))
             }, {
-                b.If(b.And(b.And(b.LtE(p, b.i_t(33, arg_types[0])), b.LtE(r, b.i_t(4931, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
+                b.If(b.And(b.And(b.And(b.Gt(p, b.i_t(16, arg_types[0])), b.LtE(p, b.i_t(33, arg_types[0]))), b.LtE(r, b.i_t(4931, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
                     b.Assignment(result, b.i32(16))
                 }, {
                     b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {

@@ -14526,7 +14526,16 @@ public:
             if (fsource->getType()->isIntegerTy()) fsource = builder->CreateSIToFP(fsource, type);
             else if (fsource->getType()->isFloatingPointTy()) fsource = builder->CreateFPCast(fsource, type);
         }
-        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
+        std::string func_name;
+        if (a_kind == 4) {
+            func_name = "llvm.copysign.f32";
+        } else if (a_kind == 8) {
+            func_name = "llvm.copysign.f64";
+        } else if (a_kind == 16) {
+            func_name = "llvm.copysign.f128";
+        } else {
+            throw CodeGenError("visit_RealCopySign: Only kind 4, 8 and 16 reals supported");
+        }
         llvm::Function *fn_copysign = module->getFunction(func_name);
         if (!fn_copysign) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
