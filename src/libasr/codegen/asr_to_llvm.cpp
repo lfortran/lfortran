@@ -11980,12 +11980,30 @@ public:
                 tmp = nullptr;
                 return;
             }
-            // For struct members (especially common blocks), treat as allocatable
-            // so _lfortran_strcpy allocates memory if the pointer is NULL.
-            // Common block structs are initialized with zeroinitializer, so
-            // their string descriptor pointers start as NULL.
-            bool is_dest_allocatable = ASRUtils::is_allocatable(asr_target_type) ||
-                                       ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target);
+            bool is_dest_allocatable = ASRUtils::is_allocatable(asr_target_type);
+            if (!is_dest_allocatable &&
+                ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
+                ASR::StructInstanceMember_t* sim =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
+                ASR::symbol_t* member_sym =
+                    ASRUtils::symbol_get_past_external(sim->m_m);
+                if (ASR::is_a<ASR::Variable_t>(*member_sym)) {
+                    ASR::Variable_t* member_var =
+                        ASR::down_cast<ASR::Variable_t>(member_sym);
+                    ASR::symbol_t* parent_struct = ASR::down_cast<ASR::symbol_t>(
+                        member_var->m_parent_symtab->asr_owner);
+                    parent_struct =
+                        ASRUtils::symbol_get_past_external(parent_struct);
+                    ASR::symbol_t* parent_owner =
+                        ASRUtils::get_asr_owner(parent_struct);
+                    if (parent_owner &&
+                            ASR::is_a<ASR::Module_t>(*parent_owner) &&
+                            startswith(ASRUtils::symbol_name(parent_owner),
+                                       "file_common_block_")) {
+                        is_dest_allocatable = true;
+                    }
+                }
+            }
             // bind(C) allocatable string dummies have an extra pointer
             // level (string_descriptor** rather than string_descriptor*)
             // due to the BindC ABI. Dereference to string_descriptor*.
