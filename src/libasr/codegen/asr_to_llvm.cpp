@@ -23254,8 +23254,16 @@ public:
                                                 || ASRUtils::is_pointer(ASRUtils::expr_type(x.m_args[i].m_value)))) {
                                         check_and_allocate_scalar(x.m_args[i].m_value);
                                     }
-                                    llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
-                                    value = llvm_utils->CreateLoad2(value_type, value);
+                                    bool skip_load_for_fixed_size_array =
+                                        ASRUtils::is_array(arg_type) &&
+                                        !ASRUtils::is_allocatable(arg_type) &&
+                                        !ASRUtils::is_pointer(arg_type) &&
+                                        ASRUtils::extract_physical_type(arg_type) ==
+                                            ASR::array_physical_typeType::FixedSizeArray;
+                                    if (!skip_load_for_fixed_size_array) {
+                                        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
+                                        value = llvm_utils->CreateLoad2(value_type, value);
+                                    }
                                 }
                         }
                         if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
