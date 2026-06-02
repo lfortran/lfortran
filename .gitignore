@@ -141,6 +141,7 @@ pass_tree_*.txt
 *_lines.txt
 *_ldd.txt
 *_lines.dat.txt
+_lfortran_generated_file_*.txt
 
 ### https://raw.github.com/github/gitignore/218a941be92679ce67d0484547e3e142b2f5f6f0/Global/macOS.gitignore
 
