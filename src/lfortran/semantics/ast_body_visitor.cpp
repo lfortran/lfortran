@@ -3852,7 +3852,16 @@ public:
                 AST::CaseCondExpr_t *condexpr
                     = AST::down_cast<AST::CaseCondExpr_t>(Case_Stmt->m_test[i]);
                 this->visit_expr(*condexpr->m_cond);
-                expr_accum.push_back(ASRUtils::EXPR(tmp));
+                ASR::expr_t* case_expr = ASRUtils::EXPR(tmp);
+                if (ASRUtils::is_array(ASRUtils::expr_type(case_expr))) {
+                    diag.add(Diagnostic(
+                        "case value must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {case_expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                expr_accum.push_back(case_expr);
                 continue;
             } else if (AST::is_a<AST::CaseCondRange_t>(*(Case_Stmt->m_test[i]))) {
                 emit_expr_group(x.base.loc);
@@ -3862,10 +3871,26 @@ public:
                 if( condrange->m_start != nullptr ) {
                     this->visit_expr(*(condrange->m_start));
                     m_start = ASRUtils::EXPR(tmp);
+                    if (ASRUtils::is_array(ASRUtils::expr_type(m_start))) {
+                        diag.add(Diagnostic(
+                            "case value must be scalar",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {m_start->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
                 if( condrange->m_end != nullptr ) {
                     this->visit_expr(*(condrange->m_end));
                     m_end = ASRUtils::EXPR(tmp);
+                    if (ASRUtils::is_array(ASRUtils::expr_type(m_end))) {
+                        diag.add(Diagnostic(
+                            "case value must be scalar",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {m_end->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
                 Vec<ASR::stmt_t*> case_body_vec;
                 case_body_vec.reserve(al, Case_Stmt->n_body);
@@ -3885,6 +3910,14 @@ public:
     void visit_Select(const AST::Select_t& x) {
         this->visit_expr(*(x.m_test));
         ASR::expr_t* a_test = ASRUtils::EXPR(tmp);
+        if (ASRUtils::is_array(ASRUtils::expr_type(a_test))) {
+            diag.add(Diagnostic(
+                "select case expression must be scalar",
+                Level::Error, Stage::Semantic, {
+                    Label("", {a_test->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         Vec<ASR::case_stmt_t*> a_body_vec;
         a_body_vec.reserve(al, x.n_body);
         Vec<ASR::stmt_t*> def_body;
