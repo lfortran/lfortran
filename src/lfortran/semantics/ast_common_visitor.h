@@ -16156,9 +16156,26 @@ public:
         std::string idl_var_name_lower = to_lower(x.m_var);
         bool idl_var_pre_existing = (current_scope->resolve_symbol(idl_var_name_lower) != nullptr);
         idl_nesting_level++;
+        
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
         a_start = a_end = a_increment = nullptr;
+        
+        this->visit_expr(*(x.m_start));
+        a_start = ASRUtils::EXPR(tmp);
+        this->visit_expr(*(x.m_end));
+        a_end = ASRUtils::EXPR(tmp);
+        if( x.m_increment != nullptr ) {
+            this->visit_expr(*(x.m_increment));
+            a_increment = ASRUtils::EXPR(tmp);
+        }
+
+        ASR::symbol_t* a_sym = current_scope->resolve_symbol(idl_var_name_lower);
+        if (a_sym == nullptr && x.m_vartype != nullptr) {
+            ASR::ttype_t *loop_var_type = ASRUtils::expr_type(a_start);
+            a_sym = declare_implicit_variable2(x.base.base.loc, idl_var_name_lower, ASRUtils::intent_local, loop_var_type);
+        }
+
         a_values_vec.reserve(al, x.n_values);
         ASR::ttype_t* type = nullptr;
         Vec<ASR::ttype_t*> type_tuple;
@@ -16180,18 +16197,13 @@ public:
 
             a_values_vec.push_back(al, expr);
         }
-        this->visit_expr(*(x.m_start));
-        a_start = ASRUtils::EXPR(tmp);
-        this->visit_expr(*(x.m_end));
-        a_end = ASRUtils::EXPR(tmp);
-        if( x.m_increment != nullptr ) {
-            this->visit_expr(*(x.m_increment));
-            a_increment = ASRUtils::EXPR(tmp);
-        }
+
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
 
-        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
+        if (a_sym == nullptr) {
+            a_sym = current_scope->resolve_symbol(idl_var_name_lower);
+        }
         if (a_sym == nullptr) {
             if (compiler_options.implicit_typing) {
                 std::string var_name = to_lower(x.m_var);
@@ -16215,6 +16227,7 @@ public:
                 throw SemanticAbort();
             }
         }
+
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
@@ -16235,7 +16248,8 @@ public:
             // name lookups for the original identifier in contained
             // procedures don't resolve to it (they then get their own
             // implicit declaration locally).
-            if (!compiler_options.implicit_typing || idl_var_pre_existing) return;
+            if ((!compiler_options.implicit_typing && x.m_vartype == nullptr) || idl_var_pre_existing) return;
+            
             ASR::symbol_t* implicit_sym = current_scope->get_symbol(idl_var_name_lower);
             if (implicit_sym == nullptr) return;
             if (!ASR::is_a<ASR::Variable_t>(*implicit_sym)) return;
@@ -16333,28 +16347,6 @@ public:
         }
         idl_nesting_level--;
         rename_implicit_idl_var();
-    }
-
-    ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
-        /*
-            shifta(n, w):
-            This is arithmetic shift right by w bits.
-            Represent using BinOp, with left = n, right = w, op = BitRShift
-        */
-        ASR::expr_t *n = args[0].m_value;
-        ASR::expr_t *w = args[1].m_value;
-
-        ASR::ttype_t* n_type = ASRUtils::expr_type(n);
-        ASR::ttype_t* w_type = ASRUtils::expr_type(w);
-
-        if (!ASRUtils::check_equal_type(n_type, w_type, nullptr, nullptr)) {
-            if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
-                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr, nullptr));
-            }
-        }
-
-        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift,
-                            n, w, n_type);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
