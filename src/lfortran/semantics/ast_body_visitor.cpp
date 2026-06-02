@@ -6360,7 +6360,8 @@ public:
             target->type == ASR::exprType::StructInstanceMember ||
             target->type == ASR::exprType::UnionInstanceMember ||
             target->type == ASR::exprType::ComplexRe ||
-            target->type == ASR::exprType::ComplexIm
+            target->type == ASR::exprType::ComplexIm ||
+            target->type == ASR::exprType::CoarrayRef
         );
 
         is_valid_lhs = is_valid_lhs || (target->type == ASR::exprType::Cast &&
@@ -6405,7 +6406,8 @@ public:
                 target->type == ASR::exprType::StructInstanceMember ||
                 target->type == ASR::exprType::UnionInstanceMember ||
                 (target->type == ASR::exprType::Cast &&
-                 ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic)
+                 ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic) ||
+                target->type == ASR::exprType::CoarrayRef
             );
             if (lhs_supports_implicit_cast &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {

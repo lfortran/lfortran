@@ -5236,7 +5236,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_var, true);
+        int64_t ptr_loads_copy = ptr_loads;
+        if (is_assignment_target) {
+            ptr_loads = 1; // Load once: i64** alloca → i64* data pointer for the store target
+            this->visit_expr_wrapper(x.m_var, false);
+        } else if (ptr_loads <= 0) {
+            this->visit_expr_wrapper(x.m_var, false);
+        } else {
+            this->visit_expr_wrapper(x.m_var, true);
+        }
+        ptr_loads = ptr_loads_copy;
         // In single-image mode, coindices are ignored; tmp already contains the base expression result
     }
 
@@ -11762,6 +11771,7 @@ public:
             x.m_target->type == ASR::exprType::ListItem ||
             x.m_target->type == ASR::exprType::DictItem ||
             x.m_target->type == ASR::exprType::UnionInstanceMember ||
+            x.m_target->type == ASR::exprType::CoarrayRef ||
             (x.m_target->type == ASR::exprType::FunctionCall &&
              ASRUtils::is_pointer(ASRUtils::expr_type(x.m_target))) ) {
             is_assignment_target = true;
