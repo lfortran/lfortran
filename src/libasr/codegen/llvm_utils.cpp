@@ -10890,11 +10890,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         uint32_t fh = get_hash((ASR::asr_t*)final_sym);
         LCOMPILERS_ASSERT(llvm_symtab_fn.find(fh) != llvm_symtab_fn.end())
         llvm::Function* final_fn = llvm_symtab_fn[fh];
-        // The finalizer takes type(t) (plain struct*). ptr may be a class
-        // wrapper pointer or a plain struct pointer depending on the caller.
-        // Bitcast to match the finalizer's expected parameter type.
-        llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
-        llvm::Value* struct_ptr = builder->CreateBitCast(ptr, expected_type);
+        llvm::Value* struct_ptr = ptr;
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(ty))) {
+            llvm::Type* class_llvm_type = llvm_utils->getClassType(struct_sym, false);
+            llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
+            struct_ptr = builder->CreateLoad(expected_type,
+                llvm_utils->create_gep2(class_llvm_type, ptr, 1));
+        }
         builder->CreateCall(final_fn, {struct_ptr});
     }
 
