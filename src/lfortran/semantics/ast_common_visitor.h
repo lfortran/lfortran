@@ -753,6 +753,10 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
 
     if (compiletime_values.size() == 0) {
         ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
+        if (ASRUtils::is_array(type) && ASRUtils::get_fixed_size_of_array(type) == 0) {
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                al, loc, 0, nullptr, type, ASR::arraystorageType::ColMajor));
+        }
         return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, logical_type, loc, diag);
     } else {
         ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
