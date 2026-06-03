@@ -1246,14 +1246,16 @@ namespace StorageSize {
         ASR::ttype_t* type = ASRUtils::type_get_past_array(
                                  ASRUtils::type_get_past_allocatable(
                                      ASRUtils::type_get_past_pointer(arg_type)));
-        if (is_character(*arg_type)) {
+        if (is_character(*type)) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::String_t *string_type = ASR::down_cast<ASR::String_t>(type);
+            int64_t bit_size = 8 * string_type->m_kind;
             int64_t len;
-            if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(
-                ASRUtils::type_get_past_array(arg_type))->m_len, len)){
-                return ASRUtils::EXPR(
-                    ASR::make_StringLen_t(al, loc, args[0], int64, nullptr));
+            if(!ASRUtils::extract_value(string_type->m_len, len)){
+                ASR::expr_t *len_expr = b.i2i_t(b.StringLen(args[0]), t1);
+                return b.Mul(len_expr, b.i_t(bit_size, t1));
             }
-            return make_ConstantWithType(make_IntegerConstant_t, 8*len, t1, loc);
+            return make_ConstantWithType(make_IntegerConstant_t, bit_size * len, t1, loc);
         } else if (ASR::is_a<ASR::StructType_t>(*type) ||
                    ASR::is_a<ASR::CPtr_t>(*type)) {
             auto [size_bytes, _align] = ASRUtils::compute_type_size_align(type);
