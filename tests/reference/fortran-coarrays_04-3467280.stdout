@@ -51,15 +51,11 @@ interface
 end interface
 
 integer(4) function lcompilers_prif_num_images()
-    integer(4) :: tmp
-    call __module_prif_prif_num_images(tmp)
-    lcompilers_prif_num_images = tmp
+    call __module_prif_prif_num_images(lcompilers_prif_num_images)
 end function lcompilers_prif_num_images
 
 integer(4) function lcompilers_prif_this_image()
-    integer(4) :: tmp
-    call __module_prif_prif_this_image_no_coarray(tmp)
-    lcompilers_prif_this_image = tmp
+    call __module_prif_prif_this_image_no_coarray(lcompilers_prif_this_image)
 end function lcompilers_prif_this_image
 
 end program coarrays_04
