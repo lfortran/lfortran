@@ -16813,7 +16813,12 @@ public:
             }
             Vec<ASR::call_arg_t> args;
             Vec<ASR::call_arg_t> args_with_mdt;
-            visit_expr_list(x.m_args, x.n_args, args);
+            if (ASR::is_a<ASR::Function_t>(*f2)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+                visit_expr_list(x.m_args, x.n_args, args, f->m_args, f->n_args, x.n_member);
+            } else {
+                visit_expr_list(x.m_args, x.n_args, args);
+            }
             if (x.n_member >= 1) {
                 args_with_mdt.reserve(al, x.n_args + 1);
                 ASR::call_arg_t v_expr_call_arg;
@@ -19213,11 +19218,17 @@ public:
         }
     }
 
-    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
+    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args,
+            ASR::expr_t **fn_args=nullptr, size_t fn_n_args=0, size_t type_bound=0) {
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
+            ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+            if (i + type_bound < fn_n_args) {
+                current_variable_type_ = ASRUtils::expr_type(fn_args[i + type_bound]);
+            }
             this->visit_expr(*ast_list[i].m_end);
+            current_variable_type_ = temp_current_variable_type_;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (ASR::is_a<ASR::Var_t>(*expr) &&
                     ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
@@ -19315,8 +19326,6 @@ public:
         }
 
         for (int i = 0; i < (int)n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
             if (search == fn_args2.end()) {
@@ -19327,7 +19336,8 @@ public:
                 return ;
             }
 
-            int idx = std::distance(fn_args2.begin(), search) - (int)is_method;
+            int fn_arg_idx = std::distance(fn_args2.begin(), search);
+            int idx = fn_arg_idx - (int)is_method;
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument '" + name + "' is already specified as a positional argument",
@@ -19342,6 +19352,11 @@ public:
                     name + " keyword argument is already specified.");
                 return ;
             }
+            ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+            current_variable_type_ = ASRUtils::expr_type(fn_args[fn_arg_idx]);
+            this->visit_expr(*kwargs[i].m_value);
+            current_variable_type_ = temp_current_variable_type_;
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
         }
