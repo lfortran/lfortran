@@ -9246,6 +9246,7 @@ public:
         int target_rank = 0;
         Vec<llvm::Value*> lbs; lbs.reserve(al, target_section->n_args);
         Vec<llvm::Value*> ubs; ubs.reserve(al, target_section->n_args);
+        Vec<llvm::Value*> target_strides; target_strides.reserve(al, target_section->n_args);
         
         for (size_t i = 0; i < target_section->n_args; i++) {
             ASR::array_index_t& idx = target_section->m_args[i];
@@ -9274,18 +9275,82 @@ public:
                     visit_expr_wrapper(idx.m_right, true);
                     ubs.push_back(al, tmp);
                 } else if (right_refers_to_target) {
-                    // Compute ub = lb + size(value, dim) - 1 using ASR ArraySize.
-                    ASR::ttype_t* int_type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    ASR::expr_t* dim_expr = ASRUtils::EXPR(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                            (int64_t)(i + 1), int_type));
-                    ASR::expr_t* size_expr = ASRUtils::EXPR(
-                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
-                            dim_expr, int_type, nullptr));
-                    visit_expr_wrapper(size_expr, true);
-                    llvm::Value* size_val = builder->CreateSExtOrTrunc(
-                        tmp, lbs.p[i]->getType());
+                    // Compute ub = lb + size(value, dim) - 1.
+                    llvm::Value* size_val = nullptr;
+                    llvm::Type* idx_type = arr_descr->get_index_type();
+                    unsigned idx_bits = idx_type->getIntegerBitWidth();
+                    if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                        ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                        ASR::array_index_t& vidx = value_section->m_args[i];
+                        
+                        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                            ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(value_section->m_v))), module.get());
+                        llvm::Value* loaded_desc = value_desc;
+                        if (ASRUtils::is_allocatable(ASRUtils::expr_type(value_section->m_v)) || ASRUtils::is_pointer(ASRUtils::expr_type(value_section->m_v))) {
+                            loaded_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+                        }
+                        llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            value_desc_type, loaded_desc);
+                        llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                            src_dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
+
+                        llvm::Value* first_idx = nullptr;
+                        if (vidx.m_step != nullptr) {
+                            if (vidx.m_left != nullptr) {
+                                visit_expr_wrapper(vidx.m_left, true);
+                                first_idx = tmp;
+                            } else {
+                                first_idx = arr_descr->get_lower_bound(dim_des, true);
+                            }
+                        } else {
+                            visit_expr_wrapper(vidx.m_right, true);
+                            first_idx = tmp;
+                        }
+                        first_idx = builder->CreateSExtOrTrunc(first_idx, idx_type);
+                        
+                        llvm::Value* last_idx = nullptr;
+                        if (vidx.m_step != nullptr && vidx.m_right == nullptr) {
+                            last_idx = arr_descr->get_upper_bound(dim_des);
+                        } else if (vidx.m_step != nullptr && vidx.m_right != nullptr) {
+                            visit_expr_wrapper(vidx.m_right, true);
+                            last_idx = tmp;
+                        } else {
+                            last_idx = first_idx;
+                        }
+                        last_idx = builder->CreateSExtOrTrunc(last_idx, idx_type);
+                        
+                        llvm::Value* step_val = nullptr;
+                        if (vidx.m_step != nullptr) {
+                            visit_expr_wrapper(vidx.m_step, true);
+                            step_val = tmp;
+                        } else {
+                            step_val = llvm::ConstantInt::get(idx_type, 1);
+                        }
+                        step_val = builder->CreateSExtOrTrunc(step_val, idx_type);
+                        
+                        llvm::Value* diff = builder->CreateSub(last_idx, first_idx);
+                        size_val = builder->CreateSDiv(builder->CreateAdd(diff, step_val), step_val);
+                        
+                        llvm::Value* base_stride = arr_descr->get_stride(dim_des, true);
+                        target_strides.push_back(al, builder->CreateMul(base_stride, step_val));
+                    } else {
+                        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                            ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(value_type)), module.get());
+                        llvm::Value* loaded_desc = value_desc;
+                        if (ASRUtils::is_allocatable(value_type) || ASRUtils::is_pointer(value_type)) {
+                            loaded_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+                        }
+                        llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            value_desc_type, loaded_desc);
+                        llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                            dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
+                        size_val = arr_descr->get_dimension_size(dim_des, true);
+                        llvm::Value* base_stride = arr_descr->get_stride(dim_des, true);
+                        target_strides.push_back(al, base_stride);
+                    }
+                    size_val = builder->CreateSExtOrTrunc(size_val, lbs.p[i]->getType());
                     llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
                     llvm::Value* ub_val = builder->CreateSub(
                         builder->CreateAdd(lbs.p[i], size_val), one);
@@ -9461,7 +9526,6 @@ public:
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
         
         
-        llvm::Value* current_stride = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
             llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i));
@@ -9473,8 +9537,8 @@ public:
             llvm::Value* lb_ptr = arr_descr->get_lower_bound(dim_des, false);
             llvm::Value* size_ptr = arr_descr->get_dimension_size(dim_des, false);
 
-            // Set stride to current_stride
-            builder->CreateStore(current_stride, stride_ptr);
+            // Set stride from target_strides
+            builder->CreateStore(target_strides.p[i], stride_ptr);
 
             // Set lower bound from target section
             llvm::Value* lb_idx = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
@@ -9486,9 +9550,6 @@ public:
                 builder->CreateSub(ub_idx, lb_idx),
                 llvm::ConstantInt::get(idx_type, 1));
             builder->CreateStore(size, size_ptr);
-
-            // Update current_stride
-            current_stride = builder->CreateMul(current_stride, size);
         }
         
         // Store the new descriptor to the target pointer

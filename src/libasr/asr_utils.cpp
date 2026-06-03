@@ -4239,7 +4239,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
         ASR::is_a<ASR::BitCast_t>(*x) ||
         ASR::is_a<ASR::ArrayConstant_t>(*x) ||
-        ASR::is_a<ASR::ArrayConstructor_t>(*x)) {
+        ASR::is_a<ASR::ArrayConstructor_t>(*x) ||
+        ASR::is_a<ASR::ArraySection_t>(*x)) {
         return x;
     }
 
