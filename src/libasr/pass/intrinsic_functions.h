@@ -1769,10 +1769,12 @@ namespace ThisImage {
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_ThisImage(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_ThisImage(Allocator &/*al*/, const Location &/*loc*/,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+        // Return nullptr so that the value is not constant-folded.
+        // For coarray builds, the coarray pass replaces this with a PRIF runtime call.
+        // For non-coarray builds, the LLVM backend emits the constant 1.
+        return nullptr;
     }
 
     static inline ASR::asr_t* create_ThisImage(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
@@ -1797,10 +1799,12 @@ namespace NumImages {
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_NumImages(Allocator &al, const Location &loc,
+    static ASR::expr_t *eval_NumImages(Allocator &/*al*/, const Location &/*loc*/,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type, ASR::Decimal));
+        // Return nullptr so that the value is not constant-folded.
+        // For coarray builds, the coarray pass replaces this with a PRIF runtime call.
+        // For non-coarray builds, the LLVM backend emits the constant 1.
+        return nullptr;
     }
 
     static inline ASR::asr_t* create_NumImages(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
