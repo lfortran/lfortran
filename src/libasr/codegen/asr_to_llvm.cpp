@@ -22550,7 +22550,9 @@ public:
                 if (v->m_type_declaration != nullptr) {
                     ASR::Function_t* func = down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
                     func_subrout = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                    set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
+                    if (i < func->n_args) {
+                        set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
+                    }
                 }
                 // If m_type_declaration is nullptr (implicit interface without call),
                 // continue with default values for x_abi, orig_arg, etc.
@@ -22561,7 +22563,22 @@ public:
             if(orig_arg && x.m_args[i].m_value){
                 check_strings_phsyicalType_match(orig_arg->m_type, expr_type(x.m_args[i].m_value));
             }
-            
+
+            // For implicit-interface procedure pointers (procedure() with
+            // no declared parameters), orig_arg is nullptr because the
+            // declared Function_t has fewer args than the call provides.
+            // Short-circuit: evaluate the argument and pass by reference.
+            if (orig_arg == nullptr && x.m_args[i].m_value != nullptr) {
+                this->visit_expr_wrapper(x.m_args[i].m_value, true);
+                if (!tmp->getType()->isPointerTy()) {
+                    llvm::AllocaInst *target = get_call_arg_alloca(tmp->getType());
+                    builder->CreateStore(tmp, target);
+                    tmp = target;
+                }
+                args.push_back(tmp);
+                continue;
+            }
+
             if( x.m_args[i].m_value == nullptr ) {
                 LCOMPILERS_ASSERT(orig_arg != nullptr);
                 llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -22737,7 +22754,7 @@ public:
                                     llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
                                     tmp = llvm_utils->CreateLoad2(load_type, tmp);
                                 }
-                                if (ASRUtils::is_class_type(
+                                if (orig_arg && ASRUtils::is_class_type(
                                         ASRUtils::extract_type(arg->m_type))
                                     && !ASRUtils::is_class_type(
                                         ASRUtils::extract_type(orig_arg->m_type)) ) {
@@ -23127,10 +23144,11 @@ public:
                     if( func_subrout->type == ASR::symbolType::Function ) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
                         size_t arg_idx = i;
-                        LCOMPILERS_ASSERT(arg_idx < func->n_args);
-                        LCOMPILERS_ASSERT(func->m_args[arg_idx] != nullptr);
-                        orig_arg = EXPR2VAR(func->m_args[arg_idx]);
-                    } else {
+                        if (arg_idx < func->n_args) {
+                            LCOMPILERS_ASSERT(func->m_args[arg_idx] != nullptr);
+                            orig_arg = EXPR2VAR(func->m_args[arg_idx]);
+                        }
+                    } else if (func_subrout->type != ASR::symbolType::Variable) {
                         LCOMPILERS_ASSERT(false)
                     }
                     if (orig_arg != nullptr && orig_arg->m_abi == ASR::abiType::BindC
@@ -25080,15 +25098,29 @@ public:
             ptr_loads = ptr_loads_copy;
             navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
 
-            llvm::Type* func_ptr_type = llvm_utils->get_function_type(*func, module.get())->getPointerTo();
-            llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            llvm::Type* func_ptr_type = fntype->getPointerTo();
+            llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
 
             // Self argument has been inserted into args by the semantic
             // layer (with a value distinct from m_dt — see
             // make_SubroutineCall_t_util).  Let convert_call_args handle
             // all args including self with proper class wrapping.
             args = convert_call_args(x, false);
+
+            // For implicit-interface procedure pointers (procedure() with
+            // no declared parameters), the declared function type may have
+            // fewer parameters than the actual call arguments.  Reconstruct
+            // the correct LLVM function type from the actual argument types.
+            if (fntype->getNumParams() != args.size()) {
+                std::vector<llvm::Type*> arg_types;
+                for (auto* arg_val : args) {
+                    arg_types.push_back(arg_val->getType());
+                }
+                fntype = llvm::FunctionType::get(
+                    fntype->getReturnType(), arg_types, false);
+                callee = builder->CreateBitCast(callee, fntype->getPointerTo());
+            }
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }
