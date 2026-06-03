@@ -9335,20 +9335,17 @@ public:
                         llvm::Value* base_stride = arr_descr->get_stride(dim_des, true);
                         target_strides.push_back(al, builder->CreateMul(base_stride, step_val));
                     } else {
-                        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                            ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(value_type)), module.get());
-                        llvm::Value* loaded_desc = value_desc;
-                        if (ASRUtils::is_allocatable(value_type) || ASRUtils::is_pointer(value_type)) {
-                            loaded_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
-                        }
-                        llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                            value_desc_type, loaded_desc);
-                        llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                            dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
-                        size_val = arr_descr->get_dimension_size(dim_des, true);
-                        llvm::Value* base_stride = arr_descr->get_stride(dim_des, true);
-                        target_strides.push_back(al, base_stride);
+                        // Compute size(value, dim) via ASR ArraySize.
+                        ASR::ttype_t* int_type = ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        ASR::expr_t* dim_expr = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                (int64_t)(i + 1), int_type));
+                        ASR::expr_t* size_expr = ASRUtils::EXPR(
+                            ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
+                                dim_expr, int_type, nullptr));
+                        visit_expr_wrapper(size_expr, true);
+                        size_val = tmp;
                     }
                     size_val = builder->CreateSExtOrTrunc(size_val, lbs.p[i]->getType());
                     llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
@@ -9526,6 +9523,8 @@ public:
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
         
         
+        bool has_target_strides = (target_strides.n == (uint32_t)target_rank);
+        llvm::Value* current_stride = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
             llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i));
@@ -9537,8 +9536,12 @@ public:
             llvm::Value* lb_ptr = arr_descr->get_lower_bound(dim_des, false);
             llvm::Value* size_ptr = arr_descr->get_dimension_size(dim_des, false);
 
-            // Set stride from target_strides
-            builder->CreateStore(target_strides.p[i], stride_ptr);
+            // Set stride: use target_strides if available, otherwise running product
+            if (has_target_strides) {
+                builder->CreateStore(target_strides.p[i], stride_ptr);
+            } else {
+                builder->CreateStore(current_stride, stride_ptr);
+            }
 
             // Set lower bound from target section
             llvm::Value* lb_idx = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
@@ -9550,6 +9553,11 @@ public:
                 builder->CreateSub(ub_idx, lb_idx),
                 llvm::ConstantInt::get(idx_type, 1));
             builder->CreateStore(size, size_ptr);
+
+            // Update running product for next dimension
+            if (!has_target_strides) {
+                current_stride = builder->CreateMul(current_stride, size);
+            }
         }
         
         // Store the new descriptor to the target pointer
@@ -25978,6 +25986,11 @@ public:
 
         m_v = ASRUtils::get_expr_size_expr(m_v);
         LCOMPILERS_ASSERT(m_v);
+        // ArraySection doesn't produce a descriptor when visited; redirect
+        // to the base array variable so the descriptor-based size path works.
+        if (ASR::is_a<ASR::ArraySection_t>(*m_v)) {
+            m_v = ASR::down_cast<ASR::ArraySection_t>(m_v)->m_v;
+        }
         int output_kind = ASRUtils::extract_kind_from_ttype_t(m_type);
         int dim_kind = 4;
         int64_t ptr_loads_copy = ptr_loads;
