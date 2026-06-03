@@ -740,6 +740,8 @@ public:
                     type_name = "float";
                 } else if( type_size == 64 ) {
                     type_name = "double";
+                } else if( type_size == 128 ) {
+                    type_name = "float128";
                 }
                 type_encoding = llvm::dwarf::DW_ATE_float;
                 break;
