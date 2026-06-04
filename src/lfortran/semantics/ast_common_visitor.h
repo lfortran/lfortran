@@ -16523,10 +16523,11 @@ public:
             }
         }
         // if v is a function which has null pointer return type, give error
-        if (ASR::is_a<ASR::Function_t>(*v)){
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
+        ASR::symbol_t *v_past_ext = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+        if (v_past_ext && ASR::is_a<ASR::Function_t>(*v_past_ext)){
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_past_ext);
             if (func->m_return_var == nullptr){
-                diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
+                diag.add(Diagnostic("Unexpected use of subroutine name '" + std::string(x.m_func) + "'",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
