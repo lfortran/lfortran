@@ -193,6 +193,7 @@ jobs:
               -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
