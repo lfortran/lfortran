@@ -16527,7 +16527,7 @@ public:
         if (v_past_ext && ASR::is_a<ASR::Function_t>(*v_past_ext)){
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_past_ext);
             if (func->m_return_var == nullptr){
-                diag.add(Diagnostic("Unexpected use of subroutine name '" + std::string(x.m_func) + "'",
+                diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
