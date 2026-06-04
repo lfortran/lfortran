@@ -2473,8 +2473,8 @@ def_unary_operand
     | "[" id "::" expr_list_opt rbracket { $$ = ARRAY_IN3($2, $4, @$); }
     ;
 
-expr
 // ### primary
+expr
     : designator { $$ = $1; }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket %dprec 2 { $$ = ARRAY_IN2($2, $4, @$); }
@@ -2487,18 +2487,36 @@ expr
     | ".false." { $$ = FALSE($1, @$); }
     | "(" expr ")" { $$ = PAREN($2, @$); }
     | "(" expr "," expr ")" { $$ = COMPLEX($2, $4, @$); }
+    
     | "(" expr "," id "=" expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP1($2, $4, $6, $8, @$); }
+            $$ = IMPLIED_DO_LOOP1($2, nullptr, $4, $6, $8, @$); }
+    | "(" expr "," var_type "::" id "=" expr "," expr ")" {
+            $$ = IMPLIED_DO_LOOP1($2, $4, $6, $8, $10, @$); }
+            
     | "(" expr "," expr "," id "=" expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP2($2, $4, $6, $8, $10, @$); }
+            $$ = IMPLIED_DO_LOOP2($2, $4, nullptr, $6, $8, $10, @$); }
+    | "(" expr "," expr "," var_type "::" id "=" expr "," expr ")" {
+            $$ = IMPLIED_DO_LOOP2($2, $4, $6, $8, $10, $12, @$); }
+            
     | "(" expr "," expr "," expr_list "," id "=" expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP3($2, $4, $6, $8, $10, $12, @$); }
+            $$ = IMPLIED_DO_LOOP3($2, $4, $6, nullptr, $8, $10, $12, @$); }
+    | "(" expr "," expr "," expr_list "," var_type "::" id "=" expr "," expr ")" {
+            $$ = IMPLIED_DO_LOOP3($2, $4, $6, $8, $10, $12, $14, @$); }
+            
     | "(" expr "," id "=" expr "," expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP4($2, $4, $6, $8, $10, @$); }
+            $$ = IMPLIED_DO_LOOP4($2, nullptr, $4, $6, $8, $10, @$); }
+    | "(" expr "," var_type "::" id "=" expr "," expr "," expr ")" {
+            $$ = IMPLIED_DO_LOOP4($2, $4, $6, $8, $10, $12, @$); }
+            
     | "(" expr "," expr "," id "=" expr "," expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP5($2, $4, $6, $8, $10, $12, @$); }
+            $$ = IMPLIED_DO_LOOP5($2, $4, nullptr, $6, $8, $10, $12, @$); }
+    | "(" expr "," expr "," var_type "::" id "=" expr "," expr "," expr ")" {
+            $$ = IMPLIED_DO_LOOP5($2, $4, $6, $8, $10, $12, $14, @$); }
+            
     | "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
+            $$ = IMPLIED_DO_LOOP6($2, $4, $6, nullptr, $8, $10, $12, $14, @$); }
+    | "(" expr "," expr "," expr_list "," var_type "::" id "=" expr "," expr "," expr ")" {
+            $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, $16, @$); }
 
 // ### level-1
     | TK_DEF_OP def_unary_operand { $$ = UNARY_DEFOP($1, $2, @$); }

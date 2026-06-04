@@ -3331,6 +3331,7 @@ RUN(NAME implied_do_loops36 LABELS gfortran llvm)
 RUN(NAME implied_do_loops37 LABELS gfortran llvm)
 RUN(NAME implied_do_loops38 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME implied_do_loops39 LABELS gfortran llvm)
+RUN(NAME implied_do_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
