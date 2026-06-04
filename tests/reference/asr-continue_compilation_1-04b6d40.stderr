@@ -1094,7 +1094,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
 492 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
-semantic error: Unexpected use of subroutine name 'dummy_sub'
+semantic error: Subroutine `dummy_sub` called as a function
    --> tests/errors/continue_compilation_1.f90:494:14
     |
 494 |     print *, dummy_sub()
