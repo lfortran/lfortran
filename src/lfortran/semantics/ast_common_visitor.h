@@ -16163,8 +16163,8 @@ public:
         
         ASR::symbol_t* a_sym = current_scope->resolve_symbol(idl_var_name_lower);
         
-        // 1. Declare EARLY in BodyVisitor so visit_expr(m_values) succeeds under `implicit none`
-        if (is_body_visitor && a_sym == nullptr && x.m_vartype != nullptr) {
+        // 1. Declare EARLY in BOTH passes so visit_expr(m_values) succeeds under `implicit none`
+        if (a_sym == nullptr && x.m_vartype != nullptr) {
             ASR::ttype_t *loop_var_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
             a_sym = declare_implicit_variable2(x.base.base.loc, idl_var_name_lower, ASRUtils::intent_local, loop_var_type);
         }
@@ -16185,7 +16185,7 @@ public:
             if( type == nullptr ) {
                 type = type_;
             } else {
-                if (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr)) {
+                if (type_ != nullptr && (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr))) {
                     unique_type = false;
                 }
             }
@@ -16209,11 +16209,7 @@ public:
             a_sym = current_scope->resolve_symbol(idl_var_name_lower);
         }
         if (a_sym == nullptr) {
-            if (x.m_vartype != nullptr) {
-                // 2. Declare LATE in SymbolTableVisitor to prevent compile-time segfaults
-                ASR::ttype_t *loop_var_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                a_sym = declare_implicit_variable2(x.base.base.loc, idl_var_name_lower, ASRUtils::intent_local, loop_var_type);
-            } else if (compiler_options.implicit_typing) {
+            if (compiler_options.implicit_typing) {
                 std::string var_name = to_lower(x.m_var);
                 std::string first_letter = std::string(1, var_name[0]);
                 if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
@@ -16267,7 +16263,8 @@ public:
         
         bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
 
-        if (is_compiletime && idl_nesting_level == 1) {
+        // 2. THE SEGFAULT PROTECTOR: Must check `type != nullptr`
+        if (is_compiletime && idl_nesting_level == 1 && type != nullptr) {
             std::vector<int> loop_indices; // fill it with all zero
             for (size_t i = 0; i < loop_vars.size(); i++) {
                 loop_indices.push_back(0);
