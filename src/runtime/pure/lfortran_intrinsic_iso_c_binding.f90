@@ -84,4 +84,28 @@ interface
     end function
 end interface
 
+contains
+function f_c_string(s, trim_) result(c_str)
+character(len=*), intent(in) :: s
+logical, intent(in), optional :: trim_
+character(len=:), allocatable :: c_str
+integer :: slen
+logical :: keep_blanks
+
+if (present(trim_)) then
+    keep_blanks = trim_
+else
+    keep_blanks = .false.
+end if
+if (keep_blanks) then
+    slen = len(s)
+else
+    slen = len_trim(s)
+end if
+
+allocate(character(len=slen+1) :: c_str)
+c_str(1:slen) = s(1:slen)
+c_str(slen+1:slen+1) = c_null_char
+end function
+
 end module
