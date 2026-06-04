@@ -722,27 +722,93 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if (step == nullptr) {
                 step = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, ikind, loc);
             }
-            for (size_t i = 0; i < fmt->n_args; i++) {
-                ASR::expr_t* offset = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, i, ikind, loc);
-                ASR::expr_t* scaled_offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                    al, loc, offset, ASR::binopType::Mul, step, int_type, nullptr));
-                ASR::expr_t* idx = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                    al, loc, lb_lhs, ASR::binopType::Add, scaled_offset, int_type, nullptr));
-                ASR::expr_t* unit_i = PassUtils::create_array_ref(unit, idx, al, current_scope);
 
-                Vec<ASR::expr_t*> fmt_args; fmt_args.reserve(al, 1);
-                fmt_args.push_back(al, fmt->m_args[i]);
-                ASR::expr_t* fmt_i = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
-                    al, loc, fmt->m_fmt, fmt_args.p, 1, fmt->m_kind, fmt->m_type, fmt->m_value));
-                Vec<ASR::expr_t*> inner_vals; inner_vals.reserve(al, 1);
-                inner_vals.push_back(al, fmt_i);
-                pass_result.push_back(al, ASRUtils::STMT(ASR::make_FileWrite_t(
-                    al, loc, x.m_label, unit_i,
-                    x.m_iomsg, x.m_iostat, x.m_id,
-                    inner_vals.p, 1,
-                    x.m_separator, x.m_end, x.m_overloaded,
-                    x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous)));
-            }
+            // Compute section size: abs((end - start) / step) + 1
+            ASR::expr_t* diff = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, ub_lhs, ASR::binopType::Sub, lb_lhs, int_type, nullptr));
+            ASR::expr_t* quot = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, diff, ASR::binopType::Div, step, int_type, nullptr));
+            ASR::expr_t* one = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, ikind, loc);
+            ASR::expr_t* section_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, quot, ASR::binopType::Add, one, int_type, nullptr));
+
+            // Create a temporary contiguous array: character(len) :: temp(section_size)
+            ASR::ttype_t* base_str_type = ASRUtils::type_get_past_array(
+                ASRUtils::expr_type(x.m_unit));
+            ASR::dimension_t* temp_dim = al.allocate<ASR::dimension_t>(1);
+            temp_dim->loc = loc;
+            temp_dim->m_start = one;
+            temp_dim->m_length = section_size;
+            ASR::ttype_t* temp_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
+                al, loc, base_str_type, temp_dim, 1,
+                ASR::array_physical_typeType::DescriptorArray));
+            std::string tmp_name = current_scope->get_unique_name("__fw_temp_");
+            ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(
+                    al, loc, current_scope, s2c(al, tmp_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, temp_arr_type, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(tmp_name, tmp_sym);
+            ASR::expr_t* temp_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+
+
+            // Setup loop index for copy-in and copy-out
+            Vec<ASR::expr_t*> idx_vars;
+            idx_vars.reserve(al, 1);
+            PassUtils::create_idx_vars(idx_vars, 1, loc, al, current_scope, "_fwcopy", ikind);
+            ASR::expr_t* loop_var = idx_vars[0];
+            ASR::expr_t* zero = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 0, ikind, loc);
+            ASR::expr_t* loop_end = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, section_size, ASR::binopType::Sub, one, int_type, nullptr));
+
+            // Original array index: start + loop_var * step
+            ASR::expr_t* scaled = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, loop_var, ASR::binopType::Mul, step, int_type, nullptr));
+            ASR::expr_t* orig_idx = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, lb_lhs, ASR::binopType::Add, scaled, int_type, nullptr));
+            ASR::expr_t* orig_elem = PassUtils::create_array_ref(unit, orig_idx, al, current_scope);
+
+            // Temp array index: loop_var + 1
+            ASR::expr_t* temp_idx = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, loc, loop_var, ASR::binopType::Add, one, int_type, nullptr));
+            ASR::expr_t* temp_elem = PassUtils::create_array_ref(temp_var, temp_idx, al, current_scope);
+
+            // Copy in: do i = 0, section_size - 1
+            //   temp(i + 1) = c(start + i*step)
+            ASR::stmt_t* copy_in_stmt = ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(
+                    al, loc, temp_elem, orig_elem, nullptr, false, false));
+            Vec<ASR::stmt_t*> loop_in_body; loop_in_body.reserve(al, 1);
+            loop_in_body.push_back(al, copy_in_stmt);
+            ASR::do_loop_head_t head_in;
+            head_in.m_v = loop_var; head_in.m_start = zero; head_in.m_end = loop_end;
+            head_in.m_increment = nullptr; head_in.loc = loc;
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+                al, loc, nullptr, head_in, loop_in_body.p, 1, nullptr, 0)));
+
+            // Use temp_var directly as the write unit
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_FileWrite_t(
+                al, loc, x.m_label, temp_var,
+                x.m_iomsg, x.m_iostat, x.m_id,
+                x.m_values, x.n_values,
+                x.m_separator, x.m_end, x.m_overloaded,
+                x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous)));
+
+            // Copy back: do i = 0, section_size - 1
+            //   c(start + i*step) = temp(i + 1)
+            ASR::stmt_t* copy_stmt = ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(
+                    al, loc, orig_elem, temp_elem, nullptr, false, false));
+            Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
+            loop_body.push_back(al, copy_stmt);
+            ASR::do_loop_head_t head;
+            head.m_v = loop_var; head.m_start = zero; head.m_end = loop_end;
+            head.m_increment = nullptr; head.loc = loc;
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+                al, loc, nullptr, head, loop_body.p, 1, nullptr, 0)));
+
             remove_original_stmt = true;
             return;
         }
