@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+set -ex
+
+echo "CONDA_PREFIX=$CONDA_PREFIX"
+
+# Use freshly built LFortran
+
+export PATH="$PWD/src/bin:$PATH"
+
+which lfortran
+lfortran --version
+
+# Clone caffeine
+
+git clone -b main https://github.com/BerkeleyLab/caffeine.git
+cd caffeine
+
+git checkout 0388cf70cd193214952d8be9a00e968c4c5061e2
+
+# Toolchain setup
+
+export FC=lfortran
+export CC=clang
+export CXX=clang++
+
+echo "FC=${FC}"
+echo "CC=${CC}"
+echo "CXX=${CXX}"
+
+which fpm
+fpm --version
+
+which clang
+clang --version
+
+# GASNet debug options
+
+export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug"
+
+# Build caffeine
+
+./install.sh --yes --prefix=$PWD/inst --verbose
+
+cd ..
+
+# Make caffeine launcher available
+
+export PATH="$PWD/caffeine/inst/bin:$PATH"
+
+# Number of coarray images
+
+CAF_IMAGES=${CAF_IMAGES:-2}
+
+echo "Using CAF_IMAGES=$CAF_IMAGES"
+
+# Remove benign STOP output differences
+
+normalize_output() {
+    sed '/^STOP$/d' | awk '{$1=$1;print}' | sort
+}
+
+# Find all coarray-enabled tests
+
+tests=$(python3 -c '
+filenames = []
+current_file = None
+
+for line in open("tests/tests.toml"):
+    line = line.strip()
+
+    if line.startswith("[[test]]"):
+        current_file = None
+
+    elif line.startswith("filename ="):
+        current_file = "tests/" + line.split("\"")[1]
+
+    elif "--coarray=true" in line:
+        if current_file:
+            filenames.append(current_file)
+
+print(" ".join(filenames))
+')
+
+if [ -z "$tests" ]; then
+echo "No coarray tests found"
+exit 1
+fi
+
+for testfile in $tests; do
+echo "========================================="
+echo "Running coarray test: $testfile"
+echo "========================================="
+
+
+base=$(basename "$testfile" .f90)
+
+# ----------------------------------------
+# Compile with LFortran + caffeine
+# ----------------------------------------
+
+lfortran "$testfile" \
+    --coarray=true \
+    -o "${base}_lf.out" \
+    -L$PWD/caffeine/inst/lib \
+    -lcaffeine \
+    -lgasnet-smp-seq \
+    -lgasnet_tools-seq
+
+# ----------------------------------------
+# Compile with gfortran/OpenCoarrays
+# ----------------------------------------
+
+caf "$testfile" -o "${base}_gf.out"
+
+# ----------------------------------------
+# Run LFortran executable
+# ----------------------------------------
+
+lf_output=$(
+    gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out" \
+    2>&1 | normalize_output
+)
+
+# ----------------------------------------
+# Run gfortran executable
+# ----------------------------------------
+
+gf_output=$(
+    cafrun -np "$CAF_IMAGES" ./"${base}_gf.out" \
+    2>&1 | normalize_output
+)
+
+# ----------------------------------------
+# Compare outputs
+# ----------------------------------------
+
+if [ "$lf_output" != "$gf_output" ]; then
+    echo "Output mismatch for $testfile"
+
+    echo
+    echo "===== LFortran output ====="
+    echo "$lf_output"
+
+    echo
+    echo "===== gfortran/OpenCoarrays output ====="
+    echo "$gf_output"
+
+    exit 1
+fi
+
+echo "PASS: $testfile"
+
+rm -f "${base}_lf.out" "${base}_gf.out"
+
+
+done
+
+echo
+echo "All coarray runtime tests passed"
+
+rm -rf caffeine
