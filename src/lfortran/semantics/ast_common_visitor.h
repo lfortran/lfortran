@@ -16157,14 +16157,14 @@ public:
                 }
             }
         }
-        // Per the Fortran standard, an array-constructor implied-do variable
-        // has scope local to the implied-do.
         std::string idl_var_name_lower = to_lower(x.m_var);
         bool idl_var_pre_existing = (current_scope->resolve_symbol(idl_var_name_lower) != nullptr);
         idl_nesting_level++;
         
         ASR::symbol_t* a_sym = current_scope->resolve_symbol(idl_var_name_lower);
-        if (a_sym == nullptr && x.m_vartype != nullptr) {
+        
+        // 1. Declare EARLY in BodyVisitor so visit_expr(m_values) succeeds under `implicit none`
+        if (is_body_visitor && a_sym == nullptr && x.m_vartype != nullptr) {
             ASR::ttype_t *loop_var_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
             a_sym = declare_implicit_variable2(x.base.base.loc, idl_var_name_lower, ASRUtils::intent_local, loop_var_type);
         }
@@ -16178,12 +16178,10 @@ public:
         type_tuple.reserve(al, 1);
         bool unique_type = true;
         
-    
         for( size_t i = 0; i < x.n_values; i++ ) {
             this->visit_expr(*(x.m_values[i]));
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            ASR::ttype_t* type_ = ASRUtils::type_get_past_allocatable(
-                ASRUtils::expr_type(expr));
+            ASR::ttype_t* type_ = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr));
             if( type == nullptr ) {
                 type = type_;
             } else {
@@ -16192,10 +16190,8 @@ public:
                 }
             }
             type_tuple.push_back(al, type_);
-
             a_values_vec.push_back(al, expr);
         }
-
 
         this->visit_expr(*(x.m_start));
         a_start = ASRUtils::EXPR(tmp);
@@ -16213,7 +16209,11 @@ public:
             a_sym = current_scope->resolve_symbol(idl_var_name_lower);
         }
         if (a_sym == nullptr) {
-            if (compiler_options.implicit_typing) {
+            if (x.m_vartype != nullptr) {
+                // 2. Declare LATE in SymbolTableVisitor to prevent compile-time segfaults
+                ASR::ttype_t *loop_var_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                a_sym = declare_implicit_variable2(x.base.base.loc, idl_var_name_lower, ASRUtils::intent_local, loop_var_type);
+            } else if (compiler_options.implicit_typing) {
                 std::string var_name = to_lower(x.m_var);
                 std::string first_letter = std::string(1, var_name[0]);
                 if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
@@ -16245,7 +16245,6 @@ public:
                                         type, nullptr);
         ASR::ImpliedDoLoop_t* idl = (ASR::ImpliedDoLoop_t*) tmp;
 
-        // fetch loop variables
         std::vector<ASR::symbol_t*> loop_vars; fetch_implied_do_loop_variables(idl, loop_vars);
         auto rename_implicit_idl_var = [&]() {
             if ((!compiler_options.implicit_typing && x.m_vartype == nullptr) || idl_var_pre_existing) return;
@@ -16265,7 +16264,7 @@ public:
             rename_implicit_idl_var();
             return;
         }
-        // check compiletime evaluation possibility
+        
         bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
 
         if (is_compiletime && idl_nesting_level == 1) {
@@ -16347,7 +16346,7 @@ public:
         idl_nesting_level--;
         rename_implicit_idl_var();
     }
-
+    
     ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
         /*
             shifta(n, w):
