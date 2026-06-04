@@ -301,7 +301,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
 162 |     x = 5 + "x"
     |     ^       ^^^ type mismatch (integer and string)
 
-semantic error: Subroutine `bpe` called as a function
+semantic error: Unexpected use of subroutine name 'bpe'
    --> tests/errors/continue_compilation_3.f90:165:9
     |
 165 |     i = bpe()
