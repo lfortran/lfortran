@@ -1586,3 +1586,9 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 713 |         x = [character(len=3) :: "aa", "bb", "aa"]
     |         ^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (integer[:] and string[:])
+
+semantic error: case value must be scalar
+   --> tests/errors/continue_compilation_1.f90:745:16
+    |
+745 |         case (:[2])
+    |                ^^^ 

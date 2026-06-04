@@ -3778,6 +3778,13 @@ public:
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::ThisImage: {
+                // Non-coarray fallback: single image, always 1
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1, true));
+                break;
+            }
+            case ASRUtils::IntrinsicElementalFunctions::NumImages: {
+                // Non-coarray fallback: single image, always 1
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1, true));
                 break;
             }
             case ASRUtils::IntrinsicElementalFunctions::Expm1: {
@@ -5111,6 +5118,11 @@ public:
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type_, module.get());
+                
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
+                    tmp = llvm_utils->CreateLoad2(type->getPointerTo(), tmp);
+                }
+                
                 tmp = llvm_utils->CreateLoad2(
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
             }

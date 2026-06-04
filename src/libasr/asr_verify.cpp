@@ -794,7 +794,7 @@ public:
                 x.m_storage !=ASR::Parameter &&
                 !ASRUtils::is_pointer(x.m_type) /*Tolerate pointer*/){
                 require(x.m_intent != ASR::Local,
-                    "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT).");
+                    "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT) or a function return variable.");
             }
         }
         if (x.m_symbolic_value)

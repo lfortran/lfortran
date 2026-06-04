@@ -4703,7 +4703,16 @@ public:
             SymbolTable *parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
             ASR::ttype_t *type = nullptr;
-            if (sym_) {
+            if (determined_type) {
+                // if explicit type provided, give preference to it.
+                type = determined_type;
+                if (sym_ && ASR::is_a<ASR::Function_t>(*sym_)) {
+                    ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
+                    if (!func_sym->m_return_var) {
+                        is_subroutine = true;
+                    }
+                }
+            } else if (sym_) {
                 if (ASR::is_a<ASR::Function_t>(*sym_)) {
                     ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
                     if (!func_sym->m_return_var) {
@@ -4713,9 +4722,6 @@ public:
                 if (!is_subroutine) {
                     type = ASRUtils::symbol_type(sym_);
                 }
-            } else if (determined_type) {
-                // if explicit type provided, give preference to it.
-                type = determined_type;
             } else if (compiler_options.implicit_typing) {
                 type = implicit_dictionary[std::string(1,sym[0])];
                 if (!type) {
@@ -9620,7 +9626,7 @@ public:
                                 nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                                 ASR::accessType::Private));
                         type_declaration = v;
-                        type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, false));
+                        type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, false, false));
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument);
                         if (is_pointer) {

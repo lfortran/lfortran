@@ -65,7 +65,7 @@
                             []
                             0
                             (Integer 4)
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ()
                         )
                         ()
                         .false.
@@ -85,15 +85,12 @@
                                 []
                                 0
                                 (Integer 4)
-                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ()
                             )
                             Eq
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Logical 4)
-                            (LogicalConstant
-                                .true.
-                                (Logical 4)
-                            )
+                            ()
                         )
                         [(FileWrite
                             0

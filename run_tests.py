@@ -742,16 +742,11 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if fortran:
-        extra_args_fortran = extra_args
         if pass_ is not None:
-            pass_name = pass_.split(",")[0].strip()
             cmd = (
-                "sh -c 'lfortran --dump-all-passes-fortran --no-color {infile} "
-                + extra_args_fortran +
-                " >/dev/null 2>/dev/null || true' "
-                + "2>/dev/null; "
-                + "cat pass_fortran_*_" + pass_name + ".f90; "
-                + "rm -f pass_fortran_*_*.f90"
+                "lfortran --pass=" + pass_ +
+                " --show-fortran --no-color {infile} -o {outfile} " +
+                extra_args
             )
             run_test(
                 filename,
