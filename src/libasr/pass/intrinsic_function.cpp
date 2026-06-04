@@ -320,26 +320,6 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             // (e.g., index(tokens, spread(text, 1, 1))). Create a temporary
             // allocatable variable to hold the result.
             ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable(x->m_type);
-            // AssumedLength strings are only valid for dummy variables;
-            // convert to DeferredLength for the temporary.
-            ASR::ttype_t* element_type = ASRUtils::extract_type(base_type);
-            if( ASR::is_a<ASR::String_t>(*element_type) ) {
-                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(element_type);
-                if( str_t->m_len_kind == ASR::string_length_kindType::AssumedLength ) {
-                    element_type = ASRUtils::TYPE(ASR::make_String_t(
-                        al, x->base.base.loc, str_t->m_kind, nullptr,
-                        ASR::string_length_kindType::DeferredLength,
-                        str_t->m_physical_type));
-                    ASR::dimension_t* dims = nullptr;
-                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(base_type, dims);
-                    if( n_dims > 0 ) {
-                        base_type = ASRUtils::make_Array_t_util(al, x->base.base.loc,
-                            element_type, dims, n_dims);
-                    } else {
-                        base_type = element_type;
-                    }
-                }
-            }
             ASR::ttype_t* tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
                 al, x->base.base.loc, base_type));
             effective_result_var = PassUtils::create_var(result_counter,
@@ -351,19 +331,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             size_t ret_n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::type_get_past_allocatable(x->m_type), ret_dims);
             ASR::alloc_arg_t alloc_arg;
-            // For deferred-length strings, provide the string length
-            // from the source argument (first arg of spread).
-            if( ASR::is_a<ASR::String_t>(*element_type) &&
-                ASR::down_cast<ASR::String_t>(element_type)->m_len_kind ==
-                    ASR::string_length_kindType::DeferredLength &&
-                x->n_args > 0 && x->m_args[0].m_value ) {
-                alloc_arg.m_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
-                    al, x->base.base.loc, x->m_args[0].m_value,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4)),
-                    nullptr));
-            } else {
-                alloc_arg.m_len_expr = nullptr;
-            }
+            alloc_arg.m_len_expr = nullptr;
             alloc_arg.m_type = nullptr;
             alloc_arg.loc = x->base.base.loc;
             alloc_arg.m_a = effective_result_var;
