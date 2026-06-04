@@ -11930,15 +11930,8 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
                 start = end + 1;
             }
 
-            // For remaining records, pad with spaces.
-            while (rec < array_size) {
-                _lfortran_copy_str_and_pad(
-                    (*str_holder) + rec * (*len),
-                    *len,
-                    "",
-                    0);
-                rec++;
-            }
+            // Remaining records (beyond the output list) are left
+            // unchanged, per the Fortran standard.
         } else {
             _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
         }
