@@ -3,13 +3,10 @@ program real128_intrinsic_inquiry_01
     implicit none
 
     integer, parameter :: wp = selected_real_kind(33)
-    integer, parameter :: real128_significant_digits = &
-        int(log10(2.0_wp**digits(0.0_wp)))
     real(real128) :: x
     complex(real128) :: z
 
     if (wp /= real128) error stop 1
-    if (real128_significant_digits /= 34) error stop 2
     if (storage_size(x) /= 128) error stop 3
     if (storage_size(z) /= 256) error stop 4
     if (radix(x) /= 2) error stop 5

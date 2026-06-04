@@ -465,7 +465,7 @@ int __letf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a
 int __gttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
 int __getf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
 int __unordtf2_lf_impl(lf_float128 a, lf_float128 b) { return (f128_is_nan(a)||f128_is_nan(b))?1:0; }
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !LFORTRAN_HAVE_REAL128
 int __eqtf2   (lf_float128 a, lf_float128 b) { return __eqtf2_lf_impl(a, b); }
 int __netf2   (lf_float128 a, lf_float128 b) { return __netf2_lf_impl(a, b); }
 int __lttf2   (lf_float128 a, lf_float128 b) { return __lttf2_lf_impl(a, b); }
@@ -2050,20 +2050,22 @@ int lf_f128_eq(lf_float128 a, lf_float128 b) {
     return aq == bq;
 }
 
-/* Compiler-rt comparison ABI (weak on ELF so libgcc can override) */
+/* Compiler-rt comparison ABI (weak on ELF so libgcc can override).
+   LLVM lowers fp128 comparisons to calls with the platform __float128 ABI, not
+   LFortran's internal lf_float128 struct ABI. */
 #if defined(__ELF__)
 #  define LF_TF2_ATTR __attribute__((weak))
 #else
 #  define LF_TF2_ATTR
 #endif
 
-LF_TF2_ATTR int __eqtf2   (lf_float128 a, lf_float128 b) { return lf_f128_eq(a,b) ? 0 : 1; }
-LF_TF2_ATTR int __netf2   (lf_float128 a, lf_float128 b) { return lf_f128_eq(a,b) ? 0 : 1; }
-LF_TF2_ATTR int __lttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __letf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __gttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __getf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) { return (lf_f128_isnan(a)||lf_f128_isnan(b))?1:0; }
+LF_TF2_ATTR int __eqtf2   (__float128 a, __float128 b) { return (isnanq(a) || isnanq(b) || a != b) ? 1 : 0; }
+LF_TF2_ATTR int __netf2   (__float128 a, __float128 b) { return (isnanq(a) || isnanq(b) || a != b) ? 1 : 0; }
+LF_TF2_ATTR int __lttf2   (__float128 a, __float128 b) { return (isnanq(a) || isnanq(b)) ? 1 : ((a > b) - (a < b)); }
+LF_TF2_ATTR int __letf2   (__float128 a, __float128 b) { return (isnanq(a) || isnanq(b)) ? 1 : ((a > b) - (a < b)); }
+LF_TF2_ATTR int __gttf2   (__float128 a, __float128 b) { return (isnanq(a) || isnanq(b)) ? 1 : ((a > b) - (a < b)); }
+LF_TF2_ATTR int __getf2   (__float128 a, __float128 b) { return (isnanq(a) || isnanq(b)) ? 1 : ((a > b) - (a < b)); }
+LF_TF2_ATTR int __unordtf2(__float128 a, __float128 b) { return (isnanq(a) || isnanq(b)) ? 1 : 0; }
 
 #else /* !LFORTRAN_HAVE_REAL128 — expose the struct-based helpers used by intrinsics.c */
 

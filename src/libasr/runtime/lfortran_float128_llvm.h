@@ -44,6 +44,13 @@ lf_float128 __floatditf_lf_impl(int64_t  a);
 lf_float128 __floatunditf_lf_impl(uint64_t a);
 int32_t      __fixtfsi_lf_impl(lf_float128 a);
 int64_t      __fixtfdi_lf_impl(lf_float128 a);
+int          __eqtf2_lf_impl   (lf_float128 a, lf_float128 b);
+int          __netf2_lf_impl   (lf_float128 a, lf_float128 b);
+int          __lttf2_lf_impl   (lf_float128 a, lf_float128 b);
+int          __letf2_lf_impl   (lf_float128 a, lf_float128 b);
+int          __gttf2_lf_impl   (lf_float128 a, lf_float128 b);
+int          __getf2_lf_impl   (lf_float128 a, lf_float128 b);
+int          __unordtf2_lf_impl(lf_float128 a, lf_float128 b);
 
 /* ── Public ABI symbols (non-ARM64, non-WASM: thin wrappers) ───────────── */
 #if !defined(__aarch64__) && !defined(__wasm32__)
@@ -61,17 +68,6 @@ lf_float128 __floatditf(int64_t  a);
 lf_float128 __floatunditf(uint64_t a);
 int32_t      __fixtfsi(lf_float128 a);
 int64_t      __fixtfdi(lf_float128 a);
-#endif
-
-/* ── Comparisons (return int, no sret on any platform) ─────────────────── */
-#if !defined(__aarch64__) && !defined(__wasm32__)
-int __eqtf2   (lf_float128 a, lf_float128 b);
-int __netf2   (lf_float128 a, lf_float128 b);
-int __lttf2   (lf_float128 a, lf_float128 b);
-int __letf2   (lf_float128 a, lf_float128 b);
-int __gttf2   (lf_float128 a, lf_float128 b);
-int __getf2   (lf_float128 a, lf_float128 b);
-int __unordtf2(lf_float128 a, lf_float128 b);
 #endif
 
 #ifdef __cplusplus
