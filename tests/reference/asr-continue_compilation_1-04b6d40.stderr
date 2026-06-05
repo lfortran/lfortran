@@ -481,6 +481,16 @@ semantic error: COMMON block array bounds must be constant expressions
 736 |         integer :: arr(1:n)
     |                    ^^^^^^^^ 
 
+semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value` is BIND(C)
+   --> tests/errors/continue_compilation_1.f90:748:5 - 751:18
+    |
+748 |        subroutine bindc_optional_value(a) bind(c)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+751 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
