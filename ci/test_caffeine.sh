@@ -106,8 +106,7 @@ lfortran "$testfile" \
     -o "${base}_lf.out" \
     -L$PWD/caffeine/inst/lib \
     -lcaffeine \
-    -lgasnet-smp-seq \
-    -lgasnet_tools-seq
+    -lgasnet-smp-seq
 
 # ----------------------------------------
 # Compile with gfortran/OpenCoarrays
