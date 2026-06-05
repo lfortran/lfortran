@@ -745,4 +745,8 @@ program continue_compilation_1
         case (:[2])
         end select
     end subroutine
+    subroutine bindc_optional_value(a) bind(c)
+        implicit none
+        integer, optional, value :: a
+    end subroutine
 end program
