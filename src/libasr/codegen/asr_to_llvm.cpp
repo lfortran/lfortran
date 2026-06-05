@@ -5199,11 +5199,18 @@ public:
             base_t = ASRUtils::type_get_past_allocatable(base_t);
             base_t = ASRUtils::type_get_past_pointer(base_t);
             if (ASRUtils::is_array(base_t)) {// If nested derived type
-                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);\
+                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);
                 if (ASRUtils::is_struct(*elem_t)){
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
+                    if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)) &&
+                        !llvm::dyn_cast<llvm::AllocaInst>(tmp) &&
+                        !llvm::dyn_cast<llvm::GlobalVariable>(tmp)) {
+                        tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+                    }
+                    tmp = llvm_utils->get_array_descriptor_ptr(tmp, array_type, false);
                     tmp = llvm_utils->create_gep2(array_type, tmp, 0);
+                    tmp = llvm_utils->load_pointer_element(tmp, array_type);
                     base_t = elem_t;
                 }
             }
@@ -9505,6 +9512,127 @@ public:
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
+
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v)) {
+            ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(array_section->m_v);
+            if (ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                visit_expr(*sim->m_v);
+                llvm::Value* base_desc = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ptr_loads = 0;
+                visit_expr_wrapper(array_section->m_v);
+                llvm::Value* value_desc = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ptr_loads = 0;
+                visit_expr(*x.m_target);
+                llvm::Value* target_desc = tmp;
+                ptr_loads = ptr_loads_copy;
+
+                ASR::ttype_t* target_desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))),
+                     ASR::array_physical_typeType::DescriptorArray, true);
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_desc_type, module.get());
+
+                llvm::Value *target = arr_descr->create_descriptor_alloca(
+                    target_type, "array_section_descriptor");
+
+                int value_rank = array_section->n_args;
+                std::vector<llvm::Value*> section_first_indices;
+                for (int i = 0; i < value_rank; i++) {
+                    visit_expr_wrapper(array_section->m_args[i].m_right, true);
+                    section_first_indices.push_back(tmp);
+                }
+
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(
+                    symbol_get_past_external(sim->m_m));
+                ASR::ttype_t* member_type = member_var->m_type;
+                ASR::dimension_t* m_dims = nullptr;
+                int member_dims_count = ASRUtils::extract_dimensions_from_ttype(member_type, m_dims);
+
+                std::vector<llvm::Value*> llvm_diminfo;
+                for (int idim = 0; idim < member_dims_count; idim++) {
+                    llvm::Value* dim_start = nullptr;
+                    if (m_dims[idim].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
+                        visit_expr_wrapper(m_dims[idim].m_start, true);
+                        dim_start = tmp;
+                    } else {
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
+                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
+                    }
+                    llvm::Value* dim_size = nullptr;
+                    if (m_dims[idim].m_length) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
+                        visit_expr_wrapper(m_dims[idim].m_length, true);
+                        dim_size = tmp;
+                    } else {
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
+                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
+                    }
+                    llvm_diminfo.push_back(dim_start);
+                    llvm_diminfo.push_back(dim_size);
+                }
+                ptr_loads = ptr_loads_copy;
+
+                llvm::Type* member_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    sim->m_v, member_type, module.get());
+
+                value_desc = arr_descr->get_single_element(
+                    member_llvm_type, value_desc, section_first_indices, value_rank,
+                    member_type, array_section->m_v,
+                    location_manager, nullptr, true, true, llvm_diminfo.data(),
+                    false, nullptr, false, false, "", infile);
+
+                builder->CreateStore(value_desc, arr_descr->get_pointer_to_data(target_type, target));
+
+                unsigned index_bit_width = arr_descr->get_index_type()->getIntegerBitWidth();
+                builder->CreateStore(
+                    llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
+                    arr_descr->get_offset(target_type, target, false));
+
+                int target_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(sim->m_v));
+                arr_descr->fill_dimension_descriptor(target_type, target, target_rank);
+
+                llvm::Type* base_desc_type = llvm_utils->get_type_from_ttype_t_util(sim->m_v, ASRUtils::expr_type(sim->m_v), module.get());
+                base_desc = llvm_utils->get_array_descriptor_ptr(base_desc, base_desc_type, false);
+                llvm::Value* base_dim_des_array = arr_descr->get_pointer_to_dimension_descriptor_array(base_desc_type, base_desc);
+                llvm::Value* target_dim_des_array = arr_descr->get_pointer_to_dimension_descriptor_array(target_type, target);
+                
+                llvm::Type* dim_des = arr_descr->get_dimension_descriptor_type(false);
+                llvm::Type* base_el_type = llvm_utils->get_el_type(sim->m_v,
+                    ASRUtils::extract_type(ASRUtils::expr_type(sim->m_v)), module.get());
+                llvm::Type* target_el_type = llvm_utils->get_el_type(x.m_target,
+                    ASRUtils::extract_type(ASRUtils::expr_type(x.m_target)), module.get());
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t base_size = data_layout.getTypeAllocSize(base_el_type);
+                uint64_t target_size = data_layout.getTypeAllocSize(target_el_type);
+
+                for (int r = 0; r < target_rank; r++) {
+                    llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, base_dim_des_array, r);
+                    llvm::Value* dst_dim_val = llvm_utils->create_ptr_gep2(dim_des, target_dim_des_array, r);
+                    builder->CreateMemCpy(dst_dim_val, llvm::MaybeAlign(), src_dim_val, llvm::MaybeAlign(),
+                        llvm::ConstantInt::get(context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+                    
+                    llvm::Value* dst_stride_ptr = llvm_utils->create_gep2(dim_des, dst_dim_val, 2);
+                    llvm::Value* src_stride = llvm_utils->CreateLoad2(arr_descr->get_index_type(), dst_stride_ptr);
+                    llvm::Value* scaled_stride = builder->CreateMul(src_stride,
+                        llvm::ConstantInt::get(arr_descr->get_index_type(), base_size));
+                    scaled_stride = builder->CreateUDiv(scaled_stride,
+                        llvm::ConstantInt::get(arr_descr->get_index_type(), target_size));
+                    builder->CreateStore(scaled_stride, dst_stride_ptr);
+                }
+
+                builder->CreateStore(target, target_desc);
+                return;
+            }
+        }
 
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);

@@ -1787,6 +1787,7 @@ RUN(NAME intrinsics_463 LABELS llvm) # get_command (optional keyword arguments) 
 RUN(NAME intrinsics_464 LABELS gfortran llvm) # cshift with array shift
 RUN(NAME intrinsics_465 LABELS gfortran llvm) # index() must not read past declared length of deferred-length string
 RUN(NAME intrinsics_466 LABELS gfortran llvm) # eoshift with array-valued shift
+RUN(NAME intrinsics_467 LABELS gfortran llvm) # maxloc over derived-type array component section
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
