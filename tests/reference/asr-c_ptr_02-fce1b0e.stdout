@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     2
                                     1_test_obj_ptr
-                                    13 ptr
+                                    14 ptr
                                     test_obj
                                     []
                                     ptr
@@ -438,6 +438,16 @@
                                     c_vertical_tab
                                     Public
                                 ),
+                            f_c_string:
+                                (ExternalSymbol
+                                    2
+                                    f_c_string
+                                    4 f_c_string
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    f_c_string
+                                    Public
+                                ),
                             instance:
                                 (Variable
                                     2
@@ -525,11 +535,11 @@
                             test_obj:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             ptr:
                                                 (Variable
-                                                    13
+                                                    14
                                                     ptr
                                                     []
                                                     Local
