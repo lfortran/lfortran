@@ -16161,9 +16161,8 @@ public:
         bool idl_var_pre_existing = (current_scope->resolve_symbol(idl_var_name_lower) != nullptr);
         idl_nesting_level++;
         
+        // 1. Declare EARLY so the symbol table is happy under `implicit none`
         ASR::symbol_t* a_sym = current_scope->resolve_symbol(idl_var_name_lower);
-        
-        // 1. Declare EARLY in BOTH passes so visit_expr(m_values) succeeds under `implicit none`
         if (a_sym == nullptr && x.m_vartype != nullptr) {
             ASR::ttype_t *loop_var_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
             a_sym = declare_implicit_variable2(x.base.base.loc, idl_var_name_lower, ASRUtils::intent_local, loop_var_type);
@@ -16185,7 +16184,7 @@ public:
             if( type == nullptr ) {
                 type = type_;
             } else {
-                if (type_ != nullptr && (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr))) {
+                if (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr)) {
                     unique_type = false;
                 }
             }
@@ -16233,9 +16232,14 @@ public:
         }
 
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
-        if( !unique_type ) {
+        if( type_tuple.size() > 0 && !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
         }
+        
+        if (type == nullptr) {
+            type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+        }
+
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
                                         a_var, a_start, a_end, a_increment,
                                         type, nullptr);
@@ -16255,6 +16259,7 @@ public:
             var->m_name = s2c(al, unique_name);
             current_scope->add_symbol(unique_name, implicit_sym);
         };
+        
         if (is_body_visitor) {
             idl_nesting_level--;
             rename_implicit_idl_var();
@@ -16263,8 +16268,7 @@ public:
         
         bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
 
-        // 2. THE SEGFAULT PROTECTOR: Must check `type != nullptr`
-        if (is_compiletime && idl_nesting_level == 1 && type != nullptr) {
+        if (is_compiletime && idl_nesting_level == 1) {
             std::vector<int> loop_indices; // fill it with all zero
             for (size_t i = 0; i < loop_vars.size(); i++) {
                 loop_indices.push_back(0);
@@ -16343,7 +16347,7 @@ public:
         idl_nesting_level--;
         rename_implicit_idl_var();
     }
-    
+
     ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
         /*
             shifta(n, w):
