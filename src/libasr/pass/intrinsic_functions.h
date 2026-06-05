@@ -463,6 +463,13 @@ namespace X {                                                                   
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args,                           \
             diag::Diagnostics& /*diag*/) {                                      \
+        int kind = ASRUtils::extract_kind_from_ttype_t(t);                      \
+        if (kind == 16 && std::string(#X) == "Log10") {                        \
+            lf_float128 rv = ASRUtils::real_constant_get_r16(                   \
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));                  \
+            return ASRUtils::make_RealConstant_r16(al, loc,                     \
+                lf_f128_log10(rv), t);                                          \
+        }                                                                       \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
         ASRUtils::ASRBuilder b(al, loc);                                        \
         return b.f_t(std::eval_X(rv), t);                                       \
@@ -2600,7 +2607,13 @@ namespace Int {
             i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
-            i = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+            ASR::RealConstant_t* real_constant = ASR::down_cast<ASR::RealConstant_t>(
+                ASRUtils::expr_value(args[0]));
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
+                i = lf_f128_to_double(ASRUtils::real_constant_get_r16(real_constant));
+            } else {
+                i = real_constant->m_r;
+            }
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             i = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
