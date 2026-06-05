@@ -7412,6 +7412,9 @@ public:
                                 ASRUtils::extract_physical_type(v->m_type) ==
                                     ASR::array_physical_typeType::DescriptorArray) {
                             ptr = arr_descr->create_descriptor_alloca(type_, v->m_name);
+                        } else if (is_array_of_strings && ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::PointerArray) {
+                            // Delegate to the specialized setup function for stack string arrays
+                            ptr = create_and_setup_string_for_array(v->m_type, array_size, true, v->m_name);
                         } else {
                             ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
                                 v->m_name, is_llvm_ptr);
@@ -7422,6 +7425,9 @@ public:
                                 ASRUtils::extract_physical_type(v->m_type) ==
                                     ASR::array_physical_typeType::DescriptorArray) {
                             ptr = arr_descr->create_descriptor_alloca(type, v->m_name);
+                        } else if (is_array_of_strings && ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::PointerArray) {
+                            // Delegate to the specialized setup function for stack string arrays
+                            ptr = create_and_setup_string_for_array(v->m_type, array_size, true, v->m_name);
                         } else {
                             ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
                         }
