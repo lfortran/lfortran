@@ -745,8 +745,9 @@ program continue_compilation_1
         case (:[2])
         end select
     end subroutine
-    subroutine bindc_optional_value(a) bind(c)
-        implicit none
-        integer, optional, value :: a
+
+    subroutine sub_alternate_return_intrinsic()
+        call cpu_time(*1)
+1       continue
     end subroutine
 end program
