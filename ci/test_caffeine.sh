@@ -123,8 +123,7 @@ caf "$testfile" -o "${base}_gf.out"
 # ----------------------------------------
 
 lf_output=$(
-    gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out" \
-    2>&1 | normalize_output
+    gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out" | normalize_output
 )
 
 # ----------------------------------------
@@ -132,8 +131,7 @@ lf_output=$(
 # ----------------------------------------
 
 gf_output=$(
-    cafrun -np "$CAF_IMAGES" ./"${base}_gf.out" \
-    2>&1 | normalize_output
+    cafrun -np "$CAF_IMAGES" ./"${base}_gf.out" | normalize_output
 )
 
 # ----------------------------------------
