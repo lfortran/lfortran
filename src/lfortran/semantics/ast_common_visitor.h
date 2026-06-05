@@ -12768,6 +12768,15 @@ public:
             args.push_back(al, nullptr);
         }
         for( size_t i = 0; i < x.n_args; i++ ) {
+            if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
+                diag.add(diag::Diagnostic(
+                    "Alternate return arguments are not permitted in calls to the '" +
+                    intrinsic_name + "' intrinsic.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            LCOMPILERS_ASSERT(x.m_args[i].m_end != nullptr);
             // Handle BOZ constants in real() function
             ASR::ttype_t* temp_current_variable_type = current_variable_type_;
             if (intrinsic_name == "real" && i == 0 && x.m_args[i].m_end && 
