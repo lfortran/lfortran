@@ -182,6 +182,11 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
+      - name: Setup FPM
+      - uses: fortran-lang/setup-fpm@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fpm-version: latest
 
       - name: Build LFortran
         shell: bash -e -l {0}
