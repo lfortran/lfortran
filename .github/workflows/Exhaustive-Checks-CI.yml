@@ -189,10 +189,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           fpm-version: latest
 
-      - name: Install OpenCoarrays
-        shell: bash -l {0}
+      - name: Build OpenCoarrays
         run: |
-          micromamba install -y -c conda-forge opencoarrays
+          git clone https://github.com/sourceryinstitute/OpenCoarrays.git
+          cd OpenCoarrays
+
+          cmake -B build \
+            -DCMAKE_INSTALL_PREFIX=$HOME/opencoarrays
+
+          cmake --build build -j2
+          cmake --install build
+
+          echo "$HOME/opencoarrays/bin" >> $GITHUB_PATH
+          cd ..
 
       - name: Build LFortran
         shell: bash -e -l {0}
