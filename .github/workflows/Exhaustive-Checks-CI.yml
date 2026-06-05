@@ -190,7 +190,9 @@ jobs:
           fpm-version: latest
 
       - name: Build OpenCoarrays
+        shell: bash -e -l {0}
         run: |
+          micromamba install -y -c conda-forge openmpi
           git clone https://github.com/sourceryinstitute/OpenCoarrays.git
           cd OpenCoarrays
 
