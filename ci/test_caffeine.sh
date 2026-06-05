@@ -28,6 +28,8 @@ echo "FC=${FC}"
 echo "CC=${CC}"
 echo "CXX=${CXX}"
 
+micromamba install -c conda-forge fpm=0.12.0
+
 which fpm
 fpm --version
 
