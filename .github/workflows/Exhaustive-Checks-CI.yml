@@ -182,11 +182,17 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
+
       - name: Setup FPM
         uses: fortran-lang/setup-fpm@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           fpm-version: latest
+
+      - name: Install OpenCoarrays
+        shell: bash -l {0}
+        run: |
+          micromamba install -y -c conda-forge opencoarrays
 
       - name: Build LFortran
         shell: bash -e -l {0}

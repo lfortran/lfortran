@@ -34,6 +34,12 @@ fpm --version
 which clang
 clang --version
 
+which caf
+caf --version
+
+which cafrun
+cafrun --version
+
 # GASNet debug options
 
 export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug"
