@@ -1976,20 +1976,40 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             ASRUtils::get_expr_size_expr(x.m_target) != nullptr) {
-            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-            ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
-            ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
+            bool skip_shape_check = false;
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::symbol_t* tgt_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+                if (tgt_sym && ASR::is_a<ASR::Variable_t>(*tgt_sym)) {
+                    ASR::Variable_t* tgt_var = ASR::down_cast<ASR::Variable_t>(tgt_sym);
+                    if (ASRUtils::is_arg_dummy(tgt_var->m_intent) &&
+                            !ASRUtils::is_allocatable(tgt_var->m_type) &&
+                            !ASRUtils::is_pointer(tgt_var->m_type)) {
+                        ASR::dimension_t* d_dims = nullptr;
+                        size_t d_n = ASRUtils::extract_dimensions_from_ttype(
+                            tgt_var->m_type, d_dims);
+                        if (d_n > 0 && ASRUtils::is_dimension_empty(d_dims, d_n)) {
+                            skip_shape_check = true;
+                        }
+                    }
+                }
+            }
+            if (!skip_shape_check) {
+                ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
+                ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
 
-            Vec<ASR::expr_t*> vars;
-            vars.reserve(al, 1);
+                Vec<ASR::expr_t*> vars;
+                vars.reserve(al, 1);
 
-            CollectComponentsFromElementalExpr cv(al, vars);
-            cv.visit_expr(*d_value);
+                CollectComponentsFromElementalExpr cv(al, vars);
+                cv.visit_expr(*d_value);
 
-            if (debug_inserted.find(&x) == debug_inserted.end()) {
-                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, vars.p, vars.n, x.m_move_allocation)));
-                if (!x.m_move_allocation) {
-                    debug_inserted.insert(&x);
+                if (debug_inserted.find(&x) == debug_inserted.end()) {
+                    pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, vars.p, vars.n, x.m_move_allocation)));
+                    if (!x.m_move_allocation) {
+                        debug_inserted.insert(&x);
+                    }
                 }
             }
         }

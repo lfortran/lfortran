@@ -818,12 +818,11 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
 
     int width = 0, decimal_digits = 0;
     bool is_negative = (val < 0);
-    long integer_part = (long)fabs(val);
+    double integer_part = floor(fabs(val));
     double decimal_part = fabs(val) - integer_part;
 
     int sign_width = (val < 0) ? 1 : 0; // Negative sign
     bool sign_plus_exist = (use_sign_plus && val>=0); // Positive sign
-    int integer_length = (integer_part == 0) ? 1 : (int)log10(integer_part) + 1;
 
     // parsing the format
     char* dot_pos = strchr(format, '.');
@@ -848,12 +847,15 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     }
 
     if (decimal_part >= 1.0) {
-        integer_part += 1;
+        integer_part += 1.0;
         decimal_part -= 1.0;
     }
 
-    char int_str[64];
-    sprintf(int_str, "%ld", integer_part);
+    // Size buffers large enough to hold huge(1.0_real64) which has ~309
+    // integer digits.
+    char int_str[512];
+    sprintf(int_str, "%.0f", integer_part);
+    int integer_length = (int)strlen(int_str);
 
     // TODO: This will work for up to `F65.60` but will fail for:
     // print "(F67.62)", 1.23456789101112e-62_8
@@ -870,7 +872,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
                         sign_plus_exist ;
 
     bool drop_leading_zero = false;
-    if (integer_part == 0 && width > 0 && total_length > width) {
+    if (integer_part == 0.0 && width > 0 && total_length > width) {
         drop_leading_zero = true;
         total_length -= 1;
     }
@@ -879,7 +881,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
         width = total_length;
     }
 
-    char formatted_value[128] = "";
+    char formatted_value[1024] = "";
 
     int spaces = width - total_length;
     for (int i = 0; i < spaces; i++) {
@@ -891,7 +893,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
+    if (integer_part == 0.0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
         // Omit the leading zero
     } else {
         strcat(formatted_value, int_str);
@@ -4875,13 +4877,17 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
     char* rhs, int64_t rhs_len){
 
     lfortran_assert(lhs != NULL, "Run-time Error : Copying into unallocated LHS string.")
-    if(rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
 
     int64_t data_amount_to_copy = MIN(lhs_len, rhs_len);
-    memcpy(lhs, rhs, data_amount_to_copy * sizeof(char));
+    if (data_amount_to_copy > 0) {
+        if (rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
+        memcpy(lhs, rhs, data_amount_to_copy * sizeof(char));
+    }
 
     int64_t pad_amount = lhs_len - data_amount_to_copy;
-    memset(lhs + data_amount_to_copy, ' ', pad_amount * sizeof(char));
+    if (pad_amount > 0) {
+        memset(lhs + data_amount_to_copy, ' ', pad_amount * sizeof(char));
+    }
 }
 // TODO : split them into three functions instead of making compile-time choices at runtime
 LFORTRAN_API void _lfortran_strcpy_alloc(
@@ -4893,6 +4899,7 @@ LFORTRAN_API void _lfortran_strcpy_alloc(
         lfortran_assert(*lhs != NULL, "Runtime Error : Non-allocatable string isn't allocated.")
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (!is_lhs_deferred && is_lhs_allocatable){
+        if (rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
         if (*lhs == NULL) *lhs = (char*)ALLOCATOR_ALLOC(al, MAX((*lhs_len), 1));
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (is_lhs_deferred && is_lhs_allocatable) {

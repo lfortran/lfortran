@@ -810,15 +810,19 @@ public:
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
 
-        // Verify dependencies
+        const std::string marker_prefix = "__lcompilers_marker_";
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
+            std::string dep = std::string(x.m_dependencies[i]);
+            if (dep.rfind(marker_prefix, 0) == 0) {
+                continue;
+            }
             require(std::find(
                 variable_dependencies.begin(),
                 variable_dependencies.end(),
-                std::string(x.m_dependencies[i])
+                dep
             ) != variable_dependencies.end(),
                 "Variable " + std::string(x.m_name) + " doesn't depend on " +
-                std::string(x.m_dependencies[i]) + " but is found in its dependency list.");
+                dep + " but is found in its dependency list.");
         }
 
         for( size_t i = 0; i < variable_dependencies.size(); i++ ) {
@@ -1557,9 +1561,12 @@ public:
     }
 
     void visit_StructType(const StructType_t& x) {
+        bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+        _inside_array_physical_cast_type = false;
         for (size_t i = 0; i < x.n_data_member_types; i++) {
             visit_ttype(*x.m_data_member_types[i]);
         }
+        _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
     }
 
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
