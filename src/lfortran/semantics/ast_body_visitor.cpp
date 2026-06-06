@@ -20,6 +20,38 @@
 
 namespace LCompilers::LFortran {
 
+static bool is_parent_scope(SymbolTable *scope, SymbolTable *maybe_parent) {
+    for (SymbolTable *s = scope->parent; s != nullptr; s = s->parent) {
+        if (s == maybe_parent) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool is_host_associated_assignment_target(SymbolTable *current_scope, ASR::expr_t *target, std::string &var_name) {
+    target = ASRUtils::get_past_array_physical_cast(target);
+    if (!ASR::is_a<ASR::Var_t>(*target)) {
+        return false;
+    }
+    ASR::symbol_t *target_sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+    SymbolTable *symtab = ASRUtils::symbol_parent_symtab(target_sym);
+    if (!is_parent_scope(current_scope, symtab)) {
+        return false;
+    }
+    ASR::symbol_t *target_sym_past_external = ASRUtils::symbol_get_past_external(target_sym);
+    if (!ASR::is_a<ASR::Variable_t>(*target_sym_past_external)) {
+        return false;
+    }
+    ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym_past_external);
+    if (target_var->m_intent != ASR::intentType::Local &&
+            target_var->m_intent != ASR::intentType::ReturnVar) {
+        return false;
+    }
+    var_name = target_var->m_name;
+    return true;
+}
+
 static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
         size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation) {
     ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
@@ -84,6 +116,7 @@ public:
     int collapse_value=0;
     Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
+    bool current_procedure_is_pure = false;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
@@ -5434,8 +5467,10 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
+        bool old_current_procedure_is_pure = current_procedure_is_pure;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
+        current_procedure_is_pure = ASRUtils::get_FunctionType(v)->m_pure;
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         SetChar func_deps;
@@ -5454,6 +5489,7 @@ public:
             compiler_options.continue_compilation);
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
+        current_procedure_is_pure = old_current_procedure_is_pure;
         for (size_t i=0; i<x.n_contains; i++) {
             try {
                 visit_program_unit(*x.m_contains[i]);
@@ -5525,8 +5561,10 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
+        bool old_current_procedure_is_pure = current_procedure_is_pure;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
+        current_procedure_is_pure = ASRUtils::get_FunctionType(v)->m_pure;
         body.reserve(al, x.n_body);
         auto& scope_data_func = data_structure[current_scope->counter];
         if (scope_data_func.size()>0) {
@@ -5553,6 +5591,7 @@ public:
             compiler_options.continue_compilation);
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
+        current_procedure_is_pure = old_current_procedure_is_pure;
 
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
@@ -5626,8 +5665,10 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
+        bool old_current_procedure_is_pure = current_procedure_is_pure;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
+        current_procedure_is_pure = ASRUtils::get_FunctionType(v)->m_pure;
         transform_stmts(body, x.n_body, x.m_body);
         handle_format();
         SetChar func_deps;
@@ -5646,6 +5687,7 @@ public:
             compiler_options.continue_compilation);
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
+        current_procedure_is_pure = old_current_procedure_is_pure;
 
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
 
@@ -6178,6 +6220,18 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
+        std::string host_associated_name;
+        if (current_procedure_is_pure &&
+                is_host_associated_assignment_target(
+                    current_scope, target, host_associated_name)) {
+            diag.add(Diagnostic(
+                "Host-associated variable `" + host_associated_name +
+                "` cannot be defined in a PURE procedure",
+                Level::Error, Stage::Semantic, {
+                    Label("",{target->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(target))) {
             std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(target)->m_v);
             if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
