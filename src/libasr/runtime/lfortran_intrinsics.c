@@ -4875,13 +4875,17 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
     char* rhs, int64_t rhs_len){
 
     lfortran_assert(lhs != NULL, "Run-time Error : Copying into unallocated LHS string.")
-    if(rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
 
     int64_t data_amount_to_copy = MIN(lhs_len, rhs_len);
-    memcpy(lhs, rhs, data_amount_to_copy * sizeof(char));
+    if (data_amount_to_copy > 0) {
+        if (rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
+        memcpy(lhs, rhs, data_amount_to_copy * sizeof(char));
+    }
 
     int64_t pad_amount = lhs_len - data_amount_to_copy;
-    memset(lhs + data_amount_to_copy, ' ', pad_amount * sizeof(char));
+    if (pad_amount > 0) {
+        memset(lhs + data_amount_to_copy, ' ', pad_amount * sizeof(char));
+    }
 }
 // TODO : split them into three functions instead of making compile-time choices at runtime
 LFORTRAN_API void _lfortran_strcpy_alloc(
@@ -4893,6 +4897,7 @@ LFORTRAN_API void _lfortran_strcpy_alloc(
         lfortran_assert(*lhs != NULL, "Runtime Error : Non-allocatable string isn't allocated.")
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (!is_lhs_deferred && is_lhs_allocatable){
+        if (rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
         if (*lhs == NULL) *lhs = (char*)ALLOCATOR_ALLOC(al, MAX((*lhs_len), 1));
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (is_lhs_deferred && is_lhs_allocatable) {
