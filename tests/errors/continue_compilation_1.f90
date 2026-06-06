@@ -745,4 +745,13 @@ program continue_compilation_1
         case (:[2])
         end select
     end subroutine
+
+    subroutine pure_host_definition()
+        integer :: res
+        call assign_res()
+    contains
+        pure subroutine assign_res()
+            res = 10
+        end subroutine
+    end subroutine
 end program
