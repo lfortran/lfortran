@@ -6520,23 +6520,6 @@ public:
         } else {
             return;
         }
-        bool struct_has_finalizer = false;
-        {
-            ASR::Struct_t* s = struct_sym;
-            while (s) {
-                if (s->n_member_functions > 0) {
-                    struct_has_finalizer = true;
-                    break;
-                }
-                if (s->m_parent) {
-                    s = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(s->m_parent));
-                } else {
-                    s = nullptr;
-                }
-            }
-        }
-
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             llvm::Type* const class_type = llvm_utils->getClassType(struct_sym, false);
             llvm::Type* const struct_type = llvm_utils->getStructType(struct_sym, module.get(), true);
@@ -6697,8 +6680,7 @@ public:
                         }
                     }
                 }
-                if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val &&
-                    !(is_intent_out && struct_has_finalizer)) {
+                if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     if( v->m_symbolic_value ) {
                         ASR::expr_t* init_value = ASRUtils::expr_value(v->m_symbolic_value);
