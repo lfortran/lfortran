@@ -2770,7 +2770,7 @@ public:
                     ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
                 struct_sym = ASR::down_cast<ASR::Struct_t>(sym);
             }
-            int dims = ASRUtils::extract_n_dims_from_ttype(cur_type); 
+            int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
             if(ASRUtils::is_character(*cur_type)) { // Handle Strings (array of strings or just string)
                 tmp = LLVM::is_llvm_pointer(*cur_type) ?
                     builder->CreateLoad(llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get()), tmp)
