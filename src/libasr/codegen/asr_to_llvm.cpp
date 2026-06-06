@@ -13370,9 +13370,9 @@ public:
         llvm::Value* llvm_selector = tmp;
         ASR::ttype_t* selector_asr_type = ASRUtils::expr_type(x.m_selector);
         llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_asr_type, module.get());
-        if (ASRUtils::is_allocatable(selector_asr_type)) {
+        if (LLVM::is_llvm_pointer(*selector_asr_type)) {
             llvm_selector = llvm_utils->CreateLoad2(llvm_selector_type_, llvm_selector);
-            selector_asr_type = ASRUtils::type_get_past_allocatable(selector_asr_type);
+            selector_asr_type = ASRUtils::type_get_past_allocatable_pointer(selector_asr_type);
             llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_asr_type, module.get());
         }
         std::string merge_name = "ifcont";
@@ -23255,7 +23255,7 @@ public:
                 !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
                 llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
-                    orig_arg->m_type, module.get());
+                    ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type), module.get());
                 llvm::Value* descriptor = arr_descr->create_descriptor_alloca(descriptor_type);
                 llvm::Value* data_ptr = arr_descr->get_pointer_to_data(descriptor_type, descriptor);
                 // If target is unlimited polymorphic, wrap the scalar in a polymorphic type
@@ -23332,7 +23332,17 @@ public:
                     
                     builder->CreateStore(poly_wrapper, data_ptr);
                 } else {
-                    builder->CreateStore(tmp, data_ptr);
+                    llvm::Value* raw_ptr = tmp;
+                    ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
+                    if (LLVM::is_llvm_pointer(*arg_type)) {
+                        ASR::ttype_t* elem_asr_type = ASRUtils::extract_type(arg_type);
+                        llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
+                            x.m_args[i].m_value, elem_asr_type, module.get());
+                        raw_ptr = llvm_utils->CreateLoad2(elem_llvm_type->getPointerTo(), tmp);
+                    }
+                    llvm::Type* expected_ptr_type = descriptor_type->getStructElementType(0);
+                    raw_ptr = builder->CreateBitCast(raw_ptr, expected_ptr_type);
+                    builder->CreateStore(raw_ptr, data_ptr);
                 }
                 
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
