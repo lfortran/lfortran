@@ -2022,6 +2022,7 @@ public:
     ASR::presenceType dflt_presence = ASR::presenceType::Required;
     std::map<std::string, ASR::presenceType> assgnd_presence;
     std::set<std::string> assgnd_pointer;
+    std::set<std::string> assgnd_allocatable;
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
@@ -4696,6 +4697,7 @@ public:
                 current_scope->add_or_overwrite_symbol(
                     sym, ASR::down_cast<ASR::symbol_t>(var));
                 assgnd_pointer.erase(sym);
+                assgnd_allocatable.erase(sym);
                 return;
             }
             SymbolTable *parent_scope = current_scope;
@@ -5702,6 +5704,23 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrAsynchronous) {
                                     // no-op: valid Fortran 2003, LFortran's runtime is synchronous
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrAllocatable) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (sym_) {
+                                        ASR::symbol_t* sym_past_external =
+                                            ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                                sym_past_external);
+                                            if (!ASRUtils::is_allocatable(v->m_type)) {
+                                                v->m_type = ASRUtils::TYPE(
+                                                    ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
+                                            }
+                                        }
+                                    } else {
+                                        assgnd_allocatable.insert(sym);
+                                    }
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",
@@ -6892,6 +6911,9 @@ public:
                 if (assgnd_pointer.count(sym)) {
                     is_pointer = true;
                 }
+                if (assgnd_allocatable.count(sym)) {
+                    is_allocatable = true;
+                }
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr && !is_external) {
@@ -6965,6 +6987,9 @@ public:
                 // location for dimension(...) if present
                 Location dims_attr_loc;
                 is_allocatable = false;
+                if (assgnd_allocatable.count(sym)) {
+                    is_allocatable = true;
+                }
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {

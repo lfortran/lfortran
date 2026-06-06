@@ -2201,6 +2201,12 @@ public:
                             diag::Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
             }
+            if (assgnd_pointer.count(return_var_name)) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+            }
+            if (assgnd_allocatable.count(return_var_name)) {
+                type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
+            }
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
