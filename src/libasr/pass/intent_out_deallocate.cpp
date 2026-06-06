@@ -60,15 +60,17 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 ASR::stmt_t* init_stmt = nullptr;
                 if (ASRUtils::is_pointer(m_var->m_type)) {
                     // Only handle pointer-null defaults. We rebuild the
-                    // PointerNullConstant so its `var_expr` does not
-                    // reference a symbol that lives outside the current
-                    // function's scope.
+                    // PointerNullConstant using `member_expr` as its
+                    // `var_expr` so codegen can resolve the underlying
+                    // procedure interface (when the pointer targets a
+                    // procedure) without relying on a symbol from the
+                    // declaring module's scope.
                     if (!ASR::is_a<ASR::PointerNullConstant_t>(
                             *m_var->m_symbolic_value)) continue;
                     ASR::expr_t* null_value = ASRUtils::EXPR(
                         ASR::make_PointerNullConstant_t(al, loc,
                             ASRUtils::expr_type(m_var->m_symbolic_value),
-                            nullptr));
+                            member_expr));
                     init_stmt = ASRUtils::STMT(
                         ASRUtils::make_Associate_t_util(al, loc,
                             member_expr, null_value));
@@ -355,66 +357,55 @@ public:
                 if (has_finalizer) {
                     ASR::expr_t* var_expr = ASRUtils::EXPR(
                         ASR::make_Var_t(al, loc, arg_sym));
-                    ASR::Struct_t* st_for_final = struct_type;
-                    while (st_for_final != nullptr) {
-                        for (size_t fi = 0;
-                                fi < st_for_final->n_member_functions;
-                                fi++) {
-                            std::string final_proc_name =
-                                st_for_final->m_member_functions[fi];
-                            ASR::symbol_t* final_sym =
-                                st_for_final->m_symtab->parent->get_symbol(
-                                    final_proc_name);
-                            if (!final_sym) continue;
+                    for (size_t fi = 0;
+                            fi < struct_type->n_member_functions; fi++) {
+                        std::string final_proc_name =
+                            struct_type->m_member_functions[fi];
+                        ASR::symbol_t* final_sym =
+                            struct_type->m_symtab->parent->get_symbol(
+                                final_proc_name);
+                        LCOMPILERS_ASSERT(final_sym != nullptr);
 
-                            ASR::symbol_t* local_final_sym =
-                                xx.m_symtab->resolve_symbol(final_proc_name);
-                            if (!local_final_sym) {
-                                std::string module_name = "";
-                                ASR::asr_t* owner =
-                                    st_for_final->m_symtab->parent->asr_owner;
-                                if (owner &&
-                                    ASR::is_a<ASR::symbol_t>(*owner)) {
-                                    module_name = ASRUtils::symbol_name(
-                                        ASR::down_cast<ASR::symbol_t>(owner));
-                                }
-                                ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
-                                    al, loc, xx.m_symtab,
-                                    s2c(al, final_proc_name), final_sym,
-                                    s2c(al, module_name), nullptr, 0,
-                                    s2c(al, final_proc_name),
-                                    ASR::accessType::Private);
-                                xx.m_symtab->add_symbol(final_proc_name,
-                                    ASR::down_cast<ASR::symbol_t>(ext));
-                                local_final_sym =
-                                    ASR::down_cast<ASR::symbol_t>(ext);
+                        ASR::symbol_t* local_final_sym =
+                            xx.m_symtab->resolve_symbol(final_proc_name);
+                        if (!local_final_sym) {
+                            std::string module_name = "";
+                            ASR::asr_t* owner =
+                                struct_type->m_symtab->parent->asr_owner;
+                            if (owner &&
+                                ASR::is_a<ASR::symbol_t>(*owner)) {
+                                module_name = ASRUtils::symbol_name(
+                                    ASR::down_cast<ASR::symbol_t>(owner));
                             }
-
-                            Vec<ASR::call_arg_t> call_args;
-                            call_args.reserve(al, 1);
-                            ASR::call_arg_t call_arg;
-                            call_arg.loc = loc;
-                            call_arg.m_value = var_expr;
-                            call_args.push_back(al, call_arg);
-
-                            ASR::stmt_t* call_stmt = ASRUtils::STMT(
-                                ASR::make_SubroutineCall_t(
-                                    al, loc, local_final_sym,
-                                    local_final_sym, call_args.p,
-                                    call_args.n, nullptr, false));
-
-                            ASR::stmt_t* wrapped_stmt = wrap_optional_check(
-                                loc, var_expr, arg_var->m_presence,
-                                call_stmt);
-                            dealloc_stmts.push_back(al, wrapped_stmt);
+                            ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
+                                al, loc, xx.m_symtab,
+                                s2c(al, final_proc_name), final_sym,
+                                s2c(al, module_name), nullptr, 0,
+                                s2c(al, final_proc_name),
+                                ASR::accessType::Private);
+                            xx.m_symtab->add_symbol(final_proc_name,
+                                ASR::down_cast<ASR::symbol_t>(ext));
+                            local_final_sym =
+                                ASR::down_cast<ASR::symbol_t>(ext);
                         }
-                        if (st_for_final->m_parent != nullptr) {
-                            st_for_final = ASR::down_cast<ASR::Struct_t>(
-                                ASRUtils::symbol_get_past_external(
-                                    st_for_final->m_parent));
-                        } else {
-                            st_for_final = nullptr;
-                        }
+
+                        Vec<ASR::call_arg_t> call_args;
+                        call_args.reserve(al, 1);
+                        ASR::call_arg_t call_arg;
+                        call_arg.loc = loc;
+                        call_arg.m_value = var_expr;
+                        call_args.push_back(al, call_arg);
+
+                        ASR::stmt_t* call_stmt = ASRUtils::STMT(
+                            ASR::make_SubroutineCall_t(
+                                al, loc, local_final_sym,
+                                local_final_sym, call_args.p,
+                                call_args.n, nullptr, false));
+
+                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(
+                            loc, var_expr, arg_var->m_presence,
+                            call_stmt);
+                        dealloc_stmts.push_back(al, wrapped_stmt);
                     }
                     Vec<ASR::stmt_t*> init_stmts;
                     init_stmts.reserve(al, 1);
