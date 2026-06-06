@@ -2770,16 +2770,11 @@ public:
                     ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
                 struct_sym = ASR::down_cast<ASR::Struct_t>(sym);
             }
-            int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
-            
+            int dims = ASRUtils::extract_n_dims_from_ttype(cur_type); 
             if(ASRUtils::is_character(*cur_type)) { // Handle Strings (array of strings or just string)
-                
-                llvm::Value* array_descr = tmp;
                 tmp = LLVM::is_llvm_pointer(*cur_type) ?
                     builder->CreateLoad(llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get()), tmp)
                     : tmp ;
-                array_descr = tmp;
-
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
                     ASRUtils::extract_type(cur_type));
                 if (abt == ASR::abiType::BindC && ASRUtils::is_allocatable(cur_type) &&
@@ -2787,25 +2782,7 @@ public:
                     tmp = llvm_utils->CreateLoad2(
                         llvm_utils->string_descriptor->getPointerTo(), tmp);
                 }
-                
                 llvm_utils->free_strings(tmp_expr, tmp);
-                
-                if (dims > 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
-                    llvm::Value *cond = arr_descr->get_is_allocated_flag(array_descr, tmp_expr);
-                    llvm_utils->create_if_else(cond, [=]() {
-                        llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(cur_type)),
-                            module.get(), abt);
-                        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(cur_type)));
-                        llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
-                        
-                        arr_descr->reset_is_allocated_flag(typ, array_descr, llvm_data_type);
-                    }, [](){});
-                }
-                
             } else {
                 if (dims == 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
                     llvm::Type* llvm_data_type;
