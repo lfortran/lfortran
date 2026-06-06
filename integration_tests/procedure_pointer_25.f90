@@ -1,52 +1,61 @@
-! Test calling procedure(), nopass, pointer struct members with arguments.
 ! Regression test for ICE: AssertFailed: arg_idx < func_subrout->n_args
-! when a procedure() pointer (no explicit interface) is called with arguments
-! that exceed the declared (empty) formal parameter count.
-program procedure_pointer_25
-    implicit none
+! when calling this%caller(this%f, a1) — a procedure() pointer invoked with
+! two arguments despite having no declared formal parameters.
+module procedure_pointer_25_mod
+   implicit none
+   integer :: global_result = 0
 
-    type :: runner
-        procedure(), nopass, pointer :: caller => null()
-    end type
-
-    type(runner) :: br
-    integer :: result
-
-    result = 0
-
-    ! Test 1: Call procedure pointer with one integer argument
-    br%caller => set_value
-    call br%caller(result)
-    if (result /= 42) error stop
-
-    ! Test 2: Reassign and call with a different procedure (same signature)
-    br%caller => set_seven
-    call br%caller(result)
-    if (result /= 7) error stop
-
-    ! Test 3: Reassign and call with yet another procedure
-    br%caller => double_value
-    result = 10
-    call br%caller(result)
-    if (result /= 20) error stop
-
-    print *, "procedure_pointer_25: PASS"
+   type :: method
+      procedure(), nopass, pointer            :: f => null()
+      procedure(), nopass, pointer, public    :: caller => null()
+   contains
+      procedure, pass(this) :: run
+   end type
 
 contains
 
-    subroutine set_value(v)
-        integer, intent(out) :: v
-        v = 42
-    end subroutine
+   subroutine run(this, val)
+      class(method), intent(inout) :: this
+      integer, intent(in) :: val
+      ! This is the core pattern that triggered the ICE:
+      ! this%caller is procedure() with n_args=0, but we pass 2 arguments.
+      call this%caller(this%f, val)
+   end subroutine
+end module
 
-    subroutine set_seven(v)
-        integer, intent(out) :: v
-        v = 7
-    end subroutine
+program procedure_pointer_25
+   use procedure_pointer_25_mod
+   implicit none
 
-    subroutine double_value(v)
-        integer, intent(inout) :: v
-        v = v * 2
-    end subroutine
+   type(method) :: m
 
-end program procedure_pointer_25
+   ! Test 1: Wire up caller and f, then invoke through the type
+   m%f => double_it
+   m%caller => my_caller
+   call m%run(21)
+   if (global_result /= 42) error stop
+
+   ! Test 2: Different input value
+   call m%run(50)
+   if (global_result /= 100) error stop
+
+   ! Test 3: Zero input
+   call m%run(0)
+   if (global_result /= 0) error stop
+
+   print *, "procedure_pointer_25: PASS"
+
+contains
+
+   subroutine my_caller(f_ptr, val)
+      procedure() :: f_ptr
+      integer, intent(in) :: val
+      call f_ptr(val)
+   end subroutine
+
+   subroutine double_it(n)
+      integer, intent(in) :: n
+      global_result = n * 2
+   end subroutine
+
+end program
