@@ -889,8 +889,7 @@ class PRIFInterface {
                                         ASR::expr_t *base_expr,
                                         ASR::array_index_t *coindices,
                                         size_t n_coindices,
-                                        ASR::ttype_t *return_type,
-                                        std::string wrapper_prefix = "prif_get") {
+                                        ASR::ttype_t *return_type) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             ASR::expr_t *image_num = b.i32(1);
@@ -900,15 +899,7 @@ class PRIFInterface {
 
             ASR::expr_t *handle_base = get_handle_base_expr(base_expr);
             ASR::expr_t *coarray_handle = make_prif_handle_expr(loc, handle_base);
-            
-            ASR::symbol_t *wrapper = nullptr;
-            if (wrapper_prefix == "prif_get") {
-                wrapper = get_or_create_prif_get_wrapper(loc, return_type, base_expr);
-            } else if (wrapper_prefix == "prif_put") {
-                wrapper = get_or_create_prif_put_wrapper(loc, return_type, base_expr);
-            } else {
-                LCOMPILERS_ASSERT(false && "Invalid wrapper prefix");
-            }
+            ASR::symbol_t *wrapper = get_or_create_prif_get_wrapper(loc, return_type, base_expr);
 
             ASR::expr_t *size_in_bytes = get_size_in_bytes_expr(loc, return_type);
             ASR::expr_t *offset = compute_offset_bytes(loc, base_expr, size_in_bytes);

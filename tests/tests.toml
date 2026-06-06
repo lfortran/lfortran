@@ -2852,6 +2852,12 @@ pass = "coarray"
 options = "--coarray=true --show-fortran"
 
 [[test]]
+filename = "coarrays_05.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "../integration_tests/program_03.f90"
 asr = true
 llvm = true

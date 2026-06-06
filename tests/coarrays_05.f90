@@ -1,14 +1,20 @@
 program coarrays_05
     implicit none
+    ! run with 2 images
+    integer :: x[*]
+    integer :: i = 1
+    integer :: y(2) = [20, 42]
+    if (this_image() == 1) then
+        x[2] = 42
+    end if
+    if (this_image() == 2) then
+        x[1] = 20
+    end if
+    do i = 1, 2
+        if (this_image() == i .and. x /= y(i)) then 
+            error stop
+        end if
+    end do
+    
 
-    integer :: me, n
-    integer(8) :: x[*]
-
-    me = this_image()
-    n = num_images()
-
-    if (me == 1) x[2] = 30
-    if (me == 2) x[1] = 42
-
-    print *, "me :", me, "x[me] :", x[me]
 end program coarrays_05
