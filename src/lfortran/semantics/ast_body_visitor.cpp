@@ -40,7 +40,15 @@ static bool is_host_associated_assignment_target(SymbolTable *current_scope, ASR
         return false;
     }
     ASR::symbol_t *target_sym_past_external = ASRUtils::symbol_get_past_external(target_sym);
-    var_name = ASRUtils::symbol_name(target_sym_past_external);
+    if (!ASR::is_a<ASR::Variable_t>(*target_sym_past_external)) {
+        return false;
+    }
+    ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym_past_external);
+    if (target_var->m_intent != ASR::intentType::Local &&
+            target_var->m_intent != ASR::intentType::ReturnVar) {
+        return false;
+    }
+    var_name = target_var->m_name;
     return true;
 }
 
