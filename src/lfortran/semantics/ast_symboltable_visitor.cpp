@@ -449,11 +449,13 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
         }
         current_module_sym = nullptr;
@@ -577,9 +579,14 @@ public:
         }
 
         if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            if (implicit_stack.size() > 0) {
+                implicit_dictionary = implicit_stack.back();
+            } else {
+                Location a_loc = x.base.base.loc;
+                populate_implicit_dictionary(a_loc, implicit_dictionary);
+            }
             process_implicit_statements(x, implicit_dictionary);
+            implicit_stack.push_back(implicit_dictionary);
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
@@ -651,11 +658,13 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
         }
         for (size_t i : procedure_decl_indices) {
@@ -708,6 +717,7 @@ public:
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
         if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
             uint64_t hash = get_hash(tmp);
 
             implicit_mapping[hash] = implicit_dictionary;
@@ -1367,9 +1377,14 @@ public:
             }
         }
         if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            if (implicit_stack.size() > 0) {
+                implicit_dictionary = implicit_stack.back();
+            } else {
+                Location a_loc = x.base.base.loc;
+                populate_implicit_dictionary(a_loc, implicit_dictionary);
+            }
             process_implicit_statements(x, implicit_dictionary);
+            implicit_stack.push_back(implicit_dictionary);
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
@@ -1448,11 +1463,14 @@ public:
             std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            std::string current_function_return_var_name_copy = current_function_return_var_name;
+            current_function_return_var_name = "";
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            current_function_return_var_name = current_function_return_var_name_copy;
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
@@ -1708,6 +1726,7 @@ public:
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
         if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
             uint64_t hash = get_hash(tmp);
 
             implicit_mapping[hash] = implicit_dictionary;
@@ -1886,9 +1905,14 @@ public:
             }
         }
         if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            if (implicit_stack.size() > 0) {
+                implicit_dictionary = implicit_stack.back();
+            } else {
+                Location a_loc = x.base.base.loc;
+                populate_implicit_dictionary(a_loc, implicit_dictionary);
+            }
             process_implicit_statements(x, implicit_dictionary);
+            implicit_stack.push_back(implicit_dictionary);
         } else {
             for (size_t i=0;i<x.n_implicit;i++) {
                 if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
@@ -1900,6 +1924,21 @@ public:
                 }
             }
         }
+        
+        if (x.m_return_var) {
+            if (x.m_return_var->type == AST::exprType::Name) {
+                current_function_return_var_name = to_lower(((AST::Name_t*)(x.m_return_var))->m_id);
+            } else {
+                diag.add(diag::Diagnostic(
+                    "Return variable must be an identifier",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_return_var->base.loc})}));
+                throw SemanticAbort();
+            }
+        } else {
+            current_function_return_var_name = to_lower(x.m_name);
+        }
+
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         for (size_t i=0; i<x.n_decl; i++) {
             if (is_equivalence_declaration(x.m_decl[i])) continue;
@@ -1953,11 +1992,16 @@ public:
             default_storage_save = false;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+            std::string current_function_return_var_name_copy = current_function_return_var_name;
+            current_function_return_var_name = "";
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            current_function_return_var_name = current_function_return_var_name_copy;
+            implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
         }
@@ -2447,6 +2491,7 @@ public:
         // print_implicit_dictionary(implicit_dictionary);
         // get hash of the function and add it to the implicit_mapping
         if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
             uint64_t hash = get_hash(tmp);
 
             implicit_mapping[hash] = implicit_dictionary;
@@ -2455,6 +2500,7 @@ public:
         }
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        current_function_return_var_name = "";
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
     }
