@@ -45,26 +45,20 @@ contains
         me%buf_size = original_size  ! restore
     end subroutine test_modify_mid_sub
 
-end module string_116_mod
+    ! Test: character(len=n) where n is a normal variable (not a struct member)
+    subroutine test_normal_variable(n)
+        implicit none
+        integer, intent(in) :: n
+        character(len=n) :: buf
+        buf = "hello world"
+        if (len(buf) /= n) error stop
+    end subroutine test_normal_variable
 
-! Test: character(len=n) where n is a normal variable (not a struct member)
-subroutine test_normal_variable(n)
-    implicit none
-    integer, intent(in) :: n
-    character(len=n) :: buf
-    buf = "hello world"
-    if (len(buf) /= n) error stop
-end subroutine test_normal_variable
+end module string_116_mod
 
 program string_116
     use string_116_mod
     implicit none
-
-    interface
-        subroutine test_normal_variable(n)
-            integer, intent(in) :: n
-        end subroutine test_normal_variable
-    end interface
 
     type(buffer_type) :: obj
     type(buffer_type) :: obj2
