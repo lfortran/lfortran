@@ -3,6 +3,8 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/replace_coarray.h>
+#include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <map>
 
 #ifndef CAF_PRIF_VERSION
@@ -37,8 +39,25 @@ class PRIFInterface {
         Allocator &al;
         ASR::TranslationUnit_t &unit;
 
-
-
+        ASR::symbol_t* get_or_create_dummy_struct(const Location &loc, std::string &struct_name) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string symbol_name = struct_name;
+            if (ASR::symbol_t *existing = global_scope->get_symbol(symbol_name)) return existing;
+            SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::asr_t *struct_asr = ASR::make_Struct_t(
+                al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
+                nullptr, 0, nullptr, 0, nullptr, 0,
+                ASR::abiType::Source, ASR::accessType::Public,
+                false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+            ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
+            ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
+            struct_t->m_struct_signature = struct_type;
+            global_scope->add_symbol(symbol_name, struct_sym);
+            return struct_sym;
+        }
+        
         ASR::symbol_t* get_or_create_prif_coarray_handle_struct(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string symbol_name = "prif_coarray_handle";
@@ -87,7 +106,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_get_subroutine(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string symbol_name = "__module_prif_prif_get";
+            std::string symbol_name = get_mangled_name("prif", "prif_get");
 
             if (global_scope->get_symbol(symbol_name)) {
                 return global_scope->get_symbol(symbol_name);
@@ -154,7 +173,7 @@ class PRIFInterface {
                 al, loc, fn_symtab, s2c(al, symbol_name), nullptr, 0,
                 args.p, args.n, nullptr, 0, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
-                ASR::deftypeType::Interface, s2c(al, "__module_prif_prif_get"),
+                ASR::deftypeType::Interface, s2c(al, symbol_name),
                 false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr);
 
@@ -226,8 +245,8 @@ class PRIFInterface {
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
                 al, loc, prif_get_sym, nullptr, call_args.p, call_args.n, nullptr, false)));
 
-            SetChar dep; dep.reserve(al, 1);
-            dep.push_back(al, s2c(al, "__module_prif_prif_get"));
+            Vec<char*> dep; dep.reserve(al, 1);
+            dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_get")));
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, symbol_name), dep.p, dep.n,
@@ -335,6 +354,10 @@ class PRIFInterface {
         PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_)
             : al(al_), unit(unit_) {}
 
+        std::string get_mangled_name(const std::string& module_name, const std::string& symbol_name) {
+            return "__module_" + module_name + "_" + symbol_name;
+        }
+
         // Create the prif_coarray_cleanup_interface Function symbol.
         // Represents: subroutine(prif_coarray_handle) bind(C)
         ASR::symbol_t* get_or_create_cleanup_interface(const Location &loc) {
@@ -363,7 +386,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_allocate_coarray_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = "__module_prif_prif_allocate_coarray";
+            std::string sym_name = get_mangled_name("prif", "prif_allocate_coarray");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -449,16 +472,50 @@ class PRIFInterface {
                 args.p, args.n, nullptr, 0, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
-                s2c(al, "__module_prif_prif_allocate_coarray"),
+                s2c(al, sym_name),
                 false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
+        
+        ASR::symbol_t* get_or_create_prif_team_type_struct(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string symbol_name = get_mangled_name("prif", "prif_team_type");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(symbol_name)) return existing;
+
+            SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::asr_t *struct_asr = ASR::make_Struct_t(
+                al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
+                nullptr, 0, nullptr, 0, nullptr, 0,
+                ASR::abiType::Source, ASR::accessType::Public,
+                false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+            ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
+            ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            global_scope->add_symbol(symbol_name, struct_sym);
+            std::string type_info_symbol_name = get_mangled_name("prif", "prif_dummy_team_descriptor");
+            ASR::symbol_t* type_info_sym = get_or_create_dummy_struct(loc, type_info_symbol_name);
+            ASR::ttype_t* type_info_type = ASRUtils::make_StructType_t_util(al, loc, type_info_sym, true);
+            ASR::ttype_t *info_ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type_info_type ));
+            declare_variable(struct_symtab, loc, "info", info_ptr_type, ASR::intentType::Local, type_info_sym, ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required, false);
+
+            Vec<char*> members; members.reserve(al, 1);
+            members.push_back(al, s2c(al, "info"));
+
+            struct_t->m_members = members.p;
+            struct_t->n_members = members.n;
+
+            ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
+            struct_t->m_struct_signature = struct_type;
+
+            return struct_sym;
+        }
+
 
         ASR::symbol_t* get_or_create_prif_init_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = "__module_prif_prif_init";
+            std::string sym_name = get_mangled_name("prif", "prif_init");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -478,7 +535,77 @@ class PRIFInterface {
                 args.p, args.n, nullptr, 0, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
-                s2c(al, "__module_prif_prif_init"),
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        ASR::symbol_t* get_or_create_prif_num_images_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_num_images");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = int32;
+            
+            ASR::symbol_t *ni_sym = declare_variable(
+                fn_symtab, loc, "num_images", int32_type, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *ni_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ni_sym));
+            Vec<ASR::expr_t*> args; args.reserve(al, 1);
+            args.push_back(al, ni_expr);
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        ASR::symbol_t* get_or_create_prif_this_image_no_coarray_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_this_image_no_coarray");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = int32;
+
+            ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
+            ASR::ttype_t *team_type = ASRUtils::make_StructType_t_util(al, loc, team_type_sym, true);
+
+            ASR::symbol_t *team_sym = declare_variable(
+                fn_symtab, loc, "team", team_type, ASR::intentType::In, team_type_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *team_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, team_sym));
+
+            ASR::symbol_t *ti_sym = declare_variable(
+                fn_symtab, loc, "this_image", int32_type, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *ti_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ti_sym));
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 2);
+            args.push_back(al, team_expr);
+            args.push_back(al, ti_expr);
+
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
                 false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
@@ -487,7 +614,7 @@ class PRIFInterface {
 
         ASR::symbol_t* get_or_create_prif_stop_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = "__module_prif_prif_stop";
+            std::string sym_name = get_mangled_name("prif", "prif_stop");
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -522,7 +649,7 @@ class PRIFInterface {
                 args.p, args.n, nullptr, 0, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
-                s2c(al, "__module_prif_prif_stop"),
+                s2c(al, sym_name),
                 false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
@@ -702,6 +829,95 @@ class PRIFInterface {
                 al, loc, wrapper, wrapper,
                 args.p, args.n, return_type, nullptr, nullptr));
         }
+
+        ASR::expr_t* make_prif_num_images_call(const Location &loc, ASR::ttype_t *type) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = "lcompilers_prif_num_images";
+            std::string dep_name = get_mangled_name("prif", "prif_num_images");
+            ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
+            if (!wrapper_fn) {
+                SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+
+                ASR::symbol_t *ret_sym = declare_variable(
+                    fn_symtab, loc, sym_name, int32_type, ASR::intentType::ReturnVar, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
+
+                ASR::symbol_t *sub = get_or_create_prif_num_images_sub(loc);
+                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
+                ASR::call_arg_t arg; arg.loc = loc;
+                arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym));
+                call_args.push_back(al, arg);
+
+                Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
+                    al, loc, sub, sub, call_args.p, call_args.n, nullptr, nullptr, false)));
+
+                Vec<char*> deps;
+                deps.reserve(al, 1);
+                deps.push_back(al, s2c(al, dep_name));
+
+                ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                    al, loc, fn_symtab, s2c(al, sym_name), deps.p, deps.n,
+                    nullptr, 0, body.p, body.n, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)),
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::deftypeType::Implementation, nullptr,
+                    false, false, false, false, false, nullptr, 0,
+                    false, false, false, nullptr);
+                wrapper_fn = ASR::down_cast<ASR::symbol_t>(fn);
+                global_scope->add_symbol(sym_name, wrapper_fn);
+            }
+            return ASRUtils::EXPR(ASR::make_FunctionCall_t(
+                al, loc, wrapper_fn, wrapper_fn, nullptr, 0,
+                type, nullptr, nullptr));
+        }
+
+        ASR::expr_t* make_prif_this_image_call(const Location &loc, ASR::ttype_t *type) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = "lcompilers_prif_this_image";
+            std::string dep_name = get_mangled_name("prif", "prif_this_image_no_coarray");
+            ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
+            if (!wrapper_fn) {
+                SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+
+                ASR::symbol_t *ret_sym = declare_variable(
+                    fn_symtab, loc, sym_name, int32_type, ASR::intentType::ReturnVar, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
+
+                ASR::symbol_t *sub = get_or_create_prif_this_image_no_coarray_sub(loc);
+                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 2);
+
+                ASR::call_arg_t team_arg; team_arg.loc = loc;
+                team_arg.m_value = nullptr;
+                call_args.push_back(al, team_arg);
+
+                ASR::call_arg_t arg; arg.loc = loc;
+                arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym));
+                call_args.push_back(al, arg);
+
+                Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
+                    al, loc, sub, sub, call_args.p, call_args.n, nullptr, nullptr, false)));
+
+                Vec<char*> deps;
+                deps.reserve(al, 1);
+                deps.push_back(al, s2c(al, dep_name));
+
+                ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                    al, loc, fn_symtab, s2c(al, sym_name), deps.p, deps.n,
+                    nullptr, 0, body.p, body.n, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)),
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::deftypeType::Implementation, nullptr,
+                    false, false, false, false, false, nullptr, 0,
+                    false, false, false, nullptr);
+                wrapper_fn = ASR::down_cast<ASR::symbol_t>(fn);
+                global_scope->add_symbol(sym_name, wrapper_fn);
+            }
+            return ASRUtils::EXPR(ASR::make_FunctionCall_t(
+                al, loc, wrapper_fn, wrapper_fn, nullptr, 0,
+                type, nullptr, nullptr));
+        }
 };
 
 class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
@@ -719,14 +935,28 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
                 x->n_coindices, x->m_type);
             *current_expr = call;
         }
+
+        void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t *x) {
+            std::string intrinsic_name = ASRUtils::get_intrinsic_name(x->m_intrinsic_id);
+            if (intrinsic_name == "NumImages") {
+                ASR::expr_t *call = prif.make_prif_num_images_call(x->base.base.loc, x->m_type);
+                *current_expr = call;
+            } else if (intrinsic_name == "ThisImage") {
+                ASR::expr_t *call = prif.make_prif_this_image_call(x->base.base.loc, x->m_type);
+                *current_expr = call;
+            } else {
+                ASR::BaseExprReplacer<CoarrayPrifReplacer>::replace_IntrinsicElementalFunction(x);
+            }
+        }
 };
 
 class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayPrifVisitor> {
     private:
         CoarrayPrifReplacer replacer;
     public:
-        CoarrayPrifVisitor(Allocator &al, PRIFInterface &prif)
-            : replacer(al, prif) {}
+        CoarrayPrifVisitor(Allocator &al_, PRIFInterface &prif)
+            : replacer(al_, prif) {
+        }
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -841,11 +1071,7 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
     CoarrayInitVisitor init_v(al, prif);
     init_v.visit_TranslationUnit(unit);
 
-    if (prif.coarray_handle_map.empty()) {
-        return;
-    }
-
-    // Phase 2: Replace CoarrayRef with prif_get calls using real handles
+    // Phase 2: Replace coarray expressions
     CoarrayPrifVisitor v(al, prif);
     v.visit_TranslationUnit(unit);
 }

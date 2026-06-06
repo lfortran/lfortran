@@ -753,6 +753,10 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
 
     if (compiletime_values.size() == 0) {
         ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
+        if (ASRUtils::is_array(type) && ASRUtils::get_fixed_size_of_array(type) == 0) {
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                al, loc, 0, nullptr, type, ASR::arraystorageType::ColMajor));
+        }
         return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, logical_type, loc, diag);
     } else {
         ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
@@ -4697,7 +4701,16 @@ public:
             SymbolTable *parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
             ASR::ttype_t *type = nullptr;
-            if (sym_) {
+            if (determined_type) {
+                // if explicit type provided, give preference to it.
+                type = determined_type;
+                if (sym_ && ASR::is_a<ASR::Function_t>(*sym_)) {
+                    ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
+                    if (!func_sym->m_return_var) {
+                        is_subroutine = true;
+                    }
+                }
+            } else if (sym_) {
                 if (ASR::is_a<ASR::Function_t>(*sym_)) {
                     ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
                     if (!func_sym->m_return_var) {
@@ -4707,9 +4720,6 @@ public:
                 if (!is_subroutine) {
                     type = ASRUtils::symbol_type(sym_);
                 }
-            } else if (determined_type) {
-                // if explicit type provided, give preference to it.
-                type = determined_type;
             } else if (compiler_options.implicit_typing) {
                 type = implicit_dictionary[std::string(1,sym[0])];
                 if (!type) {
@@ -9614,7 +9624,7 @@ public:
                                 nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                                 ASR::accessType::Private));
                         type_declaration = v;
-                        type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, false));
+                        type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, false, false));
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument);
                         if (is_pointer) {

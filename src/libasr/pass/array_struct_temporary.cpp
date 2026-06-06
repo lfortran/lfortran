@@ -1609,8 +1609,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 // after collecting variables from RHS, we check whether
                 // there is any common variable
                 for (size_t i=0; i < array_vars.size(); i++) {
-                    ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(array_vars[i]);
-                    if (v->m_v == v1->m_v) {
+                    ASR::symbol_t* sym = extract_symbol(array_vars[i]);
+                    if (sym && sym == v1->m_v) {
                         create_temp_var_for_rhs = true;
                     }
                 }

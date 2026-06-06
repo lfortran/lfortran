@@ -1645,21 +1645,32 @@ namespace LCompilers {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::dimension_t* m_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_var), m_dims);
+            // For pointer/equivalence variables the variable type may have empty
+            // dimensions (e.g. [(() ())]).  In that case fall back to the
+            // ArrayConstant's own type which carries concrete bounds.
+            bool use_x_dims = (n_dims > 0 && (m_dims[0].m_length == nullptr));
+            if( use_x_dims ) {
+                n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims);
+            }
             Vec<int> strides;
             strides.resize(al, n_dims);
             // compute stride vars for each dimension in column major order
             strides.p[0] = 1;
             for( int i = 1; i < n_dims; i++ ) {
-                int64_t dim_size = -1;
-                ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i - 1].m_length), dim_size);
+                int64_t dim_size = 1;
+                if( m_dims[i - 1].m_length != nullptr ) {
+                    ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i - 1].m_length), dim_size);
+                }
                 strides.p[i] = strides[i - 1] * dim_size;
             }
 
             Vec<int64_t> lower_bounds_values;
             lower_bounds_values.resize(al, n_dims);
             for( int i = 0; i < n_dims; i++ ) {
-                int64_t dim_size = -1;
-                ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_start), dim_size);
+                int64_t dim_size = 1;
+                if( m_dims[i].m_start != nullptr ) {
+                    ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_start), dim_size);
+                }
                 lower_bounds_values.p[i] = dim_size;
             }
 

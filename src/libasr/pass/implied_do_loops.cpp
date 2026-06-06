@@ -577,6 +577,30 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     }
 
    void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        // Skip ArrayConstructor replacement when any argument is a function
+        // call (FunctionCall or IntrinsicElementalFunction) returning an array.
+        // The implied_do_loop pass incorrectly expands these into do-loops,
+        // generating invalid code (e.g. lbound(Nint(data), ...) or calling
+        // functions multiple times). The downstream passes
+        // (array_struct_temporary + array_op) handle these cases properly.
+        for( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::expr_t* arg = x->m_args[i];
+            if( arg == nullptr ) continue;
+            bool is_array_func_call = false;
+            if( ASR::is_a<ASR::FunctionCall_t>(*arg) &&
+                ASRUtils::is_array(ASRUtils::expr_type(arg)) ) {
+                is_array_func_call = true;
+            } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*arg) &&
+                       ASRUtils::is_array(ASRUtils::expr_type(arg)) ) {
+                is_array_func_call = true;
+            } else if( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg) &&
+                       ASRUtils::is_array(ASRUtils::expr_type(arg)) ) {
+                is_array_func_call = true;
+            }
+            if( is_array_func_call ) {
+                return;
+            }
+        }
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
         bool is_result_var_fixed_size = false;

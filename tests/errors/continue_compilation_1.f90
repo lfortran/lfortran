@@ -736,4 +736,13 @@ program continue_compilation_1
         integer :: arr(1:n)
         common /common_nonconstant_upper_bound/ arr
     end subroutine sub_common_block_nonconstant_upper_bound
+    
+    subroutine select_case_array_bound()
+        implicit none
+        integer :: n
+        n = 1
+        select case (n)
+        case (:[2])
+        end select
+    end subroutine
 end program

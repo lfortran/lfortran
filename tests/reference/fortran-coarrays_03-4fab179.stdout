@@ -1,3 +1,7 @@
+type :: prif_coarray_handle
+    type(c_ptr) :: info
+end type prif_coarray_handle
+
 program test
 implicit none
 integer(4) :: exit_code

@@ -666,7 +666,20 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (fmt->n_args == 0) return;
         ASR::expr_t* val_arg = fmt->m_args[0];
         bool is_do_loop = ASR::is_a<ASR::ImpliedDoLoop_t>(*val_arg);
-        if (!is_do_loop && !ASRUtils::is_array(ASRUtils::expr_type(val_arg))) return;
+        bool is_array_section_unit_with_scalar_values =
+            ASR::is_a<ASR::ArraySection_t>(*x.m_unit) && fmt->n_args > 1;
+        if (is_array_section_unit_with_scalar_values) {
+            for (size_t i = 0; i < fmt->n_args; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*fmt->m_args[i]) ||
+                    ASRUtils::is_array(ASRUtils::expr_type(fmt->m_args[i]))) {
+                    is_array_section_unit_with_scalar_values = false;
+                    break;
+                }
+            }
+        }
+
+        if (!is_do_loop && !ASRUtils::is_array(ASRUtils::expr_type(val_arg)) &&
+            !is_array_section_unit_with_scalar_values) return;
 
         // For formatted writes with plain array values whose format contains
         // a slash (/), skip the per-element loop transformation. The slash
@@ -700,6 +713,38 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if (sec->m_args[0].m_right) {
                 ub_lhs = sec->m_args[0].m_right;
             }
+        }
+
+        if (is_array_section_unit_with_scalar_values) {
+            ASR::ArraySection_t* sec = ASR::down_cast<ASR::ArraySection_t>(x.m_unit);
+            if (sec->n_args != 1) return;
+            ASR::expr_t* step = sec->m_args[0].m_step;
+            if (step == nullptr) {
+                step = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, ikind, loc);
+            }
+            for (size_t i = 0; i < fmt->n_args; i++) {
+                ASR::expr_t* offset = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, i, ikind, loc);
+                ASR::expr_t* scaled_offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, loc, offset, ASR::binopType::Mul, step, int_type, nullptr));
+                ASR::expr_t* idx = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, loc, lb_lhs, ASR::binopType::Add, scaled_offset, int_type, nullptr));
+                ASR::expr_t* unit_i = PassUtils::create_array_ref(unit, idx, al, current_scope);
+
+                Vec<ASR::expr_t*> fmt_args; fmt_args.reserve(al, 1);
+                fmt_args.push_back(al, fmt->m_args[i]);
+                ASR::expr_t* fmt_i = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
+                    al, loc, fmt->m_fmt, fmt_args.p, 1, fmt->m_kind, fmt->m_type, fmt->m_value));
+                Vec<ASR::expr_t*> inner_vals; inner_vals.reserve(al, 1);
+                inner_vals.push_back(al, fmt_i);
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_FileWrite_t(
+                    al, loc, x.m_label, unit_i,
+                    x.m_iomsg, x.m_iostat, x.m_id,
+                    inner_vals.p, 1,
+                    x.m_separator, x.m_end, x.m_overloaded,
+                    x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous)));
+            }
+            remove_original_stmt = true;
+            return;
         }
         
         ASR::expr_t* lb_rhs = nullptr;
