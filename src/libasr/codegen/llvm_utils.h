@@ -2525,6 +2525,78 @@ class ASRToLLVMVisitor;
         }
 
         /**
+         * Unified method for explicit DEALLOCATE statements.
+         * Delegates deep finalization, freeing memory, and nullifying pointers/descriptors.
+         */
+        void explicit_deallocate(llvm::Value* var_ptr, llvm::Value* memory_address, 
+                                 ASR::ttype_t* cur_type, ASR::Struct_t* struct_sym, 
+                                 bool in_struct, ASR::expr_t* tmp_expr) {
+            
+            int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)));
+            llvm::Type* llvm_data_type = llvm_utils_->get_el_type(tmp_expr, element_type, llvm_utils_->module.get());
+
+            // 1. Handle Strings
+            if(ASRUtils::is_character(*cur_type)) {
+                llvm_utils_->free_strings(tmp_expr, var_ptr);
+                return;
+            } 
+
+            // 2. Handle Scalars
+            if (dims == 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
+                llvm::Value *cond = builder_->CreateICmpNE(
+                    builder_->CreatePtrToInt(var_ptr, llvm::Type::getInt64Ty(builder_->getContext())),
+                    builder_->CreatePtrToInt(
+                        llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(llvm_data_type->getPointerTo())),
+                        llvm::Type::getInt64Ty(builder_->getContext())) );
+                
+                llvm_utils_->create_if_else(cond, [&]() {
+                    // Call user-defined finalizers and deep cleanup
+                    finalize_before_deallocate(var_ptr, cur_type, struct_sym, in_struct);
+                    
+                    // Free the payload
+                    if( ASRUtils::is_pointer(cur_type) || 
+                        !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(cur_type)) ) {
+                        
+                        if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::type_get_past_allocatable_pointer(cur_type)) && ASRUtils::is_pointer(cur_type) ){
+                            auto const inner_struct = llvm_utils_->CreateLoad2(
+                                llvm_utils_->getStructType(struct_sym, llvm_utils_->module.get(), true), 
+                                llvm_utils_->create_gep2(llvm_data_type, var_ptr, 1));
+                            llvm_utils_->lfortran_free(inner_struct);
+                        } else {
+                            llvm_utils_->lfortran_free(var_ptr);
+                        }
+                    }
+                    
+                    // Mark as deallocated by storing NULL back into the original memory address
+                    builder_->CreateStore(
+                        llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(llvm_data_type->getPointerTo())), 
+                        memory_address); 
+                }, [](){});
+            } 
+            // 3. Handle Arrays
+            else {
+                llvm::Type* typ = get_llvm_type(cur_type, struct_sym);
+                llvm::Value *cond = llvm_utils_->arr_descr->get_is_allocated_flag(var_ptr, tmp_expr);
+                
+                llvm_utils_->create_if_else(cond, [&]() {
+                    // Deep finalization for array elements
+                    finalize_before_deallocate(var_ptr, cur_type, struct_sym, in_struct);
+
+                    // Reset descriptors or free payload based on polymorphism
+                    if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
+                        llvm_utils_->arr_descr->reset_is_allocated_flag(typ, var_ptr, llvm_data_type);
+                    } else {
+                        // Free the array payload and reset the descriptor natively
+                        llvm_utils_->lfortran_free(var_ptr);
+                        llvm_utils_->arr_descr->reset_is_allocated_flag(typ, var_ptr, llvm_data_type);
+                    }
+                }, [](){});
+            }
+        }
+
+        /**
          * Finalize nested allocatable components before explicit deallocate.
          * This ensures nested allocatables are freed before the outer structure.
          */
@@ -2643,7 +2715,7 @@ class ASRToLLVMVisitor;
             builder_->SetInsertPoint(entry);
 
             llvm::Value* const i8_ptr_arg = &fn->args().begin()[0];
-            llvm::Type*  const llvm_type = get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(type), struct_sym);
+            llvm::Type* const llvm_type = get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(type), struct_sym);
             LCOMPILERS_ASSERT_MSG(!llvm_type->isPointerTy(), "Expected a not pointer type")
             llvm::Value* const correctly_typed_ptr = builder_->CreateBitCast(i8_ptr_arg, llvm_type->getPointerTo());
             check_userDefinedFinalizer_then_finalize(correctly_typed_ptr, type, struct_sym, false);
@@ -2655,7 +2727,6 @@ class ASRToLLVMVisitor;
             return fn;
         }
     };
-
     class LLVMList {
         private:
 
