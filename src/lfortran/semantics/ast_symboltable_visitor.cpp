@@ -1377,9 +1377,10 @@ public:
             }
         }
         if (compiler_options.implicit_typing) {
-            if (implicit_stack.size() > 0) {
+            if (implicit_stack.size() > 0 && !is_interface) {
                 implicit_dictionary = implicit_stack.back();
             } else {
+                implicit_dictionary.clear();
                 Location a_loc = x.base.base.loc;
                 populate_implicit_dictionary(a_loc, implicit_dictionary);
             }
@@ -1905,9 +1906,10 @@ public:
             }
         }
         if (compiler_options.implicit_typing) {
-            if (implicit_stack.size() > 0) {
+            if (implicit_stack.size() > 0 && !is_interface) {
                 implicit_dictionary = implicit_stack.back();
             } else {
+                implicit_dictionary.clear();
                 Location a_loc = x.base.base.loc;
                 populate_implicit_dictionary(a_loc, implicit_dictionary);
             }
