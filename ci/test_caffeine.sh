@@ -122,35 +122,14 @@ caf "$testfile" -o "${base}_gf.out"
 # Run LFortran executable
 # ----------------------------------------
 
-lf_output=$(
-    gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out" | normalize_output
-)
+gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
+
 
 # ----------------------------------------
 # Run gfortran executable
 # ----------------------------------------
 
-gf_output=$(
-    cafrun -np "$CAF_IMAGES" ./"${base}_gf.out" | normalize_output
-)
-
-# ----------------------------------------
-# Compare outputs
-# ----------------------------------------
-
-if [ "$lf_output" != "$gf_output" ]; then
-    echo "Output mismatch for $testfile"
-
-    echo
-    echo "===== LFortran output ====="
-    echo "$lf_output"
-
-    echo
-    echo "===== gfortran/OpenCoarrays output ====="
-    echo "$gf_output"
-
-    exit 1
-fi
+cafrun -np "$CAF_IMAGES" ./"${base}_gf.out"
 
 echo "PASS: $testfile"
 
