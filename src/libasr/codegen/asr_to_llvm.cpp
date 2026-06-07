@@ -23147,8 +23147,13 @@ public:
                         if (arg_idx < func->n_args) {
                             LCOMPILERS_ASSERT(func->m_args[arg_idx] != nullptr);
                             orig_arg = EXPR2VAR(func->m_args[arg_idx]);
+                        } else {
+                            LCOMPILERS_ASSERT_MSG(compiler_options.implicit_interface == true &&
+                                            symbol_get_past_external(x.m_name)->type == ASR::symbolType::Variable,
+                                            "argument/funcParams mismatch only allowed with implicit interfaces "
+                                            "and call to variable function")
                         }
-                    } else if (func_subrout->type != ASR::symbolType::Variable) {
+                    } else {
                         LCOMPILERS_ASSERT(false)
                     }
                     if (orig_arg != nullptr && orig_arg->m_abi == ASR::abiType::BindC
@@ -25112,7 +25117,8 @@ public:
             // no declared parameters), the declared function type may have
             // fewer parameters than the actual call arguments.  Reconstruct
             // the correct LLVM function type from the actual argument types.
-            if (fntype->getNumParams() != args.size()) {
+            if (fntype->getNumParams() != args.size()
+                && compiler_options.implicit_interface) {
                 std::vector<llvm::Type*> arg_types;
                 for (auto* arg_val : args) {
                     arg_types.push_back(arg_val->getType());
