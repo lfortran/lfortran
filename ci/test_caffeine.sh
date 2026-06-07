@@ -11,6 +11,29 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
+micromamba install -c conda-forge fpm=0.12.0
+
+which fpm
+fpm --version
+
+micromamba install -y -c conda-forge openmpi
+
+git clone https://github.com/sourceryinstitute/OpenCoarrays.git
+cd OpenCoarrays
+
+cmake -B build \
+  -DCMAKE_INSTALL_PREFIX="$HOME/opencoarrays"
+
+cmake --build build -j2
+cmake --install build
+
+export PATH="$HOME/opencoarrays/bin:$PATH"
+
+which caf
+caf --version
+
+cd ..
+
 # Clone caffeine
 
 git clone -b main https://github.com/BerkeleyLab/caffeine.git
@@ -27,10 +50,6 @@ export CXX=clang++
 echo "FC=${FC}"
 echo "CC=${CC}"
 echo "CXX=${CXX}"
-
-which fpm
-fpm --version
-
 which clang
 clang --version
 

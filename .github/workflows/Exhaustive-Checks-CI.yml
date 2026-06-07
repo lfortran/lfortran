@@ -483,30 +483,6 @@ jobs:
             echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
 
-      - name: Setup FPM
-        if: contains(matrix.os, 'ubuntu')
-        uses: fortran-lang/setup-fpm@main
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          fpm-version: latest
-
-      - name: Build OpenCoarrays
-        if: contains(matrix.os, 'ubuntu')
-        shell: bash -e -l {0}
-        run: |
-          micromamba install -y -c conda-forge openmpi
-          git clone https://github.com/sourceryinstitute/OpenCoarrays.git
-          cd OpenCoarrays
-
-          cmake -B build \
-            -DCMAKE_INSTALL_PREFIX=$HOME/opencoarrays
-
-          cmake --build build -j2
-          cmake --install build
-
-          echo "$HOME/opencoarrays/bin" >> $GITHUB_PATH
-          cd ..
-
       - name: Test coarray runtime with Caffeine
         if: contains(matrix.os, 'ubuntu')
         shell: bash -e -l {0}
