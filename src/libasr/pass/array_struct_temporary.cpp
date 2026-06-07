@@ -1569,6 +1569,28 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        
+        // Helper to safely find the root variable of an expression
+        std::function<ASR::symbol_t*(ASR::expr_t*)> get_root_var =
+            [&](ASR::expr_t* e) -> ASR::symbol_t* {
+            if (e == nullptr) return nullptr;
+            switch (e->type) {
+                case ASR::exprType::Var:
+                    return ASR::down_cast<ASR::Var_t>(e)->m_v;
+                case ASR::exprType::StructInstanceMember:
+                    return get_root_var(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+                case ASR::exprType::ArrayItem:
+                    return get_root_var(
+                        ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+                case ASR::exprType::ArraySection:
+                    return get_root_var(
+                        ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+                default:
+                    return nullptr;
+            }
+        };
+
         // Handle case where LHS is StructInstanceMember over an array
         // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
         if (ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) {
@@ -1583,7 +1605,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 if (ASR::is_a<ASR::ArrayReshape_t>(*xx.m_value)) {
                     needs_temp = true;
                 }
-                // Can extend this for other array intrinsics: matmul, transpose, etc.
                 if (needs_temp) {
                     std::string name_hint = "_reshape_temp_";
                     ASR::expr_t* temp_var = call_create_and_allocate_temporary_variable(
@@ -1593,22 +1614,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+        
         // e.g.; a = [b, a], where 'a' is an allocatable
         if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
             ASRUtils::is_allocatable(xx.m_target)
         ) {
-            // TODO: dealing with StructType would need thinking similar to the
-            // way `traverse_args` handles it, the only reason to not
-            // add it is because there is currently no integration test
-            // for it
             if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
                 ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
                 bool create_temp_var_for_rhs = false;
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
                 ArrayVarCollector array_var_collector(al, array_vars);
                 array_var_collector.visit_expr(*xx.m_value);
-                // after collecting variables from RHS, we check whether
-                // there is any common variable
+                
                 for (size_t i=0; i < array_vars.size(); i++) {
                     ASR::symbol_t* sym = extract_symbol(array_vars[i]);
                     if (sym && sym == v1->m_v) {
@@ -1623,56 +1640,65 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
-        // Handle struct-type RHS that aliases the LHS, e.g.:
-        //   chain2%next = chain2
-        // where the RHS expression contains the LHS as a sub-component (or
-        // shares a root variable with the LHS). Without a temporary, the
-        // deep-copy of the RHS into the LHS clobbers parts of the RHS
-        // mid-copy (especially via reallocation of nested allocatable
-        // components), producing incorrect results / segfaults.
-        {
-            std::function<ASR::symbol_t*(ASR::expr_t*)> get_root_var =
-                [&](ASR::expr_t* e) -> ASR::symbol_t* {
-                if (e == nullptr) return nullptr;
-                switch (e->type) {
-                    case ASR::exprType::Var:
-                        return ASR::down_cast<ASR::Var_t>(e)->m_v;
-                    case ASR::exprType::StructInstanceMember:
-                        return get_root_var(
-                            ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
-                    case ASR::exprType::ArrayItem:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
-                    case ASR::exprType::ArraySection:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
-                    default:
-                        return nullptr;
-                }
-            };
-            if (ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) &&
-                !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
-                !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) &&
-                ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) {
-                ASR::symbol_t* lhs_root = get_root_var(xx.m_target);
-                ASR::symbol_t* rhs_root = get_root_var(xx.m_value);
-                if (lhs_root && rhs_root && lhs_root == rhs_root) {
-                    std::string name_hint = "_struct_assign_";
-                    ASR::expr_t* struct_var_temporary =
-                        create_and_allocate_temporary_variable_for_struct(
-                            xx.m_value, name_hint, al, current_body,
-                            current_scope, exprs_with_target, realloc_lhs);
-                    xx.m_value = struct_var_temporary;
-                }
+
+        if (ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) {
+            
+            ASR::symbol_t* lhs_root = get_root_var(xx.m_target);
+            ASR::symbol_t* rhs_root = get_root_var(xx.m_value);
+            if (lhs_root && rhs_root && lhs_root == rhs_root) {
+                std::string name_hint = "_struct_assign_";
+                ASR::expr_t* struct_var_temporary =
+                    create_and_allocate_temporary_variable_for_struct(
+                        xx.m_value, name_hint, al, current_body,
+                        current_scope, exprs_with_target, realloc_lhs);
+                xx.m_value = struct_var_temporary;
             }
         }
+        
         ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
         lhs_var = lhs_array_var;
+        
+    
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
+        
         lhs_var = nullptr;
+
+        if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
+            ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) && 
+            !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) && 
+            !xx.m_overloaded) { 
+            
+            ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(xx.m_value);
+            ASR::symbol_t* lhs_root = get_root_var(xx.m_target);
+            bool aliases = false;
+            
+            if (lhs_root) {
+                for (size_t i = 0; i < fc->n_args; i++) {
+                    if (fc->m_args[i].m_value) {
+                        ASR::symbol_t* arg_root = get_root_var(fc->m_args[i].m_value);
+                        if (arg_root && arg_root == lhs_root) {
+                            aliases = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (aliases) {
+                std::string name_hint = "_struct_func_assign_";
+                ASR::expr_t* struct_var_temporary =
+                    create_and_allocate_temporary_variable_for_struct(
+                        xx.m_value, name_hint, al, current_body,
+                        current_scope, exprs_with_target, realloc_lhs);
+                xx.m_value = struct_var_temporary;
+            }
+        }
     }
 
     void visit_Where(const ASR::Where_t &x) {
