@@ -969,7 +969,7 @@ class ASRToLLVMVisitor;
      *
      * @see doc/src/llvm_utils.md 
      */
-    class LLVMFinalize final {
+    class LLVMFinalize {
     private:
 
         std::unique_ptr<LLVMUtils>                                  &llvm_utils_;
@@ -977,7 +977,7 @@ class ASRToLLVMVisitor;
         Allocator                                                   &al_;
         ASRToLLVMVisitor                                            &asr_to_llvm_visitor_;
         std::map<uint64_t, llvm::Function*>                         &llvm_symtab_fn_;
-        std::unordered_map<std::string, llvm::Function*>            type_finalizer_cache_;
+        inline static std::unordered_map<std::string, llvm::Function*>     type_finalizer_cache_;
 
     public:
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
@@ -1009,14 +1009,16 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_variable(ASR::Variable_t* const v){
+        void finalize_variable(ASR::Variable_t* const v, llvm::Value* llvm_var = nullptr){
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*
+                ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner)) ? llvm_var != nullptr : true)
             if(not_finalizable_variable(v)) return;
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
-            LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
-
             insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
+            if(!llvm_var) {
+                llvm_var = get_llvm_var(v);
+            }
 
-            auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
             check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
 
@@ -1025,6 +1027,7 @@ class ASRToLLVMVisitor;
             // heap-allocated string_descriptor array itself.  We must free
             // it here.  (Allocatable arrays use a stack-allocated initial
             // string_descriptor, so this only applies to non-allocatable.)
+            // TODO : clean THIS 
             if (!ASRUtils::is_allocatable(v->m_type) && !ASRUtils::is_pointer(v->m_type)) {
                 ASR::ttype_t* t_past = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
                 if (ASRUtils::is_array_t(t_past)) {
@@ -1041,6 +1044,7 @@ class ASRToLLVMVisitor;
                 }
             }
         }
+
 
         void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
             // Call user-defined FINAL procedures for non-allocatable struct
@@ -1129,7 +1133,7 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, bool in_struct){
+        virtual void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_pointer(t), "Must be finalizable pointer.")
             auto const t_past = ASRUtils::type_get_past_pointer(t);
             switch (t_past->type) {
@@ -1152,7 +1156,7 @@ class ASRToLLVMVisitor;
                     }
                 break;
                 default:
-                    throw LCompilersException("Unhandled Case.");
+                    return;
             }
         }
 
@@ -2390,7 +2394,7 @@ class ASRToLLVMVisitor;
         }
 
         // Check if a pointer type is finalizable (TRUE for cases where the compiler allocated some descriptor; User must free data himself)
-        bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct){
+        virtual bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct){
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(&t->base);
             switch(t_past->type){
                 case ASR::Array:{
@@ -2524,6 +2528,7 @@ class ASRToLLVMVisitor;
             finalize_type(ptr, t, nullptr);
         }
 
+
         /**
          * Finalize nested allocatable components before explicit deallocate.
          * This ensures nested allocatables are freed before the outer structure.
@@ -2654,7 +2659,44 @@ class ASRToLLVMVisitor;
             builder_->SetInsertPoint(saved_BB);
             return fn;
         }
+        friend class LLVMDeallocate;
     };
+
+    class LLVMDeallocate : public LLVMFinalize{
+        public:
+            LLVMDeallocate() = delete;
+            LLVMDeallocate (LLVMFinalize &llvm_finalize) 
+            : LLVMFinalize(llvm_finalize.asr_to_llvm_visitor_, 
+                llvm_finalize.llvm_utils_, llvm_finalize.builder_, 
+                llvm_finalize.al_, llvm_finalize.llvm_symtab_fn_) {}
+
+        void deallocate_variable(ASR::Variable_t* const v, llvm::Value* const var_SSA = nullptr){
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*
+                ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner)) ? var_SSA != nullptr : true)
+            finalize_variable(v, var_SSA);
+        }
+        void finalize_pointer(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym, bool in_struct) override {
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_pointer(t);
+            finalize(ptr, t_past, struct_sym, in_struct);
+            switch(t_past->type){
+                case ASR::Array:
+                case ASR::String:
+                break;
+                case ASR::StructType:
+                    if(!ASRUtils::is_class_type(t_past)) {llvm_utils_->lfortran_free_nocheck(ptr);}
+                break;
+                default:
+                    llvm_utils_->lfortran_free_nocheck(ptr);
+            }
+        }
+
+        bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct) override{
+            (void)t; (void)struct_sym; (void)in_struct;
+            return true;
+        }
+    };
+
+
 
     class LLVMList {
         private:
