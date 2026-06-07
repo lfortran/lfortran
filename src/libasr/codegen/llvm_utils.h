@@ -2535,7 +2535,9 @@ class ASRToLLVMVisitor;
             int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
             ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)));
-            llvm::Type* llvm_data_type = llvm_utils_->get_el_type(tmp_expr, element_type, llvm_utils_->module.get());
+            
+            // FIX: Removed .get() from module
+            llvm::Type* llvm_data_type = llvm_utils_->get_el_type(tmp_expr, element_type, llvm_utils_->module);
 
             // 1. Handle Strings
             if(ASRUtils::is_character(*cur_type)) {
@@ -2560,8 +2562,9 @@ class ASRToLLVMVisitor;
                         !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(cur_type)) ) {
                         
                         if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::type_get_past_allocatable_pointer(cur_type)) && ASRUtils::is_pointer(cur_type) ){
+                            // FIX: Removed .get() from module
                             auto const inner_struct = llvm_utils_->CreateLoad2(
-                                llvm_utils_->getStructType(struct_sym, llvm_utils_->module.get(), true), 
+                                llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true), 
                                 llvm_utils_->create_gep2(llvm_data_type, var_ptr, 1));
                             llvm_utils_->lfortran_free(inner_struct);
                         } else {
@@ -2578,7 +2581,9 @@ class ASRToLLVMVisitor;
             // 3. Handle Arrays
             else {
                 llvm::Type* typ = get_llvm_type(cur_type, struct_sym);
-                llvm::Value *cond = llvm_utils_->arr_descr->get_is_allocated_flag(var_ptr, tmp_expr);
+                
+                // FIX: Use asr_to_llvm_visitor_ instead of llvm_utils_ for arr_descr
+                llvm::Value *cond = asr_to_llvm_visitor_.arr_descr->get_is_allocated_flag(var_ptr, tmp_expr);
                 
                 llvm_utils_->create_if_else(cond, [&]() {
                     // Deep finalization for array elements
@@ -2586,11 +2591,13 @@ class ASRToLLVMVisitor;
 
                     // Reset descriptors or free payload based on polymorphism
                     if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
-                        llvm_utils_->arr_descr->reset_is_allocated_flag(typ, var_ptr, llvm_data_type);
+                        // FIX: Use asr_to_llvm_visitor_.arr_descr
+                        asr_to_llvm_visitor_.arr_descr->reset_is_allocated_flag(typ, var_ptr, llvm_data_type);
                     } else {
                         // Free the array payload and reset the descriptor natively
                         llvm_utils_->lfortran_free(var_ptr);
-                        llvm_utils_->arr_descr->reset_is_allocated_flag(typ, var_ptr, llvm_data_type);
+                        // FIX: Use asr_to_llvm_visitor_.arr_descr
+                        asr_to_llvm_visitor_.arr_descr->reset_is_allocated_flag(typ, var_ptr, llvm_data_type);
                     }
                 }, [](){});
             }
