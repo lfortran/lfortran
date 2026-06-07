@@ -2535,10 +2535,20 @@ class ASRToLLVMVisitor;
                                  ArrDescrType* arr_descr) {
             
             int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
-            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)));
+            ASR::ttype_t* cur_type_past = ASRUtils::type_get_past_allocatable_pointer(cur_type);
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(cur_type_past);
             
-            llvm::Type* llvm_data_type = llvm_utils_->get_el_type(tmp_expr, element_type, llvm_utils_->module);
+            // Extract the exact LLVM Data Type mirroring the original visit_Deallocate logic
+            llvm::Type* llvm_data_type = nullptr;
+            if (dims == 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
+                    llvm_data_type = get_llvm_type(cur_type_past, struct_sym);
+                } else {
+                    llvm_data_type = get_llvm_type(element_type, struct_sym);
+                }
+            } else {
+                llvm_data_type = llvm_utils_->get_el_type(tmp_expr, element_type, llvm_utils_->module);
+            }
 
             // 1. Handle Strings
             if(ASRUtils::is_character(*cur_type)) {
@@ -2560,9 +2570,9 @@ class ASRToLLVMVisitor;
                     
                     // Free the payload
                     if( ASRUtils::is_pointer(cur_type) || 
-                        !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(cur_type)) ) {
+                        !ASR::is_a<ASR::StructType_t>(*cur_type_past) ) {
                         
-                        if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::type_get_past_allocatable_pointer(cur_type)) && ASRUtils::is_pointer(cur_type) ){
+                        if(ASRUtils::non_unlimited_polymorphic_class(cur_type_past) && ASRUtils::is_pointer(cur_type) ){
                             auto const inner_struct = llvm_utils_->CreateLoad2(
                                 llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true), 
                                 llvm_utils_->create_gep2(llvm_data_type, var_ptr, 1));
@@ -2580,9 +2590,9 @@ class ASRToLLVMVisitor;
             } 
             // 3. Handle Arrays
             else {
-                llvm::Type* typ = get_llvm_type(cur_type, struct_sym);
+                // FIX: Strip allocatable/pointer to get the raw descriptor StructType!
+                llvm::Type* typ = get_llvm_type(cur_type_past, struct_sym);
                 
-                // Use the passed-in arr_descr!
                 llvm::Value *cond = arr_descr->get_is_allocated_flag(var_ptr, tmp_expr);
                 
                 llvm_utils_->create_if_else(cond, [&]() {
