@@ -13654,6 +13654,18 @@ public:
         llvm::Value *right = tmp;
         load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
+        
+        if (left->getType() != right->getType()) {
+            if (left->getType()->isIntegerTy() && right->getType()->isIntegerTy()) {
+                unsigned lhs_bw = left->getType()->getIntegerBitWidth();
+                unsigned rhs_bw = right->getType()->getIntegerBitWidth();
+                if (lhs_bw < rhs_bw) {
+                    left = builder->CreateSExt(left, right->getType());
+                } else {
+                    right = builder->CreateSExt(right, left->getType());
+                }
+            }
+        }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -22886,6 +22898,14 @@ public:
                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                 }
+                if (orig_arg &&
+                    LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                    !LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_args[i].m_value)) &&
+                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                    llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(*builder, tmp->getType());
+                    builder->CreateStore(tmp, ptr_to_tmp);
+                    tmp = ptr_to_tmp;
+                }
             } else if (ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) &&
                         ASR::down_cast<ASR::Cast_t>(x.m_args[i].m_value)->m_kind ==
                             ASR::cast_kindType::ClassToIntrinsic) {
@@ -26047,7 +26067,15 @@ public:
         ASR::expr_t* m_arg = x.m_v;
         this->visit_expr_wrapper(m_arg, false);
         llvm::Value *arg = tmp;
-        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
+        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg, 
+            ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(ASRUtils::expr_type(m_arg))), module.get());
+        
+        if (!arg->getType()->isPointerTy()) {
+            llvm::Value* temp_alloca = llvm_utils->CreateAlloca(*builder, arr_type);
+            builder->CreateStore(arg, temp_alloca);
+            arg = temp_alloca;
+        }
+
         tmp = arr_descr->get_rank(arr_type, arg);
     }
 

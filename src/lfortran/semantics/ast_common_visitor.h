@@ -12932,9 +12932,21 @@ public:
                         Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(v_Var))) {
+                ASR::dimension_t m_dim;
+                m_dim.loc = x.base.base.loc;
+                m_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
+                m_dim.m_length = ASRUtils::EXPR(ASR::make_ArrayRank_t(al, x.base.base.loc, v_Var, int_type, nullptr));
+                
+                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(
+                    al, x.base.base.loc, int_type, &m_dim, 1,
+                    ASR::array_physical_typeType::DescriptorArray));
+                
+                return ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, nullptr, array_type, bound, nullptr);
+            }
             Vec<ASR::expr_t*> arr_args;
             arr_args.reserve(al, 0);
-            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             for (int i = 1; i <= n_dims; i++) {
                 ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int_type));
                 arr_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim_, type,

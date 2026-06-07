@@ -1835,6 +1835,59 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
             return ;
         }
+
+        if ( ASR::is_a<ASR::ArrayBound_t>(*xx.m_value) ) {
+            ASR::ArrayBound_t* ab = ASR::down_cast<ASR::ArrayBound_t>(xx.m_value);
+            if (ab->m_dim == nullptr) {
+                const Location loc = x.base.base.loc;
+                ASRUtils::ASRBuilder builder(al, loc);
+                ASR::ttype_t* idx_type = get_index_type(loc);
+
+                std::string idx_name = current_scope->get_unique_name("__libasr_lbound_idx");
+                ASR::symbol_t* idx_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, idx_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, idx_type, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+                current_scope->add_symbol(idx_name, idx_sym);
+                ASR::expr_t* idx_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, idx_sym));
+
+                ASR::expr_t* loop_start = builder.i_t(1, idx_type);
+                ASR::expr_t* loop_end = ASRUtils::EXPR(ASR::make_ArrayRank_t(al, loc,
+                    ASRUtils::get_past_array_physical_cast(ab->m_v), idx_type, nullptr));
+
+                Vec<ASR::array_index_t> args; args.reserve(al, 1);
+                ASR::array_index_t ai; ai.loc = loc; ai.m_left = nullptr; ai.m_right = idx_var; ai.m_step = nullptr;
+                args.push_back(al, ai);
+
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(ab->m_type);
+
+                ASR::expr_t* target_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+                    xx.m_target, args.p, args.size(), elem_type, ASR::arraystorageType::ColMajor, nullptr));
+
+                ASR::expr_t* bound_i = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                    ab->m_v, idx_var, elem_type, ab->m_bound, nullptr));
+
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                    target_i, bound_i, nullptr, false, false));
+
+                ASR::do_loop_head_t loop_head;
+                loop_head.loc = loc;
+                loop_head.m_v = idx_var;
+                loop_head.m_start = loop_start;
+                loop_head.m_end = loop_end;
+                loop_head.m_increment = nullptr;
+
+                Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
+                loop_body.push_back(al, assign_stmt);
+
+                ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+                    loop_head, loop_body.p, loop_body.size(), nullptr, 0));
+
+                pass_result.push_back(al, do_loop);
+                return;
+            }
+        }
+
         bool is_target_assumed_rank = (ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_target) && 
             ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_target)->m_old == ASR::array_physical_typeType::AssumedRankArray) 
             || ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_target));
