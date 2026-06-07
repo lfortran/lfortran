@@ -2805,7 +2805,7 @@ public:
             }
 
             // --- 3. Delegate to LLVMFinalize ---
-            llvm_symtab_finalizer.explicit_deallocate(tmp, memory_address, cur_type, struct_sym, in_struct, tmp_expr, arr_descr);
+            llvm_symtab_finalizer.explicit_deallocate(tmp, memory_address, cur_type, struct_sym, in_struct, tmp_expr, arr_descr.get());
         }
     }
     
