@@ -1067,6 +1067,22 @@ bool set_allocation_size(
         case ASR::exprType::FunctionParam: {
             return false;
         }
+        case ASR::exprType::ArrayBound: {
+            ASR::ArrayBound_t* ab = ASR::down_cast<ASR::ArrayBound_t>(value);
+            if (ab->m_dim == nullptr) {
+                ASR::expr_t* source_orig = ASRUtils::get_past_array_physical_cast(ab->m_v);
+                allocate_dims.reserve(al, 1);
+                ASR::dimension_t allocate_dim;
+                allocate_dim.loc = loc;
+                allocate_dim.m_start = int32_one;
+                allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArrayRank_t(
+                    al, loc, source_orig,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                allocate_dims.push_back(al, allocate_dim);
+                break;
+            }
+            return false;
+        }
         default: {
             LCOMPILERS_ASSERT_MSG(false, "ASR::exprType::" + std::to_string(value->type)
                 + " not handled yet in set_allocation_size");
