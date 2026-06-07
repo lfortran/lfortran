@@ -23367,10 +23367,19 @@ public:
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
                     ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type));
+                    bool dummy_is_assumed_type = false;
+                    if (orig_arg->m_type_declaration) {
+                        ASR::symbol_t* dummy_decl_sym = ASRUtils::symbol_get_past_external(
+                            orig_arg->m_type_declaration);
+                        if (dummy_decl_sym && std::string(ASRUtils::symbol_name(
+                                dummy_decl_sym)) == "~assumed_type") {
+                            dummy_is_assumed_type = true;
+                        }
+                    }
                     if (!ASR::is_a<ASR::StructType_t>(*arg_type_unwrapped)) {
                         struct_api->store_intrinsic_type_vptr(arg_type,
                             ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
-                    } else {
+                    } else if (!dummy_is_assumed_type) {
                         ASR::symbol_t* value_struct_sym =
                             ASRUtils::get_struct_sym_from_struct_expr(
                                 x.m_args[i].m_value);
