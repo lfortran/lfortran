@@ -160,71 +160,6 @@ jobs:
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
 
-  test_coarrays_caffeine:
-    name: Coarray runtime tests (Caffeine)
-    runs-on: ubuntu-latest
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Setup FPM
-        uses: fortran-lang/setup-fpm@main
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          fpm-version: latest
-
-      - name: Build OpenCoarrays
-        shell: bash -e -l {0}
-        run: |
-          micromamba install -y -c conda-forge openmpi
-          git clone https://github.com/sourceryinstitute/OpenCoarrays.git
-          cd OpenCoarrays
-
-          cmake -B build \
-            -DCMAKE_INSTALL_PREFIX=$HOME/opencoarrays
-
-          cmake --build build -j2
-          cmake --install build
-
-          echo "$HOME/opencoarrays/bin" >> $GITHUB_PATH
-          cd ..
-
-      - name: Build LFortran
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test coarray runtime with Caffeine
-        shell: bash -e -l {0}
-        run: ci/test_caffeine.sh
 
 # Commented out to save CI runners:
 #  test-pixi:
@@ -547,6 +482,35 @@ jobs:
             fi
             echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
+
+      - name: Setup FPM
+        if: contains(matrix.os, 'ubuntu')
+        uses: fortran-lang/setup-fpm@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fpm-version: latest
+
+      - name: Build OpenCoarrays
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash -e -l {0}
+        run: |
+          micromamba install -y -c conda-forge openmpi
+          git clone https://github.com/sourceryinstitute/OpenCoarrays.git
+          cd OpenCoarrays
+
+          cmake -B build \
+            -DCMAKE_INSTALL_PREFIX=$HOME/opencoarrays
+
+          cmake --build build -j2
+          cmake --install build
+
+          echo "$HOME/opencoarrays/bin" >> $GITHUB_PATH
+          cd ..
+
+      - name: Test coarray runtime with Caffeine
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash -e -l {0}
+        run: ci/test_caffeine.sh
 
   upload_tarball:
     name: Upload Tarball
