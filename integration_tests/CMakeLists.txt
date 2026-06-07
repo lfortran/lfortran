@@ -4493,6 +4493,7 @@ RUN(NAME proc_ptr_16 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME proc_ptr_17 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME proc_ptr_18 LABELS gfortran llvm)
 RUN(NAME write_substr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME write_implied_do_1 LABELS gfortran llvm)
 RUN(NAME move_alloc_derived_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_assign_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
