@@ -9279,7 +9279,21 @@ public:
     }
 
     void visit_SyncAll(const AST::SyncAll_t &x) {
-        tmp = ASR::make_SyncAll_t(al, x.base.base.loc);
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        for (size_t i = 0; i < x.n_stat; i++) {
+            AST::event_attribute_t *attr = x.m_stat[i];
+            if (AST::is_a<AST::AttrStat_t>(*attr)) {
+                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
+                ASR::symbol_t *sym = current_scope->resolve_symbol(s->m_variable);
+                stat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
+                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
+                ASR::symbol_t *sym = current_scope->resolve_symbol(e->m_variable);
+                errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+            }
+        }
+        tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
     }
 
     void visit_SyncMemory(const AST::SyncMemory_t &x) {

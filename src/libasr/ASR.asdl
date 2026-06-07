@@ -71,7 +71,7 @@ stmt
     | WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
     | Nullify(expr* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
-    | SyncAll()
+    | SyncAll(expr? stat, expr? errmsg)
     | SyncMemory()
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
