@@ -2575,6 +2575,34 @@ namespace Spread {
         ASR::ttype_t *type_ncopies = ASRUtils::type_get_past_allocatable_pointer(expr_type(ncopies));
         ASR::ttype_t *ret_type = ASRUtils::type_get_past_allocatable_pointer(expr_type(source));
 
+        // If the source is an assumed-length string (character(*)), the return
+        // type must not carry AssumedLength — that's only valid for dummy
+        // arguments and is invalid in ASR for a function return.  Convert to
+        // ExpressionLength with len = StringLen(source).
+        ASR::ttype_t* ret_elem = ASRUtils::extract_type(ret_type);
+        if( ASR::is_a<ASR::String_t>(*ret_elem) ) {
+            ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(ret_elem);
+            if( str_t->m_len_kind == ASR::string_length_kindType::AssumedLength ) {
+                ASR::expr_t* source_for_len = args[0];
+                ASR::expr_t* len_expr = ASRUtils::EXPR(
+                    ASR::make_StringLen_t(al, loc, source_for_len,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                ASR::ttype_t* new_str = ASRUtils::TYPE(ASR::make_String_t(
+                    al, loc, str_t->m_kind, len_expr,
+                    ASR::string_length_kindType::ExpressionLength,
+                    str_t->m_physical_type));
+                // Rebuild ret_type with the corrected element type
+                ASR::dimension_t* rdims = nullptr;
+                size_t rn = ASRUtils::extract_dimensions_from_ttype(ret_type, rdims);
+                if( rn > 0 ) {
+                    ret_type = ASRUtils::make_Array_t_util(al, loc, new_str,
+                        rdims, rn);
+                } else {
+                    ret_type = new_str;
+                }
+            }
+        }
+
         ASRBuilder b(al, loc);
         int overload_id = 2;
         if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) ||
@@ -2691,6 +2719,10 @@ namespace Spread {
         }
         fill_func_arg("dim", arg_types[1]);
         fill_func_arg("ncopies", arg_types[2]);
+
+        // Save the original return type for the FunctionCall node (caller's scope).
+        ASR::ttype_t* caller_return_type = return_type;
+
         int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
         bool is_allocatable = ASRUtils::is_allocatable(return_type);
         Vec<ASR::dimension_t> empty_dims;
@@ -2702,10 +2734,38 @@ namespace Spread {
             empty_dim.m_length = nullptr;
             empty_dims.push_back(al, empty_dim);
         }
+
+        // For string element types with ExpressionLength, the length expression
+        // references the caller's variable (e.g. StringLen(deferred_text)).
+        // Inside this generated function, we must use StringLen(source_param)
+        // where source_param is the function's own source argument.
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(return_type);
+        if( ASR::is_a<ASR::String_t>(*elem_type) ) {
+            ASR::String_t* str = ASR::down_cast<ASR::String_t>(elem_type);
+            if( str->m_len_kind == ASR::string_length_kindType::ExpressionLength ) {
+                ASR::expr_t* source_param = args[0]; // function's own source arg
+                ASR::expr_t* new_len = ASRUtils::EXPR(
+                    ASR::make_StringLen_t(al, loc, source_param,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                elem_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, loc, str->m_kind, new_len,
+                    ASR::string_length_kindType::ExpressionLength,
+                    str->m_physical_type));
+            }
+        }
+
         return_type = ASRUtils::make_Array_t_util(al, loc,
-            ASRUtils::extract_type(return_type), empty_dims.p, empty_dims.size());
+            elem_type, empty_dims.p, empty_dims.size());
         if( is_allocatable ) {
             return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type));
+        }
+
+        // Also rebuild caller_return_type with empty dims for the FunctionCall node.
+        ASR::ttype_t* caller_elem = ASRUtils::extract_type(caller_return_type);
+        caller_return_type = ASRUtils::make_Array_t_util(al, loc,
+            caller_elem, empty_dims.p, empty_dims.size());
+        if( is_allocatable ) {
+            caller_return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, caller_return_type));
         }
 
         diag::Diagnostics diag;
@@ -2731,7 +2791,7 @@ namespace Spread {
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
-        return b.Call(fn_sym, m_args, return_type, nullptr);
+        return b.Call(fn_sym, m_args, caller_return_type, nullptr);
     }
 
 } // namespace Spread
