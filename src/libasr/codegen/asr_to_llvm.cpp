@@ -1164,6 +1164,14 @@ public:
             case ASR::ExpressionLength:{
                 LCOMPILERS_ASSERT(len);
                 visit_expr_load_wrapper(len, 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(len)), true);
+                if (ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(len)) &&
+                    (ASR::is_a<ASR::StructInstanceMember_t>(*len) ||
+                     ASR::is_a<ASR::ArrayItem_t>(*len) ||
+                     ASR::is_a<ASR::ArraySection_t>(*len))) {
+                    llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+                        len, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(len)), module.get());
+                    tmp = llvm_utils->CreateLoad2(t, tmp);
+                }
                 tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
                 llvm::Value* len_ptr = llvm_utils->get_string_length(str_type, str, true);
                 builder->CreateStore(tmp, len_ptr);
