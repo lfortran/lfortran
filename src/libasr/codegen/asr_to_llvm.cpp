@@ -2695,7 +2695,6 @@ public:
             ASR::symbol_t* curr_obj = nullptr;
             ASR::abiType abt = ASR::abiType::Source;
             
-            // --- FIX: Track address for nullification ---
             llvm::Value* address_to_nullify = nullptr;
 
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
@@ -2806,6 +2805,7 @@ public:
                         tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
                     if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
+                        // If it is a class type, we need to get the pointer to the struct
                         llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(
                             tmp_expr,
                             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)),
@@ -2825,6 +2825,7 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
+                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
                         if (struct_sym != nullptr && struct_sym->n_member_functions > 0) {
                             for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
                                 std::string final_proc_name = struct_sym->m_member_functions[fi];
@@ -2834,6 +2835,9 @@ public:
                                     uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                                     if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
                                         llvm::Function* final_fn = llvm_symtab_fn[fh];
+                                        // Finalizers take type(T), not class(T). For class
+                                        // variables, load the concrete data pointer (field 1)
+                                        // from the class wrapper {vptr, data*}.
                                         llvm::Value* final_arg = tmp;
                                         if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
                                             llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
@@ -2883,7 +2887,7 @@ public:
                             call_lfortran_free(free_fn, typ,  llvm_data_type);
                         }
 
-                        // --- FIX: Only free the descriptor if it is an IMPLICIT deallocate ---
+                      
                         // Explicit deallocates should keep the descriptor for reuse.
                         bool is_implicit_dealloc = false;
                         if constexpr (std::is_same_v<T, ASR::ImplicitDeallocate_t>) {
@@ -9381,7 +9385,7 @@ public:
             // Allocate descriptor on the heap so it survives after this
             // function returns (the caller holds a pointer).
             
-            // --- FIX: Prevent pointer reassignment leak (Guarded for Structs only) ---
+           
             bool is_struct_member = ASR::is_a<ASR::StructInstanceMember_t>(*target_section->m_v);
             llvm::Value* old_desc = llvm_utils->CreateLoad2(
                 target_type_llvm->getPointerTo(), target_desc);
@@ -9405,7 +9409,6 @@ public:
                     builder->CreateCall(free_fn, {allocator, desc_i8});
                 }
             }, [](){});
-            // -----------------------------------------------------
 
             new_desc = arr_descr->allocate_descriptor_on_heap(
                 target_type_llvm);
