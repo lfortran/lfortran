@@ -394,15 +394,12 @@ decl_attribute_t** VAR_DECL2b(Allocator &al,
     return a;
 }
 
-decl_attribute_t** VAR_DECL_NAMELISTb(Allocator &al,
-        Location &loc,
-            char *name) {
-    Vec<decl_attribute_t*> v;
-    v.reserve(al, 1);
-    ast_t* a = make_AttrNamelist_t(al, loc, name);
-    v.push_back(al, down_cast<decl_attribute_t>(a));
-    return v.p;
-}
+struct namelist_group_t {
+    Location loc;
+    char* m_name;
+    var_sym_t* m_objects;
+    size_t n_objects;
+};
 
 var_sym_t* VAR_DECL_NAMELISTc(Allocator &al,
             Vec<ast_t*> id_list) {
@@ -412,6 +409,23 @@ var_sym_t* VAR_DECL_NAMELISTc(Allocator &al,
     }
     return a;
 }
+
+static inline namelist_group_t* make_namelist_group(Allocator &al, Location const &loc,
+        ast_t const *name, Vec<ast_t*> const &id_list) {
+    namelist_group_t *r = al.allocate<namelist_group_t>(1);
+    r->loc = loc;
+    r->m_name = name2char(name);
+    r->m_objects = VAR_DECL_NAMELISTc(al, id_list);
+    r->n_objects = id_list.size();
+    return r;
+}
+
+#define NAMELIST_GROUP(name, id_list, l) \
+    make_namelist_group(p.m_a, l, name, id_list)
+
+#define DECL_NAMELIST(groups, trivia, l) \
+    make_Namelist_t(p.m_a, l, groups.p, groups.n, trivia_cast(trivia))
+
 
 decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
         Location &loc) {
@@ -435,13 +449,6 @@ decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
         VAR_DECL2b(p.m_a, xattr0), 1, \
         varsym.p, varsym.n, trivia_cast(trivia))
 
-#define VAR_DECL_NAMELIST(id, id_list, trivia, l) \
-        make_Declaration_t(p.m_a, l, \
-        nullptr, \
-        VAR_DECL_NAMELISTb(p.m_a, l, name2char(id)), 1, \
-        VAR_DECL_NAMELISTc(p.m_a, id_list), id_list.n, \
-        trivia_cast(trivia))
-
 #define VAR_DECL_PARAMETER(varsym, trivia, l) \
         make_Declaration_t(p.m_a, l, \
         nullptr, \
@@ -453,8 +460,8 @@ decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
 
 static inline bool has_num_val(expr_t const * const expr, int64_t val) {
     if (expr && is_a<Num_t>(*expr)) {
-	Num_t const *num = down_cast<Num_t>(expr);
-	return (num->m_n == val);
+        Num_t const *num = down_cast<Num_t>(expr);
+        return (num->m_n == val);
     }
     return false;
 }
@@ -463,39 +470,39 @@ static inline bool has_num_val(expr_t const * const expr, int64_t val) {
    objects were stored as an expr, and decoded in ast_common_visitor. */
 static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
     if (vs.n_dim == 0) {
-	// There aren't any dimensions, just make a name
-	return EXPR(make_Name_t(al, vs.loc, vs.m_name, nullptr, 0));
+        // There aren't any dimensions, just make a name
+        return EXPR(make_Name_t(al, vs.loc, vs.m_name, nullptr, 0));
     } else {
-	// Convert each dimension_t to fnarg_t
-	fnarg_t* args = al.allocate<fnarg_t>(vs.n_dim);
-	fnarg_t* ca = args;
-	for (size_t i = 0; i < vs.n_dim; ++i) {
-	    dimension_t const &d = vs.m_dim[i];
-	    ca->loc = d.loc;
-	    if (has_num_val(d.m_start, 1)) {
-		ca->m_start = nullptr;
-		ca->m_step = nullptr;
-	    } else {
-		ca->m_start = d.m_start;
-		ca->m_step = EXPR(make_Num_t(al, vs.loc, 1, nullptr));
-	    }
-	    ca->m_end = d.m_end;
-	    ca->m_label = 0;
-	    ++ca;
-	}
-	return EXPR(make_FuncCallOrArray_t(al, vs.loc, vs.m_name,
-					   nullptr, 0, /* member */
-					   args, vs.n_dim,
-					   nullptr, 0, /* keywords */
-					   nullptr, 0, /* subargs */
-					   nullptr, 0 /* temp_args */ ));
+        // Convert each dimension_t to fnarg_t
+        fnarg_t* args = al.allocate<fnarg_t>(vs.n_dim);
+        fnarg_t* ca = args;
+        for (size_t i = 0; i < vs.n_dim; ++i) {
+            dimension_t const &d = vs.m_dim[i];
+            ca->loc = d.loc;
+            if (has_num_val(d.m_start, 1)) {
+                ca->m_start = nullptr;
+                ca->m_step = nullptr;
+            } else {
+                ca->m_start = d.m_start;
+                ca->m_step = EXPR(make_Num_t(al, vs.loc, 1, nullptr));
+            }
+            ca->m_end = d.m_end;
+            ca->m_label = 0;
+            ++ca;
+        }
+        return EXPR(make_FuncCallOrArray_t(al, vs.loc, vs.m_name,
+                                           nullptr, 0, /* member */
+                                           args, vs.n_dim,
+                                           nullptr, 0, /* keywords */
+                                           nullptr, 0, /* subargs */
+                                           nullptr, 0 /* temp_args */ ));
     }
 }
 
 #define VAR_DECL_COMMON(blks, trivia, l) \
     make_Declaration_t(p.m_a, l, \
-		       nullptr, \
-		       COMMON(p.m_a, l, blks.p, blks.n), 1, nullptr, 0, trivia_cast(trivia))
+                       nullptr, \
+                       COMMON(p.m_a, l, blks.p, blks.n), 1, nullptr, 0, trivia_cast(trivia))
 
 
 static inline common_block_t *make_common_block(Allocator &al, Location const &loc,
@@ -503,9 +510,9 @@ static inline common_block_t *make_common_block(Allocator &al, Location const &l
     common_block_t * r = al.allocate<common_block_t>(1);
     r->loc = loc;
     if (name)
-	r->m_name = name2char(name);
+        r->m_name = name2char(name);
     else
-	r->m_name = nullptr;
+        r->m_name = nullptr;
     r->m_objects = varsym.p;
     r->n_objects = varsym.n;
     for (size_t i = 0; i < varsym.n; ++i) {
@@ -518,7 +525,7 @@ static inline common_block_t *make_common_block2(Allocator &al, Location const &
         char *name, Vec<var_sym_t> const & varsym) {
     common_block_t * r = al.allocate<common_block_t>(1);
     r->loc = loc;
-	r->m_name = name;
+        r->m_name = name;
     r->m_objects = varsym.p;
     r->n_objects = varsym.n;
     for (size_t i = 0; i < varsym.n; ++i) {
@@ -627,30 +634,30 @@ Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items,
     ast_nodes.reserve(al, kind_items.size());
 
     for (const auto &kind_item : kind_items) {
-      /*  Each of these kind_items should be of the form:
-	     : letter
-	     | letter - letter
-	  We need to convert each one into a LetterSpec, which we
-	  return a list of.
+      /* Each of these kind_items should be of the form:
+             : letter
+             | letter - letter
+          We need to convert each one into a LetterSpec, which we
+          return a list of.
       */
       expr_t const * exprNode = kind_item.m_value;
       Location const & loc = exprNode->base.loc;
       ast_t *ls_node = nullptr;
       char *end_name = id_if_Name_t(exprNode);
       if(end_name) {
-	ls_node = make_LetterSpec_t(al, loc, nullptr, end_name);
+        ls_node = make_LetterSpec_t(al, loc, nullptr, end_name);
       } else if (exprNode->type == LCompilers::LFortran::AST::exprType::BinOp) {
-	BinOp_t const * binOpNode = down_cast<BinOp_t>(exprNode);
-	if (binOpNode->m_op == LCompilers::LFortran::AST::operatorType::Sub) {
-	  char *start_name = id_if_Name_t(binOpNode->m_left);
-	  end_name = id_if_Name_t(binOpNode->m_right);
-	  if (start_name && end_name) {
-	    ls_node = make_LetterSpec_t(al, loc, start_name, end_name);
-	  }
-	}
+        BinOp_t const * binOpNode = down_cast<BinOp_t>(exprNode);
+        if (binOpNode->m_op == LCompilers::LFortran::AST::operatorType::Sub) {
+          char *start_name = id_if_Name_t(binOpNode->m_left);
+          end_name = id_if_Name_t(binOpNode->m_right);
+          if (start_name && end_name) {
+            ls_node = make_LetterSpec_t(al, loc, start_name, end_name);
+          }
+        }
       }
       if (ls_node) {
-	ast_nodes.push_back(al, ls_node);
+        ast_nodes.push_back(al, ls_node);
       } else {
         diagnostics.add(LCompilers::diag::Diagnostic(
             "Bad implicit letter specification",
@@ -661,7 +668,7 @@ Vec<ast_t*> vec_kind_item2ast(Allocator &al, const Vec<kind_item_t> &kind_items,
     return ast_nodes;
 }
 #define IMPLICIT(specs, trivia, l) make_Implicit_t(p.m_a, l, \
-	VEC_CAST(specs, implicit_spec), specs.size(), trivia_cast(trivia))
+        VEC_CAST(specs, implicit_spec), specs.size(), trivia_cast(trivia))
 #define IMPLICIT_SPEC(t, specs, l) make_ImplicitSpec_t(p.m_a, l, \
         down_cast<decl_attribute_t>(t), \
         VEC_CAST(vec_kind_item2ast(p.m_a, specs, p.diag), letter_spec), specs.size())
@@ -757,7 +764,6 @@ static inline expr_t** DIMS2EXPRS(Allocator &al, const Vec<FnArg> &d)
         return s;
     }
 }
-
 static inline Vec<kind_item_t> empty()
 {
     Vec<kind_item_t> r;

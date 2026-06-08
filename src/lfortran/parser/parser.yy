@@ -440,6 +440,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> var_decl_star
 %type <vec_var_sym> var_sym_decl_list
 %type <ast> var_decl
+%type <namelist_group> namelist_group
+%type <vec_namelist_group> namelist_group_list
 %type <ast> decl_spec
 %type <var_sym> var_sym_decl
 %type <vec_dim> array_comp_decl_list
@@ -1375,8 +1377,8 @@ var_decl
         LLOC(@$, @3); $$ = VAR_DECL3($1, $3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PARAMETER "(" named_constant_def_list ")" sep {
         LLOC(@$, @4); $$ = VAR_DECL_PARAMETER($3, TRIVIA_AFTER($5, @$), @$); }
-    | KW_NAMELIST "/" id "/" id_list sep {
-        LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
+    | KW_NAMELIST namelist_group_list sep {
+        LLOC(@$, @3); $$ = DECL_NAMELIST($2, TRIVIA_AFTER($3, @$), @$);}
     | KW_COMMON common_block_list_top sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
@@ -1385,11 +1387,30 @@ var_decl
         LLOC(@$, @1); $$ = VAR_DECL_PRAGMA($1, TRIVIA_AFTER($2, @$), @$);}
     ;
 
+namelist_group
+    : "/" id "/" id_list { $$ = NAMELIST_GROUP($2, $4, @$); }
+    ;
+
+namelist_group_list
+    : namelist_group { 
+        LIST_NEW($$); 
+        PLIST_ADD($$, *$1); 
+    }
+    | namelist_group_list namelist_group { 
+        $$ = $1; 
+        PLIST_ADD($$, *$2); 
+    }
+    | namelist_group_list "," namelist_group { 
+        $$ = $1; 
+        PLIST_ADD($$, *$3); 
+    }
+    ;
+
 equivalence_set_list
     : equivalence_set_list "," equivalence_set { $$ = $1; PLIST_ADD($$, $3); }
     | equivalence_set { LIST_NEW($$); PLIST_ADD($$, $1); }
     ;
-
+    
 equivalence_set
     : "(" expr_list ")" { $$ = EQUIVALENCE_SET($2, @$); }
     ;

@@ -62,6 +62,7 @@ unit_decl1
 unit_decl2
     = Declaration(decl_attribute? vartype, decl_attribute* attributes,
         var_sym* syms, trivia? trivia)
+    | Namelist(namelist_group* groups, trivia? trivia)
     | DeclarationPragma(pragma_type type, string text, trivia? trivia)
     | Interface(interface_header header, trivia? trivia, interface_item* items)
     | DerivedType(identifier name, identifier* namelist, trivia? trivia, decl_attribute* attrtype,
@@ -357,6 +358,7 @@ var_sym = (identifier? name, dimension* dim, codimension* codim,
  expr? length, expr? initializer, symbol sym, decl_attribute? spec)
 
 common_block = (identifier? name, var_sym* objects)
+namelist_group = (identifier name, var_sym* objects)
 
 kind_item = (identifier? id, expr? value, kind_item_type type)
 

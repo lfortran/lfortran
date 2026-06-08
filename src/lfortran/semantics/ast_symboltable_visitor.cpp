@@ -4476,6 +4476,7 @@ public:
             std::string req_param = req->m_args[i];
             std::string req_arg = "";
 
+            // Check for the original AttrNamelist (used by templates)
             if (AST::is_a<AST::AttrNamelist_t>(*attr)) {
                 AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(attr);
                 req_arg = to_lower(attr_name->m_name);
@@ -4489,7 +4490,24 @@ public:
                             diag::Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
                 }
-            } else if (AST::is_a<AST::AttrType_t>(*attr)) {
+            } 
+            // Check for the new AttrNamelistGroup (our newly added AST structure)
+            else if (AST::is_a<AST::AttrNamelistGroup_t>(*attr)) {
+                AST::AttrNamelistGroup_t *attr_group = AST::down_cast<AST::AttrNamelistGroup_t>(attr);
+                req_arg = to_lower(attr_group->m_group.m_name);
+                if (std::find(current_procedure_args.begin(),
+                        current_procedure_args.end(),
+                        req_arg) == current_procedure_args.end()
+                        && !current_scope->get_symbol(req_arg)) {
+                    diag.add(diag::Diagnostic(
+                        "Parameter '" + req_arg + "' was not declared",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            } 
+            // Check for Types
+            else if (AST::is_a<AST::AttrType_t>(*attr)) {
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 ASR::symbol_t *type_declaration;
@@ -4539,7 +4557,7 @@ public:
 
         context_map.clear();
     }
-
+    
     void visit_Template(const AST::Template_t &x){
         is_template = true;
         std::string template_name = to_lower(std::string(x.m_name));
