@@ -2858,55 +2858,59 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_); // Store NULL as identifier for deallocated variable.
                     }, [](){});
                 } else {
-                // --- ADDED: Capture the pointer to the descriptor ---
-                llvm::Value* saved_ptr_to_descriptor = tmp; 
-                // ----------------------------------------------------
+                    // --- FIX: Capture the pointer to the descriptor ---
+                    llvm::Value* saved_ptr_to_descriptor = tmp; 
+                    // --------------------------------------------------
 
-                if( LLVM::is_llvm_pointer(*cur_type) ) {
-                    llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
-                    tmp = llvm_utils->CreateLoad2(typ, tmp);
-                }
-                llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(cur_type)),
-                module.get(), abt);
-                ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(cur_type)));
-                // Use the array element *storage* type (e.g. logical arrays are i8-backed).
-                llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
-                llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
-                
-                llvm_utils->create_if_else(cond, [=]() {
-                    llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
-
-                    if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
-                        arr_descr->reset_is_allocated_flag(typ, tmp, llvm_data_type);
-                    } else {
-                        call_lfortran_free(free_fn, typ,  llvm_data_type);
+                    if( LLVM::is_llvm_pointer(*cur_type) ) {
+                        llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
+                        tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
+                    llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(cur_type)),
+                    module.get(), abt);
+                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(cur_type)));
+                    // Use the array element *storage* type (e.g. logical arrays are i8-backed).
+                    llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
+                    llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
+                    
+                    llvm_utils->create_if_else(cond, [=]() {
+                        llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
-                    // --- ADDED: Free the heap-allocated descriptor struct ---
-                    if (in_struct) {
-                        // 1. Cast the descriptor pointer to i8* and free it
+                        if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
+                            arr_descr->reset_is_allocated_flag(typ, tmp, llvm_data_type);
+                        } else {
+                            call_lfortran_free(free_fn, typ,  llvm_data_type);
+                        }
+
+                        // --- FIX: Free the heap-allocated descriptor struct ---
+                        if (in_struct) {
+                            // 1. Cast the descriptor pointer to i8* and free it
 #if LLVM_VERSION_MAJOR < 15
-                        llvm::Value* desc_i8 = builder->CreateBitCast(tmp, llvm::Type::getInt8PtrTy(context));
+                            llvm::Value* desc_i8 = builder->CreateBitCast(tmp, llvm::Type::getInt8PtrTy(context));
 #else
-                        llvm::Value* desc_i8 = tmp; // Opaque pointers in LLVM 15+
+                            llvm::Value* desc_i8 = tmp; // Opaque pointers in LLVM 15+
 #endif
-                        builder->CreateCall(free_fn, {allocator, desc_i8});
+                            builder->CreateCall(free_fn, {allocator, desc_i8});
 
-                        // 2. Nullify the descriptor pointer inside the parent struct
-                        llvm::Type* desc_ptr_type = tmp->getType();
-                        builder->CreateStore(
-                            llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(desc_ptr_type)),
-                            saved_ptr_to_descriptor
-                        );
-                    }
-                    // -------------------------------------------------------------
+                            // 2. Nullify the descriptor pointer inside the parent struct
+                            llvm::Type* desc_ptr_type = tmp->getType();
+                            builder->CreateStore(
+                                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(desc_ptr_type)),
+                                saved_ptr_to_descriptor
+                            );
+                        }
+                        // -------------------------------------------------------------
 
-                }, [](){});
+                    }, [](){});
+                }
             }
+        }
+    }
+    
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         visit_Deallocate(x);
     }
