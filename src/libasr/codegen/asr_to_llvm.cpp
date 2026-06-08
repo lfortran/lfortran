@@ -2882,11 +2882,19 @@ public:
                         } else {
                             call_lfortran_free(free_fn, typ,  llvm_data_type);
                         }
-                        if (in_struct && address_to_nullify) {
+
+                        // --- FIX: Only free the descriptor if it is an IMPLICIT deallocate ---
+                        // Explicit deallocates should keep the descriptor for reuse.
+                        bool is_implicit_dealloc = false;
+                        if constexpr (std::is_same_v<T, ASR::ImplicitDeallocate_t>) {
+                            is_implicit_dealloc = true;
+                        }
+
+                        if (in_struct && address_to_nullify && is_implicit_dealloc) {
 #if LLVM_VERSION_MAJOR < 15
                             llvm::Value* desc_i8 = builder->CreateBitCast(tmp, llvm::Type::getInt8PtrTy(context));
 #else
-                            llvm::Value* desc_i8 = tmp;
+                            llvm::Value* desc_i8 = tmp; // Opaque pointers in LLVM 15+
 #endif
                             builder->CreateCall(free_fn, {allocator, desc_i8});
                             llvm::Type* desc_ptr_type = tmp->getType();
@@ -9373,7 +9381,8 @@ public:
             // Allocate descriptor on the heap so it survives after this
             // function returns (the caller holds a pointer).
             
-            // --- ADDED: Prevent pointer reassignment leak ---
+            // --- FIX: Prevent pointer reassignment leak (Guarded for Structs only) ---
+            bool is_struct_member = ASR::is_a<ASR::StructInstanceMember_t>(*target_section->m_v);
             llvm::Value* old_desc = llvm_utils->CreateLoad2(
                 target_type_llvm->getPointerTo(), target_desc);
             
@@ -9383,15 +9392,18 @@ public:
             );
             
             llvm_utils->create_if_else(is_not_null, [&]() {
-                llvm::Function* free_fn = llvm_utils->_Deallocate();
-                llvm::Value* allocator = llvm_utils->get_allocator(module.get());
-                
+                // Only free if it's a struct member to avoid freeing stack-allocated common block pointers
+                if (is_struct_member) {
+                    llvm::Function* free_fn = llvm_utils->_Deallocate();
+                    llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+                    
 #if LLVM_VERSION_MAJOR < 15
-                llvm::Value* desc_i8 = builder->CreateBitCast(old_desc, llvm::Type::getInt8PtrTy(context));
+                    llvm::Value* desc_i8 = builder->CreateBitCast(old_desc, llvm::Type::getInt8PtrTy(context));
 #else
-                llvm::Value* desc_i8 = old_desc; // Opaque pointers in LLVM 15+
+                    llvm::Value* desc_i8 = old_desc; // Opaque pointers in LLVM 15+
 #endif
-                builder->CreateCall(free_fn, {allocator, desc_i8});
+                    builder->CreateCall(free_fn, {allocator, desc_i8});
+                }
             }, [](){});
             // -----------------------------------------------------
 
