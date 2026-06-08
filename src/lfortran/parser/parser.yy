@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    238 // shift/reduce conflicts
+%expect    239 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -1410,7 +1410,7 @@ equivalence_set_list
     : equivalence_set_list "," equivalence_set { $$ = $1; PLIST_ADD($$, $3); }
     | equivalence_set { LIST_NEW($$); PLIST_ADD($$, $1); }
     ;
-    
+
 equivalence_set
     : "(" expr_list ")" { $$ = EQUIVALENCE_SET($2, @$); }
     ;
