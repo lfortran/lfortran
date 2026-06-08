@@ -2861,7 +2861,6 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_);
                     }, [](){});
                 } else {
-                    llvm::Value* saved_ptr_to_descriptor = tmp; 
                     if( LLVM::is_llvm_pointer(*cur_type) ) {
                         llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
                         tmp = llvm_utils->CreateLoad2(typ, tmp);
@@ -2901,7 +2900,7 @@ public:
             }
         }
     }
-    
+
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         visit_Deallocate(x);
     }
