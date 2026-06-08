@@ -7067,18 +7067,11 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
-                            } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
-                                // PDT kind parameter: treat as a Parameter variable
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrKind ||
+                                    sa->m_attr == AST::simple_attributeType::AttrLen) {
+                                // PDT kind/len parameter: treat as a Parameter variable
                                 is_kind_parameter = true;
                                 storage_type = ASR::storage_typeType::Parameter;
-                            } else if (sa->m_attr == AST::simple_attributeType::AttrLen) {
-                                diag.add(Diagnostic(
-                                    "LEN parameters in parameterized derived types are not supported yet",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc})
-                                    }));
-                                throw SemanticAbort();
-
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
@@ -8543,43 +8536,72 @@ public:
 
     }
 
-    // Replace sentinel kind values in a type with actual values.
+    static void replace_sentinel_expr(ASR::expr_t* expr,
+        const std::map<int64_t, int64_t>& sentinel_to_actual)
+    {
+        if (!expr) return;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+            ASR::IntegerConstant_t* int_const =
+                ASR::down_cast<ASR::IntegerConstant_t>(expr);
+            auto it = sentinel_to_actual.find(int_const->m_n);
+            if (it != sentinel_to_actual.end()) int_const->m_n = it->second;
+        }
+    }
+
+    // Replace sentinel PDT parameter values in a type with actual values.
     static void replace_sentinel_kinds(ASR::ttype_t* type,
         const std::map<int64_t, int64_t>& sentinel_to_actual)
     {
         if (!type) return;
 
-        ASR::ttype_t* base_type = type;
-        if (ASR::is_a<ASR::Pointer_t>(*base_type)) {
-            base_type = ASR::down_cast<ASR::Pointer_t>(base_type)->m_type;
-        } else if (ASR::is_a<ASR::Allocatable_t>(*base_type)) {
-            base_type = ASR::down_cast<ASR::Allocatable_t>(base_type)->m_type;
+        if (ASR::is_a<ASR::Pointer_t>(*type)) {
+            replace_sentinel_kinds(ASR::down_cast<ASR::Pointer_t>(type)->m_type,
+                sentinel_to_actual);
+            return;
+        } else if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+            replace_sentinel_kinds(ASR::down_cast<ASR::Allocatable_t>(type)->m_type,
+                sentinel_to_actual);
+            return;
+        } else if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(type);
+            for (size_t i = 0; i < array_type->n_dims; i++) {
+                replace_sentinel_expr(array_type->m_dims[i].m_start,
+                    sentinel_to_actual);
+                replace_sentinel_expr(array_type->m_dims[i].m_length,
+                    sentinel_to_actual);
+            }
+            replace_sentinel_kinds(array_type->m_type, sentinel_to_actual);
+            return;
         }
-        base_type = ASRUtils::type_get_past_array(base_type);
 
-        switch (base_type->type) {
+        switch (type->type) {
             case ASR::ttypeType::Integer: {
-                ASR::Integer_t* t = ASR::down_cast<ASR::Integer_t>(base_type);
+                ASR::Integer_t* t = ASR::down_cast<ASR::Integer_t>(type);
                 auto it = sentinel_to_actual.find(t->m_kind);
                 if (it != sentinel_to_actual.end()) t->m_kind = it->second;
                 break;
             }
             case ASR::ttypeType::Real: {
-                ASR::Real_t* t = ASR::down_cast<ASR::Real_t>(base_type);
+                ASR::Real_t* t = ASR::down_cast<ASR::Real_t>(type);
                 auto it = sentinel_to_actual.find(t->m_kind);
                 if (it != sentinel_to_actual.end()) t->m_kind = it->second;
                 break;
             }
             case ASR::ttypeType::Complex: {
-                ASR::Complex_t* t = ASR::down_cast<ASR::Complex_t>(base_type);
+                ASR::Complex_t* t = ASR::down_cast<ASR::Complex_t>(type);
                 auto it = sentinel_to_actual.find(t->m_kind);
                 if (it != sentinel_to_actual.end()) t->m_kind = it->second;
                 break;
             }
             case ASR::ttypeType::Logical: {
-                ASR::Logical_t* t = ASR::down_cast<ASR::Logical_t>(base_type);
+                ASR::Logical_t* t = ASR::down_cast<ASR::Logical_t>(type);
                 auto it = sentinel_to_actual.find(t->m_kind);
                 if (it != sentinel_to_actual.end()) t->m_kind = it->second;
+                break;
+            }
+            case ASR::ttypeType::String: {
+                ASR::String_t* t = ASR::down_cast<ASR::String_t>(type);
+                replace_sentinel_expr(t->m_len, sentinel_to_actual);
                 break;
             }
             default:
