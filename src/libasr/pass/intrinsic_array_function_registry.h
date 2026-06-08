@@ -6436,12 +6436,15 @@ namespace Unpack {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }
         vector_a = ASRUtils::expr_value(vector_a);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a));
-        ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
-
+        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(vector_a));
         for (int i = 0; i < dim; i++) {
-            ASR::expr_t* arg_a = ASRUtils::fetch_ArrayConstant_value(al, a_const, i);
-
+            ASR::expr_t* arg_a {};
+            if (ASR::is_a<ASR::ArrayConstant_t>(*vector_a)) {
+                ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
+                arg_a = ASRUtils::fetch_ArrayConstant_value(al, a_const, i);
+            } else {
+                arg_a = vector_a;
+            }
             if (ASR::is_a<ASR::IntegerConstant_t>(*arg_a)) {
                 a[i] = ASR::down_cast<ASR::IntegerConstant_t>(arg_a)->m_n;
             } else if (ASR::is_a<ASR::RealConstant_t>(*arg_a)) {
@@ -6461,12 +6464,15 @@ namespace Unpack {
             vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
         }
         vector_a = ASRUtils::expr_value(vector_a);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*vector_a));
-        ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
-
+        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(vector_a));
         for (int i = 0; i < dim; i++) {
-            ASR::expr_t* arg_a = ASRUtils::fetch_ArrayConstant_value(al, a_const, i);
-
+            ASR::expr_t* arg_a {};
+            if (ASR::is_a<ASR::ArrayConstant_t>(*vector_a)) {
+                ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
+                arg_a = ASRUtils::fetch_ArrayConstant_value(al, a_const, i);
+            } else {
+                arg_a = vector_a;
+            }
             if (ASR::is_a<ASR::ComplexConstructor_t>(*arg_a)) {
                 arg_a = ASR::down_cast<ASR::ComplexConstructor_t>(arg_a)->m_value;
             }
@@ -6485,11 +6491,6 @@ namespace Unpack {
         ASR::ttype_t *type_vector = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector)));
         ASR::ttype_t *type_mask = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(mask)));
         ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_vector);
-
-        ASR::ttype_t *type_field = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(field)));
-        if (!ASRUtils::is_array(type_field)) {
-            return nullptr;
-        }
 
         int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
         int dim_mask = ASRUtils::get_fixed_size_of_array(type_mask);
