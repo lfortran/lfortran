@@ -1602,3 +1602,9 @@ semantic error: case value must be scalar
     |
 745 |         case (:[2])
     |                ^^^ 
+
+semantic error: Alternate return arguments are not permitted in calls to the 'cpu_time' intrinsic.
+   --> tests/errors/continue_compilation_1.f90:753:9
+    |
+753 |         call cpu_time(*1)
+    |         ^^^^^^^^^^^^^^^^^ 
