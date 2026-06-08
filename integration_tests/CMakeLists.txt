@@ -1299,6 +1299,7 @@ RUN(NAME procedure_pointer_21 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_22 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_23 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_24 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_25 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -2809,6 +2810,7 @@ RUN(NAME string_113 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_114 LABELS gfortran llvm)
 RUN(NAME string_115 LABELS gfortran llvm)
 RUN(NAME string_116 LABELS gfortran llvm)
+RUN(NAME string_117 LABELS gfortran llvm)
 
 RUN(NAME substring_read LABELS gfortran llvm)
 
@@ -4493,6 +4495,7 @@ RUN(NAME proc_ptr_16 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME proc_ptr_17 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME proc_ptr_18 LABELS gfortran llvm)
 RUN(NAME write_substr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME write_implied_do_1 LABELS gfortran llvm)
 RUN(NAME move_alloc_derived_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_assign_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
