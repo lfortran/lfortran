@@ -749,4 +749,8 @@ program continue_compilation_1
         implicit none
         integer, optional, value :: a
     end subroutine
+    subroutine sub_alternate_return_intrinsic()
+        call cpu_time(*1)
+1       continue
+    end subroutine 
 end program
