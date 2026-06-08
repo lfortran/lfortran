@@ -491,7 +491,7 @@ program continue_compilation_1
     print *, a(1:2:b'10')
     a_real = [logical::]
     print *,size(a_real)
-
+    print *, dummy_sub()
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
     print *, string(1:6)

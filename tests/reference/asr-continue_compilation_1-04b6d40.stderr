@@ -1094,6 +1094,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 492 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
+semantic error: Subroutine `dummy_sub` called as a function
+   --> tests/errors/continue_compilation_1.f90:494:14
+    |
+494 |     print *, dummy_sub()
+    |              ^^^^^^^^^^^ 
+
 semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
    --> tests/errors/continue_compilation_1.f90:495:22
     |
