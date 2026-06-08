@@ -2,11 +2,11 @@
     "basename": "fortran-coarrays_03-4fab179",
     "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true --show-fortran",
     "infile": "tests/coarrays_03.f90",
-    "infile_hash": "a3687a0474f2f19971e807fbaf8942803b49b760bbf49d1c79bfafea",
+    "infile_hash": "e7c66157c1d158647dca2964dab6dec025ba322db8385f6c853ffc8b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "fortran-coarrays_03-4fab179.stdout",
-    "stdout_hash": "0ebd4c088aabc2f8c4aaf223d496f99d0e27bafb585136ac9440f352",
+    "stdout_hash": "d0cf3208c53e00122fb447eff61f0696edfad2f6b7f22bfe18b7e1dd",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
