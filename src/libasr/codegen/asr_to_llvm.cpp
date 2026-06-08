@@ -2694,6 +2694,10 @@ public:
             ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
             ASR::abiType abt = ASR::abiType::Source;
+            
+            // --- FIX: Track address for nullification ---
+            llvm::Value* address_to_nullify = nullptr;
+
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 curr_obj = tmp_var->m_v;
@@ -2718,6 +2722,9 @@ public:
                 this->visit_expr_wrapper(sm->m_v, ASRUtils::is_class_type(ASRUtils::extract_type(caller_type)));
                 ptr_loads = ptr_loads_copy;
                 llvm::Value* dt = tmp;
+                
+                address_to_nullify = dt; 
+
                 ASR::symbol_t *struct_sym = nullptr;
                 llvm::Type* dt_type = llvm_utils->getStructType(
                     ASR::down_cast<ASR::Struct_t>(
@@ -2731,6 +2738,7 @@ public:
                         module.get());
                     llvm::Value* dt_ptr = llvm_utils->create_gep2(dt_type_poly, dt, 1);
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt_ptr);
+                    address_to_nullify = dt_ptr;
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v) &&
                            ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(sm->m_v))) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
@@ -2759,6 +2767,7 @@ public:
                 LCOMPILERS_ASSERT(dt->getType()->isPointerTy());
                 llvm::Value* dt_1 = builder->CreateGEP(name2dertype[curr_struct], dt, idx_vars);
                 tmp = dt_1;
+                address_to_nullify = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
                                     ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
@@ -2874,7 +2883,7 @@ public:
                         } else {
                             call_lfortran_free(free_fn, typ,  llvm_data_type);
                         }
-                        if (in_struct) {
+                        if (in_struct && address_to_nullify) {
 #if LLVM_VERSION_MAJOR < 15
                             llvm::Value* desc_i8 = builder->CreateBitCast(tmp, llvm::Type::getInt8PtrTy(context));
 #else
@@ -2884,7 +2893,7 @@ public:
                             llvm::Type* desc_ptr_type = tmp->getType();
                             builder->CreateStore(
                                 llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(desc_ptr_type)),
-                                saved_ptr_to_descriptor
+                                address_to_nullify
                             );
                         }
                     }, [](){});
@@ -2892,7 +2901,7 @@ public:
             }
         }
     }
-
+    
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         visit_Deallocate(x);
     }
