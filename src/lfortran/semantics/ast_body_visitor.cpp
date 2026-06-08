@@ -4043,6 +4043,9 @@ public:
                     SymbolTable* current_scope_copy = current_scope;
                     current_scope = parent_scope;
                     AST::RankDefault_t* rank_default = AST::down_cast<AST::RankDefault_t>(x.m_body[i]);
+                    if (!array_var_name.empty()) {
+                        assumed_rank_arrays.erase(array_var_name);
+                    }
                     transform_stmts(select_rank_default, rank_default->n_body, rank_default->m_body);
                     current_scope = current_scope_copy;
                     break;
@@ -4053,10 +4056,6 @@ public:
                 }
             }
             current_scope = parent_scope;
-        }
-
-        if (!array_var_name.empty()) {
-            assumed_rank_arrays.erase(array_var_name);
         }
 
         all_loops_blocks_nesting--;
