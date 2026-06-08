@@ -28,6 +28,67 @@ namespace LCompilers {
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
+    static bool struct_hierarchy_has_finalizer(ASR::Struct_t* st) {
+        while (st != nullptr) {
+            if (st->n_member_functions > 0) return true;
+            if (st->m_parent == nullptr) return false;
+            st = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(st->m_parent));
+        }
+        return false;
+    }
+    void emit_struct_default_init_stmts(
+            ASR::expr_t* struct_expr,
+            ASR::Struct_t* struct_type,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts) {
+        ASR::Struct_t* st = struct_type;
+        while (st != nullptr) {
+            for (auto& m : st->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+                ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
+                    m.second);
+                if (m_var->m_symbolic_value == nullptr) continue;
+                if (ASRUtils::is_allocatable(m_var->m_type)) continue;
+
+                ASR::expr_t* member_expr = ASRUtils::EXPR(
+                    ASRUtils::getStructInstanceMember_t(al, loc,
+                        (ASR::asr_t*)struct_expr, m.second,
+                        m.second, current_scope));
+
+                ASR::stmt_t* init_stmt = nullptr;
+                if (ASRUtils::is_pointer(m_var->m_type)) {
+                    // Only handle pointer-null defaults. We rebuild the
+                    // PointerNullConstant using `member_expr` as its
+                    // `var_expr` so codegen can resolve the underlying
+                    // procedure interface (when the pointer targets a
+                    // procedure) without relying on a symbol from the
+                    // declaring module's scope.
+                    if (!ASR::is_a<ASR::PointerNullConstant_t>(
+                            *m_var->m_symbolic_value)) continue;
+                    ASR::expr_t* null_value = ASRUtils::EXPR(
+                        ASR::make_PointerNullConstant_t(al, loc,
+                            ASRUtils::expr_type(m_var->m_symbolic_value),
+                            member_expr));
+                    init_stmt = ASRUtils::STMT(
+                        ASRUtils::make_Associate_t_util(al, loc,
+                            member_expr, null_value));
+                } else {
+                    init_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
+                        al, loc, member_expr, m_var->m_symbolic_value,
+                        nullptr, false, false));
+                }
+                out_stmts.push_back(al, init_stmt);
+            }
+            if (st->m_parent != nullptr) {
+                st = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(st->m_parent));
+            } else {
+                st = nullptr;
+            }
+        }
+    }
 
     void emit_struct_cleanup_stmts(
             ASR::expr_t* struct_expr,
@@ -287,26 +348,24 @@ public:
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
 
-                // Call user-defined FINAL procedures for non-allocatable
-                // intent(out) struct args (Fortran 2018 §7.5.6.3 ¶7):
+                // Fortran 2018 §7.5.6.3 ¶7:
                 //   "When a procedure is invoked with a nonpointer,
                 //    nonallocatable, INTENT(OUT) dummy argument of a type
                 //    for which a final subroutine is defined, the
-                //    finalization occurs before the procedure body executes."
-                if (struct_type->n_member_functions > 0) {
+                bool has_finalizer =
+                    struct_hierarchy_has_finalizer(struct_type);
+                if (has_finalizer) {
                     ASR::expr_t* var_expr = ASRUtils::EXPR(
                         ASR::make_Var_t(al, loc, arg_sym));
-                    for (size_t fi = 0; fi < struct_type->n_member_functions; fi++) {
+                    for (size_t fi = 0;
+                            fi < struct_type->n_member_functions; fi++) {
                         std::string final_proc_name =
                             struct_type->m_member_functions[fi];
                         ASR::symbol_t* final_sym =
                             struct_type->m_symtab->parent->get_symbol(
                                 final_proc_name);
-                        if (!final_sym) continue;
+                        LCOMPILERS_ASSERT(final_sym != nullptr);
 
-                        // Ensure the FINAL procedure is accessible from the
-                        // function's own symbol table; create an ExternalSymbol
-                        // if one does not already exist.
                         ASR::symbol_t* local_final_sym =
                             xx.m_symtab->resolve_symbol(final_proc_name);
                         if (!local_final_sym) {
@@ -339,11 +398,23 @@ public:
 
                         ASR::stmt_t* call_stmt = ASRUtils::STMT(
                             ASR::make_SubroutineCall_t(
-                                al, loc, local_final_sym, local_final_sym,
-                                call_args.p, call_args.n, nullptr, false));
+                                al, loc, local_final_sym,
+                                local_final_sym, call_args.p,
+                                call_args.n, nullptr, false));
 
                         ASR::stmt_t* wrapped_stmt = wrap_optional_check(
-                            loc, var_expr, arg_var->m_presence, call_stmt);
+                            loc, var_expr, arg_var->m_presence,
+                            call_stmt);
+                        dealloc_stmts.push_back(al, wrapped_stmt);
+                    }
+                    Vec<ASR::stmt_t*> init_stmts;
+                    init_stmts.reserve(al, 1);
+                    emit_struct_default_init_stmts(var_expr, struct_type,
+                        xx.m_symtab, loc, init_stmts);
+                    for (size_t k = 0; k < init_stmts.size(); k++) {
+                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(
+                            loc, var_expr, arg_var->m_presence,
+                            init_stmts[k]);
                         dealloc_stmts.push_back(al, wrapped_stmt);
                     }
                 }
