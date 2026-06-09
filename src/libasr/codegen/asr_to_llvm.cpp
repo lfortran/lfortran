@@ -6011,7 +6011,7 @@ public:
 
         visit_procedures(x);
 
-        // --- PLATFORM-SAFE MODULE FINALIZER (atexit via global_ctors) ---
+        // --- PLATFORM-SAFE MODULE FINALIZER (Runs early via atexit) ---
         if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             std::string mod_name_str = std::string(x.m_name);
             std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
@@ -6020,23 +6020,20 @@ public:
             if (!module->getFunction(finalizer_name)) {
                 llvm::BasicBlock *saved_insert_block = builder->GetInsertBlock();
 
-                // 1. Create the Finalizer Function
+                // 1. Create Finalizer
                 llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
                 llvm::Function *fin_fn = llvm::Function::Create(
                     void_ft, llvm::GlobalValue::InternalLinkage, finalizer_name, module.get());
-
                 llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, "entry", fin_fn);
                 builder->SetInsertPoint(fin_bb);
                 llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
                 builder->CreateRetVoid();
 
-                // 2. Create the Registration Constructor
+                // 2. Create Startup Constructor to hook into atexit()
                 llvm::Function *reg_fn = llvm::Function::Create(
                     void_ft, llvm::GlobalValue::InternalLinkage, register_name, module.get());
                 llvm::BasicBlock *reg_bb = llvm::BasicBlock::Create(context, "entry", reg_fn);
                 builder->SetInsertPoint(reg_bb);
-
-                // Declare and call standard C atexit()
                 llvm::Function *atexit_fn = module->getFunction("atexit");
                 if (!atexit_fn) {
                     llvm::Type *ptr_ty = void_ft->getPointerTo();
@@ -6046,15 +6043,10 @@ public:
                 builder->CreateCall(atexit_fn, {fin_fn});
                 builder->CreateRetVoid();
 
-                if (saved_insert_block) {
-                    builder->SetInsertPoint(saved_insert_block);
-                } else {
-                    builder->ClearInsertionPoint();
-                }
+                if (saved_insert_block) builder->SetInsertPoint(saved_insert_block);
+                else builder->ClearInsertionPoint();
 
-                // Append to global_ctors with lowest priority (65535). 
-                // Runs late during startup -> Pushed later to atexit stack -> Pops FIRST during exit.
-                llvm::appendToGlobalCtors(*module, reg_fn, 65535); 
+                llvm::appendToGlobalCtors(*module, reg_fn, 0); 
             }
         }
 
@@ -6240,58 +6232,53 @@ public:
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
 
-        // ... [Top half of visit_Program remains exactly the same] ...
         
         free_heap_fixed_size_arrays();
 
-        // --- PLATFORM-SAFE PROGRAM TEARDOWN (atexit via global_ctors) ---
+        // --- PLATFORM-SAFE & STOP-SAFE PROGRAM TEARDOWN ---
         if (compiler_options.detect_leaks) {
             llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
 
-            // 1. Create Teardown Function (dbg_report THEN finalize)
+            // 1. Create a global boolean flag for Normal Exit tracking
+            module->getOrInsertGlobal("__lfortran_normal_exit", llvm::Type::getInt1Ty(context));
+            llvm::GlobalVariable *normal_exit = module->getNamedGlobal("__lfortran_normal_exit");
+            normal_exit->setLinkage(llvm::GlobalValue::InternalLinkage);
+            normal_exit->setInitializer(llvm::ConstantInt::getFalse(context));
+
+            // 2. Build the Teardown Function
             llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
             llvm::Function *dtor_fn = llvm::Function::Create(void_ft,
                 llvm::Function::InternalLinkage, "_lfortran_program_dtor", module.get());
             llvm::BasicBlock *dtor_bb = llvm::BasicBlock::Create(context, "entry", dtor_fn);
             builder->SetInsertPoint(dtor_bb);
 
-            // Step A: Print report
-            llvm::Function *fn_dbg = module->getFunction("dbg_report");
-            if (!fn_dbg) {
-                fn_dbg = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
-            }
-            builder->CreateCall(fn_dbg, {});
+            // Conditional branching based on Normal Exit
+            llvm::Value *is_normal = builder->CreateLoad(llvm::Type::getInt1Ty(context), normal_exit);
+            llvm::BasicBlock *report_bb = llvm::BasicBlock::Create(context, "report", dtor_fn);
+            llvm::BasicBlock *cleanup_bb = llvm::BasicBlock::Create(context, "cleanup", dtor_fn);
+            builder->CreateCondBr(is_normal, report_bb, cleanup_bb);
 
-            // Step B: Finalize tracker
+            // Step A: Print report ONLY if exit is normal (avoids 'stop' test failures)
+            builder->SetInsertPoint(report_bb);
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if (!fn_dbg) fn_dbg = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
+            builder->CreateCall(fn_dbg, {});
+            builder->CreateBr(cleanup_bb);
+
+            // Step B: Always safely shut down tracker memory
+            builder->SetInsertPoint(cleanup_bb);
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
-            if (!fn_finalize) {
-                fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
-            }
+            if (!fn_finalize) fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
             builder->CreateCall(fn_finalize, {});
             builder->CreateRetVoid();
 
-            // 2. Create the Registration Constructor
-            llvm::Function *reg_fn = llvm::Function::Create(void_ft,
-                llvm::Function::InternalLinkage, "_lfortran_program_register_dtor", module.get());
-            llvm::BasicBlock *reg_bb = llvm::BasicBlock::Create(context, "entry", reg_fn);
-            builder->SetInsertPoint(reg_bb);
+            // Register directly to global_dtors. Guaranteed by OS C-ABI to run AFTER atexit().
+            llvm::appendToGlobalDtors(*module, dtor_fn, 65535);
 
-            // Declare and call standard C atexit()
-            llvm::Function *atexit_fn = module->getFunction("atexit");
-            if (!atexit_fn) {
-                llvm::Type *ptr_ty = void_ft->getPointerTo();
-                llvm::FunctionType *atexit_ft = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), {ptr_ty}, false);
-                atexit_fn = llvm::Function::Create(atexit_ft, llvm::Function::ExternalLinkage, "atexit", module.get());
-            }
-            builder->CreateCall(atexit_fn, {dtor_fn});
-            builder->CreateRetVoid();
-
-            // Append to global_ctors with highest priority (0).
-            // Runs FIRST during startup -> Pushed FIRST to atexit stack -> Pops LAST during exit.
-            llvm::appendToGlobalCtors(*module, reg_fn, 0);
-
+            // 3. Set the normal_exit flag to TRUE directly before main() returns
             if (saved_bb) builder->SetInsertPoint(saved_bb);
             else builder->ClearInsertionPoint();
+            builder->CreateStore(llvm::ConstantInt::getTrue(context), normal_exit);
 
         } else {
             // When not detecting leaks, safely shut down the tracker inline
