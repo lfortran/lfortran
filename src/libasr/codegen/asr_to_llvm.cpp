@@ -6011,64 +6011,76 @@ public:
 
         visit_procedures(x);
 
-        // --- PLATFORM-SAFE MODULE FINALIZER (Inline Export Strategy) ---
+        // --- PLATFORM-SAFE MODULE FINALIZER (With Weak Stub Stripping) ---
         if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             std::string mod_name_str = std::string(x.m_name);
             std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
 
-            if (!module->getFunction(finalizer_name)) {
-                llvm::BasicBlock *saved_insert_block = builder->GetInsertBlock();
+            llvm::Function *fin_fn = module->getFunction(finalizer_name);
+            if (fin_fn) {
+                if (!fin_fn->empty()) {
+                    fin_fn->deleteBody(); // Strip any existing weak stubs generated earlier in the TU
+                }
+                fin_fn->setLinkage(llvm::GlobalValue::ExternalLinkage);
+            } else {
+                fin_fn = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, finalizer_name, module.get());
+            }
 
-                llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
-                llvm::Function *fin_fn = llvm::Function::Create(
-                    void_ft, llvm::GlobalValue::ExternalLinkage, finalizer_name, module.get());
-                llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, "entry", fin_fn);
-                builder->SetInsertPoint(fin_bb);
+            llvm::BasicBlock *saved_insert_block = builder->GetInsertBlock();
+            llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, "entry", fin_fn);
+            builder->SetInsertPoint(fin_bb);
 
-                // Add Execution Guard (Prevents double-frees if 'use'd by multiple files)
-                llvm::GlobalVariable *guard = new llvm::GlobalVariable(
-                    *module, llvm::Type::getInt1Ty(context), false,
-                    llvm::GlobalValue::InternalLinkage,
-                    llvm::ConstantInt::getFalse(context),
-                    finalizer_name + "_guard"
-                );
+            // Add Execution Guard (Prevents double-frees if 'use'd by multiple files)
+            llvm::GlobalVariable *guard = new llvm::GlobalVariable(
+                *module, llvm::Type::getInt1Ty(context), false,
+                llvm::GlobalValue::InternalLinkage,
+                llvm::ConstantInt::getFalse(context),
+                finalizer_name + "_guard"
+            );
+            
+            llvm::Value *is_fin = builder->CreateLoad(llvm::Type::getInt1Ty(context), guard);
+            llvm::BasicBlock *do_fin = llvm::BasicBlock::Create(context, "do_fin", fin_fn);
+            llvm::BasicBlock *end_fin = llvm::BasicBlock::Create(context, "end_fin", fin_fn);
+            builder->CreateCondBr(is_fin, end_fin, do_fin);
+
+            builder->SetInsertPoint(do_fin);
+            builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
+
+            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+
+            // Recursively call dependencies using WEAK FALLBACK STUBS
+            for (size_t i = 0; i < x.n_dependencies; i++) {
+                std::string dep_name = std::string(x.m_dependencies[i]);
                 
-                llvm::Value *is_fin = builder->CreateLoad(llvm::Type::getInt1Ty(context), guard);
-                llvm::BasicBlock *do_fin = llvm::BasicBlock::Create(context, "do_fin", fin_fn);
-                llvm::BasicBlock *end_fin = llvm::BasicBlock::Create(context, "end_fin", fin_fn);
-                builder->CreateCondBr(is_fin, end_fin, do_fin);
-
-                builder->SetInsertPoint(do_fin);
-                builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
-
-                llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
-
-                // Recursively call dependencies
-                for (size_t i = 0; i < x.n_dependencies; i++) {
-                    std::string dep_name = std::string(x.m_dependencies[i]);
-                    
-                    // NEW: Skip intrinsic/built-in modules
-                    if (dep_name.find("lfortran_intrinsic_") == 0 || 
-                        dep_name.find("iso_") == 0 || 
-                        dep_name.find("ieee_") == 0) {
-                        continue;
-                    }
-
-                    std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
-                    llvm::Function *dep_fin = module->getFunction(dep_fin_name);
-                    if (!dep_fin) {
-                        dep_fin = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, dep_fin_name, module.get());
-                    }
-                    builder->CreateCall(dep_fin, {});
+                // Skip intrinsic/built-in modules
+                if (dep_name.find("lfortran_intrinsic_") == 0 || 
+                    dep_name.find("iso_") == 0 || 
+                    dep_name.find("ieee_") == 0) {
+                    continue;
                 }
 
-                builder->CreateBr(end_fin);
-                builder->SetInsertPoint(end_fin);
-                builder->CreateRetVoid();
-
-                if (saved_insert_block) builder->SetInsertPoint(saved_insert_block);
-                else builder->ClearInsertionPoint();
+                std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
+                llvm::Function *dep_fin = module->getFunction(dep_fin_name);
+                if (!dep_fin) {
+                    dep_fin = llvm::Function::Create(void_ft, llvm::GlobalValue::WeakAnyLinkage, dep_fin_name, module.get());
+                }
+                // Provide the empty fallback body if it doesn't have one
+                if (dep_fin->empty()) {
+                    dep_fin->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+                    llvm::BasicBlock *fallback_bb = llvm::BasicBlock::Create(context, "entry", dep_fin);
+                    llvm::IRBuilder<> stub_builder(fallback_bb);
+                    stub_builder.CreateRetVoid();
+                }
+                builder->CreateCall(dep_fin, {});
             }
+
+            builder->CreateBr(end_fin);
+            builder->SetInsertPoint(end_fin);
+            builder->CreateRetVoid();
+
+            if (saved_insert_block) builder->SetInsertPoint(saved_insert_block);
+            else builder->ClearInsertionPoint();
         }
 
         mangle_prefix = "";
@@ -6267,12 +6279,12 @@ public:
                 }
             }
 
-            // 2. Resolve --separate-compilation misses (Calling external finalizers inline)
+            // 2. Resolve --separate-compilation misses using WEAK FALLBACK STUBS
             llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
             for (size_t i = 0; i < x.n_dependencies; i++) {
                 std::string dep_name = std::string(x.m_dependencies[i]);
                 
-                // Skip intrinsic/built-in modules so the linker doesn't crash
+                // Skip intrinsic/built-in modules so the linker doesn't complain
                 if (dep_name.find("lfortran_intrinsic_") == 0 || 
                     dep_name.find("iso_") == 0 || 
                     dep_name.find("ieee_") == 0) {
@@ -6284,12 +6296,18 @@ public:
                     if (tm == dep_name) is_in_tu = true;
                 }
                 
-                // If it wasn't handled in the TU, call its external finalizer
+                // If it wasn't handled in the TU, call its external finalizer safely
                 if (!is_in_tu) {
                     std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
                     llvm::Function *dep_fin = module->getFunction(dep_fin_name);
                     if (!dep_fin) {
-                        dep_fin = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, dep_fin_name, module.get());
+                        dep_fin = llvm::Function::Create(void_ft, llvm::GlobalValue::WeakAnyLinkage, dep_fin_name, module.get());
+                    }
+                    if (dep_fin->empty()) {
+                        dep_fin->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+                        llvm::BasicBlock *fallback_bb = llvm::BasicBlock::Create(context, "entry", dep_fin);
+                        llvm::IRBuilder<> stub_builder(fallback_bb);
+                        stub_builder.CreateRetVoid();
                     }
                     builder->CreateCall(dep_fin, {});
                 }
