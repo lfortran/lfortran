@@ -6011,42 +6011,55 @@ public:
 
         visit_procedures(x);
 
-        // --- PLATFORM-SAFE MODULE FINALIZER (Runs early via atexit) ---
+        // --- PLATFORM-SAFE MODULE FINALIZER (Inline Export Strategy) ---
         if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             std::string mod_name_str = std::string(x.m_name);
             std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
-            std::string register_name = "_lfortran_module_register_dtor_" + mod_name_str;
 
             if (!module->getFunction(finalizer_name)) {
                 llvm::BasicBlock *saved_insert_block = builder->GetInsertBlock();
 
-                // 1. Create Finalizer
                 llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
                 llvm::Function *fin_fn = llvm::Function::Create(
-                    void_ft, llvm::GlobalValue::InternalLinkage, finalizer_name, module.get());
+                    void_ft, llvm::GlobalValue::ExternalLinkage, finalizer_name, module.get());
                 llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, "entry", fin_fn);
                 builder->SetInsertPoint(fin_bb);
-                llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
-                builder->CreateRetVoid();
 
-                // 2. Create Startup Constructor to hook into atexit()
-                llvm::Function *reg_fn = llvm::Function::Create(
-                    void_ft, llvm::GlobalValue::InternalLinkage, register_name, module.get());
-                llvm::BasicBlock *reg_bb = llvm::BasicBlock::Create(context, "entry", reg_fn);
-                builder->SetInsertPoint(reg_bb);
-                llvm::Function *atexit_fn = module->getFunction("atexit");
-                if (!atexit_fn) {
-                    llvm::Type *ptr_ty = void_ft->getPointerTo();
-                    llvm::FunctionType *atexit_ft = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), {ptr_ty}, false);
-                    atexit_fn = llvm::Function::Create(atexit_ft, llvm::Function::ExternalLinkage, "atexit", module.get());
+                // Add Execution Guard (Prevents double-frees if 'use'd by multiple files)
+                llvm::GlobalVariable *guard = new llvm::GlobalVariable(
+                    *module, llvm::Type::getInt1Ty(context), false,
+                    llvm::GlobalValue::InternalLinkage,
+                    llvm::ConstantInt::getFalse(context),
+                    finalizer_name + "_guard"
+                );
+                
+                llvm::Value *is_fin = builder->CreateLoad(llvm::Type::getInt1Ty(context), guard);
+                llvm::BasicBlock *do_fin = llvm::BasicBlock::Create(context, "do_fin", fin_fn);
+                llvm::BasicBlock *end_fin = llvm::BasicBlock::Create(context, "end_fin", fin_fn);
+                builder->CreateCondBr(is_fin, end_fin, do_fin);
+
+                builder->SetInsertPoint(do_fin);
+                builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
+
+                llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+
+                // Recursively call dependencies
+                for (size_t i = 0; i < x.n_dependencies; i++) {
+                    std::string dep_name = std::string(x.m_dependencies[i]);
+                    std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
+                    llvm::Function *dep_fin = module->getFunction(dep_fin_name);
+                    if (!dep_fin) {
+                        dep_fin = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, dep_fin_name, module.get());
+                    }
+                    builder->CreateCall(dep_fin, {});
                 }
-                builder->CreateCall(atexit_fn, {fin_fn});
+
+                builder->CreateBr(end_fin);
+                builder->SetInsertPoint(end_fin);
                 builder->CreateRetVoid();
 
                 if (saved_insert_block) builder->SetInsertPoint(saved_insert_block);
                 else builder->ClearInsertionPoint();
-
-                llvm::appendToGlobalCtors(*module, reg_fn, 0); 
             }
         }
 
@@ -6232,62 +6245,59 @@ public:
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
 
-        
-        free_heap_fixed_size_arrays();
-
-        // --- PLATFORM-SAFE & STOP-SAFE PROGRAM TEARDOWN ---
+        // --- INLINE PROGRAM TEARDOWN ---
         if (compiler_options.detect_leaks) {
-            llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
+            // 1. Explicitly finalize modules compiled in the current Translation Unit
+            SymbolTable* tu = ASRUtils::get_tu_symtab(x.m_symtab);
+            std::vector<std::string> tu_mods;
+            for (auto &kv : tu->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*kv.second)) {
+                    ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(kv.second);
+                    llvm_symtab_finalizer.finalize_symtab(m->m_symtab);
+                    tu_mods.push_back(std::string(m->m_name));
+                }
+            }
 
-            // 1. Create a global boolean flag for Normal Exit tracking
-            module->getOrInsertGlobal("__lfortran_normal_exit", llvm::Type::getInt1Ty(context));
-            llvm::GlobalVariable *normal_exit = module->getNamedGlobal("__lfortran_normal_exit");
-            normal_exit->setLinkage(llvm::GlobalValue::InternalLinkage);
-            normal_exit->setInitializer(llvm::ConstantInt::getFalse(context));
-
-            // 2. Build the Teardown Function
+            // 2. Resolve --separate-compilation misses (Calling external finalizers inline)
             llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
-            llvm::Function *dtor_fn = llvm::Function::Create(void_ft,
-                llvm::Function::InternalLinkage, "_lfortran_program_dtor", module.get());
-            llvm::BasicBlock *dtor_bb = llvm::BasicBlock::Create(context, "entry", dtor_fn);
-            builder->SetInsertPoint(dtor_bb);
+            for (size_t i = 0; i < x.n_dependencies; i++) {
+                std::string dep_name = std::string(x.m_dependencies[i]);
+                bool is_in_tu = false;
+                for (const auto& tm : tu_mods) {
+                    if (tm == dep_name) is_in_tu = true;
+                }
+                
+                // If it wasn't handled in the TU, call its external finalizer
+                if (!is_in_tu) {
+                    std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
+                    llvm::Function *dep_fin = module->getFunction(dep_fin_name);
+                    if (!dep_fin) {
+                        dep_fin = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, dep_fin_name, module.get());
+                    }
+                    builder->CreateCall(dep_fin, {});
+                }
+            }
+        }
 
-            // Conditional branching based on Normal Exit
-            llvm::Value *is_normal = builder->CreateLoad(llvm::Type::getInt1Ty(context), normal_exit);
-            llvm::BasicBlock *report_bb = llvm::BasicBlock::Create(context, "report", dtor_fn);
-            llvm::BasicBlock *cleanup_bb = llvm::BasicBlock::Create(context, "cleanup", dtor_fn);
-            builder->CreateCondBr(is_normal, report_bb, cleanup_bb);
-
-            // Step A: Print report ONLY if exit is normal (avoids 'stop' test failures)
-            builder->SetInsertPoint(report_bb);
-            llvm::Function *fn_dbg = module->getFunction("dbg_report");
-            if (!fn_dbg) fn_dbg = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
-            builder->CreateCall(fn_dbg, {});
-            builder->CreateBr(cleanup_bb);
-
-            // Step B: Always safely shut down tracker memory
-            builder->SetInsertPoint(cleanup_bb);
-            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
-            if (!fn_finalize) fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
-            builder->CreateCall(fn_finalize, {});
-            builder->CreateRetVoid();
-
-            // Register directly to global_dtors. Guaranteed by OS C-ABI to run AFTER atexit().
-            llvm::appendToGlobalDtors(*module, dtor_fn, 65535);
-
-            // 3. Set the normal_exit flag to TRUE directly before main() returns
-            if (saved_bb) builder->SetInsertPoint(saved_bb);
-            else builder->ClearInsertionPoint();
-            builder->CreateStore(llvm::ConstantInt::getTrue(context), normal_exit);
-
-        } else {
-            // When not detecting leaks, safely shut down the tracker inline
+        free_heap_fixed_size_arrays();
+        
+        // 3. Keep internal teardown exactly where LFortran expects it (safely destroying the tracker LAST)
+        {
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
                 llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
-                fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
             }
             builder->CreateCall(fn_finalize, {});
+        }
+        
+        if (compiler_options.detect_leaks) {
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if (!fn_dbg) {
+                llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+                fn_dbg = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            }
+            builder->CreateCall(fn_dbg, {});
         }
         
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
