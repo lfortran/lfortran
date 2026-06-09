@@ -9892,13 +9892,44 @@ public:
             AST::fnarg_t* m_args, size_t n_args, AST::keyword_t* kwargs,
             size_t n_kwargs, ASR::symbol_t *v, bool is_const = false) {
         Vec<ASR::call_arg_t> vals;
-        visit_expr_list(m_args, n_args, vals);
+        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
+        std::deque<ASR::symbol_t*> constructor_arg_syms;
+        ASR::Struct_t* struct_type_ = struct_type;
+        while( struct_type_ ) {
+            for( int i = (int) struct_type_->n_members - 1; i >= 0; i-- ) {
+                constructor_arg_syms.push_front(
+                    struct_type_->m_symtab->get_symbol(
+                        struct_type_->m_members[i]));
+            }
+            if( struct_type_->m_parent != nullptr ) {
+                ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                                        struct_type_->m_parent);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*parent));
+                struct_type_ = ASR::down_cast<ASR::Struct_t>(parent);
+            } else {
+                struct_type_ = nullptr;
+            }
+        }
+        vals.reserve(al, n_args);
+        for (size_t i = 0; i < n_args; i++) {
+            LCOMPILERS_ASSERT(m_args[i].m_end != nullptr);
+            ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+            if( i < constructor_arg_syms.size() ) {
+                current_variable_type_ = ASRUtils::symbol_type(constructor_arg_syms[i]);
+            }
+            this->visit_expr(*m_args[i].m_end);
+            current_variable_type_ = temp_current_variable_type_;
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            ASR::call_arg_t call_arg;
+            call_arg.loc = expr->base.loc;
+            call_arg.m_value = expr;
+            vals.push_back(al, call_arg);
+        }
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
 
         // For PDTs with kind parameters, resolve to the instantiated type
         // and re-cast args to concrete member types (not sentinel types).
-        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
         if (struct_type->n_kind_params > 0) {
             std::string pdt_name = struct_type->m_name;
             std::vector<int64_t> kind_vals;
@@ -16802,7 +16833,12 @@ public:
             }
             Vec<ASR::call_arg_t> args;
             Vec<ASR::call_arg_t> args_with_mdt;
-            visit_expr_list(x.m_args, x.n_args, args);
+            if (ASR::is_a<ASR::Function_t>(*f2)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+                visit_expr_list(x.m_args, x.n_args, args, f->m_args, f->n_args, x.n_member);
+            } else {
+                visit_expr_list(x.m_args, x.n_args, args);
+            }
             if (x.n_member >= 1) {
                 args_with_mdt.reserve(al, x.n_args + 1);
                 ASR::call_arg_t v_expr_call_arg;
@@ -19202,11 +19238,17 @@ public:
         }
     }
 
-    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
+    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args,
+            ASR::expr_t **fn_args=nullptr, size_t fn_n_args=0, size_t type_bound=0) {
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
+            ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+            if (i + type_bound < fn_n_args) {
+                current_variable_type_ = ASRUtils::expr_type(fn_args[i + type_bound]);
+            }
             this->visit_expr(*ast_list[i].m_end);
+            current_variable_type_ = temp_current_variable_type_;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (ASR::is_a<ASR::Var_t>(*expr) &&
                     ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
@@ -19304,8 +19346,6 @@ public:
         }
 
         for (int i = 0; i < (int)n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
             if (search == fn_args2.end()) {
@@ -19316,7 +19356,8 @@ public:
                 return ;
             }
 
-            int idx = std::distance(fn_args2.begin(), search) - (int)is_method;
+            int fn_arg_idx = std::distance(fn_args2.begin(), search);
+            int idx = fn_arg_idx - (int)is_method;
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument '" + name + "' is already specified as a positional argument",
@@ -19331,6 +19372,11 @@ public:
                     name + " keyword argument is already specified.");
                 return ;
             }
+            ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+            current_variable_type_ = ASRUtils::expr_type(fn_args[fn_arg_idx]);
+            this->visit_expr(*kwargs[i].m_value);
+            current_variable_type_ = temp_current_variable_type_;
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
         }
@@ -19389,8 +19435,6 @@ public:
         LCOMPILERS_ASSERT(args.size() == constructor_args.size());
 
         for (size_t i = 0; i < n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
                                     constructor_args.end(), name);
@@ -19403,6 +19447,11 @@ public:
             }
 
             size_t idx = std::distance(constructor_args.begin(), search);
+            ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+            current_variable_type_ = ASRUtils::symbol_type(constructor_arg_syms[idx]);
+            this->visit_expr(*kwargs[i].m_value);
+            current_variable_type_ = temp_current_variable_type_;
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (args[idx].m_value != nullptr) {
                 diag.semantic_error_label(
                     "Keyword argument is already specified",
