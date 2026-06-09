@@ -6013,17 +6013,18 @@ public:
 
         visit_procedures(x);
 
+        // SAFEST MODULE FINALIZER: Guarded, InternalLinkage, Priority 0
         if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
             std::string mod_name_str = std::string(x.m_name);
             std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
 
-            // Guard: only emit once per module (re-entrant visit protection)
             if (!module->getFunction(finalizer_name)) {
                 llvm::FunctionType *ft = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(context), /*isVarArg=*/false);
+                
                 llvm::Function *fin_fn = llvm::Function::Create(
                     ft,
-                    llvm::GlobalValue::LinkOnceODRLinkage,
+                    llvm::GlobalValue::InternalLinkage, 
                     finalizer_name,
                     module.get());
 
@@ -6041,9 +6042,12 @@ public:
 
                 if (saved_bb) {
                     builder->SetInsertPoint(saved_bb, saved_ip);
+                } else {
+                    builder->ClearInsertionPoint();
                 }
 
-                llvm::appendToGlobalDtors(*module, fin_fn, 200);
+                // Priority 0 ensures module variables are freed BEFORE the tracker shuts down
+                llvm::appendToGlobalDtors(*module, fin_fn, 0); 
             }
         }
 
@@ -6091,6 +6095,7 @@ public:
         set_api_lp->set_is_set_present(false);
         set_api_sc->set_is_set_present(false);
         llvm_goto_targets.clear();
+        
         // Generate code for the main program
         std::vector<llvm::Type*> command_line_args = {
             llvm::Type::getInt32Ty(context),
@@ -6177,6 +6182,8 @@ public:
                 llvm::APInt(32, compiler_options.fpe_traps));
             builder->CreateCall(fpe_fn, {mask_val});
         }
+        // Enable CFI debug mode so CFI_allocate/CFI_deallocate use the
+        // tracked allocator, keeping them in sync with Fortran allocate/deallocate.
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = module->getFunction("_lfortran_set_cfi_debug_mode");
             if (!fn) {
@@ -6226,26 +6233,27 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
-        
-        free_heap_fixed_size_arrays(); 
+
+        free_heap_fixed_size_arrays();
+
+        // SAFEST PROGRAM TEARDOWN: Ordered safely and registered to run last
         if (compiler_options.detect_leaks) {
             llvm::BasicBlock *saved_bb = builder->GetInsertBlock();
 
-            // Create ONE unified destructor function
             llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
             llvm::Function *dtor_fn = llvm::Function::Create(void_ft,
                 llvm::Function::InternalLinkage, "_lfortran_program_dtor", module.get());
             llvm::BasicBlock *dtor_bb = llvm::BasicBlock::Create(context, "entry", dtor_fn);
             builder->SetInsertPoint(dtor_bb);
 
-            // 1. Run the report
+            // Step 1: Run the report BEFORE tracker is destroyed
             llvm::Function *fn_dbg = module->getFunction("dbg_report");
             if (!fn_dbg) {
                 fn_dbg = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "dbg_report", module.get());
             }
             builder->CreateCall(fn_dbg, {});
             
-            // 2. Safely shut down the memory tracker
+            // Step 2: Safely shut down and destroy the memory tracker
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
                 fn_finalize = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
@@ -6254,14 +6262,17 @@ public:
 
             builder->CreateRetVoid();
             
-            // Register this unified block to run absolute last (Priority 0)
-            llvm::appendToGlobalDtors(*module, dtor_fn, 0);
+            // Priority 65535 ensures this runs LAST, after all modules have freed their variables
+            llvm::appendToGlobalDtors(*module, dtor_fn, 65535);
 
-            if (saved_bb) builder->SetInsertPoint(saved_bb);
-            else builder->ClearInsertionPoint();
+            if (saved_bb) {
+                builder->SetInsertPoint(saved_bb);
+            } else {
+                builder->ClearInsertionPoint();
+            }
             
         } else {
-            // When not detecting leaks, just shut down safely inline
+            // When not detecting leaks, safely shut down the tracker inline
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
                 llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
@@ -6270,9 +6281,9 @@ public:
             builder->CreateCall(fn_finalize, {});
         }
         
-        llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
-            llvm::APInt(32, 0));
+        llvm::Value *ret_val2 = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
+        
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
         set_api_lp->set_is_set_present(is_set_present_copy_lp);
