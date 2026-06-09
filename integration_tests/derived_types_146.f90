@@ -18,10 +18,15 @@ contains
 
     function compiler_new() result(step)
         type(workflow) :: step
+        step%dummy = 100
     end function
 
     subroutine build_compilerinfo()
         type(compiler) :: info
+        type(workflow) :: wf
+
+        wf = compiler()
+        if (wf%dummy /= 100) error stop
 
         select case (1)
         case (1)
