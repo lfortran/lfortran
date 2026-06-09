@@ -11414,6 +11414,12 @@ public:
                         },
                     false);
             if( idx == -1 ) {
+                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
+                if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
+                    return create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
+                        x.m_keywords, x.n_keywords, tmp_v);
+                }
+
                 bool is_function = true;
                 v = intrinsic_as_node(x, is_function);
                 if( !is_function ) {
