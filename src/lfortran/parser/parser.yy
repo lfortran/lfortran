@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    238 // shift/reduce conflicts
+%expect    239 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -438,6 +438,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> use_modifiers
 %type <vec_ast> use_modifier_list
 %type <vec_ast> var_decl_star
+%type <vec_ast> namelist_decl
+%type <vec_ast> namelist_group_list
+%type <ast> namelist_group
 %type <vec_var_sym> var_sym_decl_list
 %type <ast> var_decl
 %type <ast> decl_spec
@@ -1100,6 +1103,7 @@ fn_mod
 
 temp_decl_star
     : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
+    | temp_decl_star namelist_decl { $$ = $1; LIST_CONCAT($$, $2); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -1115,6 +1119,7 @@ temp_decl
 
 decl_star
     : decl_star decl { $$ = $1; LIST_ADD($$, $2); }
+    | decl_star namelist_decl { $$ = $1; LIST_CONCAT($$, $2); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -1351,6 +1356,7 @@ use_modifier
 // var_decl*
 var_decl_star
     : var_decl_star var_decl { $$ = $1; LIST_ADD($$, $2); }
+    | var_decl_star namelist_decl { $$ = $1; LIST_CONCAT($$, $2); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -1375,14 +1381,30 @@ var_decl
         LLOC(@$, @3); $$ = VAR_DECL3($1, $3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PARAMETER "(" named_constant_def_list ")" sep {
         LLOC(@$, @4); $$ = VAR_DECL_PARAMETER($3, TRIVIA_AFTER($5, @$), @$); }
-    | KW_NAMELIST "/" id "/" id_list sep {
-        LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
     | KW_COMMON common_block_list_top sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
         LLOC(@$, @2); $$ = VAR_DECL_EQUIVALENCE($2, TRIVIA_AFTER($3, @$), @$);}
     | TK_PRAGMA_DECL sep {
         LLOC(@$, @1); $$ = VAR_DECL_PRAGMA($1, TRIVIA_AFTER($2, @$), @$);}
+    ;
+
+namelist_decl
+    : KW_NAMELIST namelist_group_list sep {
+        $$ = $2;
+    }
+    ;
+
+namelist_group_list
+    : namelist_group_list "," namelist_group { $$ = $1; LIST_ADD($$, $3); }
+    | namelist_group_list namelist_group { $$ = $1; LIST_ADD($$, $2); }
+    | namelist_group { LIST_NEW($$); LIST_ADD($$, $1); }
+    ;
+
+namelist_group
+    : "/" id "/" id_list {
+        LLOC(@$, @4); $$ = VAR_DECL_NAMELIST($2, $4, nullptr, @$);
+    }
     ;
 
 equivalence_set_list
@@ -1716,6 +1738,7 @@ sep_one
 
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
+    | decl_statements namelist_decl { $$ = $1; LIST_CONCAT($$, $2); }
     | %empty { LIST_NEW($$); }
     | decl_statements error sep_one { $$ = $1; }
     ;

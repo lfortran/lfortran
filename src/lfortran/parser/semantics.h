@@ -1925,6 +1925,10 @@ return make_Program_t(al, a_loc,
 
 #define LIST_NEW(l) l.reserve(p.m_a, 4)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
+#define LIST_CONCAT(l, x) \
+    for (size_t i=0; i<x.size(); i++) { \
+        l.push_back(p.m_a, x[i]); \
+    }
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
 static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         ast_t *repeat, ast_t *e) {
