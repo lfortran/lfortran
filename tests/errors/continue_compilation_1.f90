@@ -487,7 +487,7 @@ program continue_compilation_1
     print *, a(1:2:b'10')
     a_real = [logical::]
     print *,size(a_real)
-
+    print *, dummy_sub()
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
     print *, string(1:6)
@@ -745,4 +745,8 @@ program continue_compilation_1
         implicit none
         integer, optional, value :: a
     end subroutine
+    subroutine sub_alternate_return_intrinsic()
+        call cpu_time(*1)
+1       continue
+    end subroutine 
 end program

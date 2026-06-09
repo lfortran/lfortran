@@ -4043,6 +4043,9 @@ public:
                     SymbolTable* current_scope_copy = current_scope;
                     current_scope = parent_scope;
                     AST::RankDefault_t* rank_default = AST::down_cast<AST::RankDefault_t>(x.m_body[i]);
+                    if (!array_var_name.empty()) {
+                        assumed_rank_arrays.erase(array_var_name);
+                    }
                     transform_stmts(select_rank_default, rank_default->n_body, rank_default->m_body);
                     current_scope = current_scope_copy;
                     break;
@@ -4053,10 +4056,6 @@ public:
                 }
             }
             current_scope = parent_scope;
-        }
-
-        if (!array_var_name.empty()) {
-            assumed_rank_arrays.erase(array_var_name);
         }
 
         all_loops_blocks_nesting--;
@@ -7165,20 +7164,21 @@ public:
 
         // we handle kwargs here
         if (x.n_keywords > 0) {
-            bool is_proc_pointer_var = false;
+            bool is_nopass = false;
             if (ASR::is_a<ASR::Variable_t>(*f2)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f2);
                 [[maybe_unused]] ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v->m_type);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v_type));
                 f2 = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                is_proc_pointer_var = true;
+                is_nopass = (v->m_pass_attr == ASR::pass_attrType::NoPass ||
+                             v->m_pass_attr == ASR::pass_attrType::NotMethod);
             }
             if (ASR::is_a<ASR::Function_t>(*f2)) {
                 ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(f2);
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                              f->m_args, f->n_args, x.base.base.loc, f,
-                             diags, x.n_member, is_proc_pointer_var);
+                             diags, x.n_member, is_nopass);
                 if (diags.has_error()) {
                     diag.diagnostics.insert(diag.diagnostics.end(),
                                             diags.diagnostics.begin(), diags.diagnostics.end());

@@ -1088,6 +1088,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 488 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
+semantic error: Subroutine `dummy_sub` called as a function
+   --> tests/errors/continue_compilation_1.f90:494:14
+    |
+494 |     print *, dummy_sub()
+    |              ^^^^^^^^^^^ 
+
 semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
    --> tests/errors/continue_compilation_1.f90:491:22
     |
@@ -1596,3 +1602,9 @@ semantic error: case value must be scalar
     |
 741 |         case (:[2])
     |                ^^^ 
+
+semantic error: Alternate return arguments are not permitted in calls to the 'cpu_time' intrinsic.
+   --> tests/errors/continue_compilation_1.f90:753:9
+    |
+753 |         call cpu_time(*1)
+    |         ^^^^^^^^^^^^^^^^^ 

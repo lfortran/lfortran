@@ -12790,6 +12790,15 @@ public:
             args.push_back(al, nullptr);
         }
         for( size_t i = 0; i < x.n_args; i++ ) {
+            if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
+                diag.add(diag::Diagnostic(
+                    "Alternate return arguments are not permitted in calls to the '" +
+                    intrinsic_name + "' intrinsic.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            LCOMPILERS_ASSERT(x.m_args[i].m_end != nullptr);
             // Handle BOZ constants in real() function
             ASR::ttype_t* temp_current_variable_type = current_variable_type_;
             if (intrinsic_name == "real" && i == 0 && x.m_args[i].m_end && 
@@ -16536,8 +16545,9 @@ public:
             }
         }
         // if v is a function which has null pointer return type, give error
-        if (ASR::is_a<ASR::Function_t>(*v)){
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
+        ASR::symbol_t *v_past_ext = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+        if (v_past_ext && ASR::is_a<ASR::Function_t>(*v_past_ext)){
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_past_ext);
             if (func->m_return_var == nullptr){
                 diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));

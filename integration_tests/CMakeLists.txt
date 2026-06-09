@@ -957,6 +957,7 @@ RUN(NAME assumed_rank_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME assumed_rank_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assume_rank_shape_product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -984,6 +985,7 @@ RUN(NAME select_rank_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME select_rank_pointer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_27 LABELS gfortran llvm)
 RUN(NAME select_rank_28 LABELS gfortran llvm)
 RUN(NAME select_rank_29 LABELS gfortran llvm)
@@ -1469,6 +1471,7 @@ RUN(NAME intrinsics_147 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
 RUN(NAME intrinsics_148 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH) # pack
 RUN(NAME intrinsics_149 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # unpack
 RUN(NAME unpack_scalar_field_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME unpack_scalar_field_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_150 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskr
 RUN(NAME intrinsics_151 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl
 RUN(NAME intrinsics_152 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # selected_real_kind
@@ -2589,6 +2592,8 @@ RUN(NAME realloc_lhs_23 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_24 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_25 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
@@ -2665,6 +2670,7 @@ RUN(NAME associate_51 LABELS gfortran llvm)
 
 RUN(NAME associate_52 LABELS gfortran llvm)
 RUN(NAME associate_53 LABELS gfortran llvm)
+RUN(NAME associate_54 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3141,6 +3147,7 @@ RUN(NAME derived_type_member_procedure_call_01 LABELS gfortran llvm)
 RUN(NAME derived_type_member_procedure_call_02 LABELS gfortran llvm)
 RUN(NAME derived_type_shape_pointer_01 LABELS gfortran llvm)
 RUN(NAME derived_type_target_arg_01 LABELS gfortran llvm)
+RUN(NAME derived_type_target_arg_02 LABELS gfortran llvm)
 
 RUN(NAME class_allocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3596,6 +3603,7 @@ RUN(NAME write_34 LABELS gfortran llvm)
 RUN(NAME write_37 LABELS gfortran llvm)
 RUN(NAME write_38 LABELS gfortran llvm)
 RUN(NAME write_39 LABELS gfortran llvm)
+RUN(NAME write_40 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -3703,6 +3711,8 @@ RUN(NAME procedure_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_50 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_keyword_03 LABELS gfortran llvm)
 
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocated_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4788,5 +4798,6 @@ RUN(NAME real128_arith_08 LABELS gfortran llvm)
 RUN(NAME real128_arith_09 LABELS gfortran llvm)
 RUN(NAME real128_arith_10 LABELS gfortran llvm)
 RUN(NAME real128_int_to_real_01 LABELS gfortran llvm)
+RUN(NAME real128_intrinsic_inquiry_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
