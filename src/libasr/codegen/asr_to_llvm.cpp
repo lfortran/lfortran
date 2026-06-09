@@ -6046,6 +6046,14 @@ public:
                 // Recursively call dependencies
                 for (size_t i = 0; i < x.n_dependencies; i++) {
                     std::string dep_name = std::string(x.m_dependencies[i]);
+                    
+                    // NEW: Skip intrinsic/built-in modules
+                    if (dep_name.find("lfortran_intrinsic_") == 0 || 
+                        dep_name.find("iso_") == 0 || 
+                        dep_name.find("ieee_") == 0) {
+                        continue;
+                    }
+
                     std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
                     llvm::Function *dep_fin = module->getFunction(dep_fin_name);
                     if (!dep_fin) {
@@ -6066,6 +6074,7 @@ public:
         mangle_prefix = "";
         current_scope = current_scope_copy;
     }
+
 #ifdef HAVE_TARGET_WASM
     void add_wasm_start_function() {
         llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -6262,6 +6271,14 @@ public:
             llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
             for (size_t i = 0; i < x.n_dependencies; i++) {
                 std::string dep_name = std::string(x.m_dependencies[i]);
+                
+                // Skip intrinsic/built-in modules so the linker doesn't crash
+                if (dep_name.find("lfortran_intrinsic_") == 0 || 
+                    dep_name.find("iso_") == 0 || 
+                    dep_name.find("ieee_") == 0) {
+                    continue;
+                }
+
                 bool is_in_tu = false;
                 for (const auto& tm : tu_mods) {
                     if (tm == dep_name) is_in_tu = true;
@@ -6281,7 +6298,7 @@ public:
 
         free_heap_fixed_size_arrays();
         
-        // 3. Keep internal teardown exactly where LFortran expects it (safely destroying the tracker LAST)
+        // 3. Keep internal teardown exactly where LFortran expects it (safely destroying the tracker)
         {
             llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
@@ -6291,6 +6308,7 @@ public:
             builder->CreateCall(fn_finalize, {});
         }
         
+        // 4. Run the Leak Report LAST
         if (compiler_options.detect_leaks) {
             llvm::Function *fn_dbg = module->getFunction("dbg_report");
             if (!fn_dbg) {
@@ -6324,7 +6342,6 @@ public:
         }
 #endif
     }
-
            
      /*
     * This function detects if the current variable is an argument.
