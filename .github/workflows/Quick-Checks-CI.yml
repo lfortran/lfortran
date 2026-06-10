@@ -128,7 +128,7 @@ jobs:
             set CC=cl.exe
             set CXX=cl.exe
             set "PATH=%PATH:C:\mingw64\bin;=%"
-            shell ci\build.sh
+            bash ci\build.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
