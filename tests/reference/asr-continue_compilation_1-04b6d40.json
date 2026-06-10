@@ -2,12 +2,12 @@
     "basename": "asr-continue_compilation_1-04b6d40",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/continue_compilation_1.f90",
-    "infile_hash": "eb992e024ea132b9dbb4b322e41cbac9460962b5d7c78c4bdc06bea8",
+    "infile_hash": "a8f27a2c20898f0a331e01b285a7dcf893f836c2748014a2dcc5d46b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-continue_compilation_1-04b6d40.stderr",
-    "stderr_hash": "c05b1759a9b24120f05d81ca01c66c831419939cef8691b8663b176d",
+    "stderr_hash": "f94e54f6deb9c00f2a8d3f5703a92f0e269695b111428c1952f76e66",
     "returncode": 1
 }
