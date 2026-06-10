@@ -117,7 +117,7 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+            set MAMBA_INSTALL_LOCN=C:\Users\runneradmin\micromamba
             call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
             call micromamba activate lf
             set LFORTRAN_CMAKE_GENERATOR=Ninja
@@ -167,7 +167,7 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+            set MAMBA_INSTALL_LOCN=C:\Users\runneradmin\micromamba
             call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
             call micromamba activate lf
             set LFORTRAN_CMAKE_GENERATOR=Ninja
