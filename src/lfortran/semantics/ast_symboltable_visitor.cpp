@@ -2687,7 +2687,7 @@ public:
                 if (is_kind_attr || is_len_attr) {
                     kind_len_decl_indices.insert(i);
                 }
-                if (is_kind_attr) {
+                if (is_kind_attr || is_len_attr) {
                     for (size_t j = 0; j < decl.n_syms; j++) {
                         kind_params.push_back(al, s2c(al, to_lower(decl.m_syms[j].m_name)));
                     }

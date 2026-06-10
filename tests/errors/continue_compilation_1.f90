@@ -301,10 +301,10 @@ program continue_compilation_1
     integer, parameter :: z(1) = 2
     integer, parameter :: qval(2) = reshape([7, 8], -[z])
     integer :: u
-    type matrix(n)
-        integer, len :: n
-        real :: data(n)
-    end type
+
+
+
+
 
 
 
