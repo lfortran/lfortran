@@ -11414,6 +11414,12 @@ public:
                         },
                     false);
             if( idx == -1 ) {
+                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
+                if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
+                    return create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
+                        x.m_keywords, x.n_keywords, tmp_v);
+                }
+
                 bool is_function = true;
                 v = intrinsic_as_node(x, is_function);
                 if( !is_function ) {
@@ -12768,6 +12774,15 @@ public:
             args.push_back(al, nullptr);
         }
         for( size_t i = 0; i < x.n_args; i++ ) {
+            if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
+                diag.add(diag::Diagnostic(
+                    "Alternate return arguments are not permitted in calls to the '" +
+                    intrinsic_name + "' intrinsic.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            LCOMPILERS_ASSERT(x.m_args[i].m_end != nullptr);
             // Handle BOZ constants in real() function
             ASR::ttype_t* temp_current_variable_type = current_variable_type_;
             if (intrinsic_name == "real" && i == 0 && x.m_args[i].m_end && 
@@ -16514,8 +16529,9 @@ public:
             }
         }
         // if v is a function which has null pointer return type, give error
-        if (ASR::is_a<ASR::Function_t>(*v)){
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
+        ASR::symbol_t *v_past_ext = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+        if (v_past_ext && ASR::is_a<ASR::Function_t>(*v_past_ext)){
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_past_ext);
             if (func->m_return_var == nullptr){
                 diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));

@@ -1074,9 +1074,9 @@ lf_float128 lf_f128_log(lf_float128 a) {
      * Let u = (m-1)/(m+1), log(m) = 2*atanh(u) = 2*(u + u^3/3 + u^5/5 + ...)
      * u = (m-1)/(m+1) ∈ [0, 1/3) since m ∈ [1, 2).
      */
-    int32_t n = p.exp;  /* exponent, so m = a * 2^(-n) ∈ [1,2) */
+    int32_t n = p.exp - 112;  /* exponent, so m = a * 2^(-n) ∈ [1,2) */
     /* Build m = a with exponent forced to 0 */
-    lf_float128 m = f128_pack_parts(0, 0, p.mant);  /* m ∈ [1, 2) */
+    lf_float128 m = f128_pack_parts(0, 112, p.mant);  /* m ∈ [1, 2) */
 
     /* u = (m - 1) / (m + 1) */
     lf_float128 one = f128_one();
