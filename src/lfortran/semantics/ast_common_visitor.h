@@ -5813,16 +5813,30 @@ public:
                                         assgnd_pointer.insert(sym);
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
-                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    // Use resolve_symbol to find the function in parent scopes if necessary
+                                    ASR::symbol_t* sym_ = current_scope->resolve_symbol(sym);
                                     if (sym_) {
                                         ASR::symbol_t* sym_past_external =
                                             ASRUtils::symbol_get_past_external(sym_);
+                                        
                                         if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                            // Standard variable case
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                                 sym_past_external);
                                             if (!ASRUtils::is_allocatable(v->m_type)) {
                                                 v->m_type = ASRUtils::TYPE(
                                                     ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
+                                            }
+                                        } else if (ASR::is_a<ASR::Function_t>(*sym_past_external)) {
+                                            // Function result case: grab the internal return variable
+                                            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_past_external);
+                                            if (f->m_return_var) {
+                                                ASR::symbol_t* ret_sym = ASR::down_cast<ASR::Var_t>(f->m_return_var)->m_v;
+                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(ret_sym);
+                                                if (!ASRUtils::is_allocatable(v->m_type)) {
+                                                    v->m_type = ASRUtils::TYPE(
+                                                        ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
+                                                }
                                             }
                                         }
                                     } else {
