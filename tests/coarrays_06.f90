@@ -1,13 +1,13 @@
-module m
+module coarrays_06_m
     integer :: x[*]
 contains
     subroutine show()
         print *, x[2]
     end subroutine
-end module
+end module coarrays_06_m
 
-program p
-    use m
+program coarrays_06
+    use coarrays_06_m
     call show()
     sync all
-end program
+end program coarrays_06

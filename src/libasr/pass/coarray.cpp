@@ -759,11 +759,13 @@ class PRIFInterface {
                 Vec<ASR::expr_t*> lco_elems; lco_elems.reserve(al, corank);
                 Vec<ASR::expr_t*> uco_elems; uco_elems.reserve(al, corank > 1 ? corank - 1 : 0);
                 for (int64_t ci = 0; ci < corank; ci++) {
+                    // Lower cobound: from codims or default to 1
                     int64_t lb = 1;
                     if (ci < (int64_t)var->n_codims && var->m_codims[ci].m_start) {
                         ASRUtils::extract_value(var->m_codims[ci].m_start, lb);
                     }
                     lco_elems.push_back(al, b.i64(lb));
+                    // Upper cobound: skip last dim (it's *)
                     if (ci == corank - 1) {
                         LCOMPILERS_ASSERT(var->m_codims[ci].m_end == nullptr);
                     }
@@ -774,7 +776,7 @@ class PRIFInterface {
                         uco_elems.push_back(al, b.i64(ub));
                     }
                 }
-                
+                // lcobounds array
                 Vec<ASR::dimension_t> arr_d; arr_d.reserve(al, 1);
                 ASR::dimension_t ad; ad.loc = loc;
                 ad.m_start = b.i32(1);
@@ -786,7 +788,7 @@ class PRIFInterface {
                     lco_vec.push_back(lco_elems.p[i]);
                 }
                 ASR::expr_t *lcobounds_val = b.ArrayConstant(lco_vec, i64, false, lco_arr_t);
-                
+                // ucobounds array
                 Vec<ASR::dimension_t> arr_d0; arr_d0.reserve(al, 1);
                 ASR::dimension_t ad0; ad0.loc = loc;
                 ad0.m_start = b.i32(1);
@@ -812,7 +814,7 @@ class PRIFInterface {
                     nullptr, false, false, false, false, false, nullptr, 0, false));
                 ASR::expr_t *null_fptr = ASRUtils::EXPR(
                     ASR::make_PointerNullConstant_t(al, loc, cleanup_ft, nullptr));
-                
+                // Build call args
                 Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 9);
                 ASR::call_arg_t a1; a1.loc=loc; a1.m_value=lcobounds_val;
                 ASR::call_arg_t a2; a2.loc=loc; a2.m_value=ucobounds_val;
@@ -836,7 +838,7 @@ class PRIFInterface {
                     al, loc, alloc_sub, nullptr,
                     call_args.p, call_args.n, nullptr, false));
                 new_body.push_back(al, call_stmt);
-                
+
                 ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
                 ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
                     ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, nullptr, nullptr));
@@ -1030,10 +1032,39 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
         }
 };
 
+// CoarrayCompanionVisitor traverses the AST and declares companion
+// variables for coarrays in each scope (Program, Function, Module)
+// before any allocation or lookup is performed.
+class CoarrayCompanionVisitor : public ASR::BaseWalkVisitor<CoarrayCompanionVisitor> {
+    private:
+        void process_scope(SymbolTable *symtab, const Location &loc) {
+            prif.declare_coarray_companions(symtab, loc);
+            for (auto &item : symtab->get_scope()) {
+                visit_symbol(*item.second);
+            }
+        }
+    public:
+        PRIFInterface &prif;
+
+        CoarrayCompanionVisitor(PRIFInterface &prif_)
+            : prif(prif_) {}
+
+        void visit_Module(const ASR::Module_t &x) {
+            process_scope(x.m_symtab, x.base.base.loc);
+        }
+
+        void visit_Program(const ASR::Program_t &x) {
+            process_scope(x.m_symtab, x.base.base.loc);
+        }
+
+        void visit_Function(const ASR::Function_t &x) {
+            process_scope(x.m_symtab, x.base.base.loc);
+        }
+};
+
 // CoarrayInitVisitor traverses the AST and inserts initialization
 // code for coarrays in each scope (Program, Function, Module).
-// It creates companion handle and data variables for each coarray,
-// and emits a call to prif_allocate_coarray. It also ensures the
+// It emits a call to prif_allocate_coarray. It also ensures the
 // global PRIF runtime initialization and cleanup routines are called.
 class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
     private:
@@ -1044,8 +1075,6 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             : al(al_), prif(prif_) {}
 
         void visit_Module(const ASR::Module_t &x) {
-            ASR::Module_t &xx = const_cast<ASR::Module_t &>(x);
-            prif.declare_coarray_companions(xx.m_symtab, xx.base.base.loc);
             for (auto &item : x.m_symtab->get_scope()) {
                 visit_symbol(*item.second);
             }
@@ -1053,7 +1082,6 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
 
         void visit_Program(const ASR::Program_t &x) {
             ASR::Program_t &xx = const_cast<ASR::Program_t &>(x);
-            prif.declare_coarray_companions(xx.m_symtab, xx.base.base.loc);
 
             Vec<ASR::stmt_t*> new_body;
             new_body.reserve(al, xx.n_body + 16);
@@ -1114,7 +1142,6 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
 
         void visit_Function(const ASR::Function_t &x) {
             ASR::Function_t &xx = const_cast<ASR::Function_t &>(x);
-            prif.declare_coarray_companions(xx.m_symtab, xx.base.base.loc);
 
             Vec<ASR::stmt_t*> new_body;
             new_body.reserve(al, xx.n_body + 16);
@@ -1140,15 +1167,19 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
         return;
     }
     PRIFInterface prif(al, unit);
-    // Phase 1: Create companion vars and allocation calls for coarrays
+    // Phase 1: Declare coarray companion variables
+    CoarrayCompanionVisitor comp_v(prif);
+    comp_v.visit_TranslationUnit(unit);
+
+    // Phase 2: Create allocation calls for coarrays
     CoarrayInitVisitor init_v(al, prif);
     init_v.visit_TranslationUnit(unit);
 
-    // Phase 2: Replace coarray expressions
+    // Phase 3: Replace coarray expressions
     CoarrayPrifVisitor v(al, prif);
     v.visit_TranslationUnit(unit);
 
-    // Phase 3: Update dependencies
+    // Phase 4: Update dependencies
     PassUtils::UpdateDependenciesVisitor(al).visit_TranslationUnit(unit);
 }
 
