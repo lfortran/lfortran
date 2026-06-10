@@ -32,11 +32,6 @@ namespace LCompilers {
 
 using ASR::down_cast;
 
-uint64_t static inline get_hash(ASR::asr_t *node)
-{
-    return (uint64_t)node;
-}
-
 class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     public:
     std::unordered_map<ASR::symbol_t*, std::string> sym_to_renamed;
