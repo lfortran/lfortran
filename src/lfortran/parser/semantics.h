@@ -408,9 +408,71 @@ var_sym_t* VAR_DECL_NAMELISTc(Allocator &al,
             Vec<ast_t*> id_list) {
     var_sym_t* a = al.allocate<var_sym_t>(id_list.size());
     for (size_t i=0; i<id_list.size(); i++) {
+        a[i].loc = id_list[i]->loc;
         a[i].m_name = name2char(id_list[i]);
+        a[i].m_dim = nullptr;
+        a[i].n_dim = 0;
+        a[i].m_codim = nullptr;
+        a[i].n_codim = 0;
+        a[i].m_length = nullptr;
+        a[i].m_initializer = nullptr;
+        a[i].m_sym = symbolType::None;
+        a[i].m_spec = nullptr;
     }
     return a;
+}
+
+#define NAMELIST_DECL_GROUP(id, var, l) \
+        fn_NAMELIST_DECL_GROUP(p.m_a, id, var, l)
+
+#define NAMELIST_DECL_APPEND_VAR(decls, var) \
+        fn_NAMELIST_DECL_APPEND_VAR(p.m_a, decls, var)
+
+#define NAMELIST_DECL_APPEND_GROUP(decls, id, var, l) \
+        fn_NAMELIST_DECL_APPEND_GROUP(p.m_a, decls, id, var, l)
+
+Vec<ast_t*> fn_NAMELIST_DECL_GROUP(Allocator &al,
+        ast_t *id, ast_t *var, Location &loc) {
+    Vec<ast_t*> id_list;
+    id_list.reserve(al, 1);
+    id_list.push_back(al, var);
+    Vec<ast_t*> decls;
+    decls.reserve(al, 4);
+    ast_t *decl = make_Declaration_t(al, loc,
+        nullptr,
+        VAR_DECL_NAMELISTb(al, loc, name2char(id)), 1,
+        VAR_DECL_NAMELISTc(al, id_list), id_list.n,
+        nullptr);
+    decls.push_back(al, decl);
+    return decls;
+}
+
+void fn_NAMELIST_DECL_APPEND_VAR(Allocator &al,
+        Vec<ast_t*> &decls, ast_t *var) {
+    LCOMPILERS_ASSERT(decls.size() > 0);
+    Declaration_t *decl = down_cast2<Declaration_t>(decls[decls.size() - 1]);
+    var_sym_t *syms = al.allocate<var_sym_t>(decl->n_syms + 1);
+    for (size_t i=0; i<decl->n_syms; i++) {
+        syms[i] = decl->m_syms[i];
+    }
+    syms[decl->n_syms].loc = var->loc;
+    syms[decl->n_syms].m_name = name2char(var);
+    syms[decl->n_syms].m_dim = nullptr;
+    syms[decl->n_syms].n_dim = 0;
+    syms[decl->n_syms].m_codim = nullptr;
+    syms[decl->n_syms].n_codim = 0;
+    syms[decl->n_syms].m_length = nullptr;
+    syms[decl->n_syms].m_initializer = nullptr;
+    syms[decl->n_syms].m_sym = symbolType::None;
+    syms[decl->n_syms].m_spec = nullptr;
+    decl->m_syms = syms;
+    decl->n_syms++;
+}
+
+void fn_NAMELIST_DECL_APPEND_GROUP(Allocator &al,
+        Vec<ast_t*> &decls, ast_t *id, ast_t *var, Location &loc) {
+    Vec<ast_t*> group = fn_NAMELIST_DECL_GROUP(al, id, var, loc);
+    decls.push_back(al, group[0]);
 }
 
 decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,

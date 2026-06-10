@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    239 // shift/reduce conflicts
+%expect    238 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -440,7 +440,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> var_decl_star
 %type <vec_ast> namelist_decl
 %type <vec_ast> namelist_group_list
-%type <ast> namelist_group
 %type <vec_var_sym> var_sym_decl_list
 %type <ast> var_decl
 %type <ast> decl_spec
@@ -1396,14 +1395,17 @@ namelist_decl
     ;
 
 namelist_group_list
-    : namelist_group_list "," namelist_group { $$ = $1; LIST_ADD($$, $3); }
-    | namelist_group_list namelist_group { $$ = $1; LIST_ADD($$, $2); }
-    | namelist_group { LIST_NEW($$); LIST_ADD($$, $1); }
-    ;
-
-namelist_group
-    : "/" id "/" id_list {
-        LLOC(@$, @4); $$ = VAR_DECL_NAMELIST($2, $4, nullptr, @$);
+    : "/" id "/" id {
+        LLOC(@$, @4); $$ = NAMELIST_DECL_GROUP($2, $4, @$);
+    }
+    | namelist_group_list "," id {
+        $$ = $1; NAMELIST_DECL_APPEND_VAR($$, $3);
+    }
+    | namelist_group_list "," "/" id "/" id {
+        $$ = $1; NAMELIST_DECL_APPEND_GROUP($$, $4, $6, @$);
+    }
+    | namelist_group_list "/" id "/" id {
+        $$ = $1; NAMELIST_DECL_APPEND_GROUP($$, $3, $5, @$);
     }
     ;
 

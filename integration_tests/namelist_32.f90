@@ -1,4 +1,4 @@
-program namelist_31
+program namelist_32
     implicit none
 
     integer :: a, b, x, y
@@ -16,4 +16,4 @@ program namelist_31
     if (x /= 1) error stop
     if (y /= 2) error stop
     print *,"test passed"
-end program namelist_31
+end program namelist_32
