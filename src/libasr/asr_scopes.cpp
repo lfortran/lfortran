@@ -5,7 +5,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/pass_utils.h>
 
-std::string lcompilers_unique_ID_separate_compilation;
+std::string lcompilers_unique_ID_separate_compilation;// Unique ID per source file
 std::string lcompilers_commandline_options;
 
 namespace LCompilers  {
