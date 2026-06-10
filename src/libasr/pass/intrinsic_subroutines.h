@@ -911,12 +911,17 @@ namespace DateAndTime {
             ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
             dep.push_back(al, s2c(al, c_func_name_4));
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(extract_type(arg_types[3]));
             for (int i = 0; i < 8; i++) {
                 Vec<ASR::expr_t*> call_args2; call_args2.reserve(al, 1);
                 call_args2.push_back(al, b.i32(i+1));
                 auto xx = declare("i_" + std::to_string(i), int32, Local);
                 body.push_back(al, b.Assignment(xx, b.Call(s_4, call_args2, int32)));
-                vals.push_back(xx);
+                ASR::expr_t* xx_casted = xx;
+                if (!ASRUtils::check_equal_type(ASRUtils::expr_type(xx), element_type, nullptr, nullptr, false)) {
+                    xx_casted = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, xx, ASR::cast_kindType::IntegerToInteger, element_type, nullptr, nullptr));
+                }
+                vals.push_back(xx_casted);
             }
             body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
         } else {
