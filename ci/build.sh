@@ -5,7 +5,11 @@ set -ex
 echo "Running SHELL"
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
-llvm-config --components
+
+# llvm-config is not available on Windows
+if [[ "$WIN" != "1" ]]; then
+    llvm-config --components
+fi
 
 # Generate the `version` file
 bash ci/version.sh
