@@ -1273,7 +1273,6 @@ namespace StorageSize {
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
             if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
             else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
-            else if (kind == 16) return make_ConstantWithType(make_IntegerConstant_t, 256, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
         } else {
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -1281,7 +1280,6 @@ namespace StorageSize {
             else if (kind == 2) return make_ConstantWithType(make_IntegerConstant_t, 16, t1, loc);
             else if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
             else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
-            else if (kind == 16) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
         }
     }
@@ -1444,8 +1442,6 @@ namespace Range {
                     range_val = 37; break;
                 } case 8: {
                     range_val = 307; break;
-                } case 16: {
-                    range_val = 4931; break;
                 } default: {
                     break;
                 }
@@ -6930,8 +6926,6 @@ namespace MinExponent {
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::min_exponent;
-        } else if (m_kind == 16) {
-            result = -16381;
         } else {
             result = std::numeric_limits<double>::min_exponent;
         }
@@ -6948,8 +6942,6 @@ namespace MaxExponent {
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::max_exponent;
-        } else if (m_kind == 16) {
-            result = 16384;
         } else {
             result = std::numeric_limits<double>::max_exponent;
         }
@@ -7870,10 +7862,6 @@ namespace Epsilon {
                 epsilon_val = std::numeric_limits<float>::epsilon(); break;
             } case 8: {
                 epsilon_val = std::numeric_limits<double>::epsilon(); break;
-            } case 16: {
-                return ASRUtils::make_RealConstant_r16(al, loc,
-                    lf_float128_from_str("1.92592994438723585305597794258492732e-34"),
-                    arg_type);
             } default: {
                 break;
             }
@@ -7896,8 +7884,6 @@ namespace Precision {
                 precision_val = 6; break;
             } case 8: {
                 precision_val = 15; break;
-            } case 16: {
-                precision_val = 33; break;
             } default: {
                 append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
                 return nullptr;
