@@ -2260,17 +2260,37 @@ public:
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
+            bool is_alloc_standalone = false;
+            bool is_ptr_standalone = false;
+            for (const auto& a_name : assgnd_allocatable) {
+                if (to_lower(a_name) == return_var_name) is_alloc_standalone = true;
+            }
+            for (const auto& p_name : assgnd_pointer) {
+                if (to_lower(p_name) == return_var_name) is_ptr_standalone = true;
+            }
+
             if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
-                diag.add(diag::Diagnostic(
-                    "Cannot specify the return type twice",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                if (!is_alloc_standalone && !is_ptr_standalone) {
+                    diag.add(diag::Diagnostic(
+                        "Cannot specify the return type twice",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
             }
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
+            
+            // Upgrade the implicitly typed variable to Allocatable or Pointer
+            if (is_alloc_standalone && !ASRUtils::is_allocatable(return_variable->m_type)) {
+                return_variable->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, return_variable->m_type));
+            }
+            if (is_ptr_standalone && !ASRUtils::is_pointer(return_variable->m_type)) {
+                return_variable->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, return_variable->m_type));
+            }
+
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
@@ -2278,7 +2298,6 @@ public:
             return_variable->m_dependencies = variable_dependencies_vec.p;
             return_variable->n_dependencies = variable_dependencies_vec.size();
         }
-
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
 
