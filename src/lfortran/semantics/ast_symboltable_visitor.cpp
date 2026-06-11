@@ -2230,8 +2230,26 @@ public:
                 }
             }
 
+            // Catch standalone declarations (e.g., `allocatable :: value`) parsed earlier in this pass
+            bool is_alloc_standalone = false;
+            bool is_ptr_standalone = false;
+            for (const auto& a_name : assgnd_allocatable) {
+                if (to_lower(a_name) == return_var_name) is_alloc_standalone = true;
+            }
+            for (const auto& p_name : assgnd_pointer) {
+                if (to_lower(p_name) == return_var_name) is_ptr_standalone = true;
+            }
+
+            if (is_alloc_standalone && !ASRUtils::is_allocatable(type)) {
+                type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
+            }
+            if (is_ptr_standalone && !ASRUtils::is_pointer(type)) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+            }
+
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
+          
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             // Add it as a local variable:
             return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
