@@ -2090,11 +2090,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 if (backend == Backend::llvm &&
                         compiler_options.po.enable_gpu_offloading &&
                         std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
-                    std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
-                    std::string mlir_tmp_o = std::filesystem::path(file_path).replace_extension(
-                        ".mlir.tmp_" + LCompilers::get_unique_ID(s) + ".o").string();
-                    compile_cmd += mlir_tmp_o + " ";
-                    mlir_temp_object_files.push_back(mlir_tmp_o);
+                        std::string obj_file_path = std::filesystem::path(s).string();// "do_concurrent_01.tmp_yDR0nDW17GGvAia86INkc2.o"
+                        obj_file_path.insert(obj_file_path.find('.'), ".mlir");
+                        compile_cmd += obj_file_path + " ";
+                        mlir_temp_object_files.push_back(obj_file_path);
                 }
             }
             if(!extra_library_flags.empty()) {
