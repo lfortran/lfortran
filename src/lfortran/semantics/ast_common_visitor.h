@@ -5824,15 +5824,12 @@ public:
                                                 v->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
                                             }
                                             
-                                            // Prevent reverting: update the function signature and Var_t expression if this is the return variable!
+                                            // Prevent reverting: update the function signature if this is the return variable!
                                             if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
                                                 ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
                                                 if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
                                                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner_sym);
                                                     if (fn->m_return_var && ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v == sym_past) {
-                                                        ASR::Var_t *ret_var_expr = ASR::down_cast<ASR::Var_t>(fn->m_return_var);
-                                                        ret_var_expr->m_type = v->m_type; 
-                                                        
                                                         ASR::FunctionType_t *f_type = ASR::down_cast<ASR::FunctionType_t>(fn->m_function_signature);
                                                         if (f_type->m_return_var_type && !ASRUtils::is_allocatable(f_type->m_return_var_type)) {
                                                             f_type->m_return_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, f_type->m_return_var_type));
@@ -5845,11 +5842,10 @@ public:
                                         else if (ASR::is_a<ASR::Function_t>(*sym_past)) {
                                             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_past);
                                             if (f->m_return_var) {
-                                                ASR::Var_t *ret_var_expr = ASR::down_cast<ASR::Var_t>(f->m_return_var);
-                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(ret_var_expr->m_v);
+                                                ASR::symbol_t* ret_sym = ASR::down_cast<ASR::Var_t>(f->m_return_var)->m_v;
+                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(ret_sym);
                                                 if (!ASRUtils::is_allocatable(v->m_type)) {
                                                     v->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
-                                                    ret_var_expr->m_type = v->m_type; 
                                                 }
                                             }
                                             // Prevent reverting here too
