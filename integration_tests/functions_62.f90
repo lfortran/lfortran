@@ -1,5 +1,4 @@
 ﻿program main
-  print *, value()
 contains
   integer function value()
     allocatable :: value
