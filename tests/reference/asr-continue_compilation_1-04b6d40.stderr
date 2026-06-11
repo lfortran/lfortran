@@ -322,14 +322,11 @@ semantic error: Initialization with non-constant variable `non_parameter_var` is
 281 |     integer :: non_parameter_var = 5
     |                ~~~~~~~~~~~~~~~~~~~~~ declared here
 
-semantic error: Named initialization with array parameter `myclass_array` is not supported yet
+semantic error: Parameter `myclass_array` has no initialization value
    --> tests/errors/continue_compilation_1.f90:283:5
     |
 283 |     type(MyClass) :: err_obj4 = myclass_array
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    |
-244 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
-    |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ array parameter declared here
 
 semantic error: Symbol not found: `uninitialized_param_local`
    --> tests/errors/continue_compilation_1.f90:284:5

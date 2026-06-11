@@ -7643,17 +7643,6 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            // Check if parameter is a scalar
-                            // TODO: Add support for arrays as well
-                            if (ASRUtils::is_array(var->m_type)) {
-                                diag.add(Diagnostic(
-                                    "Named initialization with array parameter `" + sym_name + "` is not supported yet",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc}),
-                                        Label("array parameter declared here", {var->base.base.loc}, false)
-                                    }));
-                                throw SemanticAbort();
-                            }
                             // Parameters may have StructConstant in symbolic_value, but non-parameter
                             // variables need StructConstructor so init_expr pass generates assignments
                             ASR::expr_t* param_init = var->m_symbolic_value ? var->m_symbolic_value : var->m_value;
