@@ -247,6 +247,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if( d == nullptr ) {
             implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
         } else {
+            d = builder.i2i_t(d, ASRUtils::expr_type(end));
             implied_doloop_size = builder.Add(builder.Div(
                 builder.Sub(end, start), d),
                 make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
