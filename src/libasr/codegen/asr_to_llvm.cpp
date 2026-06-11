@@ -15749,7 +15749,45 @@ public:
                 if (ASRUtils::is_character(*element_type)) {
                     // For character arrays: num_elements = source_bytes / element_bytes
                     // where element_bytes = kind * length for character(kind, len)
-                    llvm::Value* source_length = get_string_length(x.m_source);
+                    llvm::Value* source_length = nullptr;
+                    if (ASRUtils::is_character(*ASRUtils::expr_type(x.m_source))) {
+                        source_length = get_string_length(x.m_source);
+                        if (!source_length->getType()->isIntegerTy(64)) {
+                            source_length = builder->CreateZExt(source_length, llvm::Type::getInt64Ty(context));
+                        }
+                    } else {
+                        llvm::DataLayout dl(module->getDataLayout());
+                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_source))) {
+                            ASR::ttype_t* src_arr_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_source));
+                            ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(src_arr_type);
+                            llvm::Value* num_elems = nullptr;
+                            if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                                llvm::Type* llvm_src_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, src_arr_type, module.get());
+                                num_elems = arr_descr->get_array_size(llvm_src_type, source, nullptr, arr_t->n_dims);
+                                if (!num_elems->getType()->isIntegerTy(64)) {
+                                    num_elems = builder->CreateZExt(num_elems, llvm::Type::getInt64Ty(context));
+                                }
+                            } else {
+                                uint64_t n_elems = 1;
+                                for (size_t i = 0; i < arr_t->n_dims; i++) {
+                                    ASR::dimension_t dim = arr_t->m_dims[i];
+                                    if (dim.m_length && ASR::is_a<ASR::IntegerConstant_t>(*dim.m_length)) {
+                                        n_elems *= ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
+                                    }
+                                }
+                                num_elems = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), n_elems);
+                            }
+                            ASR::ttype_t* src_el_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_source));
+                            llvm::Type* src_el_llvm = llvm_utils->get_type_from_ttype_t_util(x.m_source, src_el_type, module.get());
+                            uint64_t el_sz = dl.getTypeAllocSize(src_el_llvm);
+                            llvm::Value* elem_size = llvm::ConstantInt::get(num_elems->getType(), el_sz);
+                            source_length = builder->CreateMul(num_elems, elem_size);
+                        } else {
+                            llvm::Type* src_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, ASRUtils::expr_type(x.m_source), module.get());
+                            uint64_t sz = dl.getTypeAllocSize(src_type);
+                            source_length = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), sz);
+                        }
+                    }
 
                     // Note: source_length is the total number of bytes in the source
                     // The ASR phase has already calculated the correct array dimension
@@ -15761,7 +15799,7 @@ public:
                     // Create a string view representing the whole source byte data
                     // The assignment handler will extract element_length bytes per iteration
                     llvm::Value* const str_view = llvm_utils->create_stringView(
-                        ASRUtils::get_string_type(x.m_source),
+                        ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(element_type)),
                         casted_to_i8, source_length, "bit_cast_expr_return");
                     tmp = str_view;
                 }
