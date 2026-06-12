@@ -94,13 +94,13 @@ semantic error: Procedure declarations without an explicit interface (procedure(
     |         ^^^^^^^^^^^ 
 
 semantic error: Procedure 'op_clash_f' is already defined as an interface body
-   --> tests/errors/continue_compilation_1.f90:186:5 - 190:27
+   --> tests/errors/continue_compilation_1.f90:193:5 - 197:27
     |
-186 |        function op_clash_f(x) result(y)
+193 |        function op_clash_f(x) result(y)
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-190 |        end function op_clash_f
+197 |        end function op_clash_f
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
     |
  35 |            function op_clash_f(x) result(y)
@@ -547,6 +547,12 @@ semantic error: Interface mismatch in procedure pointer assignment at (1): 'dumm
     |
 183 |         pf2 => dummy_func
     |         ^^^^^^^^^^^^^^^^^ (1)
+
+semantic error: Actual argument for 'a' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:191:34
+    |
+191 |         call assumed_size_callee(a)
+    |                                  ^ 
 
 semantic error: Intrinsic 'not_real' is not recognized
    --> tests/errors/continue_compilation_1.f90:268:14
