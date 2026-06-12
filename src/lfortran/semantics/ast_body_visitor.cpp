@@ -6756,7 +6756,7 @@ public:
                 "shape argument not specified in c_f_pointer "
                 "even though fptr is an array.",
                 Level::Error, Stage::Semantic, {
-                    Label("",{shape->base.loc})
+                    Label("",{fptr->base.loc})
                 }));
             throw SemanticAbort();
         }
