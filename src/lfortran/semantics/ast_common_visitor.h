@@ -448,34 +448,67 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        int left_val, right_val;
+        value = nullptr;
         this->visit_expr(*x.m_left);
-        left_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        ASR::expr_t* left_val = value;
+        value = nullptr;
         this->visit_expr(*x.m_right);
-        right_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-        int res;
-        switch (x.m_op) {
-            case ASR::binopType::Mul:
-                res = left_val * right_val;
-                break;
-            case ASR::binopType::Add:
-                res = left_val + right_val;
-                break;
-            case ASR::binopType::Sub:
-                res = left_val - right_val;
-                break;
-            case ASR::binopType::Div:
-                res = left_val / right_val;
-                break;
-            case ASR::binopType::Pow:
-                res = std::pow(left_val, right_val);
-                break;
-            default:
-                diag.add(Diagnostic("Unsupported binary operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+        ASR::expr_t* right_val = value;
+
+        if (left_val && right_val) {
+            bool left_is_array = ASR::is_a<ASR::ArrayConstant_t>(*left_val);
+            bool right_is_array = ASR::is_a<ASR::ArrayConstant_t>(*right_val);
+
+            if (left_is_array || right_is_array) {
+                ASR::ArrayConstant_t* arr = ASR::down_cast<ASR::ArrayConstant_t>(left_is_array ? left_val : right_val);
+                int32_t scalar = ASR::down_cast<ASR::IntegerConstant_t>(left_is_array ? right_val : left_val)->m_n;
+                int64_t n_data = arr->m_n_data;
+                int64_t n_elements = n_data / sizeof(int32_t);
+                int32_t* new_data = al.allocate<int32_t>(n_elements);
+                int32_t* old_data = (int32_t*)arr->m_data;
+                for(int64_t i=0; i<n_elements; ++i) {
+                    int32_t a = left_is_array ? old_data[i] : scalar;
+                    int32_t b = left_is_array ? scalar : old_data[i];
+                    switch (x.m_op) {
+                        case ASR::binopType::Add: new_data[i] = a + b; break;
+                        case ASR::binopType::Sub: new_data[i] = a - b; break;
+                        case ASR::binopType::Mul: new_data[i] = a * b; break;
+                        case ASR::binopType::Div: new_data[i] = b != 0 ? a / b : 0; break;
+                        case ASR::binopType::Pow: new_data[i] = std::pow(a, b); break;
+                        default: new_data[i] = 0; break;
+                    }
+                }
+                value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, n_data, new_data, x.m_type, ASR::arraystorageType::ColMajor));
+                return;
+            }
+
+            // Both are scalars
+            int32_t a = ASR::down_cast<ASR::IntegerConstant_t>(left_val)->m_n;
+            int32_t b = ASR::down_cast<ASR::IntegerConstant_t>(right_val)->m_n;
+            int32_t res;
+            switch (x.m_op) {
+                case ASR::binopType::Mul: res = a * b; break;
+                case ASR::binopType::Add: res = a + b; break;
+                case ASR::binopType::Sub: res = a - b; break;
+                case ASR::binopType::Div: res = a / b; break;
+                case ASR::binopType::Pow: res = std::pow(a, b); break;
+                default:
+                    diag.add(Diagnostic("Unsupported binary operation in implied do loop",
+                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+            }
+            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, res, x.m_type));
+        } else {
+            value = nullptr;
         }
-        value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, res, x.m_type));
+    }
+
+    void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+        value = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+        this->visit_expr(*x.m_array);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
@@ -10832,7 +10865,7 @@ public:
                 }
             }
             if (type == nullptr) {
-                type = expr_type;
+                type = ASRUtils::extract_type(expr_type);
                 extracted_type = ASRUtils::extract_type(type);
                 if (ASR::is_a<ASR::Tuple_t>(*extracted_type)) {
                      ASR::Tuple_t *t = ASR::down_cast<ASR::Tuple_t>(extracted_type);
@@ -16148,6 +16181,30 @@ public:
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
                     curr_nesting_level++;
                     populate_compiletime_array_for_idl(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), array, loop_vars, loop_indices, curr_nesting_level, itr);
+                } else if (ASRUtils::is_array(ASRUtils::expr_type(idl->m_values[i]))) {
+                    ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
+                    visitor.value = nullptr;
+                    visitor.visit_expr(*idl->m_values[i]);
+                    if (visitor.value && ASR::is_a<ASR::ArrayConstant_t>(*visitor.value)) {
+                        ASR::ArrayConstant_t* arr = ASR::down_cast<ASR::ArrayConstant_t>(visitor.value);
+                        if constexpr (std::is_same_v<T,int32_t>) {
+                            int32_t* arr_data = (int32_t*)arr->m_data;
+                            for(int64_t k=0; k < arr->m_n_data / (int64_t)sizeof(int32_t); ++k) {
+                                array.push_back(al, arr_data[k]);
+                                itr++;
+                            }
+                        } else if constexpr (std::is_same_v<T,int64_t>) {
+                            int64_t* arr_data = (int64_t*)arr->m_data;
+                            for(int64_t k=0; k < arr->m_n_data / (int64_t)sizeof(int64_t); ++k) {
+                                array.push_back(al, arr_data[k]);
+                                itr++;
+                            }
+                        }
+                    } else {
+                        // fallback
+                        array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
+                        itr++;
+                    }
                 } else {
                     ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
                     array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
@@ -16338,11 +16395,12 @@ public:
                 if (ASRUtils::is_character(*type)) {
                     physical_type = ASR::array_physical_typeType::PointerArray;
                 }
-                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, type, dims.p, dims.n, physical_type));
-                int64_t n_data = itr * ASRUtils::extract_kind_from_ttype_t(type);
-                if (ASRUtils::is_character(*type)) {
+                ASR::ttype_t* base_type = ASRUtils::extract_type(type);
+                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, base_type, dims.p, dims.n, physical_type));
+                int64_t n_data = itr * ASRUtils::extract_kind_from_ttype_t(base_type);
+                if (ASRUtils::is_character(*base_type)) {
                     int len;
-                    if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type))->m_len, len)){
+                    if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(base_type)->m_len, len)){
                         LCOMPILERS_ASSERT(false);
                     }
                     n_data = itr * len;
