@@ -254,8 +254,8 @@ program continue_compilation_2
     character(8) :: badfmt_s = '(a i0)'
     character(:), allocatable :: ax
     integer :: a_deferred(:)
-    
-
+    type(c_ptr) :: queries_3
+    integer, pointer :: cfp_y_3(:)
 
 
 
@@ -537,8 +537,8 @@ program continue_compilation_2
     print "(aai6)", a,"hi",15
     call sleep(1)
     a = cmplx(y = 2)
-    
-
+    ! c_f_pointer_03
+    call c_f_pointer(queries_3, cfp_y_3)    
 
 
 
