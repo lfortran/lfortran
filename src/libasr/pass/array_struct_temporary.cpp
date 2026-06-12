@@ -1472,7 +1472,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
                 x_m_args_vec.push_back(al, array_var_temporary);
             } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i])) &&
-                       !is_directly_addressable_expr(x_m_args[i]) ) {
+                       !ASR::is_a<ASR::Var_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i])) &&
+                       !(ASR::is_a<ASR::ArrayItem_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i])) &&
+                         !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i])) &&
+                         !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i]))) ) {
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i]), name_hint, al, current_body,
                     current_scope, exprs_with_target, realloc_lhs);
@@ -1539,6 +1544,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        !ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                         !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                         !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
+                       !(ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                          !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                          !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
@@ -3030,9 +3039,13 @@ class TransformVariableInitialiser:
         }
 
         const Location& loc = x.base.base.loc;
+        static const std::string marker_prefix = "__lcompilers_marker_";
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
             std::string dep_name = x.m_dependencies[i];
-            visit_symbol(*(current_scope->resolve_symbol(dep_name)));
+            if (dep_name.rfind(marker_prefix, 0) == 0) continue;
+            ASR::symbol_t* dep_sym = current_scope->resolve_symbol(dep_name);
+            if (dep_sym == nullptr) continue;
+            visit_symbol(*dep_sym);
         }
 
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);

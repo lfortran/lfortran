@@ -6674,19 +6674,23 @@ public:
                     alloc_arg.m_len_expr = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
                     if (ASR::is_a<ASR::StructType_t>(*val_elem_type)) {
-                        ASR::symbol_t* struct_sym =
+                        // For class(*), allocatable LHS being assigned a
+                        // concrete derived-type RHS, propagate the struct
+                        // symbol so the LLVM backend can pick the proper
+                        // vtable in `allocate_array_of_classes` and size
+                        // the underlying data buffer using the concrete
+                        // type rather than the unlimited-polymorphic
+                        // wrapper.  Externalise the struct symbol if it
+                        // lives in a different module so the modfile
+                        // serializer does not record a dangling symtab
+                        // reference.
+                        ASR::symbol_t* val_struct_sym =
                             ASRUtils::get_struct_sym_from_struct_expr(value);
-                        if (struct_sym != nullptr && current_scope != nullptr) {
-                            ASR::symbol_t* in_scope_sym =
-                                current_scope->resolve_symbol(
-                                    ASRUtils::symbol_name(struct_sym));
-                            if (in_scope_sym != nullptr &&
-                                ASRUtils::symbol_get_past_external(in_scope_sym)
-                                    == struct_sym) {
-                                struct_sym = in_scope_sym;
-                            }
+                        if (val_struct_sym != nullptr) {
+                            alloc_arg.m_sym_subclass =
+                                ASRUtils::import_struct_type(
+                                    al, val_struct_sym, current_scope);
                         }
-                        alloc_arg.m_sym_subclass = struct_sym;
                     }
                     alloc_arg.m_type = val_elem_type;
                     Vec<ASR::alloc_arg_t> alloc_args;

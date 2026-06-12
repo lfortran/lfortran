@@ -1,3 +1,4 @@
+#include <cstring>
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
@@ -25,6 +26,41 @@ namespace LCompilers {
 // - We intentionally skip compiler-generated intrinsic implementations
 //   (`deftype == Implementation`) to avoid changing their internal ownership
 //   conventions.
+static inline bool variable_is_converted_function_result(
+        const ASR::Variable_t* v) {
+    static const char* kMarker = "__lcompilers_marker_was_function_result";
+    for (size_t i = 0; i < v->n_dependencies; i++) {
+        if (v->m_dependencies[i] && std::strcmp(v->m_dependencies[i],
+                kMarker) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static inline bool struct_owns_heap_resources(ASR::Struct_t* st) {
+    while (st != nullptr) {
+        SymbolTable* sym_table = st->m_symtab;
+        if (sym_table != nullptr) {
+            for (auto& m : sym_table->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+                ASR::ttype_t* mem_t = ASRUtils::symbol_type(m.second);
+                if (ASRUtils::is_allocatable(mem_t) ||
+                        ASRUtils::is_pointer(mem_t)) {
+                    return true;
+                }
+            }
+        }
+        if (st->m_parent != nullptr) {
+            st = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(st->m_parent));
+        } else {
+            st = nullptr;
+        }
+    }
+    return false;
+}
+
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
@@ -348,64 +384,109 @@ public:
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
 
+                bool is_converted_function_result =
+                    variable_is_converted_function_result(arg_var);
+                if (is_converted_function_result &&
+                        struct_type->n_member_functions > 0 &&
+                        !struct_owns_heap_resources(struct_type)) {
+                    std::string dummy_name =
+                        xx.m_symtab->get_unique_name(
+                            "__libasr_created__exit_final_dummy");
+                    ASR::ttype_t* dummy_type =
+                        ASRUtils::duplicate_type(al, arg_var->m_type);
+                    ASR::symbol_t* dummy_sym =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(
+                                al, loc, xx.m_symtab,
+                                s2c(al, dummy_name), nullptr, 0,
+                                ASR::intentType::Local,
+                                nullptr, nullptr,
+                                ASR::storage_typeType::Default,
+                                dummy_type,
+                                arg_var->m_type_declaration,
+                                ASR::abiType::Source,
+                                ASR::accessType::Public,
+                                ASR::presenceType::Required,
+                                false));
+                    xx.m_symtab->add_symbol(dummy_name, dummy_sym);
+                }
+
+                // Handle finalizable intent(out) struct dummies.
+                //
                 // Fortran 2018 §7.5.6.3 ¶7:
                 //   "When a procedure is invoked with a nonpointer,
                 //    nonallocatable, INTENT(OUT) dummy argument of a type
                 //    for which a final subroutine is defined, the
-                bool has_finalizer =
-                    struct_hierarchy_has_finalizer(struct_type);
-                if (has_finalizer) {
+                //    finalization occurs before the procedure body executes."
+                //
+                // Codegen deliberately skips the in-place default
+                // initialization of simple scalar / null-pointer-to-scalar
+                // members for finalizable intent(out) struct dummies (see
+                // `allocate_array_members_of_struct` in asr_to_llvm.cpp).
+                // We therefore emit those defaults here for *all*
+                // finalizable intent(out) struct dummies. For user-declared
+                // intent(out) args we additionally emit the FINAL call
+                // *before* the default-init assignments so FINAL still
+                // observes the caller's original scalar values. For
+                // converted function-result dummies (which were just freshly
+                // allocated by the caller and never held a finalizable
+                // value) we skip the FINAL call but still emit the
+                // default-init assignments so codegen's skip does not leave
+                // the dummy with uninitialised scalars.
+                if (struct_type->n_member_functions > 0) {
                     ASR::expr_t* var_expr = ASRUtils::EXPR(
                         ASR::make_Var_t(al, loc, arg_sym));
-                    for (size_t fi = 0;
-                            fi < struct_type->n_member_functions; fi++) {
-                        std::string final_proc_name =
-                            struct_type->m_member_functions[fi];
-                        ASR::symbol_t* final_sym =
-                            struct_type->m_symtab->parent->get_symbol(
-                                final_proc_name);
-                        LCOMPILERS_ASSERT(final_sym != nullptr);
+                    if (!is_converted_function_result) {
+                        for (size_t fi = 0;
+                                fi < struct_type->n_member_functions; fi++) {
+                            std::string final_proc_name =
+                                struct_type->m_member_functions[fi];
+                            ASR::symbol_t* final_sym =
+                                struct_type->m_symtab->parent->get_symbol(
+                                    final_proc_name);
+                            LCOMPILERS_ASSERT(final_sym != nullptr);
 
-                        ASR::symbol_t* local_final_sym =
-                            xx.m_symtab->resolve_symbol(final_proc_name);
-                        if (!local_final_sym) {
-                            std::string module_name = "";
-                            ASR::asr_t* owner =
-                                struct_type->m_symtab->parent->asr_owner;
-                            if (owner &&
-                                ASR::is_a<ASR::symbol_t>(*owner)) {
-                                module_name = ASRUtils::symbol_name(
-                                    ASR::down_cast<ASR::symbol_t>(owner));
+                            ASR::symbol_t* local_final_sym =
+                                xx.m_symtab->resolve_symbol(final_proc_name);
+                            if (!local_final_sym) {
+                                std::string module_name = "";
+                                ASR::asr_t* owner =
+                                    struct_type->m_symtab->parent->asr_owner;
+                                if (owner &&
+                                    ASR::is_a<ASR::symbol_t>(*owner)) {
+                                    module_name = ASRUtils::symbol_name(
+                                        ASR::down_cast<ASR::symbol_t>(owner));
+                                }
+                                ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
+                                    al, loc, xx.m_symtab,
+                                    s2c(al, final_proc_name), final_sym,
+                                    s2c(al, module_name), nullptr, 0,
+                                    s2c(al, final_proc_name),
+                                    ASR::accessType::Private);
+                                xx.m_symtab->add_symbol(final_proc_name,
+                                    ASR::down_cast<ASR::symbol_t>(ext));
+                                local_final_sym =
+                                    ASR::down_cast<ASR::symbol_t>(ext);
                             }
-                            ASR::asr_t* ext = ASR::make_ExternalSymbol_t(
-                                al, loc, xx.m_symtab,
-                                s2c(al, final_proc_name), final_sym,
-                                s2c(al, module_name), nullptr, 0,
-                                s2c(al, final_proc_name),
-                                ASR::accessType::Private);
-                            xx.m_symtab->add_symbol(final_proc_name,
-                                ASR::down_cast<ASR::symbol_t>(ext));
-                            local_final_sym =
-                                ASR::down_cast<ASR::symbol_t>(ext);
+
+                            Vec<ASR::call_arg_t> call_args;
+                            call_args.reserve(al, 1);
+                            ASR::call_arg_t call_arg;
+                            call_arg.loc = loc;
+                            call_arg.m_value = var_expr;
+                            call_args.push_back(al, call_arg);
+
+                            ASR::stmt_t* call_stmt = ASRUtils::STMT(
+                                ASR::make_SubroutineCall_t(
+                                    al, loc, local_final_sym,
+                                    local_final_sym, call_args.p,
+                                    call_args.n, nullptr, false));
+
+                            ASR::stmt_t* wrapped_stmt = wrap_optional_check(
+                                loc, var_expr, arg_var->m_presence,
+                                call_stmt);
+                            dealloc_stmts.push_back(al, wrapped_stmt);
                         }
-
-                        Vec<ASR::call_arg_t> call_args;
-                        call_args.reserve(al, 1);
-                        ASR::call_arg_t call_arg;
-                        call_arg.loc = loc;
-                        call_arg.m_value = var_expr;
-                        call_args.push_back(al, call_arg);
-
-                        ASR::stmt_t* call_stmt = ASRUtils::STMT(
-                            ASR::make_SubroutineCall_t(
-                                al, loc, local_final_sym,
-                                local_final_sym, call_args.p,
-                                call_args.n, nullptr, false));
-
-                        ASR::stmt_t* wrapped_stmt = wrap_optional_check(
-                            loc, var_expr, arg_var->m_presence,
-                            call_stmt);
-                        dealloc_stmts.push_back(al, wrapped_stmt);
                     }
                     Vec<ASR::stmt_t*> init_stmts;
                     init_stmts.reserve(al, 1);

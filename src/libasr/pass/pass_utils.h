@@ -6,6 +6,7 @@
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
 
+#include <cstring>
 #include <deque>
 
 namespace LCompilers {
@@ -500,6 +501,16 @@ namespace LCompilers {
                     std::string current_name_copy = current_name;
                     current_name = x.m_name;
                     ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+                    Vec<char*> preserved_markers;
+                    preserved_markers.reserve(al, 1);
+                    for (size_t k = 0; k < xx.n_dependencies; k++) {
+                        const char* dep = xx.m_dependencies[k];
+                        if (dep && std::strncmp(dep, "__lcompilers_marker_",
+                                std::strlen("__lcompilers_marker_")) == 0) {
+                            preserved_markers.push_back(al,
+                                xx.m_dependencies[k]);
+                        }
+                    }
                     variable_dependencies.n = 0;
                     variable_dependencies.reserve(al, 1);
                     bool fill_variable_dependencies_copy = fill_variable_dependencies;
@@ -509,6 +520,10 @@ namespace LCompilers {
                                                 x.m_intent == ASR::intentType::InOut);
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Variable(x);
                     _return_var_or_intent_out = false;
+                    for (size_t k = 0; k < preserved_markers.n; k++) {
+                        variable_dependencies.push_back(al,
+                            preserved_markers[k]);
+                    }
                     xx.n_dependencies = variable_dependencies.size();
                     xx.m_dependencies = variable_dependencies.p;
                     fill_variable_dependencies = fill_variable_dependencies_copy;
@@ -1493,6 +1508,15 @@ namespace LCompilers {
                                 var->m_intent = ASR::intentType::In;
                             } else if( var->m_intent == ASR::intentType::ReturnVar ) {
                                 var->m_intent = ASR::intentType::Out;
+                                Vec<char*> deps;
+                                deps.reserve(al, var->n_dependencies + 1);
+                                for (size_t k = 0; k < var->n_dependencies; k++) {
+                                    deps.push_back(al, var->m_dependencies[k]);
+                                }
+                                deps.push_back(al, s2c(al,
+                                    "__lcompilers_marker_was_function_result"));
+                                var->m_dependencies = deps.p;
+                                var->n_dependencies = deps.n;
                             }
                         }
                     }
