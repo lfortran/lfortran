@@ -264,7 +264,6 @@ namespace LCompilers {
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
-                "intent_out_deallocate",
                 "subroutine_from_function",
                 "array_op",
                 "pass_array_by_data",
@@ -278,6 +277,7 @@ namespace LCompilers {
                 "while_else",
                 "unused_functions",
                 "unique_symbols",
+                "intent_out_deallocate",
             };
             _optimization_passes = {
                 "replace_with_compile_time_values",
