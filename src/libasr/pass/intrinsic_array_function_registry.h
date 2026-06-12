@@ -6866,6 +6866,18 @@ namespace DotProduct {
         int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
         int dim = ASRUtils::get_fixed_size_of_array(type_vector_a);
 
+        if (dim < 0) return nullptr;
+        if (dim == 0) {
+            if (ASRUtils::is_integer(*type_a) || ASRUtils::is_real(*type_a)) {
+                return make_ConstantWithType(make_IntegerConstant_t, 0, return_type, loc);
+            } else if (ASRUtils::is_logical(*type_a)) {
+                return make_ConstantWithType(make_LogicalConstant_t, false, return_type, loc);
+            } else if (ASRUtils::is_complex(*type_a)) {
+                return EXPR(make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type));
+            }
+            return nullptr;
+        }
+
         if (ASRUtils::is_real(*type_a)) {
             if (kind == 4) {
                 std::vector<float> a(dim), b(dim);
