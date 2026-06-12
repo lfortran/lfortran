@@ -7914,6 +7914,37 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                                 throw SemanticAbort();
                             }
                         }
+                        
+                        // Check if actual argument is an assumed-size array
+                        ASR::ttype_t* actual_type = ASRUtils::expr_type(passed_arg_expr);
+                        ASR::ttype_t* actual_arr_type = ASRUtils::type_get_past_allocatable_pointer(actual_type);
+                        if (ASR::is_a<ASR::Array_t>(*actual_arr_type)) {
+                            ASR::Array_t* actual_arr = ASR::down_cast<ASR::Array_t>(actual_arr_type);
+                            if (actual_arr->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+                                ASR::ttype_t* dummy_arr_type = ASRUtils::type_get_past_allocatable_pointer(callee_param->m_type);
+                                if (ASR::is_a<ASR::Array_t>(*dummy_arr_type)) {
+                                    ASR::Array_t* dummy_arr = ASR::down_cast<ASR::Array_t>(dummy_arr_type);
+                                    bool is_invalid = false;
+                                    if (dummy_arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray ||
+                                        dummy_arr->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                                        is_invalid = true;
+                                    } else if (dummy_arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                                        if (ASRUtils::is_pointer(callee_param->m_type) || ASRUtils::is_allocatable(callee_param->m_type)) {
+                                            is_invalid = true;
+                                        }
+                                    }
+                                    if (is_invalid) {
+                                        std::string dummy_name = std::string(callee_param->m_name);
+                                        diag.add(diag::Diagnostic(
+                                            "Actual argument for '" + dummy_name + "' cannot be an assumed-size array",
+                                            diag::Level::Error, diag::Stage::Semantic, {
+                                                diag::Label("", {passed_arg_expr->base.loc})
+                                            }));
+                                        throw SemanticAbort();
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
