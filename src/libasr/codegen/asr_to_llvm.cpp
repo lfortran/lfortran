@@ -6520,6 +6520,36 @@ public:
         } else {
             return;
         }
+        // Detect whether this struct (or any of its ancestors) defines a
+        // FINAL procedure. For `intent(out)` dummies of finalizable
+        // structs, Fortran 2018 §7.5.6.3 ¶7 requires the FINAL routine to
+        // observe the caller's original scalar values, not the dummy's
+        // defaults. The ASR pass `intent_out_deallocate` emits the FINAL
+        // call followed by the per-member default-init assignments at the
+        // start of the body. To preserve the ordering we must skip the
+        // in-place default initialization of certain "simple" members
+        // here (see the targeted skip further down). All non-simple
+        // members (characters, fixed-size arrays of structs, pointer
+        // arrays, etc.) still need their descriptors / values set up at
+        // the function prologue, otherwise the conv-layer tests fail
+        // with runtime errors when those members are read before the
+        // ASR-pass-emitted assignments run.
+        bool struct_has_finalizer = false;
+        {
+            ASR::Struct_t* s = struct_sym;
+            while (s) {
+                if (s->n_member_functions > 0) {
+                    struct_has_finalizer = true;
+                    break;
+                }
+                if (s->m_parent) {
+                    s = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(s->m_parent));
+                } else {
+                    s = nullptr;
+                }
+            }
+        }
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             llvm::Type* const class_type = llvm_utils->getClassType(struct_sym, false);
             llvm::Type* const struct_type = llvm_utils->getStructType(struct_sym, module.get(), true);
@@ -6683,6 +6713,48 @@ public:
                 if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     if( v->m_symbolic_value ) {
+                        // For `intent(out)` struct dummies of finalizable
+                        // types, skip the in-place default initialization
+                        // of simple integer / unsigned / logical / real /
+                        // complex scalar members and of scalar (non-array)
+                        // pointer members that default to `null()`. The
+                        // ASR pass `intent_out_deallocate` will emit the
+                        // FINAL call (for user-declared intent(out) args)
+                        // followed by the per-member default-init
+                        // assignments at the start of the body, so FINAL
+                        // observes the caller's original values (Fortran
+                        // 2018 §7.5.6.3 ¶7). The ASR pass also emits the
+                        // default-init assignments for converted
+                        // function-result dummies (no FINAL is called for
+                        // them, but they still need default values). All
+                        // other members (characters, arrays, pointer-
+                        // arrays, etc.) still go through the normal in-
+                        // place init below so that their descriptors are
+                        // set up before any user code (or downstream
+                        // component-cleanup statements) read them.
+                        if (is_intent_out && struct_has_finalizer) {
+                            ASR::ttype_t* sym_ttype =
+                                ASRUtils::symbol_type(sym);
+                            ASR::ttype_t* skip_init_type =
+                                ASRUtils::extract_type(sym_ttype);
+                            bool is_simple_scalar =
+                                !ASRUtils::is_array(sym_ttype) &&
+                                !ASRUtils::is_pointer(sym_ttype) &&
+                                !ASRUtils::is_allocatable(sym_ttype) &&
+                                (ASR::is_a<ASR::Integer_t>(*skip_init_type) ||
+                                 ASR::is_a<ASR::UnsignedInteger_t>(*skip_init_type) ||
+                                 ASR::is_a<ASR::Logical_t>(*skip_init_type) ||
+                                 ASR::is_a<ASR::Real_t>(*skip_init_type) ||
+                                 ASR::is_a<ASR::Complex_t>(*skip_init_type));
+                            bool is_null_pointer_to_scalar =
+                                ASRUtils::is_pointer(sym_ttype) &&
+                                !ASRUtils::is_array(sym_ttype) &&
+                                ASR::is_a<ASR::PointerNullConstant_t>(
+                                    *v->m_symbolic_value);
+                            if (is_simple_scalar || is_null_pointer_to_scalar) {
+                                continue;
+                            }
+                        }
                         ASR::expr_t* init_value = ASRUtils::expr_value(v->m_symbolic_value);
                         ASR::ttype_t* init_type = ASRUtils::extract_type(symbol_type);
                         bool use_constant_init = init_value != nullptr &&
