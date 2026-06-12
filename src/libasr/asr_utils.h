@@ -7925,8 +7925,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                                 if (ASR::is_a<ASR::Array_t>(*dummy_arr_type)) {
                                     ASR::Array_t* dummy_arr = ASR::down_cast<ASR::Array_t>(dummy_arr_type);
                                     bool is_invalid = false;
-                                    if (dummy_arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray ||
-                                        dummy_arr->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                                    if (dummy_arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                                         is_invalid = true;
                                     } else if (dummy_arr->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                                         if (ASRUtils::is_pointer(callee_param->m_type) || ASRUtils::is_allocatable(callee_param->m_type)) {
