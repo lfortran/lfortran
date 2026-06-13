@@ -1205,7 +1205,13 @@ public:
             // Handle Memory
             if(!ASRUtils::is_allocatable_or_pointer(type) &&
                t->m_len_kind != ASR::string_length_kindType::AssumedLength){
-                llvm_utils->set_string_memory_on_heap(t->m_physical_type, str, llvm_utils->get_string_length(t, str));
+                llvm::Value* storage_size = llvm_utils->get_string_length(t, str);
+                if (t->m_kind > 1) {
+                    storage_size = builder->CreateMul(
+                        llvm_utils->convert_kind(storage_size, llvm::Type::getInt64Ty(context)),
+                        llvm::ConstantInt::get(context, llvm::APInt(64, t->m_kind)));
+                }
+                llvm_utils->set_string_memory_on_heap(t->m_physical_type, str, storage_size);
             }
         } else {
             throw LCompilersException("Unhandled string physicalType");
@@ -3064,6 +3070,14 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *c = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+        int arg_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
+        if (arg_kind > 1) {
+            llvm::Type *char_type = llvm::Type::getIntNTy(context, arg_kind * 8);
+            llvm::Value *char_ptr = builder->CreateBitCast(c, char_type->getPointerTo());
+            tmp = llvm_utils->CreateLoad2(char_type, char_ptr);
+            tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+            return;
+        }
         std::string runtime_func_name = "_lfortran_ichar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -3084,6 +3098,17 @@ public:
         }
         this->visit_expr_load_wrapper(x.m_arg, 0);
         llvm::Value *c = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+        int arg_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
+        if (arg_kind > 1) {
+            llvm::Type *char_type = llvm::Type::getIntNTy(context, arg_kind * 8);
+            llvm::Value *char_ptr = builder->CreateBitCast(c, char_type->getPointerTo());
+            tmp = llvm_utils->CreateLoad2(char_type, char_ptr);
+            tmp = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
+            if( ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8 ) {
+                tmp = builder->CreateSExt(tmp, llvm_utils->getIntType(8));
+            }
+            return;
+        }
         std::string runtime_func_name = "_lfortran_iachar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -11999,10 +12024,29 @@ public:
                         llvm_utils->string_descriptor->getPointerTo(), target);
                 }
             }
+            ASR::String_t* target_str_type = ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(asr_target_type));
+            ASR::String_t* value_str_type = ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(asr_value_type));
+            if (target_str_type->m_kind > 1 &&
+                target_str_type->m_kind == value_str_type->m_kind &&
+                target_str_type->m_physical_type == ASR::DescriptorString &&
+                value_str_type->m_physical_type == ASR::DescriptorString &&
+                !is_dest_allocatable &&
+                target_str_type->m_len_kind != ASR::string_length_kindType::DeferredLength) {
+                llvm::Value *target_data = llvm_utils->get_string_data(target_str_type, target);
+                llvm::Value *value_data = llvm_utils->get_string_data(value_str_type, value);
+                llvm::Value *copy_size = llvm_utils->get_string_length(value_str_type, value);
+                copy_size = builder->CreateMul(
+                    llvm_utils->convert_kind(copy_size, llvm::Type::getInt64Ty(context)),
+                    llvm::ConstantInt::get(context, llvm::APInt(64, target_str_type->m_kind)));
+                builder->CreateMemCpy(target_data, llvm::MaybeAlign(),
+                                      value_data, llvm::MaybeAlign(), copy_size);
+                tmp = nullptr;
+                return;
+            }
             llvm_utils->lfortran_str_copy(target, value,
-                ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
-                ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
-                is_dest_allocatable);
+                target_str_type, value_str_type, is_dest_allocatable);
             tmp = nullptr;
             return;
         }
@@ -14391,6 +14435,11 @@ public:
             llvm::Value* idx /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
                                                 llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+            int char_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
+            if (char_kind > 1) {
+                idx = builder->CreateMul(idx,
+                    llvm::ConstantInt::get(context, llvm::APInt(64, char_kind)));
+            }
             str_item = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data, idx);
         }
 
@@ -14490,6 +14539,11 @@ public:
             llvm::Value* str_data_orig = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* start = builder->CreateSub(start_INT64, llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+            int char_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
+            if (char_kind > 1) {
+                start = builder->CreateMul(start,
+                    llvm::ConstantInt::get(context, llvm::APInt(64, char_kind)));
+            }
             str_data = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data_orig, start, "StrSliceGEP");
         }
 

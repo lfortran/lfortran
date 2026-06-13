@@ -2746,7 +2746,8 @@ namespace LCompilers {
         int64_t str_len = -1;
         ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, str_len);
 
-        std::string initial_string = std::string(str_const->m_s, str_len);
+        int kind = ASRUtils::extract_kind_from_ttype_t(str_const->m_type);
+        std::string initial_string = std::string(str_const->m_s, str_len * kind);
         return declare_global_string(
             ASRUtils::get_string_type(str_const->m_type),
             initial_string, true, "string_const");
@@ -2832,6 +2833,8 @@ namespace LCompilers {
             ASRUtils::extract_value(str->m_len, len);
         }
 
+        int kind = str->m_kind;
+        int64_t byte_len = len * kind;
         llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, len));
         llvm::Constant* string_constant;
         // setup global string constant (llvm array of i8)
@@ -2852,13 +2855,13 @@ namespace LCompilers {
                         "Global variable should have constant-compile-time known length"
                     );
                 }
-                // Type -> [len x i8]
-                llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len);
-                // [len x i8] c "DATA HERE"
+                // Type -> [len * kind x i8]
+                llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), byte_len);
+                // [len * kind x i8] c "DATA HERE"
                 llvm::Constant* const_data_as_array {};
                 {
                     std::string initial_data_padded = std::string(initial_data);
-                    initial_data_padded.resize(len,' ');
+                    initial_data_padded.resize(byte_len,' ');
                     const_data_as_array = llvm::ConstantDataArray::getString(context, initial_data_padded, false);
                 }
                 // global [len x i8] c "DATA HERE"
