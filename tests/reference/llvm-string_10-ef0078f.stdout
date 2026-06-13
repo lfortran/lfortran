@@ -111,7 +111,7 @@ free_nonnull:                                     ; preds = %.entry
 
 free_done:                                        ; preds = %free_nonnull, %.entry
   %38 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy_alloc(i8* %2, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 1), i8 0, i8 0, i8* %38, i64 2)
+  call void @_lfortran_strcpy_alloc_kind(i8* %2, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 1), i8 0, i8 0, i8* %38, i64 2, i32 1)
   %39 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 0), align 8
   %40 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
   %41 = call i32 @str_compare(i8* %39, i64 2, i8* %40, i64 1)
@@ -155,7 +155,7 @@ free_nonnull2:                                    ; preds = %free_done
 
 free_done3:                                       ; preds = %free_nonnull2, %free_done
   %70 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.19, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy_alloc(i8* %2, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 1), i8 0, i8 0, i8* %70, i64 2)
+  call void @_lfortran_strcpy_alloc_kind(i8* %2, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 1), i8 0, i8 0, i8* %70, i64 2, i32 1)
   %71 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @c, i32 0, i32 0), align 8
   %72 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.21, i32 0, i32 0), align 8
   %73 = call i32 @str_compare(i8* %71, i64 2, i8* %72, i64 1)
@@ -208,7 +208,7 @@ free_done6:                                       ; preds = %free_nonnull5, %fre
   %106 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
   %107 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
   %108 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.30, i32 0, i32 0), align 8
-  call void @_lfortran_strcpy_alloc(i8* %2, i8** %106, i64* %107, i8 0, i8 0, i8* %108, i64 3)
+  call void @_lfortran_strcpy_alloc_kind(i8* %2, i8** %106, i64* %107, i8 0, i8 0, i8* %108, i64 3, i32 1)
   %109 = getelementptr %string_descriptor, %string_descriptor* %num, i32 0, i32 0
   %110 = load i8*, i8** %109, align 8
   %111 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.32, i32 0, i32 0), align 8
@@ -256,7 +256,7 @@ declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
-declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64)
+declare void @_lfortran_strcpy_alloc_kind(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
