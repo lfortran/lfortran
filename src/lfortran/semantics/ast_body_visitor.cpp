@@ -3434,6 +3434,9 @@ public:
                                 new_arg.m_dims = nullptr;
                                 new_arg.n_dims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
+                            } else if (!ASRUtils::is_array(mold_type)) {
+                                // Allow scalar intrinsic molds to pass through to the validation phase
+                                new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                             } else {
                                 diag.add(Diagnostic("The type of the argument is not supported yet for mold.", Level::Error, Stage::Semantic, {Label("",{mold->base.loc})}));
                                 throw SemanticAbort();
@@ -3514,6 +3517,10 @@ public:
                                 new_arg.m_dims = nullptr;
                                 new_arg.n_dims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
+                            } else if (!ASRUtils::is_array(source_type)) {
+                                // Allow scalar intrinsic sources to pass through to the validation phase
+                                // so it can correctly throw "Cannot allocate an array from a scalar source"
+                                new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                             } else {
                                 diag.add(Diagnostic("The type of the argument is not supported yet for source.", Level::Error, Stage::Semantic, {Label("",{source->base.loc})}));
                                 throw SemanticAbort();
@@ -3560,9 +3567,9 @@ public:
                 }));
             throw SemanticAbort();
         }
+
         // Perform all validation checks BEFORE creating any ASR nodes
         // to avoid creating malformed ASR when continuing compilation after errors
-
         for (size_t i = 0; i < alloc_args_vec.n; i++) {
             ASR::expr_t* alloc_expr = alloc_args_vec.p[i].m_a;
             ASR::ttype_t* alloc_type = ASRUtils::expr_type(alloc_expr);
@@ -3594,6 +3601,7 @@ public:
                 size_t source_n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, source_m_dims);
                 size_t var_n_dims = alloc_args_vec.p[i].n_dims;
                 size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
+
                 // Compare base element types (stripping Array/Allocatable/Pointer)
                 // because a scalar source is valid for array allocation per
                 // Fortran standard (F2018 9.7.1.2). Rank is checked separately below.
@@ -3628,6 +3636,7 @@ public:
                     throw SemanticAbort();
                 }
 
+                // Check individual dimension shapes
                 if (source_m_dims && var_m_dims) {
                     for (size_t j = 0; j < var_n_dims; j++) {
                         int source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
@@ -3655,7 +3664,7 @@ public:
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
                                         alloc_args_vec.p, alloc_args_vec.size(),
                                         stat, errmsg, source)));
-                                        // Pushing assignment statements to source
+            // Pushing assignment statements to source
             if (source_cond) {
                 for (size_t i = 0; i < alloc_args_vec.n ; i++) {
                     // Create assignment statement only for non-struct types
@@ -3693,7 +3702,7 @@ public:
             }
         }
     }
-
+    
     ASR::symbol_t* get_allocate_expr_sym(ASR::expr_t* v) {
         if (ASR::is_a<ASR::Var_t>(*v)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(v);
