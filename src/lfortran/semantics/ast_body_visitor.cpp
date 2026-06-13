@@ -3319,6 +3319,9 @@ public:
         }
 
         // When source is a FunctionCall, materialize it into a temporary
+        // variable so the function is called only once. Without this, the
+        // source expression is duplicated into ArrayBound, ArraySize,
+        // Allocate, and Assignment nodes, causing multiple evaluations.
         if (source_cond && source != nullptr && ASR::is_a<ASR::FunctionCall_t>(*source)) {
             ASR::ttype_t* source_type = ASRUtils::expr_type(source);
             std::string tmp_name = current_scope->get_unique_name("__lfortran_allocate_source_tmp");
@@ -3357,6 +3360,7 @@ public:
                         ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
                         if ( ASRUtils::check_equal_type(mold_type, a_type, mold, alloc_args_vec[i].m_a) ) {
                             if (ASRUtils::is_array(mold_type)) {
+                                // Compute m_len_expr for character arrays
                                 ASR::expr_t* len_expr = alloc_args_vec[i].m_len_expr;
                                 if (len_expr == nullptr && ASRUtils::is_character(*ASRUtils::type_get_past_array(mold_type))) {
                                     len_expr = ASRUtils::EXPR(
@@ -3407,6 +3411,10 @@ public:
                                     new_alloc_args_vec.push_back(al, new_arg);
                                 }
                             } else if ( ASR::is_a<ASR::StructType_t>(*mold_type) || ASRUtils::is_unlimited_polymorphic_type(a_type) ) {
+                                // For StructType mold or when allocatee is
+                                // unlimited polymorphic (class(*)), record the
+                                // mold type so the runtime allocates the
+                                // correct concrete type.
                                 ASR::alloc_arg_t new_arg;
                                 new_arg.loc = alloc_args_vec[i].loc;
                                 new_arg.m_a = alloc_args_vec[i].m_a;
@@ -3552,6 +3560,8 @@ public:
                 }));
             throw SemanticAbort();
         }
+        // Perform all validation checks BEFORE creating any ASR nodes
+        // to avoid creating malformed ASR when continuing compilation after errors
 
         for (size_t i = 0; i < alloc_args_vec.n; i++) {
             ASR::expr_t* alloc_expr = alloc_args_vec.p[i].m_a;
@@ -3584,7 +3594,9 @@ public:
                 size_t source_n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, source_m_dims);
                 size_t var_n_dims = alloc_args_vec.p[i].n_dims;
                 size_t var_n_dims_decl = ASRUtils::extract_dimensions_from_ttype(var_type, var_m_dims_decl);
-
+                // Compare base element types (stripping Array/Allocatable/Pointer)
+                // because a scalar source is valid for array allocation per
+                // Fortran standard (F2018 9.7.1.2). Rank is checked separately below.
                 ASR::ttype_t* source_base_type = ASRUtils::extract_type(source_type);
                 ASR::ttype_t* var_base_type = ASRUtils::extract_type(var_type);
                 if (!ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
@@ -3643,8 +3655,11 @@ public:
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
                                         alloc_args_vec.p, alloc_args_vec.size(),
                                         stat, errmsg, source)));
+                                        // Pushing assignment statements to source
             if (source_cond) {
                 for (size_t i = 0; i < alloc_args_vec.n ; i++) {
+                    // Create assignment statement only for non-struct types
+                    // All validation was already done above before creating the Allocate ASR node
                     if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
                         ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
                             ASRUtils::expr_type(alloc_args_vec[i].m_a));
@@ -3678,7 +3693,7 @@ public:
             }
         }
     }
-    
+
     ASR::symbol_t* get_allocate_expr_sym(ASR::expr_t* v) {
         if (ASR::is_a<ASR::Var_t>(*v)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(v);
@@ -9255,12 +9270,48 @@ public:
             AST::event_attribute_t *attr = x.m_stat[i];
             if (AST::is_a<AST::AttrStat_t>(*attr)) {
                 auto *s = AST::down_cast<AST::AttrStat_t>(attr);
-                ASR::symbol_t *sym = current_scope->resolve_symbol(s->m_variable);
-                stat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(s->m_variable)));
+                ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+                if (ASRUtils::is_array(stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_integer(*stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be of type integer, found "
+                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
                 auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
-                ASR::symbol_t *sym = current_scope->resolve_symbol(e->m_variable);
-                errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(e->m_variable)));
+                ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+                if (ASRUtils::is_array(errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_character(*errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be of type character, found "
+                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
