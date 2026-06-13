@@ -12812,6 +12812,9 @@ public:
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(m_arg))),
             module.get());
         llvm::Type* m_arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
+        ASR::expr_t* m_arg_value = ASRUtils::expr_value(m_arg);
+        bool is_array_constructor_value = m_arg_value &&
+            ASR::is_a<ASR::ArrayConstructor_t>(*m_arg_value);
         if( m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
@@ -12851,18 +12854,20 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            if( ((ASRUtils::expr_value(m_arg) &&
-                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                ASRUtils::expr_value(m_arg) == nullptr ) &&
+            if( ((m_arg_value &&
+                !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                !is_array_constructor_value) ||
+                m_arg_value == nullptr ) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->CreateGEP2(m_arg_llvm_type, tmp, 0);
             }
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            if( ((ASRUtils::expr_value(m_arg) &&
-                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                ASRUtils::expr_value(m_arg) == nullptr) &&
+            if( ((m_arg_value &&
+                !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                !is_array_constructor_value) ||
+                m_arg_value == nullptr) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
@@ -12877,9 +12882,10 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            if( ((ASRUtils::expr_value(m_arg) &&
-                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                ASRUtils::expr_value(m_arg) == nullptr) &&
+            if( ((m_arg_value &&
+                !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                !is_array_constructor_value) ||
+                m_arg_value == nullptr) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
@@ -12995,9 +13001,10 @@ public:
             m_old == ASR::array_physical_typeType::StringArraySinglePointer) {
         //
             if (ASRUtils::is_fixed_size_array(m_type)) {
-                if( ((ASRUtils::expr_value(m_arg) &&
-                    !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                    ASRUtils::expr_value(m_arg) == nullptr) &&
+                if( ((m_arg_value &&
+                    !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                    !is_array_constructor_value) ||
+                    m_arg_value == nullptr) &&
                     !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                     tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
                 }
