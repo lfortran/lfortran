@@ -7551,6 +7551,24 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // An assumed-size array has no known extent for its last
+                    // dimension, so it cannot be used where the dummy requires
+                    // a descriptor (pointer or allocatable).
+                    if (ASRUtils::is_pointer(dummy_type) ||
+                        ASRUtils::is_allocatable(dummy_type)) {
+                        ASR::ttype_t* actual_array =
+                            ASRUtils::type_get_past_allocatable_pointer(actual_type);
+                        if (ASR::is_a<ASR::Array_t>(*actual_array) &&
+                            ASR::down_cast<ASR::Array_t>(actual_array)->m_physical_type ==
+                                ASR::array_physical_typeType::UnboundedPointerArray) {
+                            std::string dummy_name = dummy_var->m_name;
+                            diag.semantic_error_label(
+                                "Actual argument for '" + dummy_name +
+                                "' cannot be an assumed-size array",
+                                {args[i].m_value->base.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
                     if (ASRUtils::is_allocatable(dummy_type)) {
                         ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable(dummy_type));
