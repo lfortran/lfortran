@@ -1409,10 +1409,11 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
         }
         ASR::LogicalConstant_t *back = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[4]));
+        int mask_size = ASRUtils::get_fixed_size_of_array(mask->m_type);
         int index = 0;
         int flag = 0;
         for (int i = 0; i < arr_size; i++) {
-            if (((bool*)mask->m_data)[i] != 0) {
+            if (((bool*)mask->m_data)[(mask_size == 1) ? 0 : i] != 0) {
                 flag = 1;
                 index = i;
                 break;
@@ -1434,7 +1435,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             if (is_character(*expr_type(args[0]))) {
                 std::string ele = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, index))->m_s;
                 for (int i = index+1; i < arr_size; i++) {
-                    if (((bool*)mask->m_data)[i] != 0) {
+                    if (((bool*)mask->m_data)[(mask_size == 1) ? 0 : i] != 0) {
                         flag = 1;
                         std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
                         if (back && back->m_value) {
@@ -1454,7 +1455,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 double ele = 0;
                 if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, index), ele)) {
                     for (int i = index+1; i < arr_size; i++) {
-                        if (((bool*)mask->m_data)[i] != 0) {
+                        if (((bool*)mask->m_data)[(mask_size == 1) ? 0 : i] != 0) {
                             flag = 1;
                             double ele2 = 0;
                             if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele2)) {
@@ -1478,7 +1479,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             if (is_character(*expr_type(args[0]))) {
                 std::string ele = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, index))->m_s;
                 for (int i = index+1; i < arr_size; i++) {
-                     if (((bool*)mask->m_data)[i] != 0) {
+                     if (((bool*)mask->m_data)[(mask_size == 1) ? 0 : i] != 0) {
                         flag = 1;
                         std::string ele2 = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
                         if (back && back->m_value) {
@@ -1498,7 +1499,7 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
                 double ele = 0;
                 if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, index), ele)) {
                     for (int i = index+1; i < arr_size; i++) {
-                         if (((bool*)mask->m_data)[i] != 0) {
+                         if (((bool*)mask->m_data)[(mask_size == 1) ? 0 : i] != 0) {
                             flag = 1;
                             double ele2 = 0;
                             if (extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele2)) {
