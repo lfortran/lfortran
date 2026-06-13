@@ -5216,23 +5216,30 @@ public:
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
                     
-                    // Determine if tmp needs dereferencing
-                    bool is_llvm_ptr = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
-                    bool is_alloca = llvm::dyn_cast<llvm::AllocaInst>(tmp) != nullptr;
-                    bool is_global = llvm::dyn_cast<llvm::GlobalVariable>(tmp) != nullptr;
+                    // NEW FIX: Only extract from a descriptor if the type is actually a struct!
+                    if (array_type->isStructTy()) {
+                        bool is_llvm_ptr = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
+                        bool is_alloca = llvm::dyn_cast<llvm::AllocaInst>(tmp) != nullptr;
+                        bool is_global = llvm::dyn_cast<llvm::GlobalVariable>(tmp) != nullptr;
 
-                    // Load if it's a pure pointer to the descriptor and not a direct allocation
-                    if (is_llvm_ptr && !is_alloca && !is_global) {
-                        llvm::Type* ptr_type = array_type->getPointerTo();
-                        tmp = llvm_utils->CreateLoad2(ptr_type, tmp);
+                        if (is_llvm_ptr && !is_alloca && !is_global) {
+                            llvm::Type* ptr_type = array_type->getPointerTo();
+                            tmp = llvm_utils->CreateLoad2(ptr_type, tmp);
+                        }
+                        
+                        llvm::Value* desc_ptr = llvm_utils->get_array_descriptor_ptr(tmp, array_type, false);
+                        llvm::Value* base_gep = llvm_utils->create_gep2(array_type, desc_ptr, 0);
+                        tmp = llvm_utils->load_pointer_element(base_gep, array_type);
+                    } else {
+                        // For fixed-size arrays, no descriptor exists. We use the raw array pointer.
+#if LLVM_VERSION_MAJOR < 15
+                        llvm::Type* el_type = array_type;
+                        if (llvm::ArrayType* arr_ty = llvm::dyn_cast<llvm::ArrayType>(array_type)) {
+                            el_type = arr_ty->getElementType();
+                        }
+                        tmp = builder->CreateBitCast(tmp, el_type->getPointerTo());
+#endif
                     }
-                    
-                    // Navigate through the array descriptor to access the base elements
-                    llvm::Value* desc_ptr = llvm_utils->get_array_descriptor_ptr(tmp, array_type, false);
-                    llvm::Value* base_gep = llvm_utils->create_gep2(array_type, desc_ptr, 0);
-                    
-                    // Fetch the element via our new helper utility
-                    tmp = llvm_utils->load_pointer_element(base_gep, array_type);
                     
                     base_t = elem_t;
                 }
@@ -9877,7 +9884,7 @@ public:
         }
         builder->CreateStore(target, target_desc);
     }
-    
+
     void visit_Associate(const ASR::Associate_t& x) {
         bool is_target_pointer_section = false;
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
