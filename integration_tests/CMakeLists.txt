@@ -1798,6 +1798,7 @@ RUN(NAME intrinsics_466 LABELS gfortran llvm) # eoshift with array-valued shift
 RUN(NAME intrinsics_467 LABELS gfortran llvm) # elemental intrinsics over allocatable arrays in array constructors
 RUN(NAME intrinsics_468 LABELS gfortran llvm) # product with dim in array expression
 RUN(NAME intrinsics_469 LABELS gfortran llvm) # dot product with empty/zero-length arrays
+RUN(NAME intrinsics_470 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants

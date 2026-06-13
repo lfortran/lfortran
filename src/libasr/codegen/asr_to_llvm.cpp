@@ -5209,12 +5209,31 @@ public:
             ASR::ttype_t* base_t = ASRUtils::expr_type(x.m_v);
             base_t = ASRUtils::type_get_past_allocatable(base_t);
             base_t = ASRUtils::type_get_past_pointer(base_t);
-            if (ASRUtils::is_array(base_t)) {// If nested derived type
-                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);\
+            
+            if (ASRUtils::is_array(base_t)) { // If nested derived type
+                ASR::ttype_t *elem_t = ASRUtils::type_get_past_array(base_t);
                 if (ASRUtils::is_struct(*elem_t)){
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
-                    tmp = llvm_utils->create_gep2(array_type, tmp, 0);
+                    
+                    // Determine if tmp needs dereferencing
+                    bool is_llvm_ptr = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
+                    bool is_alloca = llvm::dyn_cast<llvm::AllocaInst>(tmp) != nullptr;
+                    bool is_global = llvm::dyn_cast<llvm::GlobalVariable>(tmp) != nullptr;
+
+                    // Load if it's a pure pointer to the descriptor and not a direct allocation
+                    if (is_llvm_ptr && !is_alloca && !is_global) {
+                        llvm::Type* ptr_type = array_type->getPointerTo();
+                        tmp = llvm_utils->CreateLoad2(ptr_type, tmp);
+                    }
+                    
+                    // Navigate through the array descriptor to access the base elements
+                    llvm::Value* desc_ptr = llvm_utils->get_array_descriptor_ptr(tmp, array_type, false);
+                    llvm::Value* base_gep = llvm_utils->create_gep2(array_type, desc_ptr, 0);
+                    
+                    // Fetch the element via our new helper utility
+                    tmp = llvm_utils->load_pointer_element(base_gep, array_type);
+                    
                     base_t = elem_t;
                 }
             }
@@ -9543,6 +9562,150 @@ public:
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
 
+        // --- START NEW LOGIC FOR DERIVED TYPE COMPONENT ARRAYS ---
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v)) {
+            ASR::StructInstanceMember_t* struct_member = ASR::down_cast<ASR::StructInstanceMember_t>(array_section->m_v);
+            
+            // Proceed only if the parent structure itself is an array
+            if (ASRUtils::is_array(ASRUtils::expr_type(struct_member->m_v))) {
+                int64_t saved_ptr_loads = ptr_loads;
+                
+                // 1. Visit parent to resolve base descriptor
+                ptr_loads = 0;
+                visit_expr(*struct_member->m_v);
+                llvm::Value* parent_descriptor = tmp;
+                
+                // 2. Visit member to resolve member descriptor
+                ptr_loads = 0;
+                visit_expr_wrapper(array_section->m_v);
+                llvm::Value* member_descriptor = tmp;
+                
+                // 3. Visit target pointer
+                ptr_loads = 0;
+                visit_expr(*x.m_target);
+                llvm::Value* dest_descriptor = tmp;
+                
+                ptr_loads = saved_ptr_loads; // Restore state
+
+                // Configure and allocate the target array descriptor
+                ASR::ttype_t* dest_ttype = ASRUtils::duplicate_type_with_empty_dims(al,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))),
+                     ASR::array_physical_typeType::DescriptorArray, true);
+                     
+                llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, dest_ttype, module.get());
+                llvm::Value* allocated_target = arr_descr->create_descriptor_alloca(
+                    dest_llvm_type, "section_descriptor_alloca");
+
+                // Evaluate indices for the array section
+                int slicing_rank = array_section->n_args;
+                std::vector<llvm::Value*> slice_starts;
+                for (int i = 0; i < slicing_rank; i++) {
+                    visit_expr_wrapper(array_section->m_args[i].m_right, true);
+                    slice_starts.push_back(tmp);
+                }
+
+                // Gather member dimension metadata (start and length)
+                ASR::Variable_t* mem_var = ASR::down_cast<ASR::Variable_t>(
+                    symbol_get_past_external(struct_member->m_m));
+                ASR::ttype_t* mem_type = mem_var->m_type;
+                ASR::dimension_t* mem_dims = nullptr;
+                int mem_dims_count = ASRUtils::extract_dimensions_from_ttype(mem_type, mem_dims);
+
+                std::vector<llvm::Value*> dim_metadata;
+                llvm::Type* idx_type = arr_descr->get_index_type();
+                unsigned idx_width = idx_type->getIntegerBitWidth();
+
+                for (int d = 0; d < mem_dims_count; d++) {
+                    llvm::Value* d_start = nullptr;
+                    if (mem_dims[d].m_start) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(mem_dims[d].m_start));
+                        visit_expr_wrapper(mem_dims[d].m_start, true);
+                        d_start = tmp;
+                    } else {
+                        d_start = llvm::ConstantInt::get(context, llvm::APInt(idx_width, 1));
+                    }
+
+                    llvm::Value* d_length = nullptr;
+                    if (mem_dims[d].m_length) {
+                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(mem_dims[d].m_length));
+                        visit_expr_wrapper(mem_dims[d].m_length, true);
+                        d_length = tmp;
+                    } else {
+                        d_length = llvm::ConstantInt::get(context, llvm::APInt(idx_width, 0));
+                    }
+                    
+                    dim_metadata.push_back(d_start);
+                    dim_metadata.push_back(d_length);
+                }
+                ptr_loads = saved_ptr_loads; // Restore state again
+
+                llvm::Type* llvm_mem_type = llvm_utils->get_type_from_ttype_t_util(
+                    struct_member->m_v, mem_type, module.get());
+
+                // Utilize array descriptor utilities to pinpoint the exact single element base
+                member_descriptor = arr_descr->get_single_element(
+                    llvm_mem_type, member_descriptor, slice_starts, slicing_rank,
+                    mem_type, array_section->m_v,
+                    location_manager, nullptr, true, true, dim_metadata.data(),
+                    false, nullptr, false, false, "", infile);
+
+                // Populate the newly created descriptor target
+                builder->CreateStore(member_descriptor, arr_descr->get_pointer_to_data(dest_llvm_type, allocated_target));
+                builder->CreateStore(
+                    llvm::ConstantInt::get(context, llvm::APInt(idx_width, 0)),
+                    arr_descr->get_offset(dest_llvm_type, allocated_target, false));
+
+                int base_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(struct_member->m_v));
+                arr_descr->fill_dimension_descriptor(dest_llvm_type, allocated_target, base_rank);
+
+                // Set up and copy dimension definitions mapping between the structs
+                llvm::Type* parent_ttype = llvm_utils->get_type_from_ttype_t_util(
+                    struct_member->m_v, ASRUtils::expr_type(struct_member->m_v), module.get());
+                    
+                parent_descriptor = llvm_utils->get_array_descriptor_ptr(parent_descriptor, parent_ttype, false);
+                
+                llvm::Value* src_dims_arr = arr_descr->get_pointer_to_dimension_descriptor_array(parent_ttype, parent_descriptor);
+                llvm::Value* dst_dims_arr = arr_descr->get_pointer_to_dimension_descriptor_array(dest_llvm_type, allocated_target);
+                
+                llvm::Type* desc_dim_type = arr_descr->get_dimension_descriptor_type(false);
+                
+                llvm::Type* el_type_parent = llvm_utils->get_el_type(struct_member->m_v,
+                    ASRUtils::extract_type(ASRUtils::expr_type(struct_member->m_v)), module.get());
+                llvm::Type* el_type_target = llvm_utils->get_el_type(x.m_target,
+                    ASRUtils::extract_type(ASRUtils::expr_type(x.m_target)), module.get());
+                
+                llvm::DataLayout dl(module->getDataLayout());
+                uint64_t size_parent = dl.getTypeAllocSize(el_type_parent);
+                uint64_t size_target = dl.getTypeAllocSize(el_type_target);
+
+                for (int r = 0; r < base_rank; r++) {
+                    llvm::Value* src_dim = llvm_utils->create_ptr_gep2(desc_dim_type, src_dims_arr, r);
+                    llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(desc_dim_type, dst_dims_arr, r);
+                    
+                    builder->CreateMemCpy(dst_dim, llvm::MaybeAlign(), src_dim, llvm::MaybeAlign(),
+                        llvm::ConstantInt::get(context, llvm::APInt(32, dl.getTypeAllocSize(desc_dim_type))));
+                    
+                    // Adjust scaling of strides for nested memory boundary alignment
+                    llvm::Value* dst_stride_ptr = llvm_utils->create_gep2(desc_dim_type, dst_dim, 2);
+                    llvm::Value* raw_stride = llvm_utils->CreateLoad2(arr_descr->get_index_type(), dst_stride_ptr);
+                    
+                    llvm::Value* adjusted_stride = builder->CreateMul(raw_stride,
+                        llvm::ConstantInt::get(arr_descr->get_index_type(), size_parent));
+                        
+                    adjusted_stride = builder->CreateUDiv(adjusted_stride,
+                        llvm::ConstantInt::get(arr_descr->get_index_type(), size_target));
+                        
+                    builder->CreateStore(adjusted_stride, dst_stride_ptr);
+                }
+
+                // Finalize Target Mapping
+                builder->CreateStore(allocated_target, dest_descriptor);
+                return;
+            }
+        }
+        // --- END NEW LOGIC ---
+
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
@@ -9714,7 +9877,7 @@ public:
         }
         builder->CreateStore(target, target_desc);
     }
-
+    
     void visit_Associate(const ASR::Associate_t& x) {
         bool is_target_pointer_section = false;
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
