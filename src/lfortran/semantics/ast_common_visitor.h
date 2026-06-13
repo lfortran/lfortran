@@ -10239,36 +10239,38 @@ public:
         }
 
         if( is_item ) {
-            Vec<ASR::dimension_t> empty_dims;
-            empty_dims.reserve(al, 1);
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
-                type = ASR::down_cast<ASR::StructInstanceMember_t>(v_Var)->m_type;
-            }
-            type = ASRUtils::duplicate_type(al, type, &empty_dims);
-            if (arr_ref_val == nullptr) {
-                // For now we will only handle 1D arrays
-                if (args.size() == 1) {
-                    ASR::array_index_t arg = args[0];
-                    if (arg.m_left == nullptr && arg.m_step == nullptr) {
-                        ASR::expr_t *val = ASRUtils::expr_value(v_Var);
-                        ASR::expr_t *index = ASRUtils::expr_value(arg.m_right);
-                        if (val && index) {
-                            val = ASRUtils::expr_value(val);
-                            ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
-                            ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
-                            int based_indexing = get_based_indexing(v);
-                            int64_t index3 = index2->m_n-based_indexing;
-                            size_t index4 = index3;
-                            if (index3 < 0 || index4 >= (size_t) ASRUtils::get_fixed_size_of_array(val2->m_type)) {
-                                diag.add(Diagnostic("The index is out of bounds",
-                                    Level::Error, Stage::Semantic, {Label("", {index2->base.base.loc})}));
-                                throw SemanticAbort();
+                Vec<ASR::dimension_t> empty_dims;
+                empty_dims.reserve(al, 1);
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
+                    type = ASR::down_cast<ASR::StructInstanceMember_t>(v_Var)->m_type;
+                }
+                type = ASRUtils::duplicate_type(al, type, &empty_dims);
+                if (arr_ref_val == nullptr) {
+                    // For now we will only handle 1D arrays
+                    if (args.size() == 1) {
+                        ASR::array_index_t arg = args[0];
+                        if (arg.m_left == nullptr && arg.m_step == nullptr) {
+                            ASR::expr_t *val = ASRUtils::expr_value(v_Var);
+                            ASR::expr_t *index = ASRUtils::expr_value(arg.m_right);
+                            if (val && index) {
+                                val = ASRUtils::expr_value(val);
+                                ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
+                                ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
+                                int based_indexing = get_based_indexing(v);
+                                int64_t index3 = index2->m_n-based_indexing;
+                                size_t index4 = index3;
+                                if (index3 < 0 || index4 >= (size_t) ASRUtils::get_fixed_size_of_array(val2->m_type)) {
+                                    diag.add(Diagnostic("The index is out of bounds",
+                                        Level::Error, Stage::Semantic, {Label("", {index2->base.base.loc})}));
+                                    throw SemanticAbort();
+                                }
+                                arr_ref_val = ASRUtils::fetch_ArrayConstant_value(al, val2, index4);
                             }
-                            arr_ref_val = ASRUtils::fetch_ArrayConstant_value(al, val2, index4);
                         }
                     }
                 }
             }
+
             if( ASRUtils::is_character(*root_v_type) &&
                 !ASRUtils::is_array(root_v_type) ) {
                 ASR::ttype_t  *char_type = ASRUtils::TYPE(ASR::make_String_t(
@@ -10290,7 +10292,7 @@ public:
 
                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                                            1, int_type));
+                                                            1, int_type));
                 ASR::expr_t *l = nullptr, *r = nullptr, *step = nullptr;
                 if (m_subargs[0].m_start) {
                     this->visit_expr(*(m_subargs[0].m_start));
@@ -10327,15 +10329,10 @@ public:
             } else {
                 ASR::ttype_t* final_type;
                 if (is_arg_array) {
-                  ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
-                  final_type = ASRUtils::duplicate_type(al, op_type, &res_dims_vec);
+                    ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
+                    final_type = ASRUtils::duplicate_type(al, op_type, &res_dims_vec);
                 } else {
-                ASR::ttype_t* final_type;
-                if (is_arg_array) {
-                  ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
-                  final_type = ASRUtils::duplicate_type(al, op_type, &res_dims_vec);
-                } else {
-                  final_type = ASRUtils::type_get_past_pointer(
+                    final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
                 }
 
