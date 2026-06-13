@@ -1611,3 +1611,27 @@ semantic error: Alternate return arguments are not permitted in calls to the 'cp
     |
 753 |         call cpu_time(*1)
     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be of type integer, found string
+   --> tests/errors/continue_compilation_1.f90:759:9
+    |
+759 |         sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `errmsg` argument of `sync all` must be of type character, found integer
+   --> tests/errors/continue_compilation_1.f90:764:9
+    |
+764 |         sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be scalar
+   --> tests/errors/continue_compilation_1.f90:769:9
+    |
+769 |         sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'nosuch' is not declared
+   --> tests/errors/continue_compilation_1.f90:773:9
+    |
+773 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
