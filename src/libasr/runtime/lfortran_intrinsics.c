@@ -8743,6 +8743,11 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
             printf("No file found with given unit\n");
             exit(1);
         }
+        if (!read_access) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+            exit(1);
+        }
     }
 
     if (unit_file_bin) {
@@ -9968,16 +9973,22 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
 
     bool unit_file_bin;
     int access_id;
+    bool read_access = true;
     FILE* filep;
     if (unit_num == -1) {
         filep = stdin;
         unit_file_bin = false;
         access_id = -1;
     } else {
-        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
         if (!filep) {
             if (iostat) { *iostat = 1; return; }
             printf("No file found with given unit\n");
+            exit(1);
+        }
+        if (!read_access) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
             exit(1);
         }
     }
@@ -11580,9 +11591,15 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
 
     bool unit_file_bin;
     int access_id;
-    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access = true;
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
         fprintf(stderr, "No file found with given unit\n");
+        exit(1);
+    }
+    if (!read_access) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
         exit(1);
     }
 
