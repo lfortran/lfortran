@@ -9325,8 +9325,8 @@ public:
                         ASR::make_IntegerConstant_t(al, x.base.base.loc,
                             (int64_t)(i + 1), int_type));
                     ASR::expr_t* size_expr = ASRUtils::EXPR(
-                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
-                            dim_expr, int_type, nullptr));
+                        ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, x.m_value,
+                            dim_expr, int_type, nullptr, false));
                     visit_expr_wrapper(size_expr, true);
                     llvm::Value* size_val = builder->CreateSExtOrTrunc(
                         tmp, lbs.p[i]->getType());
@@ -9390,13 +9390,14 @@ public:
         llvm::Value* value_data = nullptr;
         llvm::Type* idx_type = arr_descr->get_index_type();
         unsigned idx_bits = idx_type->getIntegerBitWidth();
-        ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
-        if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-            ASR::ttype_t* value_desc_asr_type = value_type;
-            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
-                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
-                value_desc_asr_type = ASRUtils::expr_type(value_section->m_v);
-            }
+        ASR::ttype_t* value_desc_asr_type = value_type;
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+            ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+            value_desc_asr_type = ASRUtils::expr_type(value_section->m_v);
+        }
+        ASR::array_physical_typeType underlying_value_physical_type = ASRUtils::extract_physical_type(value_desc_asr_type);
+        
+        if (underlying_value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
             ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(value_desc_asr_type));
             llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
@@ -9446,13 +9447,68 @@ public:
                 }
                 value_data = llvm_utils->create_ptr_gep2(value_el_type, value_data, section_offset);
             }
-        } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                   value_physical_type == ASR::array_physical_typeType::PointerArray) {
+        } else if (underlying_value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                   underlying_value_physical_type == ASR::array_physical_typeType::PointerArray) {
             llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                 ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(value_type)),
+                ASRUtils::type_get_past_pointer(value_desc_asr_type)),
                 module.get());
             value_data = llvm_utils->create_gep2(val_type, value_desc, 0);
+            
+            // If the value is an ArraySection, compute offset to the first
+            // element of the section and adjust the data pointer accordingly.
+            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                llvm::Value* section_offset = llvm::ConstantInt::get(idx_type, 0);
+                ASR::dimension_t* m_dims;
+                ASRUtils::extract_dimensions_from_ttype(value_desc_asr_type, m_dims);
+                llvm::Value* stride = llvm::ConstantInt::get(idx_type, 1);
+                
+                for (size_t vi = 0; vi < value_section->n_args; vi++) {
+                    ASR::array_index_t& vidx = value_section->m_args[vi];
+                    llvm::Value* first_idx;
+                    if (vidx.m_step != nullptr) {
+                        if (vidx.m_left != nullptr) {
+                            visit_expr_wrapper(vidx.m_left, true);
+                            first_idx = tmp;
+                        } else {
+                            if (m_dims && m_dims[vi].m_start) {
+                                visit_expr_wrapper(m_dims[vi].m_start, true);
+                                first_idx = tmp;
+                            } else {
+                                first_idx = llvm::ConstantInt::get(idx_type, 1);
+                            }
+                        }
+                    } else {
+                        visit_expr_wrapper(vidx.m_right, true);
+                        first_idx = tmp;
+                    }
+                    first_idx = builder->CreateSExtOrTrunc(first_idx, idx_type);
+                    
+                    llvm::Value* lb;
+                    if (m_dims && m_dims[vi].m_start) {
+                        visit_expr_wrapper(m_dims[vi].m_start, true);
+                        lb = builder->CreateSExtOrTrunc(tmp, idx_type);
+                    } else {
+                        lb = llvm::ConstantInt::get(idx_type, 1);
+                    }
+                    
+                    section_offset = builder->CreateAdd(section_offset,
+                        builder->CreateMul(stride, builder->CreateSub(first_idx, lb)));
+                        
+                    if (vi < value_section->n_args - 1) {
+                        llvm::Value* dim_size;
+                        if (m_dims && m_dims[vi].m_length) {
+                            visit_expr_wrapper(m_dims[vi].m_length, true);
+                            dim_size = builder->CreateSExtOrTrunc(tmp, idx_type);
+                        } else {
+                            dim_size = llvm::ConstantInt::get(idx_type, 1); // fallback
+                        }
+                        stride = builder->CreateMul(stride, dim_size);
+                    }
+                }
+                value_data = llvm_utils->create_ptr_gep2(value_el_type, value_data, section_offset);
+            }
         } else {
             value_data = value_desc;
         }
