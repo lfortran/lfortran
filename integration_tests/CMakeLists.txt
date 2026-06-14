@@ -2281,6 +2281,7 @@ RUN(NAME complex_mul_test LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm for
 RUN(NAME complex_div_test LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_pow_test LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME complex_unary_minus_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME complex_pow_io LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME dcmplx_01 LABELS gfortran llvm) # dcmplx, dconjg
 RUN(NAME logical_to_integer_cast LABELS gfortran llvm EXTRA_ARGS --logical-casting NO_STD_F23)
 

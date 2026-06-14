@@ -4174,6 +4174,15 @@ LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
 LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
+    if (a->re == 0.0f && a->im == 0.0f) {
+        // 0 raised to a positive real power is 0. 
+        if (b->re > 0.0f) {
+            result->re = 0.0f;
+            result->im = 0.0f;
+            return;
+        }
+    }
+
     #ifdef _MSC_VER
         _Fcomplex ca = _FCOMPLEX_(a->re, a->im);
         _Fcomplex cb = _FCOMPLEX_(b->re, b->im);
@@ -4185,12 +4194,21 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
     #endif
         result->re = crealf(cr);
         result->im = cimagf(cr);
-
 }
 
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
+    
+    if (a->re == 0.0 && a->im == 0.0) {
+        // 0 raised to a positive real power is 0. 
+        if (b->re > 0.0) {
+            result->re = 0.0;
+            result->im = 0.0;
+            return;
+        }
+    }
+
     #ifdef _MSC_VER
         _Dcomplex ca = _DCOMPLEX_(a->re, a->im);
         _Dcomplex cb = _DCOMPLEX_(b->re, b->im);
@@ -4200,9 +4218,9 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         double complex cb = CMPLX(b->re, b->im);
         double complex cr = cpow(ca, cb);
     #endif
-        result->re = creal(cr);
-        result->im = cimag(cr);
-
+    
+    result->re = creal(cr);
+    result->im = cimag(cr);
 }
 
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
@@ -11972,6 +11990,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             }
         }
 
+        
+        
+        if (filep == stdout || filep == stderr) {
+            fflush(filep);
+        }
 
         if(iostat != NULL) *iostat = 0;
         va_end(args);
