@@ -766,7 +766,19 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
             ASR::expr_t* right_val = compiletime_values[i].second;
             args.push_back(al, compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag));
         }
-        return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
+        if (ASRUtils::is_array(type) && ASRUtils::extract_n_dims_from_ttype(type) > 1) {
+            Vec<ASR::expr_t*> values;
+            values.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                values.push_back(al, ASRUtils::expr_value(args[i]));
+            }
+            ASR::Array_t* array_type =ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(type));
+            void* data = ASRUtils::set_ArrayConstant_data(values.p, values.size(), array_type->m_type);
+            int64_t n_data = values.size() * ASRUtils::extract_kind_from_ttype_t(array_type->m_type);
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc, n_data, data, type, ASR::arraystorageType::ColMajor));
+        } else {
+            return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
+        }
     }
 }
 
