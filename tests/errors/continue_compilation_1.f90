@@ -779,4 +779,42 @@ program continue_compilation_1
     subroutine ptr_sink(x)
         integer, pointer :: x(..)
     end subroutine
+    subroutine assumed_size_to_assumed_shape_forward(items)
+        implicit none
+        integer :: items(*)
+        call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    end subroutine
+    subroutine consume_assumed_shape(items)
+        implicit none
+        integer :: items(:)
+    end subroutine
+    subroutine assumed_size_to_assumed_rank_forward(items)
+        implicit none
+        integer :: items(*)
+        call consume_assumed_rank(items)
+    end subroutine
+    subroutine consume_assumed_rank(items)
+        implicit none
+        integer :: items(..)
+    end subroutine
+    subroutine assumed_size_to_assumed_rank_function_forward(items)
+        implicit none
+        integer :: items(*)
+        print *, consume_assumed_rank_function(items)
+    end subroutine
+    integer function consume_assumed_rank_function(items)
+        implicit none
+        integer :: items(..)
+        consume_assumed_rank_function = 0
+    end function
+    subroutine assumed_size_to_assumed_shape_function_forward(items)
+        implicit none
+        integer :: items(*)
+        print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    end subroutine
+    integer function consume_assumed_shape_function(items)
+        implicit none
+        integer :: items(:)
+        consume_assumed_shape_function = size(items)
+    end function
 end program

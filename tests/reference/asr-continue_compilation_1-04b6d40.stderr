@@ -1640,4 +1640,16 @@ semantic error: Actual argument for 'x' cannot be an assumed-size array
    --> tests/errors/continue_compilation_1.f90:777:23
     |
 777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
-    |                       ^ 
+    |                       ^
+
+semantic error: actual argument for 'items' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:785:36
+    |
+785 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    |                                    ^^^^^
+
+semantic error: actual argument for 'items' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:813:49
+    |
+813 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    |                                                 ^^^^^

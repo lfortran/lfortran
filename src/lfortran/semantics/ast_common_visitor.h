@@ -11202,6 +11202,7 @@ public:
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         validate_missing_required_arguments(loc, args, func);
+        validate_assumed_size_actual_arguments(args, func);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
             final_sym, v, args.p, args.size(), return_type,
@@ -11343,6 +11344,8 @@ public:
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         validate_missing_required_arguments(loc, args, func, v_expr,
             v_class_proc->m_is_nopass);
+        validate_assumed_size_actual_arguments(args, func, 0,
+            v_class_proc->m_is_nopass ? -1 : (int64_t)ASRUtils::get_pass_arg_index(v));
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();
@@ -11400,6 +11403,7 @@ public:
             }
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
             validate_missing_required_arguments(loc, args, func);
+            validate_assumed_size_actual_arguments(args, func);
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
                 final_sym, v, args.p, args.size(), type,
@@ -11473,6 +11477,7 @@ public:
                     args_without_dt.push_back(al, args[i]);
                 }
                 validate_missing_required_arguments(loc, args, func);
+                validate_assumed_size_actual_arguments(args, func);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 ASR::call_arg_t* call_args = args_without_dt.p;
                 size_t n_call_args = args_without_dt.size();
@@ -11488,6 +11493,7 @@ public:
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
                 ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
                 validate_missing_required_arguments(loc, args, func);
+                validate_assumed_size_actual_arguments(args, func);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
@@ -11710,6 +11716,51 @@ public:
                     v.visit_Program(*p);
                 }
             }
+        }
+    }
+
+    void validate_assumed_size_actual_arguments(Vec<ASR::call_arg_t>& args,
+            ASR::Function_t* func, size_t dummy_offset=0, int64_t skip_dummy_index=-1) {
+        size_t actual_i = 0;
+        for (size_t dummy_i = dummy_offset;
+                dummy_i < func->n_args && actual_i < args.size(); dummy_i++) {
+            if (skip_dummy_index >= 0 && dummy_i == (size_t)skip_dummy_index) {
+                continue;
+            }
+            if (args[actual_i].m_value == nullptr) {
+                actual_i++;
+                continue;
+            }
+            if (!ASR::is_a<ASR::Var_t>(*func->m_args[dummy_i])) {
+                actual_i++;
+                continue;
+            }
+
+            ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(func->m_args[dummy_i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) {
+                actual_i++;
+                continue;
+            }
+
+            ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+            ASR::ttype_t* dummy_type = dummy_var->m_type;
+            ASR::ttype_t* actual_type = ASRUtils::expr_type(args[actual_i].m_value);
+            if (ASRUtils::is_array(actual_type) && ASRUtils::is_array(dummy_type) &&
+                    ASRUtils::extract_physical_type(actual_type) ==
+                        ASR::array_physical_typeType::UnboundedPointerArray &&
+                    ASRUtils::extract_physical_type(dummy_type) ==
+                        ASR::array_physical_typeType::DescriptorArray &&
+                    !ASRUtils::is_assumed_rank_array(dummy_type)) {
+                diag.add(Diagnostic(
+                    "actual argument for '" + std::string(dummy_var->m_name) +
+                    "' cannot be an assumed-size array",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {args[actual_i].m_value->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            actual_i++;
         }
     }
 
@@ -12215,6 +12266,10 @@ public:
                 current_module_dependencies.push_back(al, mod);
             }
         }
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+        legacy_array_sections_helper(v, args, loc);
+        validate_assumed_size_actual_arguments(args, func);
+        validate_create_function_arguments(args, v);
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
@@ -12228,9 +12283,6 @@ public:
             current_module_dependencies.push_back(al, v_module->m_name);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-        legacy_array_sections_helper(v, args, loc);
-        validate_create_function_arguments(args, v);
         if (!func->m_deterministic) {
             current_function_deterministic = false;
         }
