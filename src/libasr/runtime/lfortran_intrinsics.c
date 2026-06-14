@@ -11910,7 +11910,12 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
     // For character array internal files, each '\n' in formatted text denotes
     // the next record (array element).
     if (*str_holder != NULL) {
-        if (is_array_unit && array_size > 0) {
+        if (is_array_unit && array_size <= 0) {
+            if (iostat != NULL) *iostat = -1;
+            internal_free(s);
+            va_end(args);
+            return;
+        } else if (is_array_unit) {
             int64_t rec = 0;
             int64_t start = 0;
             while (rec < array_size && start <= str_len) {

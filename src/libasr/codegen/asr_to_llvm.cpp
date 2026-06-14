@@ -20128,6 +20128,9 @@ public:
                         llvm::Value* extent = builder->CreateAdd(
                             builder->CreateSDiv(builder->CreateSub(right, left), step),
                             llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+                        llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+                        extent = builder->CreateSelect(
+                            builder->CreateICmpSLT(extent, zero), zero, extent);
                         string_array_size = builder->CreateMul(string_array_size, extent);
                     }
                 } else {
