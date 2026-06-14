@@ -772,4 +772,11 @@ program continue_compilation_1
         implicit none
         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
     end subroutine
+    subroutine assumed_size_to_pointer_dummy(x)
+        integer :: x(*)
+        call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    end subroutine
+    subroutine ptr_sink(x)
+        integer, pointer :: x(..)
+    end subroutine
 end program
