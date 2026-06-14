@@ -174,6 +174,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     ASR::expr_t* value;
     ASR::ttype_t* type;
     diag::Diagnostics& diag;
+    int64_t element_idx;
     const std::map<ASRUtils::IntrinsicElementalFunctions, size_t> name2signature_varargs = {
         // max0 can accept any arbitrary number of arguments 2<=x<=100
         {ASRUtils::IntrinsicElementalFunctions::Max, 100},
@@ -205,7 +206,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
 
     ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int>& loop_indices, ASR::expr_t* value_,
         ASR::ttype_t* type, diag::Diagnostics& diag) :
-        al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value_), type(type), diag(diag) {}
+        al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value_), type(type), diag(diag), element_idx(-1) {}
 
     void visit_Var(const ASR::Var_t &x) {
         int loop_var_index = std::find(loop_vars.begin(), loop_vars.end(), x.m_v) - loop_vars.begin();
@@ -447,6 +448,8 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             s2c(al, result), x.m_type));
     }
 
+
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
         value = nullptr;
         this->visit_expr(*x.m_left);
@@ -456,41 +459,15 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         ASR::expr_t* right_val = value;
 
         if (left_val && right_val) {
-            bool left_is_array = ASR::is_a<ASR::ArrayConstant_t>(*left_val);
-            bool right_is_array = ASR::is_a<ASR::ArrayConstant_t>(*right_val);
+            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(left_val)->m_n;
+            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(right_val)->m_n;
+            int64_t res;
 
-            if (left_is_array || right_is_array) {
-                ASR::ArrayConstant_t* arr = ASR::down_cast<ASR::ArrayConstant_t>(left_is_array ? left_val : right_val);
-                int32_t scalar = ASR::down_cast<ASR::IntegerConstant_t>(left_is_array ? right_val : left_val)->m_n;
-                int64_t n_data = arr->m_n_data;
-                int64_t n_elements = n_data / sizeof(int32_t);
-                int32_t* new_data = al.allocate<int32_t>(n_elements);
-                int32_t* old_data = (int32_t*)arr->m_data;
-                for(int64_t i=0; i<n_elements; ++i) {
-                    int32_t a = left_is_array ? old_data[i] : scalar;
-                    int32_t b = left_is_array ? scalar : old_data[i];
-                    switch (x.m_op) {
-                        case ASR::binopType::Add: new_data[i] = a + b; break;
-                        case ASR::binopType::Sub: new_data[i] = a - b; break;
-                        case ASR::binopType::Mul: new_data[i] = a * b; break;
-                        case ASR::binopType::Div: new_data[i] = b != 0 ? a / b : 0; break;
-                        case ASR::binopType::Pow: new_data[i] = std::pow(a, b); break;
-                        default: new_data[i] = 0; break;
-                    }
-                }
-                value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, x.base.base.loc, n_data, new_data, x.m_type, ASR::arraystorageType::ColMajor));
-                return;
-            }
-
-            // Both are scalars
-            int32_t a = ASR::down_cast<ASR::IntegerConstant_t>(left_val)->m_n;
-            int32_t b = ASR::down_cast<ASR::IntegerConstant_t>(right_val)->m_n;
-            int32_t res;
             switch (x.m_op) {
                 case ASR::binopType::Mul: res = a * b; break;
                 case ASR::binopType::Add: res = a + b; break;
                 case ASR::binopType::Sub: res = a - b; break;
-                case ASR::binopType::Div: res = a / b; break;
+                case ASR::binopType::Div: res = b != 0 ? a / b : 0; break;
                 case ASR::binopType::Pow: res = std::pow(a, b); break;
                 default:
                     diag.add(Diagnostic("Unsupported binary operation in implied do loop",
@@ -504,7 +481,35 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
-        value = const_cast<ASR::expr_t*>(&(x.base));
+        if (element_idx != -1) {
+            ASR::ttype_t* base_type = ASRUtils::extract_type(x.m_type);
+            int kind = ASRUtils::extract_kind_from_ttype_t(base_type);
+            if (ASRUtils::is_integer(*base_type)) {
+                if (kind == 4) {
+                    int32_t val = ((int32_t*)x.m_data)[element_idx];
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, val, base_type));
+                } else if (kind == 8) {
+                    int64_t val = ((int64_t*)x.m_data)[element_idx];
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, val, base_type));
+                } else {
+                    LCOMPILERS_ASSERT(false);
+                }
+            } else if (ASRUtils::is_real(*base_type)) {
+                if (kind == 4) {
+                    float val = ((float*)x.m_data)[element_idx];
+                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, val, base_type));
+                } else if (kind == 8) {
+                    double val = ((double*)x.m_data)[element_idx];
+                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, val, base_type));
+                } else {
+                    LCOMPILERS_ASSERT(false);
+                }
+            } else {
+                value = nullptr;
+            }
+        } else {
+            value = const_cast<ASR::expr_t*>(&(x.base));
+        }
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
@@ -16182,26 +16187,14 @@ public:
                     curr_nesting_level++;
                     populate_compiletime_array_for_idl(ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), array, loop_vars, loop_indices, curr_nesting_level, itr);
                 } else if (ASRUtils::is_array(ASRUtils::expr_type(idl->m_values[i]))) {
-                    ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
-                    visitor.value = nullptr;
-                    visitor.visit_expr(*idl->m_values[i]);
-                    if (visitor.value && ASR::is_a<ASR::ArrayConstant_t>(*visitor.value)) {
-                        ASR::ArrayConstant_t* arr = ASR::down_cast<ASR::ArrayConstant_t>(visitor.value);
-                        if constexpr (std::is_same_v<T,int32_t>) {
-                            int32_t* arr_data = (int32_t*)arr->m_data;
-                            for(int64_t k=0; k < arr->m_n_data / (int64_t)sizeof(int32_t); ++k) {
-                                array.push_back(al, arr_data[k]);
-                                itr++;
-                            }
-                        } else if constexpr (std::is_same_v<T,int64_t>) {
-                            int64_t* arr_data = (int64_t*)arr->m_data;
-                            for(int64_t k=0; k < arr->m_n_data / (int64_t)sizeof(int64_t); ++k) {
-                                array.push_back(al, arr_data[k]);
-                                itr++;
-                            }
-                        }
-                    } else {
-                        // fallback
+                    int64_t n_elements = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(idl->m_values[i]));
+                    if (n_elements <= 0) {
+                        n_elements = 1;
+                    }
+                    
+                    for (int64_t element_idx = 0; element_idx < n_elements; ++element_idx) {
+                        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
+                        visitor.element_idx = element_idx;
                         array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
                         itr++;
                     }
