@@ -115,7 +115,7 @@ public:
  * @see @ref doc/passes/subroutine_from_function.md
  */
 class AllocateVarBasedOnFuncCall : public ASR::BaseExprReplacer<AllocateVarBasedOnFuncCall> {
-        
+
 private :
 
     Allocator            &al_;
@@ -254,6 +254,27 @@ public :
         ASR::ttype_t* return_t {};
         {
             ASR::ttype_t* return_t_ = ASRUtils::get_FunctionType(ASRUtils::get_function(f_call->m_name))->m_return_var_type;
+            bool use_func_call_type = f_call->m_type != nullptr;
+            if (use_func_call_type) {
+                SetChar dependencies;
+                dependencies.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, dependencies, f_call->m_type);
+                for (size_t i = 0; i < dependencies.size(); i++) {
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(dependencies.p[i]);
+                    if (!sym) {
+                        continue;
+                    }
+                    sym = ASRUtils::symbol_get_past_external(sym);
+                    if (ASR::is_a<ASR::Function_t>(*sym) &&
+                            ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(sym))->m_return_var_type == nullptr) {
+                        use_func_call_type = false;
+                        break;
+                    }
+                }
+            }
+            if(use_func_call_type){
+                return_t_ = f_call->m_type;
+            }
             if(!return_t_){
                 LCOMPILERS_ASSERT_MSG(func_ret_type,
                                         "Must pass Function Return Type manually -- "
