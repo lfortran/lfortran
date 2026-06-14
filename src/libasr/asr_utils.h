@@ -1766,6 +1766,14 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
+        case ASR::exprType::ComplexRe: {
+            ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(a_value);
+            return is_modifiable_actual_argument_expr(re->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(a_value);
+            return is_modifiable_actual_argument_expr(im->m_arg);
+        }
         case ASR::exprType::DictItem: {
             return true;
         }
@@ -2748,10 +2756,10 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
         case ASR::ttypeType::Integer: {
             int64_t val;
             switch (kind) {
-                case 1: val = std::numeric_limits<int8_t>::min()+1; break;
-                case 2: val = std::numeric_limits<int16_t>::min()+1; break;
-                case 4: val = std::numeric_limits<int32_t>::min()+1; break;
-                case 8: val = std::numeric_limits<int64_t>::min()+1; break;
+                case 1: val = std::numeric_limits<int8_t>::min(); break;
+                case 2: val = std::numeric_limits<int16_t>::min(); break;
+                case 4: val = std::numeric_limits<int32_t>::min(); break;
+                case 8: val = std::numeric_limits<int64_t>::min(); break;
                 default:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
             }

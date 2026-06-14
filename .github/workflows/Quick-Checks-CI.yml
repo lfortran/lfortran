@@ -124,7 +124,9 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
+                call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+            )
             set CC=cl.exe
             set CXX=cl.exe
             set "PATH=%PATH:C:\mingw64\bin;=%"
@@ -174,7 +176,9 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
+                call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+            )
             set CC=cl.exe
             set CXX=cl.exe
             set "PATH=%PATH:C:\mingw64\bin;=%"

@@ -491,7 +491,7 @@ program continue_compilation_1
     print *, a(1:2:b'10')
     a_real = [logical::]
     print *,size(a_real)
-
+    print *, dummy_sub()
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
     print *, string(1:6)
@@ -744,5 +744,32 @@ program continue_compilation_1
         select case (n)
         case (:[2])
         end select
+    end subroutine
+    subroutine bindc_optional_value(a) bind(c)
+        implicit none
+        integer, optional, value :: a
+    end subroutine
+    subroutine sub_alternate_return_intrinsic()
+        call cpu_time(*1)
+1       continue
+    end subroutine 
+    subroutine sync_all_stat_wrong_type()
+        implicit none
+        character(len=10) :: cstat
+        sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    end subroutine
+    subroutine sync_all_errmsg_wrong_type()
+        implicit none
+        integer :: imsg
+        sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    end subroutine
+    subroutine sync_all_stat_array()
+        implicit none
+        integer :: astat(3)
+        sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    end subroutine
+    subroutine sync_all_stat_undeclared()
+        implicit none
+        sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
     end subroutine
 end program
