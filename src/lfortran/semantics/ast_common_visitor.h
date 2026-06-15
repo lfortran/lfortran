@@ -766,7 +766,19 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
             ASR::expr_t* right_val = compiletime_values[i].second;
             args.push_back(al, compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag));
         }
-        return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
+        if (ASRUtils::is_array(type) && ASRUtils::extract_n_dims_from_ttype(type) > 1) {
+            Vec<ASR::expr_t*> values;
+            values.reserve(al, args.size());
+            for (size_t i = 0; i < args.size(); i++) {
+                values.push_back(al, ASRUtils::expr_value(args[i]));
+            }
+            ASR::Array_t* array_type =ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(type));
+            void* data = ASRUtils::set_ArrayConstant_data(values.p, values.size(), array_type->m_type);
+            int64_t n_data = values.size() * ASRUtils::extract_kind_from_ttype_t(array_type->m_type);
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc, n_data, data, type, ASR::arraystorageType::ColMajor));
+        } else {
+            return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p, args.size(), type, ASR::arraystorageType::ColMajor));
+        }
     }
 }
 
@@ -1359,6 +1371,14 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                                             ASRUtils::expr_value(operand))->m_r;
                     value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
                         al, x.base.base.loc, -op_value, operand_type));
+                } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
+                    int kind = ASRUtils::extract_kind_from_ttype_t(operand_type);
+                    if (kind == 4) {
+                        value = eval_unary_array_const<float>(al, x.base.base.loc, arr_const, operand_type, USubOp<float>());
+                    } else if (kind == 8) {
+                        value = eval_unary_array_const<double>(al, x.base.base.loc, arr_const, operand_type, USubOp<double>());
+                    }
                 }
             }
             asr = ASR::make_RealUnaryMinus_t(al, x.base.base.loc, operand,
@@ -7643,17 +7663,6 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            // Check if parameter is a scalar
-                            // TODO: Add support for arrays as well
-                            if (ASRUtils::is_array(var->m_type)) {
-                                diag.add(Diagnostic(
-                                    "Named initialization with array parameter `" + sym_name + "` is not supported yet",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc}),
-                                        Label("array parameter declared here", {var->base.base.loc}, false)
-                                    }));
-                                throw SemanticAbort();
-                            }
                             // Parameters may have StructConstant in symbolic_value, but non-parameter
                             // variables need StructConstructor so init_expr pass generates assignments
                             ASR::expr_t* param_init = var->m_symbolic_value ? var->m_symbolic_value : var->m_value;
@@ -11414,6 +11423,12 @@ public:
                         },
                     false);
             if( idx == -1 ) {
+                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
+                if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
+                    return create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
+                        x.m_keywords, x.n_keywords, tmp_v);
+                }
+
                 bool is_function = true;
                 v = intrinsic_as_node(x, is_function);
                 if( !is_function ) {
@@ -12768,6 +12783,15 @@ public:
             args.push_back(al, nullptr);
         }
         for( size_t i = 0; i < x.n_args; i++ ) {
+            if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
+                diag.add(diag::Diagnostic(
+                    "Alternate return arguments are not permitted in calls to the '" +
+                    intrinsic_name + "' intrinsic.",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            LCOMPILERS_ASSERT(x.m_args[i].m_end != nullptr);
             // Handle BOZ constants in real() function
             ASR::ttype_t* temp_current_variable_type = current_variable_type_;
             if (intrinsic_name == "real" && i == 0 && x.m_args[i].m_end && 
@@ -16514,8 +16538,9 @@ public:
             }
         }
         // if v is a function which has null pointer return type, give error
-        if (ASR::is_a<ASR::Function_t>(*v)){
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
+        ASR::symbol_t *v_past_ext = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+        if (v_past_ext && ASR::is_a<ASR::Function_t>(*v_past_ext)){
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_past_ext);
             if (func->m_return_var == nullptr){
                 diag.add(Diagnostic("Subroutine `" + var_name + "` called as a function",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
