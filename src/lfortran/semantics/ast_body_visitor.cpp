@@ -10026,7 +10026,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         // variables might have stale m_type pointers.
         auto sync_func = [&](ASR::Function_t* func) {
             ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            if (ft->m_deftype != ASR::deftypeType::Interface) return;
+            std::string fname = func->m_name;
+            bool is_generated = false;
+            if (fname.rfind("~implicit_interface_", 0) == 0) is_generated = true;
+            if (fname.size() >= 15 && fname.substr(fname.size() - 15) == "_iface_implicit") is_generated = true;
+            if (!is_generated) return;
             if (ft->m_abi == ASR::abiType::Source || ft->m_abi == ASR::abiType::BindC) {
                 if (ft->n_arg_types == func->n_args) {
                     for (size_t i = 0; i < func->n_args; i++) {
