@@ -22970,8 +22970,6 @@ public:
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
                     }
-
-
                 } else if (ASR::is_a<ASR::Function_t>(*var_sym)) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(var_sym);
                     uint32_t h = get_hash((ASR::asr_t*)fn);
@@ -22990,9 +22988,6 @@ public:
                         tmp = llvm_symtab_fn_arg[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
                     }
-
-
-
                     // If the target parameter is a procedure pointer,
                     // wrap the function pointer in an alloca
                     if (orig_arg &&

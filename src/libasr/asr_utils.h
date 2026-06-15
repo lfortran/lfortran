@@ -4898,7 +4898,6 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                     return false;
                 }
                 return true;
-
             }
             default : return false;
         }
