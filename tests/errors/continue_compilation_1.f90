@@ -752,7 +752,7 @@ program continue_compilation_1
     subroutine sub_alternate_return_intrinsic()
         call cpu_time(*1)
 1       continue
-    end subroutine
+    end subroutine 
     subroutine sync_all_stat_wrong_type()
         implicit none
         character(len=10) :: cstat
