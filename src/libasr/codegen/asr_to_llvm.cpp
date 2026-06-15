@@ -16241,9 +16241,9 @@ public:
                 break;
              }
             case (ASR::cast_kindType::FunctionToFunction) : {
-                // The actual bitcast is handled in convert_call_args
-                // using proper orig_arg context for correct type lookup.
                 // Pointer loading logic is handled before the switch statement.
+                // We do not need to generate a bitcast here since types are 
+                // reconciled and structurally correct at the ASR level.
                 break;
             }
             case (ASR::cast_kindType::RealToString) : {
