@@ -7381,7 +7381,15 @@ public:
                     } else {
                         lhs_type->m_len = char_length;
                     }
-                }                
+                } 
+                else if (!is_char_type && s.m_length) {
+                    diag.add(Diagnostic(
+                        "length specifier (*n) is only valid for character type",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {s.m_length->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }               
                 ASR::Variable_t* variable_added_to_symtab = nullptr;
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
