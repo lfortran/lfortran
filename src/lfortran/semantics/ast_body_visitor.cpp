@@ -7912,6 +7912,29 @@ public:
                                     proc_var, x.base.base.loc,
                                     arg_types.p, arg_types.size(),
                                     nullptr, parent_scope, sub_name);
+                                // Update the owner function's FunctionType arg_types
+                                // so that when this function is passed as an argument,
+                                // the resolved type propagates correctly.
+                                if (current_scope->asr_owner &&
+                                        ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                                    ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(
+                                        current_scope->asr_owner);
+                                    if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
+                                        ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner_sym);
+                                        ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                            owner_func->m_function_signature);
+                                        for (size_t j = 0; j < owner_func->n_args; j++) {
+                                            if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[j])) {
+                                                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                                                    owner_func->m_args[j])->m_v;
+                                                if (arg_sym == (ASR::symbol_t*)original_sym) {
+                                                    owner_ft->m_arg_types[j] = proc_var->m_type;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -8060,6 +8083,28 @@ public:
                                                     iface_func->m_function_signature);
                                                 iface_ft->m_arg_types = passed_ft->m_arg_types;
                                                 iface_ft->n_arg_types = passed_ft->n_arg_types;
+                                                // Create matching argument variables in the iface function's symtab
+                                                // so that n_args matches n_arg_types (required by the ASR verifier).
+                                                if (iface_func->n_args == 0 && passed_ft->n_arg_types > 0) {
+                                                    Vec<ASR::expr_t*> iface_args;
+                                                    iface_args.reserve(al, passed_ft->n_arg_types);
+                                                    for (size_t j = 0; j < passed_ft->n_arg_types; j++) {
+                                                        ASR::ttype_t* arg_type = passed_ft->m_arg_types[j];
+                                                        std::string arg_name = std::string(iface_func->m_name) + "_arg_" + std::to_string(j);
+                                                        ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                                                            ASR::make_Variable_t(al, passed_arg->base.loc, iface_func->m_symtab,
+                                                                s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
+                                                                nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+                                                                nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                                                                ASR::presenceType::Required, false, false, false, nullptr, false, false,
+                                                                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
+                                                        iface_func->m_symtab->add_symbol(arg_name, arg_sym);
+                                                        iface_args.push_back(al, ASRUtils::EXPR(
+                                                            ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
+                                                    }
+                                                    iface_func->m_args = iface_args.p;
+                                                    iface_func->n_args = iface_args.size();
+                                                }
                                                 ASR::ttype_t* new_type = iface_func->m_function_signature;
                                                 if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
                                                     new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
@@ -9969,6 +10014,41 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+    if (compiler_options.implicit_interface) {
+        // Sync the types of the m_args Variables with the FunctionType's arg_types.
+        // This is necessary because some functions share the m_arg_types array,
+        // and if it was updated in-place by another function, the m_args
+        // variables might have stale m_type pointers.
+        auto sync_func = [&](ASR::Function_t* func) {
+            ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+            if (ft->m_deftype != ASR::deftypeType::Interface) return;
+            if (ft->m_abi == ASR::abiType::Source || ft->m_abi == ASR::abiType::BindC) {
+                if (ft->n_arg_types == func->n_args) {
+                    for (size_t i = 0; i < func->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+                            if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                                ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                                arg_var->m_type = ft->m_arg_types[i];
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        for (auto& item : tu->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                sync_func(ASR::down_cast<ASR::Function_t>(item.second));
+            } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(item.second);
+                for (auto& mod_item : mod->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*mod_item.second)) {
+                        sync_func(ASR::down_cast<ASR::Function_t>(mod_item.second));
                     }
                 }
             }
