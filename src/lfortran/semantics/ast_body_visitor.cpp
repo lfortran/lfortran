@@ -8423,6 +8423,15 @@ public:
                     "Use character variables instead.",
                     Level::Error, Stage::Semantic, {
                         Label("", {x.base.base.loc})
+                }));
+                throw SemanticAbort();
+            }
+            if (!ASRUtils::is_character(*fmt_type) && !(ASR::is_a<ASR::IntegerConstant_t>(*fmt)
+                    && AST::is_a<AST::Num_t>(*x.m_fmt))) {
+                diag.add(Diagnostic(
+                    "Format specifier in print statement must be of type default character",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_fmt->base.loc})
                     }));
                 throw SemanticAbort();
             }
