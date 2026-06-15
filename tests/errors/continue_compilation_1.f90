@@ -752,7 +752,7 @@ program continue_compilation_1
     subroutine sub_alternate_return_intrinsic()
         call cpu_time(*1)
 1       continue
-    end subroutine 
+    end subroutine
     subroutine sync_all_stat_wrong_type()
         implicit none
         character(len=10) :: cstat
@@ -778,5 +778,19 @@ program continue_compilation_1
     end subroutine
     subroutine ptr_sink(x)
         integer, pointer :: x(..)
+    end subroutine
+    subroutine select_case_complex()
+        implicit none
+        complex :: nn = (1.0, 0.0)
+        select case (nn)
+        case default
+        end select
+    end subroutine
+    subroutine select_case_real()
+        implicit none
+        real :: x = 1.0
+        select case (x)
+        case default
+        end select
     end subroutine
 end program
