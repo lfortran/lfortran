@@ -1159,37 +1159,6 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
             replacer.replace_expr(*current_expr);
         }
 
-        void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
-            Vec<ASR::stmt_t*> body;
-            body.reserve(replacer.al, n_body);
-            for (size_t i=0; i<n_body; i++) {
-                ASR::stmt_t *stmt = m_body[i];
-                if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
-                    ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(stmt);
-                    if (a->m_target && ASR::is_a<ASR::CoarrayRef_t>(*a->m_target)) {
-                        ASR::expr_t **current_expr_copy_1 = current_expr;
-                        current_expr = &(a->m_value);
-                        call_replacer();
-                        current_expr = current_expr_copy_1;
-                        if (a->m_value && visit_expr_after_replacement) {
-                            visit_expr(*a->m_value);
-                        }
-
-                        ASR::CoarrayRef_t *coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(a->m_target);
-                        ASR::stmt_t *put_call = replacer.prif.make_prif_put_call(
-                            a->base.base.loc, coarray_ref->m_var, coarray_ref->m_coindices,
-                            coarray_ref->n_coindices, a->m_value);
-                        body.push_back(replacer.al, put_call);
-                        continue;
-                    }
-                }
-                visit_stmt(*stmt);
-                body.push_back(replacer.al, stmt);
-            }
-            m_body = body.p;
-            n_body = body.n;
-        }
-
         void visit_Assignment(const ASR::Assignment_t &x) {
             ASR::Assignment_t &xx = const_cast<ASR::Assignment_t &>(x);
             if (xx.m_target) {
@@ -1212,12 +1181,38 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
             Vec<ASR::stmt_t*> body;
             body.reserve(replacer.al, n_body);
             for (size_t i=0; i<n_body; i++) {
-                if (m_body[i]->type == ASR::stmtType::SyncAll) {
-                    ASR::SyncAll_t *x = ASR::down_cast<ASR::SyncAll_t>(m_body[i]);
-                    body.push_back(replacer.al, replacer.prif.make_prif_sync_all_call(
-                        x->base.base.loc, x->m_stat, x->m_errmsg));
-                } else {
-                    body.push_back(replacer.al, m_body[i]);
+                switch (m_body[i]->type) {
+                    case ASR::stmtType::SyncAll: {
+                        ASR::SyncAll_t *x = ASR::down_cast<ASR::SyncAll_t>(m_body[i]);
+                        body.push_back(replacer.al, replacer.prif.make_prif_sync_all_call(
+                            x->base.base.loc, x->m_stat, x->m_errmsg, nullptr));
+                        break;
+                    }
+                    case ASR::stmtType::Assignment: {
+                        ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
+                        if (a->m_target && ASR::is_a<ASR::CoarrayRef_t>(*a->m_target)) {
+                            ASR::expr_t **current_expr_copy_1 = current_expr;
+                            current_expr = &(a->m_value);
+                            call_replacer();
+                            current_expr = current_expr_copy_1;
+                            if (a->m_value && visit_expr_after_replacement) {
+                                visit_expr(*a->m_value);
+                            }
+
+                            ASR::CoarrayRef_t *coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(a->m_target);
+                            ASR::stmt_t *put_call = replacer.prif.make_prif_put_call(
+                                a->base.base.loc, coarray_ref->m_var, coarray_ref->m_coindices,
+                                coarray_ref->n_coindices, a->m_value);
+                            body.push_back(replacer.al, put_call);
+                        } else {
+                            body.push_back(replacer.al, m_body[i]);
+                        }
+                        break;
+                    }
+                    default: {
+                        body.push_back(replacer.al, m_body[i]);
+                        break;
+                    }
                 }
             }
             m_body = body.p;
