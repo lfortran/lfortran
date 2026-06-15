@@ -3541,6 +3541,15 @@ public:
             if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
                 ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+                ASR::ArrayItem_t *arr_item = ASR::down_cast<ASR::ArrayItem_t>(object);
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_item->m_v)) {
+                    ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(arr_item->m_v);
+                    v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+                } else {
+                    ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(arr_item->m_v);
+                    v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                }
             } else {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
