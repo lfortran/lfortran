@@ -191,6 +191,59 @@ class PRIFInterface {
             return get_or_create_prif_get_subroutine(loc, "prif_put");
         }
 
+        ASR::symbol_t* get_or_create_prif_initial_team_index_subroutine(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_initial_team_index");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            
+            ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
+            ASR::expr_t *coarray_handle = make_struct_var(
+                fn_symtab, loc, "coarray_handle", handle_sym,
+                ASR::intentType::In, ASR::presenceType::Required, false);
+
+            ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t d; d.loc = loc; d.m_start = nullptr; d.m_length = nullptr;
+            dims.push_back(al, d);
+            ASR::ttype_t *i64_arr = ASRUtils::make_Array_t_util(al, loc, i64, dims.p, dims.n);
+            ASR::expr_t *sub = b.Variable(fn_symtab, "sub", i64_arr,
+                ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+
+            ASR::ttype_t *i32 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::symbol_t *initial_team_index_sym = declare_variable(
+                fn_symtab, loc, "initial_team_index", i32, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *initial_team_index = ASRUtils::EXPR(ASR::make_Var_t(al, loc, initial_team_index_sym));
+
+            ASR::symbol_t *stat_sym = declare_variable(
+                fn_symtab, loc, "stat", i32, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 4);
+            args.push_back(al, coarray_handle);
+            args.push_back(al, sub);
+            args.push_back(al, initial_team_index);
+            args.push_back(al, stat);
+
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
         ASR::symbol_t* get_or_create_prif_get_wrapper(const Location &loc,
                               ASR::ttype_t *return_type,
                               ASR::expr_t *base_expr) {
@@ -213,7 +266,12 @@ class PRIFInterface {
             ASR::expr_t *coarray_handle = make_struct_var(
                 fn_symtab, loc, "coarray_handle", handle_sym,
                 ASR::intentType::In, ASR::presenceType::Required, false);
-            ASR::expr_t *image_num = b.Variable(fn_symtab, "image_num", int32_type,
+            
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t d; d.loc = loc; d.m_start = nullptr; d.m_length = nullptr;
+            dims.push_back(al, d);
+            ASR::ttype_t *i64_arr = ASRUtils::make_Array_t_util(al, loc, int64_type, dims.p, dims.n);
+            ASR::expr_t *sub = b.Variable(fn_symtab, "sub", i64_arr,
                                                ASR::intentType::In, nullptr,
                                                ASR::abiType::Source, true);
             ASR::expr_t *offset = b.Variable(fn_symtab, "offset", int64_type,
@@ -225,7 +283,7 @@ class PRIFInterface {
 
             Vec<ASR::expr_t*> args; args.reserve(al, 3);
             args.push_back(al, coarray_handle);
-            args.push_back(al, image_num);
+            args.push_back(al, sub);
             args.push_back(al, offset);
 
             ASR::expr_t *return_ptr = ASRUtils::EXPR(ASR::make_PointerToCPtr_t(
@@ -237,6 +295,24 @@ class PRIFInterface {
             ASR::expr_t *size_in_bytes = get_size_in_bytes_expr(loc, return_type);
 
             ASR::symbol_t *prif_get_sym = get_or_create_prif_get_subroutine(loc);
+
+            ASR::symbol_t *image_num_sym = declare_variable(
+                fn_symtab, loc, "image_num", int32_type, ASR::intentType::Local, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *image_num = ASRUtils::EXPR(ASR::make_Var_t(al, loc, image_num_sym));
+
+            ASR::symbol_t *prif_img_idx_sym = get_or_create_prif_initial_team_index_subroutine(loc);
+            Vec<ASR::call_arg_t> img_idx_args; img_idx_args.reserve(al, 4);
+            ASR::call_arg_t h_arg; h_arg.loc = loc; h_arg.m_value = coarray_handle;
+            ASR::call_arg_t s_arg; s_arg.loc = loc; s_arg.m_value = sub;
+            ASR::call_arg_t i_arg; i_arg.loc = loc; i_arg.m_value = image_num;
+            ASR::call_arg_t stat_arg; stat_arg.loc = loc; stat_arg.m_value = nullptr;
+            img_idx_args.push_back(al, h_arg);
+            img_idx_args.push_back(al, s_arg);
+            img_idx_args.push_back(al, i_arg);
+            img_idx_args.push_back(al, stat_arg);
+
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
 
             ASR::call_arg_t image_arg; image_arg.loc = loc; image_arg.m_value = image_num;
@@ -251,11 +327,14 @@ class PRIFInterface {
             call_args.push_back(al, buffer_arg);
             call_args.push_back(al, size_arg);
 
-            Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+            Vec<ASR::stmt_t*> body; body.reserve(al, 2);
+            body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, prif_img_idx_sym, nullptr, img_idx_args.p, img_idx_args.n, nullptr, false)));
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
                 al, loc, prif_get_sym, nullptr, call_args.p, call_args.n, nullptr, false)));
 
-            Vec<char*> dep; dep.reserve(al, 1);
+            Vec<char*> dep; dep.reserve(al, 2);
+            dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_initial_team_index")));
             dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_get")));
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
@@ -290,9 +369,15 @@ class PRIFInterface {
             ASR::expr_t *coarray_handle = make_struct_var(
                 fn_symtab, loc, "coarray_handle", handle_sym,
                 ASR::intentType::In, ASR::presenceType::Required, false);
-            ASR::expr_t *image_num = b.Variable(fn_symtab, "image_num", int32_type,
+
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t d; d.loc = loc; d.m_start = nullptr; d.m_length = nullptr;
+            dims.push_back(al, d);
+            ASR::ttype_t *i64_arr = ASRUtils::make_Array_t_util(al, loc, int64_type, dims.p, dims.n);
+            ASR::expr_t *sub = b.Variable(fn_symtab, "sub", i64_arr,
                                                ASR::intentType::In, nullptr,
                                                ASR::abiType::Source, true);
+
             ASR::expr_t *offset = b.Variable(fn_symtab, "offset", int64_type,
                                              ASR::intentType::In, nullptr,
                                              ASR::abiType::Source, true);
@@ -302,7 +387,7 @@ class PRIFInterface {
 
             Vec<ASR::expr_t*> args; args.reserve(al, 4);
             args.push_back(al, coarray_handle);
-            args.push_back(al, image_num);
+            args.push_back(al, sub);
             args.push_back(al, offset);
             args.push_back(al, value_var);
 
@@ -314,6 +399,23 @@ class PRIFInterface {
 
             ASR::expr_t *size_in_bytes = get_size_in_bytes_expr(loc, value_type);
             ASR::symbol_t *prif_sym = get_or_create_prif_put_subroutine(loc);
+
+            ASR::symbol_t *image_num_sym = declare_variable(
+                fn_symtab, loc, "image_num", int32_type, ASR::intentType::Local, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *image_num = ASRUtils::EXPR(ASR::make_Var_t(al, loc, image_num_sym));
+
+            ASR::symbol_t *prif_img_idx_sym = get_or_create_prif_initial_team_index_subroutine(loc);
+            Vec<ASR::call_arg_t> img_idx_args; img_idx_args.reserve(al, 4);
+            ASR::call_arg_t h_arg; h_arg.loc = loc; h_arg.m_value = coarray_handle;
+            ASR::call_arg_t s_arg; s_arg.loc = loc; s_arg.m_value = sub;
+            ASR::call_arg_t i_arg; i_arg.loc = loc; i_arg.m_value = image_num;
+            ASR::call_arg_t stat_arg; stat_arg.loc = loc; stat_arg.m_value = nullptr;
+            img_idx_args.push_back(al, h_arg);
+            img_idx_args.push_back(al, s_arg);
+            img_idx_args.push_back(al, i_arg);
+            img_idx_args.push_back(al, stat_arg);
 
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
 
@@ -329,11 +431,14 @@ class PRIFInterface {
             call_args.push_back(al, buffer_arg);
             call_args.push_back(al, size_arg);
 
-            Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+            Vec<ASR::stmt_t*> body; body.reserve(al, 2);
+            body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, prif_img_idx_sym, nullptr, img_idx_args.p, img_idx_args.n, nullptr, false)));
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
                 al, loc, prif_sym, nullptr, call_args.p, call_args.n, nullptr, false)));
 
-            Vec<char*> dep; dep.reserve(al, 1);
+            Vec<char*> dep; dep.reserve(al, 2);
+            dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_initial_team_index")));
             dep.push_back(al, s2c(al, get_mangled_name("prif", "prif_put")));
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
@@ -960,11 +1065,32 @@ class PRIFInterface {
                                         size_t n_coindices,
                                         ASR::ttype_t *return_type) {
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::expr_t *image_num = b.i32(1);
-            if (n_coindices > 0 && coindices[0].m_left) {
-                image_num = b.i2i_t(coindices[0].m_left, int32_type);
+            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+
+            Vec<ASR::expr_t*> sub_elems; sub_elems.reserve(al, n_coindices == 0 ? 1 : n_coindices);
+            if (n_coindices == 0) {
+                sub_elems.push_back(al, b.i64(1));
+            } else {
+                for (size_t i = 0; i < n_coindices; i++) {
+                    if (coindices[i].m_left) {
+                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
+                    } else {
+                        sub_elems.push_back(al, b.i64(1));
+                    }
+                }
             }
+
+            Vec<ASR::dimension_t> arr_d; arr_d.reserve(al, 1);
+            ASR::dimension_t ad; ad.loc = loc;
+            ad.m_start = b.i32(1);
+            ad.m_length = b.i32(static_cast<int64_t>(sub_elems.n));
+            arr_d.push_back(al, ad);
+            ASR::ttype_t *sub_arr_t = ASRUtils::make_Array_t_util(al, loc, int64_type, arr_d.p, arr_d.n);
+            std::vector<ASR::expr_t*> sub_vec;
+            for (size_t i = 0; i < sub_elems.n; i++) {
+                sub_vec.push_back(sub_elems.p[i]);
+            }
+            ASR::expr_t *sub = b.ArrayConstant(sub_vec, int64_type, false, sub_arr_t);
 
             ASR::expr_t *handle_base = get_handle_base_expr(base_expr);
             ASR::expr_t *coarray_handle = make_prif_handle_expr(loc, handle_base);
@@ -976,10 +1102,10 @@ class PRIFInterface {
             Vec<ASR::call_arg_t> args;
             args.reserve(al, 3);
             ASR::call_arg_t handle_arg; handle_arg.loc = loc; handle_arg.m_value = coarray_handle;
-            ASR::call_arg_t image_arg; image_arg.loc = loc; image_arg.m_value = image_num;
+            ASR::call_arg_t sub_arg; sub_arg.loc = loc; sub_arg.m_value = sub;
             ASR::call_arg_t offset_arg; offset_arg.loc = loc; offset_arg.m_value = offset;
             args.push_back(al, handle_arg);
-            args.push_back(al, image_arg);
+            args.push_back(al, sub_arg);
             args.push_back(al, offset_arg);
 
             return ASRUtils::EXPR(ASR::make_FunctionCall_t(
@@ -993,11 +1119,32 @@ class PRIFInterface {
                                         size_t n_coindices,
                                         ASR::expr_t *value_expr) {
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::expr_t *image_num = b.i32(1);
-            if (n_coindices > 0 && coindices[0].m_left) {
-                image_num = b.i2i_t(coindices[0].m_left, int32_type);
+            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+
+            Vec<ASR::expr_t*> sub_elems; sub_elems.reserve(al, n_coindices == 0 ? 1 : n_coindices);
+            if (n_coindices == 0) {
+                sub_elems.push_back(al, b.i64(1));
+            } else {
+                for (size_t i = 0; i < n_coindices; i++) {
+                    if (coindices[i].m_left) {
+                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
+                    } else {
+                        sub_elems.push_back(al, b.i64(1));
+                    }
+                }
             }
+
+            Vec<ASR::dimension_t> arr_d; arr_d.reserve(al, 1);
+            ASR::dimension_t ad; ad.loc = loc;
+            ad.m_start = b.i32(1);
+            ad.m_length = b.i32(static_cast<int64_t>(sub_elems.n));
+            arr_d.push_back(al, ad);
+            ASR::ttype_t *sub_arr_t = ASRUtils::make_Array_t_util(al, loc, int64_type, arr_d.p, arr_d.n);
+            std::vector<ASR::expr_t*> sub_vec;
+            for (size_t i = 0; i < sub_elems.n; i++) {
+                sub_vec.push_back(sub_elems.p[i]);
+            }
+            ASR::expr_t *sub = b.ArrayConstant(sub_vec, int64_type, false, sub_arr_t);
 
             ASR::expr_t *handle_base = get_handle_base_expr(base_expr);
             ASR::expr_t *coarray_handle = make_prif_handle_expr(loc, handle_base);
@@ -1011,12 +1158,12 @@ class PRIFInterface {
             Vec<ASR::call_arg_t> args;
             args.reserve(al, 4);
             ASR::call_arg_t handle_arg; handle_arg.loc = loc; handle_arg.m_value = coarray_handle;
-            ASR::call_arg_t image_arg; image_arg.loc = loc; image_arg.m_value = image_num;
+            ASR::call_arg_t sub_arg; sub_arg.loc = loc; sub_arg.m_value = sub;
             ASR::call_arg_t offset_arg; offset_arg.loc = loc; offset_arg.m_value = offset;
             ASR::call_arg_t value_arg; value_arg.loc = loc; value_arg.m_value = value_expr;
 
             args.push_back(al, handle_arg);
-            args.push_back(al, image_arg);
+            args.push_back(al, sub_arg);
             args.push_back(al, offset_arg);
             args.push_back(al, value_arg);
 

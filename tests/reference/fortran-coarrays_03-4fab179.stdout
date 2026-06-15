@@ -13,7 +13,7 @@ call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x
 call c_f_pointer(x__coarray_data, x)
 x = 42
 call __module_prif_prif_sync_all()
-print *, lcompilers_prif_get_integer(4)(x__coarray_handle, int(2, kind=4), int(0, kind=8))
+print *, lcompilers_prif_get_integer(4)(x__coarray_handle, [int(2, kind=8)], int(0, kind=8))
 call __module_prif_prif_stop(.false.)
 
 contains
@@ -56,6 +56,15 @@ interface
 end interface
 
 interface
+    subroutine __module_prif_prif_initial_team_index(coarray_handle, sub, initial_team_index, stat)
+        type(prif_coarray_handle), intent(in) :: coarray_handle
+        integer(4), intent(out) :: initial_team_index
+        integer(4), intent(out), optional :: stat
+        integer(8), dimension(:), intent(in), value :: sub
+    end subroutine __module_prif_prif_initial_team_index
+end interface
+
+interface
     subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
         logical(1), intent(in), value :: quiet
         character(len=*, kind=1), intent(in), optional, value :: stop_code_char
@@ -71,10 +80,12 @@ interface
     end subroutine __module_prif_prif_sync_all
 end interface
 
-integer(4) function lcompilers_prif_get_integer(4)(coarray_handle, image_num, offset) result(result)
+integer(4) function lcompilers_prif_get_integer(4)(coarray_handle, sub, offset) result(result)
     type(prif_coarray_handle), intent(in) :: coarray_handle
-    integer(4), intent(in), value :: image_num
+    integer(4) :: image_num
     integer(8), intent(in), value :: offset
+    integer(8), dimension(:), intent(in), value :: sub
+    call __module_prif_prif_initial_team_index(coarray_handle, sub, image_num)
     call __module_prif_prif_get(image_num, coarray_handle, offset, c_loc(result), 4_8)
 end function lcompilers_prif_get_integer(4)
 
