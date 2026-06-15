@@ -4898,6 +4898,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                     return false;
                 }
                 return true;
+
             }
             default : return false;
         }
@@ -7978,6 +7979,15 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
+
+        if (ASR::is_a<ASR::FunctionType_t>(*arg_type) && ASR::is_a<ASR::FunctionType_t>(*orig_arg_type)) {
+            if (!ASRUtils::types_equal(arg_type, orig_arg_type, nullptr, nullptr, true)) {
+                arg = a_args[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(
+                    al, arg->base.loc, arg, ASR::cast_kindType::FunctionToFunction,
+                    orig_arg_type, nullptr, nullptr));
+            }
+            continue;
+        }
         // cast string source based on the dest
         if( ASRUtils::is_string_only(orig_arg_type) &&
             ASRUtils::is_string_only(arg_type) &&

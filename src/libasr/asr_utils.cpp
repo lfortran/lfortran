@@ -801,6 +801,10 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             // associated with it, so we return nullptr.
             return nullptr;
         }
+        case ASR::exprType::Cast: {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
+            return get_function_from_expr(cast->m_arg);
+        }
         default:
             throw LCompilersException("get_function_from_expr() not implemented for "
                                 + std::to_string(expr->type));
@@ -2978,9 +2982,12 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 // Check if actual argument is an implicit interface procedure (e.g. external :: f)
                 // If it is, it is compatible with any explicit interface formal argument.
+                // Similarly, if formal argument is an implicit interface, it accepts an explicit interface actual argument.
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                    ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
+                    if ((arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) ||
+                        (arg2_func_type->n_arg_types == 0 && arg2_func_type->m_deftype == ASR::deftypeType::Interface)) {
                         continue;
                     }
                 }

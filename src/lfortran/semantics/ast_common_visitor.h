@@ -4835,22 +4835,19 @@ public:
             } else if (compiler_options.implicit_typing) {
                 type = implicit_dictionary[std::string(1,sym[0])];
                 if (!type) {
-                    // There exists an `implicit none` statement, here compiler has
-                    // no information about type of symbol hence keeping it real*4.
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                    is_subroutine = true;
                 }
             } else {
-                // Here compiler has no information about type of symbol hence keeping it real*4.
-                type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                is_subroutine = true;
             }
             // add return var
             std::string return_var_name = sym + "_return_var_name";
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             ASR::asr_t *return_var = nullptr;
             ASR::expr_t *to_return = nullptr;
             if (!is_subroutine) {
+                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
                 return_var = ASRUtils::make_Variable_t_util(al, loc,
                     current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_return_var,
@@ -7430,7 +7427,27 @@ public:
                     LCOMPILERS_ASSERT( sym_ != nullptr );
                     // set function return type as `type`
                     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
-                    ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
+                    if (f->m_return_var == nullptr) {
+                        std::string return_var_name = sym + "_return_var_name";
+                        SetChar variable_dependencies_vec;
+                        variable_dependencies_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+                        ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
+                            current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                            variable_dependencies_vec.size(), ASRUtils::intent_return_var,
+                            nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                            ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                            false);
+                        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+                        f->m_return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                            ASR::down_cast<ASR::symbol_t>(return_var)));
+                        ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                        ft->m_return_var_type = type;
+                    } else {
+                        ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
+                        ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                        ft->m_return_var_type = type;
+                    }
                 }
                 current_variable_type_ = type;
                 if (is_argument && current_scope->asr_owner
@@ -16571,13 +16588,30 @@ public:
                 // We need to create an interface and add the Function into
                 // the symbol table.
                 // Currently using real*8 as the return type.
-                ASR::ttype_t* type = external_sym ? ASRUtils::symbol_type(external_sym) :
-                                    ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                ASR::ttype_t* type = nullptr;
+                bool is_subrout = false;
+                if (external_sym) {
+                    ASR::symbol_t* target = ASRUtils::symbol_get_past_external(external_sym);
+                    if (ASR::is_a<ASR::Function_t>(*target)) {
+                        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(target);
+                        if (!fn->m_return_var) {
+                            is_subrout = true;
+                        }
+                    }
+                    if (!is_subrout) {
+                        type = ASRUtils::symbol_type(external_sym);
+                    }
+                }
+                
                 std::string var_name_first_letter = to_lower(std::string(1, var_name[0]));
                 implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
-                if ( !external_sym && compiler_options.implicit_typing &&
-                     implicit_dictionary.find(var_name_first_letter) != implicit_dictionary.end() ) {
+                if ( (!external_sym || is_subrout) && compiler_options.implicit_typing &&
+                     implicit_dictionary.find(var_name_first_letter) != implicit_dictionary.end() &&
+                     implicit_dictionary[var_name_first_letter] != nullptr ) {
                     type = implicit_dictionary[var_name_first_letter];
+                }
+                if (!type) {
+                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
                 }
                 create_implicit_interface_function(x, var_name, true, type);
                 v = current_scope->resolve_symbol(var_name);

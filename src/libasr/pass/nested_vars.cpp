@@ -1064,6 +1064,9 @@ public:
 
     bool value_is_nested_procedure(ASR::expr_t* value) {
         value = ASRUtils::get_past_array_physical_cast(value);
+        if (value && ASR::is_a<ASR::Cast_t>(*value)) {
+            value = ASR::down_cast<ASR::Cast_t>(value)->m_arg;
+        }
         if (value && ASR::is_a<ASR::Var_t>(*value)) {
             ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(value)->m_v;
             return is_nested_call_symbol(current_scope, v);
@@ -1087,6 +1090,9 @@ public:
         }
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
             arg_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*arg_expr)) {
+            arg_expr = ASR::down_cast<ASR::Cast_t>(arg_expr)->m_arg;
         }
         if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg_expr);
