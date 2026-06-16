@@ -3174,6 +3174,7 @@ RUN(NAME intent_out_finalize_01 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_02 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_03 LABELS llvm) # does not work with GFortran version at CI
 RUN(NAME intent_out_finalize_04 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME intent_out_finalize_05 LABELS llvm) # does not work with GFortran version at CI
 RUN(NAME empty_array_01 LABELS gfortran llvm)
 RUN(NAME empty_array_02 LABELS gfortran llvm)
 
