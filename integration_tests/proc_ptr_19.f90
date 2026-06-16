@@ -1,4 +1,4 @@
-module m1
+module proc_ptr_19_mod
     implicit none
     type :: runner
         procedure(), nopass, pointer :: caller => null()
@@ -13,8 +13,8 @@ contains
     end subroutine
 end module
 
-program p
-    use m1
+program proc_ptr_19
+    use proc_ptr_19_mod
     implicit none
     type(runner) :: br
     integer :: val
