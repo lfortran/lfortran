@@ -8,10 +8,11 @@ contains
   subroutine take_pointer_rank(x)
     integer, pointer, intent(in) :: x(..)
 
-    if (rank(x) == 1) then
+    select rank (x)
+      rank (1)
         if (lbound(x, 1) /= 1) error stop
-    else
+      rank default
         error stop
-    end if
+    end select
   end subroutine take_pointer_rank
 end program main
