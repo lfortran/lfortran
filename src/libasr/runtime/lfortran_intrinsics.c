@@ -818,12 +818,11 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
 
     int width = 0, decimal_digits = 0;
     bool is_negative = (val < 0);
-    long integer_part = (long)fabs(val);
+    double integer_part = floor(fabs(val));
     double decimal_part = fabs(val) - integer_part;
 
     int sign_width = (val < 0) ? 1 : 0; // Negative sign
     bool sign_plus_exist = (use_sign_plus && val>=0); // Positive sign
-    int integer_length = (integer_part == 0) ? 1 : (int)log10(integer_part) + 1;
 
     // parsing the format
     char* dot_pos = strchr(format, '.');
@@ -848,12 +847,15 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     }
 
     if (decimal_part >= 1.0) {
-        integer_part += 1;
+        integer_part += 1.0;
         decimal_part -= 1.0;
     }
 
-    char int_str[64];
-    sprintf(int_str, "%ld", integer_part);
+    // Size buffers large enough to hold huge(1.0_real64) which has ~309
+    // integer digits.
+    char int_str[512];
+    sprintf(int_str, "%.0f", integer_part);
+    int integer_length = (int)strlen(int_str);
 
     // TODO: This will work for up to `F65.60` but will fail for:
     // print "(F67.62)", 1.23456789101112e-62_8
@@ -870,7 +872,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
                         sign_plus_exist ;
 
     bool drop_leading_zero = false;
-    if (integer_part == 0 && width > 0 && total_length > width) {
+    if (integer_part == 0.0 && width > 0 && total_length > width) {
         drop_leading_zero = true;
         total_length -= 1;
     }
@@ -879,7 +881,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
         width = total_length;
     }
 
-    char formatted_value[128] = "";
+    char formatted_value[1024] = "";
 
     int spaces = width - total_length;
     for (int i = 0; i < spaces; i++) {
@@ -891,7 +893,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     if (val < 0) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
+    if (integer_part == 0.0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
         // Omit the leading zero
     } else {
         strcat(formatted_value, int_str);
@@ -6220,6 +6222,16 @@ _lfortran_open(int32_t unit_num,
         // since f_name_c is the copy we'll use going forward
         internal_free(f_name);
     }
+
+    if (already_open) {
+        bool existing_bin;
+        char* existing_filename = get_file_name_from_unit(unit_num, &existing_bin);
+        if (ini_file && (!existing_filename || !streql(existing_filename, f_name_c))) {
+            _lfortran_close(unit_num, NULL, 0, NULL);
+            already_open = NULL;
+        }
+    }
+
     char* status_c = to_c_string((const fchar*)status, status_len);
     char* form_c = to_c_string((const fchar*)form, form_len);
     char* action_c = to_c_string((const fchar*)action, action_len);
@@ -7672,7 +7684,13 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -7816,7 +7834,13 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "Internal Compiler Error: No file found with given unit number %d.\n", unit_num);
@@ -7958,7 +7982,13 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8064,7 +8094,13 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
 
     bool unit_file_bin;
     int access_id;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8164,6 +8200,11 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
     int access_id;
     bool read_access, write_access;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8267,6 +8308,11 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
     int access_id;
     bool read_access, write_access;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8380,6 +8426,11 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
     int access_id;
     bool read_access, write_access;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8483,6 +8534,11 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     int access_id;
     bool read_access, write_access;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8585,6 +8641,11 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     int access_id;
     bool read_access, write_access;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -8680,6 +8741,11 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
         if (!filep) {
             if (iostat) { *iostat = 1; return; }
             printf("No file found with given unit\n");
+            exit(1);
+        }
+        if (!read_access) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
             exit(1);
         }
     }
@@ -9003,7 +9069,13 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -9110,7 +9182,13 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -9225,7 +9303,13 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -9347,7 +9431,13 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
 
     bool unit_file_bin;
     int access_id;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -9502,7 +9592,13 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
 
     bool unit_file_bin;
     int access_id;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -9660,7 +9756,13 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
 
     bool unit_file_bin;
     int access_id;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -9772,7 +9874,13 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
 
     bool unit_file_bin;
     int access_id;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -9865,16 +9973,22 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
 
     bool unit_file_bin;
     int access_id;
+    bool read_access = true;
     FILE* filep;
     if (unit_num == -1) {
         filep = stdin;
         unit_file_bin = false;
         access_id = -1;
     } else {
-        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
         if (!filep) {
             if (iostat) { *iostat = 1; return; }
             printf("No file found with given unit\n");
+            exit(1);
+        }
+        if (!read_access) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
             exit(1);
         }
     }
@@ -9953,7 +10067,13 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
 
     bool unit_file_bin;
     int access_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
     if (!filep) {
         if (iostat) { *iostat = 1; return; }
         printf("No file found with given unit\n");
@@ -11068,13 +11188,20 @@ LFORTRAN_API void _lfortran_formatted_read(
     if (unit_num != -1) {
         int access_id = 0;
         int32_t unit_recl = 0;
+        bool read_access = true;
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = get_file_pointer_from_unit(unit_num, &unit_file_bin,
-            &access_id, NULL, NULL, NULL, &blank_zero, &unit_recl, NULL, NULL, NULL, NULL, &pad_mode);
+            &access_id, &read_access, NULL, NULL, &blank_zero, &unit_recl, NULL, NULL, NULL, NULL, &pad_mode);
         inputSource.access_id = access_id;
         inputSource.record_len = unit_recl;
         if (!inputSource.file) {
+            if (iostat) { *iostat = 1; return; }
             printf("No file found with given unit\n");
+            exit(1);
+        }
+        if (!read_access) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
             exit(1);
         }
     } else {
@@ -11464,9 +11591,15 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
 
     bool unit_file_bin;
     int access_id;
-    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    bool read_access = true;
+    FILE* fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
         fprintf(stderr, "No file found with given unit\n");
+        exit(1);
+    }
+    if (!read_access) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
         exit(1);
     }
 
@@ -11918,15 +12051,8 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
                 start = end + 1;
             }
 
-            // For remaining records, pad with spaces.
-            while (rec < array_size) {
-                _lfortran_copy_str_and_pad(
-                    (*str_holder) + rec * (*len),
-                    *len,
-                    "",
-                    0);
-                rec++;
-            }
+            // Remaining records (beyond the output list) are left
+            // unchanged, per the Fortran standard.
         } else {
             _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len);
         }

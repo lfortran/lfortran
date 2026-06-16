@@ -322,14 +322,11 @@ semantic error: Initialization with non-constant variable `non_parameter_var` is
 281 |     integer :: non_parameter_var = 5
     |                ~~~~~~~~~~~~~~~~~~~~~ declared here
 
-semantic error: Named initialization with array parameter `myclass_array` is not supported yet
+semantic error: Parameter `myclass_array` has no initialization value
    --> tests/errors/continue_compilation_1.f90:283:5
     |
 283 |     type(MyClass) :: err_obj4 = myclass_array
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    |
-244 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
-    |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ array parameter declared here
 
 semantic error: Symbol not found: `uninitialized_param_local`
    --> tests/errors/continue_compilation_1.f90:284:5
@@ -1094,6 +1091,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 492 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
+semantic error: Subroutine `dummy_sub` called as a function
+   --> tests/errors/continue_compilation_1.f90:494:14
+    |
+494 |     print *, dummy_sub()
+    |              ^^^^^^^^^^^ 
+
 semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
    --> tests/errors/continue_compilation_1.f90:495:22
     |
@@ -1602,3 +1605,51 @@ semantic error: case value must be scalar
     |
 745 |         case (:[2])
     |                ^^^ 
+
+semantic error: Alternate return arguments are not permitted in calls to the 'cpu_time' intrinsic.
+   --> tests/errors/continue_compilation_1.f90:753:9
+    |
+753 |         call cpu_time(*1)
+    |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be of type integer, found string
+   --> tests/errors/continue_compilation_1.f90:759:9
+    |
+759 |         sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `errmsg` argument of `sync all` must be of type character, found integer
+   --> tests/errors/continue_compilation_1.f90:764:9
+    |
+764 |         sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be scalar
+   --> tests/errors/continue_compilation_1.f90:769:9
+    |
+769 |         sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'nosuch' is not declared
+   --> tests/errors/continue_compilation_1.f90:773:9
+    |
+773 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
+
+semantic error: Actual argument for 'x' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:777:23
+    |
+777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    |                       ^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:785:22
+    |
+785 |         select case (nn)
+    |                      ^^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:792:22
+    |
+792 |         select case (x)
+    |                      ^ 

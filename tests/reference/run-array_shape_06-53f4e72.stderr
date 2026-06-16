@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 'output'. Tried to match size 1 of dimension 1 of LHS with size 8 of dimension 1 of RHS.
+ --> tests/errors/array_shape_06.f90:8:9
+  |
+8 |         output = upstream_grad * 2.0_real32
+  |         ^^^^^^ LHS size is 1
+  |
+8 |         output = upstream_grad * 2.0_real32
+  |                  ^^^^^^^^^^^^^ RHS size is 8
