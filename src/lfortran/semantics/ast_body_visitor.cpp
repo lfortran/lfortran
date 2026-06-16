@@ -3819,7 +3819,7 @@ public:
     void visit_case_stmt(const AST::case_stmt_t& x) {
         Vec<ASR::case_stmt_t*> case_stmts;
         case_stmts.reserve(al, 1);
-        visit_case_stmt(x, case_stmts);
+        visit_case_stmt(x, case_stmts, nullptr);
         tmp = nullptr;
         tmp_vec.clear();
         for (size_t i = 0; i < case_stmts.size(); i++) {
@@ -3827,9 +3827,38 @@ public:
         }
     }
 
-    void visit_case_stmt(const AST::case_stmt_t& x, Vec<ASR::case_stmt_t*>& case_stmts) {
+    void visit_case_stmt(const AST::case_stmt_t& x, Vec<ASR::case_stmt_t*>& case_stmts,
+                         ASR::ttype_t* a_test_type) {
         AST::CaseStmt_t* Case_Stmt = (AST::CaseStmt_t*)(&(x.base));
         std::vector<ASR::expr_t*> expr_accum;
+        auto check_case_value_type = [&](ASR::expr_t* val) {
+            if (!a_test_type) return;
+            ASR::ttype_t* val_type = ASRUtils::expr_type(val);
+            if (ASRUtils::extract_type(val_type)->type != ASRUtils::extract_type(a_test_type)->type) {
+                diag.add(Diagnostic(
+                    "case value type '" +
+                        ASRUtils::type_to_str_fortran_expr(val_type, val) +
+                        "' does not match select case expression type '" +
+                        ASRUtils::type_to_str_fortran_expr(a_test_type, nullptr) + "'",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {val->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (ASRUtils::is_character(*a_test_type) &&
+                    ASRUtils::extract_kind_from_ttype_t(val_type) !=
+                    ASRUtils::extract_kind_from_ttype_t(a_test_type)) {
+                diag.add(Diagnostic(
+                    "case value character kind (" +
+                        std::to_string(ASRUtils::extract_kind_from_ttype_t(val_type)) +
+                        ") does not match select case expression character kind (" +
+                        std::to_string(ASRUtils::extract_kind_from_ttype_t(a_test_type)) + ")",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {val->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        };
         auto emit_expr_group = [&](const Location &loc) {
             if (expr_accum.empty()) return;
             Vec<ASR::expr_t*> expr_vec;
@@ -3861,6 +3890,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+                check_case_value_type(case_expr);
                 expr_accum.push_back(case_expr);
                 continue;
             } else if (AST::is_a<AST::CaseCondRange_t>(*(Case_Stmt->m_test[i]))) {
@@ -3879,6 +3909,7 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                    check_case_value_type(m_start);
                 }
                 if( condrange->m_end != nullptr ) {
                     this->visit_expr(*(condrange->m_end));
@@ -3891,6 +3922,7 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                    check_case_value_type(m_end);
                 }
                 Vec<ASR::stmt_t*> case_body_vec;
                 case_body_vec.reserve(al, Case_Stmt->n_body);
@@ -3948,7 +3980,7 @@ public:
                         AST::down_cast<AST::CaseStmt_Default_t>(body);
                 transform_stmts(def_body, d->n_body, d->m_body);
             } else {
-                visit_case_stmt(*body, a_body_vec);
+                visit_case_stmt(*body, a_body_vec, a_test_type);
             }
         }
 

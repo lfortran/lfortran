@@ -1653,3 +1653,21 @@ semantic error: select case expression must be of type integer, character, or lo
     |
 792 |         select case (x)
     |                      ^ 
+
+semantic error: case value type 'real' does not match select case expression type 'integer'
+   --> tests/errors/continue_compilation_1.f90:800:14
+    |
+800 |         case(1.0)  ! {Error} case value type 'real' does not match select case expression type 'integer'
+    |              ^^^ 
+
+semantic error: case value type 'integer' does not match select case expression type 'string'
+   --> tests/errors/continue_compilation_1.f90:807:14
+    |
+807 |         case(1)  ! {Error} case value type 'integer' does not match select case expression type 'string'
+    |              ^ 
+
+semantic error: case value character kind (1) does not match select case expression character kind (4)
+   --> tests/errors/continue_compilation_1.f90:814:14
+    |
+814 |         case('b')  ! {Error} case value character kind (1) does not match select case expression character kind (4)
+    |              ^^^ 

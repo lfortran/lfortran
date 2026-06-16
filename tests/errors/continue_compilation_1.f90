@@ -793,4 +793,25 @@ program continue_compilation_1
         case default
         end select
     end subroutine
+    subroutine select_case_value_type_mismatch_real()
+        implicit none
+        integer :: x
+        select case (x)
+        case(1.0)  ! {Error} case value type 'real' does not match select case expression type 'integer'
+        end select
+    end subroutine
+    subroutine select_case_value_type_mismatch_char()
+        implicit none
+        character :: c
+        select case (c)
+        case(1)  ! {Error} case value type 'integer' does not match select case expression type 'string'
+        end select
+    end subroutine
+    subroutine select_case_char_kind_mismatch()
+        implicit none
+        character(kind=4) :: c
+        select case (c)
+        case('b')  ! {Error} case value character kind (1) does not match select case expression character kind (4)
+        end select
+    end subroutine
 end program
