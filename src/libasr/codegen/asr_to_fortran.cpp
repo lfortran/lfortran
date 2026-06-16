@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
@@ -270,13 +271,13 @@ public:
                     throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
                 }
                 std::string struct_name = ASRUtils::symbol_name(type_decl);
+                if (struct_name == "~assumed_type") {
+                    r = "type(*)";
+                    break;
+                }
                 if (ASRUtils::is_unlimited_polymorphic_type(type_decl) ||
                         struct_name == "~unlimited_polymorphic_type") {
                     r = "class(*)";
-                    break;
-                }
-                if (struct_name == "~assumed_type") {
-                    r = "type(*)";
                     break;
                 }
                 r = "type(";
@@ -2232,9 +2233,10 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(Abort, "abort")
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
-                    + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)
+                    + ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id)
                     + "` is not implemented");
             }
         }
