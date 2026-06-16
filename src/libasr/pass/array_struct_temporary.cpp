@@ -1491,20 +1491,41 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
-        size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint) {
+            size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
             if (orig_args &&
                 (x_m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)))) {
+                
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
-                if (orig_variable &&
-                    (orig_variable->m_intent == ASRUtils::intent_out ||
-                     orig_variable->m_intent == ASRUtils::intent_inout ||
-                     ASRUtils::is_pointer(orig_variable->m_type))) {
-                    x_m_args_vec.push_back(al, x_m_args[i]);
-                    continue;
+                
+                if (orig_variable) {
+                    bool is_assumed_rank_pointer_target = false;
+
+                    // Exception: target array passed to assumed-rank pointer dummy
+                    if (ASRUtils::is_pointer(orig_variable->m_type) && 
+                        ASRUtils::is_assumed_rank_array(orig_variable->m_type)) {
+                        
+                        ASR::expr_t* arg_no_cast = ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value);
+                        ASR::Variable_t* actual_var = ASRUtils::expr_to_variable_or_null(arg_no_cast);
+                        
+                        if (actual_var && actual_var->m_target_attr) {
+                            is_assumed_rank_pointer_target = true;
+                        }
+                    }
+
+                    // Skip temporary generation for out/inout/pointer UNLESS it's our edge case
+                    if ((orig_variable->m_intent == ASRUtils::intent_out ||
+                         orig_variable->m_intent == ASRUtils::intent_inout ||
+                         ASRUtils::is_pointer(orig_variable->m_type)) && 
+                        !is_assumed_rank_pointer_target) {
+                        
+                        x_m_args_vec.push_back(al, x_m_args[i]);
+                        continue;
+                    }
                 }
+                
                 if (orig_variable && orig_variable->m_target_attr &&
                     x_m_args[i].m_value) {
                     ASR::expr_t* arg_no_cast =
@@ -1564,7 +1585,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             }
         }
     }
-
+    
     void visit_Variable(const ASR::Variable_t& /*x*/) {
         // Do nothing
     }

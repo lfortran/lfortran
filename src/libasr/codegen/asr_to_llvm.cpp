@@ -23496,6 +23496,13 @@ public:
                 llvm::Type* expected_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                     orig_arg->m_type, module.get());
+                // If tmp is passed by value (struct) or otherwise not a pointer, wrap it in an alloca pointer.
+                if (!tmp->getType()->isPointerTy()) {
+                    llvm::Value* ptr = llvm_utils->CreateAlloca(*builder, tmp->getType());
+                    builder->CreateStore(tmp, ptr);
+                    tmp = ptr;
+                }
+
                 if (tmp->getType() != expected_desc_type->getPointerTo()) {
                     tmp = builder->CreateBitCast(tmp, expected_desc_type->getPointerTo());
                 }
