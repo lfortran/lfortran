@@ -3984,8 +3984,121 @@ public:
             }
         }
 
+        check_select_case_overlaps(a_body_vec, a_test_type);
+
         tmp = ASR::make_Select_t(al, x.base.base.loc, x.m_stmt_name, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
+    }
+
+    // null lo/hi means open bound (-inf/+inf); single value v stored as lo==hi==v
+    struct CaseInterval {
+        ASR::expr_t* lo;
+        ASR::expr_t* hi;
+        Location loc;
+    };
+
+    static bool get_str_value(ASR::expr_t* e, std::string& s) {
+        ASR::expr_t* val = ASRUtils::expr_value(e);
+        if (val && ASR::is_a<ASR::StringConstant_t>(*val)) {
+            s = ASR::down_cast<ASR::StringConstant_t>(val)->m_s;
+            return true;
+        }
+        return false;
+    }
+
+    // Fortran character comparison: shorter string is blank-padded to the longer length
+    static int fortran_str_cmp(const std::string& a, const std::string& b) {
+        size_t len = std::max(a.size(), b.size());
+        std::string pa = a, pb = b;
+        pa.resize(len, ' ');
+        pb.resize(len, ' ');
+        return pa < pb ? -1 : (pa > pb ? 1 : 0);
+    }
+
+    static bool interval_lo_less(const CaseInterval& a, const CaseInterval& b,
+                                 ASR::ttype_t* type) {
+        if (!a.lo && !b.lo) return false;
+        if (!a.lo) return true;
+        if (!b.lo) return false;
+
+        if (ASRUtils::is_integer(*type)) {
+            int64_t va = 0, vb = 0;
+            ASRUtils::extract_value(a.lo, va);
+            ASRUtils::extract_value(b.lo, vb);
+            return va < vb;
+        } else if (ASRUtils::is_character(*type)) {
+            std::string sa, sb;
+            if (get_str_value(a.lo, sa) && get_str_value(b.lo, sb))
+                return fortran_str_cmp(sa, sb) < 0;
+        } else if (ASRUtils::is_logical(*type)) {
+            ASR::expr_t* va = ASRUtils::expr_value(a.lo);
+            ASR::expr_t* vb = ASRUtils::expr_value(b.lo);
+            if (va && vb && ASR::is_a<ASR::LogicalConstant_t>(*va) &&
+                            ASR::is_a<ASR::LogicalConstant_t>(*vb)) {
+                bool ba = ASR::down_cast<ASR::LogicalConstant_t>(va)->m_value;
+                bool bb = ASR::down_cast<ASR::LogicalConstant_t>(vb)->m_value;
+                return !ba && bb; // false < true
+            }
+        }
+        return false;
+    }
+
+    // Assumes intervals are sorted by lo. After sorting, a non-overlap requires hi[a] < lo[b].
+    static bool adjacent_intervals_overlap(const CaseInterval& a, const CaseInterval& b,
+                                           ASR::ttype_t* type) {
+        if (!a.hi || !b.lo) return true;
+
+        if (ASRUtils::is_integer(*type)) {
+            int64_t h1 = 0, l2 = 0;
+            if (ASRUtils::extract_value(a.hi, h1) && ASRUtils::extract_value(b.lo, l2))
+                return h1 >= l2;
+        } else if (ASRUtils::is_character(*type)) {
+            std::string h1, l2;
+            if (get_str_value(a.hi, h1) && get_str_value(b.lo, l2))
+                return fortran_str_cmp(h1, l2) >= 0;
+        } else if (ASRUtils::is_logical(*type)) {
+            ASR::expr_t* vh1 = ASRUtils::expr_value(a.hi);
+            ASR::expr_t* vl2 = ASRUtils::expr_value(b.lo);
+            if (vh1 && vl2 && ASR::is_a<ASR::LogicalConstant_t>(*vh1) &&
+                               ASR::is_a<ASR::LogicalConstant_t>(*vl2)) {
+                bool bh1 = ASR::down_cast<ASR::LogicalConstant_t>(vh1)->m_value;
+                bool bl2 = ASR::down_cast<ASR::LogicalConstant_t>(vl2)->m_value;
+                return bh1 == bl2 || bh1; // .true. >= anything; .false. >= .false.
+            }
+        }
+        return false;
+    }
+
+    void check_select_case_overlaps(Vec<ASR::case_stmt_t*>& a_body_vec, ASR::ttype_t* a_test_type) {
+        std::vector<CaseInterval> intervals;
+        for (size_t i = 0; i < a_body_vec.size(); i++) {
+            ASR::case_stmt_t* cs = a_body_vec[i];
+            if (ASR::is_a<ASR::CaseStmt_t>(*cs)) {
+                ASR::CaseStmt_t* c = ASR::down_cast<ASR::CaseStmt_t>(cs);
+                for (size_t j = 0; j < c->n_test; j++)
+                    intervals.push_back({c->m_test[j], c->m_test[j], c->m_test[j]->base.loc});
+            } else if (ASR::is_a<ASR::CaseStmt_Range_t>(*cs)) {
+                ASR::CaseStmt_Range_t* c = ASR::down_cast<ASR::CaseStmt_Range_t>(cs);
+                intervals.push_back({c->m_start, c->m_end, cs->base.loc});
+            }
+        }
+
+        std::sort(intervals.begin(), intervals.end(),
+            [&](const CaseInterval& a, const CaseInterval& b) {
+                return interval_lo_less(a, b, a_test_type);
+            });
+
+        for (size_t i = 0; i + 1 < intervals.size(); i++) {
+            if (adjacent_intervals_overlap(intervals[i], intervals[i + 1], a_test_type)) {
+                diag.add(Diagnostic(
+                    "overlapping case value",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {intervals[i].loc}),
+                        Label("", {intervals[i + 1].loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
     }
 
     void visit_SelectRank(const AST::SelectRank_t& x) {

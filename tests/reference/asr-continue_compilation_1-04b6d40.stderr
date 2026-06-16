@@ -1671,3 +1671,39 @@ semantic error: case value character kind (1) does not match select case express
     |
 814 |         case('b')  ! {Error} case value character kind (1) does not match select case expression character kind (4)
     |              ^^^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:821:14
+    |
+821 |         case(5)
+    |              ^ 
+    |
+822 |         case(5)  ! {Error} overlapping case value
+    |              ^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:829:9
+    |
+829 |         case(1:10)
+    |         ^^^^^^^^^^^ 
+    |
+830 |         case(5:20)  ! {Error} overlapping case value
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:837:9
+    |
+837 |         case('a':'m')
+    |         ^^^^^^^^^^^^^^ 
+    |
+838 |         case('m':'z')  ! {Error} overlapping case value
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:845:14
+    |
+845 |         case(.true.)
+    |              ^^^^^^ 
+    |
+846 |         case(.true.)  ! {Error} overlapping case value
+    |              ^^^^^^ 
