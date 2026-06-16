@@ -6450,6 +6450,22 @@ public:
                 (target->type == ASR::exprType::Cast &&
                  ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic)
             );
+            if (lhs_supports_implicit_cast && ASRUtils::is_character(*target_type) &&
+                    ASRUtils::is_character(*value_type) &&
+                    ASR::is_a<ASR::StringConstant_t>(*value)) {
+                int target_kind = ASRUtils::extract_kind_from_ttype_t(target_type);
+                int value_kind = ASRUtils::extract_kind_from_ttype_t(value_type);
+                if (target_kind != value_kind) {
+                    ASR::String_t *value_string = ASRUtils::get_string_type(value_type);
+                    ASR::StringConstant_t *value_constant = ASR::down_cast<ASR::StringConstant_t>(value);
+                    ASR::ttype_t *converted_type = ASRUtils::TYPE(ASR::make_String_t(
+                        al, value->base.loc, target_kind, value_string->m_len,
+                        value_string->m_len_kind, value_string->m_physical_type));
+                    value = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, value->base.loc, value_constant->m_s, converted_type));
+                    value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
+                }
+            }
             if (lhs_supports_implicit_cast &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
