@@ -6011,7 +6011,12 @@ namespace StringLenTrim {
     static inline ASR::expr_t* instantiate_StringLenTrim(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
-        declare_basic_variables("_lcompilers_len_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string new_name = "_lcompilers_len_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        declare_basic_variables(new_name);
+        if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
+        }
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare("result", return_type, ReturnVar);
 
@@ -6073,7 +6078,17 @@ namespace StringTrim {
     static inline ASR::expr_t* instantiate_StringTrim(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
-        declare_basic_variables("_lcompilers_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+        std::string new_name = "_lcompilers_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        declare_basic_variables(new_name);
+        if (ASR::symbol_t *s = scope->get_symbol(new_name)) {
+            ASR::expr_t* call_lentrim = StringLenTrim::StringLenTrim(
+                b, new_args[0].m_value, int32, scope);
+            ASR::ttype_t* call_return_type = TYPE(ASR::make_String_t(al, loc, 1,
+                call_lentrim,
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+            return b.Call(s, new_args, call_return_type, nullptr);
+        }
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
         return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim,
