@@ -488,18 +488,6 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
 751 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
-warning: Assuming implicit save attribute for variable declaration
-   --> tests/errors/continue_compilation_1.f90:784:20
-    |
-784 |         complex :: nn = (1.0, 0.0)
-    |                    ^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
-
-warning: Assuming implicit save attribute for variable declaration
-   --> tests/errors/continue_compilation_1.f90:791:17
-    |
-791 |         real :: x = 1.0
-    |                 ^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
-
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |

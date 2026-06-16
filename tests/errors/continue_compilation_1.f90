@@ -781,14 +781,14 @@ program continue_compilation_1
     end subroutine
     subroutine select_case_complex()
         implicit none
-        complex :: nn = (1.0, 0.0)
+        complex :: nn
         select case (nn)
         case default
         end select
     end subroutine
     subroutine select_case_real()
         implicit none
-        real :: x = 1.0
+        real :: x
         select case (x)
         case default
         end select
