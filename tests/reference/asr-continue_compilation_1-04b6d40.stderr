@@ -1641,3 +1641,15 @@ semantic error: Actual argument for 'x' cannot be an assumed-size array
     |
 777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
     |                       ^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:785:22
+    |
+785 |         select case (nn)
+    |                      ^^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:792:22
+    |
+792 |         select case (x)
+    |                      ^ 

@@ -779,4 +779,18 @@ program continue_compilation_1
     subroutine ptr_sink(x)
         integer, pointer :: x(..)
     end subroutine
+    subroutine select_case_complex()
+        implicit none
+        complex :: nn
+        select case (nn)
+        case default
+        end select
+    end subroutine
+    subroutine select_case_real()
+        implicit none
+        real :: x
+        select case (x)
+        case default
+        end select
+    end subroutine
 end program
