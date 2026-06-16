@@ -779,4 +779,13 @@ program continue_compilation_1
     subroutine ptr_sink(x)
         integer, pointer :: x(..)
     end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)  
+        print *, lgt("a", glyph)  
+        print *, lle(glyph, "z")  
+        print *, llt(glyph, "z")  
+    end subroutine
 end program

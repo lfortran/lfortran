@@ -1641,3 +1641,27 @@ semantic error: Actual argument for 'x' cannot be an assumed-size array
     |
 777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
     |                       ^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:786:18
+    |
+786 |         print *, lge("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `lgt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:787:18
+    |
+787 |         print *, lgt("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `lle` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:788:18
+    |
+788 |         print *, lle(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `llt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:789:18
+    |
+789 |         print *, llt(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
