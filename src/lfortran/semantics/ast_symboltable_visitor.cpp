@@ -2282,6 +2282,13 @@ public:
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
+
+            if (return_type && (is_alloc_standalone || is_ptr_standalone)) {
+                Vec<ASR::dimension_t> dummy_dims;
+                dummy_dims.reserve(al, 0);
+                ASR::symbol_t* dummy_type_decl = nullptr;
+                return_variable->m_type = determine_type(x.base.base.loc, return_var_name, (AST::decl_attribute_t*)return_type, false, false, dummy_dims, nullptr, dummy_type_decl, current_procedure_abi_type);
+            }
             
             // Upgrade the implicitly typed variable to Allocatable or Pointer
             if (is_alloc_standalone && !ASRUtils::is_allocatable(return_variable->m_type)) {
