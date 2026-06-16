@@ -793,4 +793,9 @@ program continue_compilation_1
         case default
         end select
     end subroutine
+    subroutine char_scalar_empty_parens_call()
+        implicit none
+        character(4) :: out, make_name
+        out = make_name()  ! {Error} Array reference is not allowed on scalar variable
+    end subroutine
 end program

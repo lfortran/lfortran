@@ -10321,6 +10321,11 @@ public:
             }
             if( ASRUtils::is_character(*root_v_type) &&
                 !ASRUtils::is_array(root_v_type) ) {
+                if (args.size() == 0) {
+                    diag.add(Diagnostic("Array reference is not allowed on scalar variable",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
                 ASR::ttype_t  *char_type = ASRUtils::TYPE(ASR::make_String_t(
                     al, type->base.loc, ASRUtils::extract_kind_from_ttype_t(root_v_type),
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, type->base.loc, 1,
