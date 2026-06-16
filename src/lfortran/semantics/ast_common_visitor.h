@@ -20610,6 +20610,16 @@ public:
                 m->m_name, nullptr, 0, mtemp->m_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
+        } else if (ASR::is_a<ASR::Namelist_t>(*t)) {
+            ASR::Namelist_t *nml = ASR::down_cast<ASR::Namelist_t>(t);
+            ASR::asr_t *v = ASR::make_ExternalSymbol_t(
+                al, loc,
+                current_scope,
+                s2c(al, local_sym),
+                (ASR::symbol_t*) nml,
+                m->m_name, nullptr, 0, nml->m_group_name,
+                dflt_access);
+            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(t);
             ASR::asr_t* temp = ASR::make_ExternalSymbol_t(
