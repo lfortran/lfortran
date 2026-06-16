@@ -6163,15 +6163,11 @@ namespace Char {
         s.from_str_view(svalue);
         char *result = s.c_str(al);
         ASR::ttype_t* result_type = t1;
-        if (kind > 1 && (int64_t)svalue.size() != 1) {
-            ASR::ttype_t* int_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4));
-            result_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, kind,
-                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, (int64_t)svalue.size(), int_type)),
-                ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::DescriptorString));
-        }
+        // The logical length of a char() result is always 1, even if its UTF-8 
+        // byte representation is larger. ASR string constants expect UTF-8.
+        int64_t len = 0;
+        ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(t1))->m_len, len);
+        LCOMPILERS_ASSERT(len == 1);
         return make_ConstantWithType(make_StringConstant_t, result, result_type, loc);
     }
 
@@ -6230,15 +6226,11 @@ namespace Achar {
             svalue += (char)(0x80 | (i & 0x3F));
         }
         ASR::ttype_t* result_type = t1;
-        if (kind > 1 && (int64_t)svalue.size() != 1) {
-            ASR::ttype_t* int_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4));
-            result_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, kind,
-                ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, (int64_t)svalue.size(), int_type)),
-                ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::DescriptorString));
-        }
+        // The logical length of an achar() result is always 1, even if its UTF-8 
+        // byte representation is larger. ASR string constants expect UTF-8.
+        int64_t len = 0;
+        ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(t1))->m_len, len);
+        LCOMPILERS_ASSERT(len == 1);
         return make_ConstantWithType(make_StringConstant_t, s2c(al, svalue), result_type, loc);
     }
 

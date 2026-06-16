@@ -2228,7 +2228,7 @@ namespace LCompilers {
     }
 
     void LLVMUtils::set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type,
-        llvm::Value* str , llvm::Value* len, int char_kind){
+        llvm::Value* str , llvm::Value* len, int64_t char_kind){
 
         /* Fetch String Data Based On PhysicalType */
         llvm::Value *str_data {};
@@ -2744,7 +2744,7 @@ namespace LCompilers {
             char_kind = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
         }
 
-        std::string runtime_func_name = "_lfortran_strcpy_alloc_kind";
+        std::string runtime_func_name = "_lfortran_strcpy_alloc";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -2776,7 +2776,14 @@ namespace LCompilers {
         int64_t str_len = -1;
         ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, str_len);
 
-        std::string initial_string = std::string(str_const->m_s, str_len);
+        int kind = ASRUtils::get_string_type(str_const->m_type)->m_kind;
+        std::string initial_string;
+        if (kind > 1) {
+            initial_string = std::string(str_const->m_s);
+        } else {
+            initial_string = std::string(str_const->m_s, str_len);
+        }
+
         return declare_global_string(
             ASRUtils::get_string_type(str_const->m_type),
             initial_string, true, "string_const");
