@@ -5760,6 +5760,21 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrAsynchronous) {
                                     // no-op: valid Fortran 2003, LFortran's runtime is synchronous
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrValue) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (sym_ && ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                        bool is_argument = std::find(current_procedure_args.begin(),
+                                            current_procedure_args.end(), sym) != current_procedure_args.end();
+                                        if (!is_argument) {
+                                            diag.add(Diagnostic(
+                                                "Value attribute can only be applied to procedure arguments",
+                                                Level::Error, Stage::Semantic, {
+                                                    Label("",{x.base.base.loc})
+                                                }));
+                                            throw SemanticAbort();
+                                        }
+                                        ASR::down_cast<ASR::Variable_t>(sym_)->m_value_attr = true;
+                                    }
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",
@@ -6766,6 +6781,27 @@ public:
                                 {x.base.base.loc},
                                 "ignored for now"
                             );
+                        }
+                    }
+                } else if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i]) &&
+                        AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i])->m_attr
+                            == AST::simple_attributeType::AttrValue) {
+                    for (size_t j = 0; j < x.n_syms; j++) {
+                        std::string sym = to_lower(x.m_syms[j].m_name);
+                        ASR::symbol_t* orig_decl = current_scope->get_symbol(sym);
+                        if (orig_decl && ASR::is_a<ASR::Variable_t>(*orig_decl)) {
+                            bool is_argument = std::find(current_procedure_args.begin(),
+                                    current_procedure_args.end(), sym) !=
+                                    current_procedure_args.end();
+                            if (!is_argument) {
+                                diag.add(Diagnostic(
+                                    "Value attribute can only be applied to procedure arguments",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("",{x.m_attributes[i]->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                            ASR::down_cast<ASR::Variable_t>(orig_decl)->m_value_attr = true;
                         }
                     }
                 } else if (AST::is_a<AST::AttrIntent_t>(*x.m_attributes[i])) {
