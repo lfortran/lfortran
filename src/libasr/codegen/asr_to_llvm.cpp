@@ -22565,6 +22565,35 @@ public:
         }        
     }
 
+    // Relabel a child pointer to a parent-type formal (e.g. finalizer calls).
+    llvm::Value* upcast_arg_to_formal_struct(llvm::Value* value,
+            ASR::Variable_t* formal, ASR::expr_t* actual) {
+        if (!formal || !formal->m_type_declaration) return value;
+        if (!value || !value->getType()->isPointerTy()) return value;
+        if (ASRUtils::is_array(formal->m_type)) return value;
+
+        ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+            formal->m_type_declaration);
+        ASR::symbol_t* child = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(actual));
+        if (!parent || !child
+                || !ASR::is_a<ASR::Struct_t>(*parent)
+                || !ASR::is_a<ASR::Struct_t>(*child)
+                || !ASRUtils::is_parent(ASR::down_cast<ASR::Struct_t>(parent),
+                                        ASR::down_cast<ASR::Struct_t>(child))) {
+            return value;
+        }
+
+        ASR::expr_t* formal_var = ASRUtils::EXPR(
+            ASR::make_Var_t(al, formal->base.base.loc, &formal->base));
+        llvm::Type* formal_ptr = llvm_utils->get_type_from_ttype_t_util(
+            formal_var, ASRUtils::extract_type(formal->m_type),
+            module.get())->getPointerTo();
+
+        if (value->getType() == formal_ptr) return value;
+        return builder->CreateBitCast(value, formal_ptr);
+    }
+
     template <typename T>
     std::vector<llvm::Value*> convert_call_args(const T &x, bool skip_self = false, size_t skip_self_idx = 0) {
         std::vector<llvm::Value *> args;
@@ -23993,6 +24022,7 @@ public:
                 }
             }
 
+            tmp = upcast_arg_to_formal_struct(tmp, orig_arg, x.m_args[i].m_value);
             args.push_back(tmp);
         }
         convert_call_args_depth--;
@@ -25352,14 +25382,6 @@ public:
                 fn = llvm_utils->CreateLoad2(fntype->getPointerTo(), fn);
             }
             args = convert_call_args(x, is_method /* skip_self */);
-
-            for (size_t i = 0; i < args.size() && i < (size_t)fntype->getNumParams(); i++) {
-                llvm::Type* param_type = fntype->getParamType(i);
-                llvm::Type* arg_type = args[i]->getType();
-                if (arg_type != param_type && arg_type->isPointerTy() && param_type->isPointerTy()) {
-                    args[i] = builder->CreateBitCast(args[i], param_type);
-                }
-            }
 
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
