@@ -1069,13 +1069,13 @@ class PRIFInterface {
 
             Vec<ASR::expr_t*> sub_elems; sub_elems.reserve(al, n_coindices == 0 ? 1 : n_coindices);
             if (n_coindices == 0) {
-                sub_elems.push_back(al, b.i64(1));
+                LCOMPILERS_ASSERT(false);
             } else {
                 for (size_t i = 0; i < n_coindices; i++) {
                     if (coindices[i].m_left) {
                         sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
                     } else {
-                        sub_elems.push_back(al, b.i64(1));
+                        LCOMPILERS_ASSERT(false);
                     }
                 }
             }
@@ -1123,13 +1123,13 @@ class PRIFInterface {
 
             Vec<ASR::expr_t*> sub_elems; sub_elems.reserve(al, n_coindices == 0 ? 1 : n_coindices);
             if (n_coindices == 0) {
-                sub_elems.push_back(al, b.i64(1));
+                LCOMPILERS_ASSERT(false);
             } else {
                 for (size_t i = 0; i < n_coindices; i++) {
                     if (coindices[i].m_left) {
                         sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
                     } else {
-                        sub_elems.push_back(al, b.i64(1));
+                        LCOMPILERS_ASSERT(false);
                     }
                 }
             }
