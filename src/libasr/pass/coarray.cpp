@@ -1124,7 +1124,7 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
         }
 };
 
-// CoarrayCompanionVisitor traverses the AST and declares companion
+// CoarrayCompanionVisitor traverses the ASR and declares companion
 // variables for coarrays in each scope (Program, Function, Module)
 // before any allocation or lookup is performed.
 class CoarrayCompanionVisitor : public ASR::BaseWalkVisitor<CoarrayCompanionVisitor> {
