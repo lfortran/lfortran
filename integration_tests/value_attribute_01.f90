@@ -3,6 +3,7 @@ program value_attribute_01
   integer :: x
   real :: y
   logical :: z
+  character :: c
 
   x = 500
   if (divide_val(x) /= 50) error stop "FAIL: divide_val result"
@@ -18,6 +19,10 @@ program value_attribute_01
 
   call modify_val_sub(x)
   if (x /= 500) error stop "FAIL: x was modified by modify_val_sub"
+
+  c = 'a'
+  call modify_char_sub(c)
+  if (c /= 'a') error stop "FAIL: c was modified by modify_char_sub"
 
   print *, "PASS"
 
@@ -47,6 +52,12 @@ contains
   subroutine modify_val_sub(n)
     integer, value :: n
     n = n + 100
+  end subroutine
+
+  subroutine modify_char_sub(ch)
+    character :: ch
+    value :: ch
+    ch = 'z'
   end subroutine
 
 end program
