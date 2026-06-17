@@ -793,4 +793,8 @@ program continue_compilation_1
         case default
         end select
     end subroutine
+    subroutine integer_length_specifier()
+        implicit none
+        integer :: i*2
+    end subroutine
 end program

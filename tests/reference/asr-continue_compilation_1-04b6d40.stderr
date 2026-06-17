@@ -488,6 +488,12 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
 751 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: length specifier (*n) is only valid for character type
+   --> tests/errors/continue_compilation_1.f90:798:22
+    |
+798 |         integer :: i*2
+    |                      ^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
