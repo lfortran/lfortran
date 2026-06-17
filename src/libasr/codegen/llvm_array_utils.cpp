@@ -1008,10 +1008,20 @@ namespace LCompilers {
             } else {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
+                // instead of the array descriptor struct. We reconstruct the correct descriptor struct here.
+                if (polymorphic && variable_type_decl == nullptr && !array_type->isStructTy()) {
+                    ASR::dimension_t* m_dims;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::type_get_past_allocatable_pointer(asr_type), m_dims);
+                    array_type = this->get_array_type_for_rank(type, n_dims);
+                }
+
                 idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
-                llvm::Value* ptr_to_data_ptr = get_pointer_to_data(
-                    expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module);
+                
+                // Use the corrected array_type to avoid the buggy overload that calls get_type_from_ttype_t_util again
+                llvm::Value* ptr_to_data_ptr = this->get_pointer_to_data(array_type, array);
                 llvm::Value* full_array = nullptr;
+                
                 if(ASRUtils::is_character(*asr_type)){
                     full_array = llvm_utils->CreateLoad2(type->getPointerTo(), ptr_to_data_ptr);
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
