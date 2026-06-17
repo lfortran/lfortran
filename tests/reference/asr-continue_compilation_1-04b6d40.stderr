@@ -1654,7 +1654,7 @@ semantic error: select case expression must be of type integer, character, or lo
 792 |         select case (x)
     |                      ^ 
 
-semantic error: Array reference is not allowed on scalar variable
+semantic error: String section/item must have section reference
    --> tests/errors/continue_compilation_1.f90:799:15
     |
 799 |         out = make_name()  ! {Error} Array reference is not allowed on scalar variable

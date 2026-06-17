@@ -10322,7 +10322,7 @@ public:
             if( ASRUtils::is_character(*root_v_type) &&
                 !ASRUtils::is_array(root_v_type) ) {
                 if (args.size() == 0) {
-                    diag.add(Diagnostic("Array reference is not allowed on scalar variable",
+                    diag.add(Diagnostic("String section/item must have section reference",
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
