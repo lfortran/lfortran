@@ -15880,6 +15880,9 @@ public:
                 tmp = builder->CreateUIToFP(tmp, llvm_utils->getFPType(a_kind, false));
                 break;
             }
+            case (ASR::cast_kindType::StringToString) : {
+                break;
+            }
             case (ASR::cast_kindType::RealToInteger) : {
                 llvm::Type *target_type;
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);

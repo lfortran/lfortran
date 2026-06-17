@@ -846,4 +846,13 @@ program continue_compilation_1
         case(.true.)  ! {Error} overlapping case value
         end select
     end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)
+        print *, lgt("a", glyph)
+        print *, lle(glyph, "z")
+        print *, llt(glyph, "z")
+    end subroutine
 end program
