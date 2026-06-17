@@ -7330,6 +7330,74 @@ public:
         visit_Assignment(assignment);
     }
 
+    // Wrap derived types as `type(name)`/`class(name)`; intrinsics shown as-is.
+    std::string format_dummy_proc_arg_type(ASR::ttype_t* type, ASR::expr_t* expr) {
+        std::string str = ASRUtils::type_to_str_with_kind(type, expr);
+        ASR::ttype_t* elem = ASRUtils::type_get_past_allocatable_pointer(type);
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            return (ASRUtils::is_class_type(elem) ? "class(" : "type(") + str + ")";
+        }
+        return str;
+    }
+
+    // Verify a passed procedure matches the dummy's interface (when both
+    // signatures are complete). `descriptor` names the dummy in diagnostics.
+    void check_dummy_procedure_signature(ASR::FunctionType_t* passed_ft,
+            ASR::FunctionType_t* param_ft, ASR::Function_t* passed_func,
+            ASR::Function_t* param_func, const std::string& descriptor,
+            const Location& loc) {
+        if (passed_ft->n_arg_types == 0 || param_ft->n_arg_types == 0) {
+            return;
+        }
+        const std::string prefix = "Interface mismatch in dummy procedure " + descriptor + ": ";
+        if (passed_ft->n_arg_types != param_ft->n_arg_types) {
+            diag.add(diag::Diagnostic(
+                prefix + "number of arguments differ (expected " +
+                std::to_string(param_ft->n_arg_types) + " but got " +
+                std::to_string(passed_ft->n_arg_types) + ")",
+                diag::Level::Error, diag::Stage::Semantic, { diag::Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        for (size_t j = 0; j < passed_ft->n_arg_types; j++) {
+            ASR::ttype_t* passed_arg_t = passed_ft->m_arg_types[j];
+            ASR::ttype_t* param_arg_t = param_ft->m_arg_types[j];
+            ASR::expr_t* passed_arg_expr = (passed_func && j < passed_func->n_args) ? passed_func->m_args[j] : nullptr;
+            ASR::expr_t* param_arg_expr = (param_func && j < param_func->n_args) ? param_func->m_args[j] : nullptr;
+            // Expressions let types_equal compare struct identity (A vs B); the
+            // explicit class-vs-type check covers polymorphism, which it ignores.
+            bool poly_mismatch = ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(passed_arg_t))
+                != ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(param_arg_t));
+            if (poly_mismatch ||
+                !ASRUtils::types_equal(passed_arg_t, param_arg_t, passed_arg_expr, param_arg_expr)) {
+                diag.add(diag::Diagnostic(
+                    prefix + "type mismatch in argument " + std::to_string(j + 1) + " (" +
+                    format_dummy_proc_arg_type(param_arg_t, param_arg_expr) + "/" +
+                    format_dummy_proc_arg_type(passed_arg_t, passed_arg_expr) + ")",
+                    diag::Level::Error, diag::Stage::Semantic, { diag::Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+        }
+        // A null return type means a subroutine, non-null means a function.
+        bool passed_is_func = passed_ft->m_return_var_type != nullptr;
+        bool param_is_func = param_ft->m_return_var_type != nullptr;
+        if (passed_is_func != param_is_func) {
+            diag.add(diag::Diagnostic(
+                prefix + "expected a " + (param_is_func ? "function" : "subroutine") +
+                " but got a " + (passed_is_func ? "function" : "subroutine"),
+                diag::Level::Error, diag::Stage::Semantic, { diag::Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        if (passed_is_func &&
+            !ASRUtils::types_equal(passed_ft->m_return_var_type, param_ft->m_return_var_type, nullptr, nullptr)) {
+            diag.add(diag::Diagnostic(
+                prefix + "return type mismatch (" +
+                ASRUtils::type_to_str_with_kind(param_ft->m_return_var_type, nullptr) + "/" +
+                ASRUtils::type_to_str_with_kind(passed_ft->m_return_var_type, nullptr) + ")",
+                diag::Level::Error, diag::Stage::Semantic, { diag::Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         std::string sub_name = to_lower(x.m_name);
         // Only treat as intrinsic if no user-defined callable procedure
@@ -7911,12 +7979,6 @@ public:
                 throw SemanticAbort();
             }
         }
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
-            && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
-            // check if asr owner is associate block.
-            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
-        }
-        ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if (f) {
             const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
             if (args.size() + offset > f->n_args) {
@@ -8109,6 +8171,23 @@ public:
                                 }
                             }
                         }
+                        // Explicit interface, procedure-pointer dummy (Variable of FunctionType).
+                        if (!compiler_options.implicit_interface &&
+                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type))) {
+                            if (ASR::is_a<ASR::Var_t>(*passed_arg)) {
+                                ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg)->m_v;
+                                passed_sym = ASRUtils::symbol_get_past_external(passed_sym);
+                                if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                    ASR::FunctionType_t* passed_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                        passed_func->m_function_signature);
+                                    ASR::FunctionType_t* param_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                        ASRUtils::type_get_past_array(param_type));
+                                    check_dummy_procedure_signature(passed_ft, param_ft,
+                                        passed_func, nullptr, "argument", passed_arg->base.loc);
+                                }
+                            }
+                        }
                         // Skip type checking for polymorphic types (class), function types
                         bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
@@ -8180,10 +8259,11 @@ public:
                             passed_sym = ASRUtils::symbol_get_past_external(passed_sym);
 
                             ASR::FunctionType_t* passed_ft = nullptr;
+                            ASR::Function_t* passed_func = nullptr;
 
                             // Handle passed Function symbol
                             if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
-                                ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
                                 passed_ft = ASR::down_cast<ASR::FunctionType_t>(
                                     passed_func->m_function_signature);
                             }
@@ -8230,7 +8310,7 @@ public:
                                 // Reverse propagation: parameter has type info but passed doesn't.
                                 // Only handle when passed_sym is a Function_t.
                                 if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
-                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                    passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
                                     passed_ft->m_arg_types = param_ft->m_arg_types;
                                     passed_ft->n_arg_types = param_ft->n_arg_types;
                                     passed_ft->m_return_var_type = param_ft->m_return_var_type;
@@ -8262,13 +8342,17 @@ public:
                                 // Both have no arg_types - may need post-processing
                                 // if callee's param gets types after we visit callee's body
                                 if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
-                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                                    passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
                                     passed_ft->m_return_var_type = param_ft->m_return_var_type;
                                     if (param_ft->m_return_var_type == nullptr) {
                                         passed_func->m_return_var = nullptr;
                                     }
                                 }
                                 needs_implicit_interface_postprocessing = true;
+                            } else if (passed_ft && passed_ft->n_arg_types > 0 && param_ft->n_arg_types > 0) {
+                                check_dummy_procedure_signature(passed_ft, param_ft,
+                                    passed_func, param_func,
+                                    "'" + std::string(param_func->m_name) + "'", passed_arg->base.loc);
                             }
                             if (passed_ft && param_ft && param_ft->m_return_var_type == nullptr) {
                                 if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
@@ -8279,11 +8363,37 @@ public:
                             }
                         }
                     }
+                } else if (ASR::is_a<ASR::Function_t>(*var->m_v)) {
+                    // Explicit interface, interface-block dummy (Function symbol).
+                    ASR::Function_t* param_func = ASR::down_cast<ASR::Function_t>(var->m_v);
+                    ASR::FunctionType_t* param_ft = ASR::down_cast<ASR::FunctionType_t>(
+                        param_func->m_function_signature);
+                    if (i < args.size() && args[i].m_value != nullptr &&
+                            ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                        ASR::expr_t* passed_arg = args[i].m_value;
+                        ASR::symbol_t* passed_sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(passed_arg)->m_v);
+                        if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+                            ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
+                            ASR::FunctionType_t* passed_ft = ASR::down_cast<ASR::FunctionType_t>(
+                                passed_func->m_function_signature);
+                            check_dummy_procedure_signature(passed_ft, param_ft,
+                                passed_func, param_func,
+                                "'" + std::string(param_func->m_name) + "'", passed_arg->base.loc);
+                        }
+                    }
                 }
             }
 
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
+        // Register dependencies after validation, so an aborted call leaves none.
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
+            && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
+            // check if asr owner is associate block.
+            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+        }
+        ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         ASR::stmt_t* cast_stmt = nullptr;
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();

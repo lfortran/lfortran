@@ -1614,3 +1614,9 @@ semantic error: Alternate return arguments are not permitted in calls to the 'cp
     |
 753 |         call cpu_time(*1)
     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface mismatch in dummy procedure 'proc': type mismatch in argument 1 (class(box_11778)/type(box_11778))
+   --> tests/errors/continue_compilation_1.f90:757:31
+    |
+757 |         call takes_proc_11778(actual_11778)  ! {Error} Interface mismatch in dummy procedure 'proc': type mismatch in argument 1 (class(box_11778)/type(box_11778))
+    |                               ^^^^^^^^^^^^ 

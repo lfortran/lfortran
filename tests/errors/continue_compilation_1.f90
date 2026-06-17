@@ -64,8 +64,8 @@ module continue_compilation_1_mod
     type :: type_t
     end type type_t
 
-
-
+    type :: box_11778
+    end type box_11778
 
 
 
@@ -753,4 +753,19 @@ program continue_compilation_1
         call cpu_time(*1)
 1       continue
     end subroutine 
+    subroutine dummy_proc_iface_mismatch()
+        call takes_proc_11778(actual_11778)  ! {Error} Interface mismatch in dummy procedure 'proc': type mismatch in argument 1 (class(box_11778)/type(box_11778))
+    end subroutine
+    real function actual_11778(arg)
+        type(box_11778) :: arg
+        actual_11778 = 0.0
+    end function actual_11778
+    subroutine takes_proc_11778(proc)
+        interface
+            real function proc(arg)
+                import :: box_11778
+                class(box_11778) :: arg
+            end function proc
+        end interface
+    end subroutine takes_proc_11778
 end program
