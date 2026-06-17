@@ -3170,7 +3170,7 @@ RUN(NAME class_allocate_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_allocate_09 LABELS gfortran llvm)
 RUN(NAME class_optional_01 LABELS gfortran llvm)
 RUN(NAME class_array_deepcopy_01 LABELS gfortran llvm)
-RUN(NAME char_function_interface_01 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME char_function_interface_01 LABELS llvm EXTRA_ARGS --implicit-interface) # GFortran rejects the deliberate implicit-interface length mismatch via whole-program checking
 RUN(NAME intent_out_finalize_01 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_02 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_03 LABELS llvm) # does not work with GFortran version at CI
