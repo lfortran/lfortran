@@ -721,6 +721,13 @@ static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<as
 #define VAR_SYM_DIM_CODIM(name, dim, n_dim, codim, n_codim, sym, loc) \
         VARSYM(p.m_a, loc, name2char(name), \
         dim, n_dim, codim, n_codim, nullptr, nullptr, sym, nullptr)
+#define VAR_SYM_CODIM_INIT(name, codim, n_codim, init, sym, loc) VARSYM(p.m_a, loc, \
+        name2char(name), nullptr, 0, codim, n_codim, nullptr, \
+        down_cast<expr_t>(init), sym, nullptr)
+#define VAR_SYM_DIM_CODIM_INIT(name, dim, n_dim, codim, n_codim, init, sym, loc) \
+        VARSYM(p.m_a, loc, name2char(name), \
+        dim, n_dim, codim, n_codim, nullptr, \
+        down_cast<expr_t>(init), sym, nullptr)
 #define VAR_SYM_SPEC(x, sym, loc) VARSYM(p.m_a, loc, \
         nullptr, nullptr, 0, nullptr, 0, nullptr, nullptr, sym, \
         down_cast<decl_attribute_t>(x))

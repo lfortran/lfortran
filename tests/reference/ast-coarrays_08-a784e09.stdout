@@ -1,0 +1,30 @@
+(TranslationUnit
+    [(Program
+        coarrays_08
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(x
+            []
+            [(()
+            ()
+            CodimensionStar)]
+            ()
+            0
+            Equal
+            ())]
+            ()
+        )]
+        []
+        []
+    )]
+)

@@ -1644,8 +1644,16 @@ var_sym_decl
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Arrow, @$); }
     | id "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_CODIM($1, $3.p, $3.n, None, @$); }
+    | id "[" coarray_comp_decl_list "]" "=" expr {
+            $$ = VAR_SYM_CODIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
+    | id "[" coarray_comp_decl_list "]" "=>" expr {
+            $$ = VAR_SYM_CODIM_INIT($1, $3.p, $3.n, $6, Arrow, @$); }
     | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_DIM_CODIM($1, $3.p, $3.n, $6.p, $6.n, None, @$); }
+    | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" "=" expr {
+            $$ = VAR_SYM_DIM_CODIM_INIT($1, $3.p, $3.n, $6.p, $6.n, $9, Equal, @$); }
+    | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" "=>" expr {
+            $$ = VAR_SYM_DIM_CODIM_INIT($1, $3.p, $3.n, $6.p, $6.n, $9, Arrow, @$); }
     | id "/" slash_init_list "/" {
             $$ = VAR_SYM_DIM_INIT($1, nullptr, 0,
                  SLASH_INIT_EXPR($3, @$), SlashInit, @$); }
