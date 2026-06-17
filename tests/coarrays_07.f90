@@ -3,8 +3,6 @@ program test_cosum
 
     x = this_image()
 
-    sync all
-
     call co_sum(x)
 
     if (x /= 3) error stop ! run with 2 images

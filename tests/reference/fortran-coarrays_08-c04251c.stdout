@@ -6,16 +6,17 @@ type :: __module_prif_prif_team_type
 end type __module_prif_prif_team_type
 
 
-program test_cosum
+program coarrays_08
 implicit none
 integer(4) :: exit_code
 integer(4) :: x
 call __module_prif_prif_init(exit_code)
 x = lcompilers_prif_this_image()
-call __module_prif_prif_sync_all()
-call __module_prif_prif_co_sum(x)
-if (x /= 3) then
-    error stop
+call __module_prif_prif_co_sum(x, 2)
+if (lcompilers_prif_this_image() == 2) then
+    if (x /= 3) then
+        error stop
+    end if
 end if
 call __module_prif_prif_stop(.false.)
 
@@ -46,14 +47,6 @@ interface
 end interface
 
 interface
-    subroutine __module_prif_prif_sync_all(stat, errmsg, errmsg_alloc)
-        character(len=*, kind=1), intent(inout), optional :: errmsg
-        character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
-        integer(4), intent(out), optional :: stat
-    end subroutine __module_prif_prif_sync_all
-end interface
-
-interface
     subroutine __module_prif_prif_this_image_no_coarray(team, this_image)
         type(__module_prif_prif_team_type), intent(in), optional :: team
         integer(4), intent(out) :: this_image
@@ -64,4 +57,4 @@ integer(4) function lcompilers_prif_this_image()
     call __module_prif_prif_this_image_no_coarray(lcompilers_prif_this_image)
 end function lcompilers_prif_this_image
 
-end program test_cosum
+end program coarrays_08
