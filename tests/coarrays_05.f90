@@ -10,6 +10,7 @@ program coarrays_05
     if (this_image() == 2) then
         x[1] = 20
     end if
+    sync all
     do i = 1, 2
         if (this_image() == i .and. x /= y(i)) then 
             error stop

@@ -26,6 +26,7 @@ end if
 if (lcompilers_prif_this_image() == 2) then
     call lcompilers_prif_put_integer(4)(x__coarray_handle, [int(1, kind=8)], int(0, kind=8), 20)
 end if
+call __module_prif_prif_sync_all()
 do i = 1, 2
     if (lcompilers_prif_this_image() == i .and. x /= y(i)) then
         error stop
@@ -87,6 +88,14 @@ interface
         character(len=*, kind=1), intent(in), optional, value :: stop_code_char
         integer(4), intent(in), optional, value :: stop_code_int
     end subroutine __module_prif_prif_stop
+end interface
+
+interface
+    subroutine __module_prif_prif_sync_all(stat, errmsg, errmsg_alloc)
+        character(len=*, kind=1), intent(inout), optional :: errmsg
+        character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
+        integer(4), intent(out), optional :: stat
+    end subroutine __module_prif_prif_sync_all
 end interface
 
 interface
