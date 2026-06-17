@@ -2825,7 +2825,8 @@ RUN(NAME string_113 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_114 LABELS gfortran llvm)
 RUN(NAME string_115 LABELS gfortran llvm)
 RUN(NAME string_116 LABELS gfortran llvm)
-RUN(NAME string_117 LABELS gfortran llvm)
+RUN(NAME string_117 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_118 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME substring_read LABELS gfortran llvm)
 
