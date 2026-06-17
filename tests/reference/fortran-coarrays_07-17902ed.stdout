@@ -6,7 +6,7 @@ type :: __module_prif_prif_team_type
 end type __module_prif_prif_team_type
 
 
-program test_cosum
+program coarrays_07
 implicit none
 integer(4) :: exit_code
 integer(4) :: x
@@ -55,4 +55,4 @@ integer(4) function lcompilers_prif_this_image()
     call __module_prif_prif_this_image_no_coarray(lcompilers_prif_this_image)
 end function lcompilers_prif_this_image
 
-end program test_cosum
+end program coarrays_07

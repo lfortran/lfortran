@@ -1,4 +1,4 @@
-program test_cosum
+program coarrays_07
     integer :: x
 
     x = this_image()
@@ -6,4 +6,4 @@ program test_cosum
     call co_sum(x)
 
     if (x /= 3) error stop ! run with 2 images
-end program
+end program coarrays_07
