@@ -20520,7 +20520,13 @@ public:
                 );
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
         } else if (ASR::is_a<ASR::Variable_t>(*t)) {
-            if (current_scope->get_symbol(local_sym) != nullptr) {
+            ASR::symbol_t* existing = current_scope->get_symbol(local_sym);
+            if (existing != nullptr) {
+                existing = ASRUtils::symbol_get_past_external(existing);
+                ASR::symbol_t* incoming = ASRUtils::symbol_get_past_external(t);
+                if (existing == incoming) {
+                    return;
+                }
                 diag.add(Diagnostic(
                     "Symbol '" + local_sym + "' from module '" + m->m_name + "' shadows '" + local_sym + "' in the current scope",
                     Level::Warning, Stage::Semantic, {
