@@ -9535,6 +9535,88 @@ public:
             current_stride = builder->CreateMul(current_stride, size);
         }
         
+        if (compiler_options.po.bounds_checking) {
+            llvm::Type* value_desc_type = nullptr;
+            if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                ASR::ttype_t* value_desc_asr_type = value_type;
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                    ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                    value_desc_asr_type = ASRUtils::expr_type(value_section->m_v);
+                }
+                ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(value_desc_asr_type));
+                value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                    value_type_past_alloc, module.get());
+            }
+            llvm::Value* value_size = llvm::ConstantInt::get(idx_type, 1);
+            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    value_desc_type, value_desc);
+                for (size_t vi = 0; vi < value_section->n_args; vi++) {
+                    ASR::array_index_t& vidx = value_section->m_args[vi];
+                    if (vidx.m_step != nullptr) {
+                        llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                            src_dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, vi)));
+                        
+                        llvm::Value* left;
+                        if (vidx.m_left) {
+                            visit_expr_wrapper(vidx.m_left, true);
+                            left = builder->CreateSExtOrTrunc(tmp, idx_type);
+                        } else {
+                            left = arr_descr->get_lower_bound(dim_des, true);
+                        }
+                        
+                        llvm::Value* right;
+                        if (vidx.m_right) {
+                            visit_expr_wrapper(vidx.m_right, true);
+                            right = builder->CreateSExtOrTrunc(tmp, idx_type);
+                        } else {
+                            llvm::Value* lb = arr_descr->get_lower_bound(dim_des, true);
+                            llvm::Value* extent = arr_descr->get_dimension_size(dim_des, true);
+                            right = builder->CreateSub(builder->CreateAdd(lb, extent), llvm::ConstantInt::get(idx_type, 1));
+                        }
+                        
+                        llvm::Value* step;
+                        if (vidx.m_step) {
+                            visit_expr_wrapper(vidx.m_step, true);
+                            step = builder->CreateSExtOrTrunc(tmp, idx_type);
+                        } else {
+                            step = llvm::ConstantInt::get(idx_type, 1);
+                        }
+                        
+                        llvm::Value* dim_length = builder->CreateAdd(
+                            builder->CreateSDiv(builder->CreateSub(right, left), step),
+                            llvm::ConstantInt::get(idx_type, 1));
+                        
+                        llvm::Value* zero = llvm::ConstantInt::get(idx_type, 0);
+                        llvm::Value* is_empty = builder->CreateOr(
+                            builder->CreateAnd(builder->CreateICmpSGT(step, zero), builder->CreateICmpSLT(right, left)),
+                            builder->CreateAnd(builder->CreateICmpSLT(step, zero), builder->CreateICmpSGT(right, left))
+                        );
+                        dim_length = builder->CreateSelect(is_empty, zero, dim_length);
+                        
+                        value_size = builder->CreateMul(value_size, dim_length);
+                    }
+                }
+            } else if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                value_size = arr_descr->get_array_size(value_desc_type, value_desc, nullptr, idx_bits/8);
+            } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
+                value_size = llvm::ConstantInt::get(idx_type, ASRUtils::get_fixed_size_of_array(value_type));
+            } else {
+                value_size = current_stride;
+            }
+            
+            llvm::Value* is_too_small = builder->CreateICmpSGT(current_stride, value_size);
+            llvm_utils->generate_runtime_error(is_too_small,
+                "Target of rank remapping is too small (%d < %d)",
+                {LLVMUtils::RuntimeLabel("", {x.base.base.loc})},
+                infile,
+                location_manager,
+                value_size,
+                current_stride);
+        }
+
         // Store the new descriptor to the target pointer
         builder->CreateStore(new_desc, target_desc);
     }
