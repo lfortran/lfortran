@@ -25353,6 +25353,14 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
+            for (size_t i = 0; i < args.size() && i < (size_t)fntype->getNumParams(); i++) {
+                llvm::Type* param_type = fntype->getParamType(i);
+                llvm::Type* arg_type = args[i]->getType();
+                if (arg_type != param_type && arg_type->isPointerTy() && param_type->isPointerTy()) {
+                    args[i] = builder->CreateBitCast(args[i], param_type);
+                }
+            }
+
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
