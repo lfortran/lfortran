@@ -9275,10 +9275,18 @@ public:
                     visit_expr_wrapper(idx.m_right, true);
                     ubs.push_back(al, tmp);
                 } else if (right_refers_to_target) {
-                    // Compute ub = lb + size(value, dim) - 1.
-                    llvm::Value* size_val = nullptr;
-                    llvm::Type* idx_type = arr_descr->get_index_type();
-                    unsigned idx_bits = idx_type->getIntegerBitWidth();
+                    // Compute ub = lb + size(value, dim) - 1 using ASR ArraySize.
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(
+                        ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::expr_t* dim_expr = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                            (int64_t)(i + 1), int_type));
+                    ASR::expr_t* size_expr = ASRUtils::EXPR(
+                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
+                            dim_expr, int_type, nullptr));
+                    visit_expr_wrapper(size_expr, true);
+                    llvm::Value* size_val = tmp;
+
                     if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
                         ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
                         ASR::array_index_t& vidx = value_section->m_args[i];
@@ -9292,33 +9300,10 @@ public:
                         }
                         llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
                             value_desc_type, loaded_desc);
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
                         llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
                             src_dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
-
-                        llvm::Value* first_idx = nullptr;
-                        if (vidx.m_step != nullptr) {
-                            if (vidx.m_left != nullptr) {
-                                visit_expr_wrapper(vidx.m_left, true);
-                                first_idx = tmp;
-                            } else {
-                                first_idx = arr_descr->get_lower_bound(dim_des, true);
-                            }
-                        } else {
-                            visit_expr_wrapper(vidx.m_right, true);
-                            first_idx = tmp;
-                        }
-                        first_idx = builder->CreateSExtOrTrunc(first_idx, idx_type);
-                        
-                        llvm::Value* last_idx = nullptr;
-                        if (vidx.m_step != nullptr && vidx.m_right == nullptr) {
-                            last_idx = arr_descr->get_upper_bound(dim_des);
-                        } else if (vidx.m_step != nullptr && vidx.m_right != nullptr) {
-                            visit_expr_wrapper(vidx.m_right, true);
-                            last_idx = tmp;
-                        } else {
-                            last_idx = first_idx;
-                        }
-                        last_idx = builder->CreateSExtOrTrunc(last_idx, idx_type);
                         
                         llvm::Value* step_val = nullptr;
                         if (vidx.m_step != nullptr) {
@@ -9329,23 +9314,8 @@ public:
                         }
                         step_val = builder->CreateSExtOrTrunc(step_val, idx_type);
                         
-                        llvm::Value* diff = builder->CreateSub(last_idx, first_idx);
-                        size_val = builder->CreateSDiv(builder->CreateAdd(diff, step_val), step_val);
-                        
                         llvm::Value* base_stride = arr_descr->get_stride(dim_des, true);
                         target_strides.push_back(al, builder->CreateMul(base_stride, step_val));
-                    } else {
-                        // Compute size(value, dim) via ASR ArraySize.
-                        ASR::ttype_t* int_type = ASRUtils::TYPE(
-                            ASR::make_Integer_t(al, x.base.base.loc, 4));
-                        ASR::expr_t* dim_expr = ASRUtils::EXPR(
-                            ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                (int64_t)(i + 1), int_type));
-                        ASR::expr_t* size_expr = ASRUtils::EXPR(
-                            ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
-                                dim_expr, int_type, nullptr));
-                        visit_expr_wrapper(size_expr, true);
-                        size_val = tmp;
                     }
                     size_val = builder->CreateSExtOrTrunc(size_val, lbs.p[i]->getType());
                     llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
@@ -25986,11 +25956,14 @@ public:
 
         m_v = ASRUtils::get_expr_size_expr(m_v);
         LCOMPILERS_ASSERT(m_v);
-        // ArraySection doesn't produce a descriptor when visited; redirect
-        // to the base array variable so the descriptor-based size path works.
+
         if (ASR::is_a<ASR::ArraySection_t>(*m_v)) {
-            m_v = ASR::down_cast<ASR::ArraySection_t>(m_v)->m_v;
+            ASR::expr_t* size_expr = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                al, m_v->base.loc, m_v, m_dim, m_type, nullptr, false));
+            visit_expr_wrapper(size_expr, true);
+            return;
         }
+
         int output_kind = ASRUtils::extract_kind_from_ttype_t(m_type);
         int dim_kind = 4;
         int64_t ptr_loads_copy = ptr_loads;
