@@ -18,6 +18,7 @@ namespace LCompilers {
 // coarray accesses/allocations into runtime calls used by Caffeine.
 class PRIFInterface {
     public:
+        // Returns a scope-local reference to sym, creating an ExternalSymbol if required.
         ASR::symbol_t* get_symbol_in_scope(SymbolTable *decl_scope, SymbolTable *use_scope,
                                            ASR::symbol_t *sym, const Location &loc) {
             if (decl_scope == use_scope) return sym;
