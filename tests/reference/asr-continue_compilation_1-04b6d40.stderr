@@ -1653,3 +1653,27 @@ semantic error: select case expression must be of type integer, character, or lo
     |
 792 |         select case (x)
     |                      ^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:800:18
+    |
+800 |         print *, lge("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `lgt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:801:18
+    |
+801 |         print *, lgt("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `lle` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:802:18
+    |
+802 |         print *, lle(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `llt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:803:18
+    |
+803 |         print *, llt(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
