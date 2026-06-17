@@ -463,6 +463,13 @@ namespace X {                                                                   
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args,                           \
             diag::Diagnostics& /*diag*/) {                                      \
+        int kind = ASRUtils::extract_kind_from_ttype_t(t);                      \
+        if (kind == 16 && std::string(#X) == "Log10") {                        \
+            lf_float128 rv = ASRUtils::real_constant_get_r16(                   \
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));                  \
+            return ASRUtils::make_RealConstant_r16(al, loc,                     \
+                lf_f128_log10(rv), t);                                          \
+        }                                                                       \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
         ASRUtils::ASRBuilder b(al, loc);                                        \
         return b.f_t(std::eval_X(rv), t);                                       \
@@ -1266,6 +1273,7 @@ namespace StorageSize {
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
             if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
             else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
+            else if (kind == 16) return make_ConstantWithType(make_IntegerConstant_t, 256, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
         } else {
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -1273,6 +1281,7 @@ namespace StorageSize {
             else if (kind == 2) return make_ConstantWithType(make_IntegerConstant_t, 16, t1, loc);
             else if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
             else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
+            else if (kind == 16) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
         }
     }
@@ -1435,6 +1444,8 @@ namespace Range {
                     range_val = 37; break;
                 } case 8: {
                     range_val = 307; break;
+                } case 16: {
+                    range_val = 4931; break;
                 } default: {
                     break;
                 }
@@ -2600,7 +2611,13 @@ namespace Int {
             i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
-            i = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]))->m_r;
+            ASR::RealConstant_t* real_constant = ASR::down_cast<ASR::RealConstant_t>(
+                ASRUtils::expr_value(args[0]));
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
+                i = lf_f128_to_double(ASRUtils::real_constant_get_r16(real_constant));
+            } else {
+                i = real_constant->m_r;
+            }
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             i = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
@@ -6294,6 +6311,8 @@ namespace Digits {
                 return make_ConstantWithType(make_IntegerConstant_t, 24, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 53, int32, loc);
+            } else if (kind == 16) {
+                return make_ConstantWithType(make_IntegerConstant_t, 113, int32, loc);
             } else {
                 append_error(diag, "Kind "+ std::to_string(kind) + " not supported for type Real", loc);
             }
@@ -6321,6 +6340,8 @@ namespace Digits {
                 body.push_back(al, b.Assignment(result, b.i32(24)));
             } else if (kind == 8) {
                 body.push_back(al, b.Assignment(result, b.i32(53)));
+            } else if (kind == 16) {
+                body.push_back(al, b.Assignment(result, b.i32(113)));
             }
         }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -6909,6 +6930,8 @@ namespace MinExponent {
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::min_exponent;
+        } else if (m_kind == 16) {
+            result = -16381;
         } else {
             result = std::numeric_limits<double>::min_exponent;
         }
@@ -6925,6 +6948,8 @@ namespace MaxExponent {
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::max_exponent;
+        } else if (m_kind == 16) {
+            result = 16384;
         } else {
             result = std::numeric_limits<double>::max_exponent;
         }
@@ -7845,6 +7870,10 @@ namespace Epsilon {
                 epsilon_val = std::numeric_limits<float>::epsilon(); break;
             } case 8: {
                 epsilon_val = std::numeric_limits<double>::epsilon(); break;
+            } case 16: {
+                return ASRUtils::make_RealConstant_r16(al, loc,
+                    lf_float128_from_str("1.92592994438723585305597794258492732e-34"),
+                    arg_type);
             } default: {
                 break;
             }
@@ -7867,6 +7896,8 @@ namespace Precision {
                 precision_val = 6; break;
             } case 8: {
                 precision_val = 15; break;
+            } case 16: {
+                precision_val = 33; break;
             } default: {
                 append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
                 return nullptr;
@@ -7889,6 +7920,10 @@ namespace Tiny {
                 tiny_value = std::numeric_limits<float>::min(); break;
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
+            } case 16: {
+                return ASRUtils::make_RealConstant_r16(al, loc,
+                    lf_float128_from_str("3.36210314311209350626267781732175260e-4932"),
+                    arg_type);
             } default: {
                 append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
                     return nullptr;
@@ -7974,6 +8009,10 @@ namespace Huge {
                     huge_value = std::numeric_limits<float>::max(); break;
                 } case 8: {
                     huge_value = std::numeric_limits<double>::max(); break;
+                } case 16: {
+                    return ASRUtils::make_RealConstant_r16(al, loc,
+                        lf_float128_from_str("1.18973149535723176508575932662800702e4932"),
+                        arg_type);
                 } default: {
                     append_error(diag, "Kind " + std::to_string(kind) + " is not supported yet", loc);
                     return nullptr;
