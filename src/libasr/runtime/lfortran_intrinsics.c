@@ -4183,6 +4183,15 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         }
     }
 
+    if (b->im == 0.0f && b->re == (float)((int32_t)b->re)) {
+        int32_t n = (int32_t)b->re;
+        if (n == 2) { 
+            result->re = (a->re * a->re) - (a->im * a->im);
+            result->im = 2.0f * a->re * a->im;
+            return;
+        }
+    }
+
     #ifdef _MSC_VER
         _Fcomplex ca = _FCOMPLEX_(a->re, a->im);
         _Fcomplex cb = _FCOMPLEX_(b->re, b->im);
@@ -4199,12 +4208,21 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
-    
+   
     if (a->re == 0.0 && a->im == 0.0) {
         // 0 raised to a positive real power is 0. 
         if (b->re > 0.0) {
             result->re = 0.0;
             result->im = 0.0;
+            return;
+        }
+    }
+
+    if (b->im == 0.0 && b->re == (double)((int64_t)b->re)) {
+        int64_t n = (int64_t)b->re;
+        if (n == 2) { 
+            result->re = (a->re * a->re) - (a->im * a->im);
+            result->im = 2.0 * a->re * a->im;
             return;
         }
     }
