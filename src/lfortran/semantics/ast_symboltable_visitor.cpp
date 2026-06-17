@@ -2175,9 +2175,9 @@ public:
                             dims.reserve(al, 0);
                             std::string sym = "";
                             ASR::ttype_t *contained_type = determine_type(x.base.base.loc, sym, 
-                                                                        return_attr_type->m_attr, false, 
-                                                                        false, dims, nullptr /*TODO : pass var_sym of return*/,
-                                                                        type_declaration, current_procedure_abi_type);
+                                                                return_attr_type->m_attr, false, 
+                                                                false, dims, nullptr /*TODO : pass var_sym of return*/,
+                                                                type_declaration, current_procedure_abi_type);
 
                             type = ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type));
                             break;
@@ -2249,7 +2249,6 @@ public:
 
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
-          
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             // Add it as a local variable:
             return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
