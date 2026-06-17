@@ -5869,7 +5869,7 @@ public:
                             }
                         }
                     }
-             // enable sole `dimension` attribute
+		    // enable sole `dimension` attribute
         } else if (AST::is_a<AST::AttrDimension_t>(*x.m_attributes[i])) {
             for (size_t i=0;i<x.n_syms;++i) { // symbols for line only
                 AST::var_sym_t &s = x.m_syms[i];
