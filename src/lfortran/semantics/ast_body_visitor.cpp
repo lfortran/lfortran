@@ -3918,6 +3918,17 @@ public:
                 }));
             throw SemanticAbort();
         }
+        ASR::ttype_t *a_test_type = ASRUtils::expr_type(a_test);
+        if (!ASRUtils::is_integer(*a_test_type) &&
+                !ASRUtils::is_character(*a_test_type) &&
+                !ASRUtils::is_logical(*a_test_type)) {
+            diag.add(Diagnostic(
+                "select case expression must be of type integer, character, or logical",
+                Level::Error, Stage::Semantic, {
+                    Label("", {a_test->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         Vec<ASR::case_stmt_t*> a_body_vec;
         a_body_vec.reserve(al, x.n_body);
         Vec<ASR::stmt_t*> def_body;
