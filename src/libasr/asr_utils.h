@@ -1766,6 +1766,14 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
+        case ASR::exprType::ComplexRe: {
+            ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(a_value);
+            return is_modifiable_actual_argument_expr(re->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(a_value);
+            return is_modifiable_actual_argument_expr(im->m_arg);
+        }
         case ASR::exprType::DictItem: {
             return true;
         }

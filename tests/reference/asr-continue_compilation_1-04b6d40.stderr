@@ -322,14 +322,11 @@ semantic error: Initialization with non-constant variable `non_parameter_var` is
 281 |     integer :: non_parameter_var = 5
     |                ~~~~~~~~~~~~~~~~~~~~~ declared here
 
-semantic error: Named initialization with array parameter `myclass_array` is not supported yet
+semantic error: Parameter `myclass_array` has no initialization value
    --> tests/errors/continue_compilation_1.f90:283:5
     |
 283 |     type(MyClass) :: err_obj4 = myclass_array
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    |
-244 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
-    |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ array parameter declared here
 
 semantic error: Symbol not found: `uninitialized_param_local`
    --> tests/errors/continue_compilation_1.f90:284:5
@@ -1620,3 +1617,45 @@ semantic error: Interface mismatch in dummy procedure 'proc': type mismatch in a
     |
 757 |         call takes_proc_11778(actual_11778)  ! {Error} Interface mismatch in dummy procedure 'proc': type mismatch in argument 1 (class(box_11778)/type(box_11778))
     |                               ^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be of type integer, found string
+   --> tests/errors/continue_compilation_1.f90:774:9
+    |
+774 |         sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `errmsg` argument of `sync all` must be of type character, found integer
+   --> tests/errors/continue_compilation_1.f90:779:9
+    |
+779 |         sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be scalar
+   --> tests/errors/continue_compilation_1.f90:784:9
+    |
+784 |         sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'nosuch' is not declared
+   --> tests/errors/continue_compilation_1.f90:788:9
+    |
+788 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
+
+semantic error: Actual argument for 'x' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:792:23
+    |
+792 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    |                       ^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:800:22
+    |
+800 |         select case (nn)
+    |                      ^^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:807:22
+    |
+807 |         select case (x)
+    |                      ^ 

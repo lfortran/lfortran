@@ -2624,12 +2624,27 @@ namespace Spread {
 
         ASRBuilder b(al, loc);
         int overload_id = 2;
+        bool skip_compile_time_eval = false;
         if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) ||
             ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
             // Case : When Scalar is passed as source in Spread()
             is_scalar = true;
             Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
             m_eles.push_back(al, source);
+            if (ASR::is_a<ASR::String_t>(*type_source)) {
+                skip_compile_time_eval = true;
+                ASR::expr_t* source_value = ASRUtils::expr_value(source);
+                if (source_value && ASR::is_a<ASR::StringConstant_t>(*source_value)) {
+                    ASR::String_t* source_string = ASR::down_cast<ASR::String_t>(type_source);
+                    int64_t len = std::string(
+                        ASR::down_cast<ASR::StringConstant_t>(source_value)->m_s).size();
+                    type_source = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                        source_string->m_kind, b.i32(len),
+                        ASR::string_length_kindType::ExpressionLength,
+                        source_string->m_physical_type));
+                    ret_type = type_source;
+                }
+            }
             ASR::ttype_t *fixed_size_type = b.Array({(int64_t) 1}, type_source);
             source = EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,m_eles.p,
                           m_eles.n, fixed_size_type, ASR::arraystorageType::ColMajor));
@@ -2678,7 +2693,7 @@ namespace Spread {
         m_args.push_back(al, source); m_args.push_back(al, dim);
         m_args.push_back(al, ncopies);
         ASR::expr_t *value = nullptr;
-        if (all_args_evaluated(m_args)) {
+        if (all_args_evaluated(m_args) && !skip_compile_time_eval) {
             value = eval_Spread(al, loc, ret_type, m_args, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
@@ -6865,6 +6880,18 @@ namespace DotProduct {
 
         int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
         int dim = ASRUtils::get_fixed_size_of_array(type_vector_a);
+
+        if (dim < 0) return nullptr;
+        if (dim == 0) {
+            if (ASRUtils::is_integer(*type_a) || ASRUtils::is_real(*type_a)) {
+                return make_ConstantWithType(make_IntegerConstant_t, 0, return_type, loc);
+            } else if (ASRUtils::is_logical(*type_a)) {
+                return make_ConstantWithType(make_LogicalConstant_t, false, return_type, loc);
+            } else if (ASRUtils::is_complex(*type_a)) {
+                return EXPR(make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type));
+            }
+            return nullptr;
+        }
 
         if (ASRUtils::is_real(*type_a)) {
             if (kind == 4) {

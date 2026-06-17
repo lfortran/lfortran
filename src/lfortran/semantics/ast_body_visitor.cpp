@@ -3918,6 +3918,17 @@ public:
                 }));
             throw SemanticAbort();
         }
+        ASR::ttype_t *a_test_type = ASRUtils::expr_type(a_test);
+        if (!ASRUtils::is_integer(*a_test_type) &&
+                !ASRUtils::is_character(*a_test_type) &&
+                !ASRUtils::is_logical(*a_test_type)) {
+            diag.add(Diagnostic(
+                "select case expression must be of type integer, character, or logical",
+                Level::Error, Stage::Semantic, {
+                    Label("", {a_test->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         Vec<ASR::case_stmt_t*> a_body_vec;
         a_body_vec.reserve(al, x.n_body);
         Vec<ASR::stmt_t*> def_body;
@@ -6756,7 +6767,7 @@ public:
                 "shape argument not specified in c_f_pointer "
                 "even though fptr is an array.",
                 Level::Error, Stage::Semantic, {
-                    Label("",{shape->base.loc})
+                    Label("",{fptr->base.loc})
                 }));
             throw SemanticAbort();
         }
@@ -7619,6 +7630,24 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // An assumed-size array has no known extent for its last
+                    // dimension, so it cannot be used where the dummy requires
+                    // a descriptor (pointer or allocatable).
+                    if (ASRUtils::is_pointer(dummy_type) ||
+                        ASRUtils::is_allocatable(dummy_type)) {
+                        ASR::ttype_t* actual_array =
+                            ASRUtils::type_get_past_allocatable_pointer(actual_type);
+                        if (ASR::is_a<ASR::Array_t>(*actual_array) &&
+                            ASR::down_cast<ASR::Array_t>(actual_array)->m_physical_type ==
+                                ASR::array_physical_typeType::UnboundedPointerArray) {
+                            std::string dummy_name = dummy_var->m_name;
+                            diag.semantic_error_label(
+                                "Actual argument for '" + dummy_name +
+                                "' cannot be an assumed-size array",
+                                {args[i].m_value->base.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
                     if (ASRUtils::is_allocatable(dummy_type)) {
                         ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable(dummy_type));
@@ -9395,12 +9424,48 @@ public:
             AST::event_attribute_t *attr = x.m_stat[i];
             if (AST::is_a<AST::AttrStat_t>(*attr)) {
                 auto *s = AST::down_cast<AST::AttrStat_t>(attr);
-                ASR::symbol_t *sym = current_scope->resolve_symbol(s->m_variable);
-                stat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(s->m_variable)));
+                ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+                if (ASRUtils::is_array(stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_integer(*stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be of type integer, found "
+                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
                 auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
-                ASR::symbol_t *sym = current_scope->resolve_symbol(e->m_variable);
-                errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
+                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(e->m_variable)));
+                ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+                if (ASRUtils::is_array(errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_character(*errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be of type character, found "
+                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         }
         tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
