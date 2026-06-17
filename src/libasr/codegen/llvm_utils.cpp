@@ -9406,9 +9406,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     }
     void LLVMStruct::store_class_struct(ASR::Struct_t* const class_sym, llvm::Value* const class_ptr, llvm::Value* const struct_ptr){
         LCOMPILERS_ASSERT(class_sym && class_ptr && struct_ptr)
-        LCOMPILERS_ASSERT_MSG(!ASRUtils::is_unlimited_polymorphic_type(&class_sym->base), "This function doesn't handle unlimited polymorphic types")
+        
         llvm::Value* const struct_gep_out_of_class = llvm_utils->CreateGEP2(llvm_utils->getClassType(class_sym), class_ptr, 1);
-        builder->CreateStore(struct_ptr, struct_gep_out_of_class);
+        
+        if (ASRUtils::is_unlimited_polymorphic_type(&class_sym->base)) {
+            // For class(*), the underlying data is just a raw i8* pointer.
+            // Ensure the incoming struct_ptr is cast to i8* before storing.
+            llvm::Value* raw_ptr = builder->CreateBitCast(struct_ptr, llvm_utils->i8_ptr);
+            builder->CreateStore(raw_ptr, struct_gep_out_of_class);
+        } else {
+            // Standard bounded polymorphism keeps its typed struct pointer.
+            builder->CreateStore(struct_ptr, struct_gep_out_of_class);
+        }
     }
     
     llvm::Value* LLVMStruct::create_class_view(ASR::Struct_t* const class_symbol,
