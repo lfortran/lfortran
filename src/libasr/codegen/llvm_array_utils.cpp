@@ -330,9 +330,26 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool /*load*/) {
-            // Dims are always inlined at FIELD_DIMS. Return pointer to first element.
             llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
-            LCOMPILERS_ASSERT(arr_ty != nullptr);
+            
+            // FIX: If this is a 2-field class wrapper {vtable, desc}, unbox the descriptor pointer
+            if (arr_ty != nullptr && arr_ty->getNumElements() == 2) {
+                llvm::Value* desc_ptr_ptr = llvm_utils->create_gep2(arr_ty, arr, 1);
+                arr = llvm_utils->CreateLoad2(arr_ty->getElementType(1), desc_ptr_ptr);
+                arr_ty = nullptr; // Fall through to generic reconstruction
+            }
+
+            // FIX: If the type is an opaque pointer or stripped to i8*, reconstruct a generic 
+            // 3-field descriptor to safely calculate the byte offset for FIELD_DIMS.
+            if (arr_ty == nullptr) {
+                llvm::Type* i8_ptr = llvm::Type::getInt8PtrTy(arr->getContext());
+                llvm::Type* idx_ty = this->index_type;
+                if (!idx_ty) idx_ty = llvm::Type::getInt64Ty(arr->getContext());
+                arr_ty = llvm::StructType::get(arr->getContext(), {i8_ptr, idx_ty, llvm::ArrayType::get(this->dim_des, 1)});
+                type = arr_ty;
+            }
+
+            // Dims are always inlined at FIELD_DIMS. Return pointer to first element.
             llvm::Type* dims_array_ty = arr_ty->getElementType(FIELD_DIMS);
             llvm::Value* dims_array_ptr = llvm_utils->create_gep2(type, arr, FIELD_DIMS);
             return llvm_utils->create_gep2(dims_array_ty, dims_array_ptr, 0);
@@ -845,19 +862,51 @@ namespace LCompilers {
             llvm::Value* dim) {
             return llvm_utils->create_ptr_gep2(dim_des, dim_des_arr, dim);
         }
-
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* type, llvm::Value* arr) {
+            llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
+            
+            // FIX: Unbox 2-field class wrapper {vtable, desc} into the underlying descriptor
+            if (arr_ty != nullptr && arr_ty->getNumElements() == 2) {
+                llvm::Value* desc_ptr_ptr = llvm_utils->create_gep2(arr_ty, arr, 1);
+                arr = llvm_utils->CreateLoad2(arr_ty->getElementType(1), desc_ptr_ptr);
+                arr_ty = nullptr; 
+            }
+            // FIX: Reconstruct generic 3-field descriptor if type is stripped
+            if (arr_ty == nullptr) {
+                llvm::Type* i8_ptr = llvm::Type::getInt8PtrTy(arr->getContext());
+                llvm::Type* idx_ty = this->index_type ? this->index_type : llvm::Type::getInt64Ty(arr->getContext());
+                arr_ty = llvm::StructType::get(arr->getContext(), {i8_ptr, idx_ty, llvm::ArrayType::get(this->dim_des, 1)});
+                type = arr_ty;
+            }
+            
             return llvm_utils->create_gep2(type, arr, FIELD_BASE_ADDR);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* actual_type = llvm_utils->get_type_from_ttype_t_util(arr_expr,
                 ASRUtils::type_get_past_allocatable_pointer(arr_type), module);
-            return llvm_utils->create_gep2(actual_type, arr, FIELD_BASE_ADDR);
+            
+            // Route through the patched overload above so the unboxing logic applies here too!
+            return this->get_pointer_to_data(actual_type, arr); 
         }
 
-
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Type* type, llvm::Value* arr, bool load) {
+            llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
+            
+            // FIX: Unbox 2-field class wrapper {vtable, desc} into the underlying descriptor
+            if (arr_ty != nullptr && arr_ty->getNumElements() == 2) {
+                llvm::Value* desc_ptr_ptr = llvm_utils->create_gep2(arr_ty, arr, 1);
+                arr = llvm_utils->CreateLoad2(arr_ty->getElementType(1), desc_ptr_ptr);
+                arr_ty = nullptr; 
+            }
+            // FIX: Reconstruct generic 3-field descriptor if type is stripped
+            if (arr_ty == nullptr) {
+                llvm::Type* i8_ptr = llvm::Type::getInt8PtrTy(arr->getContext());
+                llvm::Type* idx_ty = this->index_type ? this->index_type : llvm::Type::getInt64Ty(arr->getContext());
+                arr_ty = llvm::StructType::get(arr->getContext(), {i8_ptr, idx_ty, llvm::ArrayType::get(this->dim_des, 1)});
+                type = arr_ty;
+            }
+            
             llvm::Value* offset = llvm_utils->create_gep2(type, arr, FIELD_OFFSET);
             if( !load ) {
                 return offset;
@@ -1079,7 +1128,7 @@ namespace LCompilers {
             }
             return tmp;
         }
-        
+
         llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp) {
             llvm::Value* memory_holder{}; // ptr_ptr_to_data
             ASR::ttype_t* array_type = ASRUtils::expr_type(array_exp);
