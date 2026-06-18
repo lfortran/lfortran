@@ -7170,8 +7170,31 @@ public:
         Allocator& al,
         bool& nopass
     ) {
-        visit_expr_list(x.m_args, x.n_args, args);
-        ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
+        ASR::symbol_t* f2 = original_sym ? ASRUtils::symbol_get_past_external(original_sym) : nullptr;
+        ASR::FunctionType_t* fn_type = nullptr;
+        if (f2 && ASR::is_a<ASR::Function_t>(*f2)) {
+            fn_type = ASRUtils::get_FunctionType(f2);
+        } else if (f2 && ASR::is_a<ASR::StructMethodDeclaration_t>(*f2)) {
+            fn_type = ASRUtils::get_FunctionType(f2);
+        } else if (f2 && ASR::is_a<ASR::Variable_t>(*f2)) {
+            ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASR::down_cast<ASR::Variable_t>(f2)->m_type);
+            if (ASR::is_a<ASR::FunctionType_t>(*var_type)) {
+                fn_type = ASR::down_cast<ASR::FunctionType_t>(var_type);
+            }
+        }
+        if (fn_type && fn_type->n_arg_types > 0) {
+            std::vector<ASR::ttype_t*> expected_types;
+            bool is_nopass_ = ASRUtils::get_class_proc_nopass_val(f2);
+            size_t start_idx = (v_expr != nullptr && !is_nopass_) ? 1 : 0;
+            for (size_t i = start_idx; i < fn_type->n_arg_types; i++) {
+                expected_types.push_back(fn_type->m_arg_types[i]);
+            }
+            visit_expr_list(x.m_args, x.n_args, args, expected_types);
+        } else {
+            visit_expr_list(x.m_args, x.n_args, args);
+        }
+        
+        f2 = original_sym ? ASRUtils::symbol_get_past_external(original_sym) : nullptr;
 
         // we handle kwargs here
         if (x.n_keywords > 0) {

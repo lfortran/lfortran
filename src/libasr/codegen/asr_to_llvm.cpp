@@ -5807,7 +5807,7 @@ public:
                 // bare element-pointer constant whose LLVM type doesn't match
                 // the pointer-to-descriptor global type; drop it and let the
                 // companion-descriptor path below run instead.
-                if (init_value && init_value->getType() != x_ptr) {
+                if (init_value && llvm::isa<llvm::ConstantPointerNull>(init_value)) {
                     init_value = nullptr;
                 }
                 allocatable_array_details.push_back(
@@ -5953,12 +5953,10 @@ public:
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
         llvm::Type* value_type;
 
-        value_type = ASRUtils::is_array(x.m_type)?
-            llvm_utils->get_el_type(x.m_var_expr,
-                ASRUtils::extract_type(x.m_type), module.get())->getPointerTo():
-            llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
         if (ASRUtils::is_string_only(x.m_type)) {
             value_type = llvm_utils->i8_ptr;
+        } else {
+            value_type = llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
         }
         tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
     }
@@ -6747,8 +6745,13 @@ public:
                                         ASRUtils::extract_type(v->m_type),
                                         module.get()),
                                     false);
+                                llvm::Type* el_ptr_type = llvm_utils->get_el_type(
+                                    ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                                    ASRUtils::extract_type(v->m_type),
+                                    module.get())->getPointerTo();
                                 builder->CreateStore(
-                                    tmp, llvm_utils->create_gep2(array_desc_type, pointer_array, 0));
+                                    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(el_ptr_type)),
+                                    llvm_utils->create_gep2(array_desc_type, pointer_array, 0));
                             } else {
                                 // Non-pointer array (e.g. c_funptr array): the inline
                                 // fixed-size storage is null when zero-initialized.
@@ -7057,10 +7060,12 @@ public:
             }
             case ASR::exprType::PointerNullConstant: {
                 ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(expr);
-                llvm::Type* value_type = ASRUtils::is_array(pnc->m_type)
-                    ? llvm_utils->get_el_type(pnc->m_var_expr,
-                        ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
-                    : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
+                llvm::Type* value_type;
+                if (ASRUtils::is_string_only(pnc->m_type)) {
+                    value_type = llvm_utils->i8_ptr;
+                } else {
+                    value_type = llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
+                }
                 return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(value_type));
             }
             default:

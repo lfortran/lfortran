@@ -14911,7 +14911,12 @@ public:
         if( mold_ ) {
             null_ptr_type_ = ASRUtils::expr_type(mold_);
         } else {
-            LCOMPILERS_ASSERT(current_variable_type_ != nullptr);
+            if (current_variable_type_ == nullptr) {
+                diag.add(Diagnostic(
+                    "NULL() without MOLD argument cannot be resolved in this context (e.g. as an actual argument to a generic procedure)",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             null_ptr_type_ = current_variable_type_;
         }
         return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_, current_struct_type_var_expr);
@@ -16869,7 +16874,29 @@ public:
             }
             Vec<ASR::call_arg_t> args;
             Vec<ASR::call_arg_t> args_with_mdt;
-            visit_expr_list(x.m_args, x.n_args, args);
+            
+            ASR::FunctionType_t* fn_type = nullptr;
+            if (f2 && ASR::is_a<ASR::Function_t>(*f2)) {
+                fn_type = ASRUtils::get_FunctionType(f2);
+            } else if (f2 && ASR::is_a<ASR::StructMethodDeclaration_t>(*f2)) {
+                fn_type = ASRUtils::get_FunctionType(f2);
+            } else if (f2 && ASR::is_a<ASR::Variable_t>(*f2)) {
+                ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASR::down_cast<ASR::Variable_t>(f2)->m_type);
+                if (ASR::is_a<ASR::FunctionType_t>(*var_type)) {
+                    fn_type = ASR::down_cast<ASR::FunctionType_t>(var_type);
+                }
+            }
+            if (fn_type && fn_type->n_arg_types > 0) {
+                std::vector<ASR::ttype_t*> expected_types;
+                bool is_nopass_ = ASRUtils::get_class_proc_nopass_val(f2);
+                size_t start_idx = (v_expr != nullptr && !is_nopass_) ? 1 : 0;
+                for (size_t i = start_idx; i < fn_type->n_arg_types; i++) {
+                    expected_types.push_back(fn_type->m_arg_types[i]);
+                }
+                visit_expr_list(x.m_args, x.n_args, args, expected_types);
+            } else {
+                visit_expr_list(x.m_args, x.n_args, args);
+            }
             if (x.n_member >= 1) {
                 args_with_mdt.reserve(al, x.n_args + 1);
                 ASR::call_arg_t v_expr_call_arg;
@@ -19269,11 +19296,16 @@ public:
         }
     }
 
-    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
+    void visit_expr_list(const AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args, const std::vector<ASR::ttype_t*>& expected_types = {}) {
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
+            ASR::ttype_t* temp = current_variable_type_;
+            if (i < expected_types.size() && expected_types[i] != nullptr) {
+                current_variable_type_ = expected_types[i];
+            }
             this->visit_expr(*ast_list[i].m_end);
+            current_variable_type_ = temp;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (ASR::is_a<ASR::Var_t>(*expr) &&
                     ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
@@ -19371,8 +19403,6 @@ public:
         }
 
         for (int i = 0; i < (int)n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
             if (search == fn_args2.end()) {
@@ -19398,6 +19428,18 @@ public:
                     name + " keyword argument is already specified.");
                 return ;
             }
+
+            ASR::ttype_t* temp = current_variable_type_;
+            int original_idx = std::distance(fn_args2.begin(), search);
+            if (original_idx >= 0 && original_idx < (int)fn_n_args) {
+                current_variable_type_ = ASRUtils::expr_type(fn_args[original_idx]);
+            }
+            
+            this->visit_expr(*kwargs[i].m_value);
+            current_variable_type_ = temp;
+            
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
         }
@@ -19456,8 +19498,6 @@ public:
         LCOMPILERS_ASSERT(args.size() == constructor_args.size());
 
         for (size_t i = 0; i < n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
                                     constructor_args.end(), name);
@@ -19474,9 +19514,18 @@ public:
                 diag.semantic_error_label(
                     "Keyword argument is already specified",
                     {loc},
-                    "'" + name + "'" + + " keyword argument is already specified");
+                    "'" + name + "'" + " keyword argument is already specified");
                 throw SemanticAbort();
             }
+
+            ASR::ttype_t* temp = current_variable_type_;
+            current_variable_type_ = ASRUtils::symbol_type(constructor_arg_syms[idx]);
+            
+            this->visit_expr(*kwargs[i].m_value);
+            
+            current_variable_type_ = temp;
+            
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
         }
