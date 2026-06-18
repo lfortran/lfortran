@@ -768,9 +768,9 @@ class PRIFInterface {
                 // If it's already a Pointer, it might have been processed by a previous pass
                 if (ASRUtils::is_pointer(var->m_type)) continue;
 
-                if (var->m_storage == ASR::storage_typeType::Save) {
-                    throw LCompilersException("SAVE attribute not yet supported for coarrays");
-                }
+                // if (var->m_storage == ASR::storage_typeType::Save) {
+                //     throw LCompilersException("SAVE attribute not yet supported for coarrays");
+                // }
                 
                 LCOMPILERS_ASSERT_MSG(!(ASRUtils::is_allocatable(var->m_type)), "Allocatable coarrays are not yet supported");
 
@@ -917,6 +917,16 @@ class PRIFInterface {
                 ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
                     ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, nullptr, nullptr));
                 new_body.push_back(al, cfp_stmt);
+
+                if (var->m_value) {
+                    ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                        al, loc, var_expr, var->m_value, nullptr, false, false));
+                    new_body.push_back(al, assign);
+                    var->m_value = nullptr;
+                }
+                if (var->m_symbolic_value) {
+                    var->m_symbolic_value = nullptr;
+                }
             }
         }
 
