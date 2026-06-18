@@ -1268,11 +1268,16 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
 
 // Returns true if `value` is a direct reference to existing memory (e.g., a variable
 // or a pointer to an array element) and does NOT require a temporary variable to be allocated.
-bool is_directly_addressable_array_expr(ASR::expr_t* value) {
+bool is_directly_addressable_expr(ASR::expr_t* value) {
     value = ASRUtils::get_past_array_physical_cast(value);
     switch( value->type ) {
         case ASR::exprType::Var: {
             return true;
+        }
+        case ASR::exprType::ArrayItem: {
+            return !ASRUtils::is_array(ASRUtils::expr_type(value)) &&
+                   !ASRUtils::is_allocatable(ASRUtils::expr_type(value)) &&
+                   !ASRUtils::is_pointer(ASRUtils::expr_type(value));
         }
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(value);
@@ -1284,11 +1289,11 @@ bool is_directly_addressable_array_expr(ASR::expr_t* value) {
             return true;
         }
         case ASR::exprType::ComplexRe: {
-            return is_directly_addressable_array_expr(
+            return is_directly_addressable_expr(
                 ASR::down_cast<ASR::ComplexRe_t>(value)->m_arg);
         }
         case ASR::exprType::ComplexIm: {
-            return is_directly_addressable_array_expr(
+            return is_directly_addressable_expr(
                 ASR::down_cast<ASR::ComplexIm_t>(value)->m_arg);
         }
         default: {
@@ -1306,7 +1311,7 @@ bool is_temporary_needed(ASR::expr_t* value) {
         ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0));
     return is_expr_with_no_type 
         && !ASRUtils::is_stringToArray_cast(value)
-        && !is_directly_addressable_array_expr(value)
+        && !is_directly_addressable_expr(value)
         && is_non_empty_fixed_size_array;
 }
 
@@ -1467,8 +1472,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
                 x_m_args_vec.push_back(al, array_var_temporary);
             } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i])) &&
-                       !ASR::is_a<ASR::Var_t>(
-                            *ASRUtils::get_past_array_physical_cast(x_m_args[i])) ) {
+                       !is_directly_addressable_expr(x_m_args[i]) ) {
                 ASR::expr_t* struct_var_temporary = create_and_allocate_temporary_variable_for_struct(
                     ASRUtils::get_past_array_physical_cast(x_m_args[i]), name_hint, al, current_body,
                     current_scope, exprs_with_target, realloc_lhs);
@@ -1619,6 +1623,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
 
                 if (create_temp_var_for_rhs) {
+                    visit_expr(*xx.m_value);
                     std::string name_hint = "_assignment_";
                     ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target);
                     xx.m_value = array_var_temporary;
@@ -2134,14 +2139,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_ComplexRe(const ASR::ComplexRe_t& x) {
         ASR::ComplexRe_t& xx = const_cast<ASR::ComplexRe_t&>(x);
-        if (!is_directly_addressable_array_expr(xx.m_arg)) {
+        if (!is_directly_addressable_expr(xx.m_arg)) {
             replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_re_");
         }
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t& x) {
         ASR::ComplexIm_t& xx = const_cast<ASR::ComplexIm_t&>(x);
-        if (!is_directly_addressable_array_expr(xx.m_arg)) {
+        if (!is_directly_addressable_expr(xx.m_arg)) {
             replace_expr_with_temporary_variable(xx.m_arg, x.m_arg, "_complex_im_");
         }
     }
@@ -2564,14 +2569,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ComplexRe(ASR::ComplexRe_t* x) {
-        if (is_directly_addressable_array_expr(x->m_arg)) {
+        if (is_directly_addressable_expr(x->m_arg)) {
             return;
         }
         replace_current_expr(x, "_complex_re_");
     }
 
     void replace_ComplexIm(ASR::ComplexIm_t* x) {
-        if (is_directly_addressable_array_expr(x->m_arg)) {
+        if (is_directly_addressable_expr(x->m_arg)) {
             return;
         }
         replace_current_expr(x, "_complex_im_");
@@ -2862,7 +2867,7 @@ class ReplaceExprWithTemporaryVisitor:
         call_replacer();
         replacer.lhs_var = nullptr;
         bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
-                    ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_directly_addressable_array_expr(x.m_value);
+                    ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_directly_addressable_expr(x.m_value);
         if(  is_assignment_target_array_section_item ||
             ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||

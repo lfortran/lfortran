@@ -753,4 +753,53 @@ program continue_compilation_1
         call cpu_time(*1)
 1       continue
     end subroutine 
+    subroutine sync_all_stat_wrong_type()
+        implicit none
+        character(len=10) :: cstat
+        sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    end subroutine
+    subroutine sync_all_errmsg_wrong_type()
+        implicit none
+        integer :: imsg
+        sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    end subroutine
+    subroutine sync_all_stat_array()
+        implicit none
+        integer :: astat(3)
+        sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    end subroutine
+    subroutine sync_all_stat_undeclared()
+        implicit none
+        sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    end subroutine
+    subroutine assumed_size_to_pointer_dummy(x)
+        integer :: x(*)
+        call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    end subroutine
+    subroutine ptr_sink(x)
+        integer, pointer :: x(..)
+    end subroutine
+    subroutine select_case_complex()
+        implicit none
+        complex :: nn
+        select case (nn)
+        case default
+        end select
+    end subroutine
+    subroutine select_case_real()
+        implicit none
+        real :: x
+        select case (x)
+        case default
+        end select
+    end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)  
+        print *, lgt("a", glyph)  
+        print *, lle(glyph, "z")  
+        print *, llt(glyph, "z")  
+    end subroutine
 end program

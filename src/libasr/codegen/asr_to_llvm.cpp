@@ -11522,7 +11522,8 @@ public:
                 }
             }
             return;
-        } else if ((is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)) {
+        } else if ((is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)
+                   && !ASRUtils::is_array(asr_target_type)) {
             if (ASRUtils::is_allocatable(asr_target_type)) {
                 check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
             }
@@ -12811,6 +12812,9 @@ public:
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(m_arg))),
             module.get());
         llvm::Type* m_arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
+        ASR::expr_t* m_arg_value = ASRUtils::expr_value(m_arg);
+        bool is_array_constructor_value = m_arg_value &&
+            ASR::is_a<ASR::ArrayConstructor_t>(*m_arg_value);
         if( m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
             if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
@@ -12850,18 +12854,20 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            if( ((ASRUtils::expr_value(m_arg) &&
-                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                ASRUtils::expr_value(m_arg) == nullptr ) &&
+            if( ((m_arg_value &&
+                !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                !is_array_constructor_value) ||
+                m_arg_value == nullptr ) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->CreateGEP2(m_arg_llvm_type, tmp, 0);
             }
         } else if(
             m_new == ASR::array_physical_typeType::UnboundedPointerArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            if( ((ASRUtils::expr_value(m_arg) &&
-                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                ASRUtils::expr_value(m_arg) == nullptr) &&
+            if( ((m_arg_value &&
+                !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                !is_array_constructor_value) ||
+                m_arg_value == nullptr) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
@@ -12876,9 +12882,10 @@ public:
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
-            if( ((ASRUtils::expr_value(m_arg) &&
-                !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                ASRUtils::expr_value(m_arg) == nullptr) &&
+            if( ((m_arg_value &&
+                !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                !is_array_constructor_value) ||
+                m_arg_value == nullptr) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
@@ -12994,9 +13001,10 @@ public:
             m_old == ASR::array_physical_typeType::StringArraySinglePointer) {
         //
             if (ASRUtils::is_fixed_size_array(m_type)) {
-                if( ((ASRUtils::expr_value(m_arg) &&
-                    !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
-                    ASRUtils::expr_value(m_arg) == nullptr) &&
+                if( ((m_arg_value &&
+                    !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
+                    !is_array_constructor_value) ||
+                    m_arg_value == nullptr) &&
                     !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                     tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
                 }
@@ -15870,6 +15878,9 @@ public:
             case (ASR::cast_kindType::LogicalToReal) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 tmp = builder->CreateUIToFP(tmp, llvm_utils->getFPType(a_kind, false));
+                break;
+            }
+            case (ASR::cast_kindType::StringToString) : {
                 break;
             }
             case (ASR::cast_kindType::RealToInteger) : {
@@ -23254,8 +23265,16 @@ public:
                                                 || ASRUtils::is_pointer(ASRUtils::expr_type(x.m_args[i].m_value)))) {
                                         check_and_allocate_scalar(x.m_args[i].m_value);
                                     }
-                                    llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
-                                    value = llvm_utils->CreateLoad2(value_type, value);
+                                    bool skip_load_for_fixed_size_array =
+                                        ASRUtils::is_array(arg_type) &&
+                                        !ASRUtils::is_allocatable(arg_type) &&
+                                        !ASRUtils::is_pointer(arg_type) &&
+                                        ASRUtils::extract_physical_type(arg_type) ==
+                                            ASR::array_physical_typeType::FixedSizeArray;
+                                    if (!skip_load_for_fixed_size_array) {
+                                        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
+                                        value = llvm_utils->CreateLoad2(value_type, value);
+                                    }
                                 }
                         }
                         if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
@@ -23359,9 +23378,28 @@ public:
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
                     ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type));
+                    bool dummy_is_assumed_type = false;
+                    if (orig_arg->m_type_declaration) {
+                        ASR::symbol_t* dummy_decl_sym = ASRUtils::symbol_get_past_external(
+                            orig_arg->m_type_declaration);
+                        if (dummy_decl_sym && std::string(ASRUtils::symbol_name(
+                                dummy_decl_sym)) == "~assumed_type") {
+                            dummy_is_assumed_type = true;
+                        }
+                    }
                     if (!ASR::is_a<ASR::StructType_t>(*arg_type_unwrapped)) {
                         struct_api->store_intrinsic_type_vptr(arg_type,
                             ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
+                    } else if (!dummy_is_assumed_type) {
+                        ASR::symbol_t* value_struct_sym =
+                            ASRUtils::get_struct_sym_from_struct_expr(
+                                x.m_args[i].m_value);
+                        if (value_struct_sym) {
+                            struct_api->create_new_vtable_for_struct_type(
+                                value_struct_sym, module.get());
+                            struct_api->store_class_vptr(
+                                value_struct_sym, poly_wrapper, module.get());
+                        }
                     }
                     
                     llvm::Value* poly_data_ptr = llvm_utils->create_gep2(poly_elem_type, poly_wrapper, 1);
@@ -24098,6 +24136,9 @@ public:
         }
         llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 dest_arg, dest_type, module.get());
+        if (ASRUtils::is_array(dest_type)) {
+            return builder->CreateBitCast(class_value, dest_llvm_type);
+        }
         return builder->CreateBitCast(class_value, dest_llvm_type->getPointerTo());
     }
 

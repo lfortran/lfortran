@@ -3918,6 +3918,17 @@ public:
                 }));
             throw SemanticAbort();
         }
+        ASR::ttype_t *a_test_type = ASRUtils::expr_type(a_test);
+        if (!ASRUtils::is_integer(*a_test_type) &&
+                !ASRUtils::is_character(*a_test_type) &&
+                !ASRUtils::is_logical(*a_test_type)) {
+            diag.add(Diagnostic(
+                "select case expression must be of type integer, character, or logical",
+                Level::Error, Stage::Semantic, {
+                    Label("", {a_test->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         Vec<ASR::case_stmt_t*> a_body_vec;
         a_body_vec.reserve(al, x.n_body);
         Vec<ASR::stmt_t*> def_body;
@@ -6756,7 +6767,7 @@ public:
                 "shape argument not specified in c_f_pointer "
                 "even though fptr is an array.",
                 Level::Error, Stage::Semantic, {
-                    Label("",{shape->base.loc})
+                    Label("",{fptr->base.loc})
                 }));
             throw SemanticAbort();
         }
@@ -7551,6 +7562,24 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // An assumed-size array has no known extent for its last
+                    // dimension, so it cannot be used where the dummy requires
+                    // a descriptor (pointer or allocatable).
+                    if (ASRUtils::is_pointer(dummy_type) ||
+                        ASRUtils::is_allocatable(dummy_type)) {
+                        ASR::ttype_t* actual_array =
+                            ASRUtils::type_get_past_allocatable_pointer(actual_type);
+                        if (ASR::is_a<ASR::Array_t>(*actual_array) &&
+                            ASR::down_cast<ASR::Array_t>(actual_array)->m_physical_type ==
+                                ASR::array_physical_typeType::UnboundedPointerArray) {
+                            std::string dummy_name = dummy_var->m_name;
+                            diag.semantic_error_label(
+                                "Actual argument for '" + dummy_name +
+                                "' cannot be an assumed-size array",
+                                {args[i].m_value->base.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
                     if (ASRUtils::is_allocatable(dummy_type)) {
                         ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable(dummy_type));
@@ -9040,73 +9069,67 @@ public:
 
     void visit_ForAll(const AST::ForAll_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_control != 1) {
-            diag.add(Diagnostic(
-                "Forall block: one control statement is supported for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
         if (x.n_body != 1) {
             diag.add(Diagnostic(
                 "Forall block: one body statement is supported for now",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
-                }));
+            }));
             throw SemanticAbort();
         }
-        
-        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
-        if (!h.m_var) {
-            diag.add(Diagnostic(
-                "Forall block: loop variable is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
+        for (size_t i = 0; i < x.n_control; i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            if (!h.m_var) {
+                diag.add(Diagnostic(
+                    "Forall block: loop variable is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (!h.m_start) {
+                diag.add(Diagnostic(
+                    "Forall block: start condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (!h.m_end) {
+                diag.add(Diagnostic(
+                    "Forall block: end condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         }
-        if (!h.m_start) {
-            diag.add(Diagnostic(
-                "Forall block: start condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        if (!h.m_end) {
-            diag.add(Diagnostic(
-                "Forall block: end condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        
-        ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
-        visit_expr(*h.m_start);
-        ASR::expr_t *start = ASRUtils::EXPR(tmp);
-        visit_expr(*h.m_end);
-        ASR::expr_t *end = ASRUtils::EXPR(tmp);
-        ASR::expr_t *increment;
-        if (h.m_increment) {
-            visit_expr(*h.m_increment);
-            increment = ASRUtils::EXPR(tmp);
-        } else {
-            increment = nullptr;
-        }
-        
-        ASR::do_loop_head_t head;
-        head.m_v = var;
-        head.m_start = start;
-        head.m_end = end;
-        head.m_increment = increment;
-        head.loc = head.m_v->base.loc;
         
         this->visit_stmt(*x.m_body[0]);
         ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
-        
-        tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
+        for (int i = x.n_control - 1; i >= 0; i--) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+            visit_expr(*h.m_start);
+            ASR::expr_t *start = ASRUtils::EXPR(tmp);
+            visit_expr(*h.m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            ASR::expr_t *increment;
+            if (h.m_increment) {
+                visit_expr(*h.m_increment);
+                increment = ASRUtils::EXPR(tmp);
+            } else {
+                increment = nullptr;
+            }
+            ASR::do_loop_head_t head;
+            head.m_v = var;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = increment;
+            head.loc = head.m_v->base.loc;
+            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
+            stmt = ASRUtils::STMT(tmp);
+        }
         all_loops_blocks_nesting -= 1;
     }
 
@@ -9279,7 +9302,57 @@ public:
     }
 
     void visit_SyncAll(const AST::SyncAll_t &x) {
-        tmp = ASR::make_SyncAll_t(al, x.base.base.loc);
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        for (size_t i = 0; i < x.n_stat; i++) {
+            AST::event_attribute_t *attr = x.m_stat[i];
+            if (AST::is_a<AST::AttrStat_t>(*attr)) {
+                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
+                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(s->m_variable)));
+                ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+                if (ASRUtils::is_array(stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_integer(*stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be of type integer, found "
+                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
+                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
+                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(e->m_variable)));
+                ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+                if (ASRUtils::is_array(errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_character(*errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be of type character, found "
+                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+        }
+        tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
     }
 
     void visit_SyncMemory(const AST::SyncMemory_t &x) {
