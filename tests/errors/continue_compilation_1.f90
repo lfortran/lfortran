@@ -182,19 +182,19 @@ contains
         procedure(sub_test), pointer :: pf2
         pf2 => dummy_func
     end subroutine proc_ptr_error_tests
-
+    subroutine assumed_size_callee(a)
+        integer, intent(in) :: a(:)
+        print *, a(1)
+    end subroutine
+    subroutine assumed_size_caller(a)
+        integer, intent(in) :: a(*)
+        call assumed_size_callee(a)
+    end subroutine
     function op_clash_f(x) result(y)
         integer, intent(in) :: x
         integer :: y
         y = x
     end function op_clash_f
-
-
-
-
-
-
-
 
 
 
