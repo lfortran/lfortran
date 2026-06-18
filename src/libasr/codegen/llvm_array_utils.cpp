@@ -1009,7 +1009,7 @@ namespace LCompilers {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
                 // instead of the array descriptor struct. We reconstruct the correct descriptor struct here.
-                if (polymorphic && variable_type_decl == nullptr && !array_type->isStructTy()) {
+                if (polymorphic && !array_type->isStructTy()) {
                     ASR::dimension_t* m_dims;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::type_get_past_allocatable_pointer(asr_type), m_dims);
