@@ -12870,7 +12870,8 @@ public:
                         temp = ASRUtils::EXPR(array_cast);
                     } else if (!(intrinsic_name == "size" || intrinsic_name == "lbound" || intrinsic_name == "ubound" || 
                         intrinsic_name == "rank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
-                        intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present")) {
+                        intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
+                        intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of")) {
                         diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to intrinsics",
                             {arg_expr->base.loc}, "");
                         throw SemanticAbort();

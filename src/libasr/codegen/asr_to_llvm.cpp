@@ -976,6 +976,12 @@ public:
         switch (phys_type)
         {
             case ASR::DescriptorString:{
+                if (!tmp->getType()->isPointerTy()) {
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(
+                        *builder, tmp->getType(), nullptr, "str_value");
+                    builder->CreateStore(tmp, tmp_ptr);
+                    tmp = tmp_ptr;
+                }
                 //Set data
                 data_and_length.first = builder->CreateLoad(
                     character_type,
@@ -994,6 +1000,12 @@ public:
                 break;
             }
             case ASR::CChar:{
+                if (!tmp->getType()->isPointerTy()) {
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(
+                        *builder, tmp->getType(), nullptr, "char_value");
+                    builder->CreateStore(tmp, tmp_ptr);
+                    tmp = tmp_ptr;
+                }
                 // tmp is i8* (pointer to the character byte)
                 data_and_length.first = tmp;
                 data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));

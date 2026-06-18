@@ -323,7 +323,7 @@ program continue_compilation_1
     !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
-
+    print 1+2
     a = 1
     print *, a(10)
     a5 = 8
