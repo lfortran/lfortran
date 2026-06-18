@@ -706,6 +706,7 @@ RUN(NAME functions_61 LABELS gfortran llvm fortran)
 RUN(NAME common_01 LABELS gfortran)
 
 
+RUN(NAME pointer_null_01 LABELS gfortran llvm)
 RUN(NAME types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm fortran)
 RUN(NAME types_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm fortran)
 RUN(NAME types_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm fortran)
