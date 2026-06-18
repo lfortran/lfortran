@@ -1008,6 +1008,8 @@ namespace LCompilers {
             } else {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
+                
+                // FIX: get_type_from_ttype_t_util incorrectly returns i8_ptr for class(*) arrays 
                 // instead of the array descriptor struct. We reconstruct the correct descriptor struct here.
                 if (polymorphic && !array_type->isStructTy()) {
                     ASR::dimension_t* m_dims;
