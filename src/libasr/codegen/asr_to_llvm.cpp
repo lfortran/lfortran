@@ -20103,7 +20103,8 @@ public:
         } else { // String Write
             if (is_string_array_unit &&
                 ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_unit))
-                    == ASR::array_physical_typeType::DescriptorArray) {
+                    == ASR::array_physical_typeType::DescriptorArray &&
+                !ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
                 // For DescriptorArray (e.g. EQUIVALENCE), extract the data
                 // pointer from the array descriptor to get to string descriptors
                 ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
@@ -20120,11 +20121,40 @@ public:
                     ASRUtils::get_string_type(x.m_unit), tmp, true, true);
             }
             if (is_string_array_unit) {
-                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
-                    ASR::make_ArraySize_t(al, x.base.base.loc, x.m_unit, nullptr, type32, nullptr));
-                visit_ArraySize(*array_size);
-                string_array_size = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
+                    ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_unit);
+                    auto get_i64_value = [&](ASR::expr_t* expr) {
+                        int ptr_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr_wrapper(expr, true);
+                        ptr_loads = ptr_copy;
+                        return llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
+                    };
+                    string_array_size = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                    for (size_t i = 0; i < section->n_args; i++) {
+                        if (!section->m_args[i].m_left) {
+                            continue;
+                        }
+                        llvm::Value* left = get_i64_value(section->m_args[i].m_left);
+                        llvm::Value* right = get_i64_value(section->m_args[i].m_right);
+                        llvm::Value* step = section->m_args[i].m_step ?
+                            get_i64_value(section->m_args[i].m_step) :
+                            llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                        llvm::Value* extent = builder->CreateAdd(
+                            builder->CreateSDiv(builder->CreateSub(right, left), step),
+                            llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+                        llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+                        extent = builder->CreateSelect(
+                            builder->CreateICmpSLT(extent, zero), zero, extent);
+                        string_array_size = builder->CreateMul(string_array_size, extent);
+                    }
+                } else {
+                    ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_unit, nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size);
+                    string_array_size = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
+                }
             } else {
                 string_array_size = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
             }
