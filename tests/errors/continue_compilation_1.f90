@@ -802,4 +802,10 @@ program continue_compilation_1
         print *, lle(glyph, "z")  
         print *, llt(glyph, "z")  
     end subroutine
+    
+   subroutine value_attribute_on_local()
+        implicit none
+        integer :: x
+        value :: x
+    end subroutine
 end program

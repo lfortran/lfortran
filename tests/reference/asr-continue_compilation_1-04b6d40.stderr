@@ -489,9 +489,9 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Value attribute can only be applied to procedure arguments
-   --> tests/errors/continue_compilation_1.f90:799:9
+   --> tests/errors/continue_compilation_1.f90:809:9
     |
-799 |         value :: x
+809 |         value :: x
     |         ^^^^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
