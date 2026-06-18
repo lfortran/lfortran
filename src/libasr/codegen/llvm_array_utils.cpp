@@ -991,18 +991,11 @@ namespace LCompilers {
             
             llvm::Value* tmp = nullptr;
             llvm::Value* idx = nullptr;
-
-            // FIX: If the array type is lowered to a raw pointer (e.g. UnboundedPointerArray 
-            // for class(*)), it lacks a descriptor struct. Route it to data_only.
-            llvm::Type* expected_array_type = llvm_utils->get_type_from_ttype_t_util(
-                expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
-            bool is_effectively_data_only = data_only || is_fixed_size || is_unbounded_pointer_to_data || !expected_array_type->isStructTy();
-
-            if( is_effectively_data_only ) {
+            
+            if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, array_name, infile, expr->base.loc);
-                
-                if(ASRUtils::is_character(*asr_type)){
+                if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
                 } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
                     tmp = llvm_utils->get_class_element_from_array(ASR::down_cast<ASR::Struct_t>(variable_type_decl),
@@ -1015,10 +1008,31 @@ namespace LCompilers {
                     }
                 }
             } else {
-                llvm::Type* array_type = expected_array_type;
+                llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                    expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
+                
+                // FIX: get_type_from_ttype_t_util incorrectly returns the 2-field class wrapper 
+                // instead of the 3-field array descriptor for class(*) arrays. We intercept and reconstruct it.
+                bool needs_reconstruction = false;
+                if (polymorphic) {
+                    if (!array_type->isStructTy()) {
+                        needs_reconstruction = true;
+                    } else if (llvm::cast<llvm::StructType>(array_type)->getNumElements() < 3) {
+                        needs_reconstruction = true;
+                    }
+                }
+                
+                if (needs_reconstruction) {
+                    ASR::dimension_t* m_dims;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::type_get_past_allocatable_pointer(asr_type), m_dims);
+                    array_type = this->get_array_type_for_rank(type, n_dims);
+                }
+
                 idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
-                llvm::Value* ptr_to_data_ptr = get_pointer_to_data(
-                    expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module);
+                
+                // Use the corrected array_type to avoid the buggy overload
+                llvm::Value* ptr_to_data_ptr = this->get_pointer_to_data(array_type, array);
                 llvm::Value* full_array = nullptr;
                 
                 if(ASRUtils::is_character(*asr_type)){
@@ -1054,6 +1068,7 @@ namespace LCompilers {
                                 tmp = llvm_utils->create_ptr_gep2(type, full_array, idx);
                             } else {
                                 ASR::Struct_t* class_sym = ASR::down_cast<ASR::Struct_t>(decl_sym);
+
                                 llvm::Type* class_type = llvm_utils->getClassType(class_sym, false);
                                 llvm::Type* class_type_ptr = class_type->getPointerTo();
                                 llvm::Value* casted_ptr_to_data_ptr = builder->CreateBitCast(
@@ -1100,7 +1115,7 @@ namespace LCompilers {
             }
             return tmp;
         }
-
+        
         llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp) {
             llvm::Value* memory_holder{}; // ptr_ptr_to_data
             ASR::ttype_t* array_type = ASRUtils::expr_type(array_exp);
