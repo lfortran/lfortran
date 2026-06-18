@@ -7796,6 +7796,16 @@ public:
                     // is_cptr_dummy_passed_by_value path.
                     if (arg->m_value_attr &&
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
+                        !ASR::is_a<ASR::CPtr_t>(*arg->m_type) && !ASRUtils::is_array(arg->m_type) &&
+                        ASR::is_a<ASR::String_t>(*arg->m_type) && llvm_arg.getType()->isPointerTy()) {
+                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(arg->m_type);
+                        llvm::Value* local_copy = builder->CreateAlloca(string_descriptor, nullptr, std::string(arg->m_name) + "_value");
+                        builder->CreateStore(llvm::Constant::getNullValue(string_descriptor),local_copy);
+                        llvm_utils->lfortran_str_copy(local_copy, llvm_sym, str_type, str_type, true);
+                        strings_to_be_deallocated.push_back(al, local_copy);
+                        llvm_sym = local_copy;
+                    } else if (arg->m_value_attr &&
+                        ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                         !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
                         !ASRUtils::is_array(arg->m_type) &&
                         llvm_arg.getType()->isPointerTy()) {
@@ -8412,6 +8422,7 @@ public:
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             finalize_list_call_arg_allocas();
+            free_strings_to_be_deallocated(0);
             free_heap_fixed_size_arrays();
             convert_bindc_strides_to_byte();
             llvm::Function* fn = builder->GetInsertBlock()->getParent();
@@ -8490,6 +8501,7 @@ public:
             start_new_block(proc_return);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             finalize_list_call_arg_allocas();
+            free_strings_to_be_deallocated(0);
             free_heap_fixed_size_arrays();
             convert_bindc_strides_to_byte();
             builder->CreateRetVoid();
