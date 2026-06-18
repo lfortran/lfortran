@@ -1707,3 +1707,27 @@ semantic error: overlapping case value
     |
 846 |         case(.true.)  ! {Error} overlapping case value
     |              ^^^^^^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:853:18
+    |
+853 |         print *, lge("a", glyph)
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `lgt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:854:18
+    |
+854 |         print *, lgt("a", glyph)
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `lle` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:855:18
+    |
+855 |         print *, lle(glyph, "z")
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `llt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:856:18
+    |
+856 |         print *, llt(glyph, "z")
+    |                  ^^^^^^^^^^^^^^^ 
