@@ -7979,12 +7979,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
 
+
         if (ASR::is_a<ASR::FunctionType_t>(*arg_type) && ASR::is_a<ASR::FunctionType_t>(*orig_arg_type)) {
-            if (!ASRUtils::types_equal(arg_type, orig_arg_type, nullptr, nullptr, true)) {
-                arg = a_args[i].m_value = ASRUtils::EXPR(ASR::make_Cast_t(
-                    al, arg->base.loc, arg, ASR::cast_kindType::FunctionToFunction,
-                    orig_arg_type, nullptr, nullptr));
-            }
+            // Implicit interface reconciliation is handled at the LLVM codegen level.
+            // No ASR-level cast is needed for procedure arguments.
             continue;
         }
         // cast string source based on the dest

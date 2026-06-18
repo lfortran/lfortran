@@ -801,10 +801,6 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             // associated with it, so we return nullptr.
             return nullptr;
         }
-        case ASR::exprType::Cast: {
-            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
-            return get_function_from_expr(cast->m_arg);
-        }
         default:
             throw LCompilersException("get_function_from_expr() not implemented for "
                                 + std::to_string(expr->type));
