@@ -917,6 +917,16 @@ class PRIFInterface {
                 ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
                     ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, nullptr, nullptr));
                 new_body.push_back(al, cfp_stmt);
+
+                if (var->m_value) {
+                    ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                        al, loc, var_expr, var->m_value, nullptr, false, false));
+                    new_body.push_back(al, assign);
+                    var->m_value = nullptr;
+                }
+                if (var->m_symbolic_value) {
+                    var->m_symbolic_value = nullptr;
+                }
             }
         }
 
