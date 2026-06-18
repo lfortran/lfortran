@@ -28,4 +28,14 @@ if (abs(a(3,2) - 6.0) > 1e-6) error stop
 if (abs(a(2,1) - 0.0) > 1e-6) error stop
 print *, a
 
+! Test forall block with two control variables
+a = 0.0
+forall(i=1:3, j=1:3)
+    a(i,j) = real(i + 10*j)
+end forall
+if (abs(a(1,1) - 11.0) > 1e-6) error stop
+if (abs(a(3,2) - 23.0) > 1e-6) error stop
+if (abs(a(2,3) - 32.0) > 1e-6) error stop
+print *, a
+
 end program forall_03

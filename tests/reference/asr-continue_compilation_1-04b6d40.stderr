@@ -1635,3 +1635,45 @@ semantic error: Variable 'nosuch' is not declared
     |
 773 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
+
+semantic error: Actual argument for 'x' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:777:23
+    |
+777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    |                       ^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:785:22
+    |
+785 |         select case (nn)
+    |                      ^^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:792:22
+    |
+792 |         select case (x)
+    |                      ^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:800:18
+    |
+800 |         print *, lge("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `lgt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:801:18
+    |
+801 |         print *, lgt("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `lle` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:802:18
+    |
+802 |         print *, lle(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `llt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:803:18
+    |
+803 |         print *, llt(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
