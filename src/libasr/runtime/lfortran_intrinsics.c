@@ -4189,7 +4189,7 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         return;
     }
 
-    // 2. Precision fix: Specific optimization for z**2
+    // 2.Specific optimization for z**2
     if (b->im == 0.0f && b->re == 2.0f) {
         result->re = (a->re * a->re) - (a->im * a->im);
         result->im = 2.0f * a->re * a->im;
@@ -4205,15 +4205,16 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         float complex ca = CMPLXF(a->re, a->im);
         float complex cb = CMPLXF(b->re, b->im);
         float complex cr = cpowf(ca, cb);
-        result->re = creal(cr);
-        result->im = cimag(cr);
+    #endif
+        result->re = crealf(cr);
+        result->im = cimagf(cr);
 
 }
 
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
-    // handle 0 base for positive, zero, and negative powers
+    // 1.handle 0 base for positive, zero, and negative powers
     if (a->re == 0.0 && a->im == 0.0) {
         if (b->re > 0.0) {
             result->re = 0.0;
@@ -4227,7 +4228,7 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         }
         return;
     }
-
+    // 2.Specific optimization for z**2
     if (b->im == 0.0 && b->re == 2.0) {
         result->re = (a->re * a->re) - (a->im * a->im);
         result->im = 2.0 * a->re * a->im;
@@ -4244,8 +4245,8 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         double complex cb = CMPLX(b->re, b->im);
         double complex cr = cpow(ca, cb);
     #endif
-        result->re = creal(cr);
-        result->im = cimag(cr);
+        result->re = crealf(cr);
+        result->im = cimagf(cr);
 
 }
 
