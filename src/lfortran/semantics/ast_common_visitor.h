@@ -7819,7 +7819,8 @@ public:
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter &&
-                        init_expr && ASRUtils::is_array(type)) {
+                        init_expr && ASRUtils::is_array(type) &&
+                        ASRUtils::is_array(ASRUtils::expr_type(init_expr))) {
                         ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
                         ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
                             ASRUtils::expr_type(init_expr));
@@ -8406,7 +8407,8 @@ public:
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter) {
-                        if( ASRUtils::is_array(type) ) {
+                        if( ASRUtils::is_array(type) && init_expr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(init_expr)) ) {
                             ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
                             ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
                                 ASRUtils::expr_type(init_expr));
