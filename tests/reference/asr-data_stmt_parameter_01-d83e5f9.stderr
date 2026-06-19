@@ -1,5 +1,0 @@
-semantic error: PARAMETER 'item' shall not appear in a DATA statement
- --> tests/errors/data_stmt_parameter_01.f90:9:10
-  |
-9 |     data item%value / 3.0 /
-  |          ^^^^^^^^^^ 

@@ -1,5 +1,0 @@
-semantic error: PARAMETER 'k' shall not appear in a DATA statement
- --> tests/errors/data_stmt_parameter_02.f90:5:10
-  |
-5 |     data (k(i), i=1,3) / 4, 5, 6 /
-  |          ^^^^^^^^^^^^^ 
