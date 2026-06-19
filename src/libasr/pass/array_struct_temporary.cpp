@@ -1623,6 +1623,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
 
                 if (create_temp_var_for_rhs) {
+                    visit_expr(*xx.m_value);
                     std::string name_hint = "_assignment_";
                     ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target);
                     xx.m_value = array_var_temporary;

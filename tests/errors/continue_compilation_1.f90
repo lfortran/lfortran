@@ -323,7 +323,7 @@ program continue_compilation_1
     !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
-
+    print 1+2
     a = 1
     print *, a(10)
     a5 = 8
@@ -817,4 +817,27 @@ program continue_compilation_1
         integer :: items(:)
         consume_assumed_shape_function = size(items)
     end function
+    subroutine select_case_complex()
+        implicit none
+        complex :: nn
+        select case (nn)
+        case default
+        end select
+    end subroutine
+    subroutine select_case_real()
+        implicit none
+        real :: x
+        select case (x)
+        case default
+        end select
+    end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)  
+        print *, lgt("a", glyph)  
+        print *, lle(glyph, "z")  
+        print *, llt(glyph, "z")  
+    end subroutine
 end program
