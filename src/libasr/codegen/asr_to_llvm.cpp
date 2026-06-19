@@ -15109,7 +15109,7 @@ public:
             int a_kind = ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind;
             el_type = llvm_utils->getIntType(a_kind);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
-            el_type = character_type;
+            el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
             int complex_kind = ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind;
             if( complex_kind == 4 ) {
