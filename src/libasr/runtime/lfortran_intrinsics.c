@@ -4175,21 +4175,23 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
     if (a->re == 0.0f && a->im == 0.0f) {
-        // 0 raised to a positive real power is 0. 
         if (b->re > 0.0f) {
             result->re = 0.0f;
             result->im = 0.0f;
-            return;
+        } else if (b->re == 0.0f && b->im == 0.0f) {
+            result->re = NAN;
+            result->im = NAN;
+        } else {
+            result->re = INFINITY;
+            result->im = NAN;
         }
+        return;
     }
 
-    if (b->im == 0.0f && b->re == (float)((int32_t)b->re)) {
-        int32_t n = (int32_t)b->re;
-        if (n == 2) { 
-            result->re = (a->re * a->re) - (a->im * a->im);
-            result->im = 2.0f * a->re * a->im;
-            return;
-        }
+    if (b->im == 0.0f && b->re == 2.0f) {
+        result->re = (a->re * a->re) - (a->im * a->im);
+        result->im = 2.0f * a->re * a->im;
+        return;
     }
 
     #ifdef _MSC_VER
@@ -4201,30 +4203,31 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         float complex cb = CMPLXF(b->re, b->im);
         float complex cr = cpowf(ca, cb);
     #endif
-        result->re = crealf(cr);
-        result->im = cimagf(cr);
+        result->re = creal(cr);
+        result->im = cimag(cr);
 }
 
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
-   
     if (a->re == 0.0 && a->im == 0.0) {
-        // 0 raised to a positive real power is 0. 
         if (b->re > 0.0) {
             result->re = 0.0;
             result->im = 0.0;
-            return;
+        } else if (b->re == 0.0 && b->im == 0.0) {
+            result->re = NAN;
+            result->im = NAN;
+        } else {
+            result->re = INFINITY;
+            result->im = NAN;
         }
+        return;
     }
 
-    if (b->im == 0.0 && b->re == (double)((int64_t)b->re)) {
-        int64_t n = (int64_t)b->re;
-        if (n == 2) { 
-            result->re = (a->re * a->re) - (a->im * a->im);
-            result->im = 2.0 * a->re * a->im;
-            return;
-        }
+    if (b->im == 0.0 && b->re == 2.0) {
+        result->re = (a->re * a->re) - (a->im * a->im);
+        result->im = 2.0 * a->re * a->im;
+        return;
     }
 
     #ifdef _MSC_VER
@@ -4236,9 +4239,8 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         double complex cb = CMPLX(b->re, b->im);
         double complex cr = cpow(ca, cb);
     #endif
-    
-    result->re = creal(cr);
-    result->im = cimag(cr);
+        result->re = creal(cr);
+        result->im = cimag(cr);
 }
 
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
@@ -12008,8 +12010,6 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             }
         }
 
-        
-        
         if (filep == stdout || filep == stderr) {
             fflush(filep);
         }
