@@ -15163,7 +15163,7 @@ public:
                 case (16) :
                     el_type = llvm::Type::getFP128Ty(context); break;
                 default :
-                    throw CodeGenError("ConstArray real kind not supported yet");
+                    throw CodeGenError("ConstArray real kind not supported yet", x.base.base.loc);
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x_m_type)) {
             int a_kind = ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind;
@@ -15180,7 +15180,7 @@ public:
                 LCOMPILERS_ASSERT(false);
             }
         } else {
-            throw CodeGenError("ConstArray type not supported yet");
+            throw CodeGenError("ConstArray type not supported yet", x.base.base.loc);
         }
 
         // Declaring array constant as global constant and directly using it
@@ -15193,35 +15193,51 @@ public:
         if (ASRUtils::is_integer(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                values.push_back(llvm::ConstantInt::get(el_type, down_cast<ASR::IntegerConstant_t>(el)->m_n));
+                if (ASR::is_a<ASR::IntegerConstant_t>(*el)) {
+                    values.push_back(llvm::ConstantInt::get(el_type, down_cast<ASR::IntegerConstant_t>(el)->m_n));
+                } else {
+                    throw CodeGenError("Compile-time evaluation failed: Array constant contains a non-scalar integer element.", x.base.base.loc);
+                }
             }
         } else if (ASRUtils::is_real(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                values.push_back(llvm::ConstantFP::get(el_type, down_cast<ASR::RealConstant_t>(el)->m_r));
+                if (ASR::is_a<ASR::RealConstant_t>(*el)) {
+                    values.push_back(llvm::ConstantFP::get(el_type, down_cast<ASR::RealConstant_t>(el)->m_r));
+                } else {
+                    throw CodeGenError("Compile-time evaluation failed: Array constant contains a non-scalar real element.", x.base.base.loc);
+                }
             }
         } else if (ASRUtils::is_logical(*x_m_type)) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x_m_type);
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                values.push_back(llvm::ConstantInt::get(
-                    el_type, llvm::APInt(a_kind * 8, down_cast<ASR::LogicalConstant_t>(el)->m_value ? 1 : 0)));
+                if (ASR::is_a<ASR::LogicalConstant_t>(*el)) {
+                    values.push_back(llvm::ConstantInt::get(
+                        el_type, llvm::APInt(a_kind * 8, down_cast<ASR::LogicalConstant_t>(el)->m_value ? 1 : 0)));
+                } else {
+                    throw CodeGenError("Compile-time evaluation failed: Array constant contains a non-scalar logical element.", x.base.base.loc);
+                }
             }
         } else if (ASRUtils::is_complex(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                ASR::ComplexConstant_t *comp_const = down_cast<ASR::ComplexConstant_t>(el);
-                if (ASRUtils::extract_kind_from_ttype_t(comp_const->m_type) == 4) {
-                    values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_4,
-                        {llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_re),
-                        llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_im)}));
+                if (ASR::is_a<ASR::ComplexConstant_t>(*el)) {
+                    ASR::ComplexConstant_t *comp_const = down_cast<ASR::ComplexConstant_t>(el);
+                    if (ASRUtils::extract_kind_from_ttype_t(comp_const->m_type) == 4) {
+                        values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_4,
+                            {llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_re),
+                            llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_im)}));
+                    } else {
+                        values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_8,
+                            {llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_re),
+                            llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_im)}));
+                    }
                 } else {
-                    values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_8,
-                        {llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_re),
-                        llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_im)}));
+                    throw CodeGenError("Compile-time evaluation failed: Array constant contains a non-scalar complex element.", x.base.base.loc);
                 }
             }
-        } else if (ASRUtils::is_character(*x_m_type)) { // Sepcial Case.
+        } else if (ASRUtils::is_character(*x_m_type)) { // Special Case.
             tmp = llvm_utils->declare_constant_stringArray(al, &x);
             return;
         }
