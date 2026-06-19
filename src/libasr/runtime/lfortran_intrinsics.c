@@ -4174,24 +4174,26 @@ LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
 LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
-    // 1. Short-circuit: If base is exactly 0 + 0i
+    // 1. Short-circuit: Fully handle 0 base for positive, zero, and negative powers
     if (a->re == 0.0f && a->im == 0.0f) {
-        // 0 raised to a positive real power is 0. 
         if (b->re > 0.0f) {
             result->re = 0.0f;
             result->im = 0.0f;
-            return;
+        } else if (b->re == 0.0f && b->im == 0.0f) {
+            result->re = (float)NAN;
+            result->im = (float)NAN;
+        } else {
+            result->re = (float)INFINITY;
+            result->im = (float)NAN;
         }
+        return;
     }
 
-    // 2. Precision fix: If exponent is a pure integer
-    if (b->im == 0.0f && b->re == (float)((int32_t)b->re)) {
-        int32_t n = (int32_t)b->re;
-        if (n == 2) { 
-            result->re = (a->re * a->re) - (a->im * a->im);
-            result->im = 2.0f * a->re * a->im;
-            return;
-        }
+    // 2. Precision fix: Specific optimization for z**2
+    if (b->im == 0.0f && b->re == 2.0f) {
+        result->re = (a->re * a->re) - (a->im * a->im);
+        result->im = 2.0f * a->re * a->im;
+        return;
     }
 
     // 3. Fallback to standard library
@@ -4211,23 +4213,25 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
+    // 1. Short-circuit: Fully handle 0 base for positive, zero, and negative powers
     if (a->re == 0.0 && a->im == 0.0) {
-        // 0 raised to a positive real power is 0. 
         if (b->re > 0.0) {
             result->re = 0.0;
             result->im = 0.0;
-            return;
+        } else if (b->re == 0.0 && b->im == 0.0) {
+            result->re = NAN;
+            result->im = NAN;
+        } else {
+            result->re = INFINITY;
+            result->im = NAN;
         }
+        return;
     }
 
-    // 2. Precision fix: If exponent is a pure integer
-    if (b->im == 0.0 && b->re == (double)((int64_t)b->re)) {
-        int64_t n = (int64_t)b->re;
-        if (n == 2) { 
-            result->re = (a->re * a->re) - (a->im * a->im);
-            result->im = 2.0 * a->re * a->im;
-            return;
-        }
+    if (b->im == 0.0 && b->re == 2.0) {
+        result->re = (a->re * a->re) - (a->im * a->im);
+        result->im = 2.0 * a->re * a->im;
+        return;
     }
 
     // 3. Fallback to standard library
@@ -4244,6 +4248,7 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
     result->re = creal(cr);
     result->im = cimag(cr);
 }
+
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
     int64_t res = 1;
     int64_t temp = base;
