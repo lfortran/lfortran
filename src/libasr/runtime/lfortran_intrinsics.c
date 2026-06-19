@@ -4203,8 +4203,9 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         float complex cb = CMPLXF(b->re, b->im);
         float complex cr = cpowf(ca, cb);
     #endif
-        result->re = creal(cr);
-        result->im = cimag(cr);
+        result->re = crealf(cr);
+        result->im = cimagf(cr);
+
 }
 
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
@@ -4239,8 +4240,9 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         double complex cb = CMPLX(b->re, b->im);
         double complex cr = cpow(ca, cb);
     #endif
-        result->re = creal(cr);
-        result->im = cimag(cr);
+        result->re = crealf(cr);
+        result->im = cimagf(cr);
+
 }
 
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
