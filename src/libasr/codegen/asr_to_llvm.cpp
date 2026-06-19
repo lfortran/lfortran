@@ -5216,7 +5216,7 @@ public:
                     llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_v, base_t, module.get());
                     
-                    // NEW FIX: Only extract from a descriptor if the type is actually a struct!
+                    // Only extract from a descriptor if the type is actually a struct!
                     if (array_type->isStructTy()) {
                         bool is_llvm_ptr = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
                         bool is_alloca = llvm::dyn_cast<llvm::AllocaInst>(tmp) != nullptr;
@@ -5232,13 +5232,7 @@ public:
                         tmp = llvm_utils->load_pointer_element(base_gep, array_type);
                     } else {
                         // For fixed-size arrays, no descriptor exists. We use the raw array pointer.
-#if LLVM_VERSION_MAJOR < 15
-                        llvm::Type* el_type = array_type;
-                        if (llvm::ArrayType* arr_ty = llvm::dyn_cast<llvm::ArrayType>(array_type)) {
-                            el_type = arr_ty->getElementType();
-                        }
-                        tmp = builder->CreateBitCast(tmp, el_type->getPointerTo());
-#endif
+                        tmp = builder->CreateBitCast(tmp, xtype->getPointerTo());
                     }
                     
                     base_t = elem_t;
