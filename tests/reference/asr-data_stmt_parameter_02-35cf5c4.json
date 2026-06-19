@@ -1,0 +1,13 @@
+{
+    "basename": "asr-data_stmt_parameter_02-35cf5c4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/data_stmt_parameter_02.f90",
+    "infile_hash": "ce0f16dcc690d3f46cb420380631783b2d3ba22bab907e4cbe476e0f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-data_stmt_parameter_02-35cf5c4.stderr",
+    "stderr_hash": "fb7a11e518817ff15f4cbdfe2f60a563d7f805a959a75ac29f17a195",
+    "returncode": 2
+}

@@ -4226,6 +4226,40 @@ public:
         return iterations * elements_per_iteration;
     }
 
+    // Returns the PARAMETER (named constant) Variable referenced by a
+    // DATA-statement object expression, walking through struct-member and
+    // array-index accessors and into the elements of a data implied-do-loop,
+    // or nullptr when the object does not refer to a named constant.
+    ASR::Variable_t* data_stmt_object_parameter(ASR::expr_t* expr) {
+        if (!expr) return nullptr;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                return v->m_storage == ASR::storage_typeType::Parameter ? v
+                                                                       : nullptr;
+            }
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return data_stmt_object_parameter(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            return data_stmt_object_parameter(
+                ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+        }
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::Variable_t* v = data_stmt_object_parameter(idl->m_values[i]);
+                if (v) return v;
+            }
+        }
+        return nullptr;
+    }
+
     void visit_DataStmt(const AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
         // We add its contents into the symbol table here. This visitor
@@ -4261,6 +4295,24 @@ public:
             a->m_value = expanded_values.data();
             a->n_value = expanded_values.size();
             
+            // A PARAMETER (named constant) is initialized by its declaration
+            // and must not be (re-)initialized through a DATA statement, in
+            // whole or by component.
+            for (size_t j = 0; j < a->n_object; j++) {
+                this->visit_expr(*a->m_object[j]);
+                ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                ASR::Variable_t* param_var = data_stmt_object_parameter(object);
+                if (param_var) {
+                    diag.add(Diagnostic(
+                        "PARAMETER '" + std::string(param_var->m_name)
+                        + "' shall not appear in a DATA statement",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {object->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+
             // Now we are dealing with just one item, there are four cases possible:
             // data x / 1, 2, 3 /       ! x must be an array
             // data x / 1 /             ! x must be a scalar (integer)
