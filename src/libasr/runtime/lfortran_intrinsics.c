@@ -4174,7 +4174,7 @@ LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
 LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
-    // 1. Short-circuit: Fully handle 0 base for positive, zero, and negative powers
+    // handle 0 base for positive, zero, and negative powers
     if (a->re == 0.0f && a->im == 0.0f) {
         if (b->re > 0.0f) {
             result->re = 0.0f;
@@ -4205,15 +4205,15 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         float complex ca = CMPLXF(a->re, a->im);
         float complex cb = CMPLXF(b->re, b->im);
         float complex cr = cpowf(ca, cb);
-    #endif
-        result->re = crealf(cr);
-        result->im = cimagf(cr);
+        result->re = creal(cr);
+        result->im = cimag(cr);
+
 }
 
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
-    // 1. Short-circuit: Fully handle 0 base for positive, zero, and negative powers
+    // handle 0 base for positive, zero, and negative powers
     if (a->re == 0.0 && a->im == 0.0) {
         if (b->re > 0.0) {
             result->re = 0.0;
@@ -4244,9 +4244,9 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         double complex cb = CMPLX(b->re, b->im);
         double complex cr = cpow(ca, cb);
     #endif
-    
-    result->re = creal(cr);
-    result->im = cimag(cr);
+        result->re = creal(cr);
+        result->im = cimag(cr);
+
 }
 
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
