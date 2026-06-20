@@ -19208,18 +19208,29 @@ public:
             fn_scope->add_symbol(rv_name, rv_sym);
             return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, rv_sym));
         }
-        ASR::ttype_t* iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-            al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
-            ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
-            false, false, false, false, false, nullptr, 0, false));
+        ASR::ttype_t* iface_type;
         if (update_existing) {
+            // Update the existing FunctionType in-place and share the source
+            // arg_types array directly (not a copy). This is critical for
+            // cross-scope type propagation: when contained functions' bodies
+            // are processed after the calling scope's body, in-place updates
+            // to the source array elements propagate to the iface automatically.
             existing_fn->m_symtab = fn_scope;
             fn_scope->asr_owner = (ASR::asr_t*)existing_fn;
-            existing_fn->m_function_signature = iface_type;
+            ASR::FunctionType_t* existing_ft = ASR::down_cast<ASR::FunctionType_t>(
+                existing_fn->m_function_signature);
+            existing_ft->m_arg_types = arg_type_arr;
+            existing_ft->n_arg_types = n_arg_types;
+            existing_ft->m_return_var_type = return_type;
+            iface_type = existing_fn->m_function_signature;
             existing_fn->m_args = args.p;
             existing_fn->n_args = args.size();
             existing_fn->m_return_var = return_var;
         } else {
+            iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
+                ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
+                false, false, false, false, false, nullptr, 0, false));
             ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_Function_t(
                     al, loc, fn_scope, s2c(al, iface_name),
