@@ -1747,6 +1747,7 @@ template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
+    std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -4736,6 +4737,7 @@ public:
                             nullptr, ASR::accessType::Public,
                             false, false, nullptr, nullptr, nullptr));
                     parent_scope->add_symbol(iface_name, iface_sym);
+                    implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(iface_sym));
                 }
                 ASR::ttype_t *ptr_type = ASRUtils::TYPE(
                     ASR::make_Pointer_t(al, loc, func_type));
@@ -9807,6 +9809,7 @@ public:
                             )
                         );
                         parent_scope->add_symbol(iface_name, existing);
+                        implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(existing));
                     } else {
                         // Reuse the existing iface function's FunctionType so that
                         // all variables sharing this iface reference the same object.
@@ -19242,7 +19245,9 @@ public:
                     nullptr, nullptr, nullptr));
             parent_scope->add_or_overwrite_symbol(iface_name, iface);
             proc_var->m_type_declaration = iface;
+            existing_fn = ASR::down_cast<ASR::Function_t>(iface);
         }
+        implicit_interfaces_to_sync.push_back(existing_fn);
         if (ASRUtils::is_pointer(proc_var->m_type)) {
             proc_var->m_type = ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, loc, iface_type));

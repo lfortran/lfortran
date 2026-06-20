@@ -9968,11 +9968,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         // variables might have stale m_type pointers.
         auto sync_func = [&](ASR::Function_t* func) {
             ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            std::string fname = func->m_name;
-            bool is_generated = false;
-            if (fname.rfind("~implicit_interface_", 0) == 0) is_generated = true;
-            if (fname.size() >= 15 && fname.substr(fname.size() - 15) == "_iface_implicit") is_generated = true;
-            if (!is_generated) return;
             if (ft->m_abi == ASR::abiType::Source || ft->m_abi == ASR::abiType::BindC) {
                 if (ft->n_arg_types == func->n_args) {
                     for (size_t i = 0; i < func->n_args; i++) {
@@ -9987,17 +9982,8 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                 }
             }
         };
-        for (auto& item : tu->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                sync_func(ASR::down_cast<ASR::Function_t>(item.second));
-            } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
-                ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(item.second);
-                for (auto& mod_item : mod->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::Function_t>(*mod_item.second)) {
-                        sync_func(ASR::down_cast<ASR::Function_t>(mod_item.second));
-                    }
-                }
-            }
+        for (ASR::Function_t* func : b.implicit_interfaces_to_sync) {
+            sync_func(func);
         }
     }
 
