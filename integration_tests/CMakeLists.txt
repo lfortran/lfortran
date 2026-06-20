@@ -3164,6 +3164,7 @@ RUN(NAME derived_type_member_procedure_call_01 LABELS gfortran llvm)
 RUN(NAME derived_type_member_procedure_call_02 LABELS gfortran llvm)
 RUN(NAME derived_type_shape_pointer_01 LABELS gfortran llvm)
 RUN(NAME derived_type_shape_pointer_02 LABELS gfortran llvm)
+RUN(NAME derived_type_shape_pointer_03 LABELS gfortran llvm)
 RUN(NAME derived_type_target_arg_01 LABELS gfortran llvm)
 RUN(NAME derived_type_target_arg_02 LABELS gfortran llvm)
 
