@@ -7299,6 +7299,19 @@ public:
                             "");
                         throw SemanticAbort();
                     }
+                    bool is_complex_assumed_size = false;
+                    if (x.m_vartype && AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+                        AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(x.m_vartype);
+                        is_complex_assumed_size =
+                            sym_type->m_type == AST::decl_typeType::TypeComplex ||
+                            sym_type->m_type == AST::decl_typeType::TypeDoubleComplex;
+                    }
+                    if (is_dimension_star && is_complex_assumed_size && !is_argument) {
+                        diag.semantic_error_label("Assumed size array '" + std::string(s.m_name) + "' must be a dummy argument.",
+                            {s.loc},
+                            "");
+                        throw SemanticAbort();
+                    }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                         s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
