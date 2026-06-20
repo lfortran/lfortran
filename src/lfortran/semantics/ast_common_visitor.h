@@ -16102,9 +16102,9 @@ public:
     }
 
     bool is_compiletime_implied_do_loop(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::symbol_t*>& loop_vars) {
-        if ((!ASRUtils::is_value_constant(idl->m_start) && !contains_loop_vars(idl->m_start, loop_vars)) ||
-            (!ASRUtils::is_value_constant(idl->m_end) && !contains_loop_vars(idl->m_end, loop_vars)) ||
-            (idl->m_increment != nullptr && !ASRUtils::is_value_constant(idl->m_increment) && !contains_loop_vars(idl->m_increment, loop_vars))) {
+        if ((!ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_start)) && !contains_loop_vars(idl->m_start, loop_vars)) ||
+            (!ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_end)) && !contains_loop_vars(idl->m_end, loop_vars)) ||
+            (idl->m_increment != nullptr && !ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_increment)) && !contains_loop_vars(idl->m_increment, loop_vars))) {
             return false;
         }
 
@@ -16115,7 +16115,7 @@ public:
                     return false;
                 }
             }
-            if (!ASRUtils::is_value_constant(expr)) {
+            if (!ASRUtils::is_value_constant(ASRUtils::expr_value(expr))) {
                 // may be possible that it contains a loop variable
                 if (!contains_loop_vars(expr, loop_vars)) {
                     return false;
