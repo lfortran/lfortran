@@ -23313,7 +23313,11 @@ public:
                                         !ASRUtils::is_pointer(arg_type) &&
                                         ASRUtils::extract_physical_type(arg_type) ==
                                             ASR::array_physical_typeType::FixedSizeArray;
-                                    if (!skip_load_for_fixed_size_array) {
+                                    bool skip_load_for_pointer_dummy_arg =
+                                        LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                        LLVM::is_llvm_pointer(*arg_type);
+                                    if (!skip_load_for_fixed_size_array &&
+                                            !skip_load_for_pointer_dummy_arg) {
                                         llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
                                         value = llvm_utils->CreateLoad2(value_type, value);
                                     }

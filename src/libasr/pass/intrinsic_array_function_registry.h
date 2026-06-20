@@ -1990,8 +1990,7 @@ namespace Shape {
             }
         } else if (is_struct_type_arg) {
             fill_func_arg_struct_type("source",
-                ASRUtils::duplicate_type_with_empty_dims(al,
-                    ASRUtils::type_get_past_pointer(arg_types[0])),
+                ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]),
                 new_args[0].m_value);
         } else {
             fill_func_arg("source", ASRUtils::duplicate_type_with_empty_dims(al,
