@@ -13439,13 +13439,12 @@ public:
             llvm_selector_type_ = arr_descr->get_array_type(
                 x.m_selector, selector_asr_type, selector_el_type);
         }
-#if LLVM_VERSION_MAJOR < 15
+        llvm::Type* expected_selector_ptr_type = llvm_selector_type_->getPointerTo();
         if (llvm_selector->getType()->isPointerTy() &&
-                llvm_selector->getType()->getPointerElementType() != llvm_selector_type_) {
+                llvm_selector->getType() != expected_selector_ptr_type) {
             llvm_selector = builder->CreateBitCast(
-                llvm_selector, llvm_selector_type_->getPointerTo());
+                llvm_selector, expected_selector_ptr_type);
         }
-#endif
         if (LLVM::is_llvm_pointer(*selector_asr_type)) {
             llvm_selector = llvm_utils->CreateLoad2(llvm_selector_type_, llvm_selector);
             selector_asr_type = ASRUtils::type_get_past_allocatable_pointer(selector_asr_type);
