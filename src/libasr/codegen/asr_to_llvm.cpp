@@ -7210,6 +7210,12 @@ public:
         llvm::Value *target_var = nullptr;
         ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
         uint32_t h = get_hash((ASR::asr_t*)v);
+        if constexpr (std::is_same<T, ASR::Function_t>::value) {
+            if (is_argument(v, x.m_args, x.n_args) &&
+                    ASRUtils::is_assumed_rank_array(v->m_type)) {
+                return;
+            }
+        }
         llvm::Type *type;
         int n_dims = 0, a_kind = 4;
         ASR::dimension_t* m_dims = nullptr;
@@ -13427,6 +13433,19 @@ public:
         llvm::Value* llvm_selector = tmp;
         ASR::ttype_t* selector_asr_type = ASRUtils::expr_type(x.m_selector);
         llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_asr_type, module.get());
+        if (ASRUtils::is_array(selector_asr_type)) {
+            llvm::Type* selector_el_type = llvm_utils->get_el_type(
+                x.m_selector, ASRUtils::extract_type(selector_asr_type), module.get());
+            llvm_selector_type_ = arr_descr->get_array_type(
+                x.m_selector, selector_asr_type, selector_el_type);
+        }
+#if LLVM_VERSION_MAJOR < 15
+        if (llvm_selector->getType()->isPointerTy() &&
+                llvm_selector->getType()->getPointerElementType() != llvm_selector_type_) {
+            llvm_selector = builder->CreateBitCast(
+                llvm_selector, llvm_selector_type_->getPointerTo());
+        }
+#endif
         if (LLVM::is_llvm_pointer(*selector_asr_type)) {
             llvm_selector = llvm_utils->CreateLoad2(llvm_selector_type_, llvm_selector);
             selector_asr_type = ASRUtils::type_get_past_allocatable_pointer(selector_asr_type);
