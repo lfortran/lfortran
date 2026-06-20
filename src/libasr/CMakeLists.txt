@@ -69,10 +69,11 @@ set(SRC
     pass/pass_list_expr.cpp
     pass/pass_compare.cpp
     pass/unique_symbols.cpp
-    pass/insert_deallocate.cpp
+    pass/intent_out_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/replace_with_compile_time_values.cpp
     pass/gpu_offload.cpp
+    pass/coarray.cpp
 
     codegen/asr_to_metal.cpp
     codegen/asr_to_cuda.cpp
@@ -147,6 +148,9 @@ endif()
 if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
     target_link_libraries(lfortran_utils p::llvm)
+    if (EMSCRIPTEN)
+        target_link_libraries(asr lldWasm lldCommon)
+    endif()
 endif()
 
 # Install the dwarf_convert.py and dat_convert.py

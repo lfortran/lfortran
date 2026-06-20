@@ -372,6 +372,16 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         }
     }
 
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        for (size_t i=0; i<x->n_args; i++) {
+            current_expr = &(x->m_args[i]);
+            replace_expr(*current_expr);
+        }
+        if (result_expr == nullptr) {
+            return;
+        }
+    }
+
     bool are_all_elements_scalars(ASR::expr_t** args, size_t n) {
         for( size_t i = 0; i < n; i++ ) {
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*args[i])) {
@@ -666,7 +676,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (fmt->n_args == 0) return;
         ASR::expr_t* val_arg = fmt->m_args[0];
         bool is_do_loop = ASR::is_a<ASR::ImpliedDoLoop_t>(*val_arg);
-        if (!is_do_loop && !ASRUtils::is_array(ASRUtils::expr_type(val_arg))) return;
+        bool is_array_section_unit = ASR::is_a<ASR::ArraySection_t>(*x.m_unit);
+
+        if (!is_do_loop && !ASRUtils::is_array(ASRUtils::expr_type(val_arg)) &&
+            !is_array_section_unit) return;
 
         // For formatted writes with plain array values whose format contains
         // a slash (/), skip the per-element loop transformation. The slash
@@ -700,6 +713,66 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if (sec->m_args[0].m_right) {
                 ub_lhs = sec->m_args[0].m_right;
             }
+        }
+
+        if (is_array_section_unit) {
+            ASR::ArraySection_t* sec = ASR::down_cast<ASR::ArraySection_t>(x.m_unit);
+            if (sec->n_args != 1) return;
+
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t* step = sec->m_args[0].m_step;
+            if (!step) step = b.i_idx(1, ikind);
+            ASR::expr_t* one = b.i_idx(1, ikind);
+            ASR::expr_t* zero = b.i_idx(0, ikind);
+
+            // section_size = (end - start) / step + 1
+            ASR::expr_t* section_size = b.Add(b.Div(b.Sub(ub_lhs, lb_lhs), step), one);
+
+            // Create temporary contiguous array: character(len) :: temp(section_size)
+            ASR::ttype_t* base_str_type = ASRUtils::type_get_past_array(
+                ASRUtils::expr_type(x.m_unit));
+            ASR::dimension_t* temp_dim = al.allocate<ASR::dimension_t>(1);
+            temp_dim->loc = loc;
+            temp_dim->m_start = one;
+            temp_dim->m_length = section_size;
+            ASR::ttype_t* temp_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
+                al, loc, base_str_type, temp_dim, 1,
+                ASR::array_physical_typeType::DescriptorArray));
+            std::string tmp_name = current_scope->get_unique_name("__fw_temp_");
+            ASR::expr_t* temp_var = b.Variable(current_scope, tmp_name,
+                temp_arr_type, ASR::intentType::Local);
+
+            // Loop index
+            Vec<ASR::expr_t*> idx_vars;
+            idx_vars.reserve(al, 1);
+            PassUtils::create_idx_vars(idx_vars, 1, loc, al, current_scope, "_fwcopy", ikind);
+            ASR::expr_t* loop_var = idx_vars[0];
+            ASR::expr_t* loop_end = b.Sub(section_size, one);
+
+            // Element references: orig = c(start + i*step), temp = temp(i+1)
+            ASR::expr_t* orig_elem = PassUtils::create_array_ref(unit,
+                b.Add(lb_lhs, b.Mul(loop_var, step)), al, current_scope);
+            ASR::expr_t* temp_elem = PassUtils::create_array_ref(temp_var,
+                b.Add(loop_var, one), al, current_scope);
+
+            // Copy in: do i = 0, section_size-1; temp(i+1) = c(start+i*step)
+            pass_result.push_back(al, b.DoLoop(loop_var, zero, loop_end,
+                {b.Assignment(temp_elem, orig_elem)}));
+
+            // Write to contiguous temp
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_FileWrite_t(
+                al, loc, x.m_label, temp_var,
+                x.m_iomsg, x.m_iostat, x.m_id,
+                x.m_values, x.n_values,
+                x.m_separator, x.m_end, x.m_overloaded,
+                x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous)));
+
+            // Copy back: do i = 0, section_size-1; c(start+i*step) = temp(i+1)
+            pass_result.push_back(al, b.DoLoop(loop_var, zero, loop_end,
+                {b.Assignment(orig_elem, temp_elem)}));
+
+            remove_original_stmt = true;
+            return;
         }
         
         ASR::expr_t* lb_rhs = nullptr;

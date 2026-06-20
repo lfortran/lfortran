@@ -6,6 +6,10 @@
 #include <set>
 #include <limits>
 #include <optional>
+#include <vector>
+#include <utility>
+#include <cstdint>
+#include <cstring>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
@@ -19,6 +23,7 @@
 #include <libasr/asr_expr_type_visitor.h>
 #include <libasr/asr_expr_value_visitor.h>
 #include <libasr/asr_walk_visitor.h>
+#include <libasr/runtime/lfortran_float128_quadmath.h>
 
 #include <complex>
 #include <string>
@@ -92,8 +97,72 @@ static inline std::string extract_real(const char *s) {
     std::string x = s;
     x = replace(x, "d", "e");
     x = replace(x, "D", "E");
+    // Fortran quad-precision exponent letter (e.g. 1.5q10 == 1.5e10 in real(16))
+    x = replace(x, "q", "e");
+    x = replace(x, "Q", "E");
     return x;
 }
+
+static inline std::string extract_real_16_str(const char *s) {
+    std::string r = extract_real(s);         // normalise d/D/q/Q → e/E
+    auto pos = r.rfind('_');
+    if (pos != std::string::npos) {
+        r = r.substr(0, pos);
+    }
+    return r;
+}
+
+// --- real(16) value access ---------------------------------------------------
+//
+// The `RealConstant_t.m_r` field is a 64-bit payload whose meaning depends on
+// the constant's kind:
+//   kind=4,8:  m_r is the IEEE-754 double approximation / exact value.
+//   kind=16:   m_r is bit-cast from a `uint8_t*` pointing at 16 arena-allocated
+//              bytes that hold the binary128 representation. Reading m_r as a
+//              `double` for kind=16 is undefined behaviour.
+//
+// All access to m_r MUST go through these kind-aware helpers (and through
+// `extract_value<double>`, which refuses for kind=16). Constructing a kind=16
+// constant from a decimal string is `make_RealConstant_r16_from_str`.
+
+// Read the 16 raw bytes of a kind=16 RealConstant (binary128, little-endian).
+// Asserts that the constant is kind=16. Lifetime: tied to the ASR allocator
+// that built the node.
+static inline const uint8_t* real_constant_get_r16_bytes(
+        const ASR::RealConstant_t* c) {
+    uintptr_t addr;
+    std::memcpy(&addr, &c->m_r, sizeof(addr));
+    return reinterpret_cast<const uint8_t*>(addr);
+}
+
+// Pack 16 bytes into the m_r payload (compose the pointer-encoded double).
+// Used by the literal handler and by f_t when constructing kind=16 constants.
+static inline double real_constant_pack_r16(const uint8_t* bytes) {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(bytes);
+    double m_r;
+    std::memcpy(&m_r, &addr, sizeof(addr));
+    return m_r;
+}
+
+// Read the binary128 value of a kind=16 RealConstant.
+static inline lf_float128 real_constant_get_r16(const ASR::RealConstant_t* c) {
+    lf_float128 v;
+    std::memcpy(v.bytes, real_constant_get_r16_bytes(c), 16);
+    return v;
+}
+
+// Build a kind=16 RealConstant from a binary128 value: allocate 16 bytes on the
+// ASR arena, copy the bytes in, and pack the pointer into m_r. This is the only
+// supported way to materialise a computed (non-literal) kind=16 constant.
+static inline ASR::expr_t* make_RealConstant_r16(Allocator& al,
+        const Location& loc, lf_float128 v, ASR::ttype_t* type) {
+    uint8_t* bytes = static_cast<uint8_t*>(al.alloc(16));
+    std::memcpy(bytes, v.bytes, 16);
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+        al, loc, real_constant_pack_r16(bytes), type));
+}
+
+// ----------------------------------------------------------------------------
 
 static inline double extract_real_4(const char *s) {
     std::string r_str = ASRUtils::extract_real(s);
@@ -355,6 +424,19 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
             return -1;
         }
     }
+}
+
+// Kind-aware RealConstant constructor from a `double`. For kind 4/8 the value
+// is stored directly; for kind=16 the double is widened to binary128 and the
+// pointer-encoded payload is produced via make_RealConstant_r16. This is the
+// single supported way to build a real constant from a host double when the
+// kind may be 16 (e.g. intrinsic-generated literals such as 0.0, 1.0, pi).
+static inline ASR::expr_t* make_RealConstant_util(Allocator& al,
+        const Location& loc, double value, ASR::ttype_t* type) {
+    if (extract_kind_from_ttype_t(type) == 16) {
+        return make_RealConstant_r16(al, loc, lf_f128_from_double(value), type);
+    }
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, value, type));
 }
 
 static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
@@ -1684,6 +1766,14 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
+        case ASR::exprType::ComplexRe: {
+            ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(a_value);
+            return is_modifiable_actual_argument_expr(re->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(a_value);
+            return is_modifiable_actual_argument_expr(im->m_arg);
+        }
         case ASR::exprType::DictItem: {
             return true;
         }
@@ -2092,6 +2182,13 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
         }
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
+            // kind=16 (real128) cannot be represented in `double m_r` — m_r
+            // is a pointer-encoded payload (see real_constant_get_r16_bytes).
+            // Refuse extraction so that constant-folding passes leave the
+            // value alone instead of dereferencing the pointer as a double.
+            if (ASRUtils::extract_kind_from_ttype_t(const_real->m_type) == 16) {
+                return false;
+            }
             if constexpr (std::is_same<T, double>::value){
                 value = (T) const_real->m_r;
             }
@@ -2404,6 +2501,7 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
             switch (r->m_kind) {
                 case 4: { res = "f32"; break; }
                 case 8: { res = "f64"; break; }
+                case 16: { res = "f128"; break; }
                 default: { throw LCompilersException("Float kind not supported"); }
             }
             return res;
@@ -2601,7 +2699,7 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 0, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, asr_type));
+            return ASRUtils::make_RealConstant_util(al, asr_type->base.loc, 0.0, asr_type);
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 0.0, 0.0, asr_type));
@@ -2634,7 +2732,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 1, asr_type));
         }
         case ASR::ttypeType::Real: {
-            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
+            return ASRUtils::make_RealConstant_util(al, asr_type->base.loc, 1.0, asr_type);
         }
         case ASR::ttypeType::Complex: {
             return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 0.0, asr_type));
@@ -2658,10 +2756,10 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
         case ASR::ttypeType::Integer: {
             int64_t val;
             switch (kind) {
-                case 1: val = std::numeric_limits<int8_t>::min()+1; break;
-                case 2: val = std::numeric_limits<int16_t>::min()+1; break;
-                case 4: val = std::numeric_limits<int32_t>::min()+1; break;
-                case 8: val = std::numeric_limits<int64_t>::min()+1; break;
+                case 1: val = std::numeric_limits<int8_t>::min(); break;
+                case 2: val = std::numeric_limits<int16_t>::min(); break;
+                case 4: val = std::numeric_limits<int32_t>::min(); break;
+                case 8: val = std::numeric_limits<int64_t>::min(); break;
                 default:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
             }
@@ -3408,27 +3506,35 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
     private:
-
     Allocator& al;
     ASR::call_arg_t* m_args;
     size_t n_args;
+    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> replacements;
 
     public:
-
     ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
         al(al_), m_args(m_args_), n_args(n_args_) {}
 
     void replace_FunctionParam(ASR::FunctionParam_t *x) {
         if (current_expr) {
             size_t n = x->m_param_number;
-            if (n >= n_args) {
-                LCOMPILERS_ASSERT("FunctionParam param number not in range.");
-            };
+            LCOMPILERS_ASSERT_MSG(n < n_args,"FunctionParam param number not in range.");
+            
+            replacements.push_back({current_expr, *current_expr});
             *current_expr = m_args[n].m_value;
         }
     }
 
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
+        
+
+        LCOMPILERS_ASSERT(replacements.empty()) 
+        ASR::expr_t** current_copy = current_expr;
+        current_expr = &t;
+        
+        replace_expr(t);
+        current_expr = current_copy;
+
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
         duplicator.success = true;
@@ -3436,10 +3542,10 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
         ASR::expr_t* tc = duplicator.duplicate_expr(t);
         LCOMPILERS_ASSERT(duplicator.success);
 
-        ASR::expr_t** current_copy = current_expr;
-        current_expr = &tc;
-        replace_expr(tc);
-        current_expr = current_copy;
+        for (auto& rep : replacements) {
+            *(rep.first) = rep.second; 
+        }
+        replacements.clear();
 
         return tc;
     }
@@ -4228,6 +4334,10 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
         if (*p == 'd' || *p == 'D') {
             // Double precision
             return 8;
+        }
+        if (*p == 'q' || *p == 'Q') {
+            // Quad precision (real(16))
+            return 16;
         }
         p++;
     }
@@ -7625,6 +7735,23 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = n_args > 0;
+    // Compile-time aggregation of real(16) arrays into a packed ArrayConstant
+    // is not supported: set_ArrayConstant_data / fetch_ArrayConstant_value only
+    // pack float/double element buffers, whereas a kind=16 RealConstant stores
+    // its binary128 value behind a pointer in m_r (see real_constant_get_r16_bytes
+    // in asr_utils.h). Let the array initialise at runtime instead — emits an
+    // ArrayConstructor that lowers element-by-element via fp128 store.
+    {
+        ASR::ttype_t* elt_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(a_type));
+        if (ASRUtils::is_array(elt_type)) {
+            elt_type = ASR::down_cast<ASR::Array_t>(elt_type)->m_type;
+        }
+        if (ASRUtils::is_real(*elt_type) &&
+            ASRUtils::extract_kind_from_ttype_t(elt_type) == 16) {
+            all_expr_evaluated = false;
+        }
+    }
     bool is_array_item_constant = n_args > 0 && (ASR::is_a<ASR::IntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::UnsignedIntegerConstant_t>(*a_args[0]) ||
                                 ASR::is_a<ASR::RealConstant_t>(*a_args[0]) ||
@@ -7676,9 +7803,71 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
 
-    return is_array_item_constant && all_expr_evaluated ? (ASR::asr_t*) value :
-            ASR::make_ArrayConstructor_t(al, a_loc, a_args, n_args, a_type,
-            value, a_storage_format, a_struct_var);
+    if (is_array_item_constant && all_expr_evaluated) {
+        return (ASR::asr_t*) value;
+    }
+
+    ASR::asr_t* arr_ctor_asr = ASR::make_ArrayConstructor_t(
+        al, a_loc, a_args, n_args, a_type, value, a_storage_format, a_struct_var);
+    ASR::ArrayConstructor_t* arr_ctor = ASR::down_cast<ASR::ArrayConstructor_t>(
+        ASRUtils::EXPR(arr_ctor_asr));
+    int64_t ctor_size_val = 0;
+    bool size_known = false;
+    bool all_scalars = true;
+    bool can_compute_size = true;
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t* arg = a_args[i];
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstructor_t>(*arg) ||
+            ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+            all_scalars = false;
+        }
+        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+            all_scalars = false;
+            if (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(arg))) {
+                can_compute_size = false;
+                break;
+            }
+        }
+    }
+    if (all_scalars) {
+        ctor_size_val = static_cast<int64_t>(n_args);
+        size_known = true;
+    } else if (can_compute_size) {
+        ASR::expr_t* ctor_size_expr = ASRUtils::get_ArrayConstructor_size(al, arr_ctor);
+        if (ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
+            size_known = true;
+        }
+    }
+    if (size_known && ctor_size_val > 0) {
+        ASR::ttype_t* ctor_type = ASRUtils::type_get_past_pointer(arr_ctor->m_type);
+        if (ASR::is_a<ASR::Array_t>(*ctor_type)) {
+            ASR::Array_t* ctor_arr = ASR::down_cast<ASR::Array_t>(ctor_type);
+            if (ctor_arr->n_dims == 1) {
+                int64_t dim_len = 0;
+                bool has_len = ctor_arr->m_dims[0].m_length != nullptr &&
+                    ASRUtils::extract_value(ASRUtils::expr_value(ctor_arr->m_dims[0].m_length), dim_len);
+                if (!has_len) {
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim = ctor_arr->m_dims[0];
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+                    if (dim.m_start == nullptr) {
+                        dim.m_start = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, a_loc, 1, int_type));
+                    }
+                    dim.m_length = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, a_loc, ctor_size_val, int_type));
+                    dims.push_back(al, dim);
+                    arr_ctor->m_type = ASRUtils::TYPE(ASR::make_Array_t(
+                        al, a_loc, ctor_arr->m_type, dims.p, dims.size(),
+                        ctor_arr->m_physical_type));
+                }
+            }
+        }
+    }
+
+    return arr_ctor_asr;
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
@@ -8036,32 +8225,44 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // type is a proper Array, not a bare element type.
                     dimensions = &dimension_;
                 } else if (current_scope) {
-                    // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                    // Self is already in a_args (at the PASS position), so
-                    // FunctionParam indices align 1:1 with a_args indices.
-                    ReplaceFunctionParamWithArg r(al, a_args, n_args);
-                    SetChar temp_function_dependencies;
-                    CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
-                    bool valid_symbols = true;
-                    for (size_t i = 0; i < dimension_.size(); i++) {
-                        dimension_.p[i].loc = arg->base.loc;
-                        dimension_.p[i].m_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
-                        dimension_.p[i].m_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
-                        valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+                      // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
+                      // Self is already in a_args (at the PASS position), so
+                      // FunctionParam indices align 1:1 with a_args indices.
+                      ReplaceFunctionParamWithArg r(al, a_args, n_args);
+                      SetChar temp_function_dependencies;
+                      CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
+    
+                      // 1. Initialize the caller's duplicator
+                      ASRUtils::ExprStmtDuplicator caller_dup(al);
+                      caller_dup.allow_procedure_calls = true;
+                      caller_dup.success = true;
 
-                        if (!valid_symbols) {
+                      bool valid_symbols = true;
+                      for (size_t i = 0; i < dimension_.size(); i++) {
+                          dimension_.p[i].loc = arg->base.loc;
+        
+                          // 2. Safely extract the replaced memory (optimized or mutated)
+                          ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
+                          ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
+        
+                          // 3. Caller takes responsibility for duplication to prevent the DAG crash
+                          dimension_.p[i].m_length = (replaced_length == dimension_.p[i].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
+                          dimension_.p[i].m_start = (replaced_start == dimension_.p[i].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
+                          valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+
+                          if (!valid_symbols) {
                             break;
+                          }
                         }
-                    }
-                    // If the symbols are valid then include the dimension in ArrayPhysicalCast
-                    if (valid_symbols) {
-                        dimensions = &dimension_;
-                        if (current_function_dependencies.has_value()) {
+                          // If the symbols are valid then include the dimension in ArrayPhysicalCast
+                       if (valid_symbols) {
+                          dimensions = &dimension_;
+                           if (current_function_dependencies.has_value()) {
                             for (size_t j = 0; j < temp_function_dependencies.n; j++) {
                                 current_function_dependencies->get().push_back(al, temp_function_dependencies[j]);
                             }
-                        }
-                    } else {
+                          }
+                        } else {
                         dimensions = nullptr;
                     }
                 }

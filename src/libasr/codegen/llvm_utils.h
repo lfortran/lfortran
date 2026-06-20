@@ -171,7 +171,11 @@ class ASRToLLVMVisitor;
         return llvm::ConstantExpr::getBitCast(GV, llvm::Type::getInt8PtrTy(context, AddressSpace));
 #else
         // LLVM 8+: Use the standard IRBuilder method
+#if LLVM_VERSION_MAJOR >= 20
+        return builder.CreateGlobalString(Str, Name, AddressSpace);
+#else
         return builder.CreateGlobalStringPtr(Str, Name, AddressSpace);
+#endif
 #endif
     }
 
@@ -2860,6 +2864,17 @@ class ASRToLLVMVisitor;
                 llvm::Value* array_data_ptr, llvm::Value* size,
                 ASR::ttype_t* alloc_type, bool realloc, llvm::Module* module,
                 llvm::Value* string_len = nullptr);
+            /**
+             * Description : Invoke a call to struct's FINAL procedure
+             * Details :-
+             * - Loop on struct's m_member looking for final function with rank-0
+             * - Invoke a call to it
+             * @param ptr llvm SSA to struct (struct_name*)
+             * @param ty  type of the struct
+             * @param struct_sym struct symbol of targetted symbol
+             * NOTICE : It doesn't handle arrays
+            */
+            void call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
     };
 
     class LLVMTuple {

@@ -186,20 +186,18 @@
                                                         (ArrayConstructor
                                                             [(Var 13 build_dirs)
                                                             (Var 13 temp)]
-                                                            (Allocatable
-                                                                (Array
-                                                                    (StructType
-                                                                        [(Allocatable
-                                                                            (String 1 () DeferredLength DescriptorString)
-                                                                        )]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
-                                                                    )
-                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                    ())]
-                                                                    DescriptorArray
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
                                                                 )
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                             ColMajor

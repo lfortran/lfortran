@@ -35,30 +35,6 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            x:
-                                                (Variable
-                                                    4
-                                                    x
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
                                                 )
                                         })
                                     sub2

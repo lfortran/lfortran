@@ -74,6 +74,7 @@ struct PassOptions {
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
+    bool coarray = false;
     std::vector<std::string> vector_of_time_report;
 };
 

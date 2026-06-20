@@ -794,7 +794,7 @@ public:
                 x.m_storage !=ASR::Parameter &&
                 !ASRUtils::is_pointer(x.m_type) /*Tolerate pointer*/){
                 require(x.m_intent != ASR::Local,
-                    "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT).");
+                    "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT) or a function return variable.");
             }
         }
         if (x.m_symbolic_value)
@@ -1781,6 +1781,26 @@ public:
         }
 
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
+    }
+
+    void visit_SyncAll(const SyncAll_t &x) {
+        if (x.m_stat) {
+            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
+            require(!ASRUtils::is_array(stat_type),
+                "SyncAll::m_stat must be a scalar");
+            require(ASRUtils::is_integer(*stat_type),
+                "SyncAll::m_stat must be of integer type, found " +
+                std::string(ASRUtils::get_type_code(stat_type)));
+        }
+        if (x.m_errmsg) {
+            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
+            require(!ASRUtils::is_array(errmsg_type),
+                "SyncAll::m_errmsg must be a scalar");
+            require(ASRUtils::is_character(*errmsg_type),
+                "SyncAll::m_errmsg must be of string type, found " +
+                std::string(ASRUtils::get_type_code(errmsg_type)));
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_SyncAll(x);
     }
 
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
