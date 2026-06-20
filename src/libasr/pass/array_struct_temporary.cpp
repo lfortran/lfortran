@@ -420,7 +420,7 @@ bool set_allocation_size(
                 len_allocte_expr = str_type->m_len;
             } else {
                 ASRUtils::ASRBuilder b(al, loc);
-                len_allocte_expr = b.StringLen(value);
+                len_allocte_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc, value, ASRUtils::expr_type(value), b);
             }
         }
         return true;
@@ -2509,6 +2509,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ;
         }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
+    }
+
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        for (size_t i=0; i<x->n_args; i++) {
+            current_expr = &(x->m_args[i]);
+            replace_expr(*current_expr);
+        }
     }
 
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
