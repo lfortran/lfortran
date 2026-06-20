@@ -26320,20 +26320,14 @@ public:
             builder->CreateStore(builder->CreateSExtOrTrunc(rank, index_type), arr_descr->get_dimension_size(dim_struct, false));
             builder->CreateStore(llvm::ConstantInt::get(index_type, 1), arr_descr->get_stride(dim_struct, false));
             
-            llvm::BasicBlock *loop_cond = llvm::BasicBlock::Create(context, "bound_loop_cond", builder->GetInsertBlock()->getParent());
-            llvm::BasicBlock *loop_body = llvm::BasicBlock::Create(context, "bound_loop_body", builder->GetInsertBlock()->getParent());
-            llvm::BasicBlock *loop_end = llvm::BasicBlock::Create(context, "bound_loop_end", builder->GetInsertBlock()->getParent());
-            
             llvm::Value *i_ptr = builder->CreateAlloca(builder->getInt32Ty());
             builder->CreateStore(builder->getInt32(0), i_ptr);
-            builder->CreateBr(loop_cond);
             
-            builder->SetInsertPoint(loop_cond);
-            llvm::Value *i = builder->CreateLoad(builder->getInt32Ty(), i_ptr);
-            llvm::Value *cond = builder->CreateICmpSLT(i, builder->CreateSExtOrTrunc(rank, builder->getInt32Ty()));
-            builder->CreateCondBr(cond, loop_body, loop_end);
-            
-            builder->SetInsertPoint(loop_body);
+            llvm_utils->create_loop("bound_loop", [&]() {
+                llvm::Value *i = builder->CreateLoad(builder->getInt32Ty(), i_ptr);
+                return builder->CreateICmpSLT(i, builder->CreateSExtOrTrunc(rank, builder->getInt32Ty()));
+            }, [&]() {
+                llvm::Value *i = builder->CreateLoad(builder->getInt32Ty(), i_ptr);
             llvm::Value* arr_dim_desc_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
             llvm::Value* arr_dim_struct = arr_descr->get_pointer_to_dimension_descriptor(arr_dim_desc_ptr, i);
             
@@ -26353,10 +26347,9 @@ public:
             
             llvm::Value *i_next = builder->CreateAdd(i, builder->getInt32(1));
             builder->CreateStore(i_next, i_ptr);
-            builder->CreateBr(loop_cond);
+        });
             
-            builder->SetInsertPoint(loop_end);
-            tmp = res_desc;
+        tmp = res_desc;
             return;
         }
 
