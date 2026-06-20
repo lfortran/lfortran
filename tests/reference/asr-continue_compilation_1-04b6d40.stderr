@@ -488,6 +488,12 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
 751 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Function `c_loc` is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:848:13
+    |
+848 |             type(c_ptr) :: ptr = c_loc(target_value)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |

@@ -2159,7 +2159,12 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::expr_t* expr_dt = nullptr;
     if(!sym) {
         if( ASR::is_a<ASR::StructType_t>(*target_type) ) {
-            ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target)));
+            ASR::symbol_t* target_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(target));
+            if (target_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*target_sym)) {
+                return false;
+            }
+            ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(target_sym);
             sym = target_struct->m_symtab->resolve_symbol("~assign");
             while (sym == nullptr && target_struct->m_parent != nullptr) {
                 target_struct = ASR::down_cast<ASR::Struct_t>(
@@ -2168,7 +2173,12 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
             }
             expr_dt = target;
         } else if( ASR::is_a<ASR::StructType_t>(*value_type) ) {
-            ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value)));
+            ASR::symbol_t* value_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(value));
+            if (value_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*value_sym)) {
+                return false;
+            }
+            ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(value_sym);
             sym = value_struct->m_symtab->resolve_symbol("~assign");
             while (sym == nullptr && value_struct->m_parent != nullptr) {
                 value_struct = ASR::down_cast<ASR::Struct_t>(

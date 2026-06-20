@@ -831,6 +831,7 @@ RUN(NAME arrays_reshape_40 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_41 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME arrays_reshape_42 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_43 LABELS gfortran llvm)
+RUN(NAME arrays_reshape_44 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
@@ -2831,6 +2832,7 @@ RUN(NAME string_115 LABELS gfortran llvm)
 RUN(NAME string_116 LABELS gfortran llvm)
 RUN(NAME string_117 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_118 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_array_concat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME substring_read LABELS gfortran llvm)
 
@@ -3373,6 +3375,7 @@ RUN(NAME implied_do_loops38 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-
 RUN(NAME implied_do_loops39 LABELS gfortran llvm)
 RUN(NAME implied_do_loops40 LABELS gfortran llvm)
 RUN(NAME implied_do_loops41 LABELS gfortran llvm)
+RUN(NAME implied_do_loops42 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)

@@ -4226,6 +4226,40 @@ public:
         return iterations * elements_per_iteration;
     }
 
+    // Returns the PARAMETER (named constant) Variable referenced by a
+    // DATA-statement object expression, walking through struct-member and
+    // array-index accessors and into the elements of a data implied-do-loop,
+    // or nullptr when the object does not refer to a named constant.
+    ASR::Variable_t* data_stmt_object_parameter(ASR::expr_t* expr) {
+        if (!expr) return nullptr;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                return v->m_storage == ASR::storage_typeType::Parameter ? v
+                                                                       : nullptr;
+            }
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return data_stmt_object_parameter(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            return data_stmt_object_parameter(
+                ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+        }
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::Variable_t* v = data_stmt_object_parameter(idl->m_values[i]);
+                if (v) return v;
+            }
+        }
+        return nullptr;
+    }
+
     void visit_DataStmt(const AST::DataStmt_t &x) {
         // The DataStmt is a statement, so it occurs in the BodyVisitor.
         // We add its contents into the symbol table here. This visitor
@@ -4261,6 +4295,24 @@ public:
             a->m_value = expanded_values.data();
             a->n_value = expanded_values.size();
             
+            // A PARAMETER (named constant) is initialized by its declaration
+            // and must not be (re-)initialized through a DATA statement, in
+            // whole or by component.
+            for (size_t j = 0; j < a->n_object; j++) {
+                this->visit_expr(*a->m_object[j]);
+                ASR::expr_t* object = ASRUtils::EXPR(tmp);
+                ASR::Variable_t* param_var = data_stmt_object_parameter(object);
+                if (param_var) {
+                    diag.add(Diagnostic(
+                        "PARAMETER '" + std::string(param_var->m_name)
+                        + "' shall not appear in a DATA statement",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {object->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+
             // Now we are dealing with just one item, there are four cases possible:
             // data x / 1, 2, 3 /       ! x must be an array
             // data x / 1 /             ! x must be a scalar (integer)
@@ -7591,7 +7643,14 @@ public:
                                                 func_call->m_keywords, func_call->n_keywords,
                                                 sym_found, is_struct_const));
                             } else {
-                                LCOMPILERS_ASSERT(false);
+                                std::string func_name = func_call->m_func ?
+                                    std::string(func_call->m_func) : "function";
+                                diag.add(Diagnostic(
+                                    "Function `" + func_name + "` is not permitted in an initialization expression",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
                             }
                         }
                     } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
@@ -7819,7 +7878,8 @@ public:
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter &&
-                        init_expr && ASRUtils::is_array(type)) {
+                        init_expr && ASRUtils::is_array(type) &&
+                        ASRUtils::is_array(ASRUtils::expr_type(init_expr))) {
                         ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
                         ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
                             ASRUtils::expr_type(init_expr));
@@ -8406,7 +8466,8 @@ public:
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter) {
-                        if( ASRUtils::is_array(type) ) {
+                        if( ASRUtils::is_array(type) && init_expr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(init_expr)) ) {
                             ASR::array_physical_typeType var_ptype = ASRUtils::extract_physical_type(type);
                             ASR::array_physical_typeType init_expr_ptype = ASRUtils::extract_physical_type(
                                 ASRUtils::expr_type(init_expr));
@@ -16152,9 +16213,9 @@ public:
     }
 
     bool is_compiletime_implied_do_loop(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::symbol_t*>& loop_vars) {
-        if ((!ASRUtils::is_value_constant(idl->m_start) && !contains_loop_vars(idl->m_start, loop_vars)) ||
-            (!ASRUtils::is_value_constant(idl->m_end) && !contains_loop_vars(idl->m_end, loop_vars)) ||
-            (idl->m_increment != nullptr && !ASRUtils::is_value_constant(idl->m_increment) && !contains_loop_vars(idl->m_increment, loop_vars))) {
+        if ((!ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_start)) && !contains_loop_vars(idl->m_start, loop_vars)) ||
+            (!ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_end)) && !contains_loop_vars(idl->m_end, loop_vars)) ||
+            (idl->m_increment != nullptr && !ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_increment)) && !contains_loop_vars(idl->m_increment, loop_vars))) {
             return false;
         }
 
@@ -16165,7 +16226,7 @@ public:
                     return false;
                 }
             }
-            if (!ASRUtils::is_value_constant(expr)) {
+            if (!ASRUtils::is_value_constant(ASRUtils::expr_value(expr))) {
                 // may be possible that it contains a loop variable
                 if (!contains_loop_vars(expr, loop_vars)) {
                     return false;
