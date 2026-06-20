@@ -9,13 +9,14 @@ module template_array_01_m
     end requirement
 
     template array_tmpl{t}
-        require :: r{t}
+        require r{t}
         private
         public :: insert_t
     contains
         function insert_t(n, lst, i) result(r)
             integer, intent(in) :: n
-            type(t), intent(in) :: lst(n), i
+            type(t), intent(inout) :: lst(n)
+            type(t), intent(in) :: i
             type(t) :: r
             lst(1) = i
             r = lst(1)

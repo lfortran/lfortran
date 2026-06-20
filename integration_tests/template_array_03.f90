@@ -28,21 +28,21 @@ module template_array_03_m
     requirement operations{t, plus_t, zero_t, mult_t}
 
         deferred type :: t
+        deferred interface
+            pure function plus_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
 
-        pure function plus_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
+            pure function zero_t() result(result)
+                type(t) :: result
+            end function
 
-        pure function zero_t() result(result)
-            type(t) :: result
-        end function
-
-        pure function mult_t(l, r) result(result)
-            type(t), intent(in) :: l, r
-            type(t) :: result
-        end function
-
+            pure function mult_t(l, r) result(result)
+                type(t), intent(in) :: l, r
+                type(t) :: result
+            end function
+        end interface
     end requirement
 !
     template array_tmpl{t, plus_t, zero_t, mult_t}
@@ -54,7 +54,7 @@ module template_array_03_m
     contains
 
         subroutine mymatmul_t(i, j, k, a, b, r)
-            integer, parameter, intent(in) :: i, j, k
+            integer, intent(in) :: i, j, k
             type(t), intent(in) :: a(i,j), b(j,k)
             type(t), intent(out) :: r(i,k)
             integer :: x, y, z

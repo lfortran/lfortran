@@ -3,14 +3,14 @@ module template_array_04b_m
     private
     public :: test_reverse
 
-    requirement default_behavior(t)
-        type, deferred :: t
+    requirement default_behavior{t}
+        deferred type :: t
     end requirement
 
 contains
 
     subroutine swap{T}(x, y)
-        require :: default_behavior(T)
+        require default_behavior{T}
         type(T), intent(inout) :: x, y
         type(T) :: tmp
         tmp = x

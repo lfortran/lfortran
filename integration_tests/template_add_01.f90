@@ -1,14 +1,16 @@
 module template_add_01_m
     implicit none
     private
-    public :: add_t, test_template
+    public :: add_t
 
     requirement R{T, F}
         deferred type :: T
-        function F(x, y) result(z)
-            type(T), intent(in) :: x, y
-            type(T) :: z
-        end function
+        deferred interface
+            function F(x, y) result(z)
+                type(T), intent(in) :: x, y
+                type(T) :: z
+            end function
+        end interface
     end requirement
 
     template add_t{T, F}
