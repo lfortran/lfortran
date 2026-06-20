@@ -305,7 +305,7 @@ program continue_compilation_1
         integer, len :: n
         real :: data(n)
     end type
-
+    complex :: assumed_cmp(*)
 
 
 

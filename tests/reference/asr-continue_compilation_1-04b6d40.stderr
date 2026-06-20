@@ -370,6 +370,12 @@ semantic error: LEN parameters in parameterized derived types are not supported 
 305 |         integer, len :: n
     |         ^^^^^^^^^^^^^^^^^ 
 
+semantic error: Assumed size array 'assumed_cmp' must be a dummy argument.
+   --> tests/errors/continue_compilation_1.f90:308:16
+    |
+308 |     complex :: assumed_cmp(*)
+    |                ^^^^^^^^^^^^^^ 
+
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
