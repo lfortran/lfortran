@@ -13004,6 +13004,24 @@ public:
                         Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
+            bool is_assumed_rank = ASR::is_a<ASR::Array_t>(*v_Var_type) &&
+                ASR::down_cast<ASR::Array_t>(v_Var_type)->m_physical_type ==
+                    ASR::array_physical_typeType::AssumedRankArray;
+            if (is_assumed_rank) {
+                ASR::dimension_t tmp_dim;
+                tmp_dim.loc = x.base.base.loc;
+                tmp_dim.m_start = nullptr;
+                tmp_dim.m_length = nullptr;
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                dims.push_back(al, tmp_dim);
+                ASR::ttype_t *ret_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const)),
+                    dims.p, dims.size(), ASR::abiType::Source, false,
+                    ASR::array_physical_typeType::DescriptorArray);
+                return (ASR::asr_t*)(ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, nullptr, ret_type,
+                                              bound, nullptr));
+            }
             Vec<ASR::expr_t*> arr_args;
             arr_args.reserve(al, 0);
             ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
