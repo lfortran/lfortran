@@ -4,17 +4,19 @@ module template_commutative_m
 
     requirement magma_r{T, bin, equal}
         deferred type :: T
-        pure elemental function bin(x, y) result(bin)
-            type(T), intent(in) :: x
-            type(T), intent(in) :: y
-            type(T) :: bin
-        end function
-        pure elemental function equal(x, y) result(equal)
-            type(T), intent(in) :: x
-            type(T), intent(in) :: y
-            ! type(T) :: equal
-            logical :: equal
-        end function
+        deferred interface
+            pure elemental function bin(x, y) result(bin)
+                type(T), intent(in) :: x
+                type(T), intent(in) :: y
+                type(T) :: bin
+            end function
+            pure elemental function equal(x, y) result(equal)
+                type(T), intent(in) :: x
+                type(T), intent(in) :: y
+                ! type(T) :: equal
+                logical :: equal
+            end function
+        end interface
     end requirement
 
     template commutative_prop{T, bin, equal}

@@ -8,10 +8,12 @@ module template_add_01b_m
         interface operator (+)
             procedure F
         end interface
-        function F(x, y) result(z)
-            type(T), intent(in) :: x, y
-            type(T) :: z
-        end function
+        deferred interface
+            function F(x, y) result(z)
+                type(T), intent(in) :: x, y
+                type(T) :: z
+            end function
+        end interface
     end requirement
 
     template add_t{T, F}

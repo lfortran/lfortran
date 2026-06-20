@@ -6,10 +6,12 @@ module template_array_05_m
 
     requirement op{t, plus_t}
         deferred type :: t
-        pure elemental function plus_t(l, r) result(rs)
-            type(t), intent(in) :: l, r
-            type(t) :: rs
-        end function
+        deferred interface
+            pure elemental function plus_t(l, r) result(rs)
+                type(t), intent(in) :: l, r
+                type(t) :: rs
+            end function
+        end interface
     end requirement
 
     template vector_t{t, plus_t, n}

@@ -7,18 +7,22 @@ module monoid_m
 
     requirement monoid{T, combine, empty}
         require semigroup{T, combine}
-        pure function empty() result(res)
-            type(T) :: res
-        end function
+        deferred interface
+            pure function empty() result(res)
+                type(T) :: res
+            end function
+        end interface
     end requirement
 
     requirement extended_monoid{T, combine, sconcat, stimes, empty, mconcat}
         require extended_semigroup{T, combine, sconcat, stimes}
         require monoid{T, combine, empty}
-        pure function mconcat(list) result(combined)
-            type(T), intent(in) :: list(:)
-            type(T) :: combined
-        end function
+        deferred interface
+            pure function mconcat(list) result(combined)
+                type(T), intent(in) :: list(:)
+                type(T) :: combined
+            end function
+        end interface
     end requirement
 
     template derive_extended_monoid{T, combine, empty}

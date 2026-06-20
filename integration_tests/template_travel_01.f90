@@ -9,27 +9,29 @@ module template_travel_01_travel
         deferred type :: T
         deferred type :: S
 
-        pure function plus_D(l, r) result(total)
-            type(D), intent(in) :: l, R
-            type(D) :: total
-        end function
+        deferred interface
+            pure function plus_D(l, r) result(total)
+                type(D), intent(in) :: l, R
+                type(D) :: total
+            end function
 
-        pure function plus_T(l, r) result(total)
-            type(T), intent(in) :: l, R
-            type(T) :: total
-        end function
+            pure function plus_T(l, r) result(total)
+                type(T), intent(in) :: l, R
+                type(T) :: total
+            end function
 
-        pure function D_divided_by_T(n, d) result(quotient)
-            type(D), intent(in) :: n
-            type(T), intent(in) :: d
-            type(S) :: quotient
-        end function
+            pure function D_divided_by_T(n, d) result(quotient)
+                type(D), intent(in) :: n
+                type(T), intent(in) :: d
+                type(S) :: quotient
+            end function
 
-        pure function D_divided_by_S(n, d) result(quotient)
-            type(D), intent(in) :: n
-            type(S), intent(in) :: d
-            type(T) :: quotient
-        end function
+            pure function D_divided_by_S(n, d) result(quotient)
+                type(D), intent(in) :: n
+                type(S), intent(in) :: d
+                type(T) :: quotient
+            end function
+        end interface
     end requirement
 
     template travel_tmpl{D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}

@@ -9,11 +9,13 @@ module template_travel_01b_m
         deferred type :: B
         deferred type :: C
 
-        pure function op(l, r) result(res)
-            type(A), intent(in) :: l
-            type(B), intent(in) :: r
-            type(C) :: res
-        end function
+        deferred interface
+            pure function op(l, r) result(res)
+                type(A), intent(in) :: l
+                type(B), intent(in) :: r
+                type(C) :: res
+            end function
+        end interface
     end requirement
 
     template travel_tmpl{D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}

@@ -6,10 +6,12 @@ module template_matrix_01_m
 
     requirement elemental_op{t, op}
         deferred type :: t
-        pure elemental function op(l, r) result(rs)
-            type(t), intent(in) :: l, r
-            type(t) :: rs
-        end function
+        deferred interface
+            pure elemental function op(l, r) result(rs)
+                type(t), intent(in) :: l, r
+                type(t) :: rs
+            end function
+        end interface
     end requirement
 
     template matrix_t{t, plus, times, n}

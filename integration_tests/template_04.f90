@@ -6,23 +6,27 @@ module template_04_semigroup
 
     requirement semigroup{T, combine}
         deferred type :: T
-        elemental function combine(x, y) result(combined)
-            type(T), intent(in) :: x, y
-            type(T) :: combined
-        end function
+        deferred interface
+            elemental function combine(x, y) result(combined)
+                type(T), intent(in) :: x, y
+                type(T) :: combined
+            end function
+        end interface
     end requirement
 
     requirement extended_semigroup{T, combine, sconcat, stimes}
         require semigroup{T, combine}
-        pure function sconcat(list) result(combined)
-            type(T), intent(in) :: list(:) !! Must contain at least one element
-            type(T) :: combined
-        end function
-        elemental function stimes(n, a) result(repeated)
-            integer, intent(in) :: n
-            type(T), intent(in) :: a
-            type(T) :: repeated
-        end function
+        deferred interface
+            pure function sconcat(list) result(combined)
+                type(T), intent(in) :: list(:) !! Must contain at least one element
+                type(T) :: combined
+            end function
+            elemental function stimes(n, a) result(repeated)
+                integer, intent(in) :: n
+                type(T), intent(in) :: a
+                type(T) :: repeated
+            end function
+        end interface
     end requirement
 
     template derive_extended_semigroup{T, combine}
@@ -67,18 +71,22 @@ module template_04_monoid
 
     requirement monoid{T, combine, empty}
         require semigroup{T, combine}
-        pure function empty()
-            type(T) :: empty
-        end function
+        deferred interface
+            pure function empty()
+                type(T) :: empty
+            end function
+        end interface
     end requirement
 
     requirement extended_monoid{T, combine, sconcat, stimes, empty, mconcat}
         require extended_semigroup{T, combine, sconcat, stimes}
         require monoid{T, combine, empty}
-        pure function mconcat(list) result(combined)
-            type(T), intent(in) :: list(:)
-            type(T) :: combined
-        end function
+        deferred interface
+            pure function mconcat(list) result(combined)
+                type(T), intent(in) :: list(:)
+                type(T) :: combined
+            end function
+        end interface
     end requirement
 
     template derive_extended_monoid{T, combine, empty}
@@ -130,18 +138,22 @@ module template_04_unitring
 
     requirement unit_ring_only_minus{T, plus, zero, mult, one, minus}
         require semiring{T, plus, zero, mult, one}
-        elemental function minus(x, y) result(difference)
-            type(T), intent(in) :: x, y
-            type(T) :: difference
-        end function
+        deferred interface
+            elemental function minus(x, y) result(difference)
+                type(T), intent(in) :: x, y
+                type(T) :: difference
+            end function
+        end interface
     end requirement
 
     requirement unit_ring_only_negate{T, plus, zero, mult, one, negate}
         require semiring{T, plus, zero, mult, one}
-        elemental function negate(x) result(negated)
-            type(T), intent(in) :: x
-            type(T) :: negated
-        end function
+        deferred interface
+            elemental function negate(x) result(negated)
+                type(T), intent(in) :: x
+                type(T) :: negated
+            end function
+        end interface
     end requirement
 
     requirement unit_ring{T, plus, zero, mult, one, minus, negate}
@@ -189,18 +201,22 @@ module template_04_field
 
     requirement field_only_division{T, plus, zero, mult, one, minus, negate, divide}
         require unit_ring{T, plus, zero, mult, one, minus, negate}
-        elemental function divide(x, y) result(quotient)
-            type(T), intent(in) :: x, y
-            type(T) :: quotient
-        end function
+        deferred interface
+            elemental function divide(x, y) result(quotient)
+                type(T), intent(in) :: x, y
+                type(T) :: quotient
+            end function
+        end interface
     end requirement
 
     requirement field_only_inverse{T, plus, zero, mult, one, minus, negate, invert}
         require unit_ring{T, plus, zero, mult, one, minus, negate}
-        elemental function invert(x) result(inverse)
-            type(T), intent(in) :: x
-            type(T) :: inverse
-        end function
+        deferred interface
+            elemental function invert(x) result(inverse)
+                type(T), intent(in) :: x
+                type(T) :: inverse
+            end function
+        end interface
     end requirement
 
     requirement field{T, plus, zero, mult, one, minus, negate, divide, invert}

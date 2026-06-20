@@ -4,11 +4,13 @@ program template_03
         deferred type :: T
         deferred type :: U
         deferred type :: V
-        elemental function op(a, b) result(op)
-            type(T), intent(in) :: a
-            type(U), intent(in) :: b
-            type(V) :: op
-        end function
+        deferred interface
+            elemental function op(a, b) result(op)
+                type(T), intent(in) :: a
+                type(U), intent(in) :: b
+                type(V) :: op
+            end function
+        end interface
     end requirement
 
     template axpy_tmpl{T, U, V, W, plus, times}

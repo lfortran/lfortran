@@ -3,10 +3,12 @@ module template_02_m
 
   requirement eq{t, ne}
     deferred type :: t
-    function ne(lhs, rhs)
-      type(t), intent(in) :: lhs, rhs
-      logical :: ne
-    end function
+    deferred interface
+      function ne(lhs, rhs)
+        type(t), intent(in) :: lhs, rhs
+        logical :: ne
+      end function
+    end interface
   end requirement
 
   template change_positions_tmpl{t, ne}

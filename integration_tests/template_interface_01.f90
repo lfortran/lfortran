@@ -6,19 +6,23 @@ module template_interface_01_m
         deferred type :: T
         deferred type :: U
         deferred type :: V
-        pure elemental function binary_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(U), intent(in) :: rhs
-            type(V) :: res
-        end function
+        deferred interface
+            pure elemental function binary_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(U), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
     requirement cast_r{T, cast}
         deferred type :: T
-        pure elemental function cast(arg) result(res)
-            integer, intent(in) :: arg
-            type(T) :: res
-        end function
+        deferred interface
+            pure elemental function cast(arg) result(res)
+                integer, intent(in) :: arg
+                type(T) :: res
+            end function
+        end interface
     end requirement
 
     template sum_t{T, add, cast}

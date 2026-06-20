@@ -44,11 +44,12 @@ module Math_integer_m
 
     requirement magma_r{T, plus_T}
       deferred type :: T
-
-      pure function plus_T(l, r) result(total)
-        type(T), intent(in) :: l, r
-        type(T) :: total
-      end function
+      deferred interface
+        pure function plus_T(l, r) result(total)
+          type(T), intent(in) :: l, r
+          type(T) :: total
+        end function
+      end interface
     end requirement
 
     template triple_tmpl{T, plus_T}

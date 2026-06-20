@@ -4,7 +4,7 @@ module template_03_m
       deferred type :: T
       deferred type :: U
       deferred type :: V
-      interface
+      deferred interface
         elemental function op(a, b)
           type(T), intent(in) :: a
           type(U), intent(in) :: b

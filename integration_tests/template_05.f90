@@ -2,10 +2,12 @@ module template_05_m
 
     requirement req{T, op}
         deferred type :: t
-        elemental function op(x, y) result(r)
-            type(T), intent(in) :: x, y
-            type(T) :: r
-        end function
+        deferred interface
+            elemental function op(x, y) result(r)
+                type(T), intent(in) :: x, y
+                type(T) :: r
+            end function
+        end interface
     end requirement
 
     template tmp{T, plus}

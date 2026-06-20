@@ -5,12 +5,14 @@ module template_lapack_01_m
 
     requirement gemm_r{T, gemm}
         deferred type :: T
-        subroutine gemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
-            character, intent(in) :: transa, transb
-            integer, intent(in) :: m, n, k, lda, ldb, ldc
-            type(T), intent(in) :: alpha, a(lda, *), b(ldb, *), beta
-            type(T), intent(out) :: c(ldc, *)
-        end subroutine
+        deferred interface
+            subroutine gemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+                character, intent(in) :: transa, transb
+                integer, intent(in) :: m, n, k, lda, ldb, ldc
+                type(T), intent(in) :: alpha, a(lda, *), b(ldb, *), beta
+                type(T), intent(out) :: c(ldc, *)
+            end subroutine
+        end interface
     end requirement
 
     requirement cast_r{T, U, cast}
