@@ -104,7 +104,7 @@
                                                                         (Array
                                                                             (StructType
                                                                                 [(Allocatable
-                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                    (String 4 () DeferredLength DescriptorString)
                                                                                 )]
                                                                                 []
                                                                                 .true.
@@ -167,7 +167,7 @@
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                        (String 4 () DeferredLength DescriptorString)
                                                                     )]
                                                                     []
                                                                     .true.
@@ -274,7 +274,7 @@
                                                                         (Array
                                                                             (StructType
                                                                                 [(Allocatable
-                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                    (String 4 () DeferredLength DescriptorString)
                                                                                 )]
                                                                                 []
                                                                                 .true.
@@ -306,7 +306,7 @@
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                        (String 4 () DeferredLength DescriptorString)
                                                                     )]
                                                                     []
                                                                     .true.
@@ -409,7 +409,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
+                                                        (String 4 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -429,7 +429,7 @@
                                     toml_key
                                     (StructType
                                         [(Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
+                                            (String 4 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.

@@ -3165,6 +3165,7 @@ def main(argv):
     else:
         subs["lcompiler"] = "lfortran"
     is_asr = (mod.name.upper() == "ASR")
+    generated_files = [Path(out_file)]
     fp = open(out_file, "w", encoding="utf-8")
     try:
         fp.write(HEAD % subs)
@@ -3182,6 +3183,7 @@ def main(argv):
             filename = "base"
             full_filename = asr_path.with_name(
                     f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+            generated_files.append(full_filename)
             with open(full_filename, "w", encoding="utf-8") as f:
                 f.write(HEAD_BASE_VISITOR % subs)
                 for Visitor in asr_base_visitor:
@@ -3193,6 +3195,7 @@ def main(argv):
             for filename, Visitor in asr_visitor_files:
                 full_filename = asr_path.with_name(
                         f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+                generated_files.append(full_filename)
                 with open(full_filename, "w", encoding="utf-8") as f:
                     f.write(HEAD_VISITOR % subs)
                     Visitor(f, data).visit(mod)

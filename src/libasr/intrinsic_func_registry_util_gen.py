@@ -595,25 +595,29 @@ intrinsic_funcs_args = {
     "Lgt": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Llt": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Lge": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Lle": [
         {
             "args": [("char", "char")],
-            "return": "logical"
+            "return": "logical",
+            "kind_validation": [{"first":{0: 1}}, {"second":{1: 1}}]
         },
     ],
     "Not": [
@@ -1038,6 +1042,15 @@ def add_verify_arg_type_src(func_name):
             compute_arg_kinds(3 * indent, same_kind_arg)
             condition = compute_kind_condition(same_kind_arg)
             src += 3 * indent + f'ASRUtils::require_impl({condition}, "Kind of all the arguments of {func_name} must be the same", x.base.base.loc, diagnostics);\n'
+        kind_validation_info = arg_info.get("kind_validation", [])
+        if kind_validation_info != []:
+            src += 3 * indent + "int kind = 0;\n"
+        for validation_item in kind_validation_info:
+            for arg_name, arg_spec in validation_item.items():
+                arg_pos = list(arg_spec.keys())[0]
+                required_kind = list(arg_spec.values())[0]
+                src += 3 * indent + f"kind = ASRUtils::extract_kind_from_ttype_t(arg_type{arg_pos});\n"
+                src += 3 * indent + f'ASRUtils::require_impl(kind == {required_kind}, "{arg_name} argument of `{func_name.lower()}` must have kind equal to {required_kind}", x.base.base.loc, diagnostics);\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'

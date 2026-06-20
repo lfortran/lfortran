@@ -322,14 +322,11 @@ semantic error: Initialization with non-constant variable `non_parameter_var` is
 281 |     integer :: non_parameter_var = 5
     |                ~~~~~~~~~~~~~~~~~~~~~ declared here
 
-semantic error: Named initialization with array parameter `myclass_array` is not supported yet
+semantic error: Parameter `myclass_array` has no initialization value
    --> tests/errors/continue_compilation_1.f90:283:5
     |
 283 |     type(MyClass) :: err_obj4 = myclass_array
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    |
-244 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
-    |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ array parameter declared here
 
 semantic error: Symbol not found: `uninitialized_param_local`
    --> tests/errors/continue_compilation_1.f90:284:5
@@ -446,40 +443,56 @@ semantic error: Dimensions specified for 'm' after its initialization
     |                  ^^^^ 
 
 semantic error: Cannot convert LOGICAL to REAL
-   --> tests/errors/continue_compilation_1.f90:684:24
+   --> tests/errors/continue_compilation_1.f90:687:24
     |
-684 |         real :: adwf = .true.
+687 |         real :: adwf = .true.
     |                        ^^^^^^ 
 
 warning: Assuming implicit save attribute for variable declaration
-   --> tests/errors/continue_compilation_1.f90:688:23
+   --> tests/errors/continue_compilation_1.f90:691:23
     |
-688 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
+691 |         integer(4) :: arr1(3) = [2471095, 820012001, 39024800]
     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
 
 semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
-   --> tests/errors/continue_compilation_1.f90:714:9
+   --> tests/errors/continue_compilation_1.f90:717:9
     |
-714 |         integer,allocatable  :: x(3)
+717 |         integer,allocatable  :: x(3)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Pointer array 'y' must have a deferred shape or assumed rank
-   --> tests/errors/continue_compilation_1.f90:715:9
+   --> tests/errors/continue_compilation_1.f90:718:9
     |
-715 |         integer,pointer  :: y(3)
+718 |         integer,pointer  :: y(3)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: COMMON block array bounds must be constant expressions
-   --> tests/errors/continue_compilation_1.f90:726:20
+   --> tests/errors/continue_compilation_1.f90:729:20
     |
-726 |         integer :: arr(n:10)
+729 |         integer :: arr(n:10)
     |                    ^^^^^^^^^ 
 
 semantic error: COMMON block array bounds must be constant expressions
-   --> tests/errors/continue_compilation_1.f90:733:20
+   --> tests/errors/continue_compilation_1.f90:736:20
     |
-733 |         integer :: arr(1:n)
+736 |         integer :: arr(1:n)
     |                    ^^^^^^^^ 
+
+semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value` is BIND(C)
+   --> tests/errors/continue_compilation_1.f90:748:5 - 751:18
+    |
+748 |        subroutine bindc_optional_value(a) bind(c)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+751 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Function `c_loc` is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:810:13
+    |
+810 |             type(c_ptr) :: ptr = c_loc(target_value)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
@@ -546,6 +559,12 @@ semantic error: Intrinsic 'not_real' is not recognized
     |
 268 |     call sub(not_real)
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
+
+semantic error: Format specifier in print statement must be of type default character
+   --> tests/errors/continue_compilation_1.f90:326:11
+    |
+326 |     print 1+2
+    |           ^^^ 
 
 semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
    --> tests/errors/continue_compilation_1.f90:328:14
@@ -1084,6 +1103,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 492 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
+semantic error: Subroutine `dummy_sub` called as a function
+   --> tests/errors/continue_compilation_1.f90:494:14
+    |
+494 |     print *, dummy_sub()
+    |              ^^^^^^^^^^^ 
+
 semantic error: Input to `Iparity` is expected to be an integer, but got string[:]
    --> tests/errors/continue_compilation_1.f90:495:22
     |
@@ -1539,44 +1564,128 @@ semantic error: Duplicate value of `asynchronous` found
 656 |     open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
     |                                                                                         ^^^^ 
 
-semantic error: No matching `operator(-)` found for this operand type
-   --> tests/errors/continue_compilation_1.f90:662:18
+semantic error: The argument `shift` in `eoshift` must be scalar or have rank one less than `array`
+   --> tests/errors/continue_compilation_1.f90:659:22
     |
-662 |         print *, -tt
+659 |     b1 = eoshift(b1, eoshift_bad_shift)
+    |                      ^^^^^^^^^^^^^^^^^ 
+
+semantic error: No matching `operator(-)` found for this operand type
+   --> tests/errors/continue_compilation_1.f90:665:18
+    |
+665 |         print *, -tt
     |                  ^^^ 
 
 semantic error: Variable 'k' is not declared
-   --> tests/errors/continue_compilation_1.f90:678:12
+   --> tests/errors/continue_compilation_1.f90:681:12
     |
-678 |         do k = 1, 3
+681 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
 semantic error: Expected logical expression in if statement, but recieved logical[:] instead
-   --> tests/errors/continue_compilation_1.f90:689:13
+   --> tests/errors/continue_compilation_1.f90:692:13
     |
-689 |         if (abs(arr1)(1) /= 2471095) error stop
+692 |         if (abs(arr1)(1) /= 2471095) error stop
     |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
 
 semantic error: Character intrinsic 'len' with class(*) argument must be inside 'type is (character(len=*))' guard
-   --> tests/errors/continue_compilation_1.f90:697:22
+   --> tests/errors/continue_compilation_1.f90:700:22
     |
-697 |         print *, len(generic)
+700 |         print *, len(generic)
     |                      ^^^^^^^ invalid use of character intrinsic with polymorphic argument
 
 semantic error: Argument of 'len' intrinsic must be CHARACTER, found integer instead.
-   --> tests/errors/continue_compilation_1.f90:698:22
+   --> tests/errors/continue_compilation_1.f90:701:22
     |
-698 |         print *, len(a)
+701 |         print *, len(a)
     |                      ^ 
 
 semantic error: `unit` must be of type Integer or Character
-   --> tests/errors/continue_compilation_1.f90:704:9
+   --> tests/errors/continue_compilation_1.f90:707:9
     |
-704 |         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
+707 |         write(unit=r, fmt=*) "hello"  ! {Error} `unit` must be of type Integer or Character
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_1.f90:710:9
+   --> tests/errors/continue_compilation_1.f90:713:9
     |
-710 |         x = [character(len=3) :: "aa", "bb", "aa"]
+713 |         x = [character(len=3) :: "aa", "bb", "aa"]
     |         ^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (integer[:] and string[:])
+
+semantic error: case value must be scalar
+   --> tests/errors/continue_compilation_1.f90:745:16
+    |
+745 |         case (:[2])
+    |                ^^^ 
+
+semantic error: Alternate return arguments are not permitted in calls to the 'cpu_time' intrinsic.
+   --> tests/errors/continue_compilation_1.f90:753:9
+    |
+753 |         call cpu_time(*1)
+    |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be of type integer, found string
+   --> tests/errors/continue_compilation_1.f90:759:9
+    |
+759 |         sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `errmsg` argument of `sync all` must be of type character, found integer
+   --> tests/errors/continue_compilation_1.f90:764:9
+    |
+764 |         sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be scalar
+   --> tests/errors/continue_compilation_1.f90:769:9
+    |
+769 |         sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'nosuch' is not declared
+   --> tests/errors/continue_compilation_1.f90:773:9
+    |
+773 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
+
+semantic error: Actual argument for 'x' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:777:23
+    |
+777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    |                       ^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:785:22
+    |
+785 |         select case (nn)
+    |                      ^^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:792:22
+    |
+792 |         select case (x)
+    |                      ^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:800:18
+    |
+800 |         print *, lge("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `lgt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:801:18
+    |
+801 |         print *, lgt("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `lle` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:802:18
+    |
+802 |         print *, lle(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `llt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:803:18
+    |
+803 |         print *, llt(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 

@@ -18,8 +18,13 @@
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
 #include <xeus/xhelper.hpp>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/bind.h>
+#include <xeus/xembind.hpp>
+#else
 #include <xeus-zmq/xzmq_context.hpp>
 #include <xeus-zmq/xserver_zmq.hpp>
+#endif
 
 #include <nlohmann/json.hpp>
 
@@ -499,6 +504,11 @@ namespace LCompilers::LFortran {
 
     int run_kernel(const std::string &connection_filename)
     {
+#ifdef __EMSCRIPTEN__
+        (void)connection_filename;
+        throw LCompilersException("run_kernel() is not available in the WASM build");
+        return 1;
+#else
         std::unique_ptr<xeus::xcontext> context = xeus::make_zmq_context();
 
         // Create interpreter instance
@@ -534,6 +544,23 @@ namespace LCompilers::LFortran {
         kernel.start();
 
         return 0;
+#endif // __EMSCRIPTEN__
     }
 
 } // namespace LCompilers::LFortran
+
+#ifdef __EMSCRIPTEN__
+namespace {
+    LCompilers::LFortran::custom_interpreter* make_interpreter(emscripten::val /*js_args*/)
+    {
+        return new LCompilers::LFortran::custom_interpreter();
+    }
+}
+
+EMSCRIPTEN_BINDINGS(my_module)
+{
+    xeus::export_core();
+    xeus::export_kernel<LCompilers::LFortran::custom_interpreter,
+                        &make_interpreter>("xkernel");
+}
+#endif // __EMSCRIPTEN__

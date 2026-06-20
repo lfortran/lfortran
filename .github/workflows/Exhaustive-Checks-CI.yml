@@ -160,6 +160,7 @@ jobs:
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
 
+
 # Commented out to save CI runners:
 #  test-pixi:
 #    name: Pixi Build (${{ matrix.os }})
@@ -481,6 +482,11 @@ jobs:
             fi
             echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
+
+      - name: Test coarray runtime with Caffeine
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash -e -l {0}
+        run: ci/test_caffeine.sh
 
   upload_tarball:
     name: Upload Tarball

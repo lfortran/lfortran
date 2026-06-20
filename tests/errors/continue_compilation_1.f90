@@ -323,7 +323,7 @@ program continue_compilation_1
     !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
-
+    print 1+2
     a = 1
     print *, a(10)
     a5 = 8
@@ -491,7 +491,7 @@ program continue_compilation_1
     print *, a(1:2:b'10')
     a_real = [logical::]
     print *,size(a_real)
-
+    print *, dummy_sub()
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
     print *, string(1:6)
@@ -654,6 +654,9 @@ program continue_compilation_1
     dimension :: m(3)
     open(newunit=u, file="test.dat", status="replace", asynchronous=1)
     open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
+    integer :: eoshift_bad_shift(2, 2)
+    eoshift_bad_shift = 1
+    b1 = eoshift(b1, eoshift_bad_shift)
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
@@ -733,4 +736,78 @@ program continue_compilation_1
         integer :: arr(1:n)
         common /common_nonconstant_upper_bound/ arr
     end subroutine sub_common_block_nonconstant_upper_bound
+    
+    subroutine select_case_array_bound()
+        implicit none
+        integer :: n
+        n = 1
+        select case (n)
+        case (:[2])
+        end select
+    end subroutine
+    subroutine bindc_optional_value(a) bind(c)
+        implicit none
+        integer, optional, value :: a
+    end subroutine
+    subroutine sub_alternate_return_intrinsic()
+        call cpu_time(*1)
+1       continue
+    end subroutine 
+    subroutine sync_all_stat_wrong_type()
+        implicit none
+        character(len=10) :: cstat
+        sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    end subroutine
+    subroutine sync_all_errmsg_wrong_type()
+        implicit none
+        integer :: imsg
+        sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    end subroutine
+    subroutine sync_all_stat_array()
+        implicit none
+        integer :: astat(3)
+        sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    end subroutine
+    subroutine sync_all_stat_undeclared()
+        implicit none
+        sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    end subroutine
+    subroutine assumed_size_to_pointer_dummy(x)
+        integer :: x(*)
+        call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    end subroutine
+    subroutine ptr_sink(x)
+        integer, pointer :: x(..)
+    end subroutine
+    subroutine select_case_complex()
+        implicit none
+        complex :: nn
+        select case (nn)
+        case default
+        end select
+    end subroutine
+    subroutine select_case_real()
+        implicit none
+        real :: x
+        select case (x)
+        case default
+        end select
+    end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)  
+        print *, lgt("a", glyph)  
+        print *, lle(glyph, "z")  
+        print *, llt(glyph, "z")  
+    end subroutine
+
+    subroutine c_loc_default_component_initializer()
+        use iso_c_binding, only: c_loc, c_ptr
+        integer, target :: target_value
+        type :: holder
+            type(c_ptr) :: ptr = c_loc(target_value)
+        end type
+    end subroutine
 end program

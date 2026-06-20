@@ -104,30 +104,6 @@
                                     (SymbolTable
                                         6
                                         {
-                                            centr:
-                                                (Variable
-                                                    6
-                                                    centr
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
                                             f_arg_0:
                                                 (Variable
                                                     6
@@ -164,30 +140,6 @@
                                                     (Real 8)
                                                     ()
                                                     BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            hlgth:
-                                                (Variable
-                                                    6
-                                                    hlgth
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
                                                     Public
                                                     Required
                                                     .false.

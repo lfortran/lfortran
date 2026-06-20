@@ -71,6 +71,18 @@ static ASR::symbol_t *make_external_symbol(Allocator &al, SymbolTable *scope,
     return ext_sym;
 }
 
+static ASR::ttype_t *duplicate_type_for_nested_context(Allocator &al,
+        ASR::ttype_t *var_type) {
+    ASR::ttype_t *array_type = ASRUtils::type_get_past_allocatable_pointer(var_type);
+    if (ASR::is_a<ASR::Array_t>(*array_type) &&
+            ASR::down_cast<ASR::Array_t>(array_type)->m_physical_type ==
+                ASR::array_physical_typeType::UnboundedPointerArray) {
+        return ASRUtils::duplicate_type_with_empty_dims(al, var_type,
+            ASR::array_physical_typeType::UnboundedPointerArray, true);
+    }
+    return ASRUtils::duplicate_type_with_empty_dims(al, var_type);
+}
+
 /*
 
 This pass captures the global variables that are used by the
@@ -607,10 +619,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     }
                 }
                 if( (ASRUtils::is_array(var_type) && !is_pointer) ) {
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
+                    bool is_unbounded_pointer_array =
+                        ASRUtils::extract_physical_type(var_type) ==
+                            ASR::array_physical_typeType::UnboundedPointerArray;
+                    var_type = duplicate_type_for_nested_context(al, var_type);
                     if (is_allocatable) {
                         var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
-                    } else {
+                    } else if (!is_unbounded_pointer_array) {
                         var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
                             ASRUtils::type_get_past_allocatable(var_type)));
                     }

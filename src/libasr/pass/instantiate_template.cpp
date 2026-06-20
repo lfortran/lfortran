@@ -1567,6 +1567,12 @@ public:
         // requirement function
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
+
+            if (ASRUtils::symbol_parent_symtab(name)->get_counter() != new_scope->get_counter()) {
+                std::string sym_name = ASRUtils::symbol_name(name);
+                ASR::symbol_t* scoped_sym = new_scope->resolve_symbol(sym_name);
+                name = scoped_sym;
+            }
         }
 
         // function call found in body that needs to be instantiated

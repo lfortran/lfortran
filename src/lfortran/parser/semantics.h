@@ -65,6 +65,25 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
+static inline void set_stmt_name(stmt_t &stmt, char *name) {
+    switch (stmt.type) {
+        case stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
+        case stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
+        case stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
+        case stmtType::WhileLoop:         ((WhileLoop_t&)stmt).m_stmt_name = name; break;
+        case stmtType::ChangeTeam:        ((ChangeTeam_t&)stmt).m_stmt_name = name; break;
+        case stmtType::ForAll:            ((ForAll_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Select:            ((Select_t&)stmt).m_stmt_name = name; break;
+        case stmtType::SelectRank:        ((SelectRank_t&)stmt).m_stmt_name = name; break;
+        case stmtType::SelectType:        ((SelectType_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Where:             ((Where_t&)stmt).m_stmt_name = name; break;
+        case stmtType::DoConcurrentLoop:  ((DoConcurrentLoop_t&)stmt).m_stmt_name = name; break;
+        default: LCOMPILERS_ASSERT_MSG(false, "Unknown statement type in set_stmt_name"); break;
+    }
+}
+
 static inline bool streql(const char *s1, const char *s2)
 {
 #if defined(_MSC_VER)
@@ -702,6 +721,13 @@ static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<as
 #define VAR_SYM_DIM_CODIM(name, dim, n_dim, codim, n_codim, sym, loc) \
         VARSYM(p.m_a, loc, name2char(name), \
         dim, n_dim, codim, n_codim, nullptr, nullptr, sym, nullptr)
+#define VAR_SYM_CODIM_INIT(name, codim, n_codim, init, sym, loc) VARSYM(p.m_a, loc, \
+        name2char(name), nullptr, 0, codim, n_codim, nullptr, \
+        down_cast<expr_t>(init), sym, nullptr)
+#define VAR_SYM_DIM_CODIM_INIT(name, dim, n_dim, codim, n_codim, init, sym, loc) \
+        VARSYM(p.m_a, loc, name2char(name), \
+        dim, n_dim, codim, n_codim, nullptr, \
+        down_cast<expr_t>(init), sym, nullptr)
 #define VAR_SYM_SPEC(x, sym, loc) VARSYM(p.m_a, loc, \
         nullptr, nullptr, 0, nullptr, 0, nullptr, nullptr, sym, \
         down_cast<decl_attribute_t>(x))
@@ -1817,7 +1843,7 @@ return make_Program_t(al, a_loc,
 
 #define STMT_NAME(id_first, id_last, stmt) \
         stmt; \
-        ((If_t*)stmt)->m_stmt_name = name2char(id_first); \
+        set_stmt_name(*(stmt_t*)(stmt), name2char(id_first)); \
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
         if (LCompilers::to_lower(first) != LCompilers::to_lower(last)) { \

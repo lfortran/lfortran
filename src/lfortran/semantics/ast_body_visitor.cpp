@@ -1015,8 +1015,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
-                if( a_iostat->type != ASR::exprType::Var ||
-                    (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
+                if( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
                         diag.add(Diagnostic(
                             "`iostat` must be a variable of type, Integer or IntegerPointer",
                             Level::Error, Stage::Semantic, {
@@ -1367,12 +1366,84 @@ public:
     void collect_labels() {
         labels.clear();
         if (starting_m_body == nullptr) return;
-        for (size_t i = 0; i < starting_n_body; ++i) {
-            int64_t label = stmt_label(starting_m_body[i]);
+
+        auto collect_labels_in_stmts = [&](AST::stmt_t** body, size_t n_body,
+                                           const auto& collect_labels_in_stmt_ref) -> void {
+            if (!body) return;
+            for (size_t i = 0; i < n_body; ++i) {
+                collect_labels_in_stmt_ref(body[i], collect_labels_in_stmt_ref);
+            }
+        };
+
+        auto collect_labels_in_stmt = [&](AST::stmt_t* stmt,
+                                     const auto& collect_labels_in_stmt_ref) -> void {
+            if (!stmt) return;
+            int64_t label = stmt_label(stmt);
             if (label != 0) {
                 labels.insert(std::to_string(label));
             }
-        }
+
+            switch (stmt->type) {
+                case AST::stmtType::If: {
+                    AST::If_t* s = AST::down_cast<AST::If_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::DoLoop: {
+                    AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Where: {
+                    AST::Where_t* s = AST::down_cast<AST::Where_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::WhileLoop: {
+                    AST::WhileLoop_t* s = AST::down_cast<AST::WhileLoop_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::AssociateBlock: {
+                    AST::AssociateBlock_t* s = AST::down_cast<AST::AssociateBlock_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Block: {
+                    AST::Block_t* s = AST::down_cast<AST::Block_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    break;
+                }
+                case AST::stmtType::Select: {
+                    AST::Select_t* s = AST::down_cast<AST::Select_t>(stmt);
+                    for (size_t i = 0; i < s->n_body; ++i) {
+                        AST::case_stmt_t* c = s->m_body[i];
+                        if (!c) continue;
+                        switch (c->type) {
+                            case AST::case_stmtType::CaseStmt: {
+                                AST::CaseStmt_t* cs = AST::down_cast<AST::CaseStmt_t>(c);
+                                collect_labels_in_stmts(cs->m_body, cs->n_body, collect_labels_in_stmt_ref);
+                                break;
+                            }
+                            case AST::case_stmtType::CaseStmt_Default: {
+                                AST::CaseStmt_Default_t* cs = AST::down_cast<AST::CaseStmt_Default_t>(c);
+                                collect_labels_in_stmts(cs->m_body, cs->n_body, collect_labels_in_stmt_ref);
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        };
+
+        collect_labels_in_stmts(starting_m_body, starting_n_body, collect_labels_in_stmt);
     }
 
     // Returns true if parsing succeeded, false if should continue to next kwarg
@@ -2284,23 +2355,32 @@ public:
                     })) {
                 overloaded_stmt = ASRUtils::STMT(asr);
             }
-            // If no overload found and single struct value, then expand struct components
-            // (recursively for nested structs)
-            if (overloaded_stmt == nullptr &&
-                a_values_vec.size() == 1) {
-                ASR::expr_t* expr = a_values_vec[0];
-                ASR::ttype_t* type = ASRUtils::expr_type(expr);
-                type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(type));
-                if (ASR::is_a<ASR::StructType_t>(*type)) {
-                    a_values_vec.n = 0;
-                    std::function<void(ASR::expr_t*)> expand_struct_expr;
-                    expand_struct_expr = [&](ASR::expr_t* struct_expr) {
+            // If no overload found, expand any struct-typed values into their
+            // member components (recursively for nested structs).
+            if (overloaded_stmt == nullptr && a_values_vec.size() >= 1) {
+                // Check if any value has struct type
+                bool has_struct = false;
+                for (size_t vi = 0; vi < a_values_vec.size(); vi++) {
+                    ASR::ttype_t* vtype = ASRUtils::expr_type(a_values_vec[vi]);
+                    vtype = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(vtype));
+                    if (ASR::is_a<ASR::StructType_t>(*vtype)) {
+                        has_struct = true;
+                        break;
+                    }
+                }
+                if (has_struct) {
+                    // Helper lambda: expand a struct expression into its member
+                    // expressions, recursively handling nested structs.
+                    // Appends the expanded (leaf) expressions to `expanded`.
+                    std::function<void(ASR::expr_t*, Vec<ASR::expr_t*>&)> expand_struct_expr;
+                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
+                                             Vec<ASR::expr_t*>& expanded) {
                         ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
                         stype = ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(stype));
                         if (!ASR::is_a<ASR::StructType_t>(*stype)) {
-                            a_values_vec.push_back(al, struct_expr);
+                            expanded.push_back(al, struct_expr);
                             return;
                         }
                         ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
@@ -2308,7 +2388,7 @@ public:
                         ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
                         if (struct_def->n_members == 0) {
-                            a_values_vec.push_back(al, struct_expr);
+                            expanded.push_back(al, struct_expr);
                             return;
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
@@ -2323,10 +2403,48 @@ public:
                                     al, struct_expr->base.loc, struct_expr,
                                     member_sym, member_var->m_type, nullptr));
                             // Recursively expand if the member is itself a struct
-                            expand_struct_expr(member_expr);
+                            expand_struct_expr(member_expr, expanded);
                         }
                     };
-                    expand_struct_expr(expr);
+
+                    Vec<ASR::expr_t*> new_values_vec;
+                    new_values_vec.reserve(al, a_values_vec.size() * 4);
+                    for (size_t vi = 0; vi < a_values_vec.size(); vi++) {
+                        ASR::expr_t* expr = a_values_vec[vi];
+                        ASR::ttype_t* etype = ASRUtils::expr_type(expr);
+                        etype = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(etype));
+                        if (!ASR::is_a<ASR::StructType_t>(*etype)) {
+                            // Non-struct value, keep as-is
+                            new_values_vec.push_back(al, expr);
+                        } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                            // For ImpliedDoLoop with struct values like:
+                            //   read(*, *) (recs(i), i = 1, n)
+                            // We expand struct members INSIDE the loop values.
+                            // Before: ImpliedDoLoop(values=[recs(i)], ...)
+                            // After:  ImpliedDoLoop(values=[recs(i)%x, recs(i)%y, ...], ...)
+                            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                            Vec<ASR::expr_t*> idl_new_values;
+                            idl_new_values.reserve(al, idl->n_values * 4);
+                            for (size_t iv = 0; iv < idl->n_values; iv++) {
+                                expand_struct_expr(idl->m_values[iv], idl_new_values);
+                            }
+                            ASR::ttype_t* new_type = idl->m_type;
+                            if (idl_new_values.size() > 0) {
+                                new_type = ASRUtils::expr_type(idl_new_values[0]);
+                            }
+                            ASR::expr_t* new_idl = ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(
+                                al, idl->base.base.loc, idl_new_values.p, idl_new_values.size(),
+                                idl->m_var, idl->m_start, idl->m_end, idl->m_increment,
+                                new_type, idl->m_value));
+                            new_values_vec.push_back(al, new_idl);
+                        } else {
+                            // Direct struct value (e.g., pts(1) from constant-bound
+                            // implied do loop expansion): expand into members.
+                            expand_struct_expr(expr, new_values_vec);
+                        }
+                    }
+                    a_values_vec = new_values_vec;
                 }
             }
 
@@ -2828,16 +2946,22 @@ public:
                         pnc->m_type = var->m_type;
                     }
                     if (ASR::is_a<ASR::Var_t>(*value)) {
-                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(value)->m_v);
+                        ASR::symbol_t *val_sym_raw = ASR::down_cast<ASR::Var_t>(value)->m_v;
+                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(val_sym_raw);
                         if (ASR::is_a<ASR::Function_t>(*val_sym)) {
-                            var->m_type_declaration = val_sym;
+                            // Use the original symbol (which may be an
+                            // ExternalSymbol) so that m_type_declaration
+                            // stays within the current module boundary.
+                            var->m_type_declaration = val_sym_raw;
                         } else if (ASR::is_a<ASR::Variable_t>(*val_sym)) {
                             ASR::Variable_t *val_var = ASR::down_cast<ASR::Variable_t>(val_sym);
-                            ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
-                                val_var->m_type_declaration);
-                            if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
-                                var->m_type_declaration = val_type_decl;
+                            if (val_var->m_type_declaration) {
+                                ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
+                                    val_var->m_type_declaration);
+                                if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
+                                    // Preserve the ExternalSymbol wrapper if present.
+                                    var->m_type_declaration = val_var->m_type_declaration;
+                                }
                             }
                         }
                     }
@@ -2897,6 +3021,8 @@ public:
                 }
                 tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
             } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
+                create_associate_stmt = true;
+            } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
                 create_associate_stmt = true;
             }
 
@@ -3726,7 +3852,16 @@ public:
                 AST::CaseCondExpr_t *condexpr
                     = AST::down_cast<AST::CaseCondExpr_t>(Case_Stmt->m_test[i]);
                 this->visit_expr(*condexpr->m_cond);
-                expr_accum.push_back(ASRUtils::EXPR(tmp));
+                ASR::expr_t* case_expr = ASRUtils::EXPR(tmp);
+                if (ASRUtils::is_array(ASRUtils::expr_type(case_expr))) {
+                    diag.add(Diagnostic(
+                        "case value must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {case_expr->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                expr_accum.push_back(case_expr);
                 continue;
             } else if (AST::is_a<AST::CaseCondRange_t>(*(Case_Stmt->m_test[i]))) {
                 emit_expr_group(x.base.loc);
@@ -3736,10 +3871,26 @@ public:
                 if( condrange->m_start != nullptr ) {
                     this->visit_expr(*(condrange->m_start));
                     m_start = ASRUtils::EXPR(tmp);
+                    if (ASRUtils::is_array(ASRUtils::expr_type(m_start))) {
+                        diag.add(Diagnostic(
+                            "case value must be scalar",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {m_start->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
                 if( condrange->m_end != nullptr ) {
                     this->visit_expr(*(condrange->m_end));
                     m_end = ASRUtils::EXPR(tmp);
+                    if (ASRUtils::is_array(ASRUtils::expr_type(m_end))) {
+                        diag.add(Diagnostic(
+                            "case value must be scalar",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {m_end->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
                 Vec<ASR::stmt_t*> case_body_vec;
                 case_body_vec.reserve(al, Case_Stmt->n_body);
@@ -3759,6 +3910,25 @@ public:
     void visit_Select(const AST::Select_t& x) {
         this->visit_expr(*(x.m_test));
         ASR::expr_t* a_test = ASRUtils::EXPR(tmp);
+        if (ASRUtils::is_array(ASRUtils::expr_type(a_test))) {
+            diag.add(Diagnostic(
+                "select case expression must be scalar",
+                Level::Error, Stage::Semantic, {
+                    Label("", {a_test->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        ASR::ttype_t *a_test_type = ASRUtils::expr_type(a_test);
+        if (!ASRUtils::is_integer(*a_test_type) &&
+                !ASRUtils::is_character(*a_test_type) &&
+                !ASRUtils::is_logical(*a_test_type)) {
+            diag.add(Diagnostic(
+                "select case expression must be of type integer, character, or logical",
+                Level::Error, Stage::Semantic, {
+                    Label("", {a_test->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         Vec<ASR::case_stmt_t*> a_body_vec;
         a_body_vec.reserve(al, x.n_body);
         Vec<ASR::stmt_t*> def_body;
@@ -3884,6 +4054,9 @@ public:
                     SymbolTable* current_scope_copy = current_scope;
                     current_scope = parent_scope;
                     AST::RankDefault_t* rank_default = AST::down_cast<AST::RankDefault_t>(x.m_body[i]);
+                    if (!array_var_name.empty()) {
+                        assumed_rank_arrays.erase(array_var_name);
+                    }
                     transform_stmts(select_rank_default, rank_default->n_body, rank_default->m_body);
                     current_scope = current_scope_copy;
                     break;
@@ -3894,10 +4067,6 @@ public:
                 }
             }
             current_scope = parent_scope;
-        }
-
-        if (!array_var_name.empty()) {
-            assumed_rank_arrays.erase(array_var_name);
         }
 
         all_loops_blocks_nesting--;
@@ -5899,6 +6068,14 @@ public:
                             ASRUtils::expr_type(temp));
                         if( temp_type->type == ASR::ttypeType::Array ) {
                             int64_t arr_size = ASRUtils::get_fixed_size_of_array(temp_type);
+                            int64_t start, end;
+                            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*temp)) {
+                                ASR::ImpliedDoLoop_t* impl_do = ASR::down_cast<ASR::ImpliedDoLoop_t>(temp);
+                                if (ASRUtils::extract_value(ASRUtils::expr_value(impl_do->m_start), start) &&
+                                    ASRUtils::extract_value(ASRUtils::expr_value(impl_do->m_end), end)) {
+                                    arr_size *= end - start + 1;
+                                }
+                            }
                             if (arr_size < 0) {
                                 flat_size = -1;
                             } else if (flat_size >= 0) {
@@ -6590,7 +6767,7 @@ public:
                 "shape argument not specified in c_f_pointer "
                 "even though fptr is an array.",
                 Level::Error, Stage::Semantic, {
-                    Label("",{shape->base.loc})
+                    Label("",{fptr->base.loc})
                 }));
             throw SemanticAbort();
         }
@@ -6998,20 +7175,21 @@ public:
 
         // we handle kwargs here
         if (x.n_keywords > 0) {
-            bool is_proc_pointer_var = false;
+            bool is_nopass = false;
             if (ASR::is_a<ASR::Variable_t>(*f2)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f2);
                 [[maybe_unused]] ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v->m_type);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v_type));
                 f2 = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                is_proc_pointer_var = true;
+                is_nopass = (v->m_pass_attr == ASR::pass_attrType::NoPass ||
+                             v->m_pass_attr == ASR::pass_attrType::NotMethod);
             }
             if (ASR::is_a<ASR::Function_t>(*f2)) {
                 ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(f2);
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                              f->m_args, f->n_args, x.base.base.loc, f,
-                             diags, x.n_member, is_proc_pointer_var);
+                             diags, x.n_member, is_nopass);
                 if (diags.has_error()) {
                     diag.diagnostics.insert(diag.diagnostics.end(),
                                             diags.diagnostics.begin(), diags.diagnostics.end());
@@ -7384,6 +7562,24 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // An assumed-size array has no known extent for its last
+                    // dimension, so it cannot be used where the dummy requires
+                    // a descriptor (pointer or allocatable).
+                    if (ASRUtils::is_pointer(dummy_type) ||
+                        ASRUtils::is_allocatable(dummy_type)) {
+                        ASR::ttype_t* actual_array =
+                            ASRUtils::type_get_past_allocatable_pointer(actual_type);
+                        if (ASR::is_a<ASR::Array_t>(*actual_array) &&
+                            ASR::down_cast<ASR::Array_t>(actual_array)->m_physical_type ==
+                                ASR::array_physical_typeType::UnboundedPointerArray) {
+                            std::string dummy_name = dummy_var->m_name;
+                            diag.semantic_error_label(
+                                "Actual argument for '" + dummy_name +
+                                "' cannot be an assumed-size array",
+                                {args[i].m_value->base.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
                     if (ASRUtils::is_allocatable(dummy_type)) {
                         ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable(dummy_type));
@@ -8230,6 +8426,15 @@ public:
                     }));
                 throw SemanticAbort();
             }
+            if (!ASRUtils::is_character(*fmt_type) && !(ASR::is_a<ASR::IntegerConstant_t>(*fmt)
+                    && AST::is_a<AST::Num_t>(*x.m_fmt))) {
+                diag.add(Diagnostic(
+                    "Format specifier in print statement must be of type default character",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_fmt->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
             
             if (ASR::is_a<ASR::StringConstant_t>(*fmt)) {
                 ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(fmt);
@@ -8671,6 +8876,7 @@ public:
         all_loops_blocks_nesting += 1;
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
+        AST::decl_attribute_t *current_type = nullptr;
         for(size_t i=0;i<x.n_control;i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             if (! h.m_var) {
@@ -8700,7 +8906,10 @@ public:
             std::string var_name = to_lower(h.m_var);
             ASR::expr_t *var = nullptr;
             if (h.m_type) {
-                AST::decl_attribute_t *decl_type = h.m_type;
+                current_type = h.m_type;
+            }
+            if (current_type) {
+                AST::decl_attribute_t *decl_type = current_type;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 1);
                 ASR::symbol_t *type_declaration;
@@ -8869,73 +9078,67 @@ public:
 
     void visit_ForAll(const AST::ForAll_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_control != 1) {
-            diag.add(Diagnostic(
-                "Forall block: one control statement is supported for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
         if (x.n_body != 1) {
             diag.add(Diagnostic(
                 "Forall block: one body statement is supported for now",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
-                }));
+            }));
             throw SemanticAbort();
         }
-        
-        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
-        if (!h.m_var) {
-            diag.add(Diagnostic(
-                "Forall block: loop variable is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
+        for (size_t i = 0; i < x.n_control; i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            if (!h.m_var) {
+                diag.add(Diagnostic(
+                    "Forall block: loop variable is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (!h.m_start) {
+                diag.add(Diagnostic(
+                    "Forall block: start condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (!h.m_end) {
+                diag.add(Diagnostic(
+                    "Forall block: end condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         }
-        if (!h.m_start) {
-            diag.add(Diagnostic(
-                "Forall block: start condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        if (!h.m_end) {
-            diag.add(Diagnostic(
-                "Forall block: end condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        
-        ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
-        visit_expr(*h.m_start);
-        ASR::expr_t *start = ASRUtils::EXPR(tmp);
-        visit_expr(*h.m_end);
-        ASR::expr_t *end = ASRUtils::EXPR(tmp);
-        ASR::expr_t *increment;
-        if (h.m_increment) {
-            visit_expr(*h.m_increment);
-            increment = ASRUtils::EXPR(tmp);
-        } else {
-            increment = nullptr;
-        }
-        
-        ASR::do_loop_head_t head;
-        head.m_v = var;
-        head.m_start = start;
-        head.m_end = end;
-        head.m_increment = increment;
-        head.loc = head.m_v->base.loc;
         
         this->visit_stmt(*x.m_body[0]);
         ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
-        
-        tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
+        for (int i = x.n_control - 1; i >= 0; i--) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+            visit_expr(*h.m_start);
+            ASR::expr_t *start = ASRUtils::EXPR(tmp);
+            visit_expr(*h.m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            ASR::expr_t *increment;
+            if (h.m_increment) {
+                visit_expr(*h.m_increment);
+                increment = ASRUtils::EXPR(tmp);
+            } else {
+                increment = nullptr;
+            }
+            ASR::do_loop_head_t head;
+            head.m_v = var;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = increment;
+            head.loc = head.m_v->base.loc;
+            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
+            stmt = ASRUtils::STMT(tmp);
+        }
         all_loops_blocks_nesting -= 1;
     }
 
@@ -9108,7 +9311,57 @@ public:
     }
 
     void visit_SyncAll(const AST::SyncAll_t &x) {
-        tmp = ASR::make_SyncAll_t(al, x.base.base.loc);
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        for (size_t i = 0; i < x.n_stat; i++) {
+            AST::event_attribute_t *attr = x.m_stat[i];
+            if (AST::is_a<AST::AttrStat_t>(*attr)) {
+                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
+                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(s->m_variable)));
+                ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+                if (ASRUtils::is_array(stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_integer(*stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `sync all` must be of type integer, found "
+                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
+                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
+                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(e->m_variable)));
+                ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+                if (ASRUtils::is_array(errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_character(*errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `sync all` must be of type character, found "
+                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+        }
+        tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
     }
 
     void visit_SyncMemory(const AST::SyncMemory_t &x) {

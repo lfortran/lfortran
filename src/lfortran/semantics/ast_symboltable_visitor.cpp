@@ -1492,6 +1492,18 @@ public:
                 }
             }
             ASR::symbol_t *var = current_scope->get_symbol(arg_s);
+            if (current_procedure_abi_type == ASR::abiType::BindC && ASR::is_a<ASR::Variable_t>(*var)) {
+                ASR::Variable_t *var_sym = ASR::down_cast<ASR::Variable_t>(var);
+                if (var_sym->m_value_attr && var_sym->m_presence == ASR::presenceType::Optional) {
+                    diag.add(diag::Diagnostic(
+                        "Variable `" + arg_s + "` cannot have both the OPTIONAL and VALUE attribute"
+                        " because procedure `" + std::string(x.m_name) + "` is BIND(C)",
+                        diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {x.m_args[i].loc})}));
+                    if (!compiler_options.continue_compilation){
+                        throw SemanticAbort();
+                    }
+                }
+            }
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 var)));
         }
@@ -2030,14 +2042,38 @@ public:
 
             if (return_type->m_kind != nullptr) {
                 if (return_type->n_kind == 1) {
-                    visit_expr(*return_type->m_kind->m_value);
-                    len_expr = ASRUtils::EXPR(tmp);
-                    if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
-                        a_len = ASRUtils::extract_len<SemanticAbort>(len_expr, x.base.base.loc, diag);
-                        a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr));
+                    if (return_type->m_kind->m_type == AST::kind_item_typeType::Star) {
+                        // character(len=*) — assumed-length
+                        if (return_type->m_type != AST::decl_typeType::TypeCharacter) {
+                            diag.add(diag::Diagnostic(
+                                "Expected initialization expression for kind",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {return_type->m_kind->loc})}));
+                            throw SemanticAbort();
+                        }
+                        len_expr = nullptr;
+                        a_len = -3; // sentinel for AssumedLength
+                    } else if (return_type->m_kind->m_type == AST::kind_item_typeType::Colon) {
+                        // character(len=:) — deferred-length
+                        if (return_type->m_type != AST::decl_typeType::TypeCharacter) {
+                            diag.add(diag::Diagnostic(
+                                "Expected initialization expression for kind",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {return_type->m_kind->loc})}));
+                            throw SemanticAbort();
+                        }
+                        len_expr = nullptr;
+                        a_len = -1; // sentinel for DeferredLength
                     } else {
-                        a_kind = ASRUtils::extract_kind<SemanticAbort>(len_expr, x.base.base.loc, diag);
-                        i_kind = a_kind;
+                        visit_expr(*return_type->m_kind->m_value);
+                        len_expr = ASRUtils::EXPR(tmp);
+                        if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
+                            a_len = ASRUtils::extract_len<SemanticAbort>(len_expr, x.base.base.loc, diag);
+                            a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr));
+                        } else {
+                            a_kind = ASRUtils::extract_kind<SemanticAbort>(len_expr, x.base.base.loc, diag);
+                            i_kind = a_kind;
+                        }
                     }
                 } else if (return_type->m_type == AST::decl_typeType::TypeCharacter) {
                     for (size_t ki = 0; ki < return_type->n_kind; ki++) {
@@ -2063,9 +2099,12 @@ public:
                     throw SemanticAbort();
                 }
             }
-            if (len_expr == nullptr || a_len != -1) {
-                len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind))));
+            if (a_len != -3 && a_len != -1) {
+                // Not AssumedLength or DeferredLength: create a constant len expression
+                if (len_expr == nullptr) {
+                    len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind))));
+                }
             }
 
             ASR::symbol_t* type_decl = nullptr;
@@ -2114,9 +2153,15 @@ public:
                         (is_c_char_kind && current_procedure_abi_type == ASR::abiType::BindC)
                         ? ASR::string_physical_typeType::CChar
                         : ASR::string_physical_typeType::DescriptorString;
+                    ASR::string_length_kindType len_kind = ASR::string_length_kindType::ExpressionLength;
+                    if (a_len == -3) {
+                        len_kind = ASR::string_length_kindType::AssumedLength;
+                    } else if (a_len == -1 && len_expr == nullptr) {
+                        len_kind = ASR::string_length_kindType::DeferredLength;
+                    }
                     type = ASRUtils::TYPE(ASR::make_String_t( al, x.base.base.loc, 1,
                         len_expr,
-                        ASR::string_length_kindType::ExpressionLength,
+                        len_kind,
                         phys_type));
                     break;
                 }
