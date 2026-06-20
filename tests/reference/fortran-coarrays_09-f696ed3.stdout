@@ -80,7 +80,7 @@ end interface
 
 subroutine coarrays_09_sub(v)
     integer(4), intent(out) :: v
-    integer(4), pointer, save :: x
+    integer(4), pointer, save :: x = 0
     call c_f_pointer(coarrays_09_sub_x__coarray_data, x)
     x = x + 1
     v = x
