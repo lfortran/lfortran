@@ -7911,30 +7911,8 @@ public:
                                 create_or_update_implicit_interface(
                                     proc_var, x.base.base.loc,
                                     arg_types.p, arg_types.size(),
-                                    nullptr, parent_scope, sub_name);
-                                // Update the owner function's FunctionType arg_types
-                                // so that when this function is passed as an argument,
-                                // the resolved type propagates correctly.
-                                if (current_scope->asr_owner &&
-                                        ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-                                    ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(
-                                        current_scope->asr_owner);
-                                    if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
-                                        ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner_sym);
-                                        ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                            owner_func->m_function_signature);
-                                        for (size_t j = 0; j < owner_func->n_args; j++) {
-                                            if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[j])) {
-                                                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
-                                                    owner_func->m_args[j])->m_v;
-                                                if (arg_sym == (ASR::symbol_t*)original_sym) {
-                                                    owner_ft->m_arg_types[j] = proc_var->m_type;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                    nullptr, parent_scope, sub_name,
+                                    current_scope);
                             }
                         }
                     }
