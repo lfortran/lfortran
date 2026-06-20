@@ -42,5 +42,11 @@ program intrinsics_shape_ptr_struct_member_01
    call check_shape(arr, [2, 3])
    call check_shape_assoc(arr, 2)
 
+   deallocate(arr(1)%array)
+   deallocate(arr(2)%array)
+   deallocate(arr)
+   deallocate(t1%val)
+   deallocate(t2%val)
+
    print *, "OK"
 end program intrinsics_shape_ptr_struct_member_01
