@@ -1596,6 +1596,18 @@ public:
                 *args[i] = ASRUtils::EXPR(tmp);
             }
         }
+        // When a READ has a single positional arg that is a string constant,
+        // it is the `READ fmt [, iolist]` form — the string is the format
+        // specifier, not the unit. Move it to a_fmt and leave a_unit as
+        // nullptr (the LLVM backend treats nullptr unit as stdin).
+        if (_type == AST::stmtType::Read
+                && n_args == 1
+                && a_unit != nullptr && a_fmt == nullptr
+                && ASR::is_a<ASR::StringConstant_t>(*a_unit)) {
+            a_fmt = a_unit;
+            a_unit = nullptr;
+            formatted = true;
+        }
         bool unit_explicit = false;
         bool iostat_explicit = false;
         bool iomsg_explicit = false;
