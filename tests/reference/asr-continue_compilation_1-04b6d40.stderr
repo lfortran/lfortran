@@ -1690,7 +1690,7 @@ semantic error: first argument of `llt` must have kind equal to 1
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
-semantic error: `array` argument of `findloc` must be in type conformance to `value` argument (mismatched character kinds)
+semantic error: `array` and `value` arguments of `findloc` must have the same character kind, but got character(4) and character(1)
    --> tests/errors/continue_compilation_1.f90:818:18
     |
 818 |         print *, findloc(names, key)

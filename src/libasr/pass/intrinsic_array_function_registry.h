@@ -4695,13 +4695,24 @@ namespace FindLoc {
             ASR::ttype_t *array_elt_type = ASRUtils::extract_type(expr_type(args[0]));
             ASR::ttype_t *value_elt_type = ASRUtils::extract_type(expr_type(args[1]));
             // Character kinds cannot be promoted like integer/real kinds:
-            // characters of different kinds are genuinely incompatible and
-            // must be reported as a type-conformance error (matching gfortran)
-            // instead of proceeding with mismatched kinds (which ICEs later).
-            if (ASR::is_a<ASR::String_t>(*array_elt_type)
-                    || ASR::is_a<ASR::String_t>(*value_elt_type)) {
+            // characters of different kinds (or a character vs a non-character
+            // argument) are genuinely incompatible and must be reported as a
+            // type-conformance error (matching gfortran) instead of proceeding
+            // with mismatched kinds (which ICEs later).
+            bool array_is_char = ASR::is_a<ASR::String_t>(*array_elt_type);
+            bool value_is_char = ASR::is_a<ASR::String_t>(*value_elt_type);
+            if (array_is_char && value_is_char) {
+                int array_kind = extract_kind_from_ttype_t(expr_type(args[0]));
+                int value_kind = extract_kind_from_ttype_t(expr_type(args[1]));
+                append_error(diag, "`array` and `value` arguments of `findloc` "
+                    "must have the same character kind, but got character(" +
+                    std::to_string(array_kind) + ") and character(" +
+                    std::to_string(value_kind) + ")", loc);
+                return nullptr;
+            }
+            if (array_is_char || value_is_char) {
                 append_error(diag, "`array` argument of `findloc` must be in type "
-                    "conformance to `value` argument (mismatched character kinds)", loc);
+                    "conformance to `value` argument", loc);
                 return nullptr;
             }
             Vec<ASR::expr_t*> args_;
