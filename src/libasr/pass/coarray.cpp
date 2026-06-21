@@ -1160,20 +1160,6 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
             }
         }
 
-        void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t &x) {
-            for (size_t i = 0; i < x.n_args; i++) {
-                if (x.m_args[i]) {
-                    ASR::expr_t **current_expr_copy = current_expr;
-                    current_expr = const_cast<ASR::expr_t **>(&(x.m_args[i]));
-                    call_replacer();
-                    current_expr = current_expr_copy;
-                    if (x.m_args[i] && visit_expr_after_replacement) {
-                        visit_expr(*x.m_args[i]);
-                    }
-                }
-            }
-        }
-
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(replacer.al, n_body);
