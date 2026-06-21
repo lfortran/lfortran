@@ -2852,6 +2852,12 @@ pass = "coarray"
 options = "--coarray=true --show-fortran"
 
 [[test]]
+filename = "coarrays_06.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "coarrays_07.f90"
 fortran = true
 pass = "coarray"
@@ -2859,6 +2865,11 @@ options = "--coarray=true"
 
 [[test]]
 filename = "coarrays_08.f90"
+ast = true
+ast_f90 = true
+
+[[test]]
+filename = "coarrays_10.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
@@ -5232,4 +5243,8 @@ run = true
 
 [[test]]
 filename = "errors/read_eof_01.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/shadow_same_symbol.f90"
 run = true

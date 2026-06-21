@@ -3610,7 +3610,8 @@ static inline bool is_binop_expr(ASR::expr_t* x) {
         case ASR::exprType::ComplexCompare:
         case ASR::exprType::LogicalCompare:
         case ASR::exprType::UnsignedIntegerCompare:
-        case ASR::exprType::StringCompare: {
+        case ASR::exprType::StringCompare:
+        case ASR::exprType::StringConcat: {
             return true;
         }
         default: {
@@ -3674,6 +3675,7 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
         BINOP_MEMBER_CASE(LogicalCompare, LogicalCompare_t)
         BINOP_MEMBER_CASE(UnsignedIntegerCompare, UnsignedIntegerCompare_t)
         BINOP_MEMBER_CASE(StringCompare, StringCompare_t)
+        BINOP_MEMBER_CASE(StringConcat, StringConcat_t)
         default: {
             LCOMPILERS_ASSERT(false)
         }

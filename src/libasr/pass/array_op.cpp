@@ -372,6 +372,16 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         }
     }
 
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        for (size_t i=0; i<x->n_args; i++) {
+            current_expr = &(x->m_args[i]);
+            replace_expr(*current_expr);
+        }
+        if (result_expr == nullptr) {
+            return;
+        }
+    }
+
     bool are_all_elements_scalars(ASR::expr_t** args, size_t n) {
         for( size_t i = 0; i < n; i++ ) {
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*args[i])) {
