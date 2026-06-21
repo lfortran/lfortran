@@ -4692,6 +4692,18 @@ namespace FindLoc {
         ASR::expr_t* array = nullptr;
         ASR::expr_t* value = nullptr;
         if (extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))){
+            ASR::ttype_t *array_elt_type = ASRUtils::extract_type(expr_type(args[0]));
+            ASR::ttype_t *value_elt_type = ASRUtils::extract_type(expr_type(args[1]));
+            // Character kinds cannot be promoted like integer/real kinds:
+            // characters of different kinds are genuinely incompatible and
+            // must be reported as a type-conformance error (matching gfortran)
+            // instead of proceeding with mismatched kinds (which ICEs later).
+            if (ASR::is_a<ASR::String_t>(*array_elt_type)
+                    || ASR::is_a<ASR::String_t>(*value_elt_type)) {
+                append_error(diag, "`array` argument of `findloc` must be in type "
+                    "conformance to `value` argument (mismatched character kinds)", loc);
+                return nullptr;
+            }
             Vec<ASR::expr_t*> args_;
             args_.reserve(al, 2);
             args_.push_back(al, args[0]);
