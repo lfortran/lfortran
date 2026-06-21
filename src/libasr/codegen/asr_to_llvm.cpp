@@ -22996,6 +22996,15 @@ public:
                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                 }
+
+                if (orig_arg &&
+                    LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                    !LLVM::is_llvm_pointer(*apc->m_type) &&
+                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                    llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(*builder, tmp->getType());
+                    builder->CreateStore(tmp, ptr_to_tmp);
+                    tmp = ptr_to_tmp;
+                }
             } else if (ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) &&
                         ASR::down_cast<ASR::Cast_t>(x.m_args[i].m_value)->m_kind ==
                             ASR::cast_kindType::ClassToIntrinsic) {
@@ -26220,9 +26229,17 @@ public:
             return ;
         }
         ASR::expr_t* m_arg = x.m_v;
-        this->visit_expr_wrapper(m_arg, false);
+        ASR::ttype_t* x_mv_type = ASRUtils::expr_type(m_arg);
+        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg, 
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_mv_type)), module.get());
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 2 - (LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_arg)));
+        this->visit_expr_wrapper(m_arg);
+        ptr_loads = ptr_loads_copy;
+        if (is_a<ASR::StructInstanceMember_t>(*m_arg)) {
+            tmp = llvm_utils->CreateLoad2(arr_type->getPointerTo(), tmp);
+        }
         llvm::Value *arg = tmp;
-        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
         tmp = arr_descr->get_rank(arr_type, arg);
     }
 
@@ -26275,10 +26292,71 @@ public:
             tmp = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
         }
         llvm::Value* llvm_arg1 = tmp;
-        visit_expr_wrapper(x.m_dim, true);
-        llvm::Value* dim_val = tmp;
+        llvm::Value* dim_val = nullptr;
+        if (x.m_dim) {
+            visit_expr_wrapper(x.m_dim, true);
+            dim_val = tmp;
+        }
 
         ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(x_mv_type);
+        
+        if (!x.m_dim) {
+            // Allocate a 1D array of size `rank`
+            llvm::Value* rank = arr_descr->get_rank(array_type, llvm_arg1);
+            
+            llvm::Type* return_type = llvm_utils->get_type_from_ttype_t_util(
+                (ASR::expr_t*)&x, x.m_type, module.get());
+            llvm::Value* res_desc = llvm_utils->CreateAlloca(*builder, return_type);
+            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
+                (ASR::expr_t*)&x, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::type_get_past_array(x.m_type)), module.get());
+            llvm::Value* data_ptr = builder->CreateAlloca(el_type, rank);
+            
+            builder->CreateStore(data_ptr, arr_descr->get_pointer_to_data(return_type, res_desc));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)), 
+                                 arr_descr->get_offset(return_type, res_desc, false));
+            arr_descr->set_rank(return_type, res_desc, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)));
+            
+            llvm::Value* dim_desc_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(return_type, res_desc);
+            llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_desc_ptr, builder->getInt32(0));
+            
+            llvm::Type* index_type = arr_descr->get_index_type();
+            builder->CreateStore(llvm::ConstantInt::get(index_type, 1), arr_descr->get_lower_bound(dim_struct, false));
+            builder->CreateStore(builder->CreateSExtOrTrunc(rank, index_type), arr_descr->get_dimension_size(dim_struct, false));
+            builder->CreateStore(llvm::ConstantInt::get(index_type, 1), arr_descr->get_stride(dim_struct, false));
+            
+            llvm::Value *i_ptr = builder->CreateAlloca(builder->getInt32Ty());
+            builder->CreateStore(builder->getInt32(0), i_ptr);
+            
+            llvm_utils->create_loop("bound_loop", [&]() {
+                llvm::Value *i = builder->CreateLoad(builder->getInt32Ty(), i_ptr);
+                return builder->CreateICmpSLT(i, builder->CreateSExtOrTrunc(rank, builder->getInt32Ty()));
+            }, [&]() {
+                llvm::Value *i = builder->CreateLoad(builder->getInt32Ty(), i_ptr);
+            llvm::Value* arr_dim_desc_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
+            llvm::Value* arr_dim_struct = arr_descr->get_pointer_to_dimension_descriptor(arr_dim_desc_ptr, i);
+            
+            llvm::Value* dim_size = arr_descr->get_dimension_size(arr_dim_desc_ptr, i, true);
+            llvm::Value* is_zero_extent = builder->CreateICmpEQ(dim_size, llvm::ConstantInt::get(dim_size->getType(), 0));
+            llvm::Value* res = nullptr;
+            if( x.m_bound == ASR::arrayboundType::LBound ) {
+                llvm::Value* lb = arr_descr->get_lower_bound(arr_dim_struct);
+                res = builder->CreateSelect(is_zero_extent, llvm::ConstantInt::get(lb->getType(), 1), lb);
+            } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+                llvm::Value* ub = arr_descr->get_upper_bound(arr_dim_struct);
+                res = builder->CreateSelect(is_zero_extent, llvm::ConstantInt::get(ub->getType(), 0), ub);
+            }
+            res = builder->CreateSExtOrTrunc(res, el_type);
+            llvm::Value* data_elem_ptr = builder->CreateGEP(el_type, data_ptr, i);
+            builder->CreateStore(res, data_elem_ptr);
+            
+            llvm::Value *i_next = builder->CreateAdd(i, builder->getInt32(1));
+            builder->CreateStore(i_next, i_ptr);
+        });
+            
+        tmp = res_desc;
+            return;
+        }
+
         switch( physical_type ) {
             case ASR::array_physical_typeType::AssumedRankArray:
             case ASR::array_physical_typeType::DescriptorArray: {
