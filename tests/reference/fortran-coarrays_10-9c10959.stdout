@@ -5,8 +5,12 @@ type :: __module_prif_prif_team_type
     type(__module_prif_prif_dummy_team_descriptor), pointer :: info
 end type __module_prif_prif_team_type
 
+type :: prif_coarray_handle
+    type(c_ptr) :: info
+end type prif_coarray_handle
 
-program coarrays_08
+
+program coarrays_10
 implicit none
 integer(4) :: exit_code
 integer(4) :: x
@@ -57,4 +61,4 @@ integer(4) function lcompilers_prif_this_image()
     call __module_prif_prif_this_image_no_coarray(lcompilers_prif_this_image)
 end function lcompilers_prif_this_image
 
-end program coarrays_08
+end program coarrays_10
