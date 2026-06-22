@@ -1387,7 +1387,9 @@ public:
                         Level::Error, Stage::Semantic, {
                             Label("", {stmt->base.loc})
                         }));
-                    throw SemanticAbort();
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
                 }
             }
 

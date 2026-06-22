@@ -305,8 +305,8 @@ program continue_compilation_1
         integer, len :: n
         real :: data(n)
     end type
-1000    continue
-1000    continue
+
+
 
 
 
@@ -809,5 +809,10 @@ program continue_compilation_1
         type :: holder
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
+    end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
     end subroutine
 end program
