@@ -1,12 +1,12 @@
 {
-    "basename": "asr_json-read_97-768fd75",
-    "cmd": "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
+    "basename": "asr-read_97-ddfad35",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/read_97.f90",
     "infile_hash": "d1aca151a8854f39581586c7f72ec69a9f7e869a3082371ee2e0cee1",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "asr_json-read_97-768fd75.stdout",
-    "stdout_hash": "1d2f4f5a851b0c3c848ddfb886b61d3d7a867eeed0fe7424372152c0",
+    "stdout": "asr-read_97-ddfad35.stdout",
+    "stdout_hash": "940a5b340932400786c4d9a605595df4625b11414b7582b50cfe0e17",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

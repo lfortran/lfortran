@@ -1,0 +1,78 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            read_97:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    read_97
+                    []
+                    [(Assignment
+                        (Var 2 x)
+                        (IntegerConstant 42 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (FileRead
+                        0
+                        ()
+                        (StringConstant
+                            "(I10)"
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        .true.
+                        ()
+                        ()
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

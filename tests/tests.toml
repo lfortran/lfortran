@@ -5229,7 +5229,7 @@ llvm = true
 
 [[test]]
 filename = "../integration_tests/read_97.f90"
-asr_json = true
+asr = true
 
 [[test]]
 filename = "no_main_program_1.f90"
