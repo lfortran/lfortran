@@ -1689,3 +1689,9 @@ semantic error: first argument of `llt` must have kind equal to 1
     |
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` argument of `spread` is not a valid dimension index
+   --> tests/errors/continue_compilation_1.f90:818:28
+    |
+818 |         print *, spread(a, 5, 2)
+    |                            ^ 

@@ -810,4 +810,11 @@ program continue_compilation_1
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
     end subroutine
+
+    subroutine spread_dim_out_of_range()
+        implicit none
+        integer :: a(3)
+        a = [1,2,3]
+        print *, spread(a, 5, 2)
+    end subroutine
 end program
