@@ -1190,6 +1190,18 @@ def add_create_func_return_src(func_name):
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):
         src += indent * 2 + f"m_args.push_back(al, args[{_i}]);\n"
+    if func_name in ("Mod", "Modulo"):
+        src += indent * 2 + "ASR::expr_t* divisor_value = ASRUtils::expr_value(m_args[1]);\n"
+        src += indent * 2 + "if (divisor_value && ASR::is_a<ASR::IntegerConstant_t>(*divisor_value) &&\n"
+        src += indent * 4 + "ASR::down_cast<ASR::IntegerConstant_t>(divisor_value)->m_n == 0) {\n"
+        src += indent * 3 + f'append_error(diag, "Second argument of {func_name.lower()} cannot be 0", loc);\n'
+        src += indent * 3 + "return nullptr;\n"
+        src += indent * 2 + "}\n"
+        src += indent * 2 + "if (divisor_value && ASR::is_a<ASR::RealConstant_t>(*divisor_value) &&\n"
+        src += indent * 4 + "ASR::down_cast<ASR::RealConstant_t>(divisor_value)->m_r == 0) {\n"
+        src += indent * 3 + f'append_error(diag, "Second argument of {func_name.lower()} cannot be 0", loc);\n'
+        src += indent * 3 + "return nullptr;\n"
+        src += indent * 2 + "}\n"
     if func_name in compile_time_only_fn:
         src += indent * 2 + f"return_type = ASRUtils::extract_type(return_type);\n"
         src += indent * 2 + f"m_value = eval_{func_name}(al, loc, return_type, args, diag);\n"
