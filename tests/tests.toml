@@ -2869,7 +2869,19 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "coarrays_09.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "coarrays_10.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_11.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
