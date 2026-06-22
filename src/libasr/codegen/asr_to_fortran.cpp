@@ -2235,6 +2235,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
             SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")
             SET_INTRINSIC_SUBROUTINE_NAME(CoMax, "co_max")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoMin, "co_min")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id)

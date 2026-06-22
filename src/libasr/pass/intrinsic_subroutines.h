@@ -38,6 +38,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     Sleep,
     CoSum,
     CoMax,
+    CoMin,
     // ...
 };
 
@@ -1842,6 +1843,81 @@ namespace CoMax {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         // co_max is a no-op in single-image (non-coarray) mode
         const std::string new_name = "_lcompilers_co_max_"
+            + std::to_string(arg_types.n);
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("a", arg_types[0], InOut);
+        if (arg_types.n >= 2) {
+            fill_func_arg_sub("result_image", arg_types[1], In);
+        }
+        if (arg_types.n >= 3) {
+            fill_func_arg_sub("stat", arg_types[2], In);
+        }
+        if (arg_types.n >= 4) {
+            fill_func_arg_sub("errmsg", arg_types[3], In);
+        }
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+}
+
+namespace CoMin {
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x,
+             diag::Diagnostics& diagnostics) {
+
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 4,
+            "Unexpected number of args, co_min takes 1 to 4 arguments, found "
+             + std::to_string(x.n_args),
+            x.base.base.loc, diagnostics);
+            
+        ASRUtils::require_impl(
+            ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ,
+            "First argument must be of integer, real or character type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_CoMin(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_integer(*arg_type) && !ASRUtils::is_real(*arg_type) && !ASRUtils::is_character(*arg_type)) {
+            diag.add(diag::Diagnostic(
+                "`a` argument of `co_min` must be of integer, real or character type, but got " +
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("must be integer, real or character type", { args[0]->base.loc })}));
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        for (size_t i = 1; i < args.size(); i++) {
+            if (args[i]) {
+                m_args.push_back(al, args[i]);
+            }
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::CoMin),
+            m_args.p, m_args.n, 0);
+    }
+
+     static inline ASR::stmt_t* instantiate_CoMin(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        // co_min is a no-op in single-image (non-coarray) mode
+        const std::string new_name = "_lcompilers_co_min_"
             + std::to_string(arg_types.n);
         declare_basic_variables(new_name);
         fill_func_arg_sub("a", arg_types[0], InOut);
