@@ -1546,6 +1546,15 @@ public:
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
+        // Handle the abbreviated READ fmt [, iolist] form where m_format holds
+        // the format specifier string (e.g. read "(I2)", x ). This is distinct
+        // from the parenthesized form and from args. We set a_fmt directly.
+        if (_type == AST::stmtType::Read && r != nullptr && r->m_format != nullptr) {
+            this->visit_expr(*r->m_format);
+            a_fmt = ASRUtils::EXPR(tmp);
+            formatted = true;
+        }
+
         // check if format as a keyword arg
         for (size_t i = 0; i < n_kwargs; i++) {
             std::string kwarg_name = to_lower(std::string(m_kwargs[i].m_arg));
