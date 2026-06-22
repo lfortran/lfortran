@@ -6858,6 +6858,10 @@ public:
                     ASRUtils::create_intrinsic_subroutine create_func =
                         ASRUtils::IntrinsicImpureSubroutineRegistry::get_create_subroutine(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
+                    if (tmp == nullptr) {
+                        // create_func has already reported a diagnostic; abort this
+                        throw SemanticAbort();
+                    }
                     return tmp;
                 }
             }

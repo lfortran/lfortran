@@ -810,4 +810,10 @@ program continue_compilation_1
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
     end subroutine
+
+    subroutine co_max_complex_arg()
+        implicit none
+        complex :: z
+        call co_max(z)
+    end subroutine
 end program
