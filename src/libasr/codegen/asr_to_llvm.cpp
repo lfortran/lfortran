@@ -9267,6 +9267,39 @@ public:
         builder->CreateStore(new_desc, target_ptr);
     }
 
+    llvm::Value* contiguous_section_extent(ASR::expr_t* value, int ranged_idx,
+            llvm::Type* bound_type) {
+        if (!ASR::is_a<ASR::ArraySection_t>(*value)) {
+            return nullptr;
+        }
+        ASR::ArraySection_t* sec = ASR::down_cast<ASR::ArraySection_t>(value);
+        ASR::array_index_t* dim = nullptr;
+        int seen = 0;
+        for (size_t vi = 0; vi < sec->n_args; vi++) {
+            ASR::array_index_t& idx = sec->m_args[vi];
+            if (idx.m_step == nullptr) {
+                continue;
+            }
+            int64_t step_val;
+            if (!(ASRUtils::is_value_constant(ASRUtils::expr_value(idx.m_step),
+                    step_val) && step_val == 1)) {
+                return nullptr;
+            }
+            if (seen++ == ranged_idx) {
+                dim = &idx;
+            }
+        }
+        if (dim == nullptr || dim->m_left == nullptr || dim->m_right == nullptr) {
+            return nullptr;
+        }
+        visit_expr_wrapper(dim->m_left, true);
+        llvm::Value* lb = builder->CreateSExtOrTrunc(tmp, bound_type);
+        visit_expr_wrapper(dim->m_right, true);
+        llvm::Value* ub = builder->CreateSExtOrTrunc(tmp, bound_type);
+        return builder->CreateAdd(builder->CreateSub(ub, lb),
+            llvm::ConstantInt::get(bound_type, 1));
+    }
+
     void handle_pointer_section_target(const ASR::Associate_t& x) {
         ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
         
@@ -9302,7 +9335,7 @@ public:
         int target_rank = 0;
         Vec<llvm::Value*> lbs; lbs.reserve(al, target_section->n_args);
         Vec<llvm::Value*> ubs; ubs.reserve(al, target_section->n_args);
-        
+
         for (size_t i = 0; i < target_section->n_args; i++) {
             ASR::array_index_t& idx = target_section->m_args[i];
             // For pointer section, we have left:right bounds
@@ -9330,21 +9363,24 @@ public:
                     visit_expr_wrapper(idx.m_right, true);
                     ubs.push_back(al, tmp);
                 } else if (right_refers_to_target) {
-                    // Compute ub = lb + size(value, dim) - 1 using ASR ArraySize.
-                    ASR::ttype_t* int_type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    ASR::expr_t* dim_expr = ASRUtils::EXPR(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                            (int64_t)(i + 1), int_type));
-                    ASR::expr_t* size_expr = ASRUtils::EXPR(
-                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
-                            dim_expr, int_type, nullptr));
-                    visit_expr_wrapper(size_expr, true);
-                    llvm::Value* size_val = builder->CreateSExtOrTrunc(
-                        tmp, lbs.p[i]->getType());
-                    llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
+                    llvm::Type* bound_type = lbs.p[i]->getType();
+                    llvm::Value* extent = contiguous_section_extent(
+                        x.m_value, target_rank, bound_type);
+                    if (extent == nullptr) {
+                        ASR::ttype_t* int_type = ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        ASR::expr_t* dim_expr = ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                (int64_t)(i + 1), int_type));
+                        ASR::expr_t* size_expr = ASRUtils::EXPR(
+                            ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
+                                dim_expr, int_type, nullptr));
+                        visit_expr_wrapper(size_expr, true);
+                        extent = builder->CreateSExtOrTrunc(tmp, bound_type);
+                    }
+                    llvm::Value* one = llvm::ConstantInt::get(bound_type, 1);
                     llvm::Value* ub_val = builder->CreateSub(
-                        builder->CreateAdd(lbs.p[i], size_val), one);
+                        builder->CreateAdd(lbs.p[i], extent), one);
                     ubs.push_back(al, ub_val);
                 } else {
                     // Use left as both bounds for single element
