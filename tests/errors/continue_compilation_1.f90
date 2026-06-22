@@ -305,8 +305,8 @@ program continue_compilation_1
         integer, len :: n
         real :: data(n)
     end type
-
-
+1000    continue
+1000    continue
 
 
 
