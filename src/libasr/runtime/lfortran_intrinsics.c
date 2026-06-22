@@ -480,7 +480,7 @@ static void _lfortran_internal_free_tracked(void *ptr,
 
 #endif /* LFORTRAN_INTERNAL_ALLOC_CHECK */
 
-const char *scratch_prefix = "_lfortran_generated_file";
+const char *scratch_prefix = "_lfortran_generated_file";  /* marker for auto-generated scratch files */
 
 static void _lfortran_close_all_units(void);
 
@@ -5939,13 +5939,12 @@ void remove_from_unit_to_file(int32_t unit_num) {
 }
 
 static void _lfortran_close_all_units(void) {
-    const size_t scratch_prefix_len = strlen(scratch_prefix);
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].filename != NULL) {
-            // Delete scratch files at normal program termination
-            if (strncmp(unit_to_file[i].filename, scratch_prefix,
-                        scratch_prefix_len) == 0) {
-                remove(unit_to_file[i].filename);
+            // Delete scratch files at normal program termination.
+            // Use strstr so it works whether the file is in cwd or a temp dir.
+            if (strstr(unit_to_file[i].filename, scratch_prefix) != NULL) {
+                remove(unit_to_file[i].filename);  /* ignore result */
             }
             internal_free(unit_to_file[i].filename);
             unit_to_file[i].filename = NULL;
@@ -6088,6 +6087,14 @@ _lfortran_open(int32_t unit_num,
     if (iostat != NULL) {
         *iostat = 0;
     }
+
+    /* Register cleanup so scratch (unnamed) files are removed on more termination paths */
+    static int atexit_registered = 0;
+    if (!atexit_registered) {
+        atexit(_lfortran_internal_alloc_finalize);
+        atexit_registered = 1;
+    }
+
     bool ini_encoding = true;
     if (encoding == NULL) {
         encoding = "unknown";
@@ -6118,13 +6125,28 @@ _lfortran_open(int32_t unit_num,
     // For now, we just validate and store the value but don't use it in this function
     
     bool ini_file = true;
-    if (f_name == NULL) {  // Not Provided
+    if (f_name == NULL) {  // Not Provided -> scratch/temporary file
         char *format = "txt";
         char unique_id[ID_LEN + 1];
         get_unique_ID(unique_id);
-        int length = ID_LEN + strlen(scratch_prefix) + strlen(format) + 3;
+
+        /* Place in a proper temp directory instead of cwd (like gfortran etc.) */
+        const char *tmpdir = getenv("TMPDIR");
+        if (!tmpdir) tmpdir = getenv("TMP");
+        if (!tmpdir) tmpdir = getenv("TEMP");
+#if defined(_WIN32)
+        if (!tmpdir) tmpdir = "C:\\Windows\\Temp";
+#else
+        if (!tmpdir) tmpdir = "/tmp";
+#endif
+
+        size_t dir_len = strlen(tmpdir);
+        int has_sep = (dir_len > 0 && (tmpdir[dir_len-1] == '/' || tmpdir[dir_len-1] == '\\'));
+        const char *sep = has_sep ? "" : "/";
+
+        int length = dir_len + strlen(sep) + strlen(scratch_prefix) + 1 + ID_LEN + 1 + strlen(format) + 1;
         f_name = (char*) internal_malloc(length);
-        snprintf(f_name, length, "%s_%s.%s", scratch_prefix, unique_id, format);
+        snprintf(f_name, length, "%s%s%s_%s.%s", tmpdir, sep, scratch_prefix, unique_id, format);
         f_name_len = strlen(f_name);
         ini_file = false;
     }
@@ -6474,6 +6496,7 @@ _lfortran_open(int32_t unit_num,
             perror(f_name_c);
             exit(1);
         }
+
         // Handle position='append': seek to end of file
         if (fd && position != NULL && position_len > 0) {
             char* position_c = to_c_string((const fchar*)position, position_len);
@@ -6482,6 +6505,14 @@ _lfortran_open(int32_t unit_num,
             }
             internal_free(position_c);
         }
+
+        /* For auto-generated scratch files (no FILE=), remove the directory entry
+           immediately after we decide to keep the open file. This makes the name
+           disappear (no more visible trash files). Data lives only via fd until close. */
+        if (fd && !ini_file) {
+            remove(f_name_c);  /* best effort */
+        }
+
         // f_name_c is stored in the unit table, do not free it
         store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode, decimal_mode, encoding_mode, round_mode_val, pad_mode);
         internal_free(status_c);
@@ -12822,11 +12853,10 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     // TODO: Support other `status` specifiers
     char *file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
 
-    const int64_t scratch_file_len = strlen(scratch_prefix) - 1; // exclude '\0'
-
     // file_name can be NULL for pre-connected units (stdin/stdout/stderr)
+    // Use strstr to support files placed in temp directories.
     bool is_temp_file = (file_name != NULL) &&
-        (strncmp(file_name, scratch_prefix, scratch_file_len) == 0);
+        (strstr(file_name, scratch_prefix) != NULL);
 
     bool delete_requested = false;
     if (status && status_len > 0) {
@@ -12850,12 +12880,16 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
 
     if (delete_requested || is_temp_file) {
         if (remove(file_name) != 0) {
-            if (iostat) {
+            if (errno == ENOENT) {
+                /* Already unlinked (common for scratch files after immediate remove on open).
+                   This is fine. */
+            } else if (iostat) {
                 *iostat = 2;
                 return;
+            } else {
+                printf("Error in deleting file!\n");
+                exit(1);
             }
-            printf("Error in deleting file!\n");
-            exit(1);
         }
     }
 
