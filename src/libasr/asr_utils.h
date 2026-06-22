@@ -5181,6 +5181,11 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
         sym_target = ASRUtils::symbol_get_past_external(sym_target);
         ASR::symbol_t* sym_value = ASRUtils::get_struct_sym_from_struct_expr(value);
         sym_value = ASRUtils::symbol_get_past_external(sym_value);
+        if (sym_target == nullptr || sym_value == nullptr ||
+                !ASR::is_a<ASR::Struct_t>(*sym_target) ||
+                !ASR::is_a<ASR::Struct_t>(*sym_value)) {
+            return false;
+        }
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(sym_target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(sym_value);
         bool tar_is_upoly = tar_struct->m_struct_signature != nullptr &&
