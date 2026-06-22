@@ -810,4 +810,13 @@ program continue_compilation_1
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
     end subroutine
+
+    subroutine merge_kind_mismatch()
+        implicit none
+        integer(kind=8) :: a
+        integer(kind=4) :: b
+        a = 1
+        b = 2
+        print *, merge(a, b, .true.)
+    end subroutine
 end program
