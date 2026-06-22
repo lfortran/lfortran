@@ -6,6 +6,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <map>
+#include <set>
 
 #ifndef CAF_PRIF_VERSION
 #define CAF_PRIF_VERSION 8
@@ -384,6 +385,7 @@ class PRIFInterface {
             ASR::Variable_t *var;
             ASR::symbol_t *handle_sym;
             ASR::symbol_t *data_sym;
+            ASR::expr_t *init_value;
             Location loc;
         };
         Vec<SavedCoarray> saved_coarrays;
@@ -808,8 +810,11 @@ class PRIFInterface {
                     sc.var = var;
                     sc.handle_sym = handle_sym;
                     sc.data_sym = data_sym;
+                    sc.init_value = var->m_value;
                     sc.loc = loc;
                     saved_coarrays.push_back(al, sc);
+                    var->m_value = nullptr;
+                    var->m_symbolic_value = nullptr;
                 }
 
                 ASR::ttype_t *orig_type = var->m_type;
@@ -921,13 +926,17 @@ class PRIFInterface {
                 if (var->n_codims == 0) continue;
 
                 if (var->m_storage == ASR::storage_typeType::Save) {
-                    ASR::symbol_t *dsym_orig = nullptr;
-                    for (size_t i = 0; i < saved_coarrays.n; i++) {
-                        if (saved_coarrays.p[i].var == var) {
-                            dsym_orig = saved_coarrays.p[i].data_sym;
-                            break;
-                        }
+                    // For saved coarrays, the companion variables live in the TU
+                    // global scope with a mangled name. Look them up by naming
+                    // convention so this works across separate compilation units.
+                    std::string parent_name = "";
+                    if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                        parent_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
                     }
+                    std::string vname = var->m_name;
+                    std::string dname = parent_name + "_" + vname + "__coarray_data";
+                    ASR::symbol_t *dsym_orig = unit.m_symtab->get_symbol(dname);
                     if (dsym_orig) {
                         ASR::symbol_t *dsym_use = get_symbol_in_scope(unit.m_symtab, body_scope, dsym_orig, loc);
                         ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
@@ -980,33 +989,127 @@ class PRIFInterface {
             }
         }
 
-        void allocate_saved_coarrays(SymbolTable *body_scope, const Location &loc,
-                                     Vec<ASR::stmt_t*> &new_body) {
-            ASRUtils::ASRBuilder b(al, loc);
-            bool initialized = false;
-            ASR::ttype_t *i64 = nullptr;
-            ASR::symbol_t *handle_struct = nullptr;
-            ASR::symbol_t *alloc_sub = nullptr;
+        // Build a unique per-TU init function name from the parent scope
+        // names of saved coarrays to avoid linker collisions.
+        std::string get_tu_init_function_name() {
+            std::string fn_name = "__lfortran_coarray_init";
+            std::set<std::string> parent_names;
+            for (size_t i = 0; i < saved_coarrays.n; i++) {
+                SymbolTable *var_scope = ASRUtils::symbol_parent_symtab(
+                    &saved_coarrays.p[i].var->base);
+                if (var_scope->asr_owner &&
+                    ASR::is_a<ASR::symbol_t>(*var_scope->asr_owner)) {
+                    parent_names.insert(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::symbol_t>(var_scope->asr_owner)));
+                }
+            }
+            for (const auto &pn : parent_names) {
+                fn_name += "_" + pn;
+            }
+            return fn_name;
+        }
+
+        // Emit a prif_init(exit_code) call into body, declaring exit_code
+        // in the given scope. Reusable by both generate_tu_init_function
+        // and visit_Program.
+        void emit_prif_init_call(SymbolTable *scope, const Location &loc,
+                                 Vec<ASR::stmt_t*> &body) {
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            ASR::symbol_t *ec_sym = declare_variable(
+                scope, loc, "exit_code", int32_type,
+                ASR::intentType::Local, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *ec_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, ec_sym));
+            ASR::symbol_t *init_sub = get_or_create_prif_init_sub(loc);
+            Vec<ASR::call_arg_t> init_args; init_args.reserve(al, 1);
+            ASR::call_arg_t ec_arg; ec_arg.loc = loc;
+            ec_arg.m_value = ec_expr;
+            init_args.push_back(al, ec_arg);
+            body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, init_sub, nullptr,
+                init_args.p, init_args.n, nullptr, false)));
+        }
+
+        // Generate a per-TU init function that allocates all saved coarrays.
+        // Registered via @llvm.global_ctors by the LLVM backend so it runs
+        // automatically before main(), making saved coarray allocation work
+        // across separate compilation units.
+        void generate_tu_init_function(const Location &loc) {
+            if (saved_coarrays.n == 0) return;
+
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string fn_name = get_tu_init_function_name();
+
+            // Avoid creating duplicate if already present
+            if (global_scope->get_symbol(fn_name)) return;
+
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+
+            ASR::ttype_t *i64 = int64;
+            ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
+            ASR::symbol_t *alloc_sub = get_or_create_prif_allocate_coarray_sub(loc);
+
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, saved_coarrays.n * 3 + 1);
+
+            // prif_init() must run first since @llvm.global_ctors executes
+            // before main(), before the program body's own prif_init call.
+            emit_prif_init_call(fn_symtab, loc, body);
+
             for (size_t i = 0; i < saved_coarrays.n; i++) {
                 ASR::Variable_t *var = saved_coarrays.p[i].var;
                 ASR::symbol_t *hsym_orig = saved_coarrays.p[i].handle_sym;
                 ASR::symbol_t *dsym_orig = saved_coarrays.p[i].data_sym;
-                
-                if (!initialized) {
-                    i64 = int64;
-                    handle_struct = get_or_create_prif_coarray_handle_struct(loc);
-                    alloc_sub = get_or_create_prif_allocate_coarray_sub(loc);
-                    initialized = true;
-                }
+                ASR::expr_t *init_value = saved_coarrays.p[i].init_value;
 
-                ASR::symbol_t *hsym_use = get_symbol_in_scope(unit.m_symtab, body_scope, hsym_orig, loc);
-                ASR::symbol_t *dsym_use = get_symbol_in_scope(unit.m_symtab, body_scope, dsym_orig, loc);
+                ASR::symbol_t *hsym_use = get_symbol_in_scope(
+                    global_scope, fn_symtab, hsym_orig, loc);
+                ASR::symbol_t *dsym_use = get_symbol_in_scope(
+                    global_scope, fn_symtab, dsym_orig, loc);
 
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
                 ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
 
-                emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
+                emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, body);
+
+                // If the saved coarray had an initial value (e.g., x[*] = 0),
+                // bind the data pointer to a local variable and assign the value.
+                if (init_value) {
+                    std::string local_name = std::string(var->m_name) + "__init_ptr";
+                    ASR::ttype_t *var_ptr_type = var->m_type; // already Pointer_t
+                    ASR::symbol_t *local_sym = declare_variable(
+                        fn_symtab, loc, local_name, var_ptr_type,
+                        ASR::intentType::Local, nullptr,
+                        ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::presenceType::Required, false);
+                    ASR::expr_t *local_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, local_sym));
+
+                    body.push_back(al, ASRUtils::STMT(
+                        ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
+                                                  nullptr, nullptr)));
+                    body.push_back(al, ASRUtils::STMT(
+                        ASR::make_Assignment_t(al, loc, local_expr, init_value,
+                                              nullptr, false, false)));
+                }
             }
+
+            Vec<char*> deps; deps.reserve(al, 2);
+            deps.push_back(al, s2c(al, get_mangled_name("prif", "prif_init")));
+            deps.push_back(al, s2c(al, get_mangled_name("prif", "prif_allocate_coarray")));
+
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, fn_name), deps.p, deps.n,
+                nullptr, 0, body.p, body.n, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Implementation, nullptr,
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+
+            global_scope->add_symbol(fn_name, ASR::down_cast<ASR::symbol_t>(fn));
         }
 
         ASR::expr_t* make_prif_get_call(const Location &loc,
@@ -1270,20 +1373,9 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             Location loc = xx.base.base.loc;
 
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::symbol_t *ec_sym = prif.declare_variable(
-                xx.m_symtab, loc, "exit_code", int32_type, ASR::intentType::Local, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false);
-            ASR::expr_t *ec_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ec_sym));
 
             // Insert prif_init() call first
-            ASR::symbol_t *init_sub = prif.get_or_create_prif_init_sub(loc);
-            Vec<ASR::call_arg_t> init_args; init_args.reserve(al, 1);
-            ASR::call_arg_t ec_arg; ec_arg.loc = loc; ec_arg.m_value = ec_expr;
-            init_args.push_back(al, ec_arg);
-            new_body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(
-                al, loc, init_sub, nullptr, init_args.p, init_args.n, nullptr, false)));
+            prif.emit_prif_init_call(xx.m_symtab, loc, new_body);
 
             // Allocate coarrays for all used modules first
             for (auto &item : prif.get_global_scope()->get_scope()) {
@@ -1292,9 +1384,6 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
                     prif.allocate_coarrays(mod->m_symtab, xx.m_symtab, loc, new_body);
                 }
             }
-
-            // Allocate saved coarrays across all scopes
-            prif.allocate_saved_coarrays(xx.m_symtab, loc, new_body);
 
             // Allocate coarrays in Program scope
             prif.allocate_coarrays(xx.m_symtab, xx.m_symtab, loc, new_body);
@@ -1360,11 +1449,18 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
     CoarrayInitVisitor init_v(al, prif);
     init_v.visit_TranslationUnit(unit);
 
-    // Phase 3: Replace coarray expressions
+    // Phase 3: Generate per-TU init function for saved coarrays
+    // This creates a __lfortran_coarray_init subroutine that the LLVM
+    // backend will register via @llvm.global_ctors, ensuring saved
+    // coarrays are allocated even in separate compilation units.
+    Location loc; loc.first = 1; loc.last = 1;
+    prif.generate_tu_init_function(loc);
+
+    // Phase 4: Replace coarray expressions
     CoarrayPrifVisitor v(al, prif);
     v.visit_TranslationUnit(unit);
 
-    // Phase 4: Update dependencies
+    // Phase 5: Update dependencies
     PassUtils::UpdateDependenciesVisitor(al).visit_TranslationUnit(unit);
 }
 

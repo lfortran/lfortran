@@ -45,6 +45,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Utils/ModuleUtils.h>
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
@@ -1910,6 +1911,21 @@ public:
                 visit_symbol(*item.second);
             }
         }
+
+        // Register coarray per-TU init functions in @llvm.global_ctors
+        // so saved coarray allocations run before main() in separate compilation
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                std::string name = item.first;
+                if (name.find("__lfortran_coarray_init") == 0) {
+                    llvm::Function *init_fn = module->getFunction(name);
+                    if (init_fn) {
+                        llvm::appendToGlobalCtors(*module, init_fn, 65535);
+                    }
+                }
+            }
+        }
+
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
     }
