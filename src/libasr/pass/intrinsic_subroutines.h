@@ -131,11 +131,36 @@ namespace RandomSeed {
         }
     }
 
-    static inline ASR::asr_t* create_RandomSeed(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+    static inline ASR::asr_t* create_RandomSeed(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 0);
         ASRBuilder b(al, loc);
         for (int i = 0; i < int(args.size()); i++) {
             if(args[i]) {
+                if (i == 0 || i == 2) {
+                    if (!ASRUtils::is_modifiable_actual_argument_expr(args[i])) {
+                        diag.semantic_error_label(
+                            "Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)",
+                            {args[i]->base.loc},
+                            "failed here"
+                        );
+                        return nullptr;
+                    }
+                    if (ASR::is_a<ASR::Var_t>(*args[i])) {
+                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(args[i])->m_v;
+                        if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
+                            ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
+                            if (passed_var->m_intent == ASR::intentType::In) {
+                                std::string arg_name = i == 0 ? "size" : "get";
+                                diag.semantic_error_label(
+                                    "‘" + arg_name + "’ argument of ‘random_seed’ intrinsic cannot be INTENT(IN)",
+                                    {args[i]->base.loc},
+                                    "failed here"
+                                );
+                                return nullptr;
+                            }
+                        }
+                    }
+                }
                 m_args.push_back(al, args[i]);
             } else {
                 m_args.push_back(al, b.f32(1));

@@ -6858,6 +6858,9 @@ public:
                     ASRUtils::create_intrinsic_subroutine create_func =
                         ASRUtils::IntrinsicImpureSubroutineRegistry::get_create_subroutine(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
+                    if (diag.has_error()) {
+                        throw SemanticAbort();
+                    }
                     return tmp;
                 }
             }
