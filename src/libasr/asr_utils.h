@@ -7564,7 +7564,12 @@ inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayCon
 template<typename T>
 T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+        ASR::expr_t* expr = ASRUtils::expr_value(a_args[i]);
+        if (ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+            data[i] = ASR::down_cast<ASR::IntegerConstant_t>(expr)->m_n;
+        } else {
+            throw LCompilersException("Compile-time array evaluation failed: Integer array contains non-scalar element.");
+        }
     }
     return data;
 }
@@ -7572,7 +7577,12 @@ T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+        ASR::expr_t* expr = ASRUtils::expr_value(a_args[i]);
+        if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*expr)) {
+            data[i] = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(expr)->m_n;
+        } else {
+            throw LCompilersException("Compile-time array evaluation failed: Unsigned integer array contains non-scalar element.");
+        }
     }
     return data;
 }
@@ -7580,7 +7590,12 @@ T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
+        ASR::expr_t* expr = ASRUtils::expr_value(a_args[i]);
+        if (ASR::is_a<ASR::RealConstant_t>(*expr)) {
+            data[i] = ASR::down_cast<ASR::RealConstant_t>(expr)->m_r;
+        } else {
+            throw LCompilersException("Compile-time array evaluation failed: Real array contains non-scalar element.");
+        }
     }
     return data;
 }
@@ -7588,8 +7603,13 @@ T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_complex(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[2*i] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re;
-        data[2*i + 1] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im;
+        ASR::expr_t* expr = ASRUtils::expr_value(a_args[i]);
+        if (ASR::is_a<ASR::ComplexConstant_t>(*expr)) {
+            data[2*i] = ASR::down_cast<ASR::ComplexConstant_t>(expr)->m_re;
+            data[2*i + 1] = ASR::down_cast<ASR::ComplexConstant_t>(expr)->m_im;
+        } else {
+            throw LCompilersException("Compile-time array evaluation failed: Complex array contains non-scalar element.");
+        }
     }
     return data;
 }
