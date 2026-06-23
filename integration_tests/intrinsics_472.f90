@@ -1,4 +1,4 @@
-program intrinsics_len_trim_01
+program intrinsics_472
     use iso_c_binding, only: c_int
     implicit none
     character(len=10) :: s
@@ -18,4 +18,4 @@ program intrinsics_len_trim_01
     end if
 
     print *, "OK"
-end program intrinsics_len_trim_01
+end program intrinsics_472
