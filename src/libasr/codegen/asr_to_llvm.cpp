@@ -18694,8 +18694,11 @@ public:
             is_string_array = ASRUtils::is_array(unit_type);
             llvm::Value *src_data, *src_len;
             if (is_string_array) {
+                llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_unit, ASRUtils::type_get_past_allocatable_pointer(unit_type),
+                    module.get());
                 llvm::Value* unit_desc = llvm_utils->CreateLoad2(
-                    unit_val->getType()->getPointerElementType(), unit_val);
+                    llvm_arr_type->getPointerTo(), unit_val);
                 src_data = llvm_utils->get_stringArray_data(unit_type, unit_desc);
                 src_len = llvm_utils->get_stringArray_length(unit_type, unit_desc);
             } else {
@@ -18711,11 +18714,11 @@ public:
                 LCOMPILERS_ASSERT(n_dims >= 1);
                 int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
                 if (n_elems_val == -1) {
-                    llvm::Value* unit_desc = llvm_utils->CreateLoad2(
-                        unit_val->getType()->getPointerElementType(), unit_val);
                     llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_unit, ASRUtils::type_get_past_allocatable_pointer(unit_type),
                         module.get());
+                    llvm::Value* unit_desc = llvm_utils->CreateLoad2(
+                        llvm_arr_type->getPointerTo(), unit_val);
                     args.push_back(arr_descr->get_array_size(llvm_arr_type, unit_desc, nullptr, 8));
                 } else {
                     args.push_back(llvm::ConstantInt::get(
