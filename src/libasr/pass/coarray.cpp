@@ -1540,6 +1540,9 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                             coarray_ref->n_coindices, a->m_value);
                         body.push_back(replacer.al, put_call);
                     }
+                    else {
+                        body.push_back(replacer.al, m_body[i]);
+                    }
                 }
                 else {
                     body.push_back(replacer.al, m_body[i]);
