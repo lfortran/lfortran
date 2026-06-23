@@ -976,6 +976,12 @@ public:
         switch (phys_type)
         {
             case ASR::DescriptorString:{
+                if (!tmp->getType()->isPointerTy()) {
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(
+                        *builder, tmp->getType(), nullptr, "str_value");
+                    builder->CreateStore(tmp, tmp_ptr);
+                    tmp = tmp_ptr;
+                }
                 //Set data
                 data_and_length.first = builder->CreateLoad(
                     character_type,
@@ -994,6 +1000,12 @@ public:
                 break;
             }
             case ASR::CChar:{
+                if (!tmp->getType()->isPointerTy()) {
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(
+                        *builder, tmp->getType(), nullptr, "char_value");
+                    builder->CreateStore(tmp, tmp_ptr);
+                    tmp = tmp_ptr;
+                }
                 // tmp is i8* (pointer to the character byte)
                 data_and_length.first = tmp;
                 data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
@@ -15107,7 +15119,7 @@ public:
             int a_kind = ASR::down_cast<ASR::Logical_t>(x_m_type)->m_kind;
             el_type = llvm_utils->getIntType(a_kind);
         } else if (ASR::is_a<ASR::String_t>(*x_m_type)) {
-            el_type = character_type;
+            el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
             int complex_kind = ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind;
             if( complex_kind == 4 ) {
@@ -15782,7 +15794,29 @@ public:
                 if (ASRUtils::is_character(*element_type)) {
                     // For character arrays: num_elements = source_bytes / element_bytes
                     // where element_bytes = kind * length for character(kind, len)
-                    llvm::Value* source_length = get_string_length(x.m_source);
+                    llvm::Value* source_length = nullptr;
+                    if (ASRUtils::is_character(*ASRUtils::expr_type(x.m_source))) {
+                        source_length = get_string_length(x.m_source);
+                        if (!source_length->getType()->isIntegerTy(64)) {
+                            source_length = builder->CreateZExt(source_length, llvm::Type::getInt64Ty(context));
+                        }
+                    } else {
+                        llvm::DataLayout dl(module->getDataLayout());
+                        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_source))) {
+                            ASR::ttype_t* src_arr_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_source));
+                            llvm::Type* llvm_src_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, src_arr_type, module.get());
+                            llvm::Value* num_elems = llvm_utils->get_array_size(source, llvm_src_type, src_arr_type, this);
+                            ASR::ttype_t* src_el_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_source));
+                            llvm::Type* src_el_llvm = llvm_utils->get_type_from_ttype_t_util(x.m_source, src_el_type, module.get());
+                            uint64_t el_sz = dl.getTypeAllocSize(src_el_llvm);
+                            llvm::Value* elem_size = llvm::ConstantInt::get(num_elems->getType(), el_sz);
+                            source_length = builder->CreateMul(num_elems, elem_size);
+                        } else {
+                            llvm::Type* src_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, ASRUtils::expr_type(x.m_source), module.get());
+                            uint64_t sz = dl.getTypeAllocSize(src_type);
+                            source_length = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), sz);
+                        }
+                    }
 
                     // Note: source_length is the total number of bytes in the source
                     // The ASR phase has already calculated the correct array dimension
@@ -15794,7 +15828,7 @@ public:
                     // Create a string view representing the whole source byte data
                     // The assignment handler will extract element_length bytes per iteration
                     llvm::Value* const str_view = llvm_utils->create_stringView(
-                        ASRUtils::get_string_type(x.m_source),
+                        ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(element_type)),
                         casted_to_i8, source_length, "bit_cast_expr_return");
                     tmp = str_view;
                 }
@@ -15888,6 +15922,9 @@ public:
             case (ASR::cast_kindType::LogicalToReal) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 tmp = builder->CreateUIToFP(tmp, llvm_utils->getFPType(a_kind, false));
+                break;
+            }
+            case (ASR::cast_kindType::StringToString) : {
                 break;
             }
             case (ASR::cast_kindType::RealToInteger) : {
@@ -20098,7 +20135,8 @@ public:
         } else { // String Write
             if (is_string_array_unit &&
                 ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_unit))
-                    == ASR::array_physical_typeType::DescriptorArray) {
+                    == ASR::array_physical_typeType::DescriptorArray &&
+                !ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
                 // For DescriptorArray (e.g. EQUIVALENCE), extract the data
                 // pointer from the array descriptor to get to string descriptors
                 ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
@@ -20115,11 +20153,40 @@ public:
                     ASRUtils::get_string_type(x.m_unit), tmp, true, true);
             }
             if (is_string_array_unit) {
-                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
-                    ASR::make_ArraySize_t(al, x.base.base.loc, x.m_unit, nullptr, type32, nullptr));
-                visit_ArraySize(*array_size);
-                string_array_size = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
+                    ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_unit);
+                    auto get_i64_value = [&](ASR::expr_t* expr) {
+                        int ptr_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr_wrapper(expr, true);
+                        ptr_loads = ptr_copy;
+                        return llvm_utils->convert_kind(tmp, llvm::Type::getInt64Ty(context));
+                    };
+                    string_array_size = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                    for (size_t i = 0; i < section->n_args; i++) {
+                        if (!section->m_args[i].m_left) {
+                            continue;
+                        }
+                        llvm::Value* left = get_i64_value(section->m_args[i].m_left);
+                        llvm::Value* right = get_i64_value(section->m_args[i].m_right);
+                        llvm::Value* step = section->m_args[i].m_step ?
+                            get_i64_value(section->m_args[i].m_step) :
+                            llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                        llvm::Value* extent = builder->CreateAdd(
+                            builder->CreateSDiv(builder->CreateSub(right, left), step),
+                            llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+                        llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+                        extent = builder->CreateSelect(
+                            builder->CreateICmpSLT(extent, zero), zero, extent);
+                        string_array_size = builder->CreateMul(string_array_size, extent);
+                    }
+                } else {
+                    ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_unit, nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size);
+                    string_array_size = builder->CreateSExt(tmp, llvm::Type::getInt64Ty(context));
+                }
             } else {
                 string_array_size = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
             }
@@ -23278,7 +23345,11 @@ public:
                                         !ASRUtils::is_pointer(arg_type) &&
                                         ASRUtils::extract_physical_type(arg_type) ==
                                             ASR::array_physical_typeType::FixedSizeArray;
-                                    if (!skip_load_for_fixed_size_array) {
+                                    bool skip_load_for_pointer_dummy_arg =
+                                        LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                        LLVM::is_llvm_pointer(*arg_type);
+                                    if (!skip_load_for_fixed_size_array &&
+                                            !skip_load_for_pointer_dummy_arg) {
                                         llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg_type, module.get());
                                         value = llvm_utils->CreateLoad2(value_type, value);
                                     }

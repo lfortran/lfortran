@@ -323,7 +323,7 @@ program continue_compilation_1
     !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
-
+    print 1+2
     a = 1
     print *, a(10)
     a5 = 8
@@ -792,5 +792,22 @@ program continue_compilation_1
         select case (x)
         case default
         end select
+    end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)  
+        print *, lgt("a", glyph)  
+        print *, lle(glyph, "z")  
+        print *, llt(glyph, "z")  
+    end subroutine
+
+    subroutine c_loc_default_component_initializer()
+        use iso_c_binding, only: c_loc, c_ptr
+        integer, target :: target_value
+        type :: holder
+            type(c_ptr) :: ptr = c_loc(target_value)
+        end type
     end subroutine
 end program

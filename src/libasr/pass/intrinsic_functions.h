@@ -5929,6 +5929,12 @@ namespace StringConcat {
                 return b.Add(len1, len2);
             }
         }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*expr)) {
+            ASR::ArrayConstructor_t* arr = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
+            if (arr->n_args > 0) {
+                return get_safe_string_len(al, loc, arr->m_args[0], ASRUtils::expr_type(arr->m_args[0]), b);
+            }
+        }
         return b.StringLen(expr);
     }
 

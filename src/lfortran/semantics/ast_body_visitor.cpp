@@ -7924,7 +7924,8 @@ public:
                                 create_or_update_implicit_interface(
                                     proc_var, x.base.base.loc,
                                     arg_types.p, arg_types.size(),
-                                    nullptr, parent_scope, sub_name);
+                                    nullptr, parent_scope, sub_name,
+                                    current_scope);
                             }
                         }
                     }
@@ -8063,39 +8064,25 @@ public:
                                     // If parameter has no arg info but passed function does,
                                     // create/update the parameter's interface using the passed function's type info.
                                     if (param_ft->n_arg_types == 0 && passed_ft->n_arg_types > 0) {
-                                        if (v->m_type_declaration) {
-                                            // Interface exists, update it
-                                            ASR::symbol_t* iface_sym = ASRUtils::symbol_get_past_external(
-                                                v->m_type_declaration);
-                                            if (ASR::is_a<ASR::Function_t>(*iface_sym)) {
-                                                ASR::Function_t* iface_func = ASR::down_cast<ASR::Function_t>(iface_sym);
-                                                ASR::FunctionType_t* iface_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                                    iface_func->m_function_signature);
-                                                iface_ft->m_arg_types = passed_ft->m_arg_types;
-                                                iface_ft->n_arg_types = passed_ft->n_arg_types;
-                                                ASR::ttype_t* new_type = iface_func->m_function_signature;
-                                                if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
-                                                    new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
-                                                }
-                                                v->m_type = new_type;
-                                                ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                                    f->m_function_signature);
-                                                callee_ft->m_arg_types[i + offset] = v->m_type;
-                                            }
-                                        } else {
-                                            // No interface yet, create one with the passed function's type info.
+                                        {
+                                            // Use create_or_update_implicit_interface to properly
+                                            // create/update the interface with matching args and arg_types.
+                                            // This handles both "interface exists" and "no interface" cases.
+                                            // For existing interfaces, it shares the source arg_types array
+                                            // directly for cross-scope type propagation (see #11924).
                                             SymbolTable* callee_scope = f->m_symtab;
-                                            SymbolTable* parent_scope = callee_scope->parent ? callee_scope->parent : callee_scope;
+                                            SymbolTable* iface_parent = callee_scope->parent ? callee_scope->parent : callee_scope;
                                             std::string var_name = v->m_name;
-                                            ASR::ttype_t* return_type = param_ft->m_return_var_type;
+                                            ASR::ttype_t* return_type = passed_ft->m_return_var_type;
                                             ASR::ttype_t* iface_type = create_or_update_implicit_interface(
                                                 v, passed_arg->base.loc,
                                                 passed_ft->m_arg_types, passed_ft->n_arg_types,
-                                                return_type, parent_scope, var_name);
+                                                return_type, iface_parent, var_name);
                                             // Update the callee function's signature
                                             ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
                                                 f->m_function_signature);
-                                            callee_ft->m_arg_types[i + offset] = iface_type;
+                                            callee_ft->m_arg_types[i + offset] = v->m_type;
+                                            (void)iface_type;
                                         }
                                     } else if (passed_ft->n_arg_types == 0 && param_ft->n_arg_types > 0) {
                                         // Reverse propagation: parameter has type info (from being called
@@ -8425,6 +8412,15 @@ public:
                     "Use character variables instead.",
                     Level::Error, Stage::Semantic, {
                         Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (!ASRUtils::is_character(*fmt_type) && !(ASR::is_a<ASR::IntegerConstant_t>(*fmt)
+                    && AST::is_a<AST::Num_t>(*x.m_fmt))) {
+                diag.add(Diagnostic(
+                    "Format specifier in print statement must be of type default character",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_fmt->base.loc})
                     }));
                 throw SemanticAbort();
             }
@@ -9071,73 +9067,67 @@ public:
 
     void visit_ForAll(const AST::ForAll_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_control != 1) {
-            diag.add(Diagnostic(
-                "Forall block: one control statement is supported for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
         if (x.n_body != 1) {
             diag.add(Diagnostic(
                 "Forall block: one body statement is supported for now",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
-                }));
+            }));
             throw SemanticAbort();
         }
-        
-        AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[0];
-        if (!h.m_var) {
-            diag.add(Diagnostic(
-                "Forall block: loop variable is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
+        for (size_t i = 0; i < x.n_control; i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            if (!h.m_var) {
+                diag.add(Diagnostic(
+                    "Forall block: loop variable is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (!h.m_start) {
+                diag.add(Diagnostic(
+                    "Forall block: start condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            if (!h.m_end) {
+                diag.add(Diagnostic(
+                    "Forall block: end condition is required",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         }
-        if (!h.m_start) {
-            diag.add(Diagnostic(
-                "Forall block: start condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        if (!h.m_end) {
-            diag.add(Diagnostic(
-                "Forall block: end condition is required",
-                Level::Error, Stage::Semantic, {
-                    Label("", {x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
-        
-        ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
-        visit_expr(*h.m_start);
-        ASR::expr_t *start = ASRUtils::EXPR(tmp);
-        visit_expr(*h.m_end);
-        ASR::expr_t *end = ASRUtils::EXPR(tmp);
-        ASR::expr_t *increment;
-        if (h.m_increment) {
-            visit_expr(*h.m_increment);
-            increment = ASRUtils::EXPR(tmp);
-        } else {
-            increment = nullptr;
-        }
-        
-        ASR::do_loop_head_t head;
-        head.m_v = var;
-        head.m_start = start;
-        head.m_end = end;
-        head.m_increment = increment;
-        head.loc = head.m_v->base.loc;
         
         this->visit_stmt(*x.m_body[0]);
         ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
-        
-        tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
+        for (int i = x.n_control - 1; i >= 0; i--) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
+            ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
+            visit_expr(*h.m_start);
+            ASR::expr_t *start = ASRUtils::EXPR(tmp);
+            visit_expr(*h.m_end);
+            ASR::expr_t *end = ASRUtils::EXPR(tmp);
+            ASR::expr_t *increment;
+            if (h.m_increment) {
+                visit_expr(*h.m_increment);
+                increment = ASRUtils::EXPR(tmp);
+            } else {
+                increment = nullptr;
+            }
+            ASR::do_loop_head_t head;
+            head.m_v = var;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = increment;
+            head.loc = head.m_v->base.loc;
+            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
+            stmt = ASRUtils::STMT(tmp);
+        }
         all_loops_blocks_nesting -= 1;
     }
 
@@ -9985,6 +9975,31 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                     }
                 }
             }
+        }
+    }
+    if (compiler_options.implicit_interface) {
+        // Sync the types of the m_args Variables with the FunctionType's arg_types.
+        // This is necessary because some functions share the m_arg_types array,
+        // and if it was updated in-place by another function, the m_args
+        // variables might have stale m_type pointers.
+        auto sync_func = [&](ASR::Function_t* func) {
+            ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+            if (ft->m_abi == ASR::abiType::Source || ft->m_abi == ASR::abiType::BindC) {
+                if (ft->n_arg_types == func->n_args) {
+                    for (size_t i = 0; i < func->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+                            if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                                ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                                arg_var->m_type = ft->m_arg_types[i];
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        for (ASR::Function_t* func : b.implicit_interfaces_to_sync) {
+            sync_func(func);
         }
     }
 

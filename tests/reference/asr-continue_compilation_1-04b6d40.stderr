@@ -488,6 +488,12 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
 751 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Function `c_loc` is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:810:13
+    |
+810 |             type(c_ptr) :: ptr = c_loc(target_value)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
@@ -553,6 +559,12 @@ semantic error: Intrinsic 'not_real' is not recognized
     |
 268 |     call sub(not_real)
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
+
+semantic error: Format specifier in print statement must be of type default character
+   --> tests/errors/continue_compilation_1.f90:326:11
+    |
+326 |     print 1+2
+    |           ^^^ 
 
 semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
    --> tests/errors/continue_compilation_1.f90:328:14
@@ -1653,3 +1665,27 @@ semantic error: select case expression must be of type integer, character, or lo
     |
 792 |         select case (x)
     |                      ^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:800:18
+    |
+800 |         print *, lge("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `lgt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:801:18
+    |
+801 |         print *, lgt("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `lle` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:802:18
+    |
+802 |         print *, lle(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `llt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:803:18
+    |
+803 |         print *, llt(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
