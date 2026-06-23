@@ -5350,7 +5350,10 @@ public:
     }
 
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            throw CodeGenError("Compile-time evaluation failed: Array initializer could not be fully reduced to a constant.", value->base.loc);
+        }
+        
         ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
         std::vector<llvm::Constant*> arr_elements;
         size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
@@ -5396,9 +5399,11 @@ public:
                     im = llvm::ConstantFP::get(context, llvm::APFloat((double) comp_const->m_im));
                     struct_type = llvm::cast<llvm::StructType>(complex_type_8);
                 } else {
-                    throw CodeGenError("Complex kind " + std::to_string(a_kind) + " not supported in array initializer");
+                    throw CodeGenError("Complex kind " + std::to_string(a_kind) + " not supported in array initializer", value->base.loc);
                 }
                 arr_elements.push_back(llvm::ConstantStruct::get(struct_type, {re, im}));
+            } else {
+                 throw CodeGenError("Compile-time evaluation failed: Array initializer contains a non-constant element.", value->base.loc);
             }
         }
         if (!arr_type) {
