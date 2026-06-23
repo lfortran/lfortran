@@ -18693,8 +18693,27 @@ public:
             ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
             is_string_array = ASRUtils::is_array(unit_type);
             llvm::Value *src_data, *src_len;
-            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
-                ASRUtils::get_string_type(x.m_unit), unit_val);
+            if (is_string_array) {
+                ASR::array_physical_typeType storage_type = ASRUtils::extract_physical_type(unit_type);
+                if (storage_type == ASR::array_physical_typeType::PointerArray) {
+                    src_data = llvm_utils->get_stringArray_data(unit_type, unit_val);
+                    src_len = llvm_utils->get_stringArray_length(unit_type, unit_val);
+                } else {
+                    llvm::Type* unit_val_type = unit_val->getType();
+                    if (unit_val_type->isPointerTy() &&
+                        unit_val_type->getPointerElementType()->isPointerTy()) {
+                        unit_val = llvm_utils->CreateLoad2(unit_val_type->getPointerElementType(), unit_val);
+                    }
+                    llvm::Value* first_elem = builder->CreateLoad(
+                        llvm_utils->get_StringType(ASRUtils::extract_type(unit_type))->getPointerTo(),
+                        arr_descr->get_pointer_to_data(x.m_unit, unit_type, unit_val, module.get()));
+                    std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                        ASRUtils::get_string_type(x.m_unit), first_elem);
+                }
+            } else {
+                std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), unit_val);
+            }
             args.push_back(src_data);
             args.push_back(src_len);
             if (is_string_array) {
@@ -18703,8 +18722,18 @@ public:
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(unit_type, dims);
                 LCOMPILERS_ASSERT(n_dims >= 1);
                 int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
-                args.push_back(llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val)));
+                if (n_elems_val >= 0) {
+                    args.push_back(llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val)));
+                } else {
+                    llvm::Type* unit_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_unit, ASRUtils::type_get_past_allocatable_pointer(unit_type),
+                        module.get());
+                    llvm::Value* n_elems = arr_descr->get_array_size(
+                        unit_llvm_type, unit_val, nullptr, 8);
+                    args.push_back(builder->CreateSExtOrTrunc(
+                        n_elems, llvm::Type::getInt64Ty(context)));
+                }
             }
         } else {
             args.push_back(unit_val);
