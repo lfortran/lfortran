@@ -3049,6 +3049,10 @@ template <class T, class U>
 static inline T* down_cast(const U *f)
 {
     LCOMPILERS_ASSERT(f != nullptr);
+    if (!is_a<T>(*f)) {
+        printf("\n\n>>> ICE FAILED NODE: %%d IN: %%s <<<\n\n", (int)f->type, __PRETTY_FUNCTION__);
+        fflush(stdout);
+    }
     LCOMPILERS_ASSERT(is_a<T>(*f));
     return (T*)f;
 }
