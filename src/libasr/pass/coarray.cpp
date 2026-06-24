@@ -735,9 +735,12 @@ class PRIFInterface {
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
-        ASR::symbol_t* get_or_create_prif_co_sum_sub(const Location &loc, ASR::ttype_t * /*a_type*/) {
+        // Declares the interface for prif_co_sum / prif_co_max / prif_co_min, which
+        // share the same signature: (a: type(*) assumed-rank inout target,
+        // result_image, stat, errmsg, errmsg_alloc).
+        ASR::symbol_t* get_or_create_prif_co_reduction_sub(const Location &loc, const std::string &prif_name) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_co_sum");
+            std::string sym_name = get_mangled_name("prif", prif_name);
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -824,8 +827,7 @@ class PRIFInterface {
                                            ASR::expr_t *stat = nullptr,
                                            ASR::expr_t *errmsg = nullptr,
                                            ASR::expr_t *errmsg_alloc = nullptr) {
-            ASR::ttype_t *a_type = ASRUtils::expr_type(a);
-            ASR::symbol_t *sub = get_or_create_prif_co_sum_sub(loc, a_type);
+            ASR::symbol_t *sub = get_or_create_prif_co_reduction_sub(loc, "prif_co_sum");
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a;
@@ -844,92 +846,11 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
 
-        ASR::symbol_t* get_or_create_prif_co_max_sub(const Location &loc, ASR::ttype_t * /*a_type*/) {
+        // Declares the interface for prif_co_max_character / prif_co_min_character
+        // (a: character(len=*, kind=c_char) assumed-rank inout target, ...).
+        ASR::symbol_t* get_or_create_prif_co_reduction_character_sub(const Location &loc, const std::string &prif_name) {
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_co_max");
-            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
-                return existing;
-            }
-            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = int32;
-            ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1, nullptr,
-                ASR::string_length_kindType::AssumedLength,
-                ASR::string_physical_typeType::DescriptorString));
-            ASR::ttype_t *alloc_str_type = allocatable_deferred_string();
-
-            std::string derived_type_name = "~assumed_type";
-            ASR::symbol_t *type_declaration = global_scope->resolve_symbol(derived_type_name);
-            if (!type_declaration) {
-                SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
-                ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
-                                                s2c(al, derived_type_name), nullptr, nullptr, 0, nullptr, 0,
-                                                nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, true,
-                                                nullptr, 0, nullptr, nullptr, nullptr, 0);
-                ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
-                ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
-                ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
-                struct_->m_struct_signature = struct_type;
-                type_declaration = struct_symbol;
-                global_scope->add_symbol(derived_type_name, type_declaration);
-            }
-            ASR::ttype_t * assumed_type = ASRUtils::make_StructType_t_util(al, loc, type_declaration, false);
-            ASR::ttype_t * a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(al, loc, assumed_type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
-
-            ASR::symbol_t *a_sym = declare_variable(
-                fn_symtab, loc, "a", a_type_assumed, ASR::intentType::InOut, type_declaration,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false);
-            ASR::down_cast<ASR::Variable_t>(a_sym)->m_target_attr = true;
-            ASR::expr_t *a = ASRUtils::EXPR(ASR::make_Var_t(al, loc, a_sym));
-
-            ASR::symbol_t *res_img_sym = declare_variable(
-                fn_symtab, loc, "result_image", int32_type, ASR::intentType::In, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *res_img = ASRUtils::EXPR(ASR::make_Var_t(al, loc, res_img_sym));
-
-            ASR::symbol_t *stat_sym = declare_variable(
-                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
-
-            ASR::symbol_t *errmsg_sym = declare_variable(
-                fn_symtab, loc, "errmsg", str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
-
-            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
-                fn_symtab, loc, "errmsg_alloc", alloc_str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
-
-            Vec<ASR::expr_t*> args; args.reserve(al, 5);
-            args.push_back(al, a);
-            args.push_back(al, res_img);
-            args.push_back(al, stat);
-            args.push_back(al, errmsg);
-            args.push_back(al, errmsg_alloc);
-
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
-                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
-                args.p, args.n, nullptr, 0, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::deftypeType::Interface,
-                s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
-                false, false, false, nullptr);
-            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
-            return ASR::down_cast<ASR::symbol_t>(fn);
-        }
-
-        ASR::symbol_t* get_or_create_prif_co_max_character_sub(const Location &loc) {
-            SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_co_max_character");
+            std::string sym_name = get_mangled_name("prif", prif_name);
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
                 return existing;
             }
@@ -1000,200 +921,18 @@ class PRIFInterface {
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
 
-        ASR::stmt_t* make_prif_co_max_call(const Location &loc,
+        // Builds a call to prif_co_max / prif_co_min, dispatching to the character
+        // variant (prif_co_*_character) when `a` is of character type.
+        ASR::stmt_t* make_prif_co_reduction_call(const Location &loc, const std::string &prif_name,
                                            ASR::expr_t *a,
                                            ASR::expr_t *result_image = nullptr,
                                            ASR::expr_t *stat = nullptr,
                                            ASR::expr_t *errmsg = nullptr,
                                            ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::ttype_t *a_type = ASRUtils::expr_type(a);
-            ASR::symbol_t *sub = ASRUtils::is_character(*a_type) 
-                                        ? get_or_create_prif_co_max_character_sub(loc)
-                                        : get_or_create_prif_co_max_sub(loc, a_type);
-            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
-
-            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a;
-            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = result_image;
-            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = stat;
-            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = errmsg;
-            ASR::call_arg_t arg5; arg5.loc = loc; arg5.m_value = errmsg_alloc;
-
-            call_args.push_back(al, arg1);
-            call_args.push_back(al, arg2);
-            call_args.push_back(al, arg3);
-            call_args.push_back(al, arg4);
-            call_args.push_back(al, arg5);
-
-            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
-                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
-        }
-
-        ASR::symbol_t* get_or_create_prif_co_min_sub(const Location &loc, ASR::ttype_t * /*a_type*/) {
-            SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_co_min");
-            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
-                return existing;
-            }
-            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = int32;
-            ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1, nullptr,
-                ASR::string_length_kindType::AssumedLength,
-                ASR::string_physical_typeType::DescriptorString));
-            ASR::ttype_t *alloc_str_type = allocatable_deferred_string();
-
-            std::string derived_type_name = "~assumed_type";
-            ASR::symbol_t *type_declaration = global_scope->resolve_symbol(derived_type_name);
-            if (!type_declaration) {
-                SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
-                ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
-                                                s2c(al, derived_type_name), nullptr, nullptr, 0, nullptr, 0,
-                                                nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, true,
-                                                nullptr, 0, nullptr, nullptr, nullptr, 0);
-                ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
-                ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
-                ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
-                struct_->m_struct_signature = struct_type;
-                type_declaration = struct_symbol;
-                global_scope->add_symbol(derived_type_name, type_declaration);
-            }
-            ASR::ttype_t * assumed_type = ASRUtils::make_StructType_t_util(al, loc, type_declaration, false);
-            ASR::ttype_t * a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(al, loc, assumed_type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
-
-            ASR::symbol_t *a_sym = declare_variable(
-                fn_symtab, loc, "a", a_type_assumed, ASR::intentType::InOut, type_declaration,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false);
-            ASR::down_cast<ASR::Variable_t>(a_sym)->m_target_attr = true;
-            ASR::expr_t *a = ASRUtils::EXPR(ASR::make_Var_t(al, loc, a_sym));
-
-            ASR::symbol_t *res_img_sym = declare_variable(
-                fn_symtab, loc, "result_image", int32_type, ASR::intentType::In, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *res_img = ASRUtils::EXPR(ASR::make_Var_t(al, loc, res_img_sym));
-
-            ASR::symbol_t *stat_sym = declare_variable(
-                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
-
-            ASR::symbol_t *errmsg_sym = declare_variable(
-                fn_symtab, loc, "errmsg", str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
-
-            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
-                fn_symtab, loc, "errmsg_alloc", alloc_str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
-
-            Vec<ASR::expr_t*> args; args.reserve(al, 5);
-            args.push_back(al, a);
-            args.push_back(al, res_img);
-            args.push_back(al, stat);
-            args.push_back(al, errmsg);
-            args.push_back(al, errmsg_alloc);
-
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
-                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
-                args.p, args.n, nullptr, 0, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::deftypeType::Interface,
-                s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
-                false, false, false, nullptr);
-            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
-            return ASR::down_cast<ASR::symbol_t>(fn);
-        }
-
-        ASR::symbol_t* get_or_create_prif_co_min_character_sub(const Location &loc) {
-            SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_co_min_character");
-            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
-                return existing;
-            }
-            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = int32;
-            ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1, nullptr,
-                ASR::string_length_kindType::AssumedLength,
-                ASR::string_physical_typeType::DescriptorString));
-            ASR::ttype_t *alloc_str_type = allocatable_deferred_string();
-
-            ASR::ttype_t *a_char_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1, nullptr,
-                ASR::string_length_kindType::AssumedLength,
-                ASR::string_physical_typeType::DescriptorString));
-            ASR::ttype_t *a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(
-                al, loc, a_char_type, nullptr, 0,
-                ASR::array_physical_typeType::AssumedRankArray));
-
-            ASR::symbol_t *a_sym = declare_variable(
-                fn_symtab, loc, "a", a_type_assumed, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false);
-            ASR::down_cast<ASR::Variable_t>(a_sym)->m_target_attr = true;
-            ASR::expr_t *a = ASRUtils::EXPR(ASR::make_Var_t(al, loc, a_sym));
-
-            ASR::symbol_t *res_img_sym = declare_variable(
-                fn_symtab, loc, "result_image", int32_type, ASR::intentType::In, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *res_img = ASRUtils::EXPR(ASR::make_Var_t(al, loc, res_img_sym));
-
-            ASR::symbol_t *stat_sym = declare_variable(
-                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
-
-            ASR::symbol_t *errmsg_sym = declare_variable(
-                fn_symtab, loc, "errmsg", str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
-
-            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
-                fn_symtab, loc, "errmsg_alloc", alloc_str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
-
-            Vec<ASR::expr_t*> args; args.reserve(al, 5);
-            args.push_back(al, a);
-            args.push_back(al, res_img);
-            args.push_back(al, stat);
-            args.push_back(al, errmsg);
-            args.push_back(al, errmsg_alloc);
-
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
-                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
-                args.p, args.n, nullptr, 0, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::deftypeType::Interface,
-                s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
-                false, false, false, nullptr);
-            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
-            return ASR::down_cast<ASR::symbol_t>(fn);
-        }
-
-        ASR::stmt_t* make_prif_co_min_call(const Location &loc,
-                                           ASR::expr_t *a,
-                                           ASR::expr_t *result_image = nullptr,
-                                           ASR::expr_t *stat = nullptr,
-                                           ASR::expr_t *errmsg = nullptr,
-                                           ASR::expr_t *errmsg_alloc = nullptr) {
-            ASR::ttype_t *a_type = ASRUtils::expr_type(a);
-            ASR::symbol_t *sub = ASRUtils::is_character(*a_type) 
-                                        ? get_or_create_prif_co_min_character_sub(loc)
-                                        : get_or_create_prif_co_min_sub(loc, a_type);
+            ASR::symbol_t *sub = ASRUtils::is_character(*a_type)
+                                        ? get_or_create_prif_co_reduction_character_sub(loc, prif_name + "_character")
+                                        : get_or_create_prif_co_reduction_sub(loc, prif_name);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a;
@@ -1628,8 +1367,8 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                         if (x->n_args >= 3) stat = x->m_args[2];
                         if (x->n_args >= 4) errmsg = x->m_args[3];
                         
-                        body.push_back(replacer.al, replacer.prif.make_prif_co_max_call(
-                            x->base.base.loc, a, result_image, stat, errmsg));
+                        body.push_back(replacer.al, replacer.prif.make_prif_co_reduction_call(
+                            x->base.base.loc, "prif_co_max", a, result_image, stat, errmsg));
                     }
                     else if (intrinsic_name == "CoMin") {
                         ASR::expr_t *a = nullptr;
@@ -1641,8 +1380,8 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                         if (x->n_args >= 3) stat = x->m_args[2];
                         if (x->n_args >= 4) errmsg = x->m_args[3];
                              
-                        body.push_back(replacer.al, replacer.prif.make_prif_co_min_call(
-                            x->base.base.loc, a, result_image, stat, errmsg));
+                        body.push_back(replacer.al, replacer.prif.make_prif_co_reduction_call(
+                            x->base.base.loc, "prif_co_min", a, result_image, stat, errmsg));
                     }
                     else {
                         body.push_back(replacer.al, m_body[i]);
