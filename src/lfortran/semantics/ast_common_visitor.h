@@ -19329,10 +19329,43 @@ public:
         arg_types_vec.reserve(al, n_arg_types);
         for (size_t i = 0; i < n_arg_types; i++) {
             std::string arg_name = iface_name + "_arg_" + std::to_string(i);
+            // For StructType args, resolve the type_declaration from the scope chain
+            ASR::symbol_t* arg_type_decl = nullptr;
+            ASR::ttype_t* base_type = ASRUtils::extract_type(arg_type_arr[i]);
+            if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+                ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(base_type);
+                if (st->m_is_unlimited_polymorphic) {
+                    arg_type_decl = parent_scope->resolve_symbol("~unlimited_polymorphic_type");
+                    if (!arg_type_decl) {
+                        // Create it here, mirroring determine_type's logic
+                        std::string poly_name = "~unlimited_polymorphic_type";
+                        SymbolTable *struct_symtab = al.make_new<SymbolTable>(parent_scope);
+                        ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
+                            s2c(al, poly_name), nullptr, nullptr, 0, nullptr, 0,
+                            nullptr, 0, ASR::abiType::Source, ASR::accessType::Public,
+                            false, true, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                        ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
+                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(
+                            al, loc, struct_symbol, false);
+                        ASR::down_cast<ASR::Struct_t>(struct_symbol)->m_struct_signature = struct_type;
+                        parent_scope->add_symbol(poly_name, struct_symbol);
+                        arg_type_decl = struct_symbol;
+                    }
+                } else {
+                    // For named struct types, search scope for a matching Struct
+                    for (auto& sym_pair : parent_scope->get_scope()) {
+                        ASR::symbol_t* past_ext = ASRUtils::symbol_get_past_external(sym_pair.second);
+                        if (ASR::is_a<ASR::Struct_t>(*past_ext)) {
+                            arg_type_decl = sym_pair.second;
+                            break;
+                        }
+                    }
+                }
+            }
             ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_Variable_t(al, loc, fn_scope, s2c(al, arg_name),
                     nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
-                    ASR::storage_typeType::Default, arg_type_arr[i], nullptr,
+                    ASR::storage_typeType::Default, arg_type_arr[i], arg_type_decl,
                     ASR::abiType::BindC, ASR::accessType::Public,
                     ASR::presenceType::Required, false, false, false, nullptr,
                     false, false, ASR::pass_attrType::NotMethod, nullptr,
