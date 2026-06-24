@@ -12,11 +12,8 @@ end type prif_coarray_handle
 program coarrays_13
 implicit none
 integer(4) :: exit_code
-character(len=3, kind=1) :: s
+character(len=3, kind=1), save :: s = "xyz"
 call __module_prif_prif_init(exit_code)
-if (lcompilers_prif_this_image() == 1) then
-    s = "xyz"
-end if
 if (lcompilers_prif_this_image() == 2) then
     s = "abc"
 end if
