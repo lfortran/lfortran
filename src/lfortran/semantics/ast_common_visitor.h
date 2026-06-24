@@ -1747,6 +1747,7 @@ template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
+    std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -4790,6 +4791,7 @@ public:
                             nullptr, ASR::accessType::Public,
                             false, false, nullptr, nullptr, nullptr));
                     parent_scope->add_symbol(iface_name, iface_sym);
+                    implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(iface_sym));
                 }
                 ASR::ttype_t *ptr_type = ASRUtils::TYPE(
                     ASR::make_Pointer_t(al, loc, func_type));
@@ -9870,6 +9872,13 @@ public:
                             )
                         );
                         parent_scope->add_symbol(iface_name, existing);
+                        implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(existing));
+                    } else {
+                        // Reuse the existing iface function's FunctionType so that
+                        // all variables sharing this iface reference the same object.
+                        // In-place updates to the iface's arg_types will then
+                        // propagate to struct members and dummy arguments alike.
+                        type = ASR::down_cast<ASR::Function_t>(existing)->m_function_signature;
                     }
                     type_declaration = existing;
                 } else {
@@ -19211,12 +19220,15 @@ public:
     // Create or update an implicit interface for a procedure variable.
     // If proc_var->m_type_declaration already points to a Function_t,
     // updates it in place; otherwise creates a new interface symbol.
+    // If owner_scope is provided, also updates the containing function's
+    // FunctionType arg_types to reflect the resolved procedure type.
     // Returns the resulting FunctionType.
     ASR::ttype_t* create_or_update_implicit_interface(
             ASR::Variable_t* proc_var, const Location& loc,
             ASR::ttype_t** arg_type_arr, size_t n_arg_types,
             ASR::ttype_t* return_type, SymbolTable* parent_scope,
-            const std::string& var_name) {
+            const std::string& var_name,
+            SymbolTable* owner_scope = nullptr) {
         bool update_existing = proc_var->m_type_declaration != nullptr &&
             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
                 proc_var->m_type_declaration));
@@ -19266,18 +19278,29 @@ public:
             fn_scope->add_symbol(rv_name, rv_sym);
             return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, rv_sym));
         }
-        ASR::ttype_t* iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-            al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
-            ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
-            false, false, false, false, false, nullptr, 0, false));
+        ASR::ttype_t* iface_type;
         if (update_existing) {
+            // Update the existing FunctionType in-place and share the source
+            // arg_types array directly (not a copy). This is critical for
+            // cross-scope type propagation: when contained functions' bodies
+            // are processed after the calling scope's body, in-place updates
+            // to the source array elements propagate to the iface automatically.
             existing_fn->m_symtab = fn_scope;
             fn_scope->asr_owner = (ASR::asr_t*)existing_fn;
-            existing_fn->m_function_signature = iface_type;
+            ASR::FunctionType_t* existing_ft = ASR::down_cast<ASR::FunctionType_t>(
+                existing_fn->m_function_signature);
+            existing_ft->m_arg_types = arg_type_arr;
+            existing_ft->n_arg_types = n_arg_types;
+            existing_ft->m_return_var_type = return_type;
+            iface_type = existing_fn->m_function_signature;
             existing_fn->m_args = args.p;
             existing_fn->n_args = args.size();
             existing_fn->m_return_var = return_var;
         } else {
+            iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+                al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
+                ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
+                false, false, false, false, false, nullptr, 0, false));
             ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_Function_t(
                     al, loc, fn_scope, s2c(al, iface_name),
@@ -19286,12 +19309,38 @@ public:
                     nullptr, nullptr, nullptr));
             parent_scope->add_or_overwrite_symbol(iface_name, iface);
             proc_var->m_type_declaration = iface;
+            existing_fn = ASR::down_cast<ASR::Function_t>(iface);
         }
+        implicit_interfaces_to_sync.push_back(existing_fn);
         if (ASRUtils::is_pointer(proc_var->m_type)) {
             proc_var->m_type = ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, loc, iface_type));
         } else {
             proc_var->m_type = iface_type;
+        }
+        // If owner_scope is provided, update the containing function's
+        // FunctionType arg_types so the resolved type propagates when
+        // the owner function is passed as an argument elsewhere.
+        if (owner_scope && owner_scope->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*owner_scope->asr_owner)) {
+            ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(
+                owner_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
+                ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner_sym);
+                ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
+                    owner_func->m_function_signature);
+                ASR::symbol_t* proc_sym = owner_scope->get_symbol(proc_var->m_name);
+                for (size_t idx = 0; idx < owner_func->n_args; idx++) {
+                    if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[idx])) {
+                        ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
+                            owner_func->m_args[idx])->m_v;
+                        if (arg_sym == proc_sym) {
+                            owner_ft->m_arg_types[idx] = iface_type;
+                            break;
+                        }
+                    }
+                }
+            }
         }
         return iface_type;
     }
@@ -19309,27 +19358,8 @@ public:
         std::string var_name = proc_var->m_name;
         ASR::ttype_t* iface_type = create_or_update_implicit_interface(
             proc_var, loc, func_type->m_arg_types, func_type->n_arg_types,
-            return_type, parent_scope, var_name);
-        // Update the arg type in the containing function's signature
-        ASR::symbol_t* proc_sym = current_scope->get_symbol(proc_var->m_name);
-        if (proc_sym && current_scope->asr_owner &&
-                ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
-                ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
-            ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(
-                ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
-            ASR::FunctionType_t* owner_ft = ASR::down_cast<ASR::FunctionType_t>(
-                owner_func->m_function_signature);
-            for (size_t i = 0; i < owner_func->n_args; i++) {
-                if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i])) {
-                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
-                        owner_func->m_args[i])->m_v;
-                    if (arg_sym == proc_sym) {
-                        owner_ft->m_arg_types[i] = iface_type;
-                        break;
-                    }
-                }
-            }
-        }
+            return_type, parent_scope, var_name, current_scope);
+        (void)iface_type;
     }
 
     void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
