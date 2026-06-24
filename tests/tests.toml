@@ -2899,6 +2899,18 @@ pass = "coarray"
 options = "--coarray=true"
 
 [[test]]
+filename = "coarrays_14.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_15.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "../integration_tests/program_03.f90"
 asr = true
 llvm = true
