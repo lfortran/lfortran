@@ -3251,9 +3251,17 @@ static inline int64_t get_fixed_size_of_ArraySection(ASR::ArraySection_t* x) {
     for (size_t i = 0; i < x->n_args; i++) {
         if (x->m_args[i].m_left && x->m_args[i].m_right && ASRUtils::is_value_constant(x->m_args[i].m_right) &&
             ASRUtils::is_value_constant(x->m_args[i].m_left)) {
-            ASR::IntegerConstant_t* start = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(x->m_args[i].m_left));
-            ASR::IntegerConstant_t* end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(x->m_args[i].m_right));
-            array_size = array_size * (end->m_n - start->m_n + 1);
+            
+            int64_t start_n = 0;
+            int64_t end_n = 0;
+            
+            // Safely extract integer values. If they are arrays (vector subscripts), this gracefully fails.
+            if (ASRUtils::extract_value(ASRUtils::expr_value(x->m_args[i].m_left), start_n) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(x->m_args[i].m_right), end_n)) {
+                array_size = array_size * (end_n - start_n + 1);
+            } else {
+                return -1;
+            }
         } else {
             return -1;
         }
