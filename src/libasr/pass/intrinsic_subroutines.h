@@ -1751,7 +1751,17 @@ namespace CoSum {
     }
 
     static inline ASR::asr_t* create_CoSum(Allocator& al, const Location& loc,
-            Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_integer(*arg_type) && !ASRUtils::is_real(*arg_type)
+                && !ASRUtils::is_complex(*arg_type)) {
+            diag.add(diag::Diagnostic(
+                "`a` argument of `co_sum` must be of integer, real or complex type, but got " +
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("must be integer, real or complex type", { args[0]->base.loc })}));
+            return nullptr;
+        }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
         m_args.push_back(al, args[0]);
         for (size_t i = 1; i < args.size(); i++) {

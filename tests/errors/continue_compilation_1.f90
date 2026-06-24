@@ -816,4 +816,10 @@ program continue_compilation_1
         complex :: z
         call co_max(z)
     end subroutine
+
+    subroutine cosum_invalid_argument_type()
+        implicit none
+        logical :: mask
+        call co_sum(mask)
+    end subroutine
 end program

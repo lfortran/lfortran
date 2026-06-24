@@ -1695,3 +1695,9 @@ semantic error: `a` argument of `co_max` must be of integer, real or character t
     |
 817 |         call co_max(z)
     |                     ^ must be integer, real or character type
+
+semantic error: `a` argument of `co_sum` must be of integer, real or complex type, but got logical
+   --> tests/errors/continue_compilation_1.f90:823:21
+    |
+823 |         call co_sum(mask)
+    |                     ^^^^ must be integer, real or complex type
