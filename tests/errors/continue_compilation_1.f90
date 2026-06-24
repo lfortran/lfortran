@@ -379,7 +379,7 @@ program continue_compilation_1
     print *, modulo(1, 0)
     !more_kwargs_than_acceptable_to_subroutine
     call my_func(y=1, x=2, z=1)
-
+    logical :: flag(1) = mod([2], 0) == 0
     !nint_overflow
     print*, nint(1e12_8)
     print*, nint(1000000000000.0000000000000000d0)

@@ -3838,11 +3838,25 @@ namespace FloorDiv {
 namespace Mod {
 
     static ASR::expr_t *eval_Mod(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         bool is_real1 = is_real(*ASRUtils::expr_type(args[0]));
         bool is_real2 = is_real(*ASRUtils::expr_type(args[1]));
         bool is_int1 = is_integer(*ASRUtils::expr_type(args[0]));
         bool is_int2 = is_integer(*ASRUtils::expr_type(args[1]));
+
+        if (is_int2) {
+            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            if (b == 0) {
+                append_error(diag, "Second argument of mod cannot be 0", loc);
+                return nullptr;
+            }
+        } else if (is_real2) {
+            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if (b == 0) {
+                append_error(diag, "Second argument of mod cannot be 0", loc);
+                return nullptr;
+            }
+        }
 
         if (is_int1 && is_int2) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -4556,13 +4570,23 @@ namespace Modulo {
 
     static ASR::expr_t *eval_Modulo(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
-            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        if (is_integer(*ASRUtils::expr_type(args[1]))) {
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             if (b == 0) {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
                 return nullptr;
             }
+        } else if (is_real(*ASRUtils::expr_type(args[1]))) {
+            double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if (b == 0) {
+                append_error(diag, "Second argument of modulo cannot be 0", loc);
+                return nullptr;
+            }
+        }
+
+        if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
+            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             int64_t r = a % b;
             if (r != 0 && ((r < 0 && b > 0) || (r > 0 && b < 0))) {
                 r += b;
@@ -4571,10 +4595,6 @@ namespace Modulo {
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-            if (b == 0) {
-                append_error(diag, "Second argument of modulo cannot be 0", loc);
-                return nullptr;
-            }
             return ASRUtils::make_RealConstant_util(al, loc, a - b * std::floor(a/b), t1);
         }
         return nullptr;
