@@ -1,11 +1,8 @@
 ﻿program main
   implicit none
-  integer, target :: a(2)
 
-  call take_pointer_rank(a(1:2))
-  print *, "ok"
-contains
-  subroutine take_pointer_rank(x)
-    integer, pointer, intent(in) :: x(..)
-  end subroutine take_pointer_rank
+  character(len=:), allocatable :: text
+
+  text = "x"
+  print *, storage_size(text)
 end program main
