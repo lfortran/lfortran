@@ -7736,7 +7736,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     }
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
-    bool all_expr_evaluated = n_args > 0;
+    bool all_expr_evaluated = true;
     // Compile-time aggregation of real(16) arrays into a packed ArrayConstant
     // is not supported: set_ArrayConstant_data / fetch_ArrayConstant_value only
     // pack float/double element buffers, whereas a kind=16 RealConstant stores
@@ -7771,6 +7771,16 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
         if (!is_value_constant(a_value)) {
             all_expr_evaluated = false;
+        }
+    }
+    if (all_expr_evaluated && n_args == 0) {
+        ASR::ttype_t* array_type = ASRUtils::type_get_past_pointer(a_type);
+        ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(array_type);
+        if (is_character(*array->m_type)) {
+            int len = 0;
+            if (!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(array->m_type)->m_len, len)) {
+                all_expr_evaluated = false;
+            }
         }
     }
     if (all_expr_evaluated) {
