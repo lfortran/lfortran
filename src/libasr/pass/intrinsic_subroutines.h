@@ -1851,7 +1851,6 @@ namespace CoMax {
      static inline ASR::stmt_t* instantiate_CoMax(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        // co_max is a no-op in single-image (non-coarray) mode
         const std::string new_name = "_lcompilers_co_max_"
             + std::to_string(arg_types.n);
         declare_basic_variables(new_name);
@@ -1926,7 +1925,6 @@ namespace CoMin {
      static inline ASR::stmt_t* instantiate_CoMin(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        // co_min is a no-op in single-image (non-coarray) mode
         const std::string new_name = "_lcompilers_co_min_"
             + std::to_string(arg_types.n);
         declare_basic_variables(new_name);

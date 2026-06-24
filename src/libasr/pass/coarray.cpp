@@ -928,11 +928,6 @@ class PRIFInterface {
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
-        // Declares the interface for prif_co_sum / prif_co_max / prif_co_min, which
-        // share the same signature: (a: type(*) assumed-rank inout target,
-        // result_image, stat, errmsg, errmsg_alloc).
-        // Declares the (stat, errmsg, errmsg_alloc) optional dummy arguments common
-        // to many PRIF entry points and appends them to `args`.
         void declare_prif_status_args(SymbolTable *fn_symtab, const Location &loc, Vec<ASR::expr_t*> &args) {
             ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, loc, 1, nullptr,
@@ -1041,8 +1036,6 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
 
-        // Declares the interface for prif_co_max_character / prif_co_min_character
-        // (a: character(len=*, kind=c_char) assumed-rank inout target, ...).
         ASR::symbol_t* get_or_create_prif_co_reduction_character_sub(const Location &loc, const std::string &prif_name) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = get_mangled_name("prif", prif_name);
@@ -1091,8 +1084,6 @@ class PRIFInterface {
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
 
-        // Builds a call to prif_co_max / prif_co_min, dispatching to the character
-        // variant (prif_co_*_character) when `a` is of character type.
         ASR::stmt_t* make_prif_co_reduction_call(const Location &loc, const std::string &prif_name,
                                            ASR::expr_t *a,
                                            ASR::expr_t *result_image = nullptr,
