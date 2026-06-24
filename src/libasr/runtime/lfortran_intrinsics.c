@@ -6088,13 +6088,6 @@ _lfortran_open(int32_t unit_num,
         *iostat = 0;
     }
 
-    /* Register cleanup so scratch (unnamed) files are removed on more termination paths */
-    static int atexit_registered = 0;
-    if (!atexit_registered) {
-        atexit(_lfortran_internal_alloc_finalize);
-        atexit_registered = 1;
-    }
-
     bool ini_encoding = true;
     if (encoding == NULL) {
         encoding = "unknown";
