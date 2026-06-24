@@ -5501,10 +5501,58 @@ public:
             external = false;
         }
         llvm::Constant* init_value = nullptr;
+        llvm::Constant* alias_target = nullptr;
         if (x.m_symbolic_value != nullptr &&
             !ASRUtils::is_string_only(x.m_type)){
-            this->visit_expr_wrapper(x.m_symbolic_value, true);
-            init_value = llvm::dyn_cast<llvm::Constant>(tmp);
+            if (ASR::is_a<ASR::GetPointer_t>(*x.m_symbolic_value)) {
+                ASR::GetPointer_t* get_ptr = ASR::down_cast<ASR::GetPointer_t>(x.m_symbolic_value);
+                if (ASR::is_a<ASR::Var_t>(*get_ptr->m_arg) || ASR::is_a<ASR::ArrayItem_t>(*get_ptr->m_arg)) {
+                    ASR::Variable_t* target_var = nullptr;
+                    if (ASR::is_a<ASR::Var_t>(*get_ptr->m_arg)) {
+                        target_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(get_ptr->m_arg)->m_v));
+                    } else {
+                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(get_ptr->m_arg);
+                        if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
+                            target_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v));
+                        }
+                    }
+                    if (target_var) {
+                        uint32_t target_h = get_hash((ASR::asr_t*)target_var);
+                        if (llvm_symtab.find(target_h) == llvm_symtab.end()) {
+                            visit_Variable(*target_var);
+                        }
+                        if (llvm_symtab.find(target_h) != llvm_symtab.end()) {
+                            alias_target = llvm::dyn_cast<llvm::Constant>(llvm_symtab[target_h]);
+                            
+                            // Flatten chained aliases so we don't alias an alias
+                            while (alias_target && llvm::isa<llvm::GlobalAlias>(alias_target)) {
+                                alias_target = llvm::cast<llvm::GlobalAlias>(alias_target)->getAliasee();
+                            }
+                            
+                            if (ASR::is_a<ASR::ArrayItem_t>(*get_ptr->m_arg)) {
+                                ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(get_ptr->m_arg);
+                                if (arr_item->n_args > 0 && arr_item->m_args[0].m_right && ASR::is_a<ASR::IntegerConstant_t>(*arr_item->m_args[0].m_right)) {
+                                    int64_t offset = ASR::down_cast<ASR::IntegerConstant_t>(arr_item->m_args[0].m_right)->m_n;
+                                    offset -= 1; // 1-based to 0-based
+                                    if (offset != 0 && alias_target) {
+                                        llvm::Constant* indices[] = {
+                                            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                            llvm::ConstantInt::get(context, llvm::APInt(32, offset))
+                                        };
+                                        llvm::Type* target_ty = llvm_utils->get_type_from_ttype_t_util(x.m_symbolic_value, target_var->m_type, module.get());
+                                        alias_target = llvm::ConstantExpr::getGetElementPtr(target_ty, alias_target, indices);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!alias_target) {
+                this->visit_expr_wrapper(x.m_symbolic_value, true);
+                init_value = llvm::dyn_cast<llvm::Constant>(tmp);
+            }
         }
 
         // variable name to use in declaration
@@ -5523,6 +5571,18 @@ public:
         } else {
             llvm_var_name = mangle_prefix + x.m_name;
         }
+
+        if (alias_target) {
+            llvm::Type *type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
+                    ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get());
+            if (alias_target->getType() != type->getPointerTo()) {
+                alias_target = llvm::ConstantExpr::getBitCast(alias_target, type->getPointerTo());
+            }
+            llvm::GlobalAlias* alias = llvm::GlobalAlias::create(type, 0, llvm::GlobalValue::ExternalLinkage, llvm_var_name, alias_target, module.get());
+            llvm_symtab[h] = alias;
+            return;
+        }
+
         if (x.m_type->type == ASR::ttypeType::Integer
             || x.m_type->type == ASR::ttypeType::UnsignedInteger) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
