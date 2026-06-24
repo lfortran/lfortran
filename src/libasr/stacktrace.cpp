@@ -3,18 +3,29 @@
 #include <libasr/colors.h>
 #include <libasr/exception.h>
 
+#include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
+#ifdef HAVE_LFORTRAN_LLVM
+#include <llvm/Config/llvm-config.h>
+#include <llvm/DebugInfo/DWARF/DWARFContext.h>
 #include <llvm/DebugInfo/Symbolize/Symbolize.h>
+#include <llvm/Object/Binary.h>
+#include <llvm/Object/ELFObjectFile.h>
+#include <llvm/Object/ObjectFile.h>
+#include <llvm/Support/Error.h>
+#endif
+
+#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/TargetSelect.h>
-#include <llvm/Object/ELFObjectFile.h>
 #endif
 
 // free() and abort() functions
@@ -661,48 +672,119 @@ void address_to_line_number(const std::vector<std::string> &filenames,
     filename = filenames[addresses[3*end_ind+2]];
 }
 
+#ifdef HAVE_RUNTIME_STACKTRACE
+bool write_runtime_debug_map(const std::string &binary_path,
+          const std::string &map_path,
+          std::string &error_message) {
+#ifdef HAVE_LFORTRAN_LLVM
+  struct DebugMapEntry {
+    uint64_t address;
+    uint64_t line;
+    uint64_t file_id;
+  };
 
-void get_local_info_dwarfdump(std::vector<StacktraceItem> &d)
-{
-  std::vector<std::string> filenames;
-  std::vector<uint64_t> addresses;
-  {
-    std::string filename = binary_executable_path + ".dSYM/lines.txt";
-    std::ifstream in;
-    in.open(filename);
-    if (!in.is_open()) {
-        return;
-    }
-    std::string s;
-    std::getline(in, s);
-    int n = std::stoi(s);
-    for (int i=0; i < n; i++) {
-      std::getline(in, s);
-      filenames.push_back(s);
-    }
-    std::getline(in, s);
-    n = std::stoi(s);
+  auto binary_or_err = llvm::object::createBinary(binary_path);
+  if (!binary_or_err) {
+    error_message = llvm::toString(binary_or_err.takeError());
+    return false;
+  }
 
-    filename = binary_executable_path + ".dSYM/lines.dat";
-    std::ifstream in2;
-    in2.open(filename, std::ios::binary);
-    addresses.resize(3*n);
-    in2.read((char*)&addresses[0], 3*n*sizeof(uint64_t));
+  llvm::object::Binary *binary = binary_or_err->getBinary();
+  auto *obj_file = llvm::dyn_cast<llvm::object::ObjectFile>(binary);
+  if (!obj_file) {
+    error_message = "Debug map generation expects an object/executable file: " + binary_path;
+    return false;
   }
-  for (size_t i=0; i < d.size(); i++) {
-    address_to_line_number(filenames, addresses, d[i].local_pc,
-      d[i].source_filename, d[i].line_number);
+
+  std::unique_ptr<llvm::DWARFContext> dwarf_context = llvm::DWARFContext::create(*obj_file);
+  std::vector<DebugMapEntry> entries;
+  std::unordered_map<std::string, uint64_t> file_to_id;
+
+  for (const std::unique_ptr<llvm::DWARFUnit> &unit : dwarf_context->compile_units()) {
+    const llvm::DWARFDebugLine::LineTable *line_table =
+        dwarf_context->getLineTableForUnit(unit.get());
+    if (line_table == nullptr) {
+      continue;
+    }
+
+    const char *comp_dir = unit->getCompilationDir();
+    if (comp_dir == nullptr) {
+      comp_dir = "";
+    }
+
+    for (const llvm::DWARFDebugLine::Row &row : line_table->Rows) {
+      if (row.EndSequence || row.Line == 0 || !line_table->hasFileAtIndex(row.File)) {
+        continue;
+      }
+
+      std::string filename;
+      if (!line_table->getFileNameByIndex(row.File, comp_dir,
+              llvm::DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, filename)) {
+        continue;
+      }
+
+      if (!filename.empty() && filename[0] != '/') {
+        filename = std::filesystem::absolute(filename).string();
+      }
+
+      uint64_t file_id = 0;
+      auto it = file_to_id.find(filename);
+      if (it == file_to_id.end()) {
+        file_id = file_to_id.size();
+        file_to_id[filename] = file_id;
+      } else {
+        file_id = it->second;
+      }
+
+#if LLVM_VERSION_MAJOR >= 10
+      uint64_t row_address = row.Address.Address;
+#else
+      uint64_t row_address = row.Address;
+#endif
+      entries.push_back({row_address, row.Line, file_id});
+    }
   }
+
+  if (entries.empty()) {
+    error_message = "No DWARF line entries found in: " + binary_path;
+    return false;
+  }
+
+  std::stable_sort(entries.begin(), entries.end(),
+    [](const DebugMapEntry &a, const DebugMapEntry &b) {
+      return a.address < b.address;
+    });
+
+  std::ofstream out(map_path, std::ios::binary | std::ios::trunc);
+  if (!out.is_open()) {
+    error_message = "Cannot open debug map output file: " + map_path;
+    return false;
+  }
+
+  for (const DebugMapEntry &entry : entries) {
+    uint64_t triple[3] = {entry.address, entry.line, entry.file_id};
+    out.write(reinterpret_cast<const char *>(triple), sizeof(triple));
+  }
+
+  if (!out.good()) {
+    error_message = "Failed while writing debug map output file: " + map_path;
+    return false;
+  }
+
+  return true;
+#else
+  (void)binary_path;
+  (void)map_path;
+  error_message = "LFortran was built without LLVM support";
+  return false;
+#endif
 }
-
+#endif // HAVE_RUNTIME_STACKTRACE
 
 void get_local_info(std::vector<StacktraceItem> &d)
 {
 #ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
     get_llvm_info(d);
-#else
-#ifdef HAVE_LFORTRAN_DWARFDUMP
-  get_local_info_dwarfdump(d);
 #else
 #ifdef HAVE_LFORTRAN_BFD
   bfd_init();
@@ -713,7 +795,6 @@ void get_local_info(std::vector<StacktraceItem> &d)
 #else
   (void)d;
 #endif // HAVE_LFORTRAN_BFD
-#endif // HAVE_LFOTRAN_DWARFDUMP
 #endif // HAVE_LFORTRAN_LLVM_STACKTRACE
 }
 
