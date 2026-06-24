@@ -7551,11 +7551,12 @@ namespace Max {
         ASR::ttype_t* function_return_type = return_type;
         if (ASRUtils::is_string_only(arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
+                fill_func_arg("x" + std::to_string(i), TYPE(ASR::make_String_t(al, loc, kind,
+                    nullptr, ASR::AssumedLength, ASR::DescriptorString)));
             }
-            function_return_type = b.String(
+            function_return_type = TYPE(ASR::make_String_t(al, loc, kind,
                 EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
-                ASR::ExpressionLength);
+                ASR::ExpressionLength, ASR::DescriptorString));
         } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind)));
@@ -7723,9 +7724,10 @@ namespace Min {
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
+                fill_func_arg("x" + std::to_string(i), TYPE(ASR::make_String_t(al, loc, kind,
+                    nullptr, ASR::AssumedLength, ASR::DescriptorString)));
             }
-            return_type = TYPE(ASR::make_String_t(al, loc, 1,
+            return_type = TYPE(ASR::make_String_t(al, loc, kind,
                 EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
@@ -7747,7 +7749,7 @@ namespace Min {
             }, {}));
         }
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
-            return_type = TYPE(ASR::make_String_t(al, loc, 1,
+            return_type = TYPE(ASR::make_String_t(al, loc, kind,
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
