@@ -2686,6 +2686,16 @@ namespace LCompilers {
                 src_str_type, src);
         }
 
+        if (dest_str_type->m_kind > 1) {
+            llvm::Value *kind = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), dest_str_type->m_kind);
+            llvm::Value *lhs_byte_len = builder->CreateMul(
+                builder->CreateLoad(llvm::Type::getInt64Ty(context), lhs_len),
+                kind);
+            lhs_len = builder->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "string_byte_len");
+            builder->CreateStore(lhs_byte_len, lhs_len);
+            rhs_len = builder->CreateMul(rhs_len, kind);
+        }
+
         // For struct members (like common blocks) with fixed-length CHARACTER,
         // the descriptor may be initialized with zeroinitializer (length=0).
         // If we know the declared length at compile time, store it in the
