@@ -810,4 +810,10 @@ program continue_compilation_1
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
     end subroutine
+    subroutine random_seed_intent_error(seed)
+        implicit none
+        integer, intent(in) :: seed
+        call random_seed(seed)
+    end subroutine
+
 end program

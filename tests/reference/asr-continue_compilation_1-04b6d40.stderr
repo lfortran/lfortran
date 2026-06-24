@@ -1689,3 +1689,9 @@ semantic error: first argument of `llt` must have kind equal to 1
     |
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: ‘size’ argument of ‘random_seed’ intrinsic cannot be INTENT(IN)
+   --> tests/errors/continue_compilation_1.f90:816:26
+    |
+816 |         call random_seed(seed)
+    |                          ^^^^ failed here
