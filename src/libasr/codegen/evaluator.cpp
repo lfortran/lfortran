@@ -464,6 +464,7 @@ void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filenam
     if (TM->addPassesToEmitFile(pass, dest, nullptr, ft)) {
         throw std::runtime_error("TargetMachine can't emit a file of this type");
     }
+    std::cout<<"target triple --->>> "<<target_triple<<"\n";
     pass.run(m);
     dest.flush();
 }
