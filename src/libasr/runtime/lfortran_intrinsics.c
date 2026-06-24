@@ -4266,6 +4266,7 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         double complex cr = cpow(ca, cb);
         result->re = creal(cr);
         result->im = cimag(cr);
+        
     #endif
 }
 
