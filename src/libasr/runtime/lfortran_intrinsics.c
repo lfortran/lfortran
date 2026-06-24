@@ -4174,22 +4174,29 @@ LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
 LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result)
 {
-    // Fully handle 0 base for positive, zero, and negative powers
+    // Fully handle 0 base
     if (a->re == 0.0f && a->im == 0.0f) {
         if (b->re > 0.0f) {
             result->re = 0.0f;
             result->im = 0.0f;
-        } else if (b->re == 0.0f && b->im == 0.0f) {
-            result->re = (float)NAN;       // Casts required to prevent MSVC C4244
-            result->im = (float)NAN;
-        } else {
-            result->re = (float)INFINITY;  // Casts required to prevent MSVC C4244
-            result->im = (float)NAN;
+            return;
         }
-        return;
+        #ifdef _MSC_VER
+        // Prevent MSVC cpow crash for zero and negative powers
+        else if (b->re == 0.0f && b->im == 0.0f) {
+            result->re = (float)NAN;
+            result->im = (float)NAN;
+            return;
+        } else {
+            result->re = (float)INFINITY;
+            result->im = (float)NAN;
+            return;
+        }
+        #endif
+        // On non-MSVC systems, it safely falls through to native cpowf
     }
 
-    // 2. Precision fix: Safe 2.0f check (prevents Undefined Behavior)
+    // 2.0f check (prevents Undefined Behavior)
     if (b->im == 0.0f && b->re == 2.0f) {
         result->re = (a->re * a->re) - (a->im * a->im);
         result->im = 2.0f * a->re * a->im;
@@ -4217,22 +4224,29 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result)
 {
-    // Fully handle 0 base for positive, zero, and negative powers
+    // Fully handle 0 base
     if (a->re == 0.0 && a->im == 0.0) {
         if (b->re > 0.0) {
             result->re = 0.0;
             result->im = 0.0;
-        } else if (b->re == 0.0 && b->im == 0.0) {
+            return;
+        }
+        #ifdef _MSC_VER
+        // Prevent MSVC cpow crash for zero and negative powers
+        else if (b->re == 0.0 && b->im == 0.0) {
             result->re = NAN;
             result->im = NAN;
+            return;
         } else {
             result->re = INFINITY;
             result->im = NAN;
+            return;
         }
-        return;
+        #endif
+        // On non-MSVC systems, it safely falls through to native cpow
     }
 
-    // 2. Precision fix: Safe 2.0 check (prevents Undefined Behavior)
+    //  2.0 check (prevents Undefined Behavior)
     if (b->im == 0.0 && b->re == 2.0) {
         result->re = (a->re * a->re) - (a->im * a->im);
         result->im = 2.0 * a->re * a->im;
