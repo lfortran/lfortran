@@ -2231,14 +2231,8 @@ public:
             }
 
             // Catch standalone declarations (e.g., `allocatable :: value`) parsed earlier in this pass
-            bool is_alloc_standalone = false;
-            bool is_ptr_standalone = false;
-            for (const auto& a_name : assgnd_allocatable) {
-                if (to_lower(a_name) == return_var_name) is_alloc_standalone = true;
-            }
-            for (const auto& p_name : assgnd_pointer) {
-                if (to_lower(p_name) == return_var_name) is_ptr_standalone = true;
-            }
+            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name) > 0;
+            bool is_ptr_standalone = assgnd_pointer.count(return_var_name) > 0;
 
             if (is_alloc_standalone && !ASRUtils::is_allocatable(type)) {
                 type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
@@ -2259,43 +2253,17 @@ public:
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
-            bool is_alloc_standalone = false;
-            bool is_ptr_standalone = false;
-            for (const auto& a_name : assgnd_allocatable) {
-                if (to_lower(a_name) == return_var_name) is_alloc_standalone = true;
-            }
-            for (const auto& p_name : assgnd_pointer) {
-                if (to_lower(p_name) == return_var_name) is_ptr_standalone = true;
-            }
-
             if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
-                if (!is_alloc_standalone && !is_ptr_standalone) {
-                    diag.add(diag::Diagnostic(
-                        "Cannot specify the return type twice",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
+                diag.add(diag::Diagnostic(
+                    "Cannot specify the return type twice",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
             }
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
-
-            if (return_type && (is_alloc_standalone || is_ptr_standalone)) {
-                Vec<ASR::dimension_t> dummy_dims;
-                dummy_dims.reserve(al, 0);
-                ASR::symbol_t* dummy_type_decl = nullptr;
-                return_variable->m_type = determine_type(x.base.base.loc, return_var_name, (AST::decl_attribute_t*)return_type, false, false, dummy_dims, nullptr, dummy_type_decl, current_procedure_abi_type);
-            }
-            
-            // Upgrade the implicitly typed variable to Allocatable or Pointer
-            if (is_alloc_standalone && !ASRUtils::is_allocatable(return_variable->m_type)) {
-                return_variable->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, return_variable->m_type));
-            }
-            if (is_ptr_standalone && !ASRUtils::is_pointer(return_variable->m_type)) {
-                return_variable->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, return_variable->m_type));
-            }
 
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
