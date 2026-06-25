@@ -1118,7 +1118,7 @@ def add_create_func_arg_type_src(func_name):
         if same_type_arg:
             condition = compute_type_condition(same_type_arg)
             src += 3 * indent + f'if(!({condition}))' + ' {\n'
-            src += 4 * indent + f'append_error(diag, "`fsource` argument of `{func_name.lower()}` must be the same type and kind as `tsource` argument", loc);\n'
+            src += 4 * indent + f'append_error(diag, "Type and kind of the relevant arguments of {func_name} must be the same", loc);\n'
             src += 4 * indent + f'return nullptr;\n'
             src += 3 * indent + '}\n'
         kind_validation_info = arg_info.get("kind_validation", [])

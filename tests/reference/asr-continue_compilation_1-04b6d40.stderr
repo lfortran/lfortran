@@ -1690,8 +1690,14 @@ semantic error: first argument of `llt` must have kind equal to 1
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
-semantic error: `fsource` argument of `merge` must be the same type and kind as `tsource` argument
+semantic error: Type and kind of the relevant arguments of Merge must be the same
    --> tests/errors/continue_compilation_1.f90:820:18
     |
 820 |         print *, merge(a, b, .true.)
     |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate statement label 1000
+   --> tests/errors/continue_compilation_1.f90:825:9
+    |
+825 | 1000    continue
+    |         ^^^^^^^^ 

@@ -819,4 +819,9 @@ program continue_compilation_1
         b = 2
         print *, merge(a, b, .true.)
     end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
 end program
