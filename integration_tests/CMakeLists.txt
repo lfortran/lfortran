@@ -410,7 +410,7 @@ endmacro(COMPILE)
 
 # GFortran + LFortran LLVM + LFortran C++
 RUN(NAME complex_pow_io LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME assumed_rank_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME assumed_rank_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME program_cmake_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME program_cmake_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 
