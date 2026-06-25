@@ -5823,7 +5823,7 @@ public:
                                             }
                                         }
                                     } else {
-                                        assgnd_allocatable.insert(sym);
+                                        assgnd_allocatable.insert(to_lower(sym));
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
                                     // no-op: valid Fortran 2003, LFortran's runtime is synchronous
@@ -7017,9 +7017,6 @@ public:
                 bool is_pointer = false;
                 if (assgnd_pointer.count(sym)) {
                     is_pointer = true;
-                }
-                if (assgnd_allocatable.count(sym)) {
-                    is_allocatable = true;
                 }
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
