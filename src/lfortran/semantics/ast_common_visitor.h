@@ -6863,28 +6863,31 @@ public:
                         orig_decl_variable->m_intent = s_intent;
                     }
                 } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
-                    // namelist /EXAMPLE/ foo, bar
-                    AST::AttrNamelist_t* attr_namelist = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
-                    Vec<ASR::symbol_t*> var_list; var_list.reserve(al, x.n_syms);
-                    if (current_scope->get_symbol(to_lower(attr_namelist->m_name)) != nullptr) {
-                        ASR::Namelist_t* existing_namelist = ASR::down_cast<ASR::Namelist_t>(
-                            current_scope->get_symbol(to_lower(attr_namelist->m_name)));
-                        for (size_t i = 0; i < existing_namelist->n_var_list; i++) {
-                            var_list.push_back(al, existing_namelist->m_var_list[i]);   
+                    AST::AttrNamelist_t* attr_namelist =
+                        AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0]);
+                    for (size_t j = 0; j < attr_namelist->n_groups; j++) {
+                        AST::namelist_group_t &group = attr_namelist->m_groups[j];
+                        std::string group_name = to_lower(group.m_name);
+                        Vec<ASR::symbol_t*> var_list;
+                        var_list.reserve(al, group.n_objects);
+                        if (current_scope->get_symbol(group_name) != nullptr) {
+                            ASR::Namelist_t* existing_namelist =
+                                ASR::down_cast<ASR::Namelist_t>(
+                                    current_scope->get_symbol(group_name));
+                            for (size_t i = 0; i < existing_namelist->n_var_list; i++) {
+                                var_list.push_back(al, existing_namelist->m_var_list[i]);
+                            }
                         }
+                        for (size_t i = 0; i < group.n_objects; i++) {
+                            var_list.push_back(al, current_scope->resolve_symbol(
+                                to_lower(group.m_objects[i].m_name)));
+                        }
+                        ASR::asr_t* namelist = ASR::make_Namelist_t(al,
+                            group.loc, current_scope, s2c(al, group_name),
+                            var_list.p, var_list.n);
+                        current_scope->add_or_overwrite_symbol(s2c(al, group_name),
+                            ASR::down_cast<ASR::symbol_t>(namelist));
                     }
-                    for (size_t i = 0; i < x.n_syms; i++) {
-                        var_list.push_back(al,
-                                           current_scope->resolve_symbol(to_lower(x.m_syms[i].m_name)));
-                    }
-                    ASR::asr_t* namelist = ASR::make_Namelist_t(al,
-                                               attr_namelist->base.base.loc,
-                                               current_scope,
-                                               s2c(al, to_lower(attr_namelist->m_name)),
-                                               var_list.p,
-                                               var_list.n);
-                    current_scope->add_or_overwrite_symbol(s2c(al, to_lower(attr_namelist->m_name)),
-                                              ASR::down_cast<ASR::symbol_t>(namelist));
                 } else if (AST::is_a<AST::AttrBind_t>(*x.m_attributes[i])) {
                     AST::AttrBind_t *attr_bind = AST::down_cast<AST::AttrBind_t>(x.m_attributes[i]);
                     ASR::abiType abi_type = ASR::abiType::Source;
@@ -17862,8 +17865,8 @@ public:
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
                     type_subs[param].second = type_declaration;
                 }
-            } else if (AST::is_a<AST::AttrNamelist_t>(*args[i])) {
-                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(args[i]);
+            } else if (AST::is_a<AST::AttrName_t>(*args[i])) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(args[i]);
                 std::string arg = to_lower(attr_name->m_name);
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments
