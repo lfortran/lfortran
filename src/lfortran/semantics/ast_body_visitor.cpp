@@ -9199,8 +9199,16 @@ public:
         if (x.m_goto_label) {
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
+            if (labels.find(std::to_string(goto_label)) == labels.end()) {
+                    diag.add(Diagnostic(
+                        "Label " + std::to_string(goto_label) + " is not defined",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label,
-                        s2c(al, std::to_string(goto_label)));
+                        s2c(al, std::to_string(goto_label)));                
             } else {
                 this->visit_expr(*x.m_goto_label);
                 ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);
