@@ -23,7 +23,7 @@ concurrency:
 
 
 env:
-  MACOSX_DEPLOYMENT_TARGET: 16.0
+  MACOSX_DEPLOYMENT_TARGET: 26.0
 
 jobs:
   Build:
