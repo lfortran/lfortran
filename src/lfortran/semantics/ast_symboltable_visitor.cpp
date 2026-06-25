@@ -2231,8 +2231,8 @@ public:
             }
 
             // Catch standalone declarations (e.g., `allocatable :: value`) parsed earlier in this pass
-            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name) > 0;
-            bool is_ptr_standalone = assgnd_pointer.count(return_var_name) > 0;
+            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name);
+            bool is_ptr_standalone = assgnd_pointer.count(return_var_name);
 
             if (is_alloc_standalone && !ASRUtils::is_allocatable(type)) {
                 type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
@@ -2253,12 +2253,17 @@ public:
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
+            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name);
+            bool is_ptr_standalone = assgnd_pointer.count(return_var_name);
+
             if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
-                diag.add(diag::Diagnostic(
-                    "Cannot specify the return type twice",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                if (!is_alloc_standalone && !is_ptr_standalone) {
+                    diag.add(diag::Diagnostic(
+                        "Cannot specify the return type twice",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
             }
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
