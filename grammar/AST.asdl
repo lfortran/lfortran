@@ -285,7 +285,8 @@ decl_attribute
     | AttrEquivalence(equi* args)
     | AttrExtends(identifier name)
     | AttrIntent(attr_intent intent)
-    | AttrNamelist(identifier name)
+    | AttrName(identifier name)
+    | AttrNamelist(namelist_group* groups)
     | AttrPass(identifier? name)
     | SimpleAttribute(simple_attribute attr)
     | AttrType(decl_type type, kind_item* kind, decl_attribute? attr,
@@ -357,6 +358,8 @@ var_sym = (identifier? name, dimension* dim, codimension* codim,
  expr? length, expr? initializer, symbol sym, decl_attribute? spec)
 
 common_block = (identifier? name, var_sym* objects)
+
+namelist_group = (identifier name, var_sym* objects)
 
 kind_item = (identifier? id, expr? value, kind_item_type type)
 
