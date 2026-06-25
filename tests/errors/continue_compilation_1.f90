@@ -815,4 +815,9 @@ program continue_compilation_1
 1000    continue
 1000    continue
     end subroutine
+
+    subroutine pointer_bounds_remapping_to_null()
+        real, pointer :: values(:)
+        values(1:2) => null()
+    end subroutine
 end program
