@@ -115,6 +115,11 @@ namespace LCompilers {
         test_output.SetArray();
 
         for (auto symbol : symbol_lists) {
+            // Skip synthetic ExternalSymbol artifacts (compiler-generated
+            // member-access shims). See lfortran-vscode-client#39.
+            if (symbol.is_synthetic_member) {
+                continue;
+            }
             uint32_t start_character = symbol.first_column;
             uint32_t start_line = symbol.first_line;
             uint32_t end_character = symbol.last_column;
