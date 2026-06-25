@@ -1054,19 +1054,18 @@ namespace GetEnvironmentVariable {
             }
             if (has_status) {
                 fill_func_arg_sub("status", arg_types[arg_idx], Out);
-                // Declare interface `_lfortran_get_environment_variable_status`
-                std::string status_func_name = "_lfortran_get_environment_variable_status";
+                std::string status_func_name = "_lfortran_get_environment_variable_status_value";
                 ASR::symbol_t *_lfortran_get_environment_variable_status = b.create_c_func_subroutines_with_return_type(
-                    status_func_name, fn_symtab, 2,
+                    status_func_name, fn_symtab, 3,
                     {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1),
-                     int32},
+                     int32, int32},
                     arg_types[arg_idx]);
                 fn_symtab->add_symbol(status_func_name, _lfortran_get_environment_variable_status);
                 dep.push_back(al, s2c(al, status_func_name));
-                // Call the status function and assign result
-                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 2);
+                Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 3);
                 status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
                 status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                status_call_args.push_back(al, b.StringLen(args[1] /* value */));
                 body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
                 arg_idx++;
             }
