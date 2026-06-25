@@ -986,8 +986,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 ASR::Variable_t *v =
                     ASR::down_cast<ASR::Variable_t>(item.second);
                 if (isLocalVar(v)) {
-                    m_var_idx_map[get_hash((ASR::asr_t *)v)] = cur_sym_info.no_of_params + local_vars.size();
+                    // Assign the index BEFORE get_var_type modifies local_vars.size()
+                    uint32_t current_idx = cur_sym_info.no_of_params + local_vars.size();
+                    m_var_idx_map[get_hash((ASR::asr_t *)v)] = current_idx;
                     get_var_type(v, local_vars);
+                    // The drift is still there for the NEXT variable if get_var_type added 2 slots!
                 }
             }
         }
