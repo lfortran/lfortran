@@ -2679,8 +2679,9 @@ namespace Spread {
             int64_t dim_value = 0;
             if (ASRUtils::extract_value(dim, dim_value)
                     && (dim_value < 1 || dim_value > max_dim)) {
-                append_error(diag, "`dim` argument of `spread` is not a valid "
-                    "dimension index", dim->base.loc);
+                append_error(diag, "Dimension index " + std::to_string(dim_value) +
+                    " is out of range for `spread`; expected 1 <= dim <= " +
+                    std::to_string(max_dim), dim->base.loc);
                 return nullptr;
             }
         }

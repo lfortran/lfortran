@@ -817,4 +817,9 @@ program continue_compilation_1
         a = [1,2,3]
         print *, spread(a, 5, 2)
     end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
 end program
