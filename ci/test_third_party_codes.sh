@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "##[group] Setup"
 set -ex  # Exit immediately on any error
 
 # Default to gfortran if FC is not set
@@ -66,10 +67,12 @@ time_section() {
   local LABEL="$1"
   local BLOCK="$2"
   local START=$(date +%s)
+  echo "##[group] $LABEL"
   print_section "$LABEL"
-  eval "$BLOCK"
+  ( set -x ; eval "$BLOCK" )
   local END=$(date +%s)
   print_subsection "⏱ Duration: $((END - START)) seconds"
+  echo "##[endgroup]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -107,6 +110,9 @@ fi
 # Setup a temporary workspace
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
+
+set +x
+echo "##[endgroup]" # end of Setup
 
 time_section "🧪 Testing caffeine" '
   git clone -b main https://github.com/BerkeleyLab/caffeine.git
