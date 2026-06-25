@@ -963,6 +963,7 @@ RUN(NAME assumed_rank_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME assumed_rank_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assume_rank_shape_product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1805,6 +1806,7 @@ RUN(NAME intrinsics_466 LABELS gfortran llvm) # eoshift with array-valued shift
 RUN(NAME intrinsics_467 LABELS gfortran llvm) # elemental intrinsics over allocatable arrays in array constructors
 RUN(NAME intrinsics_468 LABELS gfortran llvm) # product with dim in array expression
 RUN(NAME intrinsics_469 LABELS gfortran llvm) # dot product with empty/zero-length arrays
+RUN(NAME intrinsics_470 LABELS gfortran llvm) # index with character(kind=4) arguments
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
@@ -2832,6 +2834,7 @@ RUN(NAME string_115 LABELS gfortran llvm)
 RUN(NAME string_116 LABELS gfortran llvm)
 RUN(NAME string_117 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_118 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_119 LABELS gfortran llvm)
 RUN(NAME string_array_concat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME substring_read LABELS gfortran llvm)
@@ -4185,6 +4188,7 @@ RUN(NAME transfer_26 LABELS gfortran llvm)
 RUN(NAME transfer_27 LABELS gfortran llvm)
 RUN(NAME transfer_28 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME transfer_29 LABELS gfortran llvm)
+RUN(NAME transfer_30 LABELS gfortran llvm)
 RUN(NAME transfer_assumed_shape_01 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4537,6 +4541,7 @@ RUN(NAME proc_ptr_14 LABELS gfortran llvm)
 RUN(NAME proc_ptr_15 LABELS gfortran llvm)
 RUN(NAME proc_ptr_16 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME proc_ptr_17 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME proc_ptr_19 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME proc_ptr_18 LABELS gfortran llvm)
 RUN(NAME write_substr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_implied_do_1 LABELS gfortran llvm)

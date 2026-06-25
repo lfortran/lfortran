@@ -817,4 +817,9 @@ program continue_compilation_1
         character(kind=1, len=1) :: key
         print *, findloc(names, key)
     end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
 end program

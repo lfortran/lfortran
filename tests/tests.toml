@@ -2852,7 +2852,19 @@ pass = "coarray"
 options = "--coarray=true --show-fortran"
 
 [[test]]
+filename = "coarrays_05.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "coarrays_06.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_07.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
@@ -2861,6 +2873,12 @@ options = "--coarray=true"
 filename = "coarrays_08.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "coarrays_10.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
 
 [[test]]
 filename = "../integration_tests/program_03.f90"

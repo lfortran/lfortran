@@ -1030,7 +1030,11 @@ class ASRBuilder {
 
         // Set multi-dimensional type
         if (array_type) {
-            ASR::down_cast<ASR::ArrayConstant_t>(arr_constant)->m_type = array_type;
+            if (ASR::is_a<ASR::ArrayConstant_t>(*arr_constant)) {
+                ASR::down_cast<ASR::ArrayConstant_t>(arr_constant)->m_type = array_type;
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*arr_constant)) {
+                ASR::down_cast<ASR::ArrayConstructor_t>(arr_constant)->m_type = array_type;
+            }
         }
 
         if (cast2descriptor) {
