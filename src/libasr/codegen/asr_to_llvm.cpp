@@ -4052,21 +4052,30 @@ public:
             case ASRUtils::IntrinsicElementalFunctions::StorageSize: {
                 ASR::expr_t* arg_expr = x.m_args[0];
                 ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_expr);
-                ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer_array(arg_type);
+                
+                ASR::ttype_t* base_type = ASRUtils::type_get_past_array(
+                                             ASRUtils::type_get_past_allocatable(
+                                                 ASRUtils::type_get_past_pointer(arg_type)));
 
                 if (ASRUtils::is_character(*base_type)) {
+                    // 1. Create an ASR node for 'len(string)'
                     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                     ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
                         al, x.base.base.loc, arg_expr, int_type, nullptr));
 
+                    // 2. Visit it to let the LLVM backend generate the dynamic length extraction code
                     this->visit_expr(*str_len_expr);
-                    llvm::Value* str_len = tmp; // 'tmp' now holds the string's length at runtime
+                    llvm::Value* str_len = tmp;
 
-                    llvm::Type* dest_type = llvm_utils->getIntType(ASRUtils::expr_type(x.m_value ? x.m_value : x.m_args[0]));
+                    int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                    llvm::Type* dest_type = llvm_utils->getIntType(return_kind);
+                    
+                    // 3. Cast to the correct return type
                     if (str_len->getType() != dest_type) {
                         str_len = builder->CreateIntCast(str_len, dest_type, /*isSigned=*/true);
                     }
 
+                    // 4. Multiply by 8 to convert bytes to bits
                     llvm::Value* bits_per_byte = llvm::ConstantInt::get(dest_type, 8);
                     tmp = builder->CreateMul(str_len, bits_per_byte, "storage_size_bits");
 
