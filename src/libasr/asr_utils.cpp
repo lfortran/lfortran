@@ -2178,6 +2178,41 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
             expr_dt = value;
         }
     }
+    if(!sym) {
+        ASR::ttype_t* target_element_type = ASRUtils::extract_type(target_type);
+        ASR::ttype_t* value_element_type = ASRUtils::extract_type(value_type);
+        if( ASRUtils::is_array(target_type) &&
+                ASR::is_a<ASR::StructType_t>(*target_element_type) ) {
+            ASR::symbol_t* struct_sym =
+                ASRUtils::get_struct_sym_from_struct_expr(target);
+            if (struct_sym != nullptr) {
+                ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_sym));
+                sym = target_struct->m_symtab->resolve_symbol("~assign");
+                while (sym == nullptr && target_struct->m_parent != nullptr) {
+                    target_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(target_struct->m_parent));
+                    sym = target_struct->m_symtab->resolve_symbol("~assign");
+                }
+                if (sym) expr_dt = target;
+            }
+        } else if( ASRUtils::is_array(value_type) &&
+                ASR::is_a<ASR::StructType_t>(*value_element_type) ) {
+            ASR::symbol_t* struct_sym =
+                ASRUtils::get_struct_sym_from_struct_expr(value);
+            if (struct_sym != nullptr) {
+                ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_sym));
+                sym = value_struct->m_symtab->resolve_symbol("~assign");
+                while (sym == nullptr && value_struct->m_parent != nullptr) {
+                    value_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(value_struct->m_parent));
+                    sym = value_struct->m_symtab->resolve_symbol("~assign");
+                }
+                if (sym) expr_dt = value;
+            }
+        }
+    }
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
