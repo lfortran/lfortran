@@ -9299,111 +9299,68 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
-    void visit_SyncAll(const AST::SyncAll_t &x) {
-        ASR::expr_t *stat = nullptr;
-        ASR::expr_t *errmsg = nullptr;
-        for (size_t i = 0; i < x.n_stat; i++) {
-            AST::event_attribute_t *attr = x.m_stat[i];
+    void resolve_sync_stat_errmsg(AST::event_attribute_t **attrs, size_t n_attrs, const Location &loc, 
+        const std::string &stmt_name, ASR::expr_t *&stat, ASR::expr_t *&errmsg)
+    {
+        stat = nullptr;
+        errmsg = nullptr;
+        for (size_t i = 0; i < n_attrs; i++) {
+            AST::event_attribute_t *attr = attrs[i];
             if (AST::is_a<AST::AttrStat_t>(*attr)) {
                 auto *s = AST::down_cast<AST::AttrStat_t>(attr);
-                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
-                    to_lower(s->m_variable)));
+                stat = ASRUtils::EXPR(resolve_variable(
+                    loc, to_lower(s->m_variable)));
                 ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
                 if (ASRUtils::is_array(stat_type)) {
                     diag.add(Diagnostic(
-                        "`stat` argument of `sync all` must be scalar",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`stat` argument of `" + stmt_name + "` must be scalar",
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
                 if (!ASRUtils::is_integer(*stat_type)) {
                     diag.add(Diagnostic(
-                        "`stat` argument of `sync all` must be of type integer, found "
-                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`stat` argument of `" + stmt_name +
+                        "` must be of type integer, found " +
+                        ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
             } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
                 auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
-                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
-                    to_lower(e->m_variable)));
+                errmsg = ASRUtils::EXPR(resolve_variable(loc, to_lower(e->m_variable)));
                 ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
                 if (ASRUtils::is_array(errmsg_type)) {
                     diag.add(Diagnostic(
-                        "`errmsg` argument of `sync all` must be scalar",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`errmsg` argument of `" + stmt_name + "` must be scalar",
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
                 if (!ASRUtils::is_character(*errmsg_type)) {
                     diag.add(Diagnostic(
-                        "`errmsg` argument of `sync all` must be of type character, found "
-                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`errmsg` argument of `" + stmt_name +
+                        "` must be of type character, found " +
+                        ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
             }
         }
+    }
+    void visit_SyncAll(const AST::SyncAll_t &x) {
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        resolve_sync_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync all", stat, errmsg);
         tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
     }
 
     void visit_SyncMemory(const AST::SyncMemory_t &x) {
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
-        for (size_t i = 0; i < x.n_stat; i++) {
-            AST::event_attribute_t *attr = x.m_stat[i];
-            if (AST::is_a<AST::AttrStat_t>(*attr)) {
-                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
-                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
-                    to_lower(s->m_variable)));
-                ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
-                if (ASRUtils::is_array(stat_type)) {
-                    diag.add(Diagnostic(
-                        "`stat` argument of `sync memory` must be scalar",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if (!ASRUtils::is_integer(*stat_type)) {
-                    diag.add(Diagnostic(
-                        "`stat` argument of `sync memory` must be of type integer, found "
-                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
-                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
-                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
-                    to_lower(e->m_variable)));
-                ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
-                if (ASRUtils::is_array(errmsg_type)) {
-                    diag.add(Diagnostic(
-                        "`errmsg` argument of `sync memory` must be scalar",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if (!ASRUtils::is_character(*errmsg_type)) {
-                    diag.add(Diagnostic(
-                        "`errmsg` argument of `sync memory` must be of type character, found "
-                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-            }
-        }
+        resolve_sync_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync memory", stat, errmsg);
         tmp = ASR::make_SyncMemory_t(al, x.base.base.loc, stat, errmsg);
     }
 
