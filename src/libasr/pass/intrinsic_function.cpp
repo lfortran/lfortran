@@ -167,6 +167,8 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
             in_ttype = in_ttype_copy;
         }
 
+
+
         void call_replacer() {
             replacer.current_expr = current_expr;
             replacer.replace_expr(*current_expr);
@@ -299,6 +301,22 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             return;
         }
 
+        ASR::expr_t* target_var = this->result_var_;
+        bool is_param = false;
+        if (ASR::is_a<ASR::Var_t>(*target_var)) {
+            ASR::Variable_t* v = ASRUtils::EXPR2VAR(target_var);
+            if (v->m_storage == ASR::storage_typeType::Parameter) {
+                is_param = true;
+            }
+        }
+
+        if (is_param) {
+            ASR::ttype_t* target_type = ASRUtils::expr_type(target_var);
+            target_var = PassUtils::create_var(++result_counter,
+                                        "_param_init_temp",
+                                        x->base.base.loc, target_type, al, current_scope);
+        }
+
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, x->n_args + 1);
         for( size_t i = 0; i < x->n_args; i++ ) {
@@ -308,9 +326,9 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             new_args.push_back(al, new_arg);
         }
         ASR::call_arg_t new_arg;
-        LCOMPILERS_ASSERT(this->result_var_)
-        new_arg.loc = this->result_var_->base.loc;
-        new_arg.m_value = this->result_var_;
+        LCOMPILERS_ASSERT(target_var)
+        new_arg.loc = target_var->base.loc;
+        new_arg.m_value = target_var;
         new_args.push_back(al, new_arg);
 
 
@@ -318,6 +336,12 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
             new_args.size(), x->m_dt, nullptr, false));
         pass_result.push_back(al, subrout_call);
+
+        if (is_param) {
+            ASR::stmt_t* param_assign = ASRUtils::STMT(ASR::make_Assignment_t(
+                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false));
+            pass_result.push_back(al, param_assign);
+        }
     }
 };
 
