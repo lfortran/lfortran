@@ -1217,7 +1217,11 @@ public:
             // Handle Memory
             if(!ASRUtils::is_allocatable_or_pointer(type) &&
                t->m_len_kind != ASR::string_length_kindType::AssumedLength){
-                llvm_utils->set_string_memory_on_heap(t->m_physical_type, str, llvm_utils->get_string_length(t, str));
+                llvm::Value *allocation_size = llvm_utils->get_string_length(t, str);
+                if (t->m_kind > 1) {
+                    allocation_size = builder->CreateMul(allocation_size,llvm::ConstantInt::get(allocation_size->getType(), t->m_kind));
+                }
+                llvm_utils->set_string_memory_on_heap(t->m_physical_type, str, allocation_size);
             }
         } else {
             throw LCompilersException("Unhandled string physicalType");
@@ -3076,6 +3080,11 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *c = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg)) == 4) {
+            tmp = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
+                builder->CreateBitCast(c,llvm::Type::getInt32Ty(context)->getPointerTo()));
+            return;
+        }
         std::string runtime_func_name = "_lfortran_ichar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -10553,6 +10562,22 @@ public:
         llvm::Value* str_val_data, *str_val_len;
         std::tie(str_val_data, str_val_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(value), str_val);
 
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(ss->m_arg));
+        if (kind > 1) {
+            llvm::Value *kind_value = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), kind);
+            str_len = builder->CreateMul(str_len, kind_value);
+            str_val_len = builder->CreateMul(str_val_len, kind_value);
+            if (ss->m_start) {
+                idx1 = builder->CreateAdd(builder->CreateMul(
+                    builder->CreateSub(idx1, llvm::ConstantInt::get(idx1->getType(), 1)),
+                    llvm::ConstantInt::get(idx1->getType(), kind)),
+                    llvm::ConstantInt::get(idx1->getType(), 1));
+            }
+            if (ss->m_end) {
+                idx2 = builder->CreateMul(idx2, llvm::ConstantInt::get(idx2->getType(), kind));
+            }
+        }
+
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         tmp = builder->CreateCall(fn, {allocator, str_data, str_len, str_val_data, str_val_len, idx1, idx2, step, lp, rp});
 
@@ -14413,6 +14438,10 @@ public:
             llvm::Value* idx /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
                                                 llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
+            int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
+            if (kind > 1) {
+                idx = builder->CreateMul(idx, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), kind));
+            }
             str_item = builder->CreateGEP(llvm::Type::getInt8Ty(context), str_data, idx);
         }
 

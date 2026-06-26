@@ -6117,13 +6117,14 @@ namespace Ichar {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
         declare_basic_variables("_lcompilers_ichar_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, kind, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
         body.push_back(al, b.Assignment(itr, b.i32(1)));
         body.push_back(al, b.Assignment(result, b.i2i_t(
             ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
-            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, 
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, kind, nullptr,
                 ASR::string_length_kindType::AssumedLength,
                 ASR::string_physical_typeType::DescriptorString)),
             nullptr)), int32, nullptr)), return_type)));
@@ -6211,6 +6212,10 @@ namespace Achar {
     static ASR::expr_t *eval_Achar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        if (kind > 1) {
+            return nullptr;
+        }
         std::string svalue(1, static_cast<char>(i));
         return make_ConstantWithType(make_StringConstant_t, s2c(al, svalue), t1, loc);
     }
@@ -6246,7 +6251,7 @@ namespace Achar {
                 ASR::string_length_kindType::ExpressionLength);
         } else {
             fill_func_arg("i", arg_types[0]);
-            result = declare("result", character(1), ReturnVar);
+            result = declare("result", return_type, ReturnVar);
             body.push_back(al, b.Assignment(result, b.BitCast(args[0], result)));
         }
 
