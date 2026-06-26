@@ -2818,6 +2818,14 @@ public:
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         tmp = nullptr;
+        if (ASR::is_a<ASR::ArraySection_t>(*target) && ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+            diag.add(Diagnostic(
+                "A pointer with bounds remapping cannot be associated with NULL()",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if (ASR::is_a<ASR::ArraySection_t>(*target)) {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(target);

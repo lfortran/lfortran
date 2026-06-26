@@ -1695,3 +1695,9 @@ semantic error: duplicate statement label 1000
     |
 816 | 1000    continue
     |         ^^^^^^^^ 
+
+semantic error: A pointer with bounds remapping cannot be associated with NULL()
+   --> tests/errors/continue_compilation_1.f90:821:9
+    |
+821 |         values(1:2) => null()
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
