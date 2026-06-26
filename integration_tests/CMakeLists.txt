@@ -4627,6 +4627,7 @@ RUN(NAME stdlib_bitsets_01 LABELS gfortran llvm)
 RUN(NAME pure_side_effects_03 LABELS gfortran llvm)
 RUN(NAME merge_str_01 LABELS gfortran llvm)
 RUN(NAME io_direct_slash LABELS gfortran llvm)
+RUN(NAME achar_kind_01 LABELS gfortran llvm)
 
 #test for coarray
 RUN(NAME coarray_01 LABELS gfortran GFORTRAN_ARGS -fcoarray=single)
