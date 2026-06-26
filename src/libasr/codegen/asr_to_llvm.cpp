@@ -16885,11 +16885,15 @@ public:
 
             data_ptr = builder->CreateBitCast(data_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
             if (!stride_val) {
-                llvm::DataLayout data_layout(module->getDataLayout());
-                llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
-                    nullptr, elem_type, module.get());
-                stride_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
-                    data_layout.getTypeAllocSize(llvm_elem_type));
+                if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                    stride_val = elem_len_val;
+                } else {
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                        nullptr, elem_type, module.get());
+                    stride_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                        data_layout.getTypeAllocSize(llvm_elem_type));
+                }
             }
 
             // Create lfortran_nml_item_t struct
