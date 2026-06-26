@@ -114,9 +114,9 @@ cd "$TMP_DIR"
 set +x
 echo "##[endgroup]" # end of Setup
 
-time_section "🧪 Testing caffeine" '
-  git clone -b main https://github.com/BerkeleyLab/caffeine.git
-  cd caffeine
+time_section "🧪 Testing conda-forge fpm" '
+  mkdir conda-fpm
+  cd conda-fpm
 
   micromamba install -c conda-forge fpm=0.12.0
 
@@ -125,6 +125,19 @@ time_section "🧪 Testing caffeine" '
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
+
+  fpm --version
+
+  cd ..
+  rm -rf conda-fpm
+'
+
+time_section "🧪 Testing caffeine" '
+  git clone -b main https://github.com/BerkeleyLab/caffeine.git
+  cd caffeine
+
+  micromamba install -c conda-forge fpm=0.12.0
+
   fpm --version
 
   export CC=clang
@@ -186,11 +199,6 @@ time_section "🧪 Testing splpak" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  # To debug https://github.com/lfortran/lfortran/issues/7732:
-  which fpm
-  realpath $(which fpm)
-  ls -l $(dirname $(realpath $(which fpm)))/../lib
-  ls -l $CONDA_PREFIX/lib
   fpm --version
 
   git checkout lf-2
