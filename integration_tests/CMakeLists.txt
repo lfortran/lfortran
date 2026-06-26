@@ -963,6 +963,7 @@ RUN(NAME assumed_rank_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_rank_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME assumed_rank_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assume_rank_shape_product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1761,8 +1762,8 @@ RUN(NAME intrinsics_422 LABELS llvm llvm_wasm llvm_wasm_emcc) # this_image
 RUN(NAME intrinsics_423 LABELS llvm llvm_wasm llvm_wasm_emcc) # num_images
 RUN(NAME intrinsics_424 LABELS llvm llvm_wasm llvm_wasm_emcc) # co_sum
 RUN(NAME intrinsics_425 LABELS llvm llvm_wasm llvm_wasm_emcc) # co_sum with optional args
-RUN(NAME intrinsics_470 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_max
-RUN(NAME intrinsics_471 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_min
+RUN(NAME intrinsics_471 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_max
+RUN(NAME intrinsics_472 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_min
 RUN(NAME intrinsics_426 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # count(mask, dim) with variable dim
 RUN(NAME intrinsics_427 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxval with derived-type component in declaration
 RUN(NAME intrinsics_428 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # merge array mask in loop
@@ -1807,6 +1808,7 @@ RUN(NAME intrinsics_466 LABELS gfortran llvm) # eoshift with array-valued shift
 RUN(NAME intrinsics_467 LABELS gfortran llvm) # elemental intrinsics over allocatable arrays in array constructors
 RUN(NAME intrinsics_468 LABELS gfortran llvm) # product with dim in array expression
 RUN(NAME intrinsics_469 LABELS gfortran llvm) # dot product with empty/zero-length arrays
+RUN(NAME intrinsics_470 LABELS gfortran llvm) # index with character(kind=4) arguments
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
@@ -2834,6 +2836,7 @@ RUN(NAME string_115 LABELS gfortran llvm)
 RUN(NAME string_116 LABELS gfortran llvm)
 RUN(NAME string_117 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_118 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_119 LABELS gfortran llvm)
 RUN(NAME string_array_concat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME substring_read LABELS gfortran llvm)

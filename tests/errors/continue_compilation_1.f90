@@ -822,4 +822,9 @@ program continue_compilation_1
         logical :: mask
         call co_sum(mask)
     end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
 end program

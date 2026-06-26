@@ -6837,8 +6837,9 @@ namespace SubstrIndex {
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
         declare_basic_variables("_lcompilers_index_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        fill_func_arg("str",   ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,  ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
-        fill_func_arg("substr", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
+        int64_t character_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        fill_func_arg("str",   ASRUtils::TYPE(ASR::make_String_t(al, loc, character_kind, nullptr,  ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
+        fill_func_arg("substr", ASRUtils::TYPE(ASR::make_String_t(al, loc, character_kind, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
         fill_func_arg("kind", int32);
         auto idx = declare(fn_name, return_type, ReturnVar);
@@ -7551,11 +7552,12 @@ namespace Max {
         ASR::ttype_t* function_return_type = return_type;
         if (ASRUtils::is_string_only(arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
+                fill_func_arg("x" + std::to_string(i), TYPE(ASR::make_String_t(al, loc, kind,
+                    nullptr, ASR::AssumedLength, ASR::DescriptorString)));
             }
-            function_return_type = b.String(
+            function_return_type = TYPE(ASR::make_String_t(al, loc, kind,
                 EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
-                ASR::ExpressionLength);
+                ASR::ExpressionLength, ASR::DescriptorString));
         } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind)));
@@ -7723,9 +7725,10 @@ namespace Min {
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
-                fill_func_arg("x" + std::to_string(i), b.String(nullptr, ASR::AssumedLength));
+                fill_func_arg("x" + std::to_string(i), TYPE(ASR::make_String_t(al, loc, kind,
+                    nullptr, ASR::AssumedLength, ASR::DescriptorString)));
             }
-            return_type = TYPE(ASR::make_String_t(al, loc, 1,
+            return_type = TYPE(ASR::make_String_t(al, loc, kind,
                 EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
@@ -7747,7 +7750,7 @@ namespace Min {
             }, {}));
         }
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
-            return_type = TYPE(ASR::make_String_t(al, loc, 1,
+            return_type = TYPE(ASR::make_String_t(al, loc, kind,
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));

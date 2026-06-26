@@ -1701,3 +1701,9 @@ semantic error: `a` argument of `co_sum` must be of integer, real or complex typ
     |
 823 |         call co_sum(mask)
     |                     ^^^^ must be integer, real or complex type
+
+semantic error: duplicate statement label 1000
+   --> tests/errors/continue_compilation_1.f90:828:9
+    |
+828 | 1000    continue
+    |         ^^^^^^^^ 

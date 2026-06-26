@@ -1380,7 +1380,17 @@ public:
             if (!stmt) return;
             int64_t label = stmt_label(stmt);
             if (label != 0) {
-                labels.insert(std::to_string(label));
+                std::string label_name = std::to_string(label);
+                if (!labels.insert(label_name).second) {
+                    diag.add(Diagnostic(
+                        "duplicate statement label " + label_name,
+                        Level::Error, Stage::Semantic, {
+                            Label("", {stmt->base.loc})
+                        }));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                }
             }
 
             switch (stmt->type) {
