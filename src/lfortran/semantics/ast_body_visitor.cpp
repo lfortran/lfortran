@@ -47,10 +47,7 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
         if (ASR::is_a<ASR::Var_t>(*arg)) {
             ASR::Var_t *var_expr = ASR::down_cast<ASR::Var_t>(arg);
             ASR::Variable_t *v_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
-            if (v_var->m_intent == ASR::intentType::Unspecified &&
-                !ASRUtils::is_pointer(v_var->m_type) &&
-                !v_var->m_value_attr &&
-                !ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v_var->m_type))) {
+            if (v_var->m_intent == ASR::intentType::Unspecified) {
                 diag.add(diag::Diagnostic(
                     "Dummy argument '" + std::string(v_var->m_name) +
                     "' of pure function must have INTENT(IN) or VALUE attribute",
