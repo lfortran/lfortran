@@ -362,6 +362,9 @@ public:
             if (is_module_variable(v)) {
                 continue;
             }
+            if (current_scope && is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
+                continue;
+            }
             nesting_map[par_func_sym].insert(nml->m_var_list[i]);
         }
     }
@@ -813,6 +816,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             }
             var_list.push_back(al, it_ext->second.second);
         }
+        if (var_list.n == 0) {
+            return nullptr;
+        }
 
         std::string nml_name = ASRUtils::symbol_name(nml_sym);
         std::string unique_name = mod_symtab->get_unique_name(nml_name, false);
@@ -836,12 +842,16 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             return;
         }
         std::string sym_name = ASRUtils::symbol_name(nml_sym);
-        ASR::symbol_t *ext_sym = current_scope->resolve_symbol(sym_name);
-        if (!ext_sym || !ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym) ||
-                ASRUtils::symbol_get_past_external(ext_sym) != nml_new_sym) {
+        ASR::symbol_t *ext_sym = current_scope->get_symbol(sym_name);
+        if (ext_sym && (!ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym) ||
+                ASRUtils::symbol_get_past_external(ext_sym) != nml_new_sym)) {
+            sym_name = current_scope->get_unique_name(sym_name, false);
+            ext_sym = nullptr;
+        }
+        if (!ext_sym) {
             std::string owner_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(nml_new_sym));
             ext_sym = make_external_symbol(al, current_scope, nml_new_sym, sym_name,
-                owner_name, sym_name, ASR::accessType::Public);
+                owner_name, ASRUtils::symbol_name(nml_sym), ASR::accessType::Public);
         }
         nml_sym = ext_sym;
     }
