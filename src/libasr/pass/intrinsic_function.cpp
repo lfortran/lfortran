@@ -167,8 +167,6 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
             in_ttype = in_ttype_copy;
         }
 
-
-
         void call_replacer() {
             replacer.current_expr = current_expr;
             replacer.replace_expr(*current_expr);

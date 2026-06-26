@@ -845,7 +845,6 @@ static inline void populate_compiletime_values(Allocator &al, std::vector<std::p
             compiletime_values.push_back({array->m_args[i], nullptr});
         }
     }
-
     if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
         ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
         for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(array->m_type); i++) {
