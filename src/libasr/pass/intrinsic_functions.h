@@ -5785,23 +5785,32 @@ namespace StringConcat {
     inline ASR::expr_t *eval_StringConcat(Allocator &al, const Location &loc,
             ASR::ttype_t* value_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/){
         char* result {};
-        int64_t s0_length, s1_length;
         ASR::expr_t* s0_value = expr_value(args[0]);
         ASR::expr_t* s1_value = expr_value(args[1]);
-        { // Get lengths from evaluated values' types
-            ASR::String_t* s0 = get_string_type(s0_value);
-            ASR::String_t* s1 = get_string_type(s1_value);
-            extract_value_(expr_value(s0->m_len), s0_length);
-            extract_value_(expr_value(s1->m_len), s1_length);
-            result = al.allocate<char>(s0_length + s1_length + 1 /* \0 */);
-        }
-        { // Concat strings
-            char* s0_char {}, *s1_char {};
-            extract_value_(s0_value, s0_char);
-            extract_value_(s1_value, s1_char);
-            memcpy(result, s0_char, s0_length);
-            memcpy(result + s0_length, s1_char, s1_length);
-        }
+
+        ASR::String_t* s0_type = get_string_type(s0_value);
+        ASR::String_t* s1_type = get_string_type(s1_value);
+
+        char* s0_char {};
+        char* s1_char {};
+        extract_value_(s0_value, s0_char);
+        extract_value_(s1_value, s1_char);
+
+        // For kind=1, logical length == physical byte length (safe for null bytes).
+        // For kind>1, logical length != physical bytes (UTF-8 multi-byte encoding),
+        // so we must use strlen to get the actual byte count.
+        int64_t s0_len, s1_len;
+        extract_value_(expr_value(s0_type->m_len), s0_len);
+        extract_value_(expr_value(s1_type->m_len), s1_len);
+        int64_t phys_s0 = (s0_type->m_kind > 1 && s0_char) ? (int64_t)strlen(s0_char) : s0_len;
+        int64_t phys_s1 = (s1_type->m_kind > 1 && s1_char) ? (int64_t)strlen(s1_char) : s1_len;
+
+        result = al.allocate<char>(phys_s0 + phys_s1 + 1 /* \0 */);
+
+        if (s0_char) memcpy(result, s0_char, phys_s0);
+        if (s1_char) memcpy(result + phys_s0, s1_char, phys_s1);
+        result[phys_s0 + phys_s1] = '\0';
+
         return make_ConstantWithType(make_StringConstant_t, result, value_type, loc);
     }
 
@@ -5828,7 +5837,13 @@ namespace StringConcat {
                 int64_t s0_len, s1_len;
                 extract_value(expr_value(s0_type->m_len), s0_len);
                 extract_value(expr_value(s1_type->m_len), s1_len);
-                return_type = b.String(b.i64(s0_len + s1_len), ASR::ExpressionLength);
+                // For kind>1, logical length != physical bytes (UTF-8 encoding),
+                // so use strlen. For kind=1, logical == physical (null-safe).
+                char* s0_char {}; extract_value_(s0_value, s0_char);
+                char* s1_char {}; extract_value_(s1_value, s1_char);
+                int64_t phys_s0 = (s0_type->m_kind > 1 && s0_char) ? (int64_t)strlen(s0_char) : s0_len;
+                int64_t phys_s1 = (s1_type->m_kind > 1 && s1_char) ? (int64_t)strlen(s1_char) : s1_len;
+                return_type = b.String(b.i64(phys_s0 + phys_s1), ASR::ExpressionLength);
                 value = eval_StringConcat(al, loc, return_type, args, diag);
             } else {
                 // Array parameter: evaluate element-by-element into an ArrayConstant
@@ -6163,8 +6178,10 @@ namespace Char {
         s.from_str_view(svalue);
         char *result = s.c_str(al);
         ASR::ttype_t* result_type = t1;
-        // The logical length of a char() result is always 1, even if its UTF-8 
-        // byte representation is larger. ASR string constants expect UTF-8.
+        // Return length is always 1 (one logical character).
+        // We encode into UTF-8 because ASR StringConstant uses char* m_s;
+        // raw UCS-4 bytes may contain embedded nulls that would break the
+        // C-string representation. The LLVM backend decodes via utf8_to_unicode_bytes.
         int64_t len = 0;
         ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(t1))->m_len, len);
         LCOMPILERS_ASSERT(len == 1);
@@ -6226,8 +6243,10 @@ namespace Achar {
             svalue += (char)(0x80 | (i & 0x3F));
         }
         ASR::ttype_t* result_type = t1;
-        // The logical length of an achar() result is always 1, even if its UTF-8 
-        // byte representation is larger. ASR string constants expect UTF-8.
+        // Return length is always 1 (one logical character).
+        // We encode into UTF-8 because ASR StringConstant uses char* m_s;
+        // raw UCS-4 bytes may contain embedded nulls that would break the
+        // C-string representation. The LLVM backend decodes via utf8_to_unicode_bytes.
         int64_t len = 0;
         ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(t1))->m_len, len);
         LCOMPILERS_ASSERT(len == 1);

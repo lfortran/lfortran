@@ -21,7 +21,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* %6, i8** %4, align 8
   %7 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
   %8 = load i8*, i8** %7, align 8
-  call void @_lfortran_strcpy_alloc_kind(i8* %2, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 1), i8 0, i8 0, i8* %8, i64 1, i32 1)
+  call void @_lfortran_strcpy_alloc(i8* %2, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 1), i8 0, i8 0, i8* %8, i64 1, i32 1)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -44,7 +44,7 @@ declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
 
-declare void @_lfortran_strcpy_alloc_kind(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
+declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 

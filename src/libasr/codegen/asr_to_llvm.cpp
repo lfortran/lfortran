@@ -7404,11 +7404,19 @@ public:
                     if(v->m_symbolic_value){ // Get initial value if exist.
                         char* str_inital_value{};
                         ASRUtils::extract_value(ASRUtils::expr_value(v->m_symbolic_value), str_inital_value);
-                        int str_initial_value_len{};
-                        ASRUtils::extract_value(ASRUtils::expr_value(
-                            ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value))->m_len),
-                            str_initial_value_len);
-                        str_initial_value_string = std::string(str_inital_value, str_initial_value_len);
+                        int kind = ASRUtils::get_string_type(v->m_type)->m_kind;
+                        if (kind > 1 && str_inital_value) {
+                            // For kind>1, logical length != physical byte length
+                            // (UTF-8 multi-byte encoding). Use strlen to read the
+                            // full UTF-8 string without truncation.
+                            str_initial_value_string = std::string(str_inital_value);
+                        } else {
+                            int str_initial_value_len{};
+                            ASRUtils::extract_value(ASRUtils::expr_value(
+                                ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value))->m_len),
+                                str_initial_value_len);
+                            str_initial_value_string = std::string(str_inital_value, str_initial_value_len);
+                        }
                     }
                     ptr = llvm_utils->declare_global_string(ASRUtils::get_string_type(v->m_type),
                             str_initial_value_string, false,
