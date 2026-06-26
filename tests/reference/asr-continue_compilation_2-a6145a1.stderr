@@ -1009,3 +1009,15 @@ semantic error: shape argument not specified in c_f_pointer even though fptr is 
     |
 541 |     call c_f_pointer(queries_3, cfp_y_3)    
     |                                 ^^^^^^^ 
+
+semantic error: Dummy argument 'x' of pure function must have INTENT(IN) or VALUE attribute
+   --> tests/errors/continue_compilation_2.f90:585:20
+    |
+585 |         integer :: x, y
+    |                    ^ 
+
+semantic error: Dummy argument 'y' of pure function must have INTENT(IN) or VALUE attribute
+   --> tests/errors/continue_compilation_2.f90:585:23
+    |
+585 |         integer :: x, y
+    |                       ^ 
