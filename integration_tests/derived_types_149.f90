@@ -6,7 +6,6 @@ module derived_types_149_mod
    contains
       procedure :: assign_t
       generic :: assignment(=) => assign_t
-      final :: finalise_t
    end type t
 
 contains
@@ -17,17 +16,6 @@ contains
       lhs%leaf => rhs%leaf
       lhs%is_temporary = .true.
    end subroutine assign_t
-
-   subroutine finalise_t(this)
-      type(t), intent(inout) :: this
-      ! Only owners may free the leaf. Temporary copies must not.
-      if (.not. this%is_temporary) then
-         if (associated(this%leaf)) then
-            deallocate(this%leaf)
-            nullify(this%leaf)
-         end if
-      end if
-   end subroutine finalise_t
 
    function get_data(src) result(out)
       type(t), dimension(:), intent(in) :: src
@@ -63,4 +51,11 @@ program derived_types_149
       ! Both must point to the same object (shared, not deep copy).
       if (.not. associated(arr(i)%leaf, copy(i)%leaf)) error stop
    end do
+
+   ! Free the heap-allocated leaves owned by arr (copies share them).
+   do i = 1, 3
+      deallocate(arr(i)%leaf)
+   end do
+   deallocate(copy)
+   deallocate(arr)
 end program derived_types_149
