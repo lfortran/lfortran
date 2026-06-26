@@ -9900,6 +9900,7 @@ public:
                         // all variables sharing this iface reference the same object.
                         // In-place updates to the iface's arg_types will then
                         // propagate to struct members and dummy arguments alike.
+                        existing = ASRUtils::symbol_get_past_external(existing);
                         type = ASR::down_cast<ASR::Function_t>(existing)->m_function_signature;
                     }
                     type_declaration = existing;
