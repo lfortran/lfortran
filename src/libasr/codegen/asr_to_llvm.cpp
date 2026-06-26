@@ -19227,13 +19227,20 @@ public:
             delim_val = llvm::Constant::getNullValue(character_type);
             delim_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        llvm::Value *recl_orig_ptr = nullptr;
+        int recl_kind = 4;
         if (x.m_recl) {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_recl, false);
-            recl = tmp;
-
             ptr_loads = ptr_loads_copy;
+            recl_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_recl));
+            if (recl_kind == 4) {
+                recl = tmp;
+            } else {
+                recl_orig_ptr = tmp;
+                recl = llvm_utils->CreateAlloca(*builder,llvm::Type::getInt32Ty(context));
+            }
         } else {
             recl = llvm::ConstantPointerNull::get(
                 llvm::Type::getInt32Ty(context)->getPointerTo());
@@ -19685,6 +19692,11 @@ public:
             llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,
                 llvm_utils->getIntType(pos_kind));
             builder->CreateStore(converted, pos_orig_ptr);
+        }
+        if (recl_orig_ptr) {
+            llvm::Value *loaded = builder->CreateLoad(llvm::Type::getInt32Ty(context), recl);
+            llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,llvm_utils->getIntType(recl_kind));
+            builder->CreateStore(converted, recl_orig_ptr);
         }
         if (pending_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(
