@@ -144,7 +144,17 @@
                                     (IntegerConstant 4 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
-                                ()
+                                (ArrayConstant
+                                    16
+                                    [0, 0, 3, 4]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )]
                             3
                             (Array
