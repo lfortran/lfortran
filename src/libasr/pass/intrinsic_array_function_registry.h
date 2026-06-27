@@ -1375,6 +1375,11 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
         // a wrapped expression (e.g. ArrayPhysicalCast of IntegerCompare)
         // whose value is the actual ArrayConstant.
         ASR::expr_t* mask_arg = args[2];
+        // Unwrap ArrayPhysicalCast, since its m_value is typically null
+        // and we need the inner expression's value.
+        if (mask_arg && ASR::is_a<ASR::ArrayPhysicalCast_t>(*mask_arg)) {
+            mask_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(mask_arg)->m_arg;
+        }
         ASR::expr_t* mask_val_expr = mask_arg ? ASRUtils::expr_value(mask_arg) : nullptr;
         if (mask_val_expr && ASR::is_a<ASR::ArrayConstant_t>(*mask_val_expr)) {
             mask = ASR::down_cast<ASR::ArrayConstant_t>(mask_val_expr);
