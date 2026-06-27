@@ -500,6 +500,12 @@ semantic error: Symbol 'undeclared_proc' not declared
 640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
+  --> tests/errors/continue_compilation_1.f90:72:9
+   |
+72 |         statement_function_name_conflict(argument) = 0
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
     |
@@ -644,13 +650,13 @@ semantic error: `transpose` accepts arrays of rank 2 only, provided an array wit
 359 |     print *, transpose(a)
     |                        ^ 
 
-semantic error: Kind of all the arguments of Mergebits must be the same
+semantic error: Type and kind of the relevant arguments of Mergebits must be the same
    --> tests/errors/continue_compilation_1.f90:361:14
     |
 361 |     print *, merge_bits(8, 12_8, 2)
     |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Mergebits must be the same
+semantic error: Type and kind of the relevant arguments of Mergebits must be the same
    --> tests/errors/continue_compilation_1.f90:363:14
     |
 363 |     print *, merge_bits(a5, b5, c5)

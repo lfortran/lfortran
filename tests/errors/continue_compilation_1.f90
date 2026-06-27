@@ -66,14 +66,14 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
-
 contains
 
+    integer function statement_function_name_conflict()
+        statement_function_name_conflict(argument) = 0
+    contains
+        integer function argument()
+        end function
+    end function
     subroutine my_undefined_type_test()
         implicit none
         type(another_undefined_type) :: s3_in_subroutine
