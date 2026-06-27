@@ -1707,3 +1707,9 @@ semantic error: Interface mismatch in global procedure 'cc1_charlenmismatch': Ch
     |
 823 |         character(4) :: cc1_charlenmismatch
     |                         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface mismatch in global procedure 'cc1_typemismatch': Type mismatch in function result
+   --> tests/errors/continue_compilation_1.f90:832:17
+    |
+832 |         real :: cc1_typemismatch
+    |                 ^^^^^^^^^^^^^^^^ 

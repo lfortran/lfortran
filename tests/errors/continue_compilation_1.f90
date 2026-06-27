@@ -824,4 +824,13 @@ program continue_compilation_1
         print *, cc1_charlenmismatch()
     end subroutine
 
+    integer function cc1_typemismatch()
+        cc1_typemismatch = 42
+    end function
+
+    subroutine test_type_mismatch()
+        real :: cc1_typemismatch
+        print *, cc1_typemismatch()
+    end subroutine
+
 end program
