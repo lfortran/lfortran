@@ -402,17 +402,7 @@
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
-                                (ArrayConstant
-                                    8
-                                    [3, 4]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 2 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
+                                ()
                             )
                             ()
                             ()
@@ -586,17 +576,7 @@
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         DescriptorArray
                                     )
-                                    (ArrayConstant
-                                        8
-                                        [5, 5]
-                                        (Array
-                                            (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerConstant 2 (Integer 4) Decimal))]
-                                            FixedSizeArray
-                                        )
-                                        ColMajor
-                                    )
+                                    ()
                                 )
                                 ()
                                 ()
@@ -809,17 +789,7 @@
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         DescriptorArray
                                     )
-                                    (ArrayConstant
-                                        8
-                                        [1, 2]
-                                        (Array
-                                            (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerConstant 2 (Integer 4) Decimal))]
-                                            FixedSizeArray
-                                        )
-                                        ColMajor
-                                    )
+                                    ()
                                 )
                                 ()
                                 ()
@@ -1090,17 +1060,7 @@
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
-                                (ArrayConstant
-                                    8
-                                    [2, 2]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 2 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
+                                ()
                             )
                             ()
                             ()
