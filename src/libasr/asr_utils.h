@@ -7291,6 +7291,9 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
         }
     }
 
+    if (!a_value && a_arg) {
+        a_value = ASRUtils::expr_value(a_arg);
+    }
     return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_old, a_new, a_type, a_value);
 }
 
