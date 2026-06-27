@@ -1353,8 +1353,14 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
         ASR::ttype_t *type, Vec<ASR::expr_t*> &args, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
     ASR::expr_t* array = args[0];
+    // Get the original array's type before extracting its value,
+    // so we can determine the true number of dimensions for multi-dim arrays.
+    ASR::ttype_t* orig_array_type = ASRUtils::expr_type(array);
+    int orig_n_dims = extract_n_dims_from_ttype(orig_array_type);
     array = ASRUtils::expr_value(array);
     if (!array) return nullptr;
+    // The expr_value of a multi-dim array may be flattened to 1D ArrayConstant,
+    // so we check the flattened value's dims (should be 1) instead of orig_n_dims.
     if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
         int arr_size = 0;
         ASR::ArrayConstant_t *arr = nullptr;
@@ -1365,16 +1371,40 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             return nullptr;
         }
         ASR::ArrayConstant_t *mask = nullptr;
-        if (args[2] && ASR::is_a<ASR::ArrayConstant_t>(*args[2])) {
-            mask = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[2]));
-        } else if(args[2] && ASR::is_a<ASR::LogicalConstant_t>(*args[2])) {
-            bool mask_val = ASR::down_cast<ASR::LogicalConstant_t>(ASRUtils::expr_value(args[2])) -> m_value;
-            if (mask_val == false) return b.i_t(0, type);
-            mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant({b.bool_t(mask_val, logical)}, logical, false));
+        // Resolve the mask via expr_value() first, since args[2] may be
+        // a wrapped expression (e.g. ArrayPhysicalCast of IntegerCompare)
+        // whose value is the actual ArrayConstant.
+        ASR::expr_t* mask_arg = args[2];
+        // Unwrap ArrayPhysicalCast, since its m_value is typically null
+        // and we need the inner expression's value.
+        if (mask_arg && ASR::is_a<ASR::ArrayPhysicalCast_t>(*mask_arg)) {
+            mask_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(mask_arg)->m_arg;
+        }
+        ASR::expr_t* mask_val_expr = mask_arg ? ASRUtils::expr_value(mask_arg) : nullptr;
+        if (mask_val_expr && ASR::is_a<ASR::ArrayConstant_t>(*mask_val_expr)) {
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(mask_val_expr);
+        } else if (mask_val_expr && ASR::is_a<ASR::LogicalConstant_t>(*mask_val_expr)) {
+            bool mask_val = ASR::down_cast<ASR::LogicalConstant_t>(mask_val_expr)->m_value;
+            std::vector<ASR::expr_t*> mask_data;
+            for (int i = 0; i < arr_size; i++) {
+                mask_data.push_back(b.bool_t(mask_val, logical));
+            }
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
+        } else if (mask_arg && ASR::is_a<ASR::ArrayConstant_t>(*mask_arg)) {
+            // Fallback: mask_arg itself might already be an ArrayConstant
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(mask_arg);
         } else {
             std::vector<ASR::expr_t*> mask_data;
             for (int i = 0; i < arr_size; i++) {
                 mask_data.push_back(b.bool_t(true, logical));
+            }
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
+        }
+        if (mask && ASRUtils::get_fixed_size_of_array(mask->m_type) == 1 && arr_size > 1) {
+            bool mask_val = ((bool*)mask->m_data)[0];
+            std::vector<ASR::expr_t*> mask_data;
+            for (int i = 0; i < arr_size; i++) {
+                mask_data.push_back(b.bool_t(mask_val, logical));
             }
             mask = ASR::down_cast<ASR::ArrayConstant_t>(b.ArrayConstant(mask_data, logical, false));
         }
@@ -1392,7 +1422,12 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
             if (!is_array(type)) {
                 return b.i_t(0, type);
             } else {
-                return b.ArrayConstant({b.i32(0)}, extract_type(type), false);
+                int result_size = ASRUtils::get_fixed_size_of_array(type);
+                std::vector<ASR::expr_t*> zeros;
+                for (int i = 0; i < result_size; i++) {
+                    zeros.push_back(b.i_t(0, extract_type(type)));
+                }
+                return b.ArrayConstant(zeros, extract_type(type), false);
             }
         }
         if (static_cast<int64_t>(IntrinsicArrayFunctions::MaxLoc) == static_cast<int64_t>(intrinsic_func_id)) {
@@ -1488,7 +1523,33 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
         if (!is_array(type)) {
             return b.i_t(index + 1, type);
         } else {
-            return b.ArrayConstant({b.i32(index + 1)}, extract_type(type), false);
+            int result_size = ASRUtils::get_fixed_size_of_array(type);
+            if (result_size == 1 || orig_n_dims <= 1) {
+                // 1D array or scalar result
+                return b.ArrayConstant({b.i_t(index + 1, extract_type(type))}, extract_type(type), false);
+            } else {
+                // Multi-dimensional array: convert flat index to per-dimension
+                // indices using column-major (Fortran) ordering.
+                ASR::dimension_t* orig_dims = nullptr;
+                int n_orig_dims = ASRUtils::extract_dimensions_from_ttype(orig_array_type, orig_dims);
+                std::vector<int64_t> dim_sizes(n_orig_dims);
+                for (int d = 0; d < n_orig_dims; d++) {
+                    int64_t ds = 1;
+                    if (orig_dims[d].m_length != nullptr) {
+                        ASRUtils::extract_value(ASRUtils::expr_value(orig_dims[d].m_length), ds);
+                    }
+                    LCOMPILERS_ASSERT(ds > 0);
+                    dim_sizes[d] = ds;
+                }
+                std::vector<ASR::expr_t*> indices;
+                int remaining = index;
+                for (int d = 0; d < n_orig_dims; d++) {
+                    int dim_idx = remaining % dim_sizes[d];
+                    remaining = remaining / dim_sizes[d];
+                    indices.push_back(b.i_t(dim_idx + 1, extract_type(type))); // 1-based
+                }
+                return b.ArrayConstant(indices, extract_type(type), false);
+            }
         }
     } else {
         return nullptr;

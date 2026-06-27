@@ -1810,6 +1810,7 @@ RUN(NAME intrinsics_467 LABELS gfortran llvm) # elemental intrinsics over alloca
 RUN(NAME intrinsics_468 LABELS gfortran llvm) # product with dim in array expression
 RUN(NAME intrinsics_469 LABELS gfortran llvm) # dot product with empty/zero-length arrays
 RUN(NAME intrinsics_470 LABELS gfortran llvm) # index with character(kind=4) arguments
+RUN(NAME intrinsics_471 LABELS gfortran llvm) # maxloc/minloc with compile-time mask evaluation on 2D arrays
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
