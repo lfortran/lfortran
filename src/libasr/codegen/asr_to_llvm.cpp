@@ -9366,6 +9366,7 @@ public:
         int target_rank = 0;
         Vec<llvm::Value*> lbs; lbs.reserve(al, target_section->n_args);
         Vec<llvm::Value*> ubs; ubs.reserve(al, target_section->n_args);
+        Vec<llvm::Value*> target_strides; target_strides.reserve(al, target_section->n_args);
         
         for (size_t i = 0; i < target_section->n_args; i++) {
             ASR::array_index_t& idx = target_section->m_args[i];
@@ -9404,8 +9405,39 @@ public:
                         ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
                             dim_expr, int_type, nullptr));
                     visit_expr_wrapper(size_expr, true);
-                    llvm::Value* size_val = builder->CreateSExtOrTrunc(
-                        tmp, lbs.p[i]->getType());
+                    llvm::Value* size_val = tmp;
+
+                    if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+                        ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+                        ASR::array_index_t& vidx = value_section->m_args[i];
+                        
+                        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                            ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(value_section->m_v))), module.get());
+                        llvm::Value* loaded_desc = value_desc;
+                        if (ASRUtils::is_allocatable(ASRUtils::expr_type(value_section->m_v)) || ASRUtils::is_pointer(ASRUtils::expr_type(value_section->m_v))) {
+                            loaded_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+                        }
+                        llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            value_desc_type, loaded_desc);
+                        llvm::Type* idx_type = arr_descr->get_index_type();
+                        unsigned idx_bits = idx_type->getIntegerBitWidth();
+                        llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                            src_dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
+                        
+                        llvm::Value* step_val = nullptr;
+                        if (vidx.m_step != nullptr) {
+                            visit_expr_wrapper(vidx.m_step, true);
+                            step_val = tmp;
+                        } else {
+                            step_val = llvm::ConstantInt::get(idx_type, 1);
+                        }
+                        step_val = builder->CreateSExtOrTrunc(step_val, idx_type);
+                        
+                        llvm::Value* base_stride = arr_descr->get_stride(dim_des, true);
+                        target_strides.push_back(al, builder->CreateMul(base_stride, step_val));
+                    }
+                    size_val = builder->CreateSExtOrTrunc(size_val, lbs.p[i]->getType());
                     llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
                     llvm::Value* ub_val = builder->CreateSub(
                         builder->CreateAdd(lbs.p[i], size_val), one);
@@ -9581,6 +9613,7 @@ public:
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
         
         
+        bool has_target_strides = (target_strides.n == (uint32_t)target_rank);
         llvm::Value* current_stride = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
@@ -9593,8 +9626,12 @@ public:
             llvm::Value* lb_ptr = arr_descr->get_lower_bound(dim_des, false);
             llvm::Value* size_ptr = arr_descr->get_dimension_size(dim_des, false);
 
-            // Set stride to current_stride
-            builder->CreateStore(current_stride, stride_ptr);
+            // Set stride: use target_strides if available, otherwise running product
+            if (has_target_strides) {
+                builder->CreateStore(target_strides.p[i], stride_ptr);
+            } else {
+                builder->CreateStore(current_stride, stride_ptr);
+            }
 
             // Set lower bound from target section
             llvm::Value* lb_idx = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
@@ -9607,8 +9644,10 @@ public:
                 llvm::ConstantInt::get(idx_type, 1));
             builder->CreateStore(size, size_ptr);
 
-            // Update current_stride
-            current_stride = builder->CreateMul(current_stride, size);
+            // Update running product for next dimension
+            if (!has_target_strides) {
+                current_stride = builder->CreateMul(current_stride, size);
+            }
         }
         
         // Store the new descriptor to the target pointer
@@ -26200,6 +26239,14 @@ public:
 
         m_v = ASRUtils::get_expr_size_expr(m_v);
         LCOMPILERS_ASSERT(m_v);
+
+        if (ASR::is_a<ASR::ArraySection_t>(*m_v)) {
+            ASR::expr_t* size_expr = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                al, m_v->base.loc, m_v, m_dim, m_type, nullptr, false));
+            visit_expr_wrapper(size_expr, true);
+            return;
+        }
+
         int output_kind = ASRUtils::extract_kind_from_ttype_t(m_type);
         int dim_kind = 4;
         int64_t ptr_loads_copy = ptr_loads;
