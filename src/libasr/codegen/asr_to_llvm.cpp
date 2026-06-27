@@ -18153,7 +18153,8 @@ public:
                         var_to_read_into = arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(type), module.get()), var_to_read_into);
                     }
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
-                        || ASR::is_a<ASR::Pointer_t>(*type)) {
+                        || ASR::is_a<ASR::Pointer_t>(*type)
+                        || arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                         var_to_read_into = llvm_utils->CreateLoad2(el_type->getPointerTo(), var_to_read_into);
                     }
                     llvm::Value *arr = var_to_read_into;
