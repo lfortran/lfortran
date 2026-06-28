@@ -1841,6 +1841,7 @@ RUN(NAME parameter_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTR
 RUN(NAME parameter_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME parameter_16 LABELS gfortran llvm)
 RUN(NAME parameter_17 LABELS gfortran llvm)
+RUN(NAME parameter_18 LABELS gfortran llvm)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

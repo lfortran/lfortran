@@ -791,9 +791,13 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
 
     if (compiletime_values.size() == 0) {
         ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
-        if (ASRUtils::is_array(type) && ASRUtils::get_fixed_size_of_array(type) == 0) {
-            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
-                al, loc, 0, nullptr, type, ASR::arraystorageType::ColMajor));
+        if (ASRUtils::is_array(type)) {
+            if (ASRUtils::get_fixed_size_of_array(type) == 0) {
+                return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                    al, loc, 0, nullptr, type, ASR::arraystorageType::ColMajor));
+            } else {
+                return nullptr;
+            }
         }
         return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, logical_type, loc, diag);
     } else {
@@ -802,7 +806,12 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
         for (size_t i = 0; i < compiletime_values.size(); i++) {
             ASR::expr_t* left_val = compiletime_values[i].first;
             ASR::expr_t* right_val = compiletime_values[i].second;
-            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag));
+            if (ASRUtils::is_array(ASRUtils::expr_type(left_val)) || ASRUtils::is_array(ASRUtils::expr_type(right_val))) {
+                return nullptr;
+            }
+            ASR::expr_t* res = compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag);
+            if (!res) return nullptr;
+            args.push_back(al, res);
         }
         if (ASRUtils::is_array(type) && ASRUtils::extract_n_dims_from_ttype(type) > 1) {
             Vec<ASR::expr_t*> values;
@@ -830,6 +839,11 @@ static inline void populate_compiletime_values(Allocator &al, std::vector<std::p
         for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(array->m_type); i++) {
             compiletime_values.push_back({ASRUtils::fetch_ArrayConstant_value(al, array, i), nullptr});
         }
+    } else if (ASR::is_a<ASR::ArrayConstructor_t>(*ASRUtils::expr_value(left))) {
+        ASR::ArrayConstructor_t* array = ASR::down_cast<ASR::ArrayConstructor_t>(ASRUtils::expr_value(left));
+        for (size_t i=0; i<array->n_args; i++) {
+            compiletime_values.push_back({array->m_args[i], nullptr});
+        }
     }
     if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
         ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
@@ -838,6 +852,15 @@ static inline void populate_compiletime_values(Allocator &al, std::vector<std::p
                 compiletime_values[i].second = ASRUtils::fetch_ArrayConstant_value(al, array, i);
             } else {
                 compiletime_values.push_back({nullptr, ASRUtils::fetch_ArrayConstant_value(al, array, i)});
+            }
+        }
+    } else if (ASR::is_a<ASR::ArrayConstructor_t>(*ASRUtils::expr_value(right))) {
+        ASR::ArrayConstructor_t* array = ASR::down_cast<ASR::ArrayConstructor_t>(ASRUtils::expr_value(right));
+        for (size_t i=0; i<array->n_args; i++) {
+            if(compiletime_values.size() > i) {
+                compiletime_values[i].second = array->m_args[i];
+            } else {
+                compiletime_values.push_back({nullptr, array->m_args[i]});
             }
         }
     }
