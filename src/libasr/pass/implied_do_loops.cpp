@@ -530,6 +530,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                                         element_array_size);
                     }
                 }
+            } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*element)) {
+                ASR::expr_t* implied_doloop_size = ASRUtils::get_ImpliedDoLoop_size(al,
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(element));
+                if (array_size) {
+                    array_size = builder.Add(implied_doloop_size, array_size);
+                } else {
+                    array_size = implied_doloop_size;
+                }
             } else {
                 ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(element)));
@@ -577,7 +585,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 ASRUtils::get_fixed_size_of_array(x->m_type), int_type, x->base.base.loc);
     }
 
-   void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+    void replace_ImpliedDoLoop(ASR::ImpliedDoLoop_t* /*x*/) {
+        // Do not descend into ImpliedDoLoop, as it has its own scope for loop variables.
+        // Any ArrayConstructor inside will be handled by create_do_loop during ImpliedDoLoop expansion.
+    }
+
+    void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // Skip ArrayConstructor replacement when any argument is a function
         // call (FunctionCall or IntrinsicElementalFunction) returning an array.
         // The implied_do_loop pass incorrectly expands these into do-loops,
@@ -605,7 +618,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
         bool is_result_var_fixed_size = false;
-        if (result_var != nullptr &&
+        if (result_var != nullptr && !ASR::is_a<ASR::ImpliedDoLoop_t>(*result_var) &&
             resultvar2value.find(result_var) != resultvar2value.end() &&
             resultvar2value[result_var] == &(x->base)) {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
@@ -1072,7 +1085,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
             dim.push_back(al, d);
 
-            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+            ASR::ttype_t* array_type;
+            if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                array_type = ASRUtils::expr_type(value);
+            } else {
+                array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+            }
             ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, value->base.loc,
                                         args.p, args.n, array_type, ASR::arraystorageType::ColMajor);
             return array_constant;

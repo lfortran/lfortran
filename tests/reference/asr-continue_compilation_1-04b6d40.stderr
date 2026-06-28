@@ -500,6 +500,12 @@ semantic error: Symbol 'undeclared_proc' not declared
 640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
+  --> tests/errors/continue_compilation_1.f90:72:9
+   |
+72 |         statement_function_name_conflict(argument) = 0
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
     |

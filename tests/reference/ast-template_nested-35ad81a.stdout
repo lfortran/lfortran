@@ -126,10 +126,10 @@
             [(Require
                 [(UnitRequire
                     R
-                    [(AttrNamelist
+                    [(AttrName
                         T
                     )
-                    (AttrNamelist
+                    (AttrName
                         F
                     )]
                 )]
@@ -391,7 +391,7 @@
                     ()
                     None
                 )
-                (AttrNamelist
+                (AttrName
                     func_arg_real
                 )]
                 [(UseSymbol
