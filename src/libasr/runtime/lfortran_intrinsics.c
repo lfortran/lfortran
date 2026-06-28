@@ -10977,17 +10977,26 @@ static void init_record_state(InputSource *inputSource)
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
         // For sequential/stream access, scan from record_start_pos to find '\n'
         if (inputSource->access_id != 2) {  // Not direct access
-            long saved_pos = ftell(inputSource->file);
-            fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
-            
-            inputSource->record_length = 0;
-            int c;
-            while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
-                inputSource->record_length++;
+            // Non-seekable streams (e.g. stdin piped from a shell) have
+            // record_start_pos == -1.  fseek/fgetc would silently consume
+            // data that can never be put back, so skip the pre-scan and
+            // leave record_length as a large sentinel value instead.
+            if (inputSource->record_start_pos < 0) {
+                inputSource->record_length = LONG_MAX;
+            } else {
+                long saved_pos = ftell(inputSource->file);
+                fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
+                
+                inputSource->record_length = 0;
+                int c;
+                while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
+                    inputSource->record_length++;
+                }
+                
+                // Restore position to start of record
+                fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
+                (void)saved_pos;
             }
-            
-            // Restore position to start of record
-            fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
         } else {
             // For direct access, record_length is already known from record_len
             inputSource->record_length = inputSource->record_len;
