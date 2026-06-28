@@ -21000,9 +21000,6 @@ public:
         } else {
             dest_data_ptr = llvm_utils->get_string_data(dest_str_type, target_ptr);
         }
-        llvm_utils->lfortran_str_copy_with_data(dest_data_ptr, dest_len_ptr, byte_ptr,
-            copy_length, false, false, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), dest_kind));
-
         llvm::Value* copy_length = element_length_val;
         if (is_array_target) {
             llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), module.get());
