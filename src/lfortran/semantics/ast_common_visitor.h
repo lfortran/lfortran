@@ -4009,6 +4009,19 @@ public:
         // so no checks are needed:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                 ASRUtils::expr_type(value), ASRUtils::expr_type(object), diag);
+        // Reject an incompatible DATA value up front (e.g. a character constant
+        // used to initialize a numeric variable). set_converted_value leaves
+        // the value unchanged when no implicit cast applies; without this
+        // check the mismatched types reach make_Assignment_t_util below and
+        // segfault.
+        if (!ASRUtils::types_equal(ASRUtils::expr_type(value), ASRUtils::expr_type(object), value, object)) {
+            diag.add(Diagnostic(
+                "Incompatible types in DATA statement",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
         // Pad/trim a character string constant initializer to match the
         // declared length of the target variable. Without this, a DATA

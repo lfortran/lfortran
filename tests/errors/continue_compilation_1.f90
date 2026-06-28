@@ -815,4 +815,10 @@ program continue_compilation_1
 1000    continue
 1000    continue
     end subroutine
+
+    subroutine data_type_mismatch()
+        implicit none
+        integer :: x
+        data x / "abc" /
+    end subroutine
 end program
