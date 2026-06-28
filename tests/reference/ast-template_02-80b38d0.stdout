@@ -97,10 +97,10 @@
             [(Require
                 [(UnitRequire
                     eq
-                    [(AttrNamelist
+                    [(AttrName
                         t
                     )
-                    (AttrNamelist
+                    (AttrName
                         ne
                     )]
                 )]
