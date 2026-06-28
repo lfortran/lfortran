@@ -511,6 +511,7 @@ program continue_compilation_1
     print *, ieor()
     print *, min(c, c)
     exit
+    cycle
 
     ! calling function with less arguments
     call my_func(10)

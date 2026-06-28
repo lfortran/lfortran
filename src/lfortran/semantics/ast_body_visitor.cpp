@@ -8725,6 +8725,7 @@ public:
 
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
         all_loops_blocks_nesting += 1;
+        loop_nesting += 1;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
@@ -8733,6 +8734,7 @@ public:
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);
         all_loops_blocks_nesting -= 1;
+        loop_nesting -= 1;
     }
 
     #define cast_as_loop_var(conv_candidate) \
@@ -8908,6 +8910,7 @@ public:
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
+        loop_nesting += 1;
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         AST::decl_attribute_t *current_type = nullptr;
@@ -9044,6 +9047,7 @@ public:
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
         all_loops_blocks_nesting -= 1;
+        loop_nesting -= 1;
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -9188,6 +9192,13 @@ public:
     }
 
     void visit_Cycle(const AST::Cycle_t &x) {
+        if (loop_nesting == 0) {
+            diag.add(Diagnostic("`cycle` statements cannot be outside of loops",
+                                Level::Error,
+                                Stage::Semantic,
+                                { Label("", { x.base.base.loc }) }));
+            throw SemanticAbort();
+        }
         tmp = ASR::make_Cycle_t(al, x.base.base.loc, x.m_stmt_name);
     }
 
