@@ -4811,7 +4811,7 @@ public:
                             al, loc, fn_scope, s2c(al, iface_name),
                             func_type,
                             nullptr, 0, nullptr, 0, nullptr, 0,
-                            nullptr, ASR::accessType::Public,
+                            nullptr, ASR::accessType::Private,
                             false, false, nullptr, nullptr, nullptr));
                     parent_scope->add_symbol(iface_name, iface_sym);
                     implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(iface_sym));
@@ -9941,7 +9941,7 @@ public:
                                 nullptr, 0,
                                 nullptr, 0,
                                 nullptr,
-                                ASR::accessType::Public,
+                                ASR::accessType::Private,
                                 false,
                                 false,
                                 nullptr,
