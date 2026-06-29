@@ -1,7 +1,13 @@
 program complex_pow_io
     implicit none
-    complex :: base32, res32
-    complex(8) :: base64, res64
+    complex :: z32, base32, res32
+    complex(8) :: z64, base64, res64
+
+    z32 = (3.0, 4.0)
+    if (z32**2 /= (-7.0, 24.0)) error stop 1
+
+    z64 = (3.0d0, 4.0d0)
+    if (z64**2 /= (-7.0d0, 24.0d0)) error stop 2
 
     base32 = (0.0, 0.0)
     res32 = base32 ** 0.0
