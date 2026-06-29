@@ -1696,14 +1696,20 @@ semantic error: first argument of `llt` must have kind equal to 1
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
-semantic error: duplicate statement label 1000
-   --> tests/errors/continue_compilation_1.f90:816:9
+semantic error: `array` and `value` arguments of `findloc` must have the same character kind, but got character(4) and character(1)
+   --> tests/errors/continue_compilation_1.f90:818:18
     |
-816 | 1000    continue
+818 |         print *, findloc(names, key)
+    |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate statement label 1000
+   --> tests/errors/continue_compilation_1.f90:823:9
+    |
+823 | 1000    continue
     |         ^^^^^^^^ 
 
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:822:22
+   --> tests/errors/continue_compilation_1.f90:829:22
     |
-822 |         select type (a)
+829 |         select type (a)
     |                      ^ 

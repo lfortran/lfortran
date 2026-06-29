@@ -811,6 +811,13 @@ program continue_compilation_1
         end type
     end subroutine
 
+    subroutine findloc_character_kind_mismatch()
+        implicit none
+        character(kind=4, len=1) :: names(1)
+        character(kind=1, len=1) :: key
+        print *, findloc(names, key)
+    end subroutine
+
     subroutine duplicate_statement_label()
 1000    continue
 1000    continue
