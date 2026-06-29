@@ -19205,6 +19205,7 @@ public:
         if (x.m_unit) {
             this->visit_expr_wrapper(x.m_unit, true);
             unit = tmp;
+            unit = llvm_utils->convert_kind(unit, llvm::Type::getInt32Ty(context));
         } else {
             unit = llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
