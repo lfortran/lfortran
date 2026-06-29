@@ -1859,33 +1859,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         bool value_is_scalar = !ASRUtils::is_array(
             ASRUtils::expr_type(value_unbroadcast));
 
-        ASR::ttype_t* index_type = ASRUtils::TYPE(ASR::make_Integer_t(
-            al, loc, 4));
-
         Vec<ASR::expr_t*> idx_vars;
-        idx_vars.reserve(al, rank);
-        for (size_t i = 0; i < rank; i++) {
-            std::string idx_name = current_scope->get_unique_name(
-                "__libasr_ov_idx_" + std::to_string(i) + "_");
-            ASR::symbol_t* idx_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, current_scope,
-                    s2c(al, idx_name), nullptr, 0, ASR::intentType::Local,
-                    nullptr, nullptr, ASR::storage_typeType::Default,
-                    index_type, nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public, ASR::presenceType::Required,
-                    false));
-            current_scope->add_symbol(idx_name, idx_sym);
-            idx_vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(
-                al, loc, idx_sym)));
-        }
+        PassUtils::create_idx_vars(idx_vars, rank, loc, al, current_scope,
+            "__libasr_ov_idx_");
 
-        ASR::expr_t* indexed_target = make_indexed_expr(target, idx_vars, loc);
+        ASR::expr_t* indexed_target = PassUtils::create_array_ref(target,
+            idx_vars, al, current_scope);
         ASR::expr_t* indexed_value = value_is_scalar
             ? value
-            : make_indexed_expr(value_unbroadcast, idx_vars, loc);
-        if (indexed_target == nullptr || indexed_value == nullptr) {
-            return false;
-        }
+            : PassUtils::create_array_ref(value_unbroadcast, idx_vars, al,
+                current_scope);
 
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, sc->n_args);
@@ -1912,10 +1895,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::do_loop_head_t head;
             head.loc = loc;
             head.m_v = idx_vars[dim];
-            head.m_start = PassUtils::get_bound(target, dim + 1, "lbound",
-                al, 4);
-            head.m_end = PassUtils::get_bound(target, dim + 1, "ubound",
-                al, 4);
+            head.m_start = ASRUtils::get_bound(target, dim + 1, "lbound", al);
+            head.m_end = ASRUtils::get_bound(target, dim + 1, "ubound", al);
             head.m_increment = nullptr;
             Vec<ASR::stmt_t*> body;
             body.reserve(al, 1);
@@ -1925,48 +1906,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         pass_result.push_back(al, loop);
         return true;
-    }
-
-    ASR::expr_t* make_indexed_expr(ASR::expr_t* expr,
-            Vec<ASR::expr_t*>& idx_vars, const Location& loc) {
-        ASR::expr_t* base_array = expr;
-        Vec<ASR::array_index_t> args;
-        args.reserve(al, idx_vars.size());
-        if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
-            ASR::ArraySection_t* sec = ASR::down_cast<ASR::ArraySection_t>(
-                expr);
-            base_array = sec->m_v;
-            size_t k = 0;
-            for (size_t i = 0; i < sec->n_args; i++) {
-                ASR::array_index_t a;
-                a.loc = loc;
-                a.m_left = nullptr;
-                a.m_step = nullptr;
-                if (sec->m_args[i].m_step == nullptr &&
-                        sec->m_args[i].m_left == nullptr) {
-                    a.m_right = sec->m_args[i].m_right;
-                } else {
-                    if (k >= idx_vars.size()) return nullptr;
-                    a.m_right = idx_vars[k];
-                    k++;
-                }
-                args.push_back(al, a);
-            }
-        } else {
-            for (size_t i = 0; i < idx_vars.size(); i++) {
-                ASR::array_index_t a;
-                a.loc = loc;
-                a.m_left = nullptr;
-                a.m_step = nullptr;
-                a.m_right = idx_vars[i];
-                args.push_back(al, a);
-            }
-        }
-        ASR::ttype_t* elem_type = ASRUtils::extract_type(
-            ASRUtils::expr_type(base_array));
-        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-            base_array, args.p, args.size(), elem_type,
-            ASR::arraystorageType::ColMajor, nullptr));
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
