@@ -8986,6 +8986,17 @@ public:
             }
         }
         ptr_loads = ptr_loads_copy;
+        auto to_int64 = [&](llvm::Value* v) {
+            if (v->getType()->isStructTy()) {
+                v = builder->CreateExtractValue(v, {0});
+            }
+            if (v->getType()->isPointerTy()) {
+                return builder->CreatePtrToInt(v, llvm_utils->getIntType(8, false));
+            } else {
+                return builder->CreateIntCast(v, llvm_utils->getIntType(8, false), false);
+            }
+        };
+
         if( ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_ptr)) &&
             x.m_tgt && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_tgt)) ) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -9003,13 +9014,11 @@ public:
                     x.m_tgt, ASRUtils::expr_type(x.m_tgt), module.get());
                 tgt = llvm_utils->CreateLoad2(t_llvm_type, tgt);
             }
-            tmp = builder->CreateICmpEQ(
-                builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false)),
-                builder->CreatePtrToInt(tgt, llvm_utils->getIntType(8, false)));
+            tmp = builder->CreateICmpEQ(to_int64(ptr), to_int64(tgt));
             return ;
         }
         llvm_utils->create_if_else(builder->CreateICmpEQ(
-            builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false)),
+            to_int64(ptr),
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0))),
         [&]() {
             builder->CreateStore(
@@ -9095,15 +9104,10 @@ public:
                     nptr = llvm_utils->create_gep2(tgt_class_type, nptr, 1);
                     nptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, nptr);
                 }
-                nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
-                ptr = builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false));
-                builder->CreateStore(builder->CreateICmpEQ(ptr, nptr), res);
+                builder->CreateStore(builder->CreateICmpEQ(to_int64(ptr), to_int64(nptr)), res);
             } else {
-                llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
-                nptr = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
-                nptr = builder->CreatePtrToInt(nptr, llvm_utils->getIntType(8, false));
-                ptr = builder->CreatePtrToInt(ptr, llvm_utils->getIntType(8, false));
-                builder->CreateStore(builder->CreateICmpNE(ptr, nptr), res);
+                llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0));
+                builder->CreateStore(builder->CreateICmpNE(to_int64(ptr), zero), res);
             }
         });
         tmp = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), res);
@@ -19333,13 +19337,20 @@ public:
             delim_val = llvm::Constant::getNullValue(character_type);
             delim_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         }
+        llvm::Value *recl_orig_ptr = nullptr;
+        int recl_kind = 4;
         if (x.m_recl) {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_recl, false);
-            recl = tmp;
-
             ptr_loads = ptr_loads_copy;
+            recl_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_recl));
+            if (recl_kind == 4) {
+                recl = tmp;
+            } else {
+                recl_orig_ptr = tmp;
+                recl = llvm_utils->CreateAlloca(*builder,llvm::Type::getInt32Ty(context));
+            }
         } else {
             recl = llvm::ConstantPointerNull::get(
                 llvm::Type::getInt32Ty(context)->getPointerTo());
@@ -19791,6 +19802,11 @@ public:
             llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,
                 llvm_utils->getIntType(pos_kind));
             builder->CreateStore(converted, pos_orig_ptr);
+        }
+        if (recl_orig_ptr) {
+            llvm::Value *loaded = builder->CreateLoad(llvm::Type::getInt32Ty(context), recl);
+            llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,llvm_utils->getIntType(recl_kind));
+            builder->CreateStore(converted, recl_orig_ptr);
         }
         if (pending_actual) {
             llvm::Value *loaded = llvm_utils->CreateLoad2(

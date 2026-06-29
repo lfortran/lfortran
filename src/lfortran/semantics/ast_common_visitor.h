@@ -4009,14 +4009,14 @@ public:
         // so no checks are needed:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                 ASRUtils::expr_type(value), ASRUtils::expr_type(object), diag);
-        // Reject an incompatible DATA value up front (e.g. a character constant
-        // used to initialize a numeric variable). set_converted_value leaves
-        // the value unchanged when no implicit cast applies; without this
-        // check the mismatched types reach make_Assignment_t_util below and
-        // segfault.
         if (!ASRUtils::types_equal(ASRUtils::expr_type(value), ASRUtils::expr_type(object), value, object)) {
+            std::string var_type = ASRUtils::type_to_str_fortran_symbol(
+                ASRUtils::expr_type(object), nullptr, true);
+            std::string val_type = ASRUtils::type_to_str_fortran_symbol(
+                ASRUtils::expr_type(value), nullptr, true);
             diag.add(Diagnostic(
-                "Incompatible types in DATA statement",
+                "Cannot initialize " + var_type + " variable with " + val_type +
+                " value in DATA statement",
                 Level::Error, Stage::Semantic, {
                     Label("",{x.base.base.loc})
                 }));
@@ -12411,8 +12411,7 @@ public:
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args, compiler_options);
-                char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
-                    current_scope->resolve_symbol(f->m_name))->m_module_name;
+                char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
                 current_module_dependencies.push_back(al, mod);
             }
         }
@@ -16978,14 +16977,15 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
-                    if (var_name == "c_loc") {
+                std::string orig_name = f->m_name;
+                if (intrinsic_module_procedures_as_asr_nodes.find(orig_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
+                    if (orig_name == "c_loc") {
                         tmp = create_PointerToCptr(x);
-                    } else if (var_name == "c_associated") {
+                    } else if (orig_name == "c_associated") {
                         tmp = create_Associated(x);
-                    } else if (var_name == "c_funloc") {
+                    } else if (orig_name == "c_funloc") {
                         tmp = create_PointerToCptr(x);
-                    } else if (var_name == "c_sizeof") {
+                    } else if (orig_name == "c_sizeof") {
                         tmp = create_CSizeOf(x);
                     } else {
                         LCOMPILERS_ASSERT(false)

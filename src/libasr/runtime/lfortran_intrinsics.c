@@ -1543,6 +1543,31 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
             }
         }
 
+        // Handle Hollerith constants: digits followed by 'h'/'H'
+        // Copy the next n characters verbatim (preserving spaces)
+        if (!in_quotes && isdigit(c)) {
+            int digit_start = i;
+            int hollerith_len = 0;
+            int k = i;
+            while (k < len && isdigit(format[k])) {
+                hollerith_len = hollerith_len * 10 + (format[k] - '0');
+                k++;
+            }
+            if (k < len && (format[k] == 'h' || format[k] == 'H')) {
+                // Copy digits and 'h'/'H'
+                for (int m = digit_start; m <= k; m++) {
+                    cleaned_format[j++] = format[m];
+                }
+                // Copy next hollerith_len characters verbatim
+                k++;
+                for (int m = 0; m < hollerith_len && k < len; m++, k++) {
+                    cleaned_format[j++] = format[k];
+                }
+                i = k - 1; // -1 because the for loop will i++
+                continue;
+            }
+        }
+
         if (!isspace(c) || in_quotes) {
             cleaned_format[j++] = c; // copy non-space characters or any character within quotes
         }
@@ -3214,6 +3239,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         hollerith + 1, hollerith_len);
                     result_len += hollerith_len;
                     if (result_len > content_end) content_end = result_len;
+                    continue;
                 }
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 // Advance position by 1 without overwriting any existing

@@ -1702,8 +1702,14 @@ semantic error: duplicate statement label 1000
 816 | 1000    continue
     |         ^^^^^^^^ 
 
-semantic error: Incompatible types in DATA statement
+semantic error: Cannot initialize integer(4) variable with character(len=3) value in DATA statement
    --> tests/errors/continue_compilation_1.f90:822:9
     |
 822 |         data x / "abc" /
     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: Selector shall be polymorphic in SELECT TYPE statement
+   --> tests/errors/continue_compilation_1.f90:828:22
+    |
+828 |         select type (a)
+    |                      ^ 
