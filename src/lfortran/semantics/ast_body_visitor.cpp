@@ -4120,6 +4120,24 @@ public:
         }
         visit_expr(*x.m_selector);
         ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
+        // The selector of `select type` must be polymorphic (i.e. of type
+        // `class(derived)` or `class(*)`). A non-polymorphic selector (e.g. a
+        // plain integer) used to segfault later when matching a `type is`
+        // branch; reject it up front, matching gfortran's "Selector shall be
+        // polymorphic in SELECT TYPE statement".
+        {
+            ASR::ttype_t* selector_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(m_selector));
+            if (!ASRUtils::is_class_type(selector_type)
+                    && !ASRUtils::is_unlimited_polymorphic_type(selector_type)) {
+                diag.add(Diagnostic(
+                    "Selector shall be polymorphic in SELECT TYPE statement",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.m_selector->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         // When the selector is a function call, create a temporary variable
         // to hold the result. The codegen expects Var or StructInstanceMember
         // as the selector, not a FunctionCall.
