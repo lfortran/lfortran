@@ -45,6 +45,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
@@ -6179,8 +6180,7 @@ public:
         }
         // Visit in order: Function --> Struct --> Variables
         for (auto &sym: functions) {
-            ASR::Function_t *v = down_cast<ASR::Function_t>(
-                        sym);
+            ASR::Function_t *v = down_cast<ASR::Function_t>(sym);
             ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
             if (x.m_parent_module && func_type->m_module) {
                 std::string root_module = std::string(x.m_parent_module);
@@ -6203,8 +6203,7 @@ public:
             mangle_prefix = "__module_" + std::string(x.m_name) + "_";
         }
         for (auto &sym: variables) {
-            ASR::Variable_t *v = down_cast<ASR::Variable_t>(
-                    sym);
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(sym);
             if( v->m_storage != ASR::storage_typeType::Parameter ) {
                 visit_Variable(*v);
             }
@@ -6212,6 +6211,79 @@ public:
         finish_module_init_function_prototype(x);
 
         visit_procedures(x);
+
+        // --- PLATFORM-SAFE MODULE FINALIZER (With Weak Stub Stripping) ---
+        if (compiler_options.detect_leaks && !x.m_loaded_from_mod) {
+            std::string mod_name_str = std::string(x.m_name);
+            std::string finalizer_name = "_lfortran_module_finalize_" + mod_name_str;
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
+
+            llvm::Function *fin_fn = module->getFunction(finalizer_name);
+            if (fin_fn) {
+                if (!fin_fn->empty()) {
+                    fin_fn->deleteBody(); // Strip any existing weak stubs generated earlier in the TU
+                }
+                fin_fn->setLinkage(llvm::GlobalValue::ExternalLinkage);
+            } else {
+                fin_fn = llvm::Function::Create(void_ft, llvm::GlobalValue::ExternalLinkage, finalizer_name, module.get());
+            }
+
+            llvm::BasicBlock *saved_insert_block = builder->GetInsertBlock();
+            llvm::BasicBlock *fin_bb = llvm::BasicBlock::Create(context, "entry", fin_fn);
+            builder->SetInsertPoint(fin_bb);
+
+            // Add Execution Guard (Prevents double-frees if 'use'd by multiple files)
+            llvm::GlobalVariable *guard = new llvm::GlobalVariable(
+                *module, llvm::Type::getInt1Ty(context), false,
+                llvm::GlobalValue::InternalLinkage,
+                llvm::ConstantInt::getFalse(context),
+                finalizer_name + "_guard"
+            );
+            
+            llvm::Value *is_fin = builder->CreateLoad(llvm::Type::getInt1Ty(context), guard);
+            llvm::BasicBlock *do_fin = llvm::BasicBlock::Create(context, "do_fin", fin_fn);
+            llvm::BasicBlock *end_fin = llvm::BasicBlock::Create(context, "end_fin", fin_fn);
+            builder->CreateCondBr(is_fin, end_fin, do_fin);
+
+            builder->SetInsertPoint(do_fin);
+            builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
+
+            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+
+            // Recursively call dependencies using WEAK FALLBACK STUBS
+            for (size_t i = 0; i < x.n_dependencies; i++) {
+                std::string dep_name = std::string(x.m_dependencies[i]);
+                
+                // Skip intrinsic/built-in modules
+                if (dep_name.find("lfortran_intrinsic_") == 0 || 
+                    dep_name.find("iso_") == 0 || 
+                    dep_name.find("ieee_") == 0) {
+                    continue;
+                }
+
+                std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
+                llvm::Function *dep_fin = module->getFunction(dep_fin_name);
+                if (!dep_fin) {
+                    dep_fin = llvm::Function::Create(void_ft, llvm::GlobalValue::WeakAnyLinkage, dep_fin_name, module.get());
+                }
+                // Provide the empty fallback body if it doesn't have one
+                if (dep_fin->empty()) {
+                    dep_fin->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+                    llvm::BasicBlock *fallback_bb = llvm::BasicBlock::Create(context, "entry", dep_fin);
+                    llvm::IRBuilder<> stub_builder(fallback_bb);
+                    stub_builder.CreateRetVoid();
+                }
+                builder->CreateCall(dep_fin, {});
+            }
+
+            builder->CreateBr(end_fin);
+            builder->SetInsertPoint(end_fin);
+            builder->CreateRetVoid();
+
+            if (saved_insert_block) builder->SetInsertPoint(saved_insert_block);
+            else builder->ClearInsertionPoint();
+        }
+
         mangle_prefix = "";
         current_scope = current_scope_copy;
     }
@@ -6256,6 +6328,7 @@ public:
         set_api_lp->set_is_set_present(false);
         set_api_sc->set_is_set_present(false);
         llvm_goto_targets.clear();
+        
         // Generate code for the main program
         std::vector<llvm::Type*> command_line_args = {
             llvm::Type::getInt32Ty(context),
@@ -6393,43 +6466,80 @@ public:
         start_new_block(proc_return);
         llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
         finalize_list_call_arg_allocas();
-        // Free globals if detecting leaks is ON, to print clean report
-        if(compiler_options.detect_leaks){
-            SymbolTable* tranlsationUnit_symtab = ASRUtils::get_tu_symtab(x.m_symtab);
-            for(auto &name_sym_pair : tranlsationUnit_symtab->get_scope()){
-                auto &sym = name_sym_pair.second;
-                if(ASR::is_a<ASR::Module_t>(*sym)){
-                    llvm_symtab_finalizer.finalize_symtab(
-                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
+
+        // --- INLINE PROGRAM TEARDOWN ---
+        if (compiler_options.detect_leaks) {
+            // 1. Explicitly finalize modules compiled in the current Translation Unit
+            SymbolTable* tu = ASRUtils::get_tu_symtab(x.m_symtab);
+            std::vector<std::string> tu_mods;
+            for (auto &kv : tu->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*kv.second)) {
+                    ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(kv.second);
+                    llvm_symtab_finalizer.finalize_symtab(m->m_symtab);
+                    tu_mods.push_back(std::string(m->m_name));
+                }
+            }
+
+            // 2. Resolve --separate-compilation misses using WEAK FALLBACK STUBS
+            llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), false);
+            for (size_t i = 0; i < x.n_dependencies; i++) {
+                std::string dep_name = std::string(x.m_dependencies[i]);
+                
+                // Skip intrinsic/built-in modules so the linker doesn't complain
+                if (dep_name.find("lfortran_intrinsic_") == 0 || 
+                    dep_name.find("iso_") == 0 || 
+                    dep_name.find("ieee_") == 0) {
+                    continue;
+                }
+
+                bool is_in_tu = false;
+                for (const auto& tm : tu_mods) {
+                    if (tm == dep_name) is_in_tu = true;
+                }
+                
+                // If it wasn't handled in the TU, call its external finalizer safely
+                if (!is_in_tu) {
+                    std::string dep_fin_name = "_lfortran_module_finalize_" + dep_name;
+                    llvm::Function *dep_fin = module->getFunction(dep_fin_name);
+                    if (!dep_fin) {
+                        dep_fin = llvm::Function::Create(void_ft, llvm::GlobalValue::WeakAnyLinkage, dep_fin_name, module.get());
+                    }
+                    if (dep_fin->empty()) {
+                        dep_fin->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+                        llvm::BasicBlock *fallback_bb = llvm::BasicBlock::Create(context, "entry", dep_fin);
+                        llvm::IRBuilder<> stub_builder(fallback_bb);
+                        stub_builder.CreateRetVoid();
+                    }
+                    builder->CreateCall(dep_fin, {});
                 }
             }
         }
+
         free_heap_fixed_size_arrays();
+        
+        // 3. Keep internal teardown exactly where LFortran expects it (safely destroying the tracker)
         {
-            llvm::Function *fn_finalize = module->getFunction(
-                "_lfortran_internal_alloc_finalize");
+            llvm::Function *fn_finalize = module->getFunction("_lfortran_internal_alloc_finalize");
             if (!fn_finalize) {
-                llvm::FunctionType *ft = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn_finalize = llvm::Function::Create(ft,
-                    llvm::Function::ExternalLinkage,
-                    "_lfortran_internal_alloc_finalize", module.get());
+                llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+                fn_finalize = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "_lfortran_internal_alloc_finalize", module.get());
             }
             builder->CreateCall(fn_finalize, {});
         }
+        
+        // 4. Run the Leak Report LAST
         if (compiler_options.detect_leaks) {
-            llvm::Function *fn = module->getFunction("dbg_report");
-            if(!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {}, false);
-                fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "dbg_report", module.get());
+            llvm::Function *fn_dbg = module->getFunction("dbg_report");
+            if (!fn_dbg) {
+                llvm::FunctionType *void_ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false);
+                fn_dbg = llvm::Function::Create(void_ft, llvm::Function::ExternalLinkage, "dbg_report", module.get());
             }
-            builder->CreateCall(fn, {});
+            builder->CreateCall(fn_dbg, {});
         }
-        llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
-            llvm::APInt(32, 0));
+        
+        llvm::Value *ret_val2 = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
+        
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
         set_api_lp->set_is_set_present(is_set_present_copy_lp);
@@ -6451,8 +6561,8 @@ public:
         }
 #endif
     }
-
-    /*
+           
+     /*
     * This function detects if the current variable is an argument.
     * of a function or argument. Some manipulations are to be done
     * only on arguments and not on local variables.
@@ -9243,7 +9353,6 @@ public:
 
         // Get rank from base array
         int n_dims = ASRUtils::extract_n_dims_from_ttype(base_struct_array_type);
-
         LCOMPILERS_ASSERT(n_dims == 1 );
 
         // Compute the stride multiplier: sizeof(struct) / sizeof(component)
@@ -9251,8 +9360,8 @@ public:
         llvm::DataLayout data_layout(module->getDataLayout());
         uint64_t struct_size = data_layout.getTypeAllocSize(struct_llvm_type);
         uint64_t component_size = data_layout.getTypeAllocSize(component_llvm_type);
-    
         LCOMPILERS_ASSERT(component_size > 0);
+    
 
         uint64_t stride_multiplier = struct_size / component_size;
 

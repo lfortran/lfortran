@@ -409,7 +409,7 @@ endmacro(COMPILE)
 # RUN(NAME doconcurrentloop_02 LABELS gfortran)
 
 # GFortran + LFortran LLVM + LFortran C++
-
+RUN(NAME complex_pow_io LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME program_cmake_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME program_cmake_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 
@@ -4835,6 +4835,9 @@ RUN(NAME gpu_metal_192 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_193 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_194 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_195 LABELS gfortran llvm metal)
+<<<<<<< fix-module-finalizer-leak
+RUN(NAME detect_leaks_separate_compilation_prog LABELS llvm EXTRAFILES detect_leaks_separate_compilation_mod.f90 detect_leaks_separate_compilation_sub.f90 EXTRA_ARGS --separate-compilation)
+=======
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
@@ -4851,3 +4854,4 @@ RUN(NAME real128_intrinsic_inquiry_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
 RUN(NAME equivalence_39 LABELS gfortran llvm)
+>>>>>>> main
