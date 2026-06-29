@@ -23,4 +23,6 @@ program pointer_18
     if (u(9) /= 100) error stop 10
 
     print *, lbound(u, 1), ubound(u, 1), size(u)
+
+    deallocate(t)
 end program
