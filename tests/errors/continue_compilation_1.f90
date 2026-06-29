@@ -824,4 +824,13 @@ program continue_compilation_1
 1000    continue
 1000    continue
     end subroutine
+
+    subroutine select_type_nonpolymorphic()
+        implicit none
+        integer :: a
+        select type (a)
+        type is (integer)
+            print *, a
+        end select
+    end subroutine
 end program

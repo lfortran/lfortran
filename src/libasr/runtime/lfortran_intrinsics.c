@@ -1543,6 +1543,31 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
             }
         }
 
+        // Handle Hollerith constants: digits followed by 'h'/'H'
+        // Copy the next n characters verbatim (preserving spaces)
+        if (!in_quotes && isdigit(c)) {
+            int digit_start = i;
+            int hollerith_len = 0;
+            int k = i;
+            while (k < len && isdigit(format[k])) {
+                hollerith_len = hollerith_len * 10 + (format[k] - '0');
+                k++;
+            }
+            if (k < len && (format[k] == 'h' || format[k] == 'H')) {
+                // Copy digits and 'h'/'H'
+                for (int m = digit_start; m <= k; m++) {
+                    cleaned_format[j++] = format[m];
+                }
+                // Copy next hollerith_len characters verbatim
+                k++;
+                for (int m = 0; m < hollerith_len && k < len; m++, k++) {
+                    cleaned_format[j++] = format[k];
+                }
+                i = k - 1; // -1 because the for loop will i++
+                continue;
+            }
+        }
+
         if (!isspace(c) || in_quotes) {
             cleaned_format[j++] = c; // copy non-space characters or any character within quotes
         }
@@ -3214,6 +3239,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         hollerith + 1, hollerith_len);
                     result_len += hollerith_len;
                     if (result_len > content_end) content_end = result_len;
+                    continue;
                 }
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 // Advance position by 1 without overwriting any existing
@@ -10977,17 +11003,26 @@ static void init_record_state(InputSource *inputSource)
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
         // For sequential/stream access, scan from record_start_pos to find '\n'
         if (inputSource->access_id != 2) {  // Not direct access
-            long saved_pos = ftell(inputSource->file);
-            fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
-            
-            inputSource->record_length = 0;
-            int c;
-            while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
-                inputSource->record_length++;
+            // Non-seekable streams (e.g. stdin piped from a shell) have
+            // record_start_pos == -1.  fseek/fgetc would silently consume
+            // data that can never be put back, so skip the pre-scan and
+            // leave record_length as a large sentinel value instead.
+            if (inputSource->record_start_pos < 0) {
+                inputSource->record_length = LONG_MAX;
+            } else {
+                long saved_pos = ftell(inputSource->file);
+                fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
+                
+                inputSource->record_length = 0;
+                int c;
+                while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
+                    inputSource->record_length++;
+                }
+                
+                // Restore position to start of record
+                fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
+                (void)saved_pos;
             }
-            
-            // Restore position to start of record
-            fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
         } else {
             // For direct access, record_length is already known from record_len
             inputSource->record_length = inputSource->record_len;
