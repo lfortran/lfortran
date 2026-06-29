@@ -1701,3 +1701,15 @@ semantic error: duplicate statement label 1000
     |
 816 | 1000    continue
     |         ^^^^^^^^ 
+
+semantic error: Interface mismatch in global procedure 'cc1_charlenmismatch': Character length mismatch in function result
+   --> tests/errors/continue_compilation_1.f90:823:25
+    |
+823 |         character(4) :: cc1_charlenmismatch
+    |                         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface mismatch in global procedure 'cc1_typemismatch': Type mismatch in function result
+   --> tests/errors/continue_compilation_1.f90:832:17
+    |
+832 |         real :: cc1_typemismatch
+    |                 ^^^^^^^^^^^^^^^^ 

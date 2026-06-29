@@ -815,4 +815,22 @@ program continue_compilation_1
 1000    continue
 1000    continue
     end subroutine
+    character(8) function cc1_charlenmismatch()
+        cc1_charlenmismatch = "abcdefgh"
+    end function
+
+    subroutine test_char_len_mismatch()
+        character(4) :: cc1_charlenmismatch
+        print *, cc1_charlenmismatch()
+    end subroutine
+
+    integer function cc1_typemismatch()
+        cc1_typemismatch = 42
+    end function
+
+    subroutine test_type_mismatch()
+        real :: cc1_typemismatch
+        print *, cc1_typemismatch()
+    end subroutine
+
 end program

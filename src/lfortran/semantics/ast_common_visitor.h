@@ -16946,6 +16946,54 @@ public:
                 }
             }
         }
+        if (v && !is_external_procedure && ASR::is_a<ASR::Variable_t>(*v)) {
+            ASR::ttype_t* t = ASRUtils::symbol_type(v);
+            bool is_array = ASRUtils::is_array(t);
+            if (!is_array) {
+                ASR::symbol_t* v2 = current_scope->parent ? current_scope->parent->resolve_symbol(var_name) : nullptr;
+                if (!v2) {
+                    SymbolTable* tu_symtab = ASRUtils::get_tu_symtab(current_scope);
+                    if (tu_symtab) v2 = tu_symtab->resolve_symbol(var_name);
+                }
+                if (v2 && ASR::is_a<ASR::Function_t>(*v2)) {
+                    bool is_dummy = ASR::is_a<ASR::Variable_t>(*v) && ASRUtils::is_arg_dummy(ASR::down_cast<ASR::Variable_t>(v)->m_intent);
+                    if (!is_dummy && current_scope->asr_owner != (ASR::asr_t*)v2) {
+                        ASR::Function_t* global_f = ASR::down_cast<ASR::Function_t>(v2);
+                        if (global_f->m_return_var) {
+                            ASR::ttype_t* global_ret_type = ASRUtils::expr_type(global_f->m_return_var);
+                            if (!ASRUtils::check_equal_type(t, global_ret_type, nullptr, nullptr)) {
+                                diag.add(Diagnostic(
+                                    "Interface mismatch in global procedure '" + var_name + "': Type mismatch in function result",
+                                    Level::Error, Stage::Semantic, {Label("", {v->base.loc})}));
+                                if (!compiler_options.continue_compilation) {
+                                    throw SemanticAbort();
+                                }
+                            }
+                            if (ASRUtils::is_character(*t) && ASRUtils::is_character(*global_ret_type)) {
+                                ASR::String_t *t_str = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(t)));
+                                ASR::String_t *global_str = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(global_ret_type)));
+                                int64_t t_len = -1;
+                                int64_t global_len = -1;
+                                if (t_str->m_len && global_str->m_len) {
+                                    if (ASRUtils::extract_value(ASRUtils::expr_value(t_str->m_len), t_len) &&
+                                        ASRUtils::extract_value(ASRUtils::expr_value(global_str->m_len), global_len)) {
+                                        if (t_len != global_len) {
+                                            diag.add(Diagnostic(
+                                                "Interface mismatch in global procedure '" + var_name + "': Character length mismatch in function result",
+                                                Level::Error, Stage::Semantic, {Label("", {v->base.loc})}));
+                                            if (!compiler_options.continue_compilation) {
+                                                throw SemanticAbort();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        is_external_procedure = true;
+                    }
+                }
+            }
+        }
         if (v && !compiler_options.implicit_interface && is_external_procedure) {
             /*
                 Case: ./integration_tests/external_01.f90
