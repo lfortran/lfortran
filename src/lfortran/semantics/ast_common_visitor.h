@@ -4009,6 +4009,19 @@ public:
         // so no checks are needed:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                 ASRUtils::expr_type(value), ASRUtils::expr_type(object), diag);
+        if (!ASRUtils::types_equal(ASRUtils::expr_type(value), ASRUtils::expr_type(object), value, object)) {
+            std::string var_type = ASRUtils::type_to_str_fortran_symbol(
+                ASRUtils::expr_type(object), nullptr, true);
+            std::string val_type = ASRUtils::type_to_str_fortran_symbol(
+                ASRUtils::expr_type(value), nullptr, true);
+            diag.add(Diagnostic(
+                "Cannot initialize " + var_type + " variable with " + val_type +
+                " value in DATA statement",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
         // Pad/trim a character string constant initializer to match the
         // declared length of the target variable. Without this, a DATA

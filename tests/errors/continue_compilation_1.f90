@@ -816,6 +816,12 @@ program continue_compilation_1
 1000    continue
     end subroutine
 
+    subroutine data_type_mismatch()
+        implicit none
+        integer :: x
+        data x / "abc" /
+    end subroutine
+
     subroutine select_type_nonpolymorphic()
         implicit none
         integer :: a
