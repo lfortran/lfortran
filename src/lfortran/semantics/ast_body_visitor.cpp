@@ -9112,14 +9112,6 @@ public:
 
     void visit_ForAll(const AST::ForAll_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_body != 1) {
-            diag.add(Diagnostic(
-                "Forall block: one body statement is supported for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-            }));
-            throw SemanticAbort();
-        }
         for (size_t i = 0; i < x.n_control; i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             if (!h.m_var) {
@@ -9147,10 +9139,10 @@ public:
                 throw SemanticAbort();
             }
         }
-        
-        this->visit_stmt(*x.m_body[0]);
-        ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
-        for (int i = x.n_control - 1; i >= 0; i--) {
+
+        Vec<ASR::do_loop_head_t> heads;
+        heads.reserve(al, x.n_control);
+        for (size_t i = 0; i < x.n_control; i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
             visit_expr(*h.m_start);
@@ -9170,8 +9162,22 @@ public:
             head.m_end = end;
             head.m_increment = increment;
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
-            stmt = ASRUtils::STMT(tmp);
+            heads.push_back(al, head);
+        }
+
+        if (x.n_body == 1) {
+            this->visit_stmt(*x.m_body[0]);
+            ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
+            for (int i = heads.size() - 1; i >= 0; i--) {
+                tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
+                stmt = ASRUtils::STMT(tmp);
+            }
+        } else {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, x.n_body);
+            transform_stmts(body, x.n_body, x.m_body);
+            tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
+                nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
         }
         all_loops_blocks_nesting -= 1;
     }
