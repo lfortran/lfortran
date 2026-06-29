@@ -18411,8 +18411,8 @@ public:
                 src_data = arr_descr->get_pointer_to_data(llvm_unit_type, unit_val);
                 src_data = builder->CreateBitCast(src_data, character_type);
                 ASR::String_t *str_type = ASRUtils::get_string_type(unit_type);
-                if (str_type->m_length && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_length)) {
-                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_length)->m_n;
+                if (str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_len)) {
+                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_len)->m_n;
                     src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len);
                 } else {
                     src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0); 
@@ -18856,8 +18856,8 @@ public:
                 src_data = builder->CreateBitCast(src_data, character_type);
 
                 ASR::String_t *str_type = ASRUtils::get_string_type(unit_type);
-                if (str_type->m_length && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_length)) {
-                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_length)->m_n;
+                if (str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_len)) {
+                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_len)->m_n;
                     src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len);
                 } else {
                     src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0); 
