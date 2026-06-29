@@ -3,6 +3,7 @@
 
   integer :: value
   character(len=2) :: text(1)
+  
 
   text = ["42"]
 
