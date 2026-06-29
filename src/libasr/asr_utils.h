@@ -6770,7 +6770,7 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
     }
     ASR::expr_t* bound_value = nullptr;
     ASR::dimension_t* arr_dims = nullptr;
-    int arr_n_dims = ASRUtils::extract_dimensions_from_ttype(
+    [[maybe_unused]] int arr_n_dims = ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::expr_type(arr_expr), arr_dims);
     LCOMPILERS_ASSERT(dim >= 1 && dim <= arr_n_dims);
     int dim0 = dim - 1;
