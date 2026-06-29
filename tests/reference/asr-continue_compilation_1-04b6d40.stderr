@@ -1713,3 +1713,9 @@ semantic error: duplicate statement label 1000
     |
 828 | 1000    continue
     |         ^^^^^^^^ 
+
+semantic error: Selector shall be polymorphic in SELECT TYPE statement
+   --> tests/errors/continue_compilation_1.f90:834:22
+    |
+834 |         select type (a)
+    |                      ^ 

@@ -791,9 +791,13 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
 
     if (compiletime_values.size() == 0) {
         ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(type);
-        if (ASRUtils::is_array(type) && ASRUtils::get_fixed_size_of_array(type) == 0) {
-            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
-                al, loc, 0, nullptr, type, ASR::arraystorageType::ColMajor));
+        if (ASRUtils::is_array(type)) {
+            if (ASRUtils::get_fixed_size_of_array(type) == 0) {
+                return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                    al, loc, 0, nullptr, type, ASR::arraystorageType::ColMajor));
+            } else {
+                return nullptr;
+            }
         }
         return compare_helper(al, ASRUtils::expr_value(left), ASRUtils::expr_value(right), asr_op, logical_type, loc, diag);
     } else {
@@ -802,7 +806,12 @@ static inline ASR::expr_t* evaluate_compiletime_values(Allocator &al, std::vecto
         for (size_t i = 0; i < compiletime_values.size(); i++) {
             ASR::expr_t* left_val = compiletime_values[i].first;
             ASR::expr_t* right_val = compiletime_values[i].second;
-            args.push_back(al, compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag));
+            if (ASRUtils::is_array(ASRUtils::expr_type(left_val)) || ASRUtils::is_array(ASRUtils::expr_type(right_val))) {
+                return nullptr;
+            }
+            ASR::expr_t* res = compare_helper(al, left_val, right_val, asr_op, logical_type, loc, diag);
+            if (!res) return nullptr;
+            args.push_back(al, res);
         }
         if (ASRUtils::is_array(type) && ASRUtils::extract_n_dims_from_ttype(type) > 1) {
             Vec<ASR::expr_t*> values;
@@ -830,6 +839,11 @@ static inline void populate_compiletime_values(Allocator &al, std::vector<std::p
         for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(array->m_type); i++) {
             compiletime_values.push_back({ASRUtils::fetch_ArrayConstant_value(al, array, i), nullptr});
         }
+    } else if (ASR::is_a<ASR::ArrayConstructor_t>(*ASRUtils::expr_value(left))) {
+        ASR::ArrayConstructor_t* array = ASR::down_cast<ASR::ArrayConstructor_t>(ASRUtils::expr_value(left));
+        for (size_t i=0; i<array->n_args; i++) {
+            compiletime_values.push_back({array->m_args[i], nullptr});
+        }
     }
     if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(right))) {
         ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(right));
@@ -838,6 +852,15 @@ static inline void populate_compiletime_values(Allocator &al, std::vector<std::p
                 compiletime_values[i].second = ASRUtils::fetch_ArrayConstant_value(al, array, i);
             } else {
                 compiletime_values.push_back({nullptr, ASRUtils::fetch_ArrayConstant_value(al, array, i)});
+            }
+        }
+    } else if (ASR::is_a<ASR::ArrayConstructor_t>(*ASRUtils::expr_value(right))) {
+        ASR::ArrayConstructor_t* array = ASR::down_cast<ASR::ArrayConstructor_t>(ASRUtils::expr_value(right));
+        for (size_t i=0; i<array->n_args; i++) {
+            if(compiletime_values.size() > i) {
+                compiletime_values[i].second = array->m_args[i];
+            } else {
+                compiletime_values.push_back({nullptr, array->m_args[i]});
             }
         }
     }
@@ -2083,6 +2106,8 @@ public:
     ASR::presenceType dflt_presence = ASR::presenceType::Required;
     std::map<std::string, ASR::presenceType> assgnd_presence;
     std::set<std::string> assgnd_pointer;
+    std::set<std::string> assgnd_allocatable;
+    std::set<std::string> assgnd_target;
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
@@ -5813,8 +5838,31 @@ public:
                                     } else {
                                         assgnd_pointer.insert(sym);
                                     }
-                                } else if (sa->m_attr == AST::simple_attributeType
-                                        ::AttrAsynchronous) {
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (sym_) {
+                                        ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_past_external);
+                                            if (!ASRUtils::is_allocatable(v->m_type)) {
+                                                v->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
+                                            }
+                                        }
+                                    } else {
+                                        assgnd_allocatable.insert(to_lower(sym));
+                                    }
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrTarget) {
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (sym_) {
+                                        ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_past_external);
+                                            v->m_target_attr = true;
+                                        }
+                                    } else {
+                                        assgnd_target.insert(to_lower(sym));
+                                    }
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
                                     // no-op: valid Fortran 2003, LFortran's runtime is synchronous
                                 } else {
                                     diag.add(Diagnostic(
@@ -5841,6 +5889,12 @@ public:
                                                 v->m_type = ASRUtils::TYPE(
                                                     ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
                                             }
+                                        } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            if (!ASRUtils::is_allocatable(v->m_type)) {
+                                                v->m_type = ASRUtils::TYPE(
+                                                    ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
+                                            }
                                         }
                                     }
                                 }
@@ -5858,24 +5912,19 @@ public:
                 AST::var_sym_t &s = x.m_syms[i];
                 dimension_variable(s, x.base.base.loc);
             }
-		} else if (AST::is_a<AST::AttrCommon_t>(*x.m_attributes[i])) {
-		    AST::AttrCommon_t const & common_stmt =
-			*AST::down_cast<AST::AttrCommon_t>(x.m_attributes[i]);
-		    constexpr char BLANK_BLOCK[] = "blank#block";
-		    std::string common_block_name;
-		    /* Local dictionary to aggregate objects into:
-		       "COMMON A /B1/ B, // C", will put "A" and "C"
-		       in the blank block.  This should be done for
-		       the entire declaration-construct. */
-		    common_block_varsyms objs_by_blk;
-		    for (size_t bi = 0; bi < common_stmt.n_blks; ++bi) {
-			AST::common_block_t const &cb = common_stmt.m_blks[bi];
-			if (cb.m_name) {
-			    common_block_name = to_lower(cb.m_name);
-			} else {
-			    common_block_name = BLANK_BLOCK;
-			}
-
+        } else if (AST::is_a<AST::AttrCommon_t>(*x.m_attributes[i])) {
+            AST::AttrCommon_t const & common_stmt =
+            *AST::down_cast<AST::AttrCommon_t>(x.m_attributes[i]);
+            constexpr char BLANK_BLOCK[] = "blank#block";
+            std::string common_block_name;
+            common_block_varsyms objs_by_blk;
+            for (size_t bi = 0; bi < common_stmt.n_blks; ++bi) {
+            AST::common_block_t const &cb = common_stmt.m_blks[bi];
+            if (cb.m_name) {
+                common_block_name = to_lower(cb.m_name);
+            } else {
+                common_block_name = BLANK_BLOCK;
+            }
 			// Aggregate the objects into their named common blocks
 			for (size_t oi = 0; oi < cb.n_objects; ++oi) {
 			    AST::var_sym_t const & vs = cb.m_objects[oi];
@@ -7029,6 +7078,12 @@ public:
                 bool is_pointer = false;
                 if (assgnd_pointer.count(sym)) {
                     is_pointer = true;
+                }
+                if (assgnd_allocatable.count(sym)) {
+                    is_allocatable = true;
+                }
+                if (assgnd_target.count(sym)) {
+                    target_attr = true;
                 }
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
@@ -12345,8 +12400,7 @@ public:
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args, compiler_options);
-                char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
-                    current_scope->resolve_symbol(f->m_name))->m_module_name;
+                char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
                 current_module_dependencies.push_back(al, mod);
             }
         }
@@ -16912,14 +16966,15 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
             if (ASRUtils::is_intrinsic_procedure(f)) {
-                if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
-                    if (var_name == "c_loc") {
+                std::string orig_name = f->m_name;
+                if (intrinsic_module_procedures_as_asr_nodes.find(orig_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
+                    if (orig_name == "c_loc") {
                         tmp = create_PointerToCptr(x);
-                    } else if (var_name == "c_associated") {
+                    } else if (orig_name == "c_associated") {
                         tmp = create_Associated(x);
-                    } else if (var_name == "c_funloc") {
+                    } else if (orig_name == "c_funloc") {
                         tmp = create_PointerToCptr(x);
-                    } else if (var_name == "c_sizeof") {
+                    } else if (orig_name == "c_sizeof") {
                         tmp = create_CSizeOf(x);
                     } else {
                         LCOMPILERS_ASSERT(false)

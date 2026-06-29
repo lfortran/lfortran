@@ -1556,6 +1556,15 @@ public:
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
+        // Handle the abbreviated READ fmt [, iolist] form where m_format holds
+        // the format specifier string (e.g. read "(I2)", x ). This is distinct
+        // from the parenthesized form and from args. We set a_fmt directly.
+        if (_type == AST::stmtType::Read && r != nullptr && r->m_format != nullptr) {
+            this->visit_expr(*r->m_format);
+            a_fmt = ASRUtils::EXPR(tmp);
+            formatted = true;
+        }
+
         // check if format as a keyword arg
         for (size_t i = 0; i < n_kwargs; i++) {
             std::string kwarg_name = to_lower(std::string(m_kwargs[i].m_arg));
@@ -1605,6 +1614,18 @@ public:
                 this->visit_expr(*m_args[i].m_value);
                 *args[i] = ASRUtils::EXPR(tmp);
             }
+        }
+        // When a READ has a single positional arg that is a string constant,
+        // it is the `READ fmt [, iolist]` form — the string is the format
+        // specifier, not the unit. Move it to a_fmt and leave a_unit as
+        // nullptr (the LLVM backend treats nullptr unit as stdin).
+        if (_type == AST::stmtType::Read
+                && n_args == 1
+                && a_unit != nullptr && a_fmt == nullptr
+                && ASR::is_a<ASR::StringConstant_t>(*a_unit)) {
+            a_fmt = a_unit;
+            a_unit = nullptr;
+            formatted = true;
         }
         bool unit_explicit = false;
         bool iostat_explicit = false;
@@ -4099,6 +4120,24 @@ public:
         }
         visit_expr(*x.m_selector);
         ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
+        // The selector of `select type` must be polymorphic (i.e. of type
+        // `class(derived)` or `class(*)`). A non-polymorphic selector (e.g. a
+        // plain integer) used to segfault later when matching a `type is`
+        // branch; reject it up front, matching gfortran's "Selector shall be
+        // polymorphic in SELECT TYPE statement".
+        {
+            ASR::ttype_t* selector_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(m_selector));
+            if (!ASRUtils::is_class_type(selector_type)
+                    && !ASRUtils::is_unlimited_polymorphic_type(selector_type)) {
+                diag.add(Diagnostic(
+                    "Selector shall be polymorphic in SELECT TYPE statement",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.m_selector->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         // When the selector is a function call, create a temporary variable
         // to hold the result. The codegen expects Var or StructInstanceMember
         // as the selector, not a FunctionCall.
@@ -9095,14 +9134,6 @@ public:
 
     void visit_ForAll(const AST::ForAll_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_body != 1) {
-            diag.add(Diagnostic(
-                "Forall block: one body statement is supported for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-            }));
-            throw SemanticAbort();
-        }
         for (size_t i = 0; i < x.n_control; i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             if (!h.m_var) {
@@ -9130,10 +9161,10 @@ public:
                 throw SemanticAbort();
             }
         }
-        
-        this->visit_stmt(*x.m_body[0]);
-        ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
-        for (int i = x.n_control - 1; i >= 0; i--) {
+
+        Vec<ASR::do_loop_head_t> heads;
+        heads.reserve(al, x.n_control);
+        for (size_t i = 0; i < x.n_control; i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
             visit_expr(*h.m_start);
@@ -9153,8 +9184,22 @@ public:
             head.m_end = end;
             head.m_increment = increment;
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
-            stmt = ASRUtils::STMT(tmp);
+            heads.push_back(al, head);
+        }
+
+        if (x.n_body == 1) {
+            this->visit_stmt(*x.m_body[0]);
+            ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
+            for (int i = heads.size() - 1; i >= 0; i--) {
+                tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
+                stmt = ASRUtils::STMT(tmp);
+            }
+        } else {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, x.n_body);
+            transform_stmts(body, x.n_body, x.m_body);
+            tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
+                nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
         }
         all_loops_blocks_nesting -= 1;
     }
