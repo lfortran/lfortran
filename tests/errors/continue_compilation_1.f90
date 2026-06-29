@@ -66,14 +66,14 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
-
 contains
 
+    integer function statement_function_name_conflict()
+        statement_function_name_conflict(argument) = 0
+    contains
+        integer function argument()
+        end function
+    end function
     subroutine my_undefined_type_test()
         implicit none
         type(another_undefined_type) :: s3_in_subroutine
@@ -854,5 +854,27 @@ program continue_compilation_1
         print *, lgt("a", glyph)
         print *, lle(glyph, "z")
         print *, llt(glyph, "z")
+    end subroutine
+
+    subroutine c_loc_default_component_initializer()
+        use iso_c_binding, only: c_loc, c_ptr
+        integer, target :: target_value
+        type :: holder
+            type(c_ptr) :: ptr = c_loc(target_value)
+        end type
+    end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
+
+    subroutine select_type_nonpolymorphic()
+        implicit none
+        integer :: a
+        select type (a)
+        type is (integer)
+            print *, a
+        end select
     end subroutine
 end program

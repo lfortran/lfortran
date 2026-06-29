@@ -3876,10 +3876,14 @@ ASR::asr_t* make_ArraySize_t_util(
             }
         } else {
             if( a_dim == nullptr ) {
-                LCOMPILERS_ASSERT(m_dims[0].m_length);
+                if( n_dims == 0 || m_dims[0].m_length == nullptr ) {
+                    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                }
                 ASR::expr_t* result = m_dims[0].m_length;
                 for( size_t i = 1; i < n_dims; i++ ) {
-                    LCOMPILERS_ASSERT(m_dims[i].m_length);
+                    if( m_dims[i].m_length == nullptr ) {
+                        return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                    }
                     result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
                         result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
                 }
@@ -3930,8 +3934,7 @@ ASR::asr_t* make_ArraySize_t_util(
         ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
         for( size_t i = 0; i < elemental->n_args; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(elemental->m_args[i])) ) {
-                a_v = elemental->m_args[i];
-                break;
+                return make_ArraySize_t_util(al, a_loc, elemental->m_args[i], a_dim, a_type, a_value, for_type);
             }
         }
     }
@@ -4240,7 +4243,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
         ASR::is_a<ASR::BitCast_t>(*x) ||
         ASR::is_a<ASR::ArrayConstant_t>(*x) ||
-        ASR::is_a<ASR::ArrayConstructor_t>(*x)) {
+        ASR::is_a<ASR::ArrayConstructor_t>(*x) ||
+        ASR::is_a<ASR::ArraySection_t>(*x)) {
         return x;
     }
 

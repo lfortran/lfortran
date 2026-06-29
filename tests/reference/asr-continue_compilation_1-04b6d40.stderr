@@ -488,11 +488,23 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
 751 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Function `c_loc` is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:863:13
+    |
+863 |             type(c_ptr) :: ptr = c_loc(target_value)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
 640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
+  --> tests/errors/continue_compilation_1.f90:72:9
+   |
+72 |         statement_function_name_conflict(argument) = 0
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
@@ -1737,3 +1749,15 @@ semantic error: first argument of `llt` must have kind equal to 1
     |
 856 |         print *, llt(glyph, "z")
     |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate statement label 1000
+   --> tests/errors/continue_compilation_1.f90:869:9
+    |
+869 | 1000    continue
+    |         ^^^^^^^^ 
+
+semantic error: Selector shall be polymorphic in SELECT TYPE statement
+   --> tests/errors/continue_compilation_1.f90:875:22
+    |
+875 |         select type (a)
+    |                      ^ 

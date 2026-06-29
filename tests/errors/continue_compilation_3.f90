@@ -61,6 +61,8 @@ program continue_compilation_3
     type :: t
         integer :: xx
     end type
+    type(t), parameter :: cc_param_struct = t(4)
+    integer, parameter :: cc_param_arr(3) = [1, 2, 3]
     type(t) :: y
     integer :: merge_i = 4, merge_j = 5
     integer(8) :: merge_k = 8
@@ -204,6 +206,11 @@ program continue_compilation_3
     print *, ["welcome", "to", "lf"] .and. "contributors"  !even size diff of array element must be caught
     print *,  [( '*',i , i = 1, 10 )] 
     call ss("hello")
+
+    !DATA on a PARAMETER (named constant) is a semantic error
+    data cc_param_struct%xx / 5 /  ! {Error} PARAMETER 'cc_param_struct' shall not appear in a DATA statement
+    data (cc_param_arr(i), i=1,3) / 4, 5, 6 /  ! {Error} PARAMETER 'cc_param_arr' shall not appear in a DATA statement
+
     contains 
     subroutine bpe()
         print *, size(bpe)
