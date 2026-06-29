@@ -9344,6 +9344,63 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
+    void visit_Critical(const AST::Critical_t &x) {
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        for (size_t i = 0; i < x.n_sync_stat; i++) {
+            AST::event_attribute_t *attr = x.m_sync_stat[i];
+            if (AST::is_a<AST::AttrStat_t>(*attr)) {
+                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
+                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(s->m_variable)));
+                ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+                if (ASRUtils::is_array(stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `critical` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_integer(*stat_type)) {
+                    diag.add(Diagnostic(
+                        "`stat` argument of `critical` must be of type integer, found "
+                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
+                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
+                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
+                    to_lower(e->m_variable)));
+                ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+                if (ASRUtils::is_array(errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `critical` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_character(*errmsg_type)) {
+                    diag.add(Diagnostic(
+                        "`errmsg` argument of `critical` must be of type character, found "
+                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+        }
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        transform_stmts(body, x.n_body, x.m_body);
+        tmp = ASR::make_SyncCritical_t(al, x.base.base.loc, body.p, body.n, stat, errmsg);
+    }
+
     void visit_SyncAll(const AST::SyncAll_t &x) {
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
