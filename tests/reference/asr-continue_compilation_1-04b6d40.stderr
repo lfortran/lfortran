@@ -489,9 +489,9 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Function `c_loc` is not permitted in an initialization expression
-   --> tests/errors/continue_compilation_1.f90:810:13
+   --> tests/errors/continue_compilation_1.f90:863:13
     |
-810 |             type(c_ptr) :: ptr = c_loc(target_value)
+863 |             type(c_ptr) :: ptr = c_loc(target_value)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -1672,38 +1672,92 @@ semantic error: select case expression must be of type integer, character, or lo
 792 |         select case (x)
     |                      ^ 
 
-semantic error: second argument of `lge` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:800:18
+semantic error: case value type 'real' does not match select case expression type 'integer'
+   --> tests/errors/continue_compilation_1.f90:800:14
     |
-800 |         print *, lge("a", glyph)  
+800 |         case(1.0)  ! {Error} case value type 'real' does not match select case expression type 'integer'
+    |              ^^^ 
+
+semantic error: case value type 'integer' does not match select case expression type 'string'
+   --> tests/errors/continue_compilation_1.f90:807:14
+    |
+807 |         case(1)  ! {Error} case value type 'integer' does not match select case expression type 'string'
+    |              ^ 
+
+semantic error: case value character kind (1) does not match select case expression character kind (4)
+   --> tests/errors/continue_compilation_1.f90:814:14
+    |
+814 |         case('b')  ! {Error} case value character kind (1) does not match select case expression character kind (4)
+    |              ^^^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:821:14
+    |
+821 |         case(5)
+    |              ^ 
+    |
+822 |         case(5)  ! {Error} overlapping case value
+    |              ^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:829:9
+    |
+829 |         case(1:10)
+    |         ^^^^^^^^^^^ 
+    |
+830 |         case(5:20)  ! {Error} overlapping case value
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:837:9
+    |
+837 |         case('a':'m')
+    |         ^^^^^^^^^^^^^^ 
+    |
+838 |         case('m':'z')  ! {Error} overlapping case value
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overlapping case value
+   --> tests/errors/continue_compilation_1.f90:845:14
+    |
+845 |         case(.true.)
+    |              ^^^^^^ 
+    |
+846 |         case(.true.)  ! {Error} overlapping case value
+    |              ^^^^^^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:853:18
+    |
+853 |         print *, lge("a", glyph)
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: second argument of `lgt` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:801:18
+   --> tests/errors/continue_compilation_1.f90:854:18
     |
-801 |         print *, lgt("a", glyph)  
+854 |         print *, lgt("a", glyph)
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: first argument of `lle` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:802:18
+   --> tests/errors/continue_compilation_1.f90:855:18
     |
-802 |         print *, lle(glyph, "z")  
+855 |         print *, lle(glyph, "z")
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: first argument of `llt` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:803:18
+   --> tests/errors/continue_compilation_1.f90:856:18
     |
-803 |         print *, llt(glyph, "z")  
+856 |         print *, llt(glyph, "z")
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: duplicate statement label 1000
-   --> tests/errors/continue_compilation_1.f90:816:9
+   --> tests/errors/continue_compilation_1.f90:869:9
     |
-816 | 1000    continue
+869 | 1000    continue
     |         ^^^^^^^^ 
 
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:822:22
+   --> tests/errors/continue_compilation_1.f90:875:22
     |
-822 |         select type (a)
+875 |         select type (a)
     |                      ^ 

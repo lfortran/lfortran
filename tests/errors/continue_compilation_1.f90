@@ -793,14 +793,67 @@ program continue_compilation_1
         case default
         end select
     end subroutine
+    subroutine select_case_value_type_mismatch_real()
+        implicit none
+        integer :: x
+        select case (x)
+        case(1.0)  ! {Error} case value type 'real' does not match select case expression type 'integer'
+        end select
+    end subroutine
+    subroutine select_case_value_type_mismatch_char()
+        implicit none
+        character :: c
+        select case (c)
+        case(1)  ! {Error} case value type 'integer' does not match select case expression type 'string'
+        end select
+    end subroutine
+    subroutine select_case_char_kind_mismatch()
+        implicit none
+        character(kind=4) :: c
+        select case (c)
+        case('b')  ! {Error} case value character kind (1) does not match select case expression character kind (4)
+        end select
+    end subroutine
+    subroutine select_case_overlap_int_value()
+        implicit none
+        integer :: x
+        select case (x)
+        case(5)
+        case(5)  ! {Error} overlapping case value
+        end select
+    end subroutine
+    subroutine select_case_overlap_int_range()
+        implicit none
+        integer :: x
+        select case (x)
+        case(1:10)
+        case(5:20)  ! {Error} overlapping case value
+        end select
+    end subroutine
+    subroutine select_case_overlap_char()
+        implicit none
+        character :: c
+        select case (c)
+        case('a':'m')
+        case('m':'z')  ! {Error} overlapping case value
+        end select
+    end subroutine
+    subroutine select_case_overlap_logical()
+        implicit none
+        logical :: l
+        select case (l)
+        case(.true.)
+        case(.true.)  ! {Error} overlapping case value
+        end select
+    end subroutine
 
     subroutine lexical_intrinsic_nondefault_character()
         implicit none
         character(kind=4) :: glyph
-        print *, lge("a", glyph)  
-        print *, lgt("a", glyph)  
-        print *, lle(glyph, "z")  
-        print *, llt(glyph, "z")  
+        print *, lge("a", glyph)
+        print *, lgt("a", glyph)
+        print *, lle(glyph, "z")
+        print *, llt(glyph, "z")
     end subroutine
 
     subroutine c_loc_default_component_initializer()
