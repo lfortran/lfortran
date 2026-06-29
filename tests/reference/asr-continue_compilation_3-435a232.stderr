@@ -223,7 +223,7 @@ semantic error: Invalid argument `end` supplied
 136 |     rewind(end="world")
     |     ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Sign must be the same
+semantic error: Type and kind of the relevant arguments of Sign must be the same
    --> tests/errors/continue_compilation_3.f90:140:14
     |
 140 |     print *, sign(1, 1_8)
@@ -325,13 +325,13 @@ semantic error: Array reference is not allowed on scalar variable
 170 |     c(1) = 1
     |     ^^^^ 
 
-semantic error: Kind of all the arguments of Mergebits must be the same
+semantic error: Type and kind of the relevant arguments of Mergebits must be the same
    --> tests/errors/continue_compilation_3.f90:178:14
     |
 178 |     print *, merge_bits(1, 2, 3_8)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Mergebits must be the same
+semantic error: Type and kind of the relevant arguments of Mergebits must be the same
    --> tests/errors/continue_compilation_3.f90:179:14
     |
 179 |     print *, merge_bits(merge_i,merge_j,merge_k)
