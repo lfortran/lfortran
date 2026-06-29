@@ -6759,9 +6759,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     return v.size() > 0;
 }
 
-template <typename SemanticAbort>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
-                                     std::string bound, Allocator& al, diag::Diagnostics &diag, int index_kind = 4) {
+                                     std::string bound, Allocator& al, int index_kind = 4) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, index_kind));
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc,
                                                                        dim, int_type));
@@ -6770,6 +6769,45 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
         bound_type = ASR::arrayboundType::UBound;
     }
     ASR::expr_t* bound_value = nullptr;
+    ASR::dimension_t* arr_dims = nullptr;
+    int arr_n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(arr_expr), arr_dims);
+    LCOMPILERS_ASSERT(dim >= 1 && dim <= arr_n_dims);
+    int dim0 = dim - 1;
+    if( arr_dims[dim0].m_start && arr_dims[dim0].m_length ) {
+        ASR::expr_t* arr_start = ASRUtils::expr_value(arr_dims[dim0].m_start);
+        ASR::expr_t* arr_length = ASRUtils::expr_value(arr_dims[dim0].m_length);
+        if( bound_type == ASR::arrayboundType::LBound &&
+            ASRUtils::is_value_constant(arr_start) ) {
+            int64_t const_lbound = -1;
+            if( !ASRUtils::extract_value(arr_start, const_lbound) ) {
+                LCOMPILERS_ASSERT(false);
+            }
+            bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, arr_expr->base.loc, const_lbound, int_type));
+        } else if( bound_type == ASR::arrayboundType::UBound &&
+            ASRUtils::is_value_constant(arr_start) &&
+            ASRUtils::is_value_constant(arr_length) ) {
+            int64_t const_lbound = -1;
+            if( !ASRUtils::extract_value(arr_start, const_lbound) ) {
+                LCOMPILERS_ASSERT(false);
+            }
+            int64_t const_length = -1;
+            if( !ASRUtils::extract_value(arr_length, const_length) ) {
+                LCOMPILERS_ASSERT(false);
+            }
+            bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, arr_expr->base.loc,
+                            const_lbound + const_length - 1, int_type));
+        }
+    }
+    return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr_expr->base.loc, arr_expr, dim_expr,
+                int_type, bound_type, bound_value));
+}
+
+template <typename SemanticAbort>
+static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
+                                     std::string bound, Allocator& al, diag::Diagnostics &diag, int index_kind = 4) {
     ASR::dimension_t* arr_dims = nullptr;
     int arr_n_dims = ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::expr_type(arr_expr), arr_dims);
@@ -6814,36 +6852,7 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
             throw SemanticAbort();
         }
     }
-    dim = dim - 1;
-    if( arr_dims[dim].m_start && arr_dims[dim].m_length ) {
-        ASR::expr_t* arr_start = ASRUtils::expr_value(arr_dims[dim].m_start);
-        ASR::expr_t* arr_length = ASRUtils::expr_value(arr_dims[dim].m_length);
-        if( bound_type == ASR::arrayboundType::LBound &&
-            ASRUtils::is_value_constant(arr_start) ) {
-            int64_t const_lbound = -1;
-            if( !ASRUtils::extract_value(arr_start, const_lbound) ) {
-                LCOMPILERS_ASSERT(false);
-            }
-            bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, arr_expr->base.loc, const_lbound, int_type));
-        } else if( bound_type == ASR::arrayboundType::UBound &&
-            ASRUtils::is_value_constant(arr_start) &&
-            ASRUtils::is_value_constant(arr_length) ) {
-            int64_t const_lbound = -1;
-            if( !ASRUtils::extract_value(arr_start, const_lbound) ) {
-                LCOMPILERS_ASSERT(false);
-            }
-            int64_t const_length = -1;
-            if( !ASRUtils::extract_value(arr_length, const_length) ) {
-                LCOMPILERS_ASSERT(false);
-            }
-            bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, arr_expr->base.loc,
-                            const_lbound + const_length - 1, int_type));
-        }
-    }
-    return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr_expr->base.loc, arr_expr, dim_expr,
-                int_type, bound_type, bound_value));
+    return get_bound(arr_expr, dim, bound, al, index_kind);
 }
 
 static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
