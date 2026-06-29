@@ -555,6 +555,15 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
                     dummy_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 }
+                {
+                    ASR::ttype_t* formal_t = func_arg_j->m_type;
+                    if (ASR::is_a<ASR::Array_t>(*formal_t) &&
+                        ASR::down_cast<ASR::Array_t>(formal_t)->m_physical_type
+                            == ASR::array_physical_typeType::AssumedRankArray) {
+                        dummy_variable_type = ASRUtils::duplicate_type(al,
+                            ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
+                    }
+                }
                 ASR::ttype_t* pointer_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                 // Don't declare AssumedLength strings, they are only arguments
                 if (ASRUtils::is_string_only(dummy_variable_type) || ASRUtils::is_array_of_strings(dummy_variable_type)) {

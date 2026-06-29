@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -55,9 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -81,9 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     f1
@@ -179,9 +173,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -205,9 +197,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     f2

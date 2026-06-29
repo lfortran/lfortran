@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             f:
                                 (Variable
@@ -61,9 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             get_elem_table@get_value:
                                 (ExternalSymbol
@@ -137,9 +133,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             ptr:
                                 (Variable
@@ -165,9 +159,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     main
@@ -226,9 +218,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -252,9 +242,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -280,9 +268,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -306,9 +292,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     get_elem_table
@@ -382,9 +366,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             def:
                                                 (Variable
@@ -408,9 +390,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -434,9 +414,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -462,9 +440,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -488,9 +464,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     get_elem_value_string

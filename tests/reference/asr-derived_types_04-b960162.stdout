@@ -45,9 +45,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -76,9 +74,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     all_abstract
@@ -148,9 +144,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     bitset_type

@@ -41,9 +41,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -76,9 +74,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -90,8 +86,8 @@
                                                                     8
                                                                     1_child_value_ok
                                                                     5 ok
-                                                                    child_value
-                                                                    []
+                                                                    derived_types_module_19
+                                                                    [child_value]
                                                                     ok
                                                                     Public
                                                                 )
@@ -239,9 +235,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     child_value
@@ -371,9 +365,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_value

@@ -465,17 +465,22 @@ LineType determine_line_type(const unsigned char *pos)
         return LineType::EndOfFile;
     } else if (*pos == '\t') {
         pos++;
-        if (*pos == '\0') {
+        // Skip any additional whitespace after the leading tab so that a
+        // line containing only whitespace is treated as a blank line
+        // rather than a (broken) statement.
+        const unsigned char *p = pos;
+        while (*p == ' ' || *p == '\t') p++;
+        if (*p == '\0') {
             return LineType::EndOfFile;
+        } else if (*p == '\n' || (*p == '\r' && *(p+1) == '\n')) {
+            // Blank line (tab followed only by whitespace) => comment
+            return LineType::Comment;
+        } else if (is_digit(*pos)) {
+            // A continuation line after a tab
+            return LineType::ContinuationTab;
         } else {
-            if (is_digit(*pos)) {
-                // A continuation line after a tab
-                return LineType::ContinuationTab;
-            } else {
-                // A statement line after a tab
-                return LineType::StatementTab;
-            }
-
+            // A statement line after a tab
+            return LineType::StatementTab;
         }
     } else {
         while (*pos == ' ') {

@@ -79,9 +79,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -105,9 +103,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     interface_01
@@ -255,9 +251,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     a1
@@ -323,9 +317,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     a2

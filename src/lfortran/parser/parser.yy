@@ -555,6 +555,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_common_block> common_block_list_top
 %type <var_sym> common_block_start
 %type <var_sym> common_block_object
+%type <vec_namelist_group> namelist_group_list
+%type <var_sym> namelist_group_start
+%type <var_sym> namelist_group_object
 %type <vec_ast> data_set_list
 %type <ast> data_set
 %type <vec_ast> data_object_list
@@ -641,7 +644,7 @@ script_unit
     | implicit_statement
     | var_decl           %dprec 9
     | derived_type_decl
-    | union_type_decl 
+    | union_type_decl
     | enum_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
@@ -1206,8 +1209,8 @@ implicit_spec_list
   We are using kind_arg_list rather than letter_spec_list to avoid conflicts
   in the parser.  The kind_args are translated into letter_specs in the
   IMPLICIT_SPEC macro.
-*/		
-   
+*/
+
 implicit_spec
     : KW_INTEGER "(" kind_arg_list ")" "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Integer, $3, @$), $6, @$); }
@@ -1216,7 +1219,7 @@ implicit_spec
 	    WARN_INTEGERSTAR($3, @2);}
     | KW_INTEGER "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Integer, @$), $3, @$); }
-	    
+
     | KW_CHARACTER "(" kind_arg_list ")" "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE_KIND(Character, $3, @$), $6, @$); }
     | KW_CHARACTER "*" TK_INTEGER "(" kind_arg_list ")" {
@@ -1251,7 +1254,7 @@ implicit_spec
 	    WARN_COMPLEXSTAR($3, @2);}
     | KW_COMPLEX "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(Complex, @$), $3, @$); }
-	    
+
     | KW_DOUBLE KW_PRECISION "(" kind_arg_list ")" {
             $$ = IMPLICIT_SPEC(ATTR_TYPE(DoublePrecision, @$), $4, @$); }
     | KW_DOUBLE_PRECISION "(" kind_arg_list ")" {
@@ -1273,7 +1276,7 @@ implicit_spec
 implicit_none_spec_star
     : implicit_none_spec_star "," implicit_none_spec { $$ = $1; LIST_ADD($$, $3); }
     | implicit_none_spec { LIST_NEW($$); LIST_ADD($$, $1); }
-    | %empty { LIST_NEW($$); }	 
+    | %empty { LIST_NEW($$); }
     ;
 
 implicit_none_spec
@@ -1375,8 +1378,8 @@ var_decl
         LLOC(@$, @3); $$ = VAR_DECL3($1, $3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PARAMETER "(" named_constant_def_list ")" sep {
         LLOC(@$, @4); $$ = VAR_DECL_PARAMETER($3, TRIVIA_AFTER($5, @$), @$); }
-    | KW_NAMELIST "/" id "/" id_list sep {
-        LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
+    | KW_NAMELIST namelist_group_list sep {
+        LLOC(@$, @2); $$ = VAR_DECL_NAMELIST($2, TRIVIA_AFTER($3, @$), @$);}
     | KW_COMMON common_block_list_top sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
@@ -1402,6 +1405,25 @@ named_constant_def_list
 
 named_constant_def
     : id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
+    ;
+
+namelist_group_list
+    : namelist_group_start namelist_group_object {
+        NAMELIST_GROUP_1($$, $1, $2); }
+    | namelist_group_list "," namelist_group_object {
+        NAMELIST_GROUP_2($$, $1, $3); }
+    | namelist_group_list namelist_group_start namelist_group_object {
+        NAMELIST_GROUP_3($$, $1, $2, $3); }
+    | namelist_group_list "," namelist_group_start namelist_group_object {
+        NAMELIST_GROUP_3($$, $1, $3, $4); }
+    ;
+
+namelist_group_start
+    : "/" id "/" { $$ = VAR_SYM_NAME($2, None, @$); }
+    ;
+
+namelist_group_object
+    : id { $$ = VAR_SYM_NAME($1, None, @$); }
     ;
 
 common_block_list_top
@@ -1430,6 +1452,7 @@ common_block_object
 
 data_set_list
     : data_set_list "," data_set { $$ = $1; LIST_ADD($$, $3); }
+    | data_set_list data_set { $$ = $1; LIST_ADD($$, $2); }
     | data_set { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
@@ -1643,8 +1666,12 @@ var_sym_decl
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Arrow, @$); }
     | id "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_CODIM($1, $3.p, $3.n, None, @$); }
+    | id "[" coarray_comp_decl_list "]" "=" expr {
+            $$ = VAR_SYM_CODIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
     | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_DIM_CODIM($1, $3.p, $3.n, $6.p, $6.n, None, @$); }
+    | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" "=" expr {
+            $$ = VAR_SYM_DIM_CODIM_INIT($1, $3.p, $3.n, $6.p, $6.n, $9, Equal, @$); }
     | id "/" slash_init_list "/" {
             $$ = VAR_SYM_DIM_INIT($1, nullptr, 0,
                  SLASH_INIT_EXPR($3, @$), SlashInit, @$); }
@@ -2057,9 +2084,9 @@ case_statements
     ;
 
 case_statement
-    : KW_CASE "(" case_conditions ")" sep statements {
-            $$ = CASE_STMT($3, TRIVIA_AFTER($5, @$), $6, @$); }
-    | KW_CASE KW_DEFAULT sep statements { $$ = CASE_STMT_DEFAULT(TRIVIA_AFTER($3, @$), $4, @$); }
+    : KW_CASE "(" case_conditions ")" id_opt sep statements {
+            $$ = CASE_STMT($3, TRIVIA_AFTER($6, @$), $7, @$); }
+    | KW_CASE KW_DEFAULT id_opt sep statements { $$ = CASE_STMT_DEFAULT(TRIVIA_AFTER($4, @$), $5, @$); }
     ;
 
 case_conditions
@@ -2159,9 +2186,13 @@ concurrent_control_list
 
 concurrent_control
     : id "=" expr ":" expr {
-            $$ = CONCURRENT_CONTROL1($1, $3, $5,     @$); }
+            $$ = CONCURRENT_CONTROL1(nullptr, $1, $3, $5, @$); }
     | id "=" expr ":" expr ":" expr {
-            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, @$); }
+            $$ = CONCURRENT_CONTROL2(nullptr, $1, $3, $5, $7, @$); }
+    | declaration_type_spec "::" id "=" expr ":" expr {
+            $$ = CONCURRENT_CONTROL1($1, $3, $5, $7, @$); }
+    | declaration_type_spec "::" id "=" expr ":" expr ":" expr {
+            $$ = CONCURRENT_CONTROL2($1, $3, $5, $7, $9, @$); }
     ;
 
 concurrent_locality_star

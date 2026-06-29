@@ -65,6 +65,25 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
+static inline void set_stmt_name(stmt_t &stmt, char *name) {
+    switch (stmt.type) {
+        case stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
+        case stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
+        case stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
+        case stmtType::WhileLoop:         ((WhileLoop_t&)stmt).m_stmt_name = name; break;
+        case stmtType::ChangeTeam:        ((ChangeTeam_t&)stmt).m_stmt_name = name; break;
+        case stmtType::ForAll:            ((ForAll_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Select:            ((Select_t&)stmt).m_stmt_name = name; break;
+        case stmtType::SelectRank:        ((SelectRank_t&)stmt).m_stmt_name = name; break;
+        case stmtType::SelectType:        ((SelectType_t&)stmt).m_stmt_name = name; break;
+        case stmtType::Where:             ((Where_t&)stmt).m_stmt_name = name; break;
+        case stmtType::DoConcurrentLoop:  ((DoConcurrentLoop_t&)stmt).m_stmt_name = name; break;
+        default: LCOMPILERS_ASSERT_MSG(false, "Unknown statement type in set_stmt_name"); break;
+    }
+}
+
 static inline bool streql(const char *s1, const char *s2)
 {
 #if defined(_MSC_VER)
@@ -317,7 +336,7 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             down_cast<decl_attribute_t>(attr), \
             nullptr, None)
 
-#define ATTR_NAME(x, l) make_AttrNamelist_t \
+#define ATTR_NAME(x, l) make_AttrName_t \
             (p.m_a, l, name2char(x))
 
 #define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
@@ -375,23 +394,13 @@ decl_attribute_t** VAR_DECL2b(Allocator &al,
     return a;
 }
 
-decl_attribute_t** VAR_DECL_NAMELISTb(Allocator &al,
-        Location &loc,
-            char *name) {
+decl_attribute_t** VAR_DECL_NAMELISTb(Allocator &al, Location &loc,
+        namelist_group_t* groups, size_t n_groups) {
     Vec<decl_attribute_t*> v;
     v.reserve(al, 1);
-    ast_t* a = make_AttrNamelist_t(al, loc, name);
+    ast_t* a = make_AttrNamelist_t(al, loc, groups, n_groups);
     v.push_back(al, down_cast<decl_attribute_t>(a));
     return v.p;
-}
-
-var_sym_t* VAR_DECL_NAMELISTc(Allocator &al,
-            Vec<ast_t*> id_list) {
-    var_sym_t* a = al.allocate<var_sym_t>(id_list.size());
-    for (size_t i=0; i<id_list.size(); i++) {
-        a[i].m_name = name2char(id_list[i]);
-    }
-    return a;
 }
 
 decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
@@ -416,11 +425,11 @@ decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
         VAR_DECL2b(p.m_a, xattr0), 1, \
         varsym.p, varsym.n, trivia_cast(trivia))
 
-#define VAR_DECL_NAMELIST(id, id_list, trivia, l) \
+#define VAR_DECL_NAMELIST(groups, trivia, l) \
         make_Declaration_t(p.m_a, l, \
         nullptr, \
-        VAR_DECL_NAMELISTb(p.m_a, l, name2char(id)), 1, \
-        VAR_DECL_NAMELISTc(p.m_a, id_list), id_list.n, \
+        VAR_DECL_NAMELISTb(p.m_a, l, groups.p, groups.n), 1, \
+        nullptr, 0, \
         trivia_cast(trivia))
 
 #define VAR_DECL_PARAMETER(varsym, trivia, l) \
@@ -478,6 +487,36 @@ static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
 		       nullptr, \
 		       COMMON(p.m_a, l, blks.p, blks.n), 1, nullptr, 0, trivia_cast(trivia))
 
+static inline namelist_group_t *make_namelist_group(Allocator &al,
+        Location const &loc, char *name, Vec<var_sym_t> const &objects) {
+    namelist_group_t *r = al.allocate<namelist_group_t>(1);
+    r->loc = loc;
+    r->m_name = name;
+    r->m_objects = objects.p;
+    r->n_objects = objects.n;
+    return r;
+}
+
+#define NAMELIST_GROUP_1(out, name, object) \
+    LIST_NEW(out); \
+    Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+    LIST_NEW(v); PLIST_ADD(v, object); \
+    PLIST_ADD(out, make_namelist_group(p.m_a, name->loc, name->m_name, v));
+
+#define NAMELIST_GROUP_2(out, groups, object) \
+    out = groups; \
+    LCompilers::LFortran::AST::namelist_group_t last = out.back(); \
+    Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+    v.from_pointer_n(last.m_objects, last.n_objects); \
+    PLIST_ADD(v, object); \
+    out.back().m_objects = v.data(); \
+    out.back().n_objects = v.size();
+
+#define NAMELIST_GROUP_3(out, groups, name, object) \
+    out = groups; \
+    Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+    LIST_NEW(v); PLIST_ADD(v, object); \
+    PLIST_ADD(out, make_namelist_group(p.m_a, name->loc, name->m_name, v));
 
 static inline common_block_t *make_common_block(Allocator &al, Location const &loc,
         ast_t const *name, Vec<var_sym_t> const & varsym) {
@@ -702,6 +741,13 @@ static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<as
 #define VAR_SYM_DIM_CODIM(name, dim, n_dim, codim, n_codim, sym, loc) \
         VARSYM(p.m_a, loc, name2char(name), \
         dim, n_dim, codim, n_codim, nullptr, nullptr, sym, nullptr)
+#define VAR_SYM_CODIM_INIT(name, codim, n_codim, init, sym, loc) VARSYM(p.m_a, loc, \
+        name2char(name), nullptr, 0, codim, n_codim, nullptr, \
+        down_cast<expr_t>(init), sym, nullptr)
+#define VAR_SYM_DIM_CODIM_INIT(name, dim, n_dim, codim, n_codim, init, sym, loc) \
+        VARSYM(p.m_a, loc, name2char(name), \
+        dim, n_dim, codim, n_codim, nullptr, \
+        down_cast<expr_t>(init), sym, nullptr)
 #define VAR_SYM_SPEC(x, sym, loc) VARSYM(p.m_a, loc, \
         nullptr, nullptr, 0, nullptr, 0, nullptr, nullptr, sym, \
         down_cast<decl_attribute_t>(x))
@@ -923,11 +969,18 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
 {
-    std::string s_id = down_cast2<Name_t>(id)->m_id;
-    if (s_id == "MIN" ) {
+        std::string s_id = down_cast2<Name_t>(id)->m_id;
+        std::string s_lower = LCompilers::to_lower(s_id);
+        if (s_lower == "min" ) {
         return reduce_opType::ReduceMIN;
-    } else if (s_id == "MAX") {
+        } else if (s_lower == "max") {
         return reduce_opType::ReduceMAX;
+        } else if (s_lower == "iand") {
+        return reduce_opType::ReduceIAND;
+        } else if (s_lower == "ior") {
+        return reduce_opType::ReduceIOR;
+        } else if (s_lower == "ieor") {
+        return reduce_opType::ReduceIEOR;
     } else {
         diagnostics.add(LCompilers::diag::Diagnostic(
             "Unsupported operation in reduction",
@@ -1810,7 +1863,7 @@ return make_Program_t(al, a_loc,
 
 #define STMT_NAME(id_first, id_last, stmt) \
         stmt; \
-        ((If_t*)stmt)->m_stmt_name = name2char(id_first); \
+        set_stmt_name(*(stmt_t*)(stmt), name2char(id_first)); \
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
         if (LCompilers::to_lower(first) != LCompilers::to_lower(last)) { \
@@ -2162,10 +2215,18 @@ static inline void drop_trailing_matching_continue(
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
         EXPR(mask), down_cast<stmt_t>(assign), nullptr)
 
-#define CONCURRENT_CONTROL1(i, a, b, l) make_ConcurrentControl_t(p.m_a, l, \
+#define CONCURRENT_CONTROL1(t, i, a, b, l) \
+    make_ConcurrentControl_t(p.m_a, l, \
+        ((t) ? \
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
+            : nullptr), \
         name2char(i), EXPR(a), EXPR(b), nullptr)
 
-#define CONCURRENT_CONTROL2(i, a, b, c, l) make_ConcurrentControl_t(p.m_a, l, \
+#define CONCURRENT_CONTROL2(t, i, a, b, c, l) \
+    make_ConcurrentControl_t(p.m_a, l, \
+        ((t) ? \
+            LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_attribute_t>((LCompilers::LFortran::AST::ast_t*)(t)) \
+            : nullptr), \
         name2char(i), EXPR(a), EXPR(b), EXPR(c))
 
 

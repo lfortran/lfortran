@@ -34,35 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
-                                                ),
-                                            x:
-                                                (Variable
-                                                    4
-                                                    x
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    0
-                                                    []
-                                                    .false.
                                                 )
                                         })
                                     sub2
@@ -111,9 +83,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     f

@@ -41,9 +41,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -74,9 +72,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -107,9 +103,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     axpy
@@ -232,9 +226,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             b:
                                                                 (Variable
@@ -260,9 +252,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             op:
                                                                 (Variable
@@ -288,9 +278,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     plus
@@ -349,9 +337,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             times:
                                                 (Function
@@ -382,9 +368,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             b:
                                                                 (Variable
@@ -410,9 +394,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             op:
                                                                 (Variable
@@ -438,9 +420,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     times
@@ -499,9 +479,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             v:
                                                 (Variable
@@ -527,9 +505,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             w:
                                                 (Variable
@@ -555,9 +531,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     axpy_tmpl
@@ -608,9 +582,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             axpy:
                                                 (Function
@@ -639,9 +611,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -670,9 +640,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -701,9 +669,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     axpy
@@ -818,9 +784,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             sp:
                                                 (Variable
@@ -853,9 +817,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -884,9 +846,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -915,9 +875,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             ~add:
                                                 (CustomOperator
@@ -953,9 +911,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -979,9 +935,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -1005,9 +959,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     ~add_intrinsic
@@ -1088,9 +1040,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1114,9 +1064,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -1140,9 +1088,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     ~mul_intrinsic
@@ -1364,9 +1310,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1390,9 +1334,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             dp:
                                                 (Variable
@@ -1425,9 +1367,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             op:
                                                 (Variable
@@ -1451,9 +1391,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             sp:
                                                 (Variable
@@ -1486,9 +1424,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     my_add
@@ -1562,9 +1498,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             dp:
                                                 (Variable
@@ -1597,9 +1531,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             sp:
                                                 (Variable
@@ -1632,9 +1564,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -1663,9 +1593,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -1694,9 +1622,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     my_axpy
@@ -1807,9 +1733,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1833,9 +1757,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             op:
                                                 (Variable
@@ -1859,9 +1781,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             sp:
                                                 (Variable
@@ -1894,9 +1814,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     my_mul
@@ -1977,9 +1895,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             b:
                                                                 (Variable
@@ -2005,9 +1921,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             op:
                                                                 (Variable
@@ -2033,9 +1947,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     op
@@ -2094,9 +2006,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             u:
                                                 (Variable
@@ -2122,9 +2032,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             v:
                                                 (Variable
@@ -2150,9 +2058,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     op

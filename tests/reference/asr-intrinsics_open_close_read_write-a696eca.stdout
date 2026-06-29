@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             lfortran_iomsg:
                                 (Variable
@@ -55,9 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -81,9 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             msg:
                                 (Variable
@@ -113,9 +107,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -144,9 +136,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             q:
                                 (Variable
@@ -175,9 +165,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -201,9 +189,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             u_ptr:
                                 (Variable
@@ -229,9 +215,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -260,9 +244,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -291,9 +273,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     open_close_read_write
@@ -438,6 +418,7 @@
                         ()
                         ()
                         ()
+                        ()
                     )
                     (DoLoop
                         ()
@@ -487,6 +468,7 @@
                             ()
                             ()
                             ()
+                            ()
                         )]
                         []
                     )
@@ -513,6 +495,7 @@
                             "old"
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -620,6 +603,7 @@
                             ()
                             ()
                             .true.
+                            ()
                             ()
                             ()
                             ()

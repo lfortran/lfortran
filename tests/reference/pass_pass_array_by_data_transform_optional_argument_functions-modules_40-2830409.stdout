@@ -55,9 +55,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -86,9 +84,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             de:
                                                                 (Variable
@@ -117,9 +113,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -134,7 +128,7 @@
                                                                         (Array
                                                                             (StructType
                                                                                 [(Allocatable
-                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                    (String 4 () DeferredLength DescriptorString)
                                                                                 )]
                                                                                 []
                                                                                 .true.
@@ -157,9 +151,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -183,9 +175,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     fill_stack
@@ -201,7 +191,7 @@
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                        (String 4 () DeferredLength DescriptorString)
                                                                     )]
                                                                     []
                                                                     .true.
@@ -297,9 +287,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -323,9 +311,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -340,7 +326,7 @@
                                                                         (Array
                                                                             (StructType
                                                                                 [(Allocatable
-                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                    (String 4 () DeferredLength DescriptorString)
                                                                                 )]
                                                                                 []
                                                                                 .true.
@@ -363,9 +349,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     resize
@@ -374,7 +358,7 @@
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                        (String 4 () DeferredLength DescriptorString)
                                                                     )]
                                                                     []
                                                                     .true.
@@ -462,9 +446,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             toml_key:
                                 (Struct
@@ -481,7 +463,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
+                                                        (String 4 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -495,15 +477,13 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     toml_key
                                     (StructType
                                         [(Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
+                                            (String 4 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.

@@ -12,8 +12,8 @@
                                     5
                                     1_custom_int_value
                                     3 value
-                                    custom_int
-                                    []
+                                    operator_overloading_08_mod1
+                                    [custom_int]
                                     value
                                     Public
                                 ),
@@ -44,9 +44,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             custom_div:
                                 (ExternalSymbol
@@ -140,8 +138,8 @@
                                                     4
                                                     1_custom_int_value
                                                     3 value
-                                                    custom_int
-                                                    []
+                                                    operator_overloading_08_mod1
+                                                    [custom_int]
                                                     value
                                                     Public
                                                 ),
@@ -172,9 +170,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -198,9 +194,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -229,9 +223,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     custom_div
@@ -325,9 +317,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     custom_int

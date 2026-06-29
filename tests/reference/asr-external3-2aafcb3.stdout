@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -55,67 +53,13 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             bcorr:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            a:
-                                                (Variable
-                                                    5
-                                                    a
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    0
-                                                    []
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    5
-                                                    b
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    0
-                                                    []
-                                                    .false.
-                                                ),
                                             bcorr_arg_0:
                                                 (Variable
                                                     5
@@ -138,9 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             bcorr_arg_1:
                                                 (Variable
@@ -164,9 +106,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             bcorr_return_var_name:
                                                 (Variable
@@ -190,9 +130,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     bcorr
@@ -243,9 +181,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             exp:
                                 (Variable
@@ -269,9 +205,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     brcmp1

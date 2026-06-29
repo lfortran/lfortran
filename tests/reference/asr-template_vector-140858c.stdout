@@ -125,9 +125,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -151,9 +149,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -182,9 +178,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_push_back
@@ -329,9 +323,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -355,9 +347,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -386,9 +376,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -419,9 +407,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_resize
@@ -679,9 +665,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -727,9 +711,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     intvector
@@ -779,9 +761,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     main
@@ -913,9 +893,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -939,9 +917,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -980,9 +956,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     push_back
@@ -1143,9 +1117,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1169,9 +1141,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -1210,9 +1180,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1245,9 +1213,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     resize
@@ -1521,9 +1487,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             vector:
                                                 (Struct
@@ -1561,9 +1525,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -1609,9 +1571,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     vector

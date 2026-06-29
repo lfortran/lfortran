@@ -34,9 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -60,9 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     add_z
@@ -133,9 +129,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -159,9 +153,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     fun
@@ -210,9 +202,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -236,9 +226,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     apply
@@ -315,9 +303,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     closuretest

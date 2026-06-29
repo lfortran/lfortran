@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
@@ -270,13 +271,13 @@ public:
                     throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
                 }
                 std::string struct_name = ASRUtils::symbol_name(type_decl);
+                if (struct_name == "~assumed_type") {
+                    r = "type(*)";
+                    break;
+                }
                 if (ASRUtils::is_unlimited_polymorphic_type(type_decl) ||
                         struct_name == "~unlimited_polymorphic_type") {
                     r = "class(*)";
-                    break;
-                }
-                if (struct_name == "~assumed_type") {
-                    r = "type(*)";
                     break;
                 }
                 r = "type(";
@@ -362,6 +363,30 @@ public:
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
+            }
+        }
+
+        // Emit Struct/Enum/Union definitions from Translational Unit scope
+        std::map<std::string, std::vector<std::string>> struct_deps;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_deps[item.first] = struct_deps_vec;
+            }
+        }
+        if (!struct_deps.empty()) {
+            std::vector<std::string> tu_struct_deps = ASRUtils::order_deps(struct_deps);
+            for (auto &item : tu_struct_deps) {
+                ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+                visit_symbol(*struct_sym);
+                r += src;
+                r += "\n";
             }
         }
 
@@ -560,6 +585,13 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+        bool wrap_in_interface = false;
+        if (type->m_deftype == ASR::deftypeType::Interface && !is_interface) {
+            wrap_in_interface = true;
+            r += "interface\n";
+            inc_indent();
+            r += indent;
+        }
         current_pass_self_args.clear();
         SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
             (ASR::symbol_t*) &x);
@@ -724,6 +756,11 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        if (wrap_in_interface) {
+            dec_indent();
+            r += indent;
+            r += "end interface\n";
+        }
         current_pass_self_args.clear();
         src = r;
     }
@@ -1772,10 +1809,13 @@ public:
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
         size_t start_idx = is_method ? 1 : 0;
+        bool first_arg = true;
         for (size_t i = start_idx; i < x.n_args; i ++) {
+            if (!x.m_args[i].m_value) continue;
+            if (!first_arg) r += ", ";
             visit_expr(*x.m_args[i].m_value);
             r += src;
-            if (i < x.n_args-1) r += ", ";
+            first_arg = false;
         }
 
         r += ")";
@@ -2193,9 +2233,10 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(Abort, "abort")
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
-                    + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)
+                    + ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id)
                     + "` is not implemented");
             }
         }
@@ -2907,6 +2948,14 @@ public:
         r += "%";
         r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
         src = r;
+    }
+    
+    void visit_CoarrayRef(const ASR::CoarrayRef_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_expr(*x.m_var);
     }
 
     // void visit_StructStaticMember(const ASR::StructStaticMember_t &x) {}

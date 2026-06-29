@@ -82,9 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     default_behavior
@@ -125,9 +123,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -153,9 +149,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -181,9 +175,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     swap
@@ -260,9 +252,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     swap
@@ -304,9 +294,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -330,9 +318,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -356,9 +342,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 )
                                                         })
                                                     __instantiated_swap
@@ -434,9 +418,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     test_reverse

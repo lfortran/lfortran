@@ -40,14 +40,14 @@ std::string static inline uint64_to_string(uint64_t i) {
 
 std::string static inline uintptr_to_string(uintptr_t i) {
     char bytes[8];
-    bytes[0] = (i >> 56) & 0xFF;
-    bytes[1] = (i >> 48) & 0xFF;
-    bytes[2] = (i >> 40) & 0xFF;
-    bytes[3] = (i >> 32) & 0xFF;
-    bytes[4] = (i >> 24) & 0xFF;
-    bytes[5] = (i >> 16) & 0xFF;
-    bytes[6] = (i >>  8) & 0xFF;
-    bytes[7] =  i        & 0xFF;
+    bytes[0] = (((uint64_t)i) >> 56) & 0xFF;
+    bytes[1] = (((uint64_t)i) >> 48) & 0xFF;
+    bytes[2] = (((uint64_t)i) >> 40) & 0xFF;
+    bytes[3] = (((uint64_t)i) >> 32) & 0xFF;
+    bytes[4] = (((uint64_t)i) >> 24) & 0xFF;
+    bytes[5] = (((uint64_t)i) >> 16) & 0xFF;
+    bytes[6] = (((uint64_t)i) >>  8) & 0xFF;
+    bytes[7] =  ((uint64_t)i)        & 0xFF;
     return std::string(bytes, 8);
 }
 
@@ -88,14 +88,15 @@ uintptr_t static inline string_to_uintptr(const char *s) {
     // The cast from signed char to unsigned char is important,
     // otherwise the signed char shifts return wrong value for negative numbers
     const uint8_t *p = (const unsigned char*)s;
-    return (((uintptr_t)p[0]) << 56) |
-           (((uintptr_t)p[1]) << 48) |
-           (((uintptr_t)p[2]) << 40) |
-           (((uintptr_t)p[3]) << 32) |
-           (((uintptr_t)p[4]) << 24) |
-           (((uintptr_t)p[5]) << 16) |
-           (((uintptr_t)p[6]) <<  8) |
-                       p[7];
+    return (uintptr_t)(
+           (((uint64_t)p[0]) << 56) |
+           (((uint64_t)p[1]) << 48) |
+           (((uint64_t)p[2]) << 40) |
+           (((uint64_t)p[3]) << 32) |
+           (((uint64_t)p[4]) << 24) |
+           (((uint64_t)p[5]) << 16) |
+           (((uint64_t)p[6]) <<  8) |
+                       p[7]);
 }
 
 uint16_t static inline string_to_uint16(const std::string &s) {

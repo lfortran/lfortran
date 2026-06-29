@@ -256,7 +256,7 @@ See [how to run tests](#Tests) to make sure all tests pass
 
 To install the Jupyter kernel, install the following Conda packages also:
 ```
-conda install xeus=5.1.0 xeus-zmq=3.0.0 nlohmann_json
+conda install xeus=6.0.0 xeus-zmq=4.0.0 nlohmann_json
 ```
 and enable the kernel by `-DWITH_XEUS=yes` and install into `$CONDA_PREFIX`. For
 example:
