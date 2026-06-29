@@ -5846,7 +5846,11 @@ namespace StringConcat {
                 return_type = b.String(b.i64(phys_s0 + phys_s1), ASR::ExpressionLength);
                 value = eval_StringConcat(al, loc, return_type, args, diag);
             } else {
-                // Array parameter: evaluate element-by-element into an ArrayConstant
+                // Array parameter: evaluate element-by-element into an ArrayConstant.
+                // Both forms are supported: one operand an array and the other a
+                // scalar (the scalar broadcasts), and both operands arrays of the
+                // same size (concatenated element-wise).
+                bool both_arrays = arg0_is_array && arg1_is_array;
                 ASR::expr_t* arr_arg  = arg0_is_array ? m_args[0] : m_args[1];
                 ASR::expr_t* scl_arg  = arg0_is_array ? m_args[1] : m_args[0];
 
@@ -5858,22 +5862,51 @@ namespace StringConcat {
                 ASRUtils::extract_value(arr_str_t->m_len, arr_elem_len);
                 char* arr_data = (char*)arr_const->m_data;
 
-                ASR::expr_t* scl_val = ASRUtils::expr_value(scl_arg);
-                int64_t scl_len;
-                extract_value(ASRUtils::expr_value(get_string_type(scl_val)->m_len), scl_len);
+                // For the both-arrays case the second operand is itself an array;
+                // extract its element type/length so each pair of elements can be
+                // concatenated. For the array/scalar case `scl_val` is a scalar.
+                ASR::ArrayConstant_t* arr1_const = nullptr;
+                ASR::ttype_t* arr1_elem_type = nullptr;
+                int64_t arr1_elem_len = 0;
+                char* arr1_data = nullptr;
+                ASR::expr_t* scl_val = nullptr;
+                int64_t scl_len = 0;
+                if (both_arrays) {
+                    arr1_const = ASR::down_cast<ASR::ArrayConstant_t>(
+                        ASRUtils::expr_value(scl_arg));
+                    arr1_elem_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(scl_arg));
+                    ASR::String_t* arr1_str_t = ASR::down_cast<ASR::String_t>(arr1_elem_type);
+                    ASRUtils::extract_value(arr1_str_t->m_len, arr1_elem_len);
+                    arr1_data = (char*)arr1_const->m_data;
+                } else {
+                    scl_val = ASRUtils::expr_value(scl_arg);
+                    extract_value(ASRUtils::expr_value(get_string_type(scl_val)->m_len), scl_len);
+                }
 
-                int64_t result_elem_len = arr_elem_len + scl_len;
+                int64_t result_elem_len = arr_elem_len + (both_arrays ? arr1_elem_len : scl_len);
                 size_t n = ASRUtils::get_constant_ArrayConstant_size(arr_const);
                 char* result_buf = al.allocate<char>(n * result_elem_len);
                 for (size_t i = 0; i < n; i++) {
-                    char* elem_buf = al.allocate<char>(arr_elem_len + 1);
-                    memcpy(elem_buf, arr_data + i * arr_elem_len, arr_elem_len);
-                    elem_buf[arr_elem_len] = '\0';
-                    ASR::expr_t* arr_elem_const = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                        al, loc, elem_buf, arr_elem_type));
+                    char* elem0_buf = al.allocate<char>(arr_elem_len + 1);
+                    memcpy(elem0_buf, arr_data + i * arr_elem_len, arr_elem_len);
+                    elem0_buf[arr_elem_len] = '\0';
+                    ASR::expr_t* left_elem = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, loc, elem0_buf, arr_elem_type));
+
+                    ASR::expr_t* right_elem;
+                    if (both_arrays) {
+                        char* elem1_buf = al.allocate<char>(arr1_elem_len + 1);
+                        memcpy(elem1_buf, arr1_data + i * arr1_elem_len, arr1_elem_len);
+                        elem1_buf[arr1_elem_len] = '\0';
+                        right_elem = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                            al, loc, elem1_buf, arr1_elem_type));
+                    } else {
+                        right_elem = scl_val;
+                    }
+
                     Vec<ASR::expr_t*> elem_args; elem_args.reserve(al, 2);
-                    elem_args.push_back(al, arg0_is_array ? arr_elem_const : scl_val);
-                    elem_args.push_back(al, arg0_is_array ? scl_val : arr_elem_const);
+                    elem_args.push_back(al, arg0_is_array ? left_elem : right_elem);
+                    elem_args.push_back(al, arg0_is_array ? right_elem : left_elem);
                     ASR::ttype_t* res_type = b.String(b.i64(result_elem_len), ASR::ExpressionLength);
                     ASR::StringConstant_t* res_i = ASR::down_cast<ASR::StringConstant_t>(
                         eval_StringConcat(al, loc, res_type, elem_args, diag));

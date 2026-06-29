@@ -5082,7 +5082,20 @@ public:
     }
 
     ASR::expr_t* adjust_array_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, Allocator& al) {
-        ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        // `value` may be a constant array directly, or an expression (e.g. a
+        // StringConcat of two array constructors) whose compile-time value is a
+        // constant array. Resolve to the underlying ArrayConstant value so its
+        // elements can be length-adjusted; if there is no constant value there is
+        // nothing to adjust at compile time, so return the expression unchanged.
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            ASR::expr_t* value_const = ASRUtils::expr_value(value);
+            if (!value_const || !ASR::is_a<ASR::ArrayConstant_t>(*value_const)) {
+                return value;
+            }
+        }
+        ASR::ArrayConstant_t* array_constant = ASR::is_a<ASR::ArrayConstant_t>(*value)
+            ? ASR::down_cast<ASR::ArrayConstant_t>(value)
+            : ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(value));
         Vec<ASR::expr_t*> body;
         size_t array_size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
 
