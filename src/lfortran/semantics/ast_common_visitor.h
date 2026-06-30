@@ -1770,6 +1770,7 @@ template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
+    std::map<std::string, Location> bindc_names;
     std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
@@ -7306,6 +7307,9 @@ public:
                         } else if (AST::is_a<AST::AttrBind_t>(*a)) {
                             AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
                             extract_bind(attr_bd, s_abi, bindc_name, diag);
+                            if (bindc_name && bindc_name[0] != '\0') {
+                                bindc_names[bindc_name] = s.loc;
+                            }
                         } else if (AST::is_a<AST::AttrPass_t>(*a)) {
                             AST::AttrPass_t *ap = AST::down_cast<AST::AttrPass_t>(a);
                             if (ap->m_name) {

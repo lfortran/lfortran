@@ -1355,6 +1355,20 @@ public:
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
+        if (bindc_name && bindc_name[0] != '\0') {
+            auto previous = bindc_names.find(bindc_name);
+            if (previous != bindc_names.end()) {
+                diag.add(diag::Diagnostic(
+                    "global binding name '" + std::string(bindc_name)
+                        + "' is already in use",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("first declaration", {previous->second}),
+                        diag::Label("conflicting declaration",
+                            {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            bindc_names[bindc_name] = x.base.base.loc;
+        }
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
