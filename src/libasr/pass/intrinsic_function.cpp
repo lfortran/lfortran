@@ -10,7 +10,6 @@
 
 #include <vector>
 
-
 namespace LCompilers {
 
 /*
@@ -34,6 +33,41 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     bool& in_debugcheck;
     bool& in_ttype;
     int index_kind;
+
+    ASR::ttype_t* sanitize_type_for_global_scope(Allocator& al, ASR::ttype_t* t) {
+        if (!ASRUtils::is_array(t)) {
+            return t;
+        }
+
+        ASR::dimension_t* m_dims;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
+        
+        Vec<ASR::dimension_t> new_dims;
+        new_dims.reserve(al, n_dims);
+        
+        for (int i = 0; i < n_dims; i++) {
+            ASR::dimension_t dim;
+            dim.loc = m_dims[i].loc;
+            
+            if (m_dims[i].m_start) {
+                ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
+                dim.m_start = start_val ? start_val : m_dims[i].m_start;
+            } else {
+                dim.m_start = nullptr;
+            }
+    
+            if (m_dims[i].m_length) {
+                ASR::expr_t* length_val = ASRUtils::expr_value(m_dims[i].m_length);
+                dim.m_length = length_val ? length_val : m_dims[i].m_length;
+            } else {
+                dim.m_length = nullptr;
+            }
+            
+            new_dims.push_back(al, dim);
+        }
+        
+        return ASRUtils::duplicate_type(al, t, &new_dims);
+    }
 
     public:
 
@@ -75,10 +109,14 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
+            // Future-proofing: Sanitize elemental arguments too
+            ASR::ttype_t* safe_type = sanitize_type_for_global_scope(al, ASRUtils::expr_type(x->m_args[i]));
+            arg_types.push_back(al, safe_type);
         }
         ASR::ttype_t* type = nullptr;
-        type = ASRUtils::extract_type(x->m_type);
+        // Sanitize the return type
+        type = sanitize_type_for_global_scope(al, ASRUtils::extract_type(x->m_type));
+        
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             global_scope, arg_types, type, new_args, x->m_overload_id, index_kind);
         if (current_expr_) {
@@ -113,13 +151,21 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         if( instantiate_function == nullptr ) {
             return ;
         }
+        
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
+            // Sanitize the argument type to prevent local scope variables from leaking
+            ASR::ttype_t* safe_type = sanitize_type_for_global_scope(al, ASRUtils::expr_type(x->m_args[i]));
+            arg_types.push_back(al, safe_type);
         }
+        
+        // Also sanitize the return type
+        ASR::ttype_t* safe_return_type = sanitize_type_for_global_scope(al, x->m_type);
+
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
-            global_scope, arg_types, x->m_type, new_args, x->m_overload_id, index_kind);
+            global_scope, arg_types, safe_return_type, new_args, x->m_overload_id, index_kind);
+            
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
         bool condition = ASR::is_a<ASR::FunctionCall_t>(*func_call);
@@ -299,22 +345,6 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             return;
         }
 
-        ASR::expr_t* target_var = this->result_var_;
-        bool is_param = false;
-        if (ASR::is_a<ASR::Var_t>(*target_var)) {
-            ASR::Variable_t* v = ASRUtils::EXPR2VAR(target_var);
-            if (v->m_storage == ASR::storage_typeType::Parameter) {
-                is_param = true;
-            }
-        }
-
-        if (is_param) {
-            ASR::ttype_t* target_type = ASRUtils::expr_type(target_var);
-            target_var = PassUtils::create_var(++result_counter,
-                                        "_param_init_temp",
-                                        x->base.base.loc, target_type, al, current_scope);
-        }
-
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, x->n_args + 1);
         for( size_t i = 0; i < x->n_args; i++ ) {
@@ -324,9 +354,9 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             new_args.push_back(al, new_arg);
         }
         ASR::call_arg_t new_arg;
-        LCOMPILERS_ASSERT(target_var)
-        new_arg.loc = target_var->base.loc;
-        new_arg.m_value = target_var;
+        LCOMPILERS_ASSERT(this->result_var_)
+        new_arg.loc = this->result_var_->base.loc;
+        new_arg.m_value = this->result_var_;
         new_args.push_back(al, new_arg);
 
 
@@ -334,12 +364,6 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
             new_args.size(), x->m_dt, nullptr, false));
         pass_result.push_back(al, subrout_call);
-
-        if (is_param) {
-            ASR::stmt_t* param_assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false));
-            pass_result.push_back(al, param_assign);
-        }
     }
 };
 
@@ -424,6 +448,5 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }
-
 
 } // namespace LCompilers
