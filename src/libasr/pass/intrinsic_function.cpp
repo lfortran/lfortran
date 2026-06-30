@@ -10,7 +10,6 @@
 
 #include <vector>
 
-
 namespace LCompilers {
 
 /*
@@ -35,8 +34,8 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     bool& in_ttype;
     int index_kind;
 
-    // Only allow pure integer constants to pass. Otherwise, convert to assumed-shape.
-    ASR::ttype_t* sanitize_type_for_global_scope(Allocator& al, ASR::ttype_t* t) {
+    // Helper strictly for sanitizing matmul to prevent local scope leakage into global instantiation
+    ASR::ttype_t* sanitize_matmul_type(Allocator& al, ASR::ttype_t* t) {
         if (!ASRUtils::is_array(t)) {
             return t;
         }
@@ -51,6 +50,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             ASR::dimension_t dim;
             dim.loc = m_dims[i].loc;
             
+            // Only allow pure integer constants. Otherwise, strip to assumed-shape.
             dim.m_start = nullptr;
             if (m_dims[i].m_start) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*(m_dims[i].m_start))) {
@@ -101,11 +101,6 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             arg0.m_value = x->m_args[i];
             new_args.push_back(al, arg0);
         }
-        // TODO: currently we always instantiate a new function.
-        // Rather we should reuse the old instantiation if it has
-        // exactly the same arguments. For that we could use the
-        // overload_id, and uniquely encode the argument types.
-        // We could maintain a mapping of type -> id and look it up.
 
         ASRUtils::impl_function instantiate_function =
             ASRUtils::IntrinsicElementalFunctionRegistry::get_instantiate_function(x->m_intrinsic_id);
@@ -142,12 +137,6 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             new_args.push_back(al, arg0);
         }
 
-        // TODO: currently we always instantiate a new function.
-        // Rather we should reuse the old instantiation if it has
-        // exactly the same arguments. For that we could use the
-        // overload_id, and uniquely encode the argument types.
-        // We could maintain a mapping of type -> id and look it up.
-
         ASRUtils::impl_function instantiate_function =
             ASRUtils::IntrinsicArrayFunctionRegistry::get_instantiate_function(x->m_arr_intrinsic_id);
         if( instantiate_function == nullptr ) {
@@ -157,16 +146,22 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            // Apply strict sanitization to all array intrinsic arguments
-            ASR::ttype_t* safe_type = sanitize_type_for_global_scope(al, ASRUtils::expr_type(x->m_args[i]));
-            arg_types.push_back(al, safe_type);
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(x->m_args[i]);
+            // Surgically apply sanitization ONLY to matmul
+            if (intrinsic_name_ == "matmul") {
+                arg_type = sanitize_matmul_type(al, arg_type);
+            }
+            arg_types.push_back(al, arg_type);
         }
         
-        // Also apply strict sanitization to the return type
-        ASR::ttype_t* safe_return_type = sanitize_type_for_global_scope(al, x->m_type);
+        ASR::ttype_t* return_type = x->m_type;
+        // Ensure the return type of matmul is also sanitized
+        if (intrinsic_name_ == "matmul") {
+            return_type = sanitize_matmul_type(al, return_type);
+        }
 
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
-            global_scope, arg_types, safe_return_type, new_args, x->m_overload_id, index_kind);
+            global_scope, arg_types, return_type, new_args, x->m_overload_id, index_kind);
             
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
