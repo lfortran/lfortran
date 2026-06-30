@@ -493,12 +493,11 @@ class PRIFInterface {
             if (ASR::is_a<ASR::Var_t>(*expr)) {
                 ASR::symbol_t *var_sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
                 ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(var_sym);
-                std::string orig_name = ASRUtils::symbol_name(orig_sym);
-                std::string hname = orig_name + "__coarray_handle";
-                SymbolTable *orig_scope = ASRUtils::symbol_parent_symtab(orig_sym);
-                ASR::symbol_t *hsym_orig = orig_scope->get_symbol(hname);
-                LCOMPILERS_ASSERT_MSG(hsym_orig, "Coarray variable used before prif_allocate_coarray initialization");
                 
+                auto companions = get_coarray_companions(orig_sym);
+                ASR::symbol_t *hsym_orig = companions.first;
+                
+                SymbolTable *orig_scope = ASRUtils::symbol_parent_symtab(hsym_orig);
                 SymbolTable *current_scope = ASRUtils::symbol_parent_symtab(var_sym);
                 ASR::symbol_t *hsym_use = get_symbol_in_scope(orig_scope, current_scope, hsym_orig, loc);
                 return ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
@@ -584,8 +583,33 @@ class PRIFInterface {
         };
         Vec<SavedCoarray> saved_coarrays;
 
+        std::map<ASR::symbol_t*, std::pair<ASR::symbol_t*, ASR::symbol_t*>> coarray_companions;
+
+        std::pair<ASR::symbol_t*, ASR::symbol_t*> get_coarray_companions(ASR::symbol_t *sym) {
+            auto it = coarray_companions.find(sym);
+            if (it != coarray_companions.end()) {
+                return it->second;
+            }
+            ASR::symbol_t *orig_sym = ASRUtils::symbol_get_past_external(sym);
+            it = coarray_companions.find(orig_sym);
+            if (it != coarray_companions.end()) {
+                return it->second;
+            }
+            std::string vname = ASRUtils::symbol_name(orig_sym);
+            SymbolTable *orig_scope = ASRUtils::symbol_parent_symtab(orig_sym);
+            std::string hname = vname + "__coarray_handle";
+            std::string dname = vname + "__coarray_data";
+            ASR::symbol_t *hsym = orig_scope->get_symbol(hname);
+            ASR::symbol_t *dsym = orig_scope->get_symbol(dname);
+            LCOMPILERS_ASSERT_MSG(hsym && dsym, "Coarray companion variables not found");
+            coarray_companions[sym] = {hsym, dsym};
+            return {hsym, dsym};
+        }
+
         PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_)
-            : al(al_), unit(unit_) {}
+            : al(al_), unit(unit_) {
+                saved_coarrays.reserve(al, 0);
+            }
 
         std::string get_mangled_name(const std::string& module_name, const std::string& symbol_name) {
             return "__module_" + module_name + "_" + symbol_name;
@@ -1118,7 +1142,7 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
         
-        void declare_coarray_companions(SymbolTable *scope, const Location &loc, const std::string &parent_name) {
+        void declare_coarray_companions(SymbolTable *scope, const Location &loc) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *cptr = b.CPtr();
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
@@ -1140,10 +1164,12 @@ class PRIFInterface {
                 std::string hname = vname + "__coarray_handle";
                 std::string dname = vname + "__coarray_data";
 
-                if (is_save && scope != unit.m_symtab) {
+                bool is_module = (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner)));
+
+                if (is_save && scope != unit.m_symtab && !is_module) {
                     companion_scope = unit.m_symtab;
-                    hname = parent_name + "_" + vname + "__coarray_handle";
-                    dname = parent_name + "_" + vname + "__coarray_data";
+                    hname = companion_scope->get_unique_name(vname + "__coarray_handle");
+                    dname = companion_scope->get_unique_name(vname + "__coarray_data");
                 }
 
                 ASR::ttype_t *ht = ASRUtils::make_StructType_t_util(al, loc, handle_struct, true);
@@ -1156,6 +1182,8 @@ class PRIFInterface {
                     companion_scope, loc, dname, cptr, ASR::intentType::Local, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Required, false);
+
+                coarray_companions[sym] = {handle_sym, data_sym};
 
                 if (is_save) {
                     SavedCoarray sc;
@@ -1272,27 +1300,18 @@ class PRIFInterface {
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
                 if (var->n_codims == 0) continue;
 
+                auto companions = get_coarray_companions(sym);
+                ASR::symbol_t *hsym_orig = companions.first;
+                ASR::symbol_t *dsym_orig = companions.second;
+
                 if (var->m_storage == ASR::storage_typeType::Save) {
-                    // For saved coarrays, the companion variables live in the TU
-                    // global scope with a mangled name. Look them up by naming
-                    // convention so this works across separate compilation units.
-                    std::string parent_name = "";
-                    if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-                        parent_name = ASRUtils::symbol_name(
-                            ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
-                    }
-                    std::string vname = var->m_name;
-                    std::string dname = parent_name + "_" + vname + "__coarray_data";
-                    ASR::symbol_t *dsym_orig = unit.m_symtab->get_symbol(dname);
-                    if (dsym_orig) {
-                        ASR::symbol_t *dsym_use = get_symbol_in_scope(unit.m_symtab, body_scope, dsym_orig, loc);
-                        ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
-                        ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
-                        ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
-                        ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                            ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, nullptr, nullptr));
-                        new_body.push_back(al, cfp_stmt);
-                    }
+                    ASR::symbol_t *dsym_use = get_symbol_in_scope(ASRUtils::symbol_parent_symtab(dsym_orig), body_scope, dsym_orig, loc);
+                    ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
+                    ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
+                    ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
+                    ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
+                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, nullptr, nullptr));
+                    new_body.push_back(al, cfp_stmt);
                     continue;
                 }
 
@@ -1302,16 +1321,9 @@ class PRIFInterface {
                     alloc_sub = get_or_create_prif_allocate_coarray_sub(loc);
                     initialized = true;
                 }
-                std::string vname = var->m_name;
-                std::string hname = vname + "__coarray_handle";
-                std::string dname = vname + "__coarray_data";
 
-                ASR::symbol_t *hsym_orig = scope->get_symbol(hname);
-                ASR::symbol_t *dsym_orig = scope->get_symbol(dname);
-                LCOMPILERS_ASSERT(hsym_orig && dsym_orig);
-
-                ASR::symbol_t *hsym_use = get_symbol_in_scope(scope, body_scope, hsym_orig, loc);
-                ASR::symbol_t *dsym_use = get_symbol_in_scope(scope, body_scope, dsym_orig, loc);
+                ASR::symbol_t *hsym_use = get_symbol_in_scope(ASRUtils::symbol_parent_symtab(hsym_orig), body_scope, hsym_orig, loc);
+                ASR::symbol_t *dsym_use = get_symbol_in_scope(ASRUtils::symbol_parent_symtab(dsym_orig), body_scope, dsym_orig, loc);
                 ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
 
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
@@ -1814,8 +1826,8 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
 // before any allocation or lookup is performed.
 class CoarrayCompanionVisitor : public ASR::BaseWalkVisitor<CoarrayCompanionVisitor> {
     private:
-        void process_scope(SymbolTable *symtab, const Location &loc, const std::string &parent_name) {
-            prif.declare_coarray_companions(symtab, loc, parent_name);
+        void process_scope(SymbolTable *symtab, const Location &loc) {
+            prif.declare_coarray_companions(symtab, loc);
             for (auto &item : symtab->get_scope()) {
                 visit_symbol(*item.second);
             }
@@ -1827,15 +1839,15 @@ class CoarrayCompanionVisitor : public ASR::BaseWalkVisitor<CoarrayCompanionVisi
             : prif(prif_) {}
 
         void visit_Module(const ASR::Module_t &x) {
-            process_scope(x.m_symtab, x.base.base.loc, x.m_name);
+            process_scope(x.m_symtab, x.base.base.loc);
         }
 
         void visit_Program(const ASR::Program_t &x) {
-            process_scope(x.m_symtab, x.base.base.loc, x.m_name);
+            process_scope(x.m_symtab, x.base.base.loc);
         }
 
         void visit_Function(const ASR::Function_t &x) {
-            process_scope(x.m_symtab, x.base.base.loc, x.m_name);
+            process_scope(x.m_symtab, x.base.base.loc);
         }
 };
 
