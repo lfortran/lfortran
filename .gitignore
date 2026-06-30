@@ -252,3 +252,4 @@ build.ninja
 doc/man/lfortran.1
 !doc/src/javascripts/*.js
 !pass_array_by_data_*.f90
+build_conda/
