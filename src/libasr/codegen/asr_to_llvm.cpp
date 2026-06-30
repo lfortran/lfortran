@@ -4036,6 +4036,35 @@ public:
                         llvm::cast<llvm::PointerType>(ptr_type)));
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::StorageSize: {
+                ASR::expr_t* arg_expr = x.m_args[0];
+                ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_expr);
+                
+                 ASR::ttype_t* base_type = ASRUtils::extract_type(arg_type);
+
+                if (ASRUtils::is_character(*base_type)) {
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                        al, x.base.base.loc, arg_expr, int_type, nullptr));
+
+                    this->visit_expr(*str_len_expr);
+                    llvm::Value* str_len = tmp;
+
+                    int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                    llvm::Type* dest_type = llvm_utils->getIntType(return_kind);
+                    
+                    if (str_len->getType() != dest_type) {
+                        str_len = builder->CreateIntCast(str_len, dest_type, /*isSigned=*/true);
+                    }
+
+                    llvm::Value* bits_per_byte = llvm::ConstantInt::get(dest_type, 8);
+                    tmp = builder->CreateMul(str_len, bits_per_byte, "storage_size_bits");
+
+                } else {
+                    throw CodeGenError("Runtime storage_size for this type is not yet implemented", x.base.base.loc);
+                }
+                break;
+            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
