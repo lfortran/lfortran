@@ -34,45 +34,33 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     bool& in_ttype;
     int index_kind;
 
-    // Helper strictly for sanitizing matmul to prevent local scope leakage into global instantiation
-    ASR::ttype_t* sanitize_matmul_type(Allocator& al, ASR::ttype_t* t) {
-        if (!ASRUtils::is_array(t)) {
-            return t;
-        }
-
+    // Wraps an array in a generic ArraySection (e.g., `ap(:,:)`) to strip explicit local bounds
+    ASR::expr_t* mask_array_bounds(Allocator& al, const Location& loc, ASR::expr_t* array) {
+        ASR::ttype_t* t = ASRUtils::expr_type(array);
+        if (!ASRUtils::is_array(t)) return array;
+        
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
         
-        Vec<ASR::dimension_t> new_dims;
-        new_dims.reserve(al, n_dims);
-        
-        for (int i = 0; i < n_dims; i++) {
-            ASR::dimension_t dim;
-            dim.loc = m_dims[i].loc;
-            
-            // Only allow pure integer constants. Otherwise, strip to assumed-shape.
-            dim.m_start = nullptr;
-            if (m_dims[i].m_start) {
-                if (ASR::is_a<ASR::IntegerConstant_t>(*(m_dims[i].m_start))) {
-                    dim.m_start = m_dims[i].m_start;
-                } else if (ASR::expr_t* val = ASRUtils::expr_value(m_dims[i].m_start)) {
-                    if (ASR::is_a<ASR::IntegerConstant_t>(*val)) dim.m_start = val;
-                }
-            }
-            
-            dim.m_length = nullptr;
-            if (m_dims[i].m_length) {
-                if (ASR::is_a<ASR::IntegerConstant_t>(*(m_dims[i].m_length))) {
-                    dim.m_length = m_dims[i].m_length;
-                } else if (ASR::expr_t* val = ASRUtils::expr_value(m_dims[i].m_length)) {
-                    if (ASR::is_a<ASR::IntegerConstant_t>(*val)) dim.m_length = val;
-                }
-            }
-            
-            new_dims.push_back(al, dim);
+        Vec<ASR::array_index_t> args; args.reserve(al, n_dims);
+        for(int d = 0; d < n_dims; d++) {
+            ASR::array_index_t ai;
+            ai.loc = loc;
+            ai.m_left = nullptr; ai.m_right = nullptr; ai.m_step = nullptr;
+            args.push_back(al, ai);
         }
         
-        return ASRUtils::duplicate_type(al, t, &new_dims);
+        // Strip the explicit bounds from the type
+        Vec<ASR::dimension_t> new_dims; new_dims.reserve(al, n_dims);
+        for(int d = 0; d < n_dims; d++) {
+            ASR::dimension_t dim;
+            dim.loc = m_dims[d].loc;
+            dim.m_start = nullptr; dim.m_length = nullptr;
+            new_dims.push_back(al, dim);
+        }
+        ASR::ttype_t* safe_type = ASRUtils::duplicate_type(al, t, &new_dims);
+        
+        return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, array, args.p, args.size(), safe_type, nullptr));
     }
 
     public:
@@ -133,7 +121,14 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         for( size_t i = 0; i < x->n_args; i++ ) {
             ASR::call_arg_t arg0;
             arg0.loc = (*current_expr)->base.loc;
-            arg0.m_value = x->m_args[i];
+            
+            // Mask the explicit parameter bounds ONLY for matmul to prevent ICE scoping leaks
+            if (intrinsic_name_ == "matmul") {
+                arg0.m_value = mask_array_bounds(al, arg0.loc, x->m_args[i]);
+            } else {
+                arg0.m_value = x->m_args[i];
+            }
+            
             new_args.push_back(al, arg0);
         }
 
@@ -146,18 +141,23 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            ASR::ttype_t* arg_type = ASRUtils::expr_type(x->m_args[i]);
-            // Surgically apply sanitization ONLY to matmul
-            if (intrinsic_name_ == "matmul") {
-                arg_type = sanitize_matmul_type(al, arg_type);
-            }
-            arg_types.push_back(al, arg_type);
+            // Use the type of the potentially masked argument
+            arg_types.push_back(al, ASRUtils::expr_type(new_args[i].m_value));
         }
         
         ASR::ttype_t* return_type = x->m_type;
-        // Ensure the return type of matmul is also sanitized
-        if (intrinsic_name_ == "matmul") {
-            return_type = sanitize_matmul_type(al, return_type);
+        // Strip the return type bounds for matmul as well
+        if (intrinsic_name_ == "matmul" && ASRUtils::is_array(return_type)) {
+            ASR::dimension_t* m_dims;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(return_type, m_dims);
+            Vec<ASR::dimension_t> new_dims; new_dims.reserve(al, n_dims);
+            for(int d = 0; d < n_dims; d++) {
+                ASR::dimension_t dim;
+                dim.loc = m_dims[d].loc;
+                dim.m_start = nullptr; dim.m_length = nullptr;
+                new_dims.push_back(al, dim);
+            }
+            return_type = ASRUtils::duplicate_type(al, return_type, &new_dims);
         }
 
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
