@@ -13,11 +13,11 @@ program coarrays_16
 implicit none
 integer(4) :: a1
 integer(4) :: b1
-integer(4) :: exit_code
 character(len=0, kind=1) :: lfortran_iomsg
+integer(4) :: stat
 integer(4), pointer, save :: y
-call __module_prif_prif_init(exit_code)
-call c_f_pointer(coarrays_16_y__coarray_data, y)
+call __module_prif_prif_init(stat)
+call c_f_pointer(y__coarray_data, y)
 call __module_prif_prif_sync_all()
 if (y /= 10) then
     error stop
@@ -38,17 +38,15 @@ call __module_prif_prif_stop(.false.)
 contains
 
 subroutine __lfortran_coarray_init_coarrays_16_coarrays_16_sub()
-    integer(4) :: exit_code
+    integer(4) :: stat
     integer(4), pointer :: x__init_ptr
     integer(4), pointer :: y__init_ptr
-    call __module_prif_prif_init(exit_code)
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), coarrays_16_y__coarray_handle,&
-         coarrays_16_y__coarray_data)
-    call c_f_pointer(coarrays_16_y__coarray_data, y__init_ptr)
+    call __module_prif_prif_init(stat)
+    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), y__coarray_handle, y__coarray_data)
+    call c_f_pointer(y__coarray_data, y__init_ptr)
     y__init_ptr = 10
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), coarrays_16_sub_x__coarray_handle,&
-         coarrays_16_sub_x__coarray_data)
-    call c_f_pointer(coarrays_16_sub_x__coarray_data, x__init_ptr)
+    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
+    call c_f_pointer(x__coarray_data, x__init_ptr)
     x__init_ptr = 0
 end subroutine __lfortran_coarray_init_coarrays_16_coarrays_16_sub
 
@@ -100,7 +98,7 @@ end interface
 subroutine coarrays_16_sub(v)
     integer(4), intent(out) :: v
     integer(4), pointer, save :: x
-    call c_f_pointer(coarrays_16_sub_x__coarray_data, x)
+    call c_f_pointer(x__coarray_data, x)
     x = x + 1
     v = x
 end subroutine coarrays_16_sub

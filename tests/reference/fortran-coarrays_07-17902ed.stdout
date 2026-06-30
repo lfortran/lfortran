@@ -12,9 +12,9 @@ end type prif_coarray_handle
 
 program coarrays_07
 implicit none
-integer(4) :: exit_code
+integer(4) :: stat
 integer(4) :: x
-call __module_prif_prif_init(exit_code)
+call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
 x = lcompilers_prif_this_image()
 call __module_prif_prif_co_sum(x)

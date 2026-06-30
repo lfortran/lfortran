@@ -11,10 +11,10 @@ end type prif_coarray_handle
 
 program coarrays_04
 implicit none
-integer(4) :: exit_code
 integer(4) :: me
 integer(4) :: n
-call __module_prif_prif_init(exit_code)
+integer(4) :: stat
+call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
 me = lcompilers_prif_this_image()
 n = lcompilers_prif_num_images()

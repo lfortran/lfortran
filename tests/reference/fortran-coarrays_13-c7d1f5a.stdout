@@ -11,9 +11,9 @@ end type prif_coarray_handle
 
 program coarrays_13
 implicit none
-integer(4) :: exit_code
 character(len=3, kind=1), save :: s = "xyz"
-call __module_prif_prif_init(exit_code)
+integer(4) :: stat
+call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
 if (lcompilers_prif_this_image() == 2) then
     s = "abc"
