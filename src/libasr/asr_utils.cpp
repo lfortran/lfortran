@@ -3174,12 +3174,12 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             ASR::expr_t* a_arg, ASR::cast_kindType a_kind, ASR::ttype_t* a_type) {
 
     ASR::expr_t* value = nullptr;
+    ASR::expr_t* eval_arg = ASRUtils::expr_value(a_arg);
 
-    if (ASRUtils::expr_value(a_arg)) {
-        // calculate value
-        if (a_kind == ASR::cast_kindType::RealToInteger) {
-            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
-                        ASRUtils::expr_value(a_arg));
+    if (eval_arg) {
+        // calculate value safely by ensuring the evaluated expression is actually a scalar constant
+        if (a_kind == ASR::cast_kindType::RealToInteger && ASR::is_a<ASR::RealConstant_t>(*eval_arg)) {
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(eval_arg);
             // kind=16 m_r is a pointer-encoded payload, not a double — skip
             // compile-time folding and let the runtime fptosi handle it.
             if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
@@ -3187,9 +3187,8 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
             }
-        } else if (a_kind == ASR::cast_kindType::RealToReal) {
-            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
-                       ASRUtils::expr_value(a_arg));
+        } else if (a_kind == ASR::cast_kindType::RealToReal && ASR::is_a<ASR::RealConstant_t>(*eval_arg)) {
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(eval_arg);
             int src_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a_arg));
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
             // Skip compile-time folding when either side is real(16): m_r is
@@ -3200,16 +3199,15 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_RealConstant_t(al, a_loc, rc->m_r, a_type));
             }
-        } else if (a_kind == ASR::cast_kindType::RealToComplex) {
-            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
-                                  ASRUtils::expr_value(a_arg));
+        } else if (a_kind == ASR::cast_kindType::RealToComplex && ASR::is_a<ASR::RealConstant_t>(*eval_arg)) {
+            ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(eval_arg);
             if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(
                             al, a_loc, rc->m_r, 0, a_type));
             }
-        } else if (a_kind == ASR::cast_kindType::IntegerToReal) {
+        } else if (a_kind == ASR::cast_kindType::IntegerToReal && ASR::is_a<ASR::IntegerConstant_t>(*eval_arg)) {
             // TODO: Clashes with the pow functions
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_arg))->m_n;
+            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(eval_arg)->m_n;
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
             if (dest_kind != 16) {
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
@@ -3223,45 +3221,37 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
                 value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, a_loc, m_r, a_type));
             }
-        } else if (a_kind == ASR::cast_kindType::IntegerToComplex) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
+        } else if (a_kind == ASR::cast_kindType::IntegerToComplex && ASR::is_a<ASR::IntegerConstant_t>(*eval_arg)) {
+            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(eval_arg)->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, a_loc,
                         (double)int_value, 0, a_type));
-        } else if (a_kind == ASR::cast_kindType::IntegerToInteger) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
+        } else if (a_kind == ASR::cast_kindType::IntegerToInteger && ASR::is_a<ASR::IntegerConstant_t>(*eval_arg)) {
+            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(eval_arg)->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
-        } else if (a_kind == ASR::cast_kindType::IntegerToUnsignedInteger) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
+        } else if (a_kind == ASR::cast_kindType::IntegerToUnsignedInteger && ASR::is_a<ASR::IntegerConstant_t>(*eval_arg)) {
+            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(eval_arg)->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
-        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToInteger) {
-            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
+        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToInteger && ASR::is_a<ASR::UnsignedIntegerConstant_t>(*eval_arg)) {
+            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(eval_arg)->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
-        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToUnsignedInteger) {
-            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
+        } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToUnsignedInteger && ASR::is_a<ASR::UnsignedIntegerConstant_t>(*eval_arg)) {
+            int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(eval_arg)->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
-        } else if (a_kind == ASR::cast_kindType::IntegerToLogical) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
+        } else if (a_kind == ASR::cast_kindType::IntegerToLogical && ASR::is_a<ASR::IntegerConstant_t>(*eval_arg)) {
+            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(eval_arg)->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(al, a_loc, int_value, a_type));
-        } else if (a_kind == ASR::cast_kindType::ComplexToComplex) {
-            ASR::ComplexConstant_t* value_complex = ASR::down_cast<ASR::ComplexConstant_t>(
-                        ASRUtils::expr_value(a_arg));
+        } else if (a_kind == ASR::cast_kindType::ComplexToComplex && ASR::is_a<ASR::ComplexConstant_t>(*eval_arg)) {
+            ASR::ComplexConstant_t* value_complex = ASR::down_cast<ASR::ComplexConstant_t>(eval_arg);
             double real = value_complex->m_re;
             double imag = value_complex->m_im;
             value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_ComplexConstant_t(al, a_loc, real, imag, a_type));
-        } else if (a_kind == ASR::cast_kindType::ComplexToReal) {
-            ASR::ComplexConstant_t* value_complex = ASR::down_cast<ASR::ComplexConstant_t>(
-                        ASRUtils::expr_value(a_arg));
+        } else if (a_kind == ASR::cast_kindType::ComplexToReal && ASR::is_a<ASR::ComplexConstant_t>(*eval_arg)) {
+            ASR::ComplexConstant_t* value_complex = ASR::down_cast<ASR::ComplexConstant_t>(eval_arg);
             double real = value_complex->m_re;
             value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, a_loc, real, a_type));
-        } else if (a_kind == ASR::cast_kindType::IntegerToSymbolicExpression) {
+        } else if (a_kind == ASR::cast_kindType::IntegerToSymbolicExpression && ASR::is_a<ASR::IntegerConstant_t>(*eval_arg)) {
             Vec<ASR::expr_t*> args;
             args.reserve(al, 1);
             args.push_back(al, a_arg);

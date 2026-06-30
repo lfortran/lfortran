@@ -122,7 +122,10 @@ public:
         ASR::ttype_t *index_type = ASRUtils::TYPE(ASR::make_Integer_t(al_, loc, index_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al_, loc, 1, index_type));
 
-        int m_dim_length = ASR::down_cast<ASR::IntegerConstant_t>(m_dims[dim_index].m_length)->m_n;
+        int64_t m_dim_length = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(m_dims[dim_index].m_length), m_dim_length)) {
+            throw LCompilersException("Compile-time array evaluation failed: Dimension length could not be evaluated to a constant integer.");
+        }
 
         for (int i = 0; i < m_dim_length; i++) {
             if (dim_index == 0) {
