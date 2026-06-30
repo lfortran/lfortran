@@ -1863,6 +1863,16 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
         CoarrayInitVisitor(Allocator &al_, PRIFInterface &prif_)
             : al(al_), prif(prif_) {}
 
+        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            // Process the rest of the symbol table normally
+            for (auto &item : x.m_symtab->get_scope()) {
+                visit_symbol(*item.second);
+            }
+            // Generate per-TU init function for saved coarrays
+            Location loc; loc.first = 1; loc.last = 1;
+            prif.generate_tu_init_function(loc);
+        }
+
         void visit_Module(const ASR::Module_t &x) {
             for (auto &item : x.m_symtab->get_scope()) {
                 visit_symbol(*item.second);
@@ -1955,18 +1965,11 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
     CoarrayInitVisitor init_v(al, prif);
     init_v.visit_TranslationUnit(unit);
 
-    // Phase 3: Generate per-TU init function for saved coarrays
-    // This creates a __lfortran_coarray_init subroutine that the LLVM
-    // backend will register via @llvm.global_ctors, ensuring saved
-    // coarrays are allocated even in separate compilation units.
-    Location loc; loc.first = 1; loc.last = 1;
-    prif.generate_tu_init_function(loc);
-
-    // Phase 4: Replace coarray expressions
+    // Phase 3: Replace coarray expressions
     CoarrayPrifVisitor v(al, prif);
     v.visit_TranslationUnit(unit);
 
-    // Phase 5: Update dependencies
+    // Phase 4: Update dependencies
     PassUtils::UpdateDependenciesVisitor(al).visit_TranslationUnit(unit);
 }
 
