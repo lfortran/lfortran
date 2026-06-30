@@ -420,7 +420,7 @@ bool set_allocation_size(
                 len_allocte_expr = str_type->m_len;
             } else {
                 ASRUtils::ASRBuilder b(al, loc);
-                len_allocte_expr = b.StringLen(value);
+                len_allocte_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc, value, ASRUtils::expr_type(value), b);
             }
         }
         return true;
@@ -1575,6 +1575,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        ASR::expr_t* lhs_array_var = nullptr;
+        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
+            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
+        }
+        lhs_var = lhs_array_var;
+        visit_expr(*xx.m_value);
         // Handle case where LHS is StructInstanceMember over an array
         // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
         if (ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) {
@@ -1623,6 +1629,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
 
                 if (create_temp_var_for_rhs) {
+                    visit_expr(*xx.m_value);
                     std::string name_hint = "_assignment_";
                     ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target);
                     xx.m_value = array_var_temporary;
@@ -1672,11 +1679,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
-        ASR::expr_t* lhs_array_var = nullptr;
-        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
-            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
-        }
-        lhs_var = lhs_array_var;
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
         lhs_var = nullptr;
     }
@@ -2508,6 +2510,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ;
         }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
+    }
+
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        for (size_t i=0; i<x->n_args; i++) {
+            current_expr = &(x->m_args[i]);
+            replace_expr(*current_expr);
+        }
     }
 
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {

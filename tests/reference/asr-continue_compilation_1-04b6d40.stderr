@@ -488,11 +488,23 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
 751 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Function `c_loc` is not permitted in an initialization expression
+   --> tests/errors/continue_compilation_1.f90:810:13
+    |
+810 |             type(c_ptr) :: ptr = c_loc(target_value)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
 640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
+  --> tests/errors/continue_compilation_1.f90:72:9
+   |
+72 |         statement_function_name_conflict(argument) = 0
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The upper bound of an assumed-size array's last dimension is not defined
    --> tests/errors/continue_compilation_1.f90:111:18
@@ -553,6 +565,12 @@ semantic error: Intrinsic 'not_real' is not recognized
     |
 268 |     call sub(not_real)
     |              ^^^^^^^^ 'not_real' is not a known intrinsic function
+
+semantic error: Format specifier in print statement must be of type default character
+   --> tests/errors/continue_compilation_1.f90:326:11
+    |
+326 |     print 1+2
+    |           ^^^ 
 
 semantic error: Array index 10 is out of bounds (1 to 3) in dimension 1
    --> tests/errors/continue_compilation_1.f90:328:14
@@ -1611,3 +1629,93 @@ semantic error: Alternate return arguments are not permitted in calls to the 'cp
     |
 753 |         call cpu_time(*1)
     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be of type integer, found string
+   --> tests/errors/continue_compilation_1.f90:759:9
+    |
+759 |         sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `errmsg` argument of `sync all` must be of type character, found integer
+   --> tests/errors/continue_compilation_1.f90:764:9
+    |
+764 |         sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `sync all` must be scalar
+   --> tests/errors/continue_compilation_1.f90:769:9
+    |
+769 |         sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'nosuch' is not declared
+   --> tests/errors/continue_compilation_1.f90:773:9
+    |
+773 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
+
+semantic error: Actual argument for 'x' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:777:23
+    |
+777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    |                       ^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:785:22
+    |
+785 |         select case (nn)
+    |                      ^^ 
+
+semantic error: select case expression must be of type integer, character, or logical
+   --> tests/errors/continue_compilation_1.f90:792:22
+    |
+792 |         select case (x)
+    |                      ^ 
+
+semantic error: second argument of `lge` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:800:18
+    |
+800 |         print *, lge("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `lgt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:801:18
+    |
+801 |         print *, lgt("a", glyph)  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `lle` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:802:18
+    |
+802 |         print *, lle(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `llt` must have kind equal to 1
+   --> tests/errors/continue_compilation_1.f90:803:18
+    |
+803 |         print *, llt(glyph, "z")  
+    |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: `a` argument of `co_max` must be of integer, real or character type, but got complex
+   --> tests/errors/continue_compilation_1.f90:817:21
+    |
+817 |         call co_max(z)
+    |                     ^ must be integer, real or character type
+
+semantic error: `a` argument of `co_sum` must be of integer, real or complex type, but got logical
+   --> tests/errors/continue_compilation_1.f90:823:21
+    |
+823 |         call co_sum(mask)
+    |                     ^^^^ must be integer, real or complex type
+
+semantic error: duplicate statement label 1000
+   --> tests/errors/continue_compilation_1.f90:828:9
+    |
+828 | 1000    continue
+    |         ^^^^^^^^ 
+
+semantic error: Selector shall be polymorphic in SELECT TYPE statement
+   --> tests/errors/continue_compilation_1.f90:834:22
+    |
+834 |         select type (a)
+    |                      ^ 

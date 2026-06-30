@@ -66,14 +66,14 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
-
 contains
 
+    integer function statement_function_name_conflict()
+        statement_function_name_conflict(argument) = 0
+    contains
+        integer function argument()
+        end function
+    end function
     subroutine my_undefined_type_test()
         implicit none
         type(another_undefined_type) :: s3_in_subroutine
@@ -323,7 +323,7 @@ program continue_compilation_1
     !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
-
+    print 1+2
     a = 1
     print *, a(10)
     a5 = 8
@@ -753,4 +753,87 @@ program continue_compilation_1
         call cpu_time(*1)
 1       continue
     end subroutine 
+    subroutine sync_all_stat_wrong_type()
+        implicit none
+        character(len=10) :: cstat
+        sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    end subroutine
+    subroutine sync_all_errmsg_wrong_type()
+        implicit none
+        integer :: imsg
+        sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    end subroutine
+    subroutine sync_all_stat_array()
+        implicit none
+        integer :: astat(3)
+        sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    end subroutine
+    subroutine sync_all_stat_undeclared()
+        implicit none
+        sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    end subroutine
+    subroutine assumed_size_to_pointer_dummy(x)
+        integer :: x(*)
+        call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    end subroutine
+    subroutine ptr_sink(x)
+        integer, pointer :: x(..)
+    end subroutine
+    subroutine select_case_complex()
+        implicit none
+        complex :: nn
+        select case (nn)
+        case default
+        end select
+    end subroutine
+    subroutine select_case_real()
+        implicit none
+        real :: x
+        select case (x)
+        case default
+        end select
+    end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)  
+        print *, lgt("a", glyph)  
+        print *, lle(glyph, "z")  
+        print *, llt(glyph, "z")  
+    end subroutine
+
+    subroutine c_loc_default_component_initializer()
+        use iso_c_binding, only: c_loc, c_ptr
+        integer, target :: target_value
+        type :: holder
+            type(c_ptr) :: ptr = c_loc(target_value)
+        end type
+    end subroutine
+
+    subroutine co_max_complex_arg()
+        implicit none
+        complex :: z
+        call co_max(z)
+    end subroutine
+
+    subroutine cosum_invalid_argument_type()
+        implicit none
+        logical :: mask
+        call co_sum(mask)
+    end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
+
+    subroutine select_type_nonpolymorphic()
+        implicit none
+        integer :: a
+        select type (a)
+        type is (integer)
+            print *, a
+        end select
+    end subroutine
 end program

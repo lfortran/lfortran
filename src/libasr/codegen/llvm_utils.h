@@ -500,13 +500,13 @@ class ASRToLLVMVisitor;
              * Allocate heap memory for string.
              * Notice : It doesn't set the length.
             */
-            void set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
+            void set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len, int64_t char_kind = 1);
 
             /*
              * Allocate stack memory for string.
              * Notice : It doesn't set the length.
             */
-            void set_string_memory_on_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
+            void set_string_memory_on_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len, int char_kind = 1);
 
             /*
                 Create a string based on the physical type.
@@ -668,7 +668,8 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_str_copy_with_data(
                 llvm::Value* lhs_data, llvm::Value *lhs_len,
                 llvm::Value* rhs_data, llvm::Value *rhs_len,
-                bool is_dest_deferred, bool is_dest_allocatable);;
+                bool is_dest_deferred, bool is_dest_allocatable,
+                llvm::Value* char_kind = nullptr);
 
             // Handles string literals ==> e.g. `print *, "HelloWorld"`
             llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);

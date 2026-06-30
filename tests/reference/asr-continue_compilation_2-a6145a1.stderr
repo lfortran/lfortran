@@ -1003,3 +1003,9 @@ semantic error: Missing actual argument 'x' in call to 'cmplx'
     |
 539 |     a = cmplx(y = 2)
     |         ^^^^^^^^^^^^ 
+
+semantic error: shape argument not specified in c_f_pointer even though fptr is an array.
+   --> tests/errors/continue_compilation_2.f90:541:33
+    |
+541 |     call c_f_pointer(queries_3, cfp_y_3)    
+    |                                 ^^^^^^^ 
