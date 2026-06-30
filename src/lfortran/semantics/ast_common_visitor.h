@@ -3490,7 +3490,7 @@ public:
                 }
                 ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
                 ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
-                                            object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+                                                            object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
                 current_body->push_back(al, assignment_stmt);
             } else {
                 diag.add(Diagnostic(
@@ -3504,12 +3504,18 @@ public:
             Vec<ASR::expr_t*> body;
             body.reserve(al, a->n_value);
             int size_of_array = 0;
+            
             if (ASR::is_a<ASR::ArraySection_t>(*object)) {
                 size_of_array = ASRUtils::get_fixed_size_of_ArraySection(ASR::down_cast<ASR::ArraySection_t>(object));
                 object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(object);
+                size_of_array = a->n_value - curr_value; 
+                object = item->m_v; 
             } else {
                 size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
             }
+
             if (size_of_array == -1) {
                 // For equivalenced arrays, the dimensions may not be available
                 // Use the number of DATA values as the array size
@@ -3603,13 +3609,21 @@ public:
             obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
             tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
                 body.size(), obj_type, ASR::arraystorageType::ColMajor);
+            
             ASR::Variable_t* v2 = nullptr;
             if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
                 ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
-            } else {
+            } else if (ASR::is_a<ASR::Var_t>(*object)) {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                 v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+            } else {
+                diag.add(Diagnostic(
+                    "Internal Compiler Error: Unhandled AST node type in array data statement assignment",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
             }
             // For pointer types (e.g. equivalenced arrays), don't set m_value
             // as it causes issues in LLVM codegen - create assignment instead
