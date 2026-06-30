@@ -10,6 +10,7 @@
 
 #include <vector>
 
+
 namespace LCompilers {
 
 /*
@@ -33,35 +34,6 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     bool& in_debugcheck;
     bool& in_ttype;
     int index_kind;
-
-    // Wraps an array in a generic ArraySection (e.g., `ap(:,:)`) to strip explicit local bounds
-    ASR::expr_t* mask_array_bounds(Allocator& al, const Location& loc, ASR::expr_t* array) {
-        ASR::ttype_t* t = ASRUtils::expr_type(array);
-        if (!ASRUtils::is_array(t)) return array;
-        
-        ASR::dimension_t* m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
-        
-        Vec<ASR::array_index_t> args; args.reserve(al, n_dims);
-        for(int d = 0; d < n_dims; d++) {
-            ASR::array_index_t ai;
-            ai.loc = loc;
-            ai.m_left = nullptr; ai.m_right = nullptr; ai.m_step = nullptr;
-            args.push_back(al, ai);
-        }
-        
-        // Strip the explicit bounds from the type
-        Vec<ASR::dimension_t> new_dims; new_dims.reserve(al, n_dims);
-        for(int d = 0; d < n_dims; d++) {
-            ASR::dimension_t dim;
-            dim.loc = m_dims[d].loc;
-            dim.m_start = nullptr; dim.m_length = nullptr;
-            new_dims.push_back(al, dim);
-        }
-        ASR::ttype_t* safe_type = ASRUtils::duplicate_type(al, t, &new_dims);
-        
-        return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, array, args.p, args.size(), safe_type, nullptr));
-    }
 
     public:
 
@@ -89,6 +61,11 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             arg0.m_value = x->m_args[i];
             new_args.push_back(al, arg0);
         }
+        // TODO: currently we always instantiate a new function.
+        // Rather we should reuse the old instantiation if it has
+        // exactly the same arguments. For that we could use the
+        // overload_id, and uniquely encode the argument types.
+        // We could maintain a mapping of type -> id and look it up.
 
         ASRUtils::impl_function instantiate_function =
             ASRUtils::IntrinsicElementalFunctionRegistry::get_instantiate_function(x->m_intrinsic_id);
@@ -121,48 +98,28 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         for( size_t i = 0; i < x->n_args; i++ ) {
             ASR::call_arg_t arg0;
             arg0.loc = (*current_expr)->base.loc;
-            
-            // Mask the explicit parameter bounds ONLY for matmul to prevent ICE scoping leaks
-            if (intrinsic_name_ == "matmul") {
-                arg0.m_value = mask_array_bounds(al, arg0.loc, x->m_args[i]);
-            } else {
-                arg0.m_value = x->m_args[i];
-            }
-            
+            arg0.m_value = x->m_args[i];
             new_args.push_back(al, arg0);
         }
+
+        // TODO: currently we always instantiate a new function.
+        // Rather we should reuse the old instantiation if it has
+        // exactly the same arguments. For that we could use the
+        // overload_id, and uniquely encode the argument types.
+        // We could maintain a mapping of type -> id and look it up.
 
         ASRUtils::impl_function instantiate_function =
             ASRUtils::IntrinsicArrayFunctionRegistry::get_instantiate_function(x->m_arr_intrinsic_id);
         if( instantiate_function == nullptr ) {
             return ;
         }
-        
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            // Use the type of the potentially masked argument
-            arg_types.push_back(al, ASRUtils::expr_type(new_args[i].m_value));
+            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
         }
-        
-        ASR::ttype_t* return_type = x->m_type;
-        // Strip the return type bounds for matmul as well
-        if (intrinsic_name_ == "matmul" && ASRUtils::is_array(return_type)) {
-            ASR::dimension_t* m_dims;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(return_type, m_dims);
-            Vec<ASR::dimension_t> new_dims; new_dims.reserve(al, n_dims);
-            for(int d = 0; d < n_dims; d++) {
-                ASR::dimension_t dim;
-                dim.loc = m_dims[d].loc;
-                dim.m_start = nullptr; dim.m_length = nullptr;
-                new_dims.push_back(al, dim);
-            }
-            return_type = ASRUtils::duplicate_type(al, return_type, &new_dims);
-        }
-
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
-            global_scope, arg_types, return_type, new_args, x->m_overload_id, index_kind);
-            
+            global_scope, arg_types, x->m_type, new_args, x->m_overload_id, index_kind);
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
         bool condition = ASR::is_a<ASR::FunctionCall_t>(*func_call);
@@ -445,5 +402,6 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }
+
 
 } // namespace LCompilers

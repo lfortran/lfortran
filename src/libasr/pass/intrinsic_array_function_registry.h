@@ -5212,37 +5212,37 @@ namespace MatMul {
             Vec<ASR::call_arg_t> &m_args, int64_t overload_id,
             int /*index_kind*/) {
         /*
-         *    2 x 3          3 x 2          2 x 2
-         *   ------▶
-         * [ 1, 2, 3 ]  *  [ 1, 2 ] │  =  [ 14, 20 ]
+         * 2 x 3          3 x 2          2 x 2
+         * ------▶
+         * [ 1, 2, 3 ]  * [ 1, 2 ] │  =  [ 14, 20 ]
          * [ 2, 3, 4 ]     │ 2, 3 │ │     [ 20, 29 ]
-         *                 [ 3, 4 ] ▼
+         * [ 3, 4 ] ▼
          */
         declare_basic_variables("_lcompilers_matmul");
         fill_func_arg("matrix_a_m", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("matrix_b_m", duplicate_type_with_empty_dims(al, arg_types[1]));
+        
         ASR::ttype_t* return_type_ = return_type;
-        if( !ASRUtils::is_fixed_size_array(return_type) ) {
-            bool is_allocatable = ASRUtils::is_allocatable(return_type);
-            Vec<ASR::dimension_t> empty_dims;
-            int result_dims = 2;
-            if( overload_id == 1 || overload_id == 2 ) {
-                result_dims = 1;
-            }
-            empty_dims.reserve(al, result_dims);
-            for( int idim = 0; idim < result_dims; idim++ ) {
-                ASR::dimension_t empty_dim;
-                empty_dim.loc = loc;
-                empty_dim.m_start = nullptr;
-                empty_dim.m_length = nullptr;
-                empty_dims.push_back(al, empty_dim);
-            }
-            return_type_ = ASRUtils::make_Array_t_util(al, loc,
-                ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
-            if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
-            }
+        bool is_allocatable = ASRUtils::is_allocatable(return_type);
+        Vec<ASR::dimension_t> empty_dims;
+        int result_dims = 2;
+        if( overload_id == 1 || overload_id == 2 ) {
+            result_dims = 1;
         }
+        empty_dims.reserve(al, result_dims);
+        for( int idim = 0; idim < result_dims; idim++ ) {
+            ASR::dimension_t empty_dim;
+            empty_dim.loc = loc;
+            empty_dim.m_start = nullptr;
+            empty_dim.m_length = nullptr;
+            empty_dims.push_back(al, empty_dim);
+        }
+        return_type_ = ASRUtils::make_Array_t_util(al, loc,
+            ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
+        if( is_allocatable ) {
+            return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
+        }
+
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
