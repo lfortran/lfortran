@@ -109,13 +109,10 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            // Future-proofing: Sanitize elemental arguments too
-            ASR::ttype_t* safe_type = sanitize_type_for_global_scope(al, ASRUtils::expr_type(x->m_args[i]));
-            arg_types.push_back(al, safe_type);
+            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
         }
         ASR::ttype_t* type = nullptr;
-        // Sanitize the return type
-        type = sanitize_type_for_global_scope(al, ASRUtils::extract_type(x->m_type));
+        type = ASRUtils::extract_type(x->m_type);
         
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             global_scope, arg_types, type, new_args, x->m_overload_id, index_kind);
