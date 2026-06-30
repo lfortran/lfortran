@@ -1247,7 +1247,8 @@ int compile_src_to_object_file(const std::string &infile,
 
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
-        && !LCompilers::ASRUtils::global_function_present(*asr)) {
+        && !LCompilers::ASRUtils::global_function_present(*asr)
+        && !LCompilers::ASRUtils::bind_c_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "

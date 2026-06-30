@@ -1894,6 +1894,12 @@ public:
             if (!item.compare("_lcompilers_mlir_gpu_offloading")) continue;
             ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
             if (mod == nullptr) continue;
+            if (ASR::is_a<ASR::Module_t>(*mod)) {
+                ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(mod);
+                if (m->m_loaded_from_mod && LCompilers::ASRUtils::bind_c_present(*m)) {
+                    m->m_symtab->mark_all_variables_external(al);
+                }
+            }
             visit_symbol(*mod);
         }
 
@@ -8090,8 +8096,11 @@ public:
             );
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
-                F = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, fn_name, module.get());
+                llvm::GlobalValue::LinkageTypes linkage = llvm::Function::ExternalLinkage;
+                if (startswith(fn_name, "_lcompilers_")) {
+                    linkage = llvm::Function::LinkOnceODRLinkage;
+                }
+                F = llvm::Function::Create(function_type, linkage, fn_name, module.get());
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
@@ -8163,8 +8172,11 @@ public:
                     }
                     if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                         llvm_symtab_fn_names[fn_name] = h;
-                        llvm::Function* F = llvm::Function::Create(function_type,
-                            llvm::Function::ExternalLinkage, fn_name, module.get());
+                        llvm::GlobalValue::LinkageTypes linkage = llvm::Function::ExternalLinkage;
+                        if (startswith(fn_name, "_lcompilers_")) {
+                            linkage = llvm::Function::LinkOnceODRLinkage;
+                        }
+                        llvm::Function* F = llvm::Function::Create(function_type, linkage, fn_name, module.get());
                         llvm_symtab_fn[h] = F;
                     } else {
                         uint32_t old_h = llvm_symtab_fn_names[fn_name];

@@ -2852,6 +2852,47 @@ static inline bool global_function_present(const ASR::TranslationUnit_t &unit)
     return contains_global_function;
 }
 
+static inline bool bind_c_present(const ASR::TranslationUnit_t &unit)
+{
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*a.second)) {
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(a.second);
+            if (ASRUtils::get_FunctionType(*fn)->m_abi == ASR::abiType::BindC) return true;
+        } else if (ASR::is_a<ASR::Variable_t>(*a.second)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(a.second);
+            if (v->m_abi == ASR::abiType::BindC) return true;
+        } else if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(a.second);
+            if (!m->m_loaded_from_mod) {
+                for (auto &b : m->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*b.second)) {
+                        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(b.second);
+                        if (ASRUtils::get_FunctionType(*fn)->m_abi == ASR::abiType::BindC) return true;
+                    } else if (ASR::is_a<ASR::Variable_t>(*b.second)) {
+                        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(b.second);
+                        if (v->m_abi == ASR::abiType::BindC) return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static inline bool bind_c_present(const ASR::Module_t &m)
+{
+    for (auto &b : m.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*b.second)) {
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(b.second);
+            if (ASRUtils::get_FunctionType(*fn)->m_abi == ASR::abiType::BindC) return true;
+        } else if (ASR::is_a<ASR::Variable_t>(*b.second)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(b.second);
+            if (v->m_abi == ASR::abiType::BindC) return true;
+        }
+    }
+    return false;
+}
+
 // Accepts dependencies in the form A -> [B, D, ...], B -> [C, D]
 // Returns a list of dependencies in the order that they should be built:
 // [D, C, B, A]
