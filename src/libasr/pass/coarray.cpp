@@ -585,9 +585,7 @@ class PRIFInterface {
         Vec<SavedCoarray> saved_coarrays;
 
         PRIFInterface(Allocator &al_, ASR::TranslationUnit_t &unit_)
-            : al(al_), unit(unit_) {
-                saved_coarrays.reserve(al, 8);
-            }
+            : al(al_), unit(unit_) {}
 
         std::string get_mangled_name(const std::string& module_name, const std::string& symbol_name) {
             return "__module_" + module_name + "_" + symbol_name;
@@ -1183,7 +1181,10 @@ class PRIFInterface {
                                 ASR::ttype_t *i64, const Location &loc,
                                 Vec<ASR::stmt_t*> &new_body) {
             ASRUtils::ASRBuilder b(al, loc);
-            int64_t corank = var->n_codims > 0 ? var->n_codims : 1;
+            if (var->n_codims <= 0) {
+                throw LCompilersException("Coarray variable must have codimensions");
+            }
+            int64_t corank = var->n_codims;
             Vec<ASR::expr_t*> lco_elems; lco_elems.reserve(al, corank);
             Vec<ASR::expr_t*> uco_elems; uco_elems.reserve(al, corank > 1 ? corank - 1 : 0);
             for (int64_t ci = 0; ci < corank; ci++) {
@@ -1208,26 +1209,24 @@ class PRIFInterface {
             ad.m_start = b.i32(1);
             ad.m_length = b.i32(static_cast<int64_t>(lco_elems.n));
             arr_d.push_back(al, ad);
-            ASR::ttype_t *lco_arr_t = ASRUtils::make_Array_t_util(al, loc, i64, arr_d.p, arr_d.n);
             std::vector<ASR::expr_t*> lco_vec;
             for (size_t i = 0; i < lco_elems.n; i++) {
                 lco_vec.push_back(lco_elems.p[i]);
             }
-            ASR::expr_t *lcobounds_val = b.ArrayConstant(lco_vec, i64, false, lco_arr_t);
+            ASR::expr_t *lcobounds_val = b.ArrayConstant(lco_vec, i64, false);
             
             Vec<ASR::dimension_t> arr_d0; arr_d0.reserve(al, 1);
             ASR::dimension_t ad0; ad0.loc = loc;
             ad0.m_start = b.i32(1);
             ad0.m_length = b.i32(static_cast<int64_t>(uco_elems.n));
             arr_d0.push_back(al, ad0);
-            ASR::ttype_t *uco_arr_t = ASRUtils::make_Array_t_util(al, loc, i64, arr_d0.p, arr_d0.n);
             std::vector<ASR::expr_t*> uco_vec;
             for (size_t i = 0; i < uco_elems.n; i++) {
                 uco_vec.push_back(uco_elems.p[i]);
             }
-            ASR::expr_t *ucobounds_val = b.ArrayConstant(uco_vec, i64, false, uco_arr_t);
+            ASR::expr_t *ucobounds_val = b.ArrayConstant(uco_vec, i64, false);
             
-            ASR::ttype_t *base_type = ASRUtils::type_get_past_pointer(var->m_type);
+            ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(var->m_type);
             ASR::expr_t *sz = get_size_in_bytes_expr(loc, base_type);
             
             ASR::ttype_t *handle_type_fp = ASRUtils::make_StructType_t_util(
@@ -1248,18 +1247,12 @@ class PRIFInterface {
             ASR::call_arg_t a4; a4.loc=loc; a4.m_value=null_fptr;
             ASR::call_arg_t a5; a5.loc=loc; a5.m_value=hexpr;
             ASR::call_arg_t a6; a6.loc=loc; a6.m_value=dexpr;
-            ASR::call_arg_t a7; a7.loc=loc; a7.m_value=nullptr;
-            ASR::call_arg_t a8; a8.loc=loc; a8.m_value=nullptr;
-            ASR::call_arg_t a9; a9.loc=loc; a9.m_value=nullptr;
             call_args.push_back(al, a1);
             call_args.push_back(al, a2);
             call_args.push_back(al, a3);
             call_args.push_back(al, a4);
             call_args.push_back(al, a5);
             call_args.push_back(al, a6);
-            call_args.push_back(al, a7);
-            call_args.push_back(al, a8);
-            call_args.push_back(al, a9);
             ASR::stmt_t *call_stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(
                 al, loc, alloc_sub, nullptr,
                 call_args.p, call_args.n, nullptr, false));
@@ -1343,7 +1336,6 @@ class PRIFInterface {
             }
         }
 
-        // Build a unique per-TU init function name from the parent scope
         // names of saved coarrays to avoid linker collisions.
         std::string get_tu_init_function_name() {
             std::string fn_name = "__lfortran_coarray_init";
@@ -1371,7 +1363,7 @@ class PRIFInterface {
             ASR::ttype_t *int32_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
             ASR::symbol_t *ec_sym = declare_variable(
-                scope, loc, "exit_code", int32_type,
+                scope, loc, "stat", int32_type,
                 ASR::intentType::Local, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false);
