@@ -1421,7 +1421,7 @@ class PRIFInterface {
                 ASR::Variable_t *var = saved_coarrays.p[i].var;
                 ASR::symbol_t *hsym_orig = saved_coarrays.p[i].handle_sym;
                 ASR::symbol_t *dsym_orig = saved_coarrays.p[i].data_sym;
-                ASR::expr_t *init_value = saved_coarrays.p[i].init_value;
+                // ASR::expr_t *init_value = saved_coarrays.p[i].init_value;
 
                 ASR::symbol_t *hsym_use = get_symbol_in_scope(
                     global_scope, fn_symtab, hsym_orig, loc);
@@ -1435,24 +1435,24 @@ class PRIFInterface {
 
                 // If the saved coarray had an initial value (e.g., x[*] = 0),
                 // bind the data pointer to a local variable and assign the value.
-                if (init_value) {
-                    std::string local_name = std::string(var->m_name) + "__init_ptr";
-                    ASR::ttype_t *var_ptr_type = var->m_type; // already Pointer_t
-                    ASR::symbol_t *local_sym = declare_variable(
-                        fn_symtab, loc, local_name, var_ptr_type,
-                        ASR::intentType::Local, nullptr,
-                        ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::presenceType::Required, false);
-                    ASR::expr_t *local_expr = ASRUtils::EXPR(
-                        ASR::make_Var_t(al, loc, local_sym));
+                // if (init_value) {
+                //     std::string local_name = std::string(var->m_name) + "__init_ptr";
+                //     ASR::ttype_t *var_ptr_type = var->m_type; // already Pointer_t
+                //     ASR::symbol_t *local_sym = declare_variable(
+                //         fn_symtab, loc, local_name, var_ptr_type,
+                //         ASR::intentType::Local, nullptr,
+                //         ASR::abiType::Source, ASR::accessType::Public,
+                //         ASR::presenceType::Required, false);
+                //     ASR::expr_t *local_expr = ASRUtils::EXPR(
+                //         ASR::make_Var_t(al, loc, local_sym));
 
-                    body.push_back(al, ASRUtils::STMT(
-                        ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
-                                                  nullptr, nullptr)));
-                    body.push_back(al, ASRUtils::STMT(
-                        ASR::make_Assignment_t(al, loc, local_expr, init_value,
-                                              nullptr, false, false)));
-                }
+                //     body.push_back(al, ASRUtils::STMT(
+                //         ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
+                //                                   nullptr, nullptr)));
+                //     body.push_back(al, ASRUtils::STMT(
+                //         ASR::make_Assignment_t(al, loc, local_expr, init_value,
+                //                               nullptr, false, false)));
+                // }
             }
 
             Vec<char*> deps; deps.reserve(al, 2);
