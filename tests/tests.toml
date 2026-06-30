@@ -2852,6 +2852,12 @@ pass = "coarray"
 options = "--coarray=true --show-fortran"
 
 [[test]]
+filename = "coarrays_05.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "coarrays_06.f90"
 fortran = true
 pass = "coarray"
@@ -2876,6 +2882,42 @@ options = "--coarray=true"
 
 [[test]]
 filename = "coarrays_10.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_11.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_12.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_13.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_14.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_15.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_16.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
@@ -5232,6 +5274,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/read_83.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/read_97.f90"
+asr = true
 
 [[test]]
 filename = "no_main_program_1.f90"
