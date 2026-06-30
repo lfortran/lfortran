@@ -1515,6 +1515,8 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             // Allocate coarrays in Program scope
             prif.allocate_coarrays(xx.m_symtab, xx.m_symtab, loc, new_body);
 
+            new_body.push_back(al, prif.make_prif_sync_all_call(loc));
+
             // Append original body
             for (size_t i = 0; i < xx.n_body; i++) {
                 new_body.push_back(al, xx.m_body[i]);
