@@ -10027,11 +10027,42 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                     ASR::ttype_t* arg_type = param_ft->m_arg_types[j];
                                     std::string arg_name = std::string(passed_func->m_name) + "_arg_" + std::to_string(j);
                                     if (passed_func->m_symtab->get_symbol(arg_name) == nullptr) {
+                                        // For StructType args, resolve type_declaration
+                                        ASR::symbol_t* arg_type_decl = nullptr;
+                                        ASR::ttype_t* base_arg_type = ASRUtils::extract_type(arg_type);
+                                        if (ASR::is_a<ASR::StructType_t>(*base_arg_type)) {
+                                            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(base_arg_type);
+                                            SymbolTable* search_scope = passed_func->m_symtab->parent;
+                                            if (st->m_is_unlimited_polymorphic && search_scope) {
+                                                arg_type_decl = search_scope->resolve_symbol("~unlimited_polymorphic_type");
+                                                if (!arg_type_decl) {
+                                                    std::string poly_name = "~unlimited_polymorphic_type";
+                                                    SymbolTable *st_tab = al.make_new<SymbolTable>(search_scope);
+                                                    ASR::asr_t* dtype = ASR::make_Struct_t(al, call->base.base.loc, st_tab,
+                                                        s2c(al, poly_name), nullptr, nullptr, 0, nullptr, 0,
+                                                        nullptr, 0, ASR::abiType::Source, ASR::accessType::Public,
+                                                        false, true, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                    ASR::symbol_t* ss = ASR::down_cast<ASR::symbol_t>(dtype);
+                                                    ASR::ttype_t* sst = ASRUtils::make_StructType_t_util(al, call->base.base.loc, ss, false);
+                                                    ASR::down_cast<ASR::Struct_t>(ss)->m_struct_signature = sst;
+                                                    search_scope->add_symbol(poly_name, ss);
+                                                    arg_type_decl = ss;
+                                                }
+                                            } else if (search_scope) {
+                                                for (auto& sp : search_scope->get_scope()) {
+                                                    ASR::symbol_t* past_ext = ASRUtils::symbol_get_past_external(sp.second);
+                                                    if (ASR::is_a<ASR::Struct_t>(*past_ext)) {
+                                                        arg_type_decl = sp.second;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
                                         ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
                                             ASR::make_Variable_t(al, call->base.base.loc, passed_func->m_symtab,
                                                 s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-                                                nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                                                arg_type_decl, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
                                                 ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
@@ -10065,6 +10096,36 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                             if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                                 ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
                                 arg_var->m_type = ft->m_arg_types[i];
+                                // If the new type is StructType and no type_declaration, resolve it
+                                ASR::ttype_t* base_t = ASRUtils::extract_type(arg_var->m_type);
+                                if (ASR::is_a<ASR::StructType_t>(*base_t) && !arg_var->m_type_declaration) {
+                                    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(base_t);
+                                    SymbolTable* search_scope = func->m_symtab->parent;
+                                    if (st->m_is_unlimited_polymorphic && search_scope) {
+                                        arg_var->m_type_declaration = search_scope->resolve_symbol("~unlimited_polymorphic_type");
+                                        if (!arg_var->m_type_declaration) {
+                                            std::string poly_name = "~unlimited_polymorphic_type";
+                                            SymbolTable *st_tab = al.make_new<SymbolTable>(search_scope);
+                                            ASR::asr_t* dtype = ASR::make_Struct_t(al, func->base.base.loc, st_tab,
+                                                s2c(al, poly_name), nullptr, nullptr, 0, nullptr, 0,
+                                                nullptr, 0, ASR::abiType::Source, ASR::accessType::Public,
+                                                false, true, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                            ASR::symbol_t* ss = ASR::down_cast<ASR::symbol_t>(dtype);
+                                            ASR::ttype_t* sst = ASRUtils::make_StructType_t_util(al, func->base.base.loc, ss, false);
+                                            ASR::down_cast<ASR::Struct_t>(ss)->m_struct_signature = sst;
+                                            search_scope->add_symbol(poly_name, ss);
+                                            arg_var->m_type_declaration = ss;
+                                        }
+                                    } else if (search_scope) {
+                                        for (auto& sp : search_scope->get_scope()) {
+                                            ASR::symbol_t* past_ext = ASRUtils::symbol_get_past_external(sp.second);
+                                            if (ASR::is_a<ASR::Struct_t>(*past_ext)) {
+                                                arg_var->m_type_declaration = sp.second;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
