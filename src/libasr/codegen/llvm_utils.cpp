@@ -3648,10 +3648,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return builder->CreateBitCast(descs, i8_ptr);
     }
 
-    llvm::Value* LLVMUtils::get_class_element_from_array(ASR::Struct_t* const class_symbol,[[maybe_unused]] ASR::StructType_t* const struct_type, 
-                                llvm::Value* const array_data_ptr, llvm::Value* const idx){
+    llvm::Value* LLVMUtils::get_class_element_from_array(ASR::Struct_t* const class_symbol, ASR::StructType_t* const struct_type, 
+                                                         llvm::Value* const array_data_ptr, llvm::Value* const idx) {
         LCOMPILERS_ASSERT(class_symbol && struct_type && array_data_ptr && idx)
-        LCOMPILERS_ASSERT_MSG(!struct_type->m_is_unlimited_polymorphic, "Can't get elements for array of polymorphic type");
+        // REMOVED: LCOMPILERS_ASSERT_MSG(!struct_type->m_is_unlimited_polymorphic, "Can't get elements for array of polymorphic type");
         LCOMPILERS_ASSERT_MSG(ASRUtils::is_class_type(&struct_type->base), "Operate on class type only")
         validate_llvm_SSA(getClassType(class_symbol, true), array_data_ptr);
 
@@ -3663,9 +3663,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         llvm::Value* vptr_ptr = CreateGEP2(getClassType(class_symbol), array_data_ptr, 0);
         llvm::Value* vptr = CreateLoad2(vptr_type, vptr_ptr);
+        
+        // Dynamically calculate the byte offset using the vtable
         llvm::Value* element_ptr_i8 = get_polymorphic_array_data_ptr(consecutive_struct_ptr, idx, vptr);
-        llvm::Type* declared_struct_type = getStructType(class_symbol, module);
-        llvm::Value* struct_element = builder->CreateBitCast(element_ptr_i8, declared_struct_type->getPointerTo());
+        
+        llvm::Value* struct_element = nullptr;
+        
+        if (struct_type->m_is_unlimited_polymorphic) {
+            // For class(*), there is no static underlying struct. 
+            // The payload is raw memory, so bypass the bitcast.
+            struct_element = element_ptr_i8;
+        } else {
+            llvm::Type* declared_struct_type = getStructType(class_symbol, module);
+            struct_element = builder->CreateBitCast(element_ptr_i8, declared_struct_type->getPointerTo());
+        }
         
         return struct_api->create_class_view(class_symbol, struct_element, vptr);
     }
@@ -9491,9 +9502,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     }
     void LLVMStruct::store_class_struct(ASR::Struct_t* const class_sym, llvm::Value* const class_ptr, llvm::Value* const struct_ptr){
         LCOMPILERS_ASSERT(class_sym && class_ptr && struct_ptr)
-        LCOMPILERS_ASSERT_MSG(!ASRUtils::is_unlimited_polymorphic_type(&class_sym->base), "This function doesn't handle unlimited polymorphic types")
+        
         llvm::Value* const struct_gep_out_of_class = llvm_utils->CreateGEP2(llvm_utils->getClassType(class_sym), class_ptr, 1);
-        builder->CreateStore(struct_ptr, struct_gep_out_of_class);
+        
+        if (ASRUtils::is_unlimited_polymorphic_type(&class_sym->base)) {
+            // For class(*), the underlying data is just a raw i8* pointer.
+            // Ensure the incoming struct_ptr is cast to i8* before storing.
+            llvm::Value* raw_ptr = builder->CreateBitCast(struct_ptr, llvm_utils->i8_ptr);
+            builder->CreateStore(raw_ptr, struct_gep_out_of_class);
+        } else {
+            // Standard bounded polymorphism keeps its typed struct pointer.
+            builder->CreateStore(struct_ptr, struct_gep_out_of_class);
+        }
     }
     
     llvm::Value* LLVMStruct::create_class_view(ASR::Struct_t* const class_symbol,

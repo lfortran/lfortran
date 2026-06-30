@@ -330,9 +330,26 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::
         get_pointer_to_dimension_descriptor_array(llvm::Type* type, llvm::Value* arr, bool /*load*/) {
-            // Dims are always inlined at FIELD_DIMS. Return pointer to first element.
             llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
-            LCOMPILERS_ASSERT(arr_ty != nullptr);
+            
+            // FIX: If this is a 2-field class wrapper {vtable, desc}, unbox the descriptor pointer
+            if (arr_ty != nullptr && arr_ty->getNumElements() == 2) {
+                llvm::Value* desc_ptr_ptr = llvm_utils->create_gep2(arr_ty, arr, 1);
+                arr = llvm_utils->CreateLoad2(arr_ty->getElementType(1), desc_ptr_ptr);
+                arr_ty = nullptr; // Fall through to generic reconstruction
+            }
+
+            // FIX: If the type is an opaque pointer or stripped to i8*, reconstruct a generic 
+            // 3-field descriptor to safely calculate the byte offset for FIELD_DIMS.
+            if (arr_ty == nullptr) {
+                llvm::Type* i8_ptr = llvm::Type::getInt8PtrTy(arr->getContext());
+                llvm::Type* idx_ty = this->index_type;
+                if (!idx_ty) idx_ty = llvm::Type::getInt64Ty(arr->getContext());
+                arr_ty = llvm::StructType::get(arr->getContext(), {i8_ptr, idx_ty, llvm::ArrayType::get(this->dim_des, 1)});
+                type = arr_ty;
+            }
+
+            // Dims are always inlined at FIELD_DIMS. Return pointer to first element.
             llvm::Type* dims_array_ty = arr_ty->getElementType(FIELD_DIMS);
             llvm::Value* dims_array_ptr = llvm_utils->create_gep2(type, arr, FIELD_DIMS);
             return llvm_utils->create_gep2(dims_array_ty, dims_array_ptr, 0);
@@ -845,19 +862,51 @@ namespace LCompilers {
             llvm::Value* dim) {
             return llvm_utils->create_ptr_gep2(dim_des, dim_des_arr, dim);
         }
-
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(llvm::Type* type, llvm::Value* arr) {
+            llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
+            
+            // FIX: Unbox 2-field class wrapper {vtable, desc} into the underlying descriptor
+            if (arr_ty != nullptr && arr_ty->getNumElements() == 2) {
+                llvm::Value* desc_ptr_ptr = llvm_utils->create_gep2(arr_ty, arr, 1);
+                arr = llvm_utils->CreateLoad2(arr_ty->getElementType(1), desc_ptr_ptr);
+                arr_ty = nullptr; 
+            }
+            // FIX: Reconstruct generic 3-field descriptor if type is stripped
+            if (arr_ty == nullptr) {
+                llvm::Type* i8_ptr = llvm::Type::getInt8PtrTy(arr->getContext());
+                llvm::Type* idx_ty = this->index_type ? this->index_type : llvm::Type::getInt64Ty(arr->getContext());
+                arr_ty = llvm::StructType::get(arr->getContext(), {i8_ptr, idx_ty, llvm::ArrayType::get(this->dim_des, 1)});
+                type = arr_ty;
+            }
+            
             return llvm_utils->create_gep2(type, arr, FIELD_BASE_ADDR);
         }
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* actual_type = llvm_utils->get_type_from_ttype_t_util(arr_expr,
                 ASRUtils::type_get_past_allocatable_pointer(arr_type), module);
-            return llvm_utils->create_gep2(actual_type, arr, FIELD_BASE_ADDR);
+            
+            // Route through the patched overload above so the unboxing logic applies here too!
+            return this->get_pointer_to_data(actual_type, arr); 
         }
 
-
         llvm::Value* SimpleCMODescriptor::get_offset(llvm::Type* type, llvm::Value* arr, bool load) {
+            llvm::StructType* arr_ty = llvm::dyn_cast<llvm::StructType>(type);
+            
+            // FIX: Unbox 2-field class wrapper {vtable, desc} into the underlying descriptor
+            if (arr_ty != nullptr && arr_ty->getNumElements() == 2) {
+                llvm::Value* desc_ptr_ptr = llvm_utils->create_gep2(arr_ty, arr, 1);
+                arr = llvm_utils->CreateLoad2(arr_ty->getElementType(1), desc_ptr_ptr);
+                arr_ty = nullptr; 
+            }
+            // FIX: Reconstruct generic 3-field descriptor if type is stripped
+            if (arr_ty == nullptr) {
+                llvm::Type* i8_ptr = llvm::Type::getInt8PtrTy(arr->getContext());
+                llvm::Type* idx_ty = this->index_type ? this->index_type : llvm::Type::getInt64Ty(arr->getContext());
+                arr_ty = llvm::StructType::get(arr->getContext(), {i8_ptr, idx_ty, llvm::ArrayType::get(this->dim_des, 1)});
+                type = arr_ty;
+            }
+            
             llvm::Value* offset = llvm_utils->create_gep2(type, arr, FIELD_OFFSET);
             if( !load ) {
                 return offset;
@@ -988,12 +1037,14 @@ namespace LCompilers {
             ASR::symbol_t* const variable_type_decl, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
             llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name, std::string infile) {
+            
             llvm::Value* tmp = nullptr;
             llvm::Value* idx = nullptr;
+            
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, array_name, infile, expr->base.loc);
-                if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
+                if(ASRUtils::is_character(*asr_type)){
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
                 } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
                     tmp = llvm_utils->get_class_element_from_array(ASR::down_cast<ASR::Struct_t>(variable_type_decl),
@@ -1008,10 +1059,34 @@ namespace LCompilers {
             } else {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                     expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), llvm_utils->module);
-                idx = cmo_convertor_single_element(array_type, array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
-                llvm::Value* ptr_to_data_ptr = get_pointer_to_data(
-                    expr, ASRUtils::type_get_past_allocatable_pointer(asr_type), array, llvm_utils->module);
+                
+                llvm::Value* desc_array = array;
+                
+                // UNBOX POLYMORPHIC DESCRIPTORS
+                if (polymorphic) {
+                    if (!array_type->isStructTy()) {
+                        ASR::dimension_t* m_dims;
+                        int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                            ASRUtils::type_get_past_allocatable_pointer(asr_type), m_dims);
+                        array_type = this->get_array_type_for_rank(type, n_dims);
+                    } else if (llvm::cast<llvm::StructType>(array_type)->getNumElements() == 2) {
+                        // Unbox the {vtable, descriptor} wrapper into a true 3-field Array Descriptor
+                        ASR::dimension_t* m_dims;
+                        int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                            ASRUtils::type_get_past_allocatable_pointer(asr_type), m_dims);
+                        llvm::Type* desc_type = this->get_array_type_for_rank(type, n_dims);
+                        
+                        llvm::Value* desc_ptr_ptr = llvm_utils->create_gep2(array_type, array, 1);
+                        desc_array = llvm_utils->CreateLoad2(desc_type->getPointerTo(), builder->CreateBitCast(desc_ptr_ptr, desc_type->getPointerTo()->getPointerTo()));
+                        array_type = desc_type;
+                    }
+                }
+
+                idx = cmo_convertor_single_element(array_type, desc_array, m_args, n_args, check_for_bounds, lm, array_name, infile, expr->base.loc);
+                
+                llvm::Value* ptr_to_data_ptr = this->get_pointer_to_data(array_type, desc_array);
                 llvm::Value* full_array = nullptr;
+                
                 if(ASRUtils::is_character(*asr_type)){
                     full_array = llvm_utils->CreateLoad2(type->getPointerTo(), ptr_to_data_ptr);
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
@@ -1024,77 +1099,26 @@ namespace LCompilers {
                         idx);
                 } else {
                     if( polymorphic ) {
-                        if (variable_type_decl == nullptr) {
-                            // ONE-wrapper layout: data pointer holds a single
-                            // wrapper {vptr, i8* data}. Compute the element
-                            // at byte offset idx * elem_size from data.
-                            full_array = llvm_utils->CreateLoad2(type->getPointerTo(), ptr_to_data_ptr);
-                            // Read vptr and data from the single wrapper
-                            llvm::Value* vptr_ptr = builder->CreateBitCast(
-                                full_array, llvm_utils->vptr_type->getPointerTo());
-                            llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
-                            llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                                llvm_utils->create_gep2(type, full_array, 1));
-                            llvm::Value* element_ptr = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
-                            // Allocate temp wrapper on stack, fill with vptr + element ptr
-                            llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, type);
-                            builder->CreateStore(vptr, builder->CreateBitCast(
-                                temp_wrapper, llvm_utils->vptr_type->getPointerTo()));
-                            builder->CreateStore(element_ptr,
-                                llvm_utils->create_gep2(type, temp_wrapper, 1));
-                            tmp = temp_wrapper;
+                        // Safely extract the raw memory payload from the unboxed descriptor
+                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, builder->CreateBitCast(ptr_to_data_ptr, llvm_utils->i8_ptr->getPointerTo()));
+                        
+                        // Safely extract the vtable from the original {vtable, desc} wrapper via bitcasting
+                        llvm::Value* vptr_ptr = builder->CreateBitCast(array, llvm_utils->vptr_type->getPointerTo());
+                        llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
+                        
+                        // Dynamically calculate element offset
+                        llvm::Value* element_ptr = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
+                        
+                        // Build the scalar class view to return
+                        llvm::StructType* wrapper_type = llvm::StructType::get(context, {llvm_utils->vptr_type, llvm_utils->i8_ptr});
+                        llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, wrapper_type);
+                        builder->CreateStore(vptr, llvm_utils->create_gep2(wrapper_type, temp_wrapper, 0));
+                        builder->CreateStore(element_ptr, llvm_utils->create_gep2(wrapper_type, temp_wrapper, 1));
+                        
+                        if (polymorphic_type != nullptr) {
+                            tmp = builder->CreateBitCast(temp_wrapper, polymorphic_type->getPointerTo());
                         } else {
-                            ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(variable_type_decl);
-                            if (!ASR::is_a<ASR::Struct_t>(*decl_sym)) {
-                                full_array = llvm_utils->CreateLoad2(type->getPointerTo(), ptr_to_data_ptr);
-                                tmp = llvm_utils->create_ptr_gep2(type, full_array, idx);
-                            } else {
-                                ASR::Struct_t* class_sym = ASR::down_cast<ASR::Struct_t>(decl_sym);
-
-                                llvm::Type* class_type = llvm_utils->getClassType(class_sym, false);
-                                llvm::Type* class_type_ptr = class_type->getPointerTo();
-                                llvm::Value* casted_ptr_to_data_ptr = builder->CreateBitCast(
-                                    ptr_to_data_ptr, class_type_ptr->getPointerTo());
-                                full_array = llvm_utils->CreateLoad2(class_type_ptr, casted_ptr_to_data_ptr);
-
-                                // Check if vptr is NULL (freshly allocated empty wrapper)
-                                llvm::Value* vptr_ptr = llvm_utils->create_gep2(class_type, full_array, 0);
-                                llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, vptr_ptr);
-                                llvm::Value* vptr_is_null = builder->CreateICmpEQ(
-                                    builder->CreatePtrToInt(vptr, llvm::Type::getInt64Ty(context)),
-                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
-
-                                llvm::Value* data_field_ptr = llvm_utils->create_gep2(class_type, full_array, 1);
-                                llvm::Type* data_field_type = class_type->getStructElementType(1);
-                                llvm::Value* data_ptr = llvm_utils->CreateLoad2(data_field_type, data_field_ptr);
-
-                                // Allocate temp wrapper on stack
-                                llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, class_type);
-
-                                // Store vptr in field 0 (same for both cases)
-                                builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
-
-                                // If vptr is non-NULL, compute element via byte offset
-                                // If vptr is NULL (empty wrapper for assignment target),
-                                // store NULL data (assignment will initialize it)
-                                llvm_utils->create_if_else(vptr_is_null, [&]() {
-                                    builder->CreateStore(
-                                        llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(data_field_type)),
-                                        llvm_utils->create_gep2(class_type, temp_wrapper, 1));
-                                }, [&]() {
-                                    llvm::Value* element_ptr_i8 = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
-                                    builder->CreateStore(element_ptr_i8, llvm_utils->create_gep2(class_type, temp_wrapper, 1));
-                                });
-
-                                if (polymorphic_type != nullptr) {
-                                    tmp = builder->CreateBitCast(
-                                        llvm_utils->CreateLoad2(data_field_type,
-                                            llvm_utils->create_gep2(class_type, temp_wrapper, 1)),
-                                        polymorphic_type->getPointerTo());
-                                } else {
-                                    tmp = temp_wrapper;
-                                }
-                            }
+                            tmp = builder->CreateBitCast(temp_wrapper, type->getPointerTo());
                         }
                     } else {
                         full_array = llvm_utils->CreateLoad2(type->getPointerTo(), ptr_to_data_ptr);
