@@ -2706,6 +2706,9 @@ public:
             ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
             ASR::abiType abt = ASR::abiType::Source;
+            
+            llvm::Value* address_to_nullify = nullptr;
+
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 curr_obj = tmp_var->m_v;
@@ -2730,6 +2733,9 @@ public:
                 this->visit_expr_wrapper(sm->m_v, ASRUtils::is_class_type(ASRUtils::extract_type(caller_type)));
                 ptr_loads = ptr_loads_copy;
                 llvm::Value* dt = tmp;
+                
+                address_to_nullify = dt; 
+
                 ASR::symbol_t *struct_sym = nullptr;
                 llvm::Type* dt_type = llvm_utils->getStructType(
                     ASR::down_cast<ASR::Struct_t>(
@@ -2749,6 +2755,7 @@ public:
                     }
                     llvm::Value* dt_ptr = llvm_utils->create_gep2(dt_type_poly, dt, 1);
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt_ptr);
+                    address_to_nullify = dt_ptr;
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v) &&
                            ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(sm->m_v))) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
@@ -2777,6 +2784,7 @@ public:
                 LCOMPILERS_ASSERT(dt->getType()->isPointerTy());
                 llvm::Value* dt_1 = builder->CreateGEP(name2dertype[curr_struct], dt, idx_vars);
                 tmp = dt_1;
+                address_to_nullify = dt_1;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
                                     ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
@@ -2794,7 +2802,7 @@ public:
                 struct_sym = ASR::down_cast<ASR::Struct_t>(sym);
             }
             int dims = ASRUtils::extract_n_dims_from_ttype(cur_type);
-            if(ASRUtils::is_character(*cur_type)) { // Handle Strings (array of strings or just string)
+            if(ASRUtils::is_character(*cur_type)) { 
                 tmp = LLVM::is_llvm_pointer(*cur_type) ?
                     builder->CreateLoad(llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get()), tmp)
                     : tmp ;
@@ -2860,9 +2868,8 @@ public:
                             }
                         }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
-                        // Deallocate data of class first
                         if( ASRUtils::is_pointer(cur_type) || 
-                            !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(cur_type)) ) { // TODO : Clean this by coordinating with `finalize_before_deallocate()`
+                            !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(cur_type)) ) {
                             if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::type_get_past_allocatable_pointer(cur_type)) && ASRUtils::is_pointer(cur_type) ){
                                 auto const inner_struct = llvm_utils->CreateLoad2(llvm_utils->getStructType(struct_sym, module.get(), true), llvm_utils->create_gep2(llvm_data_type, tmp, 1));
                                 llvm_utils->lfortran_free(inner_struct);
@@ -2873,7 +2880,7 @@ public:
                             builder->CreateCall(free_fn, args);
                         }
                         builder->CreateStore(
-                            llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_); // Store NULL as identifier for deallocated variable.
+                            llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_);
                     }, [](){});
                 } else {
                     if( LLVM::is_llvm_pointer(*cur_type) ) {
@@ -2887,22 +2894,36 @@ public:
                     ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::type_get_past_allocatable(cur_type)));
-                    // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
+                    
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
-
                         if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
-                            // Non-unlimited polymorphic class arrays use a single
-                            // wrapper {vptr, data*} stored as the descriptor's data
-                            // pointer. finalize_before_deallocate already frees the
-                            // per-element payloads, the consecutive struct block and
-                            // the wrapper itself, so skip call_lfortran_free to avoid
-                            // a double-free; just null the descriptor's data pointer.
                             arr_descr->reset_is_allocated_flag(typ, tmp, llvm_data_type);
                         } else {
                             call_lfortran_free(free_fn, typ,  llvm_data_type);
+                        }
+
+                      
+                        // Explicit deallocates should keep the descriptor for reuse.
+                        bool is_implicit_dealloc = false;
+                        if constexpr (std::is_same_v<T, ASR::ImplicitDeallocate_t>) {
+                            is_implicit_dealloc = true;
+                        }
+
+                        if (in_struct && address_to_nullify && is_implicit_dealloc) {
+#if LLVM_VERSION_MAJOR < 15
+                            llvm::Value* desc_i8 = builder->CreateBitCast(tmp, llvm::Type::getInt8PtrTy(context));
+#else
+                            llvm::Value* desc_i8 = tmp; // Opaque pointers in LLVM 15+
+#endif
+                            builder->CreateCall(free_fn, {allocator, desc_i8});
+                            llvm::Type* desc_ptr_type = tmp->getType();
+                            builder->CreateStore(
+                                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(desc_ptr_type)),
+                                address_to_nullify
+                            );
                         }
                     }, [](){});
                 }
@@ -9490,6 +9511,32 @@ public:
         } else {
             // Allocate descriptor on the heap so it survives after this
             // function returns (the caller holds a pointer).
+            
+           
+            bool is_struct_member = ASR::is_a<ASR::StructInstanceMember_t>(*target_section->m_v);
+            llvm::Value* old_desc = llvm_utils->CreateLoad2(
+                target_type_llvm->getPointerTo(), target_desc);
+            
+            llvm::Value* is_not_null = builder->CreateICmpNE(
+                old_desc,
+                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(target_type_llvm->getPointerTo()))
+            );
+            
+            llvm_utils->create_if_else(is_not_null, [&]() {
+                // Only free if it's a struct member to avoid freeing stack-allocated common block pointers
+                if (is_struct_member) {
+                    llvm::Function* free_fn = llvm_utils->_Deallocate();
+                    llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+                    
+#if LLVM_VERSION_MAJOR < 15
+                    llvm::Value* desc_i8 = builder->CreateBitCast(old_desc, llvm::Type::getInt8PtrTy(context));
+#else
+                    llvm::Value* desc_i8 = old_desc; // Opaque pointers in LLVM 15+
+#endif
+                    builder->CreateCall(free_fn, {allocator, desc_i8});
+                }
+            }, [](){});
+
             new_desc = arr_descr->allocate_descriptor_on_heap(
                 target_type_llvm);
         }
