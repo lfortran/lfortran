@@ -18393,40 +18393,8 @@ public:
             ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
             is_string_array = ASRUtils::is_array(unit_type);
             llvm::Value *src_data, *src_len;
-
-            ASR::ttype_t *unit_type_past_ptr = ASRUtils::type_get_past_allocatable_pointer(unit_type);
-            bool is_descriptor = false;
-            
-            if (is_string_array && ASR::is_a<ASR::Array_t>(*unit_type_past_ptr)) {
-                ASR::Array_t *arr_t = ASR::down_cast<ASR::Array_t>(unit_type_past_ptr);
-                if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                    is_descriptor = true;
-                }
-            }
-
-            if (is_descriptor) {
-                // Unpack the array section descriptor to get raw data
-                llvm::Type *llvm_unit_type = llvm_utils->get_type_from_ttype_t_util(
-                    x.m_unit, unit_type_past_ptr, module.get());
-                
-                src_data = arr_descr->get_pointer_to_data(llvm_unit_type, unit_val);
-                src_data = builder->CreateBitCast(src_data, character_type);
-
-                // Extract the length of the string elements from the ASR type
-                ASR::String_t *str_type = ASRUtils::get_string_type(unit_type);
-                if (str_type->m_length && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_length)) {
-                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_length)->m_n;
-                    src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len);
-                } else {
-                    // Fallback to 0 if dynamically sized
-                    src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0); 
-                }
-            } else {
-                // Standard logic for scalars and fixed-size arrays
-                std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
-                    ASRUtils::get_string_type(x.m_unit), unit_val);
-            }
-
+            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                ASRUtils::get_string_type(x.m_unit), unit_val);
             single_args.push_back(src_data);
             single_args.push_back(src_len);
             
@@ -18842,40 +18810,8 @@ public:
             ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
             is_string_array = ASRUtils::is_array(unit_type);
             llvm::Value *src_data, *src_len;
-
-            ASR::ttype_t *unit_type_past_ptr = ASRUtils::type_get_past_allocatable_pointer(unit_type);
-            bool is_descriptor = false;
-            
-            if (is_string_array && ASR::is_a<ASR::Array_t>(*unit_type_past_ptr)) {
-                ASR::Array_t *arr_t = ASR::down_cast<ASR::Array_t>(unit_type_past_ptr);
-                if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                    is_descriptor = true;
-                }
-            }
-
-            if (is_descriptor) {
-                // Unpack the array section descriptor to get raw data
-                llvm::Type *llvm_unit_type = llvm_utils->get_type_from_ttype_t_util(
-                    x.m_unit, unit_type_past_ptr, module.get());
-                
-                src_data = arr_descr->get_pointer_to_data(llvm_unit_type, unit_val);
-                src_data = builder->CreateBitCast(src_data, character_type);
-
-                // Extract the length of the string elements from the ASR type
-                ASR::String_t *str_type = ASRUtils::get_string_type(unit_type);
-                if (str_type->m_length && ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_length)) {
-                    int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_type->m_length)->m_n;
-                    src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len);
-                } else {
-                    // Fallback to 0 if dynamically sized
-                    src_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0); 
-                }
-            } else {
-                // Standard logic for scalars and fixed-size arrays
-                std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
-                    ASRUtils::get_string_type(x.m_unit), unit_val);
-            }
-
+            std::tie(src_data, src_len) = llvm_utils->get_string_length_data(
+                ASRUtils::get_string_type(x.m_unit), unit_val);
             args.push_back(src_data);
             args.push_back(src_len);
             
