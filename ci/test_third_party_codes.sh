@@ -344,6 +344,18 @@ time_section "🧪 Testing M_CLI2" '
   cd ..
 '
 
+time_section "🧪 Testing M_intrinsics" '
+  git clone https://github.com/urbanjost/M_intrinsics
+  cd M_intrinsics
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout 6f7a80a2920b9f276069a7c31606f03482afd611
+  micromamba install -c conda-forge fpm
+  fpm --compiler=$FC build --flag "--realloc-lhs-arrays --cpp"
+
+  print_success "Done with M_intrinsics"
+  cd ..
+'
+
 if [[ "$(uname)" != "Darwin" ]]; then
 
 time_section "🧪 Testing fortran_mpi" '

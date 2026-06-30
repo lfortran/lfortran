@@ -391,6 +391,7 @@ private:
     Allocator &al;
 public:
     SymbolTable *current_scope;
+    SymbolTable *current_function_scope;
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> nested_var_to_ext_var;
     bool skip_replace=false;
     ReplacerNestedVars(Allocator &_al) : al(_al) {}
@@ -403,7 +404,7 @@ public:
             std::string m_name = nested_var_to_ext_var[x->m_v].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x->m_v].second;
             std::string sym_name = ASRUtils::symbol_name(t);
-            ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
+            ASR::symbol_t *existing = current_function_scope->get_symbol(sym_name);
             if (existing != nullptr &&
                     ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
                     ASRUtils::symbol_get_past_external(existing) == t) {
@@ -412,9 +413,9 @@ public:
             }
             std::string unique_name = sym_name;
             if (existing != nullptr) {
-                unique_name = current_scope->get_unique_name(sym_name, false);
+                unique_name = current_function_scope->get_unique_name(sym_name, false);
             }
-            ASR::symbol_t *ext_sym = make_external_symbol(al, current_scope, t, unique_name,
+            ASR::symbol_t *ext_sym = make_external_symbol(al, current_function_scope, t, unique_name,
                 m_name, sym_name, ASR::accessType::Public);
             x->m_v = ext_sym;
         }
@@ -459,6 +460,18 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         if (nesting_depth==1 && !is_in_call) skip_replace = true;
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
+        if (!func_stack.empty()) {
+            ASR::symbol_t *fn_sym = func_stack.back();
+            if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
+                replacer.current_function_scope = ASR::down_cast<ASR::Function_t>(fn_sym)->m_symtab;
+            } else if (ASR::is_a<ASR::Program_t>(*fn_sym)) {
+                replacer.current_function_scope = ASR::down_cast<ASR::Program_t>(fn_sym)->m_symtab;
+            } else {
+                replacer.current_function_scope = current_scope;
+            }
+        } else {
+            replacer.current_function_scope = current_scope;
+        }
         replacer.skip_replace = skip_replace;
         replacer.replace_expr(*current_expr);
     }
