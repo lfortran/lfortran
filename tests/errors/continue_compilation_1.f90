@@ -811,8 +811,29 @@ program continue_compilation_1
         end type
     end subroutine
 
+    subroutine co_max_complex_arg()
+        implicit none
+        complex :: z
+        call co_max(z)
+    end subroutine
+
+    subroutine cosum_invalid_argument_type()
+        implicit none
+        logical :: mask
+        call co_sum(mask)
+    end subroutine
+
     subroutine duplicate_statement_label()
 1000    continue
 1000    continue
+    end subroutine
+
+    subroutine select_type_nonpolymorphic()
+        implicit none
+        integer :: a
+        select type (a)
+        type is (integer)
+            print *, a
+        end select
     end subroutine
 end program

@@ -1,27 +1,9 @@
 program coarrays_11
-    implicit none
+    character(3) :: s = "abc"
 
-    integer :: x[*]
-    integer :: flag[*]
+    if (this_image() == 2) s = "xyz"
 
-    x = 0
-    flag = 0
+    call co_max(s)
 
-    if (this_image() == 1) then
-        x[2] = 123
-        sync memory
-        flag[2] = 1
-
-    else if (this_image() == 2) then
-        do while (flag == 0)
-        end do
-
-        sync memory
-
-        if (x /= 123) then
-            print *, "FAIL", x
-        else
-            print *, "PASS"
-        end if
-    end if
+    if (s /= "xyz") error stop ! run with 2 or more images
 end program coarrays_11

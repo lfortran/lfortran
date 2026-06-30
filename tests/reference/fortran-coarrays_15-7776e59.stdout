@@ -9,30 +9,31 @@ type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
-program coarrays_11
+
+program coarrays_15
 implicit none
 integer(4) :: exit_code
-character(len=3, kind=1), save :: s = "abc"
+integer(4) :: x
 call __module_prif_prif_init(exit_code)
-if (lcompilers_prif_this_image() == 2) then
-    s = "xyz"
-end if
-call __module_prif_prif_co_max_character(s)
-if (s /= "xyz") then
-    error stop
+x = lcompilers_prif_this_image()
+call __module_prif_prif_co_min(x, 1)
+if (lcompilers_prif_this_image() == 1) then
+    if (x /= 1) then
+        error stop
+    end if
 end if
 call __module_prif_prif_stop(.false.)
 
 contains
 
 interface
-    subroutine __module_prif_prif_co_max_character(a, result_image, stat, errmsg, errmsg_alloc)
-        character(len=*, kind=1), dimension(..), intent(inout), target :: a
+    subroutine __module_prif_prif_co_min(a, result_image, stat, errmsg, errmsg_alloc)
+        type(*), dimension(..), intent(inout), target :: a
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
         integer(4), intent(in), optional :: result_image
         integer(4), intent(out), optional :: stat
-    end subroutine __module_prif_prif_co_max_character
+    end subroutine __module_prif_prif_co_min
 end interface
 
 interface
@@ -60,4 +61,4 @@ integer(4) function lcompilers_prif_this_image()
     call __module_prif_prif_this_image_no_coarray(lcompilers_prif_this_image)
 end function lcompilers_prif_this_image
 
-end program coarrays_11
+end program coarrays_15
