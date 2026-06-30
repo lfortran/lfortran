@@ -1964,6 +1964,7 @@ RUN(NAME bindc_08 LABELS gfortran llvm EXTRAFILES bindc_08.c EXTRA_ARGS --reallo
 RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc_11 LABELS gfortran llvm fortran)
+RUN(NAME bindc_c_main LABELS gfortran llvm EXTRAFILES bindc_c_main.c)
 RUN(NAME bindc_12 LABELS gfortran llvm)
 RUN(NAME bindc_13 LABELS gfortran llvm)
 RUN(NAME bindc_14 LABELS gfortran llvm)
