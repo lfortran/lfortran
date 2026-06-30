@@ -61,6 +61,7 @@ namespace LCompilers::CommandLineInterface {
         bool print_targets = false;
         bool print_c_include_dir = false;
         bool fixed_form_infer = false;
+        bool free_form = false;
         bool cpp = false;
         bool cpp_infer = false;
         bool no_cpp = false;

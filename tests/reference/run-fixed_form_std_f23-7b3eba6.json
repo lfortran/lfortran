@@ -1,0 +1,13 @@
+{
+    "basename": "run-fixed_form_std_f23-7b3eba6",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/fixed_form_std_f23.f",
+    "infile_hash": "55c3dbc953b25f1739cada962ae6dfa5c5ea6d19593d60fe40b4dd18",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-fixed_form_std_f23-7b3eba6.stdout",
+    "stdout_hash": "6986ebd46505c399fa6f860f06e3da006d26980cedae0d2733c026bd",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
