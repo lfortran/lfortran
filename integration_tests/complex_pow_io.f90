@@ -1,27 +1,33 @@
-program complex_pow_io
+program mandelbrot
     implicit none
-    complex :: z32, base32, res32
-    complex(8) :: z64, base64, res64
+    integer, parameter :: dp = kind(0.d0)
+    real(dp), parameter :: D = 0.035_dp
+    integer :: ix, iy, k
+    complex(dp) :: c, z
+    logical :: escaped
 
-
-    z32 = (3.0, 4.0)
-    if (abs(z32**2 - (-7.0, 24.0)) > 1e-4) error stop 1
-
-    z64 = (3.0d0, 4.0d0)
-    if (abs(z64**2 - (-7.0d0, 24.0d0)) > 1e-10) error stop 2
-
-    base32 = (0.0, 0.0)
-    res32 = base32 ** 0.0
-    res32 = base32 ** (-2.0)
-
-    base64 = (0.0d0, 0.0d0)
-    res64 = base64 ** 0.0d0
-    res64 = base64 ** (-2.0d0)
-
-
-    if (real(res32) == 999.0) print *, "dummy"
-
-    write(*, "(a)", advance="no") "A"
-    write(*, "(a)", advance="no") " "
-    write(*, "(a)") "B"
-end program
+    do iy = -15, 15
+        do ix = -35, 35
+            c = cmplx(-0.75_dp + D*ix, -1.66_dp * D*iy, dp)
+            z = (0.0_dp, 0.0_dp)
+            escaped = .false.
+            
+            do k = 1, 200
+                z = z**2 + c
+                
+                if (z%re**2 + z%im**2 > 4.0_dp) then
+                    escaped = .true.
+                    exit
+                end if
+            end do
+            
+            if (escaped) then
+                write(*, "(a)", advance="no") " "
+            else
+                write(*, "(a)", advance="no") "*"
+            end if
+        end do
+        
+        write(*, *) 
+    end do
+end program mandelbrot
