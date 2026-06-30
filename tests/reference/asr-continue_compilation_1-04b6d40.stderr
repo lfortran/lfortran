@@ -1696,14 +1696,26 @@ semantic error: first argument of `llt` must have kind equal to 1
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
-semantic error: duplicate statement label 1000
-   --> tests/errors/continue_compilation_1.f90:816:9
+semantic error: `a` argument of `co_max` must be of integer, real or character type, but got complex
+   --> tests/errors/continue_compilation_1.f90:817:21
     |
-816 | 1000    continue
+817 |         call co_max(z)
+    |                     ^ must be integer, real or character type
+
+semantic error: `a` argument of `co_sum` must be of integer, real or complex type, but got logical
+   --> tests/errors/continue_compilation_1.f90:823:21
+    |
+823 |         call co_sum(mask)
+    |                     ^^^^ must be integer, real or complex type
+
+semantic error: duplicate statement label 1000
+   --> tests/errors/continue_compilation_1.f90:828:9
+    |
+828 | 1000    continue
     |         ^^^^^^^^ 
 
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:822:22
+   --> tests/errors/continue_compilation_1.f90:834:22
     |
-822 |         select type (a)
+834 |         select type (a)
     |                      ^ 
