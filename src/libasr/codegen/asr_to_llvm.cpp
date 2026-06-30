@@ -18397,7 +18397,6 @@ public:
                 ASRUtils::get_string_type(x.m_unit), unit_val);
             single_args.push_back(src_data);
             single_args.push_back(src_len);
-            
             if (is_string_array) {
                 ASR::dimension_t* dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(unit_type, dims);
@@ -18814,7 +18813,6 @@ public:
                 ASRUtils::get_string_type(x.m_unit), unit_val);
             args.push_back(src_data);
             args.push_back(src_len);
-            
             if (is_string_array) {
                 // For character arrays, pass the number of elements
                 ASR::dimension_t* dims = nullptr;
@@ -18827,12 +18825,10 @@ public:
         } else {
             args.push_back(unit_val);
         }
-        
         args.push_back(iostat);
         args.push_back(read_size);
         args.push_back(advance);
         args.push_back(advance_length);
-        
         llvm::Value* fmt_data;
         llvm::Value* fmt_len;
         std::tie(fmt_data, fmt_len) = get_string_data_and_length(fmt_expr);
