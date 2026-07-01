@@ -970,7 +970,21 @@ namespace GetEnvironmentVariable {
         std::string c_func_name = "_lfortran_get_environment_variable";
         std::string new_name = "_lcompilers_get_environment_variable_";
         declare_basic_variables(new_name);
-        fill_func_arg_sub("name", arg_types[0], In);
+
+        auto get_assumed_len_string = [&](ASR::ttype_t* type) -> ASR::ttype_t* {
+            if (ASR::is_a<ASR::String_t>(*type)) {
+                ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(type);
+                if (str_t->m_len) {
+                    return ASRUtils::TYPE(ASR::make_String_t(
+                        al, str_t->base.base.loc, str_t->m_kind, nullptr,
+                        ASR::string_length_kindType::AssumedLength,
+                        str_t->m_physical_type));
+                }
+            }
+            return type;
+        };
+
+        fill_func_arg_sub("name", get_assumed_len_string(arg_types[0]), In);
         if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {// this is the case where args[1] is `value`
             /*
             interface 
@@ -1042,7 +1056,7 @@ namespace GetEnvironmentVariable {
             body.push_back(al, b.SubroutineCall(_lfortran_get_environment_variable, call_to_lfortran_get_environment_variable));
 
             // Declare `value` +  Assign `envVar_string_holder` into func arg `value`
-            fill_func_arg_sub("value", arg_types[1], Out);
+            fill_func_arg_sub("value", get_assumed_len_string(arg_types[1]), Out);
             body.push_back(al, b.Assignment(args[1], envVar_string_holder));
             // Deallocate `envVar_string_holder`
             body.push_back(al, b.Deallocate(envVar_string_holder));
