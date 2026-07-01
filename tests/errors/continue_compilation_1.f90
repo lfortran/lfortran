@@ -836,4 +836,9 @@ program continue_compilation_1
             print *, a
         end select
     end subroutine
+
+    subroutine length_specifier_non_character()
+        implicit none
+        integer :: i*2
+    end subroutine
 end program
