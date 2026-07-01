@@ -5231,39 +5231,40 @@ template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
     const std::function<void (const std::string &, const Location &)> err,
-    bool raise_error=true) {
+    bool raise_error=true, bool is_dt_present=false) {
+    // When `is_dt_present` is true, `args[0]` is the passed-object (the `dt`
+    // of a type-bound procedure call). A `nopass` specific procedure does not
+    // receive the passed-object, so it must be matched against the arguments
+    // excluding `args[0]`.
+    auto matches = [&](ASR::symbol_t* proc_sym) -> bool {
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
+            ASR::StructMethodDeclaration_t *clss_fn
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
+            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
+            if( is_dt_present && clss_fn->m_is_nopass && args.n >= 1 ) {
+                Vec<ASR::call_arg_t> args_no_dt;
+                args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
+                return select_func_subrout(proc, args_no_dt, loc, err);
+            }
+            return select_func_subrout(proc, args, loc, err);
+        } else {
+            return select_func_subrout(proc_sym, args, loc, err);
+        }
+    };
     for (size_t i=0; i < p.n_procs; i++) {
         if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
             continue;
         }
-        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
-            ASR::StructMethodDeclaration_t *clss_fn
-                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
+        if( matches(p.m_procs[i]) ) {
+            return i;
         }
     }
     for (size_t i=0; i < p.n_procs; i++) {
         if (!is_elemental(p.m_procs[i])) {
             continue;
         }
-        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
-            ASR::StructMethodDeclaration_t *clss_fn
-                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
+        if( matches(p.m_procs[i]) ) {
+            return i;
         }
     }
     if( raise_error ) {
