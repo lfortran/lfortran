@@ -66,9 +66,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             warnwrite:
                                 (ExternalSymbol
@@ -107,8 +105,8 @@
                                                     8
                                                     1_fpm_new_settings_name
                                                     7 name
-                                                    fpm_new_settings
-                                                    []
+                                                    modules_44_fpm_cmd_new
+                                                    [fpm_new_settings]
                                                     name
                                                     Public
                                                 ),
@@ -141,9 +139,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -174,9 +170,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     cmd_new
@@ -270,9 +264,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -325,9 +317,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     fpm_new_settings
@@ -406,9 +396,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             fname:
                                                 (Variable
@@ -432,9 +420,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     warnwrite

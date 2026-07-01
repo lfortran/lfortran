@@ -95,6 +95,8 @@ union YYSTYPE {
 
     AST::common_block_t * common_block;
     Vec<AST::common_block_t> vec_common_block;
+
+    Vec<AST::namelist_group_t> vec_namelist_group;
 };
 
 static_assert(std::is_standard_layout<YYSTYPE>::value);
@@ -102,7 +104,7 @@ static_assert(std::is_trivial<YYSTYPE>::value);
 // Ensure the YYSTYPE size is equal to Vec<AST::ast_t*>, which is a required member, so
 // YYSTYPE has to be at least as big, but it should not be bigger, otherwise it
 // would reduce performance.
-#if !defined(HAVE_BUILD_TO_WASM) && !defined(__ppc__)
+#if !defined(HAVE_BUILD_TO_WASM) && !defined(__ppc__) && !defined(__EMSCRIPTEN__)
 static_assert(sizeof(YYSTYPE) == sizeof(Vec<AST::ast_t*>));
 #endif
 } // namespace LCompilers::LFortran

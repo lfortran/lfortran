@@ -57,9 +57,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -143,9 +141,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -174,9 +170,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             sources:
                                                 (Variable
@@ -218,9 +212,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     add_sources_from_dir
@@ -384,24 +376,22 @@
                                                     )
                                                     ()
                                                 )]
-                                                (Allocatable
-                                                    (Array
-                                                        (StructType
-                                                            [(Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            (Integer 8)]
-                                                            []
-                                                            .true.
-                                                            .false.
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
-                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        ())]
-                                                        DescriptorArray
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 8)]
+                                                        []
+                                                        .true.
+                                                        .false.
                                                     )
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    ())]
+                                                    DescriptorArray
                                                 )
                                                 ()
                                                 ColMajor
@@ -445,9 +435,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -473,9 +461,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -501,9 +487,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     srcfile_t

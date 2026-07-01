@@ -14,7 +14,7 @@ Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
     bool target_attr, bool contiguous_attr, string? bindc_name,
     bool is_volatile, bool is_protected,
     pass_attr pass_attr, identifier? self_argument,
-    int corank, codimension* codims, bool is_coarray)
+    codimension* codims)
 ```
 
 ### Arguments
@@ -77,22 +77,11 @@ dummy argument of the procedure interface receives the passed object:
 - a name (e.g. `"pt"`) — the passed object goes to the dummy argument with
   that name, which may be at any position in the argument list
 
-`corank` the number of codimensions for coarray variables (0 for non-coarrays).
-When non-zero, indicates that this variable is a coarray and specifies how many
-coarray indices (image selectors) are required in `CoarrayRef` expressions to
-reference it across images.
-
 `codims` optional codimension bounds for coarray variables. Each entry follows
 the same structure as a `dimension` (start and length). When omitted, the
-coarray is treated as having deferred/unknown codimension bounds.
-
-`is_coarray` if true, this variable is marked as a coarray declaration. This is
-typically true when `corank > 0`.
-
-When non-zero, indicates that this variable is a coarray and specifies how many
-coarray indices (image selectors) are required in `CoarrayRef` expressions to
-reference it across images. For example, `integer :: x[*]` has `corank=1`, while
-`integer :: y(10)[*,*]` has `corank=2`.
+variable is not a coarray. The number of codimension entries (`n_codims`) serves
+as the corank of the variable, and `n_codims > 0` indicates the variable is a
+coarray.
 
 ### Return values
 
@@ -150,10 +139,10 @@ integer :: scalar_not_coarray         ! rank 0, corank 0
 integer :: array_not_coarray(10)      ! rank 1, corank 0
 ```
 
-The `corank` field of a `Variable` node indicates how many codimensions the variable
-has. For non-coarray variables, `corank` is 0. When accessing coarray elements in
-expressions, the number of coindices in a `CoarrayRef` node must match the variable's
-`corank`.
+The corank of a `Variable` is derived from its `codims` array — it is the
+number of codimension entries (`n_codims`). For non-coarray variables, `codims`
+is empty and the corank is 0. When accessing coarray elements in expressions,
+the number of coindices in a `CoarrayRef` node must match the variable's corank.
 
 `Variable` represents declarations of variables. `Var` nodes represent instances
 of variables in code. To represent the use of a variable in an expression,
@@ -260,7 +249,7 @@ ASR (simplified):
     Public
     Required
     .false.
-    1              ! corank = 1 (this is a coarray with one codimension)
+    [(data_or_star ...)]  ! codims with n_codims=1 (one codimension entry)
 )
 ```
 
@@ -275,8 +264,8 @@ In the assignment `x[2] = ...`, the coarray reference is represented as:
 )
 ```
 
-The `corank=1` in the Variable declaration matches the single coindex `[2]` in the
-`CoarrayRef` expression.
+The single codimension entry in the Variable's `codims` (i.e. `n_codims=1`)
+matches the single coindex `[2]` in the `CoarrayRef` expression.
 
 ## See Also
 

@@ -34,7 +34,7 @@ end module
 
 program deallocate_02
 ! Test: spec expression with finalizable type constructor
-! Ensures insert_deallocate pass updates function dependencies
+! Ensures intent_out_deallocate pass updates function dependencies
 use m_deallocate_02, only: t, f
 implicit none
 call sub

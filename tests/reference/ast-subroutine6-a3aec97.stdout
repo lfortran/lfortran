@@ -146,6 +146,7 @@
             0
             ()
             [(ConcurrentControl
+                ()
                 i
                 1
                 N
@@ -200,6 +201,7 @@
             0
             ()
             [(ConcurrentControl
+                ()
                 j
                 1
                 N2

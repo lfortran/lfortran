@@ -68,15 +68,15 @@
 
           # nixpkgs version is 1.3.0, i.e. too old for us
           # this is largely copied from nixpkgs:
-          xeus_zmq_3_0 = llvmPkgs.stdenv.mkDerivation rec {
+          xeus_zmq_4_0 = llvmPkgs.stdenv.mkDerivation rec {
             pname = "xeus-zmq";
-            version = "3.0.0";
+            version = "4.0.0";
 
             src = pkgs.fetchFromGitHub {
               owner = "jupyter-xeus";
               repo = "xeus-zmq";
               rev = "${version}";
-              hash = "sha256-J9an+D1FLw99uJPCuux4YNRFcBMh24N3+GDoS/G/U28=";
+              hash = "sha256-aofA7e764TUHQwcc14yCXWqyHncbUmEO9+QcQ0ryDbY=";
             };
 
             nativeBuildInputs = with pkgs; [ cmake ];
@@ -128,7 +128,7 @@
 
             pandoc
             xeus
-            xeus_zmq_3_0
+            xeus_zmq_4_0
             nlohmann_json
 
             clang  # gcc env fails tests without clang available

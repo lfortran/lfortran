@@ -19,6 +19,9 @@ namespace LCompilers {
 class LLVMModule;
 class MLIRModule;
 class LLVMEvaluator;
+#ifdef __EMSCRIPTEN__
+class WasmLFortranExecutor;
+#endif
 
 /*
    FortranEvaluator is the main class to access the Fortran compiler.
@@ -111,12 +114,16 @@ public:
     Result<std::unique_ptr<MLIRModule>> get_mlir(
         ASR::asr_t &asr, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,
-        LocationManager &lm, diag::Diagnostics &diagnostics);
+        LocationManager &lm, diag::Diagnostics &diagnostics,
+        LCompilers::PassManager& pass_manager);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
     Allocator &get_al() { return al; };
 #ifdef HAVE_LFORTRAN_LLVM
     LLVMEvaluator &get_llvm_evaluator();
+#endif
+#ifdef __EMSCRIPTEN__
+    WasmLFortranExecutor &get_wasm_executor();
 #endif
 
 private:
@@ -124,6 +131,9 @@ private:
 #ifdef HAVE_LFORTRAN_LLVM
     std::unique_ptr<LLVMEvaluator> e;
     int eval_count;
+#endif
+#ifdef __EMSCRIPTEN__
+    std::unique_ptr<WasmLFortranExecutor> wasm_exec;
 #endif
     SymbolTable *symbol_table;
     std::string run_fn;

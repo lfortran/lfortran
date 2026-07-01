@@ -92,12 +92,17 @@ public:
         void visit_Variable(const ASR::Variable_t &x){
             ASR::Variable_t* x_ptr = &const_cast<ASR::Variable_t&>(x);
             if(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))){
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration));
-                ASR::ttype_t* new_type = func->m_function_signature;
-                if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
-                    new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
+                if (x_ptr->m_type_declaration) {
+                    ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration);
+                    if (decl_sym && ASR::is_a<ASR::Function_t>(*decl_sym)) {
+                        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(decl_sym);
+                        ASR::ttype_t* new_type = func->m_function_signature;
+                        if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
+                            new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
+                        }
+                        x_ptr->m_type = new_type;
+                    }
                 }
-                x_ptr->m_type = new_type;
             }
         }
 
@@ -385,6 +390,20 @@ private :
                 new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
             }
         }
+        /* Handle Case `character(*) :: str` (AssumedLength) -- Create `character(:), allocatable :: str` */
+        {
+            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
+                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::AssumedLength
+                                            && !ASRUtils::is_allocatable(new_type)
+                                            && !ASRUtils::is_pointer(new_type);
+            if(allocatable_needed){
+                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
+                str->m_len = nullptr;
+                str->m_len_kind = ASR::DeferredLength;
+                str->m_physical_type = ASR::DescriptorString;
+                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
+            }
+        }
         return new_type;
     }
 
@@ -589,6 +608,16 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 use_temp_var_for_return = (ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_value)) &&
                                             !ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_target)));
                 is_pointer_return = use_temp_var_for_return;
+                {
+                    ASR::ttype_t* target_type_ = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(target));
+                    ASR::ttype_t* value_type_ = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(value));
+                    if (ASRUtils::is_class_type(target_type_) &&
+                        !ASRUtils::is_class_type(value_type_)) {
+                        use_temp_var_for_return = true;
+                    }
+                }
             } else if (ASR::is_a<ASR::Associate_t>(xx)) {
                 ASR::Associate_t* associate = ASR::down_cast<ASR::Associate_t>(&xx);
                 value = associate->m_value;
@@ -666,12 +695,28 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     ASRUtils::expr_type(value));
                 bool class_to_type_mismatch = !ASRUtils::is_class_type(target_unwrapped) &&
                     ASRUtils::is_class_type(value_unwrapped);
+                bool type_to_class_mismatch = ASRUtils::is_class_type(target_unwrapped) &&
+                    !ASRUtils::is_class_type(value_unwrapped);
 
-                if (class_to_type_mismatch) {
+                if (class_to_type_mismatch || type_to_class_mismatch) {
                     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
-                    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
+                    ASR::symbol_t* struct_sym = nullptr;
+                    if (type_to_class_mismatch) {
+                        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
+                        if (struct_sym == nullptr &&
+                            ASR::is_a<ASR::Function_t>(*func_sym)) {
+                            ASR::Function_t* func_local =
+                                ASR::down_cast<ASR::Function_t>(func_sym);
+                            if (func_local->n_args > 0) {
+                                struct_sym = ASRUtils::get_struct_sym_from_struct_expr(
+                                    func_local->m_args[func_local->n_args - 1]);
+                            }
+                        }
+                    } else {
+                        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
+                    }
                     ASR::symbol_t* temp_sym = ASR::down_cast<ASR::symbol_t>(
                         ASRUtils::make_Variable_t_util(
                             al, target->base.loc, current_scope, s2c(al, var_name),

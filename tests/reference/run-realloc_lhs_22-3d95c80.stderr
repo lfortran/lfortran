@@ -2,4 +2,4 @@ runtime error: Array 'x' is not allocated. Allocate it manually or use the '--re
  --> tests/../integration_tests/realloc_lhs_22.f90:5:5
   |
 5 |     x = [1, 2, 3]
-  |     ^ 'x' not allocated here
+  |     ^ not allocated here

@@ -17,8 +17,14 @@
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
+#include <xeus/xhelper.hpp>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/bind.h>
+#include <xeus/xembind.hpp>
+#else
 #include <xeus-zmq/xzmq_context.hpp>
-#include <xeus-zmq/xserver_zmq_split.hpp>
+#include <xeus-zmq/xserver_zmq.hpp>
+#endif
 
 #include <nlohmann/json.hpp>
 
@@ -105,7 +111,8 @@ namespace LCompilers::LFortran {
 
         nl::json kernel_info_request_impl() override;
 
-        void shutdown_request_impl() override;
+        nl::json shutdown_request_impl(bool restart) override;
+        nl::json interrupt_request_impl() override;
     };
 
     
@@ -486,12 +493,22 @@ namespace LCompilers::LFortran {
         return result;
     }
 
-    void custom_interpreter::shutdown_request_impl() {
+    nl::json custom_interpreter::shutdown_request_impl(bool restart) {
         std::cout << "Bye!!" << std::endl;
+        return xeus::create_shutdown_reply(restart);
+    }
+
+    nl::json custom_interpreter::interrupt_request_impl() {
+        return xeus::create_interrupt_reply();
     }
 
     int run_kernel(const std::string &connection_filename)
     {
+#ifdef __EMSCRIPTEN__
+        (void)connection_filename;
+        throw LCompilersException("run_kernel() is not available in the WASM build");
+        return 1;
+#else
         std::unique_ptr<xeus::xcontext> context = xeus::make_zmq_context();
 
         // Create interpreter instance
@@ -511,7 +528,7 @@ namespace LCompilers::LFortran {
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_shell_main,
+                             xeus::make_xserver_default,
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
@@ -527,6 +544,23 @@ namespace LCompilers::LFortran {
         kernel.start();
 
         return 0;
+#endif // __EMSCRIPTEN__
     }
 
 } // namespace LCompilers::LFortran
+
+#ifdef __EMSCRIPTEN__
+namespace {
+    LCompilers::LFortran::custom_interpreter* make_interpreter(emscripten::val /*js_args*/)
+    {
+        return new LCompilers::LFortran::custom_interpreter();
+    }
+}
+
+EMSCRIPTEN_BINDINGS(my_module)
+{
+    xeus::export_core();
+    xeus::export_kernel<LCompilers::LFortran::custom_interpreter,
+                        &make_interpreter>("xkernel");
+}
+#endif // __EMSCRIPTEN__

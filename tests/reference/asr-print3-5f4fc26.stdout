@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -55,9 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -81,9 +77,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     print_03
@@ -112,6 +106,7 @@
                         )
                         ()
                         .true.
+                        ()
                         ()
                         ()
                         ()
@@ -151,6 +146,7 @@
                         ()
                         ()
                         ()
+                        ()
                     )
                     (FileWrite
                         0
@@ -178,6 +174,7 @@
                         ()
                         ()
                         ()
+                        ()
                     )
                     (FileWrite
                         0
@@ -196,6 +193,7 @@
                         )
                         ()
                         .true.
+                        ()
                         ()
                         ()
                         ()
@@ -226,6 +224,7 @@
                         ()
                         ()
                         ()
+                        ()
                     )
                     (FileWrite
                         0
@@ -241,6 +240,7 @@
                         ()
                         ()
                         .true.
+                        ()
                         ()
                         ()
                         ()

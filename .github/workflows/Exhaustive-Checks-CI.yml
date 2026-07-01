@@ -36,7 +36,7 @@ jobs:
           (github.event_name == 'pull_request' &&
            contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: src
@@ -100,7 +100,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -160,6 +160,7 @@ jobs:
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
 
+
 # Commented out to save CI runners:
 #  test-pixi:
 #    name: Pixi Build (${{ matrix.os }})
@@ -169,7 +170,7 @@ jobs:
 #      matrix:
 #        os: ["ubuntu-latest"]
 #    steps:
-#      - uses: actions/checkout@v6
+#      - uses: actions/checkout@v7
 #        with:
 #          fetch-depth: 0
 #      - uses: prefix-dev/setup-pixi@v0.8.1
@@ -225,7 +226,7 @@ jobs:
             llvm-version: "22"
             python-version: "3.10"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -482,6 +483,11 @@ jobs:
             echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
 
+      - name: Test coarray runtime with Caffeine
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash -e -l {0}
+        run: ci/test_caffeine.sh
+
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
@@ -490,7 +496,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -525,7 +531,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -549,7 +555,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -601,7 +607,7 @@ jobs:
       ${{ github.event_name == 'push' ||
           (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -662,7 +668,7 @@ jobs:
       USER: lfortran
       PROJECT: lfortran
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

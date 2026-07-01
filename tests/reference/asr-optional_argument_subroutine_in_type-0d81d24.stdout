@@ -12,8 +12,8 @@
                                     5
                                     1_test_type_test_subroutine
                                     3 test_subroutine
-                                    test_type
-                                    []
+                                    test_module
+                                    [test_type]
                                     test_subroutine
                                     Public
                                 ),
@@ -64,9 +64,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     main
@@ -111,9 +109,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 )
                                         })
                                     test_subroutine
@@ -172,9 +168,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             test_subroutine:
                                                 (StructMethodDeclaration

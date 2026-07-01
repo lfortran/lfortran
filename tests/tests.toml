@@ -800,6 +800,21 @@ cpp = true
 x86 = true
 
 [[test]]
+filename = "errors/read_error_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "errors/read_error_02.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
+filename = "read_iostat_01.f90"
+run = true
+options = "< tests/errors/read_error_01.in"
+
+[[test]]
 filename = "program2.f90"
 ast = true
 
@@ -1597,7 +1612,7 @@ run = true
 
 [[test]]
 filename = "finalize_01.f90"
-pass = "insert_deallocate"
+pass = "intent_out_deallocate"
 llvm = true
 
 [[test]]
@@ -2823,6 +2838,83 @@ ast_f90 = true
 filename = "coarrays_02.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "coarrays_03.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true --show-fortran"
+
+[[test]]
+filename = "coarrays_04.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true --show-fortran"
+
+[[test]]
+filename = "coarrays_05.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_06.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_07.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_08.f90"
+ast = true
+ast_f90 = true
+
+[[test]]
+filename = "coarrays_09.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_10.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_11.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_12.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_13.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_14.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_15.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
 
 [[test]]
 filename = "../integration_tests/program_03.f90"
@@ -4082,6 +4174,10 @@ filename = "errors/scalar_allocation_check_06.f90"
 run = true
 
 [[test]]
+filename = "errors/scalar_allocation_check_07.f90"
+run = true
+
+[[test]]
 filename = "errors/matmul_unallocated_01.f90"
 run = true
 
@@ -4836,6 +4932,10 @@ filename = "errors/array_shape_05.f90"
 run = true
 
 [[test]]
+filename = "errors/array_shape_06.f90"
+run = true
+
+[[test]]
 filename = "function_call1.f90"
 asr = true
 lookup_name = true
@@ -5168,3 +5268,29 @@ asr = true
 [[test]]
 filename = "../integration_tests/read_83.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/read_97.f90"
+asr = true
+
+[[test]]
+filename = "no_main_program_1.f90"
+run = true
+
+[[test]]
+filename = "no_main_program_2.f90"
+options = "--backend=c"
+run = true
+
+[[test]]
+filename = "no_main_program_3.f90"
+options = "--backend=cpp"
+run = true
+
+[[test]]
+filename = "errors/read_eof_01.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/shadow_same_symbol.f90"
+run = true

@@ -786,10 +786,12 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         Vec<ASR::call_arg_t> call_args;
         call_args.reserve(al, 1);
+        bool args_modified = false;
 
         for (size_t i=0; i<x.n_args; i++) {
             ASR::expr_t* val = x.m_args[i].m_value;
             if (val && ASR::is_a<ASR::IntrinsicElementalFunction_t>(*val) && ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(val))) {
+                args_modified = true;
                 ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(val);
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
                 std::string symengine_var = symengine_stack.push();
@@ -815,6 +817,7 @@ public:
             } else if (val && ASR::is_a<ASR::Cast_t>(*val)) {
                 ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(val);
                 if(cast_t->m_kind != ASR::cast_kindType::IntegerToSymbolicExpression) return;
+                args_modified = true;
                 this->visit_Cast(*cast_t);
                 ASR::symbol_t *var_sym = current_scope->get_symbol(symengine_stack.pop());
                 ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
@@ -827,6 +830,7 @@ public:
                 call_args.push_back(al, x.m_args[i]);
             }
         }
+        if (!args_modified) return;
         ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, x.m_name,
             x.m_name, call_args.p, call_args.n, x.m_dt, x.m_strict_bounds_checking));
         pass_result.push_back(al, stmt);

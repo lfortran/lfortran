@@ -29,9 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 ),
                             nml:
                                 (Namelist
@@ -62,9 +60,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
                                     []
-                                    .false.
                                 )
                         })
                     __lcompilers_created__nested_context__outer_
@@ -132,9 +128,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             i_nested_ctx:
                                                 (ExternalSymbol
@@ -173,9 +167,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
                                                                     []
-                                                                    .false.
                                                                 ),
                                                             nml:
                                                                 (ExternalSymbol
@@ -219,6 +211,7 @@
                                                         4 nml
                                                         ()
                                                         ()
+                                                        ()
                                                     )]
                                                     ()
                                                     Public
@@ -255,9 +248,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
                                                     []
-                                                    .false.
                                                 ),
                                             x_nested_ctx:
                                                 (ExternalSymbol

@@ -247,6 +247,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if( d == nullptr ) {
             implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
         } else {
+            d = builder.i2i_t(d, ASRUtils::expr_type(end));
             implied_doloop_size = builder.Add(builder.Div(
                 builder.Sub(end, start), d),
                 make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
@@ -529,6 +530,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                                         element_array_size);
                     }
                 }
+            } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*element)) {
+                ASR::expr_t* implied_doloop_size = ASRUtils::get_ImpliedDoLoop_size(al,
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(element));
+                if (array_size) {
+                    array_size = builder.Add(implied_doloop_size, array_size);
+                } else {
+                    array_size = implied_doloop_size;
+                }
             } else {
                 ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(element)));
@@ -576,11 +585,40 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 ASRUtils::get_fixed_size_of_array(x->m_type), int_type, x->base.base.loc);
     }
 
-   void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+    void replace_ImpliedDoLoop(ASR::ImpliedDoLoop_t* /*x*/) {
+        // Do not descend into ImpliedDoLoop, as it has its own scope for loop variables.
+        // Any ArrayConstructor inside will be handled by create_do_loop during ImpliedDoLoop expansion.
+    }
+
+    void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        // Skip ArrayConstructor replacement when any argument is a function
+        // call (FunctionCall or IntrinsicElementalFunction) returning an array.
+        // The implied_do_loop pass incorrectly expands these into do-loops,
+        // generating invalid code (e.g. lbound(Nint(data), ...) or calling
+        // functions multiple times). The downstream passes
+        // (array_struct_temporary + array_op) handle these cases properly.
+        for( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::expr_t* arg = x->m_args[i];
+            if( arg == nullptr ) continue;
+            bool is_array_func_call = false;
+            if( ASR::is_a<ASR::FunctionCall_t>(*arg) &&
+                ASRUtils::is_array(ASRUtils::expr_type(arg)) ) {
+                is_array_func_call = true;
+            } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*arg) &&
+                       ASRUtils::is_array(ASRUtils::expr_type(arg)) ) {
+                is_array_func_call = true;
+            } else if( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*arg) &&
+                       ASRUtils::is_array(ASRUtils::expr_type(arg)) ) {
+                is_array_func_call = true;
+            }
+            if( is_array_func_call ) {
+                return;
+            }
+        }
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
         bool is_result_var_fixed_size = false;
-        if (result_var != nullptr &&
+        if (result_var != nullptr && !ASR::is_a<ASR::ImpliedDoLoop_t>(*result_var) &&
             resultvar2value.find(result_var) != resultvar2value.end() &&
             resultvar2value[result_var] == &(x->base)) {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
@@ -860,6 +898,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         bool remove_original_statement, allocate_target = false;
         bool print = false, file_write = false;
         ASR::expr_t* m_unit = nullptr;
+        ASR::expr_t* m_rec = nullptr;
+        ASR::expr_t* m_iomsg = nullptr;
+        ASR::expr_t* m_iostat = nullptr;
+        ASR::expr_t* m_pos = nullptr;
+        bool m_is_formatted = true;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::stmt_t*>* parent_body;
@@ -883,6 +926,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             pass_result.reserve(al, 0);
             print = false, file_write = false;
             m_unit = nullptr;
+            m_rec = nullptr;
+            m_iomsg = nullptr;
+            m_iostat = nullptr;
+            m_pos = nullptr;
+            m_is_formatted = true;
         }
 
         void visit_Variable(const ASR::Variable_t& /*x*/) {
@@ -1037,7 +1085,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
             dim.push_back(al, d);
 
-            ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+            ASR::ttype_t* array_type;
+            if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                array_type = ASRUtils::expr_type(value);
+            } else {
+                array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+            }
             ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, value->base.loc,
                                         args.p, args.n, array_type, ASR::arraystorageType::ColMajor);
             return array_constant;
@@ -1129,7 +1182,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false, false, false,
                 nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr, 0, nullptr, 0, false);
+                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0);
             current_scope->add_symbol(accum_name,
                 ASR::down_cast<ASR::symbol_t>(accum_var_asr));
             ASR::expr_t* accum_ref = ASRUtils::EXPR(ASR::make_Var_t(
@@ -1214,13 +1267,44 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 } else {
                     // this will be file_write
                     LCOMPILERS_ASSERT(file_write);
-                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr));
+                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr, nullptr));
                 }
                 do_loop_body.push_back(al, stmt);
             }
             
             do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             return do_loop;
+        }
+
+        ASR::stmt_t* create_do_loop_unformatted_idl(ASR::ImpliedDoLoop_t* x) {
+            ASR::do_loop_head_t do_loop_head;
+            do_loop_head.loc = x->base.base.loc; do_loop_head.m_v = x->m_var;
+            do_loop_head.m_start = x->m_start; do_loop_head.m_end = x->m_end;
+            do_loop_head.m_increment = x->m_increment;
+
+            Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
+
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, x->n_values);
+            for (size_t i = 0; i < x->n_values; i++ ) {
+                if ( ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_values[i]) ) {
+                    do_loop_body.push_back(al, create_do_loop_unformatted_idl(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i])));
+                } else {
+                    args.push_back(al, x->m_values[i]);
+                }
+            }
+
+            if (args.size() > 0) {
+                ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc,
+                    0, m_unit, m_iomsg, m_iostat, nullptr,
+                    args.p, args.size(), nullptr, nullptr, nullptr,
+                    m_is_formatted, nullptr, m_rec, m_pos, nullptr));
+                do_loop_body.push_back(al, stmt);
+            }
+
+            return ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr,
+                do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         }
 
         void visit_Print(const ASR::Print_t &x) {
@@ -1432,6 +1516,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         void visit_FileWrite(const ASR::FileWrite_t &x) {
             file_write = true;
             m_unit = x.m_unit;
+            m_rec = x.m_rec;
+            m_iomsg = x.m_iomsg;
+            m_iostat = x.m_iostat;
+            m_pos = x.m_pos;
+            m_is_formatted = x.m_is_formatted;
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
                 remove_original_statement = false;
@@ -1456,6 +1545,31 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             for(size_t i = 0; i < x.n_values; i++) {
                 ASR::expr_t* value = x.m_values[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                    ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                    if (ASR::is_a<ASR::Tuple_t>(*idl->m_type)) {
+                        Vec<ASR::expr_t*> expanded_values;
+                        expanded_values.reserve(al, 16);
+                        if (expand_implied_do_loop_flat(idl, expanded_values)) {
+                            Vec<ASR::expr_t*> new_values;
+                            new_values.reserve(al, x.n_values + expanded_values.size());
+                            for (size_t j = 0; j < i; j++) {
+                                new_values.push_back(al, x.m_values[j]);
+                            }
+                            for (size_t j = 0; j < expanded_values.size(); j++) {
+                                new_values.push_back(al, expanded_values.p[j]);
+                            }
+                            for (size_t j = i + 1; j < x.n_values; j++) {
+                                new_values.push_back(al, x.m_values[j]);
+                            }
+                            write_stmt->m_values = new_values.p;
+                            write_stmt->n_values = new_values.size();
+                            i = i + expanded_values.size() - 1;
+                            continue;
+                        }
+                        remove_original_statement = true;
+                        pass_result.push_back(al, create_do_loop_unformatted_idl(idl));
+                        continue;
+                    }
                     ASR::asr_t* array_constant = create_array_constant(x, value);
 
                     write_stmt->m_values[i] = ASRUtils::EXPR(array_constant);

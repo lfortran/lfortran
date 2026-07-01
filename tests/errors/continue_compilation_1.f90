@@ -66,14 +66,14 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
-
 contains
 
+    integer function statement_function_name_conflict()
+        statement_function_name_conflict(argument) = 0
+    contains
+        integer function argument()
+        end function
+    end function
     subroutine my_undefined_type_test()
         implicit none
         type(another_undefined_type) :: s3_in_subroutine
@@ -298,13 +298,13 @@ program continue_compilation_1
     contiguous :: contig_not_declared
     contiguous :: MyClass
     class(Derived), allocatable :: derived_cls
-
-
-
-
-
-
-
+    integer, parameter :: z(1) = 2
+    integer, parameter :: qval(2) = reshape([7, 8], -[z])
+    integer :: u
+    type matrix(n)
+        integer, len :: n
+        real :: data(n)
+    end type
 
 
 
@@ -323,7 +323,7 @@ program continue_compilation_1
     !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
-
+    print 1+2
     a = 1
     print *, a(10)
     a5 = 8
@@ -485,16 +485,16 @@ program continue_compilation_1
 
     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [1.0, 2.0])
     print *, reshape([1, 2, 3, 4, 5, 6], [2, 3], order = [2, 3])
-
+    print *, a(b'01':2)
     print *, count(1)
     print *, count([2])
-
+    print *, a(1:2:b'10')
     a_real = [logical::]
     print *,size(a_real)
-
+    print *, dummy_sub()
     print *, iparity(["a", "b"])
     print *, parity(["a", "b"])
-    
+    print *, string(1:6)
     shape_ = [2, 3]
     matrix = reshape(source, shape_, pad=[0])
 
@@ -504,12 +504,12 @@ program continue_compilation_1
     print *, c%mymember
     ! c1 is Character
     print *, c1%mymember
-
+    print *, string(1:Z'100000003')
     print *, present(x,x)
     print *, present()
     print *, ieor(x)
     print *, ieor()
-
+    print *, min(c, c)
     exit
 
     ! calling function with less arguments
@@ -648,12 +648,15 @@ program continue_compilation_1
     a(1) = .true.
     derived_cls = base_var
     call print_len_non_char("  Hello World  ")
-
-
-
-
-
-
+    print  *, 9.99e+99
+    a5 = missing_required_arg_func()
+    integer :: m = 7
+    dimension :: m(3)
+    open(newunit=u, file="test.dat", status="replace", asynchronous=1)
+    open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
+    integer :: eoshift_bad_shift(2, 2)
+    eoshift_bad_shift = 1
+    b1 = eoshift(b1, eoshift_bad_shift)
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
@@ -713,5 +716,124 @@ program continue_compilation_1
     subroutine Z_01_sub()
         integer,allocatable  :: x(3)
         integer,pointer  :: y(3)
+    end subroutine
+
+    integer function missing_required_arg_func(stat)
+        integer, intent(out) :: stat
+        missing_required_arg_func = 0
+        stat = 0
+    end function
+    subroutine sub_common_block_nonconstant_lower_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(n:10)
+        common /common_nonconstant_lower_bound/ arr
+    end subroutine sub_common_block_nonconstant_lower_bound
+
+    subroutine sub_common_block_nonconstant_upper_bound(n)
+        implicit none
+        integer, intent(in) :: n
+        integer :: arr(1:n)
+        common /common_nonconstant_upper_bound/ arr
+    end subroutine sub_common_block_nonconstant_upper_bound
+    
+    subroutine select_case_array_bound()
+        implicit none
+        integer :: n
+        n = 1
+        select case (n)
+        case (:[2])
+        end select
+    end subroutine
+    subroutine bindc_optional_value(a) bind(c)
+        implicit none
+        integer, optional, value :: a
+    end subroutine
+    subroutine sub_alternate_return_intrinsic()
+        call cpu_time(*1)
+1       continue
+    end subroutine 
+    subroutine sync_all_stat_wrong_type()
+        implicit none
+        character(len=10) :: cstat
+        sync all (stat=cstat)  ! {Error} `stat` argument of `sync all` must be of type integer
+    end subroutine
+    subroutine sync_all_errmsg_wrong_type()
+        implicit none
+        integer :: imsg
+        sync all (errmsg=imsg)  ! {Error} `errmsg` argument of `sync all` must be of type character
+    end subroutine
+    subroutine sync_all_stat_array()
+        implicit none
+        integer :: astat(3)
+        sync all (stat=astat)  ! {Error} `stat` argument of `sync all` must be scalar
+    end subroutine
+    subroutine sync_all_stat_undeclared()
+        implicit none
+        sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
+    end subroutine
+    subroutine assumed_size_to_pointer_dummy(x)
+        integer :: x(*)
+        call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+    end subroutine
+    subroutine ptr_sink(x)
+        integer, pointer :: x(..)
+    end subroutine
+    subroutine select_case_complex()
+        implicit none
+        complex :: nn
+        select case (nn)
+        case default
+        end select
+    end subroutine
+    subroutine select_case_real()
+        implicit none
+        real :: x
+        select case (x)
+        case default
+        end select
+    end subroutine
+
+    subroutine lexical_intrinsic_nondefault_character()
+        implicit none
+        character(kind=4) :: glyph
+        print *, lge("a", glyph)  
+        print *, lgt("a", glyph)  
+        print *, lle(glyph, "z")  
+        print *, llt(glyph, "z")  
+    end subroutine
+
+    subroutine c_loc_default_component_initializer()
+        use iso_c_binding, only: c_loc, c_ptr
+        integer, target :: target_value
+        type :: holder
+            type(c_ptr) :: ptr = c_loc(target_value)
+        end type
+    end subroutine
+
+    subroutine co_max_complex_arg()
+        implicit none
+        complex :: z
+        call co_max(z)
+    end subroutine
+
+    subroutine cosum_invalid_argument_type()
+        implicit none
+        logical :: mask
+        call co_sum(mask)
+    end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
+
+    subroutine select_type_nonpolymorphic()
+        implicit none
+        integer :: a
+        select type (a)
+        type is (integer)
+            print *, a
+        end select
     end subroutine
 end program
