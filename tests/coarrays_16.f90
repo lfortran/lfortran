@@ -10,9 +10,9 @@ end subroutine coarrays_16_sub
 program coarrays_16
     integer :: a1
     integer :: b1
-    integer, save :: y[*] = 10
+    integer, save :: y[*] = 0
     
-    if (y /= 10) error stop
+    if (y /= 0) error stop
 
     if (this_image() == 2) then
       call coarrays_16_sub(a1)

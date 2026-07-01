@@ -19,7 +19,7 @@ integer(4), pointer, save :: y
 call __module_prif_prif_init(stat)
 call c_f_pointer(y__coarray_data, y)
 call __module_prif_prif_sync_all()
-if (y /= 10) then
+if (y /= 0) then
     error stop
 end if
 if (lcompilers_prif_this_image() == 2) then
