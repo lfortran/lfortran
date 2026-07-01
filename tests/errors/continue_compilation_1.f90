@@ -836,4 +836,14 @@ program continue_compilation_1
             print *, a
         end select
     end subroutine
+    subroutine do_concurrent_impure_rand()
+        implicit none
+        integer :: i
+        real :: x(1)
+        do concurrent (i = 1:4)
+            block
+                x = rand()
+            end block
+        end do
+    end subroutine
 end program
