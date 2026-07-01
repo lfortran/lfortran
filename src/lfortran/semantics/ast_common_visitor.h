@@ -15440,6 +15440,11 @@ public:
     {
         ASR::expr_t* first_arg_ = ASRUtils::expr_value(args[array_indices_in_args[0]]);
         size_t max_array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(first_arg_));
+        if (max_array_size == 0) {
+            // Zero-sized array: nothing to broadcast; keep the original
+            // (empty) result_array unchanged.
+            return;
+        }
         ASR::ttype_t* array_type = ASRUtils::expr_type(first_arg_);
         Vec<ASR::expr_t*> new_expr; new_expr.reserve(al, max_array_size);
 
