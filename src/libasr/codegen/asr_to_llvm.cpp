@@ -3893,13 +3893,22 @@ public:
                     arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
                 }
 
-                // Extract field 0 (type hash or vtable pointer) from both args
-                llvm::Value* id0_ptr = llvm_utils->create_gep2(class_type0, arg0, 0);
-                llvm::Value* id1_ptr = llvm_utils->create_gep2(class_type1, arg1, 0);
-                // Load and compare
                 llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type0)->getElementType(0);
-                llvm::Value* id0 = llvm_utils->CreateLoad2(field0_type, id0_ptr);
-                llvm::Value* id1 = llvm_utils->CreateLoad2(field0_type, id1_ptr);
+                auto get_type_id = [&](llvm::Value* arg, llvm::Type* class_type,
+                        ASR::symbol_t* struct_sym) -> llvm::Value* {
+                    llvm::Type* arg_type = arg->getType();
+                    if (arg_type->isPointerTy() &&
+                            arg_type->getPointerElementType() == class_type) {
+                        llvm::Value* id_ptr = llvm_utils->create_gep2(class_type, arg, 0);
+                        return llvm_utils->CreateLoad2(field0_type, id_ptr);
+                    }
+                    if (field0_type->isPointerTy()) {
+                        return struct_api->get_pointer_to_method(struct_sym, module.get());
+                    }
+                    return llvm::ConstantInt::get(field0_type, get_class_hash(struct_sym));
+                };
+                llvm::Value* id0 = get_type_id(arg0, class_type0, struct_sym0);
+                llvm::Value* id1 = get_type_id(arg1, class_type1, struct_sym1);
                 if (field0_type->isPointerTy()) {
                     // new_classes: compare vtable pointers
                     tmp = builder->CreateICmpEQ(
@@ -3945,12 +3954,22 @@ public:
                     arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
                 }
 
-                // Extract field 0 (type hash or vtable pointer)
-                llvm::Value* id0_ptr = llvm_utils->create_gep2(class_type0, arg0, 0);
-                llvm::Value* id1_ptr = llvm_utils->create_gep2(class_type1, arg1, 0);
                 llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type0)->getElementType(0);
-                llvm::Value* id0 = llvm_utils->CreateLoad2(field0_type, id0_ptr);
-                llvm::Value* id1 = llvm_utils->CreateLoad2(field0_type, id1_ptr);
+                auto get_type_id = [&](llvm::Value* arg, llvm::Type* class_type,
+                        ASR::symbol_t* struct_sym) -> llvm::Value* {
+                    llvm::Type* arg_type = arg->getType();
+                    if (arg_type->isPointerTy() &&
+                            arg_type->getPointerElementType() == class_type) {
+                        llvm::Value* id_ptr = llvm_utils->create_gep2(class_type, arg, 0);
+                        return llvm_utils->CreateLoad2(field0_type, id_ptr);
+                    }
+                    if (field0_type->isPointerTy()) {
+                        return struct_api->get_pointer_to_method(struct_sym, module.get());
+                    }
+                    return llvm::ConstantInt::get(field0_type, get_class_hash(struct_sym));
+                };
+                llvm::Value* id0 = get_type_id(arg0, class_type0, struct_sym0);
+                llvm::Value* id1 = get_type_id(arg1, class_type1, struct_sym1);
 
                 if (field0_type->isPointerTy()) {
                     // new_classes: walk parent chain via TypeInfo
