@@ -696,3 +696,73 @@ jobs:
           context: .
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.image-tags.outputs.tags }}
+
+  build_xlfortran_jupyterlite:
+    name: Build xlfortran JupyterLite WASM kernel
+    runs-on: ubuntu-24.04
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install build0 prerequisites
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: ci/environment_linux.yml
+          init-shell: bash
+          environment-name: lf
+
+      - name: Generate parser/ASR headers (build0.sh)
+        run: ./build0.sh
+
+      - name: Install WASM build environment
+        run: micromamba create -f environment-wasm-build.yml -y
+
+      - name: Build WASM kernel
+        run: |
+          set -ex
+          micromamba create -f environment-wasm-host.yml -y \
+            --platform=emscripten-wasm32 \
+            -c https://prefix.dev/emscripten-forge-4x \
+            -c https://prefix.dev/conda-forge
+          export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
+          echo "PREFIX=$PREFIX" >> $GITHUB_ENV
+          micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
+
+      - name: Build JupyterLite site
+        run: |
+          set -ex
+          micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y
+          micromamba run -n xeus-lite-host jupyter lite build \
+              --XeusAddon.prefix=${{ env.PREFIX }} \
+              --contents share/lfortran/nb/Demo1.ipynb \
+              --contents share/lfortran/nb/Demo2.ipynb \
+              --contents share/lfortran/nb/Variables.ipynb \
+              --output-dir dist
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  deploy_jupyterlite:
+    name: Deploy JupyterLite to GitHub Pages
+    needs: build_xlfortran_jupyterlite
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
