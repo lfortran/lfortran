@@ -472,7 +472,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test third party codes
-        shell: bash -e -x -l {0}
+        shell: bash -e -l {0}
         if: ${{! (matrix.llvm-version == '7') }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
