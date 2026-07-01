@@ -1421,7 +1421,7 @@ class PRIFInterface {
                 ASR::Variable_t *var = saved_coarrays.p[i].var;
                 ASR::symbol_t *hsym_orig = saved_coarrays.p[i].handle_sym;
                 ASR::symbol_t *dsym_orig = saved_coarrays.p[i].data_sym;
-                // ASR::expr_t *init_value = saved_coarrays.p[i].init_value;
+                ASR::expr_t *init_value = saved_coarrays.p[i].init_value;
 
                 ASR::symbol_t *hsym_use = get_symbol_in_scope(
                     global_scope, fn_symtab, hsym_orig, loc);
