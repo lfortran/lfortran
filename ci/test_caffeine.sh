@@ -39,7 +39,8 @@ cd ..
 git clone -b main https://github.com/BerkeleyLab/caffeine.git
 cd caffeine
 
-git checkout 0388cf70cd193214952d8be9a00e968c4c5061e2
+# Release 0.8.0
+git checkout 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
 
 # Toolchain setup
 
@@ -66,6 +67,10 @@ export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug"
 # Build caffeine
 
 ./install.sh --yes --prefix=$PWD/inst --verbose
+
+# Output Caffeine configuration information
+
+./run-fpm.sh info
 
 cd ..
 
@@ -112,6 +117,11 @@ echo "No coarray tests found"
 exit 1
 fi
 
+# OpenCoarrays (caf/cafrun) does not support character arguments to co_max/co_min,
+# so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
+# runs them, so LFortran's own behaviour stays verified.
+opencoarrays_unsupported="coarrays_11 coarrays_13"
+
 for testfile in $tests; do
 echo "========================================="
 echo "Running coarray test: $testfile"
@@ -132,27 +142,33 @@ lfortran "$testfile" \
     -lgasnet-smp-seq
 
 # ----------------------------------------
-# Compile with gfortran/OpenCoarrays
-# ----------------------------------------
-
-caf "$testfile" -o "${base}_gf.out"
-
-# ----------------------------------------
 # Run LFortran executable
 # ----------------------------------------
 
 gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
 
-
 # ----------------------------------------
-# Run gfortran executable
+# Cross-check with gfortran/OpenCoarrays, unless OpenCoarrays lacks support
 # ----------------------------------------
 
-cafrun -np "$CAF_IMAGES" ./"${base}_gf.out"
+skip_opencoarrays=false
+for skip in $opencoarrays_unsupported; do
+    if [ "$base" = "$skip" ]; then
+        skip_opencoarrays=true
+    fi
+done
+
+if [ "$skip_opencoarrays" = true ]; then
+    echo "Skipping OpenCoarrays cross-check for $testfile (character co_max/co_min not supported by OpenCoarrays)"
+else
+    caf "$testfile" -o "${base}_gf.out"
+    cafrun -np "$CAF_IMAGES" ./"${base}_gf.out"
+    rm -f "${base}_gf.out"
+fi
 
 echo "PASS: $testfile"
 
-rm -f "${base}_lf.out" "${base}_gf.out"
+rm -f "${base}_lf.out"
 
 
 done
