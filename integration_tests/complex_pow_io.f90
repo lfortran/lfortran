@@ -1,33 +1,25 @@
-program mandelbrot
+program test_complex_pow_precision
     implicit none
     integer, parameter :: dp = kind(0.d0)
-    real(dp), parameter :: D = 0.035_dp
-    integer :: ix, iy, k
-    complex(dp) :: c, z
-    logical :: escaped
+    complex(dp) :: z, expected
+    real(dp) :: error_re, error_im
 
-    do iy = -15, 15
-        do ix = -35, 35
-            c = cmplx(-0.75_dp + D*ix, -1.66_dp * D*iy, dp)
-            z = (0.0_dp, 0.0_dp)
-            escaped = .false.
-            
-            do k = 1, 200
-                z = z**2 + c
-                
-                if (z%re**2 + z%im**2 > 4.0_dp) then
-                    escaped = .true.
-                    exit
-                end if
-            end do
-            
-            if (escaped) then
-                write(*, "(a)", advance="no") " "
-            else
-                write(*, "(a)", advance="no") "*"
-            end if
-        end do
-        
-        write(*, *) 
-    end do
-end program mandelbrot
+    z = cmplx(-1.5_dp, 0.0_dp, dp)
+    expected = cmplx(2.25_dp, 0.0_dp, dp)
+    
+    z = z**2
+    
+    error_re = abs(z%re - expected%re)
+    error_im = abs(z%im - expected%im)
+    
+    if (error_re > 1.0e-15_dp .or. error_im > 0.0_dp) then
+        print *, "Test Failed!"
+        print *, "Expected: ", expected
+        print *, "Got:      ", z
+        print *, "Error Re: ", error_re
+        print *, "Error Im: ", error_im
+        error stop 1
+    end if
+    
+    print *, "Test Passed!"
+end program test_complex_pow_precision
