@@ -3406,6 +3406,10 @@ filename = "errors/c_f_pointer_02.f90"
 asr = true
 
 [[test]]
+filename = "errors/shape_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 

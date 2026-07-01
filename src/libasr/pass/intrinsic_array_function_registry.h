@@ -1942,6 +1942,11 @@ namespace Shape {
         }
         // TODO: throw error for assumed size array
         int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
+        if (n_dims == 0 && !ASRUtils::is_assumed_rank_array(expr_type(args[0]))) {
+            append_error(diag, "The argument of SHAPE must be an array",
+                         args[0]->base.loc);
+            return nullptr;
+        }
         bool is_assumed_rank = ASRUtils::is_assumed_rank_array(expr_type(args[0]));
         ASR::ttype_t *return_type;
         if (is_assumed_rank) {
