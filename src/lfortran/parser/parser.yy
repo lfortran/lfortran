@@ -555,6 +555,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_common_block> common_block_list_top
 %type <var_sym> common_block_start
 %type <var_sym> common_block_object
+%type <vec_namelist_group> namelist_group_list
+%type <var_sym> namelist_group_start
+%type <var_sym> namelist_group_object
 %type <vec_ast> data_set_list
 %type <ast> data_set
 %type <vec_ast> data_object_list
@@ -1375,8 +1378,8 @@ var_decl
         LLOC(@$, @3); $$ = VAR_DECL3($1, $3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PARAMETER "(" named_constant_def_list ")" sep {
         LLOC(@$, @4); $$ = VAR_DECL_PARAMETER($3, TRIVIA_AFTER($5, @$), @$); }
-    | KW_NAMELIST "/" id "/" id_list sep {
-        LLOC(@$, @5); $$ = VAR_DECL_NAMELIST($3, $5, TRIVIA_AFTER($6, @$), @$);}
+    | KW_NAMELIST namelist_group_list sep {
+        LLOC(@$, @2); $$ = VAR_DECL_NAMELIST($2, TRIVIA_AFTER($3, @$), @$);}
     | KW_COMMON common_block_list_top sep {
         LLOC(@$, @2); $$ = VAR_DECL_COMMON($2, TRIVIA_AFTER($3, @$), @$); }
     | KW_EQUIVALENCE equivalence_set_list sep {
@@ -1402,6 +1405,25 @@ named_constant_def_list
 
 named_constant_def
     : id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
+    ;
+
+namelist_group_list
+    : namelist_group_start namelist_group_object {
+        NAMELIST_GROUP_1($$, $1, $2); }
+    | namelist_group_list "," namelist_group_object {
+        NAMELIST_GROUP_2($$, $1, $3); }
+    | namelist_group_list namelist_group_start namelist_group_object {
+        NAMELIST_GROUP_3($$, $1, $2, $3); }
+    | namelist_group_list "," namelist_group_start namelist_group_object {
+        NAMELIST_GROUP_3($$, $1, $3, $4); }
+    ;
+
+namelist_group_start
+    : "/" id "/" { $$ = VAR_SYM_NAME($2, None, @$); }
+    ;
+
+namelist_group_object
+    : id { $$ = VAR_SYM_NAME($1, None, @$); }
     ;
 
 common_block_list_top
@@ -1644,8 +1666,12 @@ var_sym_decl
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Arrow, @$); }
     | id "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_CODIM($1, $3.p, $3.n, None, @$); }
+    | id "[" coarray_comp_decl_list "]" "=" expr {
+            $$ = VAR_SYM_CODIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
     | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" {
             $$ = VAR_SYM_DIM_CODIM($1, $3.p, $3.n, $6.p, $6.n, None, @$); }
+    | id "(" array_comp_decl_list ")" "[" coarray_comp_decl_list "]" "=" expr {
+            $$ = VAR_SYM_DIM_CODIM_INIT($1, $3.p, $3.n, $6.p, $6.n, $9, Equal, @$); }
     | id "/" slash_init_list "/" {
             $$ = VAR_SYM_DIM_INIT($1, nullptr, 0,
                  SLASH_INIT_EXPR($3, @$), SlashInit, @$); }

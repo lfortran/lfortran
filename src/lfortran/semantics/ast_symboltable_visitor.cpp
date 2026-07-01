@@ -2213,6 +2213,34 @@ public:
                             diag::Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
             }
+
+            // Loop through function attributes to catch inline allocatable/pointer declarations
+            for (size_t i = 0; i < x.n_attributes; i++) {
+                if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i])) {
+                    AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i]);
+                    if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                        if (!ASRUtils::is_allocatable(type)) {
+                            type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
+                        }
+                    } else if (sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                        if (!ASRUtils::is_pointer(type)) {
+                            type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+                        }
+                    }
+                }
+            }
+
+            // Catch standalone declarations (e.g., `allocatable :: value`) parsed earlier in this pass
+            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name);
+            bool is_ptr_standalone = assgnd_pointer.count(return_var_name);
+
+            if (is_alloc_standalone && !ASRUtils::is_allocatable(type)) {
+                type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
+            }
+            if (is_ptr_standalone && !ASRUtils::is_pointer(type)) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+            }
+
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
@@ -2225,17 +2253,38 @@ public:
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
+            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name);
+            bool is_ptr_standalone = assgnd_pointer.count(return_var_name);
+
             if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
-                diag.add(diag::Diagnostic(
-                    "Cannot specify the return type twice",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                // Bypass the strict F23 guard if the duplicate was just caused by a standalone attribute
+                if (!is_alloc_standalone && !is_ptr_standalone) {
+                    diag.add(diag::Diagnostic(
+                        "Cannot specify the return type twice",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
             }
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
+
+            if (return_type && (is_alloc_standalone || is_ptr_standalone)) {
+                Vec<ASR::dimension_t> dummy_dims;
+                dummy_dims.reserve(al, 0);
+                ASR::symbol_t* dummy_type_decl = nullptr;
+                return_variable->m_type = determine_type(x.base.base.loc, return_var_name, (AST::decl_attribute_t*)return_type, false, false, dummy_dims, nullptr, dummy_type_decl, current_procedure_abi_type);
+            }
+
+            if (is_alloc_standalone && !ASRUtils::is_allocatable(return_variable->m_type)) {
+                return_variable->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, return_variable->m_type));
+            }
+            if (is_ptr_standalone && !ASRUtils::is_pointer(return_variable->m_type)) {
+                return_variable->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, return_variable->m_type));
+            }
+
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
@@ -2243,7 +2292,6 @@ public:
             return_variable->m_dependencies = variable_dependencies_vec.p;
             return_variable->n_dependencies = variable_dependencies_vec.size();
         }
-
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
 
@@ -4476,8 +4524,8 @@ public:
             std::string req_param = req->m_args[i];
             std::string req_arg = "";
 
-            if (AST::is_a<AST::AttrNamelist_t>(*attr)) {
-                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(attr);
+            if (AST::is_a<AST::AttrName_t>(*attr)) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(attr);
                 req_arg = to_lower(attr_name->m_name);
                 if (std::find(current_procedure_args.begin(),
                         current_procedure_args.end(),
@@ -4673,8 +4721,8 @@ public:
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
                     type_subs[param].second = type_declaration;
                 }
-            } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_args[i])) {
-                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(x.m_args[i]);
+            } else if (AST::is_a<AST::AttrName_t>(*x.m_args[i])) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(x.m_args[i]);
                 std::string arg = to_lower(attr_name->m_name);
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments
