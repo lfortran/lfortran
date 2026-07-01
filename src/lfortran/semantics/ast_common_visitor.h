@@ -11599,7 +11599,7 @@ public:
     }
 
     ASR::asr_t* create_GenericProcedureWithASTNode(const AST::FuncCallOrArray_t& x,
-                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
         const Location& loc = x.base.base.loc;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
             return symbol_resolve_external_generic_procedure_with_ast_node(x, v,
@@ -11611,7 +11611,7 @@ public:
                             diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
                         },
-                    false);
+                    false, is_dt_present);
             if( idx == -1 ) {
                 ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
@@ -11631,13 +11631,30 @@ public:
             ASR::ttype_t *type = nullptr;
             ASR::symbol_t *cp_s = nullptr;
             ASR::symbol_t *final_sym_past_ext = ASRUtils::symbol_get_past_external(final_sym);
+            bool is_nopass_method = false;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext)) {
+                is_nopass_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                    final_sym_past_ext)->m_is_nopass;
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     final_sym_past_ext, current_scope);
                 final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc;
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
+            // For a `nopass` specific selected from a type-bound generic call,
+            // `args[0]` is the passed-object, which a nopass procedure does not
+            // accept as an argument. Drop it so the actual arguments line up
+            // with the procedure's dummy arguments.
+            ASR::expr_t* passed_object = nullptr;
+            if (is_nopass_method && is_dt_present && args.size() >= 1) {
+                passed_object = args[0].m_value;
+                Vec<ASR::call_arg_t> args_no_dt;
+                args_no_dt.reserve(al, args.size() - 1);
+                for (size_t i = 1; i < args.size(); i++) {
+                    args_no_dt.push_back(al, args[i]);
+                }
+                args = args_no_dt;
+            }
             ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
             if (first_array_arg) {
                 ASR::dimension_t* array_dims;
@@ -11658,6 +11675,16 @@ public:
                 }
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
                 ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+                if (is_nopass_method) {
+                    // The passed-object has already been dropped from `args`, so
+                    // the call arguments map directly onto the procedure's args.
+                    validate_missing_required_arguments(loc, args, func);
+                    ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                    return ASRUtils::make_FunctionCall_t_util(al, loc,
+                        cp_s, nullptr, args.p, args.size(), type,
+                        nullptr, passed_object, current_scope, current_function_dependencies,
+                        compiler_options.implicit_argument_casting);
+                }
                 Vec<ASR::call_arg_t> args_without_dt; args_without_dt.reserve(al, args.size() - 1);
                 for (size_t i = 1; i < args.size(); i++) {
                     args_without_dt.push_back(al, args[i]);
@@ -12596,7 +12623,7 @@ public:
             return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v, is_dt_present);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2));
-            return create_GenericProcedureWithASTNode(x, new_args, v);
+            return create_GenericProcedureWithASTNode(x, new_args, v, is_dt_present);
         }
     }
 
