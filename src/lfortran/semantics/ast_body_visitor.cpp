@@ -8468,6 +8468,16 @@ public:
         body.reserve(al, x.n_values);
         ASR::expr_t *fmt=nullptr;
         if (x.m_fmt != nullptr) {
+            if (AST::is_a<AST::Name_t>(*x.m_fmt) && x.n_values == 0) {
+                AST::Name_t *name = AST::down_cast<AST::Name_t>(x.m_fmt);
+                ASR::symbol_t *sym = current_scope->resolve_symbol(name->m_id);
+                if (sym && ASR::is_a<ASR::Namelist_t>(*ASRUtils::symbol_get_past_external(sym))) {
+                    tmp = ASR::make_FileWrite_t(al, x.base.base.loc, x.m_label,
+                        nullptr, nullptr, nullptr, nullptr, nullptr, 0,
+                        nullptr, nullptr, nullptr, false, sym, nullptr, nullptr, nullptr);
+                    return;
+                }
+            }
             this->visit_expr(*x.m_fmt);
             fmt = ASRUtils::EXPR(tmp);
             //check if fmt is integer variable
