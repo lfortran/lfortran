@@ -1433,6 +1433,12 @@ class PRIFInterface {
 
                 emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, body);
 
+                if (init_value != nullptr) {
+                    int64_t val = 0;
+                    if (ASRUtils::extract_value(init_value, val)) {
+                        LCOMPILERS_ASSERT_MSG(val == 0, "Initialization of coarrays is not yet supported");
+                    }
+                }
                 // If the saved coarray had an initial value (e.g., x[*] = 0),
                 // bind the data pointer to a local variable and assign the value.
                 // if (init_value) {
