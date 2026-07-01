@@ -1719,3 +1719,9 @@ semantic error: Selector shall be polymorphic in SELECT TYPE statement
     |
 834 |         select type (a)
     |                      ^ 
+
+semantic error: `a` argument of `co_broadcast` must be of integer, real, complex, character or logical type, but got t
+   --> tests/errors/continue_compilation_1.f90:846:27
+    |
+846 |         call co_broadcast(obj, source_image=1)
+    |                           ^^^ must be integer, real, complex, character or logical type

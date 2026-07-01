@@ -836,4 +836,13 @@ program continue_compilation_1
             print *, a
         end select
     end subroutine
+
+    subroutine cobroadcast_invalid_argument_type()
+        implicit none
+        type :: t
+            integer :: x
+        end type
+        type(t) :: obj
+        call co_broadcast(obj, source_image=1)
+    end subroutine
 end program

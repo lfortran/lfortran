@@ -953,11 +953,6 @@ class PRIFInterface {
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym)));
         }
 
-        // Interface builder for PRIF collectives whose `a` is an assumed-type
-        // assumed-rank target: (a, <image>, stat, errmsg, errmsg_alloc). The collectives
-        // differ only in the runtime name and in the second argument's name and presence
-        // (result_image/optional for co_sum/co_max/co_min, source_image/required for
-        // co_broadcast).
         ASR::symbol_t* get_or_create_prif_collective_sub(const Location &loc, const std::string &prif_name,
                 const std::string &image_arg_name = "result_image",
                 ASR::presenceType image_presence = ASR::presenceType::Optional) {
