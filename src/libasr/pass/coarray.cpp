@@ -1902,6 +1902,9 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
             // Allocate coarrays in Program scope
             prif.allocate_coarrays(xx.m_symtab, xx.m_symtab, loc, new_body);
 
+            // Need to synchronize all the images after completing 
+            // initialization of any save coarrays allocated above,
+            // to prevent potential races with coindexed access below.
             new_body.push_back(al, prif.make_prif_sync_all_call(loc));
 
             // Append original body
