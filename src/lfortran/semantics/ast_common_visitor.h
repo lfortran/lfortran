@@ -7556,8 +7556,7 @@ public:
                     }
                 } else if (s.m_length) {
                     diag.add(Diagnostic(
-                        "length specifier is not allowed for type '"
-                            + ASRUtils::type_to_str_fortran_expr(type, nullptr) + "'",
+                        "length specifier is only valid for character type",
                         Level::Error, Stage::Semantic, {
                             Label("", {s.loc})
                         }));

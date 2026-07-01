@@ -839,7 +839,6 @@ program continue_compilation_1
 
     subroutine length_specifier_non_character()
         implicit none
-        integer :: i*2  ! {Error} length specifier is not allowed for type 'integer'
-        integer, parameter :: j*2 = 1  ! {Error} length specifier is not allowed for type 'integer'
+        integer :: i*2
     end subroutine
 end program

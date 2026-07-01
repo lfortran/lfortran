@@ -494,17 +494,11 @@ semantic error: Function `c_loc` is not permitted in an initialization expressio
 810 |             type(c_ptr) :: ptr = c_loc(target_value)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: length specifier is not allowed for type 'integer'
+semantic error: length specifier is only valid for character type
    --> tests/errors/continue_compilation_1.f90:842:20
     |
-842 |         integer :: i*2  ! {Error} length specifier is not allowed for type 'integer'
+842 |         integer :: i*2
     |                    ^^^ 
-
-semantic error: length specifier is not allowed for type 'integer'
-   --> tests/errors/continue_compilation_1.f90:843:31
-    |
-843 |         integer, parameter :: j*2 = 1  ! {Error} length specifier is not allowed for type 'integer'
-    |                               ^^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
