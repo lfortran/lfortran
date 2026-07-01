@@ -5212,16 +5212,15 @@ namespace MatMul {
             Vec<ASR::call_arg_t> &m_args, int64_t overload_id,
             int /*index_kind*/) {
         /*
-         * 2 x 3          3 x 2          2 x 2
-         * ------▶
-         * [ 1, 2, 3 ]  * [ 1, 2 ] │  =  [ 14, 20 ]
+         *    2 x 3          3 x 2          2 x 2
+         *   ------▶
+         * [ 1, 2, 3 ]  *  [ 1, 2 ] │  =  [ 14, 20 ]
          * [ 2, 3, 4 ]     │ 2, 3 │ │     [ 20, 29 ]
-         * [ 3, 4 ] ▼
+         *                 [ 3, 4 ] ▼
          */
         declare_basic_variables("_lcompilers_matmul");
         fill_func_arg("matrix_a_m", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("matrix_b_m", duplicate_type_with_empty_dims(al, arg_types[1]));
-        
         ASR::ttype_t* return_type_ = return_type;
         bool is_allocatable = ASRUtils::is_allocatable(return_type);
         Vec<ASR::dimension_t> empty_dims;
