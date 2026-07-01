@@ -15441,8 +15441,36 @@ public:
         ASR::expr_t* first_arg_ = ASRUtils::expr_value(args[array_indices_in_args[0]]);
         size_t max_array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(first_arg_));
         if (max_array_size == 0) {
-            // Zero-sized array: nothing to broadcast; keep the original
-            // (empty) result_array unchanged.
+            Vec<ASR::expr_t*> dummy_args;
+            dummy_args.reserve(al, args.size());
+            bool can_create_dummy = true;
+            for (size_t j = 0; j < args.size(); j++) {
+                if (std::find(array_indices_in_args.begin(), array_indices_in_args.end(), j) != array_indices_in_args.end()) {
+                    ASR::expr_t* arg_ = ASRUtils::expr_value(args[j]);
+                    ASR::ttype_t* s_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(arg_));
+                    ASR::expr_t* dummy_val = ASRUtils::get_constant_zero_with_given_type(al, s_type);
+                    if (!dummy_val) {
+                        can_create_dummy = false;
+                        break;
+                    }
+                    dummy_args.push_back(al, dummy_val);
+                } else {
+                    dummy_args.push_back(al, args[j]);
+                }
+            }
+            if (can_create_dummy) {
+                ASR::asr_t* dummy_res = create_func(al, loc, dummy_args, diag);      
+                if (dummy_res) {
+                    ASR::expr_t* res_expr = ASRUtils::expr_value(ASRUtils::EXPR(dummy_res));
+                    ASR::ttype_t* res_type = ASRUtils::expr_type(res_expr);
+                    ASR::Array_t* orig_arr_type = ASR::down_cast<ASR::Array_t>((*result_array)->m_type);
+                    ASR::ttype_t* correct_type = ASRUtils::make_Array_t_util(al, orig_arr_type->base.base.loc,
+                                                res_type, orig_arr_type->m_dims,     
+                                                orig_arr_type->n_dims, ASR::abiType::Source, false,
+                                                orig_arr_type->m_physical_type);     
+                    (*result_array)->m_type = correct_type;
+                }
+            }
             return;
         }
         ASR::ttype_t* array_type = ASRUtils::expr_type(first_arg_);
