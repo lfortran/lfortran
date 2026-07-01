@@ -9,7 +9,7 @@ type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
-program critical_01
+program coarrays_19
 implicit none
 type(prif_coarray_handle) :: __prif_critical_coarray_handle
 integer(4) :: exit_code
@@ -147,4 +147,4 @@ interface
     end subroutine prif_coarray_cleanup_interface
 end interface
 
-end program critical_01
+end program coarrays_19

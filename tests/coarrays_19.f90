@@ -1,4 +1,4 @@
-program critical_01
+program coarrays_19
     integer :: x[*]
 
     x = 0
@@ -13,4 +13,4 @@ program critical_01
     if (this_image() == 1) then
         if (x /= num_images()) error stop
     end if
-end program
+end program coarrays_19
