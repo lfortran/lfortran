@@ -836,4 +836,10 @@ program continue_compilation_1
             print *, a
         end select
     end subroutine
+    subroutine character_kind_mismatch()
+        implicit none
+        character(kind=1) :: c1
+        character(kind=4) :: c4
+        print *, min(c1, c4)
+    end subroutine
 end program
