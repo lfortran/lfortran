@@ -928,6 +928,43 @@ class PRIFInterface {
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
+        ASR::symbol_t* get_or_create_prif_sync_images_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_sync_images");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = int32;
+            
+            ASR::ttype_t *image_set_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(
+                al, loc, int32_type, nullptr, 0,
+                ASR::array_physical_typeType::AssumedRankArray));
+                
+            ASR::symbol_t *image_set_sym = declare_variable(
+                fn_symtab, loc, "image_set", image_set_type_assumed, ASR::intentType::In, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *image_set = ASRUtils::EXPR(ASR::make_Var_t(al, loc, image_set_sym));
+            
+            Vec<ASR::expr_t*> args; args.reserve(al, 4);
+            args.push_back(al, image_set);
+            
+            declare_prif_status_args(fn_symtab, loc, args);
+            
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
         void declare_prif_status_args(SymbolTable *fn_symtab, const Location &loc, Vec<ASR::expr_t*> &args) {
             ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, loc, 1, nullptr,
@@ -1108,6 +1145,28 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
         
+        ASR::stmt_t* make_prif_sync_images_call(const Location &loc,
+                                             ASR::expr_t *image_set = nullptr,
+                                             ASR::expr_t *stat = nullptr,
+                                             ASR::expr_t *errmsg = nullptr,
+                                             ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_sync_images_sub(loc);
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
+
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = image_set;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = stat;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = errmsg;
+            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
+
         void declare_coarray_companions(SymbolTable *scope, const Location &loc) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *cptr = b.CPtr();
@@ -1557,6 +1616,10 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                     ASR::SyncAll_t *x = ASR::down_cast<ASR::SyncAll_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_sync_all_call(
                         x->base.base.loc, x->m_stat, x->m_errmsg));
+                } else if (m_body[i]->type == ASR::stmtType::SyncImages) {
+                    ASR::SyncImages_t *x = ASR::down_cast<ASR::SyncImages_t>(m_body[i]);
+                    body.push_back(replacer.al, replacer.prif.make_prif_sync_images_call(
+                        x->base.base.loc, x->m_image_set, x->m_stat, x->m_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::IntrinsicImpureSubroutine) {
                     ASR::IntrinsicImpureSubroutine_t *x = ASR::down_cast<ASR::IntrinsicImpureSubroutine_t>(m_body[i]);
                     std::string intrinsic_name = ASRUtils::get_intrinsic_subroutine_name(x->m_sub_intrinsic_id);
