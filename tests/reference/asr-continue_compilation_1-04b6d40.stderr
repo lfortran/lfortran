@@ -1719,3 +1719,15 @@ semantic error: Selector shall be polymorphic in SELECT TYPE statement
     |
 834 |         select type (a)
     |                      ^ 
+
+warning: `rand` is an LFortran extension
+   --> tests/errors/continue_compilation_1.f90:845:21
+    |
+845 |                 x = rand()
+    |                     ^^^^^^ Use `random_number` instead
+
+semantic error: Call to impure intrinsic function 'rand' is not allowed inside a DO CONCURRENT block
+   --> tests/errors/continue_compilation_1.f90:845:21
+    |
+845 |                 x = rand()
+    |                     ^^^^^^ 
