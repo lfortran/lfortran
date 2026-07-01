@@ -115,7 +115,7 @@ fi
 # OpenCoarrays (caf/cafrun) does not support character arguments to co_max/co_min,
 # so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
 # runs them, so LFortran's own behaviour stays verified.
-opencoarrays_unsupported="coarrays_11 coarrays_13"
+opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_19"
 
 for testfile in $tests; do
 echo "========================================="
