@@ -81,6 +81,7 @@
 // LLD wasm driver — included at global scope so LLD_HAS_DRIVER declares
 // ::lld::wasm::link in the global lld namespace, not inside LCompilers.
 #ifdef __EMSCRIPTEN__
+#include <atomic>
 #include <dlfcn.h>
 #include <lld/Common/Driver.h>
 LLD_HAS_DRIVER(wasm)
@@ -590,6 +591,11 @@ WasmLFortranExecutor::WasmLFortranExecutor()
     if (llvm::sys::fs::createUniqueDirectory("xlfortran-wasm-exec-", tmp))
         throw LCompilersException("WasmLFortranExecutor: failed to create temp dir");
     TempDir = tmp.str().str();
+
+    // Claim a unique instance ID so that __lfortran_evaluate_N function names
+    // are globally unique across all executor instances in the same process.
+    static std::atomic<int> s_next_id{0};
+    m_id = s_next_id.fetch_add(1);
 }
 
 llvm::LLVMContext &WasmLFortranExecutor::get_context()
@@ -597,9 +603,31 @@ llvm::LLVMContext &WasmLFortranExecutor::get_context()
     return *context;
 }
 
+std::unique_ptr<LLVMModule> WasmLFortranExecutor::parse_module2(
+    const std::string &source, const std::string &/*filename*/)
+{
+    llvm::SMDiagnostic err;
+    auto mod = llvm::parseAssemblyString(source, err, *context);
+    if (!mod)
+        throw LCompilersException("WasmLFortranExecutor::parse_module2: Invalid LLVM IR: "
+                                  + err.getMessage().str());
+    return std::make_unique<LLVMModule>(std::move(mod));
+}
+
 void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_count)
 {
     std::unique_ptr<llvm::Module> mod = std::move(lm->m_m);
+
+    // Rename __lfortran_evaluate_<eval_count> → __lfortran_evaluate_<m_id>_<eval_count>
+    // so that multiple WasmLFortranExecutor instances in the same process (e.g.
+    // test suite) each own uniquely-named symbols and dlsym(RTLD_DEFAULT) finds
+    // the right one without needing per-handle tracking.
+    const std::string logical_stem = "__lfortran_evaluate_" + std::to_string(eval_count);
+    const std::string unique_stem  = "__lfortran_evaluate_" + std::to_string(m_id)
+                                     + "_" + std::to_string(eval_count);
+    if (llvm::Function *fn = mod->getFunction(logical_stem))
+        fn->setName(unique_stem);
+
     const std::string triple = "wasm32-unknown-emscripten";
     std::string err;
 #if LLVM_VERSION_MAJOR >= 21
@@ -621,12 +649,11 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     mod->setTargetTriple(llvm::Triple(triple));
     mod->setDataLayout(TM->createDataLayout());
 
-    const std::string stem = "__lfortran_evaluate_" + std::to_string(eval_count);
     llvm::SmallString<256> objFile, wasmFile;
     objFile = TempDir;
-    llvm::sys::path::append(objFile, stem + ".o");
+    llvm::sys::path::append(objFile, unique_stem + ".o");
     wasmFile = TempDir;
-    llvm::sys::path::append(wasmFile, stem + ".wasm");
+    llvm::sys::path::append(wasmFile, unique_stem + ".wasm");
 
     std::error_code EC;
     llvm::raw_fd_ostream ObjOut(objFile, EC);
@@ -644,25 +671,32 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
         "--import-memory", "--experimental-pic", "--stack-first", "--allow-undefined",
         objFile.c_str(), "-o", wasmFile.c_str()
     };
-    // Capture lld stderr to suppress the "not yet stable" noise and include
-    // it in the exception message only when lld actually fails.
     std::string lld_errs;
     llvm::raw_string_ostream lld_errs_stream(lld_errs);
     const ::lld::DriverDef WasmDriver = {::lld::Flavor::Wasm, &::lld::wasm::link};
     ::lld::Result Result = ::lld::lldMain(LinkerArgs, llvm::outs(), lld_errs_stream, {WasmDriver});
     if (Result.retCode)
         throw LCompilersException("WasmLFortranExecutor: wasm-ld failed for "
-                                  + stem + ": " + lld_errs_stream.str());
+                                  + unique_stem + ": " + lld_errs_stream.str());
 
     void *handle = dlopen(wasmFile.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (!handle)
         throw LCompilersException(std::string("WasmLFortranExecutor: dlopen failed: ") + dlerror());
-    (void)handle;
+    (void)handle; // side module stays live for the process lifetime via RTLD_GLOBAL
 }
 
 intptr_t WasmLFortranExecutor::get_symbol_address(const std::string &name)
 {
-    void *sym = dlsym(RTLD_DEFAULT, name.c_str());
+    // Translate the logical name to the instance-unique name, then look it up
+    // in the global RTLD symbol table.  Within one session there is only ever
+    // one executor, so RTLD_DEFAULT finds the right symbol.  In the test suite
+    // the per-instance prefix prevents collisions across test cases.
+    const std::string prefix = "__lfortran_evaluate_";
+    std::string actual = name;
+    if (name.substr(0, prefix.size()) == prefix)
+        actual = prefix + std::to_string(m_id) + "_" + name.substr(prefix.size());
+
+    void *sym = dlsym(RTLD_DEFAULT, actual.c_str());
     if (!sym)
         throw LCompilersException("WasmLFortranExecutor: symbol not found: " + name);
     return reinterpret_cast<intptr_t>(sym);
