@@ -2673,7 +2673,14 @@ namespace LCompilers {
         std::tie(str_data, str_len) = get_string_length_data(str_type, str, true, true);
         builder->CreateCall(_Deallocate(),{get_allocator(module), builder->CreateLoad(character_type, str_data)});
         builder->CreateStore(llvm::ConstantPointerNull::getNullValue(character_type), str_data);
-        builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+        // The character length is a type parameter for fixed/assumed-length
+        // strings and must be preserved across deallocate/allocate cycles so
+        // that a subsequent `allocate(...)` can size the data buffer
+        // correctly. Only deferred-length strings (`character(len=:)`) may
+        // have their runtime length reset to zero.
+        if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+        }
     }
 
 
