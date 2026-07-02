@@ -449,9 +449,9 @@ program continue_compilation_1
     print *, reshape(.true., [2, 3])
     print *, reshape([1, 2, 3, 4], "hello")
     print *, reshape([1, 2, 3, 4], .false.)
-
+    print *, achar(-1, kind=4)
     print *, reshape([1, 2, 3, 4], [2, 3])
-
+    print *, char(-1, kind=4)
     ! Division by zero
     print *, 1/0
     print *, x/zero
