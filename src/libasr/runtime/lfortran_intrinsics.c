@@ -6513,7 +6513,35 @@ _lfortran_open(int32_t unit_num,
             return (int64_t) already_open;
         }
         FILE* fd = fopen(f_name_c, access_mode);
-        if (!fd && iostat == NULL) {
+        if (!fd) {
+            if (iostat != NULL) {
+                *iostat = 2;
+                if ((iomsg != NULL) && (iomsg_len > 0)) {
+                    // Emit a message consistent with gfortran-style diagnostics.
+                    const char* reason = strerror(errno);
+                    if (f_name_c && f_name_c[0] != '\0') {
+                        snprintf(iomsg, iomsg_len + 1,
+                                 "Cannot open file '%s': %s", f_name_c, reason);
+                    } else {
+                        snprintf(iomsg, iomsg_len + 1,
+                                 "Cannot open file '': %s", reason);
+                    }
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
+                }
+                internal_free(f_name_c);
+                internal_free(status_c);
+                internal_free(form_c);
+                internal_free(access_c);
+                internal_free(action_c);
+                internal_free(delim_c);
+                internal_free(blank_c);
+                internal_free(encoding_c);
+                internal_free(sign_c);
+                internal_free(decimal_c);
+                internal_free(round_c);
+                internal_free(pad_c);
+                return 0;
+            }
             printf("Runtime error: Error in opening the file!\n");
             perror(f_name_c);
             exit(1);
