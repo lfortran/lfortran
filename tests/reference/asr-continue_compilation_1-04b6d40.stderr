@@ -1719,3 +1719,9 @@ semantic error: Selector shall be polymorphic in SELECT TYPE statement
     |
 834 |         select type (a)
     |                      ^ 
+
+semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
+   --> tests/errors/continue_compilation_1.f90:843:18
+    |
+843 |         print *, min(c1, c4)
+    |                  ^^^^^^^^^^^ 
