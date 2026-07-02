@@ -5295,6 +5295,3 @@ run = true
 filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
 
-[[test]]
-filename = "errors/goto_undefined_label.f90"
-asr = true
