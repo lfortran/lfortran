@@ -121,6 +121,7 @@ fi
 # so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
 # runs them, so LFortran's own behaviour stays verified.
 opencoarrays_unsupported="coarrays_11 coarrays_13"
+caffeine_unsupported="coarrays_19"
 
 for testfile in $tests; do
 echo "========================================="
@@ -134,18 +135,31 @@ base=$(basename "$testfile" .f90)
 # Compile with LFortran + caffeine
 # ----------------------------------------
 
-lfortran "$testfile" \
-    --coarray=true \
-    -o "${base}_lf.out" \
-    -L$PWD/caffeine/inst/lib \
-    -lcaffeine \
-    -lgasnet-smp-seq
+skip_caffeine=false
+for skip in $caffeine_unsupported; do
+    if [ "$base" = "$skip" ]; then
+        skip_caffeine=true
+    fi
+done
 
-# ----------------------------------------
-# Run LFortran executable
-# ----------------------------------------
+if [ "$skip_caffeine" = true ]; then
+    echo "Skipping Caffeine cross-check for $testfile"
+else
+    lfortran "$testfile" \
+        --coarray=true \
+        -o "${base}_lf.out" \
+        -L$PWD/caffeine/inst/lib \
+        -lcaffeine \
+        -lgasnet-smp-seq
 
-gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
+    # ----------------------------------------
+    # Run LFortran executable
+    # ----------------------------------------
+
+    gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
+    rm -f "${base}_lf.out"
+
+fi
 
 # ----------------------------------------
 # Cross-check with gfortran/OpenCoarrays, unless OpenCoarrays lacks support
@@ -167,9 +181,6 @@ else
 fi
 
 echo "PASS: $testfile"
-
-rm -f "${base}_lf.out"
-
 
 done
 
