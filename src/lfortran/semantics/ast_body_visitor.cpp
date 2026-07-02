@@ -9265,7 +9265,9 @@ public:
                         Level::Error, Stage::Semantic, {
                             Label("", {x.base.base.loc})
                         }));
-                    throw SemanticAbort();
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
                 }
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label,
                         s2c(al, std::to_string(goto_label)));
