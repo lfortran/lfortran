@@ -72,6 +72,7 @@ stmt
     | Nullify(expr* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | SyncAll(expr? stat, expr? errmsg)
+    | SyncImages(expr? image_set, expr? stat, expr? errmsg)
     | SyncMemory()
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
