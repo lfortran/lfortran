@@ -1423,13 +1423,13 @@ public:
                     break;
                 }
                 case AST::stmtType::DoLoop: {
-                AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
-                    if (s->m_do_label != 0) {
-                    labels.insert(std::to_string(s->m_do_label));
-                            }
+                    AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    if (s->m_do_label != 0) {
+                        labels.insert(std::to_string(s->m_do_label));
+                    }
                     break;
-                                           }
+                }
                 case AST::stmtType::Where: {
                     AST::Where_t* s = AST::down_cast<AST::Where_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
