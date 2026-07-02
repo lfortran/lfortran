@@ -938,9 +938,10 @@ class PRIFInterface {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int32_type = int32;
             
-            ASR::ttype_t *image_set_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(
-                al, loc, int32_type, nullptr, 0,
-                ASR::array_physical_typeType::AssumedRankArray));
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t d; d.loc = loc; d.m_start = nullptr; d.m_length = nullptr;
+            dims.push_back(al, d);
+            ASR::ttype_t *image_set_type_assumed = ASRUtils::make_Array_t_util(al, loc, int32_type, dims.p, dims.n);
                 
             ASR::symbol_t *image_set_sym = declare_variable(
                 fn_symtab, loc, "image_set", image_set_type_assumed, ASR::intentType::In, nullptr,

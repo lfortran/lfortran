@@ -9432,7 +9432,17 @@ public:
             visit_expr(*x.m_image_set);
             image_set = ASRUtils::EXPR(tmp);
             ASR::ttype_t *image_set_type = ASRUtils::expr_type(image_set);
-            if (!ASRUtils::is_integer(*image_set_type)) {
+            if (ASRUtils::is_array(image_set_type)) {
+                if (ASRUtils::extract_n_dims_from_ttype(image_set_type) != 1) {
+                    diag.add(Diagnostic(
+                        "`image_set` argument of `sync images` must be a scalar or rank-1 integer array",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            }
+            if (!ASRUtils::is_integer(*ASRUtils::type_get_past_array(image_set_type))) {
                 diag.add(Diagnostic(
                     "`image_set` argument of `sync images` must be of type integer, found "
                     + ASRUtils::type_to_str_fortran_expr(image_set_type, image_set),

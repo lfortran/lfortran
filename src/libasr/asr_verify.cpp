@@ -1806,7 +1806,7 @@ public:
     void visit_SyncImages(const SyncImages_t &x) {
         if (x.m_image_set) {
             ASR::ttype_t *image_set_type = ASRUtils::expr_type(x.m_image_set);
-            require(!ASRUtils::is_array(image_set_type),
+            require(!ASRUtils::is_array(image_set_type) || ASRUtils::extract_n_dims_from_ttype(image_set_type) == 1,
                 "SyncImages::m_image_set must be a scalar");
             require(ASRUtils::is_integer(*image_set_type),
                 "SyncImages::m_image_set must be of integer type");

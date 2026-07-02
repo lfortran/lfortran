@@ -5,9 +5,9 @@ program coarrays_17
 
     if (this_image() == 1) then
         x = 42
-        sync images(2)
+        sync images([2])
     else if (this_image() == 2) then
-        sync images(1)
+        sync images([1])
         if (x[1] /= 42) error stop
     end if
 end program coarrays_17
