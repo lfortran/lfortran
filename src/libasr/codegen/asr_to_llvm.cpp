@@ -16664,15 +16664,18 @@ public:
             llvm::Type::getInt32Ty(context),             // type
             llvm::Type::getInt32Ty(context),             // rank
             llvm::Type::getInt64Ty(context),             // elem_len
+            llvm::Type::getInt64Ty(context),             // stride
             llvm::Type::getInt8Ty(context)->getPointerTo(), // data
             llvm::Type::getInt64Ty(context)->getPointerTo()  // shape
         );
 
         std::function<void(const std::string&, ASR::ttype_t*, llvm::Value*, ASR::symbol_t*)> add_namelist_item;
-        std::function<void(const std::string&, ASR::Struct_t*, llvm::Value*)> add_struct_members;
+        std::function<void(const std::string&, ASR::Struct_t*, llvm::Value*, int32_t,
+                           llvm::Value*, llvm::Value*)> add_struct_members;
 
         add_struct_members = [&](const std::string &prefix, ASR::Struct_t* struct_sym,
-                                 llvm::Value* struct_ptr) {
+                                 llvm::Value* struct_ptr, int32_t rank,
+                                 llvm::Value* shape_ptr, llvm::Value* stride_val) {
             ASR::Struct_t* current_struct = struct_sym;
             llvm::Value* current_ptr = struct_ptr;
             while (current_struct) {
@@ -16701,8 +16704,22 @@ public:
                     std::string member_name = LCompilers::to_lower(member_var->m_name);
                     int member_idx = name2memidx[struct_name][member_var->m_name];
                     llvm::Value* member_ptr = llvm_utils->create_gep2(llvm_struct_type, current_ptr, member_idx);
-                    add_namelist_item(prefix + "%" + member_name, member_var->m_type, member_ptr,
+                    ASR::ttype_t *member_type = member_var->m_type;
+                    if (rank > 0) {
+                        member_type = ASRUtils::duplicate_type_with_empty_dims(al, member_type);
+                    }
+                    add_namelist_item(prefix + "%" + member_name, member_type, member_ptr,
                                       member_var->m_type_declaration);
+                    if (rank > 0) {
+                        llvm::Value *item = nml_items.back();
+                        builder->CreateStore(llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context), rank),
+                            builder->CreateStructGEP(item_type, item, 2));
+                        builder->CreateStore(stride_val,
+                            builder->CreateStructGEP(item_type, item, 4));
+                        builder->CreateStore(shape_ptr,
+                            builder->CreateStructGEP(item_type, item, 6));
+                    }
                 }
 
                 if (!current_struct->m_parent) {
@@ -16734,20 +16751,70 @@ public:
             ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
 
             if (ASR::is_a<ASR::StructType_t>(*elem_type)) {
-                if (ASRUtils::is_array(item_type_asr)) {
-                    throw CodeGenError("Namelist arrays of derived types are not supported yet");
-                }
                 if (!type_decl_sym) {
                     throw CodeGenError("Namelist derived type is missing its declaration");
                 }
                 ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(type_decl_sym));
-                add_struct_members(LCompilers::to_lower(item_name), struct_sym, data_ptr);
+                int32_t rank = 0;
+                llvm::Value* shape_ptr = llvm::ConstantPointerNull::get(
+                    llvm::Type::getInt64Ty(context)->getPointerTo());
+                llvm::Value* struct_ptr = data_ptr;
+                llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    nullptr, elem_type, module.get());
+                llvm::Value* stride_val = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), module->getDataLayout().getTypeAllocSize(struct_llvm_type));
+
+                if (ASRUtils::is_array(item_type_asr)) {
+                    ASR::dimension_t* dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(item_type_asr, dims);
+                    rank = (int32_t)n_dims;
+
+                    std::vector<llvm::Constant*> shape_vals;
+                    for (size_t d = 0; d < n_dims; d++) {
+                        if (!dims[d].m_length) {
+                            throw CodeGenError("Namelist array must have explicit dimensions");
+                        }
+                        this->visit_expr(*dims[d].m_length);
+                        llvm::Value* dim_len = tmp;
+                        if (!llvm::isa<llvm::ConstantInt>(dim_len)) {
+                            throw CodeGenError("Namelist with non-constant array dimensions not yet supported");
+                        }
+                        int64_t val = llvm::cast<llvm::ConstantInt>(dim_len)->getSExtValue();
+                        shape_vals.push_back(llvm::ConstantInt::get(context, llvm::APInt(64, val, true)));
+                    }
+
+                    llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(
+                        llvm::Type::getInt64Ty(context), n_dims);
+                    llvm::Constant* shape_arr = llvm::ConstantArray::get(shape_arr_type, shape_vals);
+                    std::string shape_name = "nml_shape_" + item_name;
+                    std::replace(shape_name.begin(), shape_name.end(), '%', '_');
+                    llvm::GlobalVariable* shape_global = new llvm::GlobalVariable(
+                        *module, shape_arr_type, true, llvm::GlobalValue::PrivateLinkage,
+                        shape_arr, shape_name);
+                    shape_ptr = builder->CreateBitCast(
+                        shape_global, llvm::Type::getInt64Ty(context)->getPointerTo());
+
+                    ASR::ttype_t* past_alloc = ASRUtils::type_get_past_allocatable_pointer(item_type_asr);
+                    ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(past_alloc);
+                    if (arr_t->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                        throw CodeGenError("Namelist arrays of derived types with non-fixed storage are not supported yet");
+                    }
+                    llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
+                        nullptr, past_alloc, module.get());
+                    if (data_ptr->getType() != arr_type->getPointerTo()) {
+                        data_ptr = builder->CreateBitCast(data_ptr, arr_type->getPointerTo());
+                    }
+                    struct_ptr = llvm_utils->create_gep2(arr_type, data_ptr, 0);
+                }
+                add_struct_members(LCompilers::to_lower(item_name), struct_sym, struct_ptr,
+                                   rank, shape_ptr, stride_val);
                 return;
             }
 
             int32_t type_code = -1;
             llvm::Value* elem_len_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+            llvm::Value* stride_val = nullptr;
             llvm::Value* str_desc_ptr = nullptr;
 
             if (ASR::is_a<ASR::Integer_t>(*elem_type)) {
@@ -16927,6 +16994,17 @@ public:
             }
 
             data_ptr = builder->CreateBitCast(data_ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
+            if (!stride_val) {
+                if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                    stride_val = elem_len_val;
+                } else {
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
+                        nullptr, elem_type, module.get());
+                    stride_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                        data_layout.getTypeAllocSize(llvm_elem_type));
+                }
+            }
 
             // Create lfortran_nml_item_t struct
             llvm::Value* item = llvm_utils->CreateAlloca(*builder, item_type);
@@ -16939,8 +17017,10 @@ public:
                                  builder->CreateStructGEP(item_type, item, 2));
             builder->CreateStore(elem_len_val,
                                  builder->CreateStructGEP(item_type, item, 3));
-            builder->CreateStore(data_ptr, builder->CreateStructGEP(item_type, item, 4));
-            builder->CreateStore(shape_ptr, builder->CreateStructGEP(item_type, item, 5));
+            builder->CreateStore(stride_val,
+                                 builder->CreateStructGEP(item_type, item, 4));
+            builder->CreateStore(data_ptr, builder->CreateStructGEP(item_type, item, 5));
+            builder->CreateStore(shape_ptr, builder->CreateStructGEP(item_type, item, 6));
 
             nml_items.push_back(item);
         };
@@ -17451,6 +17531,7 @@ public:
                     llvm::Type::getInt32Ty(context),             // type
                     llvm::Type::getInt32Ty(context),             // rank
                     llvm::Type::getInt64Ty(context),             // elem_len
+                    llvm::Type::getInt64Ty(context),             // stride
                     llvm::Type::getInt8Ty(context)->getPointerTo(), // data
                     llvm::Type::getInt64Ty(context)->getPointerTo()  // shape
                 );
@@ -20099,6 +20180,7 @@ public:
                     character_type,
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context),
+                    llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt64Ty(context)->getPointerTo()

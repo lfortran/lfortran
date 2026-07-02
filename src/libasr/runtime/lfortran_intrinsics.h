@@ -418,6 +418,7 @@ typedef struct {
     lfortran_nml_type_t type;
     int32_t rank;              // 0 for scalar
     int64_t elem_len;          // for character (len), else 0
+    int64_t stride;            // byte stride between array elements
     void *data;                // scalar ptr or base address of array
     const int64_t *shape;      // rank-sized array of extents (Fortran order)
 } lfortran_nml_item_t;
