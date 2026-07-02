@@ -8325,8 +8325,6 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 Vec<ASR::dimension_t> one_dim; one_dim.reserve(al, 1);
                 one_dim.push_back(al, {arg->base.loc, nullptr, nullptr});
                 string_array_target = ASRUtils::duplicate_type(al, orig_arg_type,&one_dim, ASR::array_physical_typeType::DescriptorArray, true);
-            } else {
-                LCOMPILERS_ASSERT_MSG(extract_n_dims_from_ttype(orig_arg_type)==1, "Casting string to array of rank == 1 is only possible")
             }
             a_args[i].m_value = &cast_string_to_array(al, arg, string_array_target)->base;
         }

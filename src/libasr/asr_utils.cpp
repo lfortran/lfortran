@@ -29,11 +29,33 @@ namespace LCompilers {
 inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type){
     LCOMPILERS_ASSERT(is_string_only(expr_type(string_expr)))
     LCOMPILERS_ASSERT(is_array_of_strings(array_type))
-    if(extract_n_dims_from_ttype(array_type) != 1) throw LCompilersException("Can't cast string to array of n_dims != 1");
 
     ASR::ttype_t*  const array_type_dup = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(array_type);
     ASR::Array_t*  const array_t = ASR::down_cast<ASR::Array_t>(type_get_past_allocatable_pointer(array_type_dup));
     ASR::String_t* const dest_string_t = get_string_type(array_type_dup);
+    if (array_t->n_dims != 1) {
+        ASRBuilder b(al, string_expr->base.loc);
+        ASR::expr_t* known_size = b.i32(1);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            if (array_t->m_dims[i].m_start == nullptr) {
+                array_t->m_dims[i].m_start = b.i32(1);
+            }
+            if (array_t->m_dims[i].m_length != nullptr) {
+                known_size = b.Mul(known_size, array_t->m_dims[i].m_length);
+            }
+        }
+        ASR::expr_t* string_len = b.StringLen(string_expr);
+        ASR::expr_t* elem_count = b.Div(string_len, dest_string_t->m_len);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            if (array_t->m_dims[i].m_length == nullptr) {
+                array_t->m_dims[i].m_length = b.Div(elem_count, known_size);
+                known_size = b.Mul(known_size, array_t->m_dims[i].m_length);
+            }
+        }
+       return ASR::down_cast2<ASR::Cast_t>(
+                ASR::make_Cast_t(al, string_expr->base.loc, string_expr
+                            , ASR::StringToArray, array_type_dup, nullptr, nullptr));
+    }
     const bool is_length_present = dest_string_t->m_len_kind == ASR::ExpressionLength;
     const bool is_size_present = !is_dimension_empty(array_type_dup); 
 
