@@ -1218,6 +1218,12 @@ def add_create_func_return_src(func_name):
         src += indent * 3 +         "}\n"
         src += indent * 2 +     "}\n"
 
+        if func_name == "Merge":
+            src += indent * 2 + "if (ASRUtils::is_array(return_type) && ASR::is_a<ASR::LogicalConstant_t>(*m_args[2])) {\n"
+            src += indent * 3 + "ASR::LogicalConstant_t* mask = ASR::down_cast<ASR::LogicalConstant_t>(m_args[2]);\n"
+            src += indent * 3 + "return (ASR::asr_t*) (mask->m_value ? m_args[0] : m_args[1]);\n"
+            src += indent * 2 + "}\n"
+
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
         src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
         for _i in range(no_of_args):

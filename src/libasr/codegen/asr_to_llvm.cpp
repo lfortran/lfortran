@@ -20995,8 +20995,6 @@ public:
             llvm_utils->get_string_data(src_str_type, bitcast_descriptor), byte_offset);
         
         // Get destination string descriptor pointers and copy element_length bytes
-        auto [dest_data_ptr, dest_len_ptr] = llvm_utils->get_string_length_data(
-            dest_str_type, target_ptr, true, true);
         llvm::Value* copy_length;
         if (dest_str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*dest_str_type->m_len)) {
             ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(dest_str_type->m_len);
@@ -21004,6 +21002,8 @@ public:
         } else {
             copy_length = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1);
         }
+        auto [dest_data_ptr, dest_len_ptr] = llvm_utils->get_string_length_data(
+            dest_str_type, target_ptr, true, true);
         llvm_utils->lfortran_str_copy_with_data(dest_data_ptr, dest_len_ptr, byte_ptr,
             copy_length, false, false, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), dest_kind));
         tmp = nullptr;
