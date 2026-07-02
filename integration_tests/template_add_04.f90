@@ -3,16 +3,18 @@ module template_add_04_m
   private
   public :: add_t, test_template
 
-  requirement R(T, F)
-      type, deferred :: T
-      function F(x, y) result(z)
-          type(T), intent(in) :: x, y
-          type(T) :: z
-      end function
+  requirement R{T, F}
+      deferred type :: T
+      deferred interface
+        function F(x, y) result(z)
+            type(T), intent(in) :: x, y
+            type(T) :: z
+        end function
+    end interface
   end requirement
 
-  template add_t(T, F, mult)
-      require :: R(T, F)
+  template add_t{T, F, mult}
+      require R{T, F}
       integer :: mult
       private
       public :: add_generic
@@ -42,7 +44,7 @@ contains
 
   subroutine test_template()
       integer, parameter :: n = 10
-      instantiate add_t(real, func_arg_real, n), only: add_real => add_generic
+      instantiate add_t{real, func_arg_real, n}, only: add_real => add_generic
       real :: x, y
       integer :: a, b
       x = 5.1

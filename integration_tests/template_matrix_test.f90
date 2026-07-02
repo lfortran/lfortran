@@ -42,12 +42,12 @@ program template_matrix_test
     implicit none
 
     integer, parameter :: n = 2
-    instantiate matrix_tmpl(real, operator(+), real_zero, operator(*), real_one, n), only: &
+    instantiate matrix_tmpl{real, operator(+), real_zero, operator(*), real_one, n}, only: &
             real_matrix => matrix, &
             real_plus_matrix => plus_matrix, &
             real_times_matrix => times_matrix, &
             real_matrix_subtraction_tmpl => matrix_subtraction_tmpl
-    instantiate matrix_tmpl(integer, operator(+), integer_zero, operator(*), integer_one, n), only: &
+    instantiate matrix_tmpl{integer, operator(+), integer_zero, operator(*), integer_one, n}, only: &
             integer_matrix => matrix, &
             integer_plus_matrix => plus_matrix, &
             integer_times_matrix => times_matrix, &

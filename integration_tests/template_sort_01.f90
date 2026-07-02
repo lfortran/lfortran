@@ -22,19 +22,20 @@ module template_sort_01_m
     private
     public :: sort_t
 
-    requirement op_r(T, U, V, op_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
-        pure elemental function op_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(T), intent(in) :: rhs
-            type(V) :: res
-        end function
+    requirement op_r{T, V, op_func}
+        deferred type :: T
+        deferred type :: V
+        deferred interface
+            pure elemental function op_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(T), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
-    template qsort_t(T, lt)
-        require :: op_r(T, T, logical, lt)
+    template qsort_t{T, lt}
+        require op_r{T, T, logical, lt}
         private
         public :: qsort
     contains
@@ -94,9 +95,9 @@ contains
         integer :: xi(10), i
         real :: xr(10)
         type(my_type) :: xm(10)
-        instantiate qsort_t(integer, lt_integer), only: qsort_integer => qs
-        instantiate qsort_t(real, lt_real), only: qsort_real => qs
-        instantiate qsort_t(my_type, lt_my_type), only: qsort_my_type => qs
+        instantiate qsort_t{integer, lt_integer}, only: qsort_integer => qs
+        instantiate qsort_t{real, lt_real}, only: qsort_real => qs
+        instantiate qsort_t{my_type, lt_my_type}, only: qsort_my_type => qs
         xi = [2,4,1,5,6,24,51,3,42,2]
         xr = [2,4,1,5,6,24,51,3,42,2]
         do i = 1, 10

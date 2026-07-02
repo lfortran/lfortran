@@ -8,9 +8,9 @@ module matrix_m
     private
     public :: matrix_tmpl
 
-    template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
-        require :: semiring(T, plus_t, zero_t, times_t, one_t)
-        instantiate derive_extended_monoid(T, plus_t, zero_t), only: sum => mconcat
+    template matrix_tmpl{T, plus_t, zero_t, times_t, one_t, n}
+        require semiring{T, plus_t, zero_t, times_t, one_t}
+        instantiate derive_extended_monoid{T, plus_t, zero_t}, only: sum => mconcat
         integer :: n
 
         private
@@ -34,8 +34,8 @@ module matrix_m
             procedure times_matrix
         end interface
 
-        template matrix_subtraction_tmpl(minus_t)
-            require :: unit_ring_only_minus(T, plus_t, zero_t, times_t, one_t, minus_t)
+        template matrix_subtraction_tmpl{minus_t}
+            require unit_ring_only_minus{T, plus_t, zero_t, times_t, one_t, minus_t}
 
             private
             public :: operator(-), gaussian_solver_tmpl
@@ -44,9 +44,9 @@ module matrix_m
                 procedure minus_matrix
             end interface
 
-            template gaussian_solver_tmpl(div_t)
-                instantiate derive_unit_ring_from_minus(T, plus_t, zero_t, times_t, one_t, minus_t), only: negate
-                require :: field_only_division(T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t)
+            template gaussian_solver_tmpl{div_t}
+                instantiate derive_unit_ring_from_minus{T, plus_t, zero_t, times_t, one_t, minus_t}, only: negate
+                require field_only_division{T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t}
 
                 private
             contains

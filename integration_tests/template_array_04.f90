@@ -1,14 +1,14 @@
 module reverse_m
     implicit none
     private
-    public :: reverse_tmpl, test_reverse
+    public :: reverse_tmpl
 
-    requirement default_behavior(t)
-        type, deferred :: t
+    requirement default_behavior{t}
+        deferred type :: t
     end requirement
 
-    template reverse_tmpl(t)
-        require :: default_behavior(t)
+    template reverse_tmpl{t}
+        require :: default_behavior{t}
         private
         public :: reverse
     contains
@@ -33,7 +33,7 @@ module reverse_m
 contains
 
     subroutine test_reverse()
-        instantiate reverse_tmpl(integer), &
+        instantiate reverse_tmpl{integer}, &
             only: ireverse => reverse
         integer :: a(5)
         a = [1,2,3,4,5]
