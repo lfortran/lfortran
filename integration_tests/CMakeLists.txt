@@ -3484,6 +3484,8 @@ RUN(NAME nested_vars_06 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --impl
 RUN(NAME nested_vars_07 LABELS gfortran llvm)
 RUN(NAME nested_vars_08 LABELS gfortran llvm)
 
+RUN(NAME nested_vars_10 LABELS gfortran llvm)
+
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME pass_array_by_data_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
