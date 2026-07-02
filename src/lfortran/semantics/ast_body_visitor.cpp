@@ -9511,7 +9511,7 @@ public:
             }
         }
         if (x.m_sym == AST::symbolType::Asterisk) {
-            tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
+            tmp = ASR::make_SyncImages_t(al, x.base.base.loc, nullptr, stat, errmsg);
         } else {
             tmp = ASR::make_SyncImages_t(al, x.base.base.loc, image_set, stat, errmsg);
         }

@@ -21,7 +21,7 @@ call c_f_pointer(x__coarray_data, x)
 if (lcompilers_prif_this_image() == 1) then
     x = 42
 end if
-call __module_prif_prif_sync_all()
+call __module_prif_prif_sync_images()
 if (lcompilers_prif_get_integer(4)(x__coarray_handle, [int(1, kind=8)], int(0, kind=8)) /= 42) then
     error stop
 end if
@@ -84,11 +84,12 @@ interface
 end interface
 
 interface
-    subroutine __module_prif_prif_sync_all(stat, errmsg, errmsg_alloc)
+    subroutine __module_prif_prif_sync_images(image_set, stat, errmsg, errmsg_alloc)
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
+        integer(4), dimension(:), intent(in), optional :: image_set
         integer(4), intent(out), optional :: stat
-    end subroutine __module_prif_prif_sync_all
+    end subroutine __module_prif_prif_sync_images
 end interface
 
 interface
