@@ -20322,11 +20322,8 @@ public:
             ptr_loads = ptr_copy;
             iostat = tmp;
         } else {
-            iostat = llvm_utils->CreateAlloca(*builder,
-                        llvm::Type::getInt32Ty(context)->getPointerTo());
-            builder->CreateStore(llvm::ConstantInt::getNullValue(
-                llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
-            iostat = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context)->getPointerTo(), iostat);
+            iostat = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt32Ty(context)->getPointerTo());
         }
 
         if (!is_string) {
@@ -26687,8 +26684,12 @@ public:
             llvm::Value* serialization_info = SerializeExprTypes(x.m_args, x.n_args);
             args.push_back(serialization_info);
 
-            // Create and Push a pointer to int64 to store the result size in
-            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
+            // Create and Push a pointer to int64 to store the result size in.
+            // Emit the alloca in the function's entry block so that when this
+            // string format sits inside a loop, the stack slot is reused across
+            // iterations instead of accumulating (which would otherwise cause a
+            // stack overflow for long-running loops).
+            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
             // Check unallocated arguments
@@ -26806,7 +26807,9 @@ public:
                     visit_expr_load_wrapper(x.m_args[i], 0);
                     LCOMPILERS_ASSERT(llvm_utils->get_StringType(expr_type(x.m_args[i])) == llvm::Type::getInt8Ty(context))
                     LCOMPILERS_ASSERT(tmp->getType()->isPointerTy()); // atleast not `char`
-                    llvm::Value* tmp_ptr = builder->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
+                    // Emit alloca in the entry block to avoid stack accumulation
+                    // when the enclosing string format sits inside a loop.
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 } else {
@@ -26847,7 +26850,7 @@ public:
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
                     tmp = logical_store_val(tmp, x.m_args[i]);
-                    llvm::Value* tmp_ptr = builder->CreateAlloca(tmp->getType());
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(tmp->getType());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 }
