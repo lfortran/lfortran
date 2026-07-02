@@ -1721,7 +1721,19 @@ semantic error: Selector shall be polymorphic in SELECT TYPE statement
     |                      ^ 
 
 semantic error: Label 20 is not defined
-   --> tests/errors/continue_compilation_1.f90:842:9
+   --> tests/errors/continue_compilation_1.f90:841:9
     |
-842 |         goto 20  ! {Error} Label 20 is not defined
+841 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
+
+warning: Different kinds of args in max0 is a non-standard extension
+   --> tests/errors/continue_compilation_1.f90:848:18
+    |
+848 |         print *, min(c1, c4)
+    |                  ^^^^^^^^^^^ help: ensure all arguments have the same kind to make it standard
+
+semantic error: Unsupported argument type for kind adjustment
+   --> tests/errors/continue_compilation_1.f90:848:18
+    |
+848 |         print *, min(c1, c4)
+    |                  ^^^^^^^^^^^ help: ensure all arguments are of a convertible type

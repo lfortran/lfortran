@@ -7514,6 +7514,11 @@ namespace Max {
         bool all_args_same_kind = true;
         for(size_t i=1; i<args.size(); i++) {
             if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
+                if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))) {
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i]));
+                    append_error(diag, "The `MAX` intrinsic requires all CHARACTER arguments to have the same kind; found kind " + std::to_string(kind) + " and " + std::to_string(arg_kind), loc);
+                    return nullptr;
+                }
                 diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
                 all_args_same_kind = false;
@@ -7688,6 +7693,11 @@ namespace Min {
         bool all_args_same_kind = true;
         for(size_t i=1; i<args.size(); i++){
             if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != kind) {
+                if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))) {
+                    int arg_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i]));
+                    append_error(diag, "The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind " + std::to_string(kind) + " and " + std::to_string(arg_kind), loc);
+                    return nullptr;
+                }
                 diag.semantic_warning_label("Different kinds of args in max0 is a non-standard extension", {loc},
                 "help: ensure all arguments have the same kind to make it standard");
                 all_args_same_kind = false;
