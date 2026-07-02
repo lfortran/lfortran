@@ -620,11 +620,11 @@ semantic error: The argument `matrix_b` in `matmul` must be of type Integer, Rea
 349 |     print *, matmul(b1, a1)
     |                         ^^ 
 
-semantic error: The `matmul` intrinsic doesn't handle logical type yet
-   --> tests/errors/continue_compilation_1.f90:351:14
+semantic error: The argument `matrix_b` in `matmul` must be of type Logical if first matrix is of Logical type
+   --> tests/errors/continue_compilation_1.f90:351:25
     |
 351 |     print *, matmul(a2, b1)
-    |              ^^^^^^^^^^^^^^ 
+    |                         ^^ 
 
 semantic error: `matmul` accepts arrays of rank 1 or 2 only, provided an array with rank, 3
    --> tests/errors/continue_compilation_1.f90:353:21
@@ -1726,14 +1726,8 @@ semantic error: Label 20 is not defined
 841 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
 
-warning: Different kinds of args in max0 is a non-standard extension
+semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
    --> tests/errors/continue_compilation_1.f90:848:18
     |
 848 |         print *, min(c1, c4)
-    |                  ^^^^^^^^^^^ help: ensure all arguments have the same kind to make it standard
-
-semantic error: Unsupported argument type for kind adjustment
-   --> tests/errors/continue_compilation_1.f90:848:18
-    |
-848 |         print *, min(c1, c4)
-    |                  ^^^^^^^^^^^ help: ensure all arguments are of a convertible type
+    |                  ^^^^^^^^^^^ 
