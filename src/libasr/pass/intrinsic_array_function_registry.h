@@ -5098,11 +5098,6 @@ namespace MatMul {
                                 is_real(*type_b) ||
                                 is_complex(*type_b);
         bool matrix_b_logical = is_logical(*type_b);
-        if (matrix_a_logical || matrix_b_logical) {
-            // TODO
-            append_error(diag, "The `matmul` intrinsic doesn't handle logical type yet", loc);
-            return nullptr;
-        }
         if ( !matrix_a_numeric && !matrix_a_logical ) {
             append_error(diag, "The argument `matrix_a` in `matmul` must be of type Integer, "
                 "Real, Complex or Logical", matrix_a->base.loc);
@@ -5133,8 +5128,9 @@ namespace MatMul {
             } else {
                 ret_type = extract_type(type_a);
             }
+        } else {
+            ret_type = extract_type(type_a);
         }
-        LCOMPILERS_ASSERT(!matrix_a_logical && !matrix_b_logical)
         ASR::dimension_t* matrix_a_dims = nullptr;
         ASR::dimension_t* matrix_b_dims = nullptr;
         int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
