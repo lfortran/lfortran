@@ -5288,7 +5288,9 @@ namespace MatMul {
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));
         ASR::expr_t *mul_value;
-        if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
+        if (is_logical(*expr_type(a_ref))) {
+            mul_value = b.And(a_ref, b_ref);
+        } else if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
             mul_value = b.Mul(a_ref, b.i2r_t(b_ref, expr_type(a_ref)));
         } else if (is_real(*expr_type(b_ref)) && is_integer(*expr_type(a_ref))) {
             mul_value = b.Mul(b.i2r_t(a_ref, expr_type(b_ref)), b_ref);
@@ -5307,11 +5309,20 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
+        ASR::stmt_t *init_stmt = nullptr;
+        ASR::stmt_t *update_stmt = nullptr;
+        if (is_logical(*expr_type(res_ref))) {
+            init_stmt = b.Assignment(res_ref, b.bool_t(false, expr_type(res_ref)));
+            update_stmt = b.Assignment(res_ref, b.Or(res_ref, mul_value));
+        } else {
+            init_stmt = b.Assign_Constant(res_ref, 0);
+            update_stmt = b.Assignment(res_ref, b.Add(res_ref, mul_value));
+        }
         body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
             b.DoLoop(j, b_lbound, b_ubound, {
-                b.Assign_Constant(res_ref, 0),
+                init_stmt,
                 b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
-                    b.Assignment(res_ref, b.Add(res_ref, mul_value))
+                    update_stmt
                 }),
             })
         }));
