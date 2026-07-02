@@ -1,0 +1,13 @@
+{
+    "basename": "pass_gpu_offload-gpu_offload_01-3930d4d",
+    "cmd": "lfortran --pass=gpu_offload --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/gpu_offload_01.f90",
+    "infile_hash": "ceb1364ab76d5384e73a6a9e61f9ce0c7db3e6d30b0d45a194a4b188",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_gpu_offload-gpu_offload_01-3930d4d.stdout",
+    "stdout_hash": "8dba95875b0a1ab9b8be17da5374c43a30691de98605185f2e94a3a0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
