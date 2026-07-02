@@ -45,8 +45,7 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
     for (size_t i = 0; i < v->n_args; i++) {
         ASR::expr_t *arg = v->m_args[i];
         if (ASR::is_a<ASR::Var_t>(*arg)) {
-            ASR::Var_t *var_expr = ASR::down_cast<ASR::Var_t>(arg);
-            ASR::Variable_t *v_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
+            ASR::Variable_t *v_var = ASRUtils::EXPR2VAR(arg);
             if (v_var->m_intent == ASR::intentType::Unspecified &&
                 !ASRUtils::is_pointer(v_var->m_type) &&
                 !v_var->m_value_attr &&
