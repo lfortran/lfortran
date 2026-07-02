@@ -982,14 +982,15 @@ private :
     /*
     Creates an if block with call to `allocated` intrinsic
     to check if RHS is allocated or not before doing an assignment.
-    That's needed with allocatable RHS as the Fortran standard requires 
-    to not reference non-allocated variables.
+    That's needed with allocatable RHS as the Fortran standard requires
 
     #### Example:
 
     ```fortran
         if(allocated(RHS)) then
             LHS = RHS ! assignment_stmt
+        else if (allocated(LHS)) then
+            deallocate(LHS)
         end if
     ```
     */
@@ -998,23 +999,55 @@ private :
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Assignment_t>(*assignment_stmt))
         LCOMPILERS_ASSERT(ASR::down_cast<ASR::Assignment_t>(assignment_stmt)->m_value == RHS)
 
-        /* Create Call To ImpureIntrinsic `allocated()` */
-        ASR::expr_t* allocated_intrinsic_call {};
+        ASR::expr_t* LHS = ASR::down_cast<ASR::Assignment_t>(assignment_stmt)->m_target;
+
+        /* Create Call To ImpureIntrinsic `allocated(RHS)` */
+        ASR::expr_t* allocated_rhs_call {};
         {
             Vec<ASR::expr_t*> args;
             args.reserve(al, 1);
             args.push_back(al, RHS);
             diag::Diagnostics diag_instance;
-            allocated_intrinsic_call = ASRUtils::EXPR(ASRUtils::Allocated::create_Allocated(al, RHS->base.loc, args, diag_instance));
+            allocated_rhs_call = ASRUtils::EXPR(ASRUtils::Allocated::create_Allocated(al, RHS->base.loc, args, diag_instance));
             if(diag_instance.has_error()) throw diag_instance;
         }
-        /* Create If Body */
+        /* Create If Body: LHS = RHS */
         Vec<ASR::stmt_t*> if_body {};
         {
             if_body.reserve(al, 1);
             if_body.push_back(al, assignment_stmt);
         }
-        return ASRUtils::STMT(ASR::make_If_t(al, RHS->base.loc, nullptr, allocated_intrinsic_call, if_body.p, if_body.size(), nullptr, 0));
+
+        Vec<ASR::stmt_t*> else_body {};
+        else_body.reserve(al, 1);
+        if (ASRUtils::is_allocatable(ASRUtils::expr_type(LHS))) {
+            ASR::expr_t* allocated_lhs_call {};
+            {
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 1);
+                args.push_back(al, LHS);
+                diag::Diagnostics diag_instance;
+                allocated_lhs_call = ASRUtils::EXPR(ASRUtils::Allocated::create_Allocated(al, LHS->base.loc, args, diag_instance));
+                if(diag_instance.has_error()) throw diag_instance;
+            }
+            Vec<ASR::expr_t*> dealloc_args;
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, LHS);
+            ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+                LHS->base.loc, dealloc_args.p, dealloc_args.n));
+
+            Vec<ASR::stmt_t*> inner_if_body;
+            inner_if_body.reserve(al, 1);
+            inner_if_body.push_back(al, dealloc_stmt);
+            ASR::stmt_t* inner_if = ASRUtils::STMT(ASR::make_If_t(al, LHS->base.loc,
+                nullptr, allocated_lhs_call, inner_if_body.p, inner_if_body.size(),
+                nullptr, 0));
+            else_body.push_back(al, inner_if);
+        }
+
+        return ASRUtils::STMT(ASR::make_If_t(al, RHS->base.loc, nullptr,
+            allocated_rhs_call, if_body.p, if_body.size(),
+            else_body.p, else_body.size()));
     }
 
     // Inject sync statements before cycle recursively 
@@ -1258,15 +1291,13 @@ public:
                                 // to properly handle reallocation in nested functions
                                 ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                             target, val, nullptr, true, true));
-                                // First push allocate stmt for LHS
-                                body.push_back(al, assignment);
+                                body.push_back(al, create_if_allocated_block(val, assignment));
                                 if( ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
                                         ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In &&
                                         !skip_sync_back) {
                                     assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                         val, target, nullptr, true, true));
-                                    // Now push the assignment from LHS to RHS at end of function
-                                    assigns_at_end.push_back(assignment);
+                                    assigns_at_end.push_back(create_if_allocated_block(target, assignment));
                                 }
                             } else {
                                 ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
