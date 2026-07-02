@@ -1497,6 +1497,14 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             }
         }
 
+        ASR::ttype_t* value_type = member_type;
+        if (ASRUtils::is_array(ASRUtils::expr_type(ASRUtils::EXPR(v_var)))) {
+            size_t n_dims_local = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(ASRUtils::EXPR(v_var))), m_dims);
+            value_type = ASRUtils::make_Array_t_util(al, loc, member_type_, m_dims, n_dims_local);
+        }
+
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
         ASR::expr_t* value = nullptr;
         v = ASRUtils::symbol_get_past_external(v);
@@ -1505,21 +1513,97 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             if (member_variable->m_symbolic_value != nullptr) {
                 value = expr_value(member_variable->m_symbolic_value);
             }
-            // Check for compile time value in StructConstant
             ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
-            if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
-                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(v_variable_s->m_type_declaration));
-                std::string mem_name = ASRUtils::symbol_name(member);
-                // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
-                size_t i = 0;
-                for (i = 0; i < struct_s->n_members; i++) {
-                    if (struct_s->m_members[i] == mem_name) {
-                        break;
+            ASR::expr_t* v_var_value = ASRUtils::expr_value(ASRUtils::EXPR(v_var));
+            if (!v_var_value) {
+                v_var_value = v_variable_s->m_symbolic_value;
+            }
+
+            if (v_var_value != nullptr) {
+                if (ASR::is_a<ASR::StructConstant_t>(*v_var_value) || ASR::is_a<ASR::StructConstructor_t>(*v_var_value)) {
+                    ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external((ASR::symbol_t*)ASRUtils::symbol_parent_symtab(member)->asr_owner));
+                    std::string mem_name = ASRUtils::symbol_name(member);
+                    size_t i = 0;
+                    for (i = 0; i < struct_s->n_members; i++) {
+                        if (struct_s->m_members[i] == mem_name) {
+                            break;
+                        }
+                    }
+
+                    if (ASR::is_a<ASR::StructConstant_t>(*v_var_value)) {
+                        ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_var_value);
+                        value = stc->m_args[i].m_value;
+                    } else {
+                        ASR::StructConstructor_t *stc = ASR::down_cast<ASR::StructConstructor_t>(v_var_value);
+                        value = stc->m_args[i].m_value;
+                        if (!value) value = ASRUtils::expr_value(stc->m_args[i].m_value);
+                    }
+                } else if (ASR::is_a<ASR::ArrayConstant_t>(*v_var_value)) {
+                    ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external((ASR::symbol_t*)ASRUtils::symbol_parent_symtab(member)->asr_owner));
+                    std::string mem_name = ASRUtils::symbol_name(member);
+                    size_t mem_idx = 0;
+                    for (mem_idx = 0; mem_idx < struct_s->n_members; mem_idx++) {
+                        if (struct_s->m_members[mem_idx] == mem_name) {
+                            break;
+                        }
+                    }
+
+                    ASR::ArrayConstant_t* array_const = ASR::down_cast<ASR::ArrayConstant_t>(v_var_value);
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, array_const->m_n_data);
+                    bool all_extracted = true;
+                    for (size_t k = 0; k < (size_t) array_const->m_n_data; k++) {
+                        ASR::expr_t* struct_const_expr = ASRUtils::fetch_ArrayConstant_value(al, array_const, k);
+                        if (struct_const_expr && ASR::is_a<ASR::StructConstant_t>(*struct_const_expr)) {
+                            ASR::StructConstant_t* stc = ASR::down_cast<ASR::StructConstant_t>(struct_const_expr);
+                            args.push_back(al, stc->m_args[mem_idx].m_value);
+                        } else {
+                            all_extracted = false;
+                            break;
+                        }
+                    }
+                    if (all_extracted) {
+                        void* new_data = ASRUtils::set_ArrayConstant_data(args.p, args.n, member_type_);
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc, args.n, new_data, value_type, array_const->m_storage_format));
+                    }
+                } else if (ASR::is_a<ASR::ArrayConstructor_t>(*v_var_value)) {
+                    ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external((ASR::symbol_t*)ASRUtils::symbol_parent_symtab(member)->asr_owner));
+                    std::string mem_name = ASRUtils::symbol_name(member);
+                    size_t mem_idx = 0;
+                    for (mem_idx = 0; mem_idx < struct_s->n_members; mem_idx++) {
+                        if (struct_s->m_members[mem_idx] == mem_name) {
+                            break;
+                        }
+                    }
+
+                    ASR::ArrayConstructor_t* array_ctor = ASR::down_cast<ASR::ArrayConstructor_t>(v_var_value);
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, array_ctor->n_args);
+                    bool all_extracted = true;
+                    for (size_t k = 0; k < array_ctor->n_args; k++) {
+                        ASR::expr_t* struct_const_expr = array_ctor->m_args[k];
+                        if (!ASR::is_a<ASR::StructConstant_t>(*struct_const_expr) && !ASR::is_a<ASR::StructConstructor_t>(*struct_const_expr)) {
+                            ASR::expr_t* struct_const_expr_val = ASRUtils::expr_value(struct_const_expr);
+                            if (struct_const_expr_val) struct_const_expr = struct_const_expr_val;
+                        }
+
+                        if (struct_const_expr && ASR::is_a<ASR::StructConstant_t>(*struct_const_expr)) {
+                            ASR::StructConstant_t* stc = ASR::down_cast<ASR::StructConstant_t>(struct_const_expr);
+                            args.push_back(al, stc->m_args[mem_idx].m_value);
+                        } else if (struct_const_expr && ASR::is_a<ASR::StructConstructor_t>(*struct_const_expr)) {
+                            ASR::StructConstructor_t* stc = ASR::down_cast<ASR::StructConstructor_t>(struct_const_expr);
+                            ASR::expr_t* arg_val = stc->m_args[mem_idx].m_value;
+                            if (!arg_val) arg_val = ASRUtils::expr_value(stc->m_args[mem_idx].m_value);
+                            args.push_back(al, arg_val);
+                        } else {
+                            all_extracted = false;
+                            break;
+                        }
+                    }
+                    if (all_extracted) {
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstructor_t(al, loc, args.p, args.n, value_type, nullptr, array_ctor->m_storage_format, nullptr));
                     }
                 }
-
-                ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
-                value = stc->m_args[i].m_value;
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),

@@ -5294,3 +5294,7 @@ run = true
 [[test]]
 filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
+
+[[test]]
+filename = "../integration_tests/struct_parameter_array_01.f90"
+asr = true

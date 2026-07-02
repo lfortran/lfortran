@@ -1,0 +1,293 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            struct_parameter_array_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            1_item_tag:
+                                (ExternalSymbol
+                                    2
+                                    1_item_tag
+                                    3 tag
+                                    item
+                                    []
+                                    tag
+                                    Public
+                                ),
+                            item:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            tag:
+                                                (Variable
+                                                    3
+                                                    tag
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    item
+                                    (StructType
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [tag]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                ),
+                            items:
+                                (Variable
+                                    2
+                                    items
+                                    []
+                                    Local
+                                    (ArrayConstructor
+                                        [(StructConstructor
+                                            2 item
+                                            [((StringConstant
+                                                "a"
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))]
+                                            (StructType
+                                                [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ()
+                                        )
+                                        (StructConstructor
+                                            2 item
+                                            [((StringConstant
+                                                "b"
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))]
+                                            (StructType
+                                                [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ()
+                                        )]
+                                        (Array
+                                            (StructType
+                                                [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                        ColMajor
+                                        ()
+                                    )
+                                    ()
+                                    Parameter
+                                    (Array
+                                        (StructType
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    2 item
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            tags:
+                                (Variable
+                                    2
+                                    tags
+                                    [items]
+                                    Local
+                                    (StructInstanceMember
+                                        (Var 2 items)
+                                        2 1_item_tag
+                                        (Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            PointerArray
+                                        )
+                                        (ArrayConstructor
+                                            [(StringConstant
+                                                "a"
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
+                                            (StringConstant
+                                                "b"
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )]
+                                            (Array
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                PointerArray
+                                            )
+                                            ()
+                                            ColMajor
+                                            ()
+                                        )
+                                    )
+                                    (ArrayConstant
+                                        2
+                                        ["a", "b"]
+                                        (Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            PointerArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        PointerArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    struct_parameter_array_01
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 2 tags)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (StringCompare
+                                (ArrayItem
+                                    (Var 2 tags)
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    ())]
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ColMajor
+                                    (StringConstant
+                                        "a"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                )
+                                NotEq
+                                (StringConstant
+                                    "a"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            Or
+                            (StringCompare
+                                (ArrayItem
+                                    (Var 2 tags)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ColMajor
+                                    (StringConstant
+                                        "b"
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                )
+                                NotEq
+                                (StringConstant
+                                    "b"
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

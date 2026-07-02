@@ -1846,6 +1846,7 @@ RUN(NAME parameter_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME parameter_16 LABELS gfortran llvm)
 RUN(NAME parameter_17 LABELS gfortran llvm)
 RUN(NAME parameter_18 LABELS gfortran llvm)
+RUN(NAME struct_parameter_array_01 LABELS gfortran llvm)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
