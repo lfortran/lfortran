@@ -20939,24 +20939,35 @@ public:
 
     void handle_bitcast_assignment_char(const ASR::Assignment_t &x) {
         // Handler for BitCast (transfer intrinsic) to character arrays
-        // Used for Element by Element assignment
-        // Note: Called only when element type to be assigned is character array
         ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* elem_type = target_type;
+        bool is_array_target = false;
         if (ASRUtils::is_array(target_type)) {
             elem_type = ASRUtils::extract_type(target_type);
+            is_array_target = (x.m_target->type == ASR::exprType::Var || x.m_target->type == ASR::exprType::ArraySection);
         }
+        
         auto with_value_semantics = [&](auto func) {
             int64_t saved = ptr_loads;
             ptr_loads = 0;
             func();
             ptr_loads = saved;
         };
-        LCOMPILERS_ASSERT(x.m_target->type == ASR::exprType::ArrayItem ||  x.m_target->type == ASR::exprType::Var);
-        is_assignment_target = true;
-        visit_expr(*x.m_target);
-        is_assignment_target = false;
-        llvm::Value* target_ptr = tmp;
+        llvm::Value* target_ptr;
+        if (x.m_target->type == ASR::exprType::Var) {
+            uint32_t h = get_hash((ASR::asr_t*)ASRUtils::EXPR2VAR(x.m_target));
+            target_ptr = llvm_symtab[h];
+            if (ASRUtils::is_allocatable(target_type) || ASRUtils::is_pointer(target_type)) {
+                llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+                    ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), module.get());
+                target_ptr = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), target_ptr);
+            }
+        } else {
+            is_assignment_target = true;
+            visit_expr(*x.m_target);
+            is_assignment_target = false;
+            target_ptr = tmp;
+        }
 
         llvm::Value* zero_based_idx;
         if (x.m_target->type == ASR::exprType::ArrayItem) {
@@ -20968,23 +20979,28 @@ public:
             zero_based_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
         }
         
-        // Calculate byte offset: index * element_length
-        // For character(len=2): element 0 at byte 0, element 1 at byte 2, etc.
         ASR::String_t* src_str_type = ASR::down_cast<ASR::String_t>(
             ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_value)));
-
         ASR::String_t* dest_str_type = ASR::down_cast<ASR::String_t>(elem_type);
+
         llvm::Value* element_length_val;
         if (dest_str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*dest_str_type->m_len)) {
             ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(dest_str_type->m_len);
             element_length_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), len->m_n);
         } else {
-            // If runtime-sized, extract it or default is set at len=1 
             element_length_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1);
         }
 
         llvm::Value* bitcast_descriptor;
         with_value_semantics([&]() { visit_expr_wrapper(x.m_value, true); bitcast_descriptor = tmp; });
+
+        llvm::Value* src_data_ptr;
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            src_data_ptr = llvm_utils->get_stringArray_data(ASRUtils::expr_type(x.m_value), bitcast_descriptor);
+        } else {
+            src_data_ptr = llvm_utils->get_string_data(src_str_type, bitcast_descriptor);
+        }
+
         llvm::Value* byte_offset = builder->CreateMul(zero_based_idx, element_length_val);
         int dest_kind = dest_str_type->m_kind;
         if (dest_kind > 1) {
@@ -20992,20 +21008,29 @@ public:
             byte_offset = builder->CreateMul(byte_offset, kind_val);
         }
         llvm::Value* byte_ptr = builder->CreateGEP(llvm::Type::getInt8Ty(context),
-            llvm_utils->get_string_data(src_str_type, bitcast_descriptor), byte_offset);
-        
-        // Get destination string descriptor pointers and copy element_length bytes
-        auto [dest_data_ptr, dest_len_ptr] = llvm_utils->get_string_length_data(
-            dest_str_type, target_ptr, true, true);
-        llvm::Value* copy_length;
-        if (dest_str_type->m_len && ASR::is_a<ASR::IntegerConstant_t>(*dest_str_type->m_len)) {
-            ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(dest_str_type->m_len);
-            copy_length = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len->m_n);
+            src_data_ptr, byte_offset);
+
+        llvm::Value* dest_data_ptr;
+        if (is_array_target) {
+            dest_data_ptr = llvm_utils->get_stringArray_data(target_type, target_ptr);
         } else {
-            copy_length = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1);
+            dest_data_ptr = llvm_utils->get_string_data(dest_str_type, target_ptr);
         }
-        llvm_utils->lfortran_str_copy_with_data(dest_data_ptr, dest_len_ptr, byte_ptr,
-            copy_length, false, false, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), dest_kind));
+        llvm::Value* copy_length = element_length_val;
+        if (is_array_target) {
+            llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), module.get());
+            llvm::Value* num_elems = nullptr;
+            if (ASRUtils::is_fixed_size_array(target_type)) {
+                num_elems = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), ASRUtils::get_fixed_size_of_array(target_type));
+            } else {
+                num_elems = arr_descr->get_array_size(arr_type_llvm, target_ptr, nullptr, 4);
+            }
+            copy_length = builder->CreateMul(copy_length, num_elems);
+        }
+        
+        copy_length = builder->CreateSExtOrTrunc(copy_length, llvm::Type::getInt64Ty(context));
+        
+        builder->CreateMemCpy(dest_data_ptr, llvm::MaybeAlign(), byte_ptr, llvm::MaybeAlign(), copy_length);
         tmp = nullptr;
         return;
     }
