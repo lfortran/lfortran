@@ -836,6 +836,11 @@ program continue_compilation_1
             print *, a
         end select
     end subroutine
+    subroutine sub_undefined_goto_label()
+        implicit none
+        goto 20  ! {Error} Label 20 is not defined
+    end subroutine
+
     subroutine character_kind_mismatch()
         implicit none
         character(kind=1) :: c1

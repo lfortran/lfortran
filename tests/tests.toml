@@ -5294,3 +5294,4 @@ run = true
 [[test]]
 filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
+
