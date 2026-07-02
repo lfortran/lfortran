@@ -5410,9 +5410,15 @@ namespace Count {
             arg_values.push_back(al, mask_value);
         }
 
+        ASR::ttype_t* base_type = int32;
+        if ( kind ) {
+            int kind_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(kind))->m_n;
+            base_type = TYPE(ASR::make_Integer_t(al, loc, kind_value));
+        }
+
         ASR::ttype_t* return_type = nullptr;
         if( overload_id == id_mask ) {
-            return_type = int32;
+            return_type = base_type;
         } else if( overload_id == id_mask_dim ) {
             Vec<ASR::dimension_t> dims;
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(mask_type);
@@ -5425,12 +5431,8 @@ namespace Count {
                 dims.push_back(al, dim);
             }
             return_type = ASRUtils::make_Array_t_util(al, loc,
-                int32, dims.p, dims.n, ASR::abiType::Source,
+                base_type, dims.p, dims.n, ASR::abiType::Source,
                 false);
-        }
-        if ( kind ) {
-            int kind_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(kind))->m_n;
-            return_type = TYPE(ASR::make_Integer_t(al, loc, kind_value));
         }
         value = eval_Count(al, loc, return_type, arg_values, diag);
 
