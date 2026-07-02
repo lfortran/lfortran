@@ -1619,8 +1619,18 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                         x->base.base.loc, x->m_stat, x->m_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::SyncImages) {
                     ASR::SyncImages_t *x = ASR::down_cast<ASR::SyncImages_t>(m_body[i]);
+                    ASR::expr_t *image_set = x->m_image_set;
+                    if (image_set && !ASRUtils::is_array(ASRUtils::expr_type(image_set))) {
+                        ASRUtils::ASRBuilder b(replacer.al, x->base.base.loc);
+                        Vec<ASR::dimension_t> dims; dims.reserve(replacer.al, 1);
+                        ASR::dimension_t d; d.loc = x->base.base.loc; d.m_start = b.i32(1); d.m_length = b.i32(1);
+                        dims.push_back(replacer.al, d);
+                        ASR::ttype_t *scalar_type = ASRUtils::expr_type(image_set);
+                        std::vector<ASR::expr_t*> elems = {image_set};
+                        image_set = b.ArrayConstant(elems, scalar_type, false);
+                    }
                     body.push_back(replacer.al, replacer.prif.make_prif_sync_images_call(
-                        x->base.base.loc, x->m_image_set, x->m_stat, x->m_errmsg));
+                        x->base.base.loc, image_set, x->m_stat, x->m_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::IntrinsicImpureSubroutine) {
                     ASR::IntrinsicImpureSubroutine_t *x = ASR::down_cast<ASR::IntrinsicImpureSubroutine_t>(m_body[i]);
                     std::string intrinsic_name = ASRUtils::get_intrinsic_subroutine_name(x->m_sub_intrinsic_id);
