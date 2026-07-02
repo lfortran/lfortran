@@ -3476,7 +3476,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         llvm::Value* desc_arr = builder->CreateBitCast(
             data_mem, string_descriptor->getPointerTo());
-        llvm::Value* idx = CreateAlloca(*builder, i64_ty);
+        // Emit the loop-counter alloca in the entry block so this helper
+        // does not accumulate stack space when called repeatedly.
+        llvm::Value* idx = CreateAlloca(i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("str_desc_init", [&]() {
             return builder->CreateICmpSLT(
@@ -3567,7 +3569,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Value* flat_buf = LLVMArrUtils::lfortran_malloc(
             context, *module, *builder, total_bytes);
 
-        llvm::Value* idx = CreateAlloca(*builder, i64_ty);
+        llvm::Value* idx = CreateAlloca(i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("char_consolidate", [&]() {
             return builder->CreateICmpSLT(
@@ -3585,7 +3587,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 builder->CreateAdd(i, llvm::ConstantInt::get(i64_ty, 1)), idx);
         });
 
-        llvm::Value* result = CreateAlloca(*builder, str_desc_ty,
+        llvm::Value* result = CreateAlloca(str_desc_ty,
             nullptr, "consolidated_str");
         builder->CreateStore(flat_buf, create_gep2(str_desc_ty, result, 0));
         builder->CreateStore(char_len, create_gep2(str_desc_ty, result, 1));
@@ -3606,7 +3608,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Value* char_len = CreateLoad2(i64_ty,
             create_gep2(str_desc_ty, consolidated_desc, 1));
 
-        llvm::Value* idx = CreateAlloca(*builder, i64_ty);
+        llvm::Value* idx = CreateAlloca(i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("char_writeback", [&]() {
             return builder->CreateICmpSLT(
@@ -3636,7 +3638,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         // bounded by the enclosing call, so a heap allocation would leak.
         llvm::Value* descs = CreateAlloca(*builder, str_desc_ty, n_elems_i64);
 
-        llvm::Value* idx = CreateAlloca(*builder, i64_ty);
+        llvm::Value* idx = CreateAlloca(i64_ty);
         builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), idx);
         create_loop("str_expand", [&]() {
             return builder->CreateICmpSLT(
@@ -10234,7 +10236,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         uint64_t dim_des_size = data_layout.getTypeAllocSize(dim_des);
         unsigned index_bit_width = llvm_utils->arr_api->get_index_type()->getIntegerBitWidth();
 
-        llvm::Value* r = llvm_utils->CreateAlloca(*builder, i32_ty);
+        // Hoist the loop-counter alloca to the function's entry block so
+        // that this helper doesn't accumulate stack space when invoked
+        // repeatedly from within a Fortran loop.
+        llvm::Value* r = llvm_utils->CreateAlloca(i32_ty);
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
         llvm_utils->create_loop("copy_dim_desc", [&]() {
             return builder->CreateICmpSLT(
@@ -10365,8 +10370,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 builder->CreateStore(dest_raw_data,
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
-                // Loop: copy each data element using byte offsets
-                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
+                // Loop: copy each data element using byte offsets.
+                // Hoist the loop counter to the entry block so this helper
+                // does not accumulate stack when invoked inside a Fortran
+                // loop.
+                llvm::Value* ui = llvm_utils->CreateAlloca(i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("upoly_deepcopy", [&]() {
                     return builder->CreateICmpSLT(
@@ -10436,8 +10444,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     builder->CreateBitCast(dest_raw_data, actual_struct_type->getPointerTo()),
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
-                // Loop: copy each element using byte offsets
-                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
+                // Loop: copy each element using byte offsets. Hoist the
+                // loop counter alloca to the function entry so it doesn't
+                // accumulate stack space across repeated invocations.
+                llvm::Value* ui = llvm_utils->CreateAlloca(i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("class_deepcopy", [&]() {
                     return builder->CreateICmpSLT(
@@ -10473,7 +10483,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.body");
             llvm::BasicBlock *loopEnd  = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.end");
 
-            llvm::Value* i = llvm_utils->CreateAlloca(*builder, index_type);
+            // Hoist the loop-counter alloca to the entry block so this
+            // deepcopy helper doesn't accumulate stack when called inside
+            // a Fortran loop.
+            llvm::Value* i = llvm_utils->CreateAlloca(index_type);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), i);
 
             // head
