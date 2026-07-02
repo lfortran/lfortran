@@ -1,0 +1,13 @@
+{
+    "basename": "asr-goto_undefined_label-22939fc",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/goto_undefined_label.f90",
+    "infile_hash": "7789552f0d763802fd53632ee0ad9b0110ab2a02b8991f99243ce71e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-goto_undefined_label-22939fc.stderr",
+    "stderr_hash": "80e4410f3b67205f757f4863c2201a96f85cbb8b86fdcfd29196af36",
+    "returncode": 2
+}

@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-define void @find_fit(void ([1 x float]*)* %expr) {
+define void @find_fit(ptr %expr) {
 .entry:
   br label %return
 
@@ -13,12 +13,12 @@ FINALIZE_SYMTABLE_find_fit:                       ; preds = %return
   ret void
 }
 
-declare void @expr([1 x float]*)
+declare void @expr(ptr)
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  call void @find_fit(void ([1 x float]*)* @expression)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
+  call void @find_fit(ptr @expression)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -29,7 +29,7 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
-define void @expression([1 x float]* %y) {
+define void @expression(ptr %y) {
 .entry:
   br label %return
 
@@ -40,6 +40,6 @@ FINALIZE_SYMTABLE_expression:                     ; preds = %return
   ret void
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
 declare void @_lfortran_internal_alloc_finalize()

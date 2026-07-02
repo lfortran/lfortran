@@ -23,7 +23,7 @@ namespace LCompilers::LFortran {
 static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
         size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation) {
     ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
-    if (!fn_type->m_pure || v->m_side_effect_free) {
+    if (!fn_type->m_pure) {
         return;
     }
     ASR::SideEffectFinder finder;
@@ -39,6 +39,25 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
             }));
         if (!continue_compilation) {
             throw SemanticAbort();
+        }
+    }
+    // C1592: pure function dummy data objects must have INTENT(IN) or VALUE
+    for (size_t i = 0; i < v->n_args; i++) {
+        ASR::expr_t *arg = v->m_args[i];
+        if (ASR::is_a<ASR::Var_t>(*arg)) {
+            ASR::Var_t *var_expr = ASR::down_cast<ASR::Var_t>(arg);
+            ASR::Variable_t *v_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
+            if (v_var->m_intent == ASR::intentType::Unspecified) {
+                diag.add(diag::Diagnostic(
+                    "Dummy argument '" + std::string(v_var->m_name) +
+                    "' of pure function must have INTENT(IN) or VALUE attribute",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {v_var->base.base.loc})
+                    }));
+                if (!continue_compilation) {
+                    throw SemanticAbort();
+                }
+            }
         }
     }
 }
@@ -9229,8 +9248,16 @@ public:
         if (x.m_goto_label) {
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
+            if (labels.find(std::to_string(goto_label)) == labels.end()) {
+                    diag.add(Diagnostic(
+                        "Label " + std::to_string(goto_label) + " is not defined",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label,
-                        s2c(al, std::to_string(goto_label)));
+                        s2c(al, std::to_string(goto_label)));                
             } else {
                 this->visit_expr(*x.m_goto_label);
                 ASR::expr_t *goto_label = ASRUtils::EXPR(tmp);

@@ -1,0 +1,5 @@
+semantic error: Label 20 is not defined
+ --> tests/errors/goto_undefined_label.f90:2:3
+  |
+2 |   goto 20
+  |   ^^^^^^^ 
