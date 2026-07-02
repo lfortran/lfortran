@@ -1923,6 +1923,7 @@ public:
         {"co_sum", IntrinsicSignature({"a", "result_image", "stat", "errmsg"}, 1, 4)},
         {"co_max", IntrinsicSignature({"a", "result_image", "stat", "errmsg"}, 1, 4)},
         {"co_min", IntrinsicSignature({"a", "result_image", "stat", "errmsg"}, 1, 4)},
+        {"co_broadcast", IntrinsicSignature({"a", "source_image", "stat", "errmsg"}, 2, 4)},
         {"move_alloc", IntrinsicSignature({"from", "to"}, 2, 2)},
         {"mvbits", IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)},
         {"modulo", IntrinsicSignature({"a", "p"}, 2, 2)},
@@ -15401,7 +15402,7 @@ public:
 
     void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
         std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
-        coarray_intrinsics = {"co_broadcast", "co_reduce", "lcobound", "ucobound", "failed_images",
+        coarray_intrinsics = {"co_reduce", "lcobound", "ucobound", "failed_images",
             "image_status", "get_team", "image_index", "stopped_images", "team_number", "coshape", "corank",
             "event_query"};
         atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
