@@ -1830,6 +1830,83 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    bool try_lower_overloaded_scalar_array_assignment(
+            const ASR::Assignment_t& x) {
+        if (x.m_overloaded == nullptr) return false;
+        if (!ASR::is_a<ASR::SubroutineCall_t>(*x.m_overloaded)) return false;
+        ASR::SubroutineCall_t* sc = ASR::down_cast<ASR::SubroutineCall_t>(
+            x.m_overloaded);
+        if (ASRUtils::is_elemental(sc->m_name)) return false;
+        ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(sc->m_name);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
+            proc = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc);
+        }
+        if (!ASR::is_a<ASR::Function_t>(*proc)) return false;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+        if (func->n_args == 0 || func->m_args[0] == nullptr) return false;
+        ASR::ttype_t* arg0_type = ASRUtils::expr_type(func->m_args[0]);
+        if (ASRUtils::is_array(arg0_type)) return false;
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) return false;
+
+        const Location& loc = x.base.base.loc;
+        ASR::expr_t* target = x.m_target;
+        ASR::expr_t* value = x.m_value;
+        ASR::expr_t* value_unbroadcast = ASRUtils::get_past_array_broadcast(value);
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+        if (rank == 0) return false;
+        bool value_is_scalar = !ASRUtils::is_array(
+            ASRUtils::expr_type(value_unbroadcast));
+
+        Vec<ASR::expr_t*> idx_vars;
+        PassUtils::create_idx_vars(idx_vars, rank, loc, al, current_scope,
+            "__libasr_ov_idx_");
+
+        ASR::expr_t* indexed_target = PassUtils::create_array_ref(target,
+            idx_vars, al, current_scope);
+        ASR::expr_t* indexed_value = value_is_scalar
+            ? value
+            : PassUtils::create_array_ref(value_unbroadcast, idx_vars, al,
+                current_scope);
+
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, sc->n_args);
+        for (size_t i = 0; i < sc->n_args; i++) {
+            ASR::call_arg_t a;
+            a.loc = sc->m_args[i].loc;
+            if (i == 0) {
+                a.m_value = indexed_target;
+            } else if (i == 1) {
+                a.m_value = indexed_value;
+            } else {
+                a.m_value = sc->m_args[i].m_value;
+            }
+            new_args.push_back(al, a);
+        }
+        ASR::stmt_t* call_stmt = ASRUtils::STMT(
+            ASRUtils::make_SubroutineCall_t_util(al, loc, sc->m_name,
+                sc->m_original_name, new_args.p, new_args.size(),
+                sc->m_dt, nullptr, false));
+
+        ASR::stmt_t* loop = call_stmt;
+        for (size_t k = 0; k < rank; k++) {
+            size_t dim = rank - 1 - k;
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = idx_vars[dim];
+            head.m_start = ASRUtils::get_bound(target, dim + 1, "lbound", al);
+            head.m_end = ASRUtils::get_bound(target, dim + 1, "ubound", al);
+            head.m_increment = nullptr;
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            body.push_back(al, loop);
+            loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                body.p, body.size(), nullptr, 0));
+        }
+        pass_result.push_back(al, loop);
+        return true;
+    }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         if (ASRUtils::is_simd_array(x.m_target)) {
@@ -1862,6 +1939,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             std::find(skip_exprs.begin(), skip_exprs.end(), xx.m_value->type) != skip_exprs.end() ||
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
             return ;
+        }
+        if (try_lower_overloaded_scalar_array_assignment(x)) {
+            remove_original_stmt = true;
+            return;
         }
         bool is_target_assumed_rank = (ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_target) && 
             ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_target)->m_old == ASR::array_physical_typeType::AssumedRankArray) 
