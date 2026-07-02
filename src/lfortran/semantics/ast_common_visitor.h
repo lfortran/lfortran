@@ -7995,6 +7995,11 @@ public:
                         std::string init_name = to_lower(
                             AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
                         ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
+                        if (is_derived_type
+                                && init_sym == (ASR::symbol_t*)variable_added_to_symtab
+                                && current_scope->parent) {
+                            init_sym = current_scope->parent->resolve_symbol(init_name);
+                        }
                         bool is_pending_placeholder = false;
                         if (init_sym) {
                             ASR::symbol_t *init_sym_underlying =
@@ -8020,6 +8025,31 @@ public:
                                 init_name, variable_added_to_symtab,
                                 init_resolve_scope,
                                 s.m_initializer->base.loc});
+                            continue;
+                        }
+                        if (is_derived_type && init_sym && variable_added_to_symtab) {
+                            // At this point `init_sym` refers to a symbol in
+                            // the enclosing scope. Bind the component's
+                            // `m_symbolic_value` directly to it and skip the
+                            // generic `visit_expr` path below, which would
+                            // re-resolve `init_name` against `current_scope`
+                            // and pick up the component itself.
+                            ASR::expr_t *init_expr_direct = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, s.m_initializer->base.loc, init_sym));
+                            variable_added_to_symtab->m_symbolic_value = init_expr_direct;
+                            variable_added_to_symtab->m_value = nullptr;
+                            SetChar variable_dependencies_vec;
+                            variable_dependencies_vec.reserve(al, 1);
+                            ASRUtils::collect_variable_dependencies(al,
+                                variable_dependencies_vec,
+                                variable_added_to_symtab->m_type,
+                                variable_added_to_symtab->m_symbolic_value,
+                                variable_added_to_symtab->m_value,
+                                variable_added_to_symtab->m_name);
+                            variable_added_to_symtab->m_dependencies =
+                                variable_dependencies_vec.p;
+                            variable_added_to_symtab->n_dependencies =
+                                variable_dependencies_vec.n;
                             continue;
                         }
                     }
