@@ -16353,6 +16353,7 @@ public:
                 }
                 break;
              }
+
             case (ASR::cast_kindType::RealToString) : {
                 /* Call Runtime Function `lfortran_float_to_str` */
                 llvm::Value* casted_float {}; // float -> string
@@ -23078,6 +23079,34 @@ public:
                             }
                         }
                     }
+#if LLVM_VERSION_MAJOR < 15
+                    // Bitcast procedure pointer if LLVM types don't match.
+                    // Handles implicit/explicit interfaces where LLVM generates
+                    // structurally equivalent but nominally different types
+                    // (e.g., named vs anonymous structs). When both actual and
+                    // formal are Pointer(FunctionType_t), tmp is at alloca
+                    // level (extra pointer), so compare at that level.
+                    if (orig_arg &&
+                            ASR::is_a<ASR::FunctionType_t>(
+                                *ASRUtils::type_get_past_pointer(arg->m_type)) &&
+                            ASR::is_a<ASR::FunctionType_t>(
+                                *ASRUtils::type_get_past_pointer(orig_arg->m_type))) {
+                        llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                            orig_arg->m_type, module.get());
+                        // When the variable is a procedure pointer stored in an
+                        // alloca, tmp has an extra pointer level. Match at that
+                        // level so we bitcast void({void*}*)** → void(%named*)**
+                        // rather than incorrectly casting void()** → void()*.
+                        if (ASRUtils::is_pointer(arg->m_type) &&
+                                ASRUtils::is_pointer(orig_arg->m_type)) {
+                            expected_type = expected_type->getPointerTo();
+                        }
+                        if (tmp->getType() != expected_type) {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
+                    }
+#endif
                     // When the formal is a pointer type but the actual is not,
                     // wrap the value with an extra pointer level. Skip this when
                     // the formal is a class type — convert_to_polymorphic_arg
@@ -23094,20 +23123,6 @@ public:
                         llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(*builder, tmp->getType());
                         builder->CreateStore(tmp, ptr_to_tmp);
                         tmp = ptr_to_tmp;
-                    }
-                    // Bitcast procedure pointer if types don't match (implicit interface)
-                    // Only for procedure values passed by value (not intent inout/out or pointer)
-                    if (orig_arg && ASR::is_a<ASR::FunctionType_t>(*arg->m_type) &&
-                            ASR::is_a<ASR::FunctionType_t>(*orig_arg->m_type) &&
-                            orig_arg_intent != ASR::intentType::InOut &&
-                            orig_arg_intent != ASR::intentType::Out &&
-                            !ASRUtils::is_pointer(orig_arg->m_type)) {
-                        llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
-                            orig_arg->m_type, module.get());
-                        if (tmp->getType() != expected_type) {
-                            tmp = builder->CreateBitCast(tmp, expected_type);
-                        }
                     }
                 } else if (ASR::is_a<ASR::Function_t>(*var_sym)) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(var_sym);
@@ -23127,6 +23142,23 @@ public:
                         tmp = llvm_symtab_fn_arg[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
                     }
+#if LLVM_VERSION_MAJOR < 15
+                    // Bitcast function pointer if LLVM types don't match.
+                    // Handles implicit interfaces and typed-pointer LLVM
+                    // where named vs anonymous struct types may differ.
+                    // Must happen BEFORE alloca wrapping to preserve the
+                    // correct pointer indirection level.
+                    if (orig_arg && orig_arg->m_type_declaration &&
+                            ASR::is_a<ASR::FunctionType_t>(
+                            *ASRUtils::type_get_past_pointer(orig_arg->m_type))) {
+                        llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
+                            ASRUtils::type_get_past_pointer(orig_arg->m_type), module.get());
+                        if (tmp->getType() != expected_type) {
+                            tmp = builder->CreateBitCast(tmp, expected_type);
+                        }
+                    }
+#endif
                     // If the target parameter is a procedure pointer,
                     // wrap the function pointer in an alloca
                     if (orig_arg &&
@@ -23155,6 +23187,7 @@ public:
                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                 }
+
             } else if (ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) &&
                         ASR::down_cast<ASR::Cast_t>(x.m_args[i].m_value)->m_kind ==
                             ASR::cast_kindType::ClassToIntrinsic) {
@@ -23182,14 +23215,20 @@ public:
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(x.m_args[i].m_value)))) ) {
                 this->visit_expr_wrapper(x.m_args[i].m_value, true);
-                if (orig_arg && ASR::is_a<ASR::FunctionType_t>(
+                if (orig_arg && orig_arg->m_type_declaration &&
+                        ASR::is_a<ASR::FunctionType_t>(
                         *ASRUtils::type_get_past_pointer(orig_arg->m_type))) {
+#if LLVM_VERSION_MAJOR < 15
+                    // Bitcast function pointer if LLVM types don't match.
+                    // Handles both implicit and explicit interfaces where
+                    // typed-pointer LLVM generates mismatching types.
                     llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
-                        orig_arg->m_type, module.get());
+                        ASRUtils::type_get_past_pointer(orig_arg->m_type), module.get());
                     if (tmp->getType() != expected_type) {
                         tmp = builder->CreateBitCast(tmp, expected_type);
                     }
+#endif
                     if (ASRUtils::is_pointer(orig_arg->m_type)) {
                         llvm::AllocaInst *target = get_call_arg_alloca(tmp->getType());
                         builder->CreateStore(tmp, target);

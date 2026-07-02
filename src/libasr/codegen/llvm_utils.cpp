@@ -1430,7 +1430,12 @@ namespace LCompilers {
                     throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python_expr(return_var_type0, x.m_return_var));
             }
         } else {
-            return_type = llvm::Type::getVoidTy(context);
+            ASR::FunctionType_t *func_type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+            if (func_type->m_return_var_type != nullptr) {
+                return_type = get_type_from_ttype_t_util(nullptr, func_type->m_return_var_type, module);
+            } else {
+                return_type = llvm::Type::getVoidTy(context);
+            }
         }
         std::vector<llvm::Type*> args = convert_args(x, module);
         llvm::FunctionType *function_type = llvm::FunctionType::get(
