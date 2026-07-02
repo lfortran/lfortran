@@ -2379,6 +2379,9 @@ int link_executable(const std::vector<std::string> &infiles,
 int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file_ok(infile);
+    if (!input.empty() && input.back() != '\n') {
+        input.push_back('\n');
+    }
 
     LCompilers::LFortran::CPreprocessor cpp(compiler_options);
     LCompilers::LocationManager lm;
