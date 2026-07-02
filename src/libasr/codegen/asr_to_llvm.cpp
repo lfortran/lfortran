@@ -14181,6 +14181,22 @@ public:
         size_t n = strings_to_be_deallocated.n;
         strings_to_be_deallocated.reserve(al, 1);
         this->visit_expr_wrapper(x.m_test, true);
+        {
+            ASR::ttype_t* test_type = ASRUtils::expr_type(x.m_test);
+            if (LLVM::is_llvm_pointer(*test_type) &&
+                    !ASRUtils::is_array(test_type) &&
+                    !ASRUtils::is_character(*test_type) &&
+                    tmp->getType()->isPointerTy()) {
+                ASR::ttype_t* inner_type =
+                    ASRUtils::type_get_past_allocatable_pointer(test_type);
+                if (ASR::is_a<ASR::Logical_t>(*inner_type)) {
+                    llvm::Type* inner_llvm =
+                        llvm_utils->get_type_from_ttype_t_util(
+                            x.m_test, inner_type, module.get());
+                    tmp = llvm_utils->CreateLoad2(inner_llvm, tmp);
+                }
+            }
+        }
         llvm_utils->create_if_else(tmp, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
@@ -19225,7 +19241,7 @@ public:
         if (x.m_size) {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
-            this->visit_expr_wrapper(x.m_size, true);
+            this->visit_expr_wrapper(x.m_size, false);
             ptr_loads = ptr_loads_copy;
             size_kind = ASRUtils::extract_kind_from_ttype_t(
                 ASRUtils::expr_type(x.m_size));
@@ -19246,7 +19262,8 @@ public:
         if (x.m_pos) {
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
-            this->visit_expr_wrapper(x.m_pos, true);
+            // `pos=` is also an output parameter; see `size=` above.
+            this->visit_expr_wrapper(x.m_pos, false);
             ptr_loads = ptr_loads_copy;
             pos_kind = ASRUtils::extract_kind_from_ttype_t(
                 ASRUtils::expr_type(x.m_pos));
@@ -23230,11 +23247,28 @@ public:
                         }
                     }
                 }
-                if (orig_arg && ASRUtils::is_pointer(arg_type) && !ASRUtils::is_array(arg_type) &&
+                // Passing a scalar allocatable/pointer struct member
+                // (`i32**`-typed lvalue in LLVM) to a plain scalar dummy
+                // argument requires one dereference so the callee
+                // receives the underlying data pointer (`i32*`). For
+                // struct-typed allocatable members the existing
+                // scalar/struct handling already forwards the correct
+                // pointer, so keep the pre-existing behavior there.
+                bool alloc_scalar_member_needs_deref =
+                    orig_arg && ASRUtils::is_allocatable(arg_type) &&
+                    !ASRUtils::is_array(arg_type) &&
+                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
+                    !ASRUtils::is_character(*ASRUtils::extract_type(arg_type)) &&
+                    !ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::extract_type(arg_type)) &&
+                    !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)) &&
+                    !LLVM::is_llvm_pointer(*orig_arg->m_type);
+                if ((orig_arg && ASRUtils::is_pointer(arg_type) && !ASRUtils::is_array(arg_type) &&
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
                         !ASRUtils::is_character(*ASRUtils::extract_type(arg_type)) &&
                         !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)) &&
-                        !LLVM::is_llvm_pointer(*orig_arg->m_type)) {
+                        !LLVM::is_llvm_pointer(*orig_arg->m_type))
+                        || alloc_scalar_member_needs_deref) {
                     llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, module.get());
                     tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), tmp);
