@@ -11,12 +11,12 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
-micromamba install -c conda-forge fpm=0.12.0
+# micromamba install -c conda-forge fpm=0.12.0
 
 which fpm
 fpm --version
 
-micromamba install -y -c conda-forge openmpi
+# micromamba install -y -c conda-forge openmpi
 
 git clone https://github.com/sourceryinstitute/OpenCoarrays.git
 cd OpenCoarrays
@@ -137,24 +137,21 @@ for skip in $caffeine_unsupported; do
     fi
 done
 
-if [ "$skip_caffeine" = true ]; then
-    echo "Skipping Caffeine cross-check for $testfile"
-else
-    lfortran "$testfile" \
+lfortran "$testfile" \
         --coarray=true \
         -o "${base}_lf.out" \
         -L$PWD/caffeine/inst/lib \
         -lcaffeine \
         -lgasnet-smp-seq
-
+if [ "$skip_caffeine" = true ]; then
+    echo "Skipping Caffeine execution for $testfile"
+else
     # ----------------------------------------
     # Run LFortran executable
     # ----------------------------------------
-
     gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
-    rm -f "${base}_lf.out"
-
 fi
+rm -f "${base}_lf.out"
 
 # ----------------------------------------
 # Cross-check with gfortran/OpenCoarrays, unless OpenCoarrays lacks support
