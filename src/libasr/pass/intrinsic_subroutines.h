@@ -1983,10 +1983,11 @@ namespace CoBroadcast {
                 && !ASRUtils::is_complex(*arg_type) && !ASRUtils::is_character(*arg_type)
                 && !ASRUtils::is_logical(*arg_type)) {
             diag.add(diag::Diagnostic(
-                "`a` argument of `co_broadcast` must be of integer, real, complex, character or logical type, but got " +
-                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                "`a` argument of `co_broadcast` must currently be of integer, real, complex, character or logical type, but got " +
+                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]) +
+                    " which is not yet supported",
                 diag::Level::Error, diag::Stage::Semantic,
-                {diag::Label("must be integer, real, complex, character or logical type", { args[0]->base.loc })}));
+                {diag::Label("must currently be integer, real, complex, character or logical type; other types are not yet supported", { args[0]->base.loc })}));
             return nullptr;
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
