@@ -1783,7 +1783,7 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
-     void visit_SyncAll(const SyncAll_t &x) {
+    void visit_SyncAll(const SyncAll_t &x) {
         if (x.m_stat) {
             ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
             require(!ASRUtils::is_array(stat_type),
