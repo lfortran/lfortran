@@ -23,7 +23,7 @@ if (lcompilers_prif_this_image() == 1) then
     call __module_prif_prif_sync_images([2])
 else
     if (lcompilers_prif_this_image() == 2) then
-        call __module_prif_prif_sync_images([1])
+        call __module_prif_prif_sync_images([1, 2])
         if (lcompilers_prif_get_integer(4)(x__coarray_handle, [int(1, kind=8)], int(0, kind=8)) /= 42) then
             error stop
         end if
