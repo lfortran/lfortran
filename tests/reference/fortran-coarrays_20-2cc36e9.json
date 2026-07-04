@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-coarrays_20-2cc36e9",
+    "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true",
+    "infile": "tests/coarrays_20.f90",
+    "infile_hash": "cdcdc64f793300de5061fe4558f0c8567c2bc39103d1dad3eac68613",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-coarrays_20-2cc36e9.stdout",
+    "stdout_hash": "0fbd436a736d9fb3f8d485efe121a2e55e29631e2890c8c5f3d4506c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
