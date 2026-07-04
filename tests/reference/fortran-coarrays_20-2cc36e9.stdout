@@ -9,7 +9,7 @@ type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
-program deferred_shape_test
+program coarrays_20
 implicit none
 integer(4), dimension(:), pointer :: a
 type(c_ptr) :: a__coarray_data
@@ -130,4 +130,4 @@ interface
     end subroutine prif_coarray_cleanup_interface
 end interface
 
-end program deferred_shape_test
+end program coarrays_20

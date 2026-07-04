@@ -1,5 +1,5 @@
 ! run with 2 images
-program deferred_shape_test
+program coarrays_20
     integer :: a(3)[*]
     integer :: i
 
@@ -14,4 +14,4 @@ program deferred_shape_test
         if (a(2)[2] /= 22) error stop
         if (a(3)[2] /= 23) error stop
     end if
-end program
+end program coarrays_20
