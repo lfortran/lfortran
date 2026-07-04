@@ -7666,6 +7666,12 @@ public:
         ASR::Function_t *f = nullptr;
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             f = ASR::down_cast<ASR::Function_t>(sym);
+            if (f->n_args == 0 && compiler_options.implicit_interface && ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                create_implicit_interface_function(x, sub_name, false, nullptr);
+                original_sym = current_scope->resolve_symbol(sub_name);
+                sym = ASRUtils::symbol_get_past_external(original_sym);
+                f = ASR::down_cast<ASR::Function_t>(sym);
+            }
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
                     intrinsic_module_procedures_as_asr_nodes.end()) {
