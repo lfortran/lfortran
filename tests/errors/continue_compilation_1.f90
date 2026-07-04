@@ -836,13 +836,20 @@ program continue_compilation_1
             print *, a
         end select
     end subroutine
-
-    subroutine cobroadcast_invalid_argument_type()
+    subroutine character_kind_mismatch()
         implicit none
-        type :: t
-            integer :: x
-        end type
-        type(t) :: obj
-        call co_broadcast(obj, source_image=1)
+        character(kind=1) :: c1
+        character(kind=4) :: c4
+        print *, min(c1, c4)
+    end subroutine
+
+    subroutine sub_undefined_goto_label()
+        implicit none
+        goto 20  ! {Error} Label 20 is not defined
+    end subroutine
+
+    subroutine length_specifier_non_character()
+        implicit none
+        integer :: i*2
     end subroutine
 end program

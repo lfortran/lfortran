@@ -1155,7 +1155,8 @@ public:
                         ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
                         ASR::symbol_t *ext_sym = nullptr;
                         auto it_ext = module_var_to_external.find(t);
-                        if (it_ext != module_var_to_external.end()) {
+                        if (it_ext != module_var_to_external.end() &&
+                                is_sym_in_scope_chain(current_scope,ASRUtils::symbol_parent_symtab(it_ext->second))) {
                             ext_sym = it_ext->second;
                         } else {
                             std::string original_name = ASRUtils::symbol_name(t);

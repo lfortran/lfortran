@@ -494,6 +494,12 @@ semantic error: Function `c_loc` is not permitted in an initialization expressio
 810 |             type(c_ptr) :: ptr = c_loc(target_value)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: length specifier is only valid for character type
+   --> tests/errors/continue_compilation_1.f90:853:20
+    |
+853 |         integer :: i*2
+    |                    ^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
@@ -620,11 +626,11 @@ semantic error: The argument `matrix_b` in `matmul` must be of type Integer, Rea
 349 |     print *, matmul(b1, a1)
     |                         ^^ 
 
-semantic error: The `matmul` intrinsic doesn't handle logical type yet
-   --> tests/errors/continue_compilation_1.f90:351:14
+semantic error: The argument `matrix_b` in `matmul` must be of type Logical if first matrix is of Logical type
+   --> tests/errors/continue_compilation_1.f90:351:25
     |
 351 |     print *, matmul(a2, b1)
-    |              ^^^^^^^^^^^^^^ 
+    |                         ^^ 
 
 semantic error: `matmul` accepts arrays of rank 1 or 2 only, provided an array with rank, 3
    --> tests/errors/continue_compilation_1.f90:353:21
@@ -1720,8 +1726,14 @@ semantic error: Selector shall be polymorphic in SELECT TYPE statement
 834 |         select type (a)
     |                      ^ 
 
-semantic error: `a` argument of `co_broadcast` must be of integer, real, complex, character or logical type, but got t
-   --> tests/errors/continue_compilation_1.f90:846:27
+semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
+   --> tests/errors/continue_compilation_1.f90:843:18
     |
-846 |         call co_broadcast(obj, source_image=1)
-    |                           ^^^ must be integer, real, complex, character or logical type
+843 |         print *, min(c1, c4)
+    |                  ^^^^^^^^^^^ 
+
+semantic error: Label 20 is not defined
+   --> tests/errors/continue_compilation_1.f90:848:9
+    |
+848 |         goto 20  ! {Error} Label 20 is not defined
+    |         ^^^^^^^ 

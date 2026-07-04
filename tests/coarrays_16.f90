@@ -1,9 +1,27 @@
+subroutine coarrays_16_sub(v)
+    integer, save :: x[*] = 0
+
+    integer, intent(out) :: v
+
+    x = x + 1
+    v = x
+end subroutine coarrays_16_sub
+
 program coarrays_16
-    integer :: x
+    integer :: a1
+    integer :: b1
+    integer, save :: y[*]
 
-    x = this_image()
+    if (this_image() == 2) then
+      call coarrays_16_sub(a1)
+      call coarrays_16_sub(b1)
+    end if
 
-    call co_broadcast(x, source_image=1)
+    sync all
 
-    if (x /= 1) error stop ! run with 2 or more images
+    if (this_image() == 2) then
+        write(*,'(*(I4))') a1, b1
+        if (a1 /= 1 .or. b1 /= 2) error stop
+    end if
+
 end program coarrays_16

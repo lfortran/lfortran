@@ -1403,6 +1403,9 @@ public:
                 case AST::stmtType::DoLoop: {
                     AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    if (s->m_do_label != 0) {
+                        labels.insert(std::to_string(s->m_do_label));
+                    }
                     break;
                 }
                 case AST::stmtType::Where: {
@@ -9229,6 +9232,16 @@ public:
         if (x.m_goto_label) {
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
+                if (labels.find(std::to_string(goto_label)) == labels.end()) {
+                    diag.add(Diagnostic(
+                        "Label " + std::to_string(goto_label) + " is not defined",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                }
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label,
                         s2c(al, std::to_string(goto_label)));
             } else {

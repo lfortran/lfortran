@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "##[group] Setup"
 set -ex  # Exit immediately on any error
 
 # Default to gfortran if FC is not set
@@ -66,10 +67,12 @@ time_section() {
   local LABEL="$1"
   local BLOCK="$2"
   local START=$(date +%s)
+  echo "##[group] $LABEL"
   print_section "$LABEL"
-  eval "$BLOCK"
+  ( set -x ; eval "$BLOCK" )
   local END=$(date +%s)
   print_subsection "⏱ Duration: $((END - START)) seconds"
+  echo "##[endgroup]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -108,9 +111,12 @@ fi
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-time_section "🧪 Testing caffeine" '
-  git clone -b main https://github.com/BerkeleyLab/caffeine.git
-  cd caffeine
+set +x
+echo "##[endgroup]" # end of Setup
+
+time_section "🧪 Testing conda-forge fpm" '
+  mkdir conda-fpm
+  cd conda-fpm
 
   micromamba install -c conda-forge fpm=0.12.0
 
@@ -119,6 +125,19 @@ time_section "🧪 Testing caffeine" '
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
+
+  fpm --version
+
+  cd ..
+  rm -rf conda-fpm
+'
+
+time_section "🧪 Testing caffeine" '
+  git clone -b main https://github.com/BerkeleyLab/caffeine.git
+  cd caffeine
+
+  micromamba install -c conda-forge fpm=0.12.0
+
   fpm --version
 
   export CC=clang
@@ -135,8 +154,11 @@ time_section "🧪 Testing caffeine" '
   # inject ISO_Fortran_binding.h into the C include path
   export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
 
+  # Release 0.8.0
+  git checkout 0.8.0
+  assert_git_commit 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
+
   # Now build and test caffeine with LFortran
-  git checkout 0388cf70cd193214952d8be9a00e968c4c5061e2
   export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
   ./install.sh --yes --prefix=$PWD/inst --verbose
   export CAF_IMAGES=4
@@ -177,11 +199,6 @@ time_section "🧪 Testing splpak" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  # To debug https://github.com/lfortran/lfortran/issues/7732:
-  which fpm
-  realpath $(which fpm)
-  ls -l $(dirname $(realpath $(which fpm)))/../lib
-  ls -l $CONDA_PREFIX/lib
   fpm --version
 
   git checkout lf-2
