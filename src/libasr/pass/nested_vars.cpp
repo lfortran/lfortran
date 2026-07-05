@@ -1155,7 +1155,8 @@ public:
                         ASR::symbol_t *t = nested_var_to_ext_var[sym].second;
                         ASR::symbol_t *ext_sym = nullptr;
                         auto it_ext = module_var_to_external.find(t);
-                        if (it_ext != module_var_to_external.end()) {
+                        if (it_ext != module_var_to_external.end() &&
+                                is_sym_in_scope_chain(current_scope,ASRUtils::symbol_parent_symtab(it_ext->second))) {
                             ext_sym = it_ext->second;
                         } else {
                             std::string original_name = ASRUtils::symbol_name(t);
@@ -1271,9 +1272,9 @@ public:
                                 ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                                             target, val));
                                 body.push_back(al, associate);
-                                // TODO : Remove the following if block (See integration test `arrays_87.f90`)
-                                if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
-                                    is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
+                                if((ASRUtils::is_array(ASRUtils::symbol_type(sym)) ||
+                                    is_sym_allocatable_or_pointer)
+                                    && is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
                                     && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter
                                     && ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In
                                     && !skip_sync_back) {

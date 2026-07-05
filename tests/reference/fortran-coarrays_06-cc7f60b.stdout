@@ -22,10 +22,11 @@ use coarrays_06_m, only: x
 use coarrays_06_m, only: x__coarray_data
 use coarrays_06_m, only: x__coarray_handle
 implicit none
-integer(4) :: exit_code
-call __module_prif_prif_init(exit_code)
+integer(4) :: stat
+call __module_prif_prif_init(stat)
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
 call c_f_pointer(x__coarray_data, x)
+call __module_prif_prif_sync_all()
 call show()
 call __module_prif_prif_sync_all()
 call __module_prif_prif_stop(.false.)
