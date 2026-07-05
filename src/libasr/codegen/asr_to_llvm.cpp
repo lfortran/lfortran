@@ -25903,6 +25903,19 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
+#if LLVM_VERSION_MAJOR < 15
+            // Bitcast arguments when their types don't match the function
+            // signature (e.g., [100 x double]* passed where double* expected
+            // for fixed-size array parameters called through procedure pointers).
+            for (size_t i = 0; i < args.size(); i++) {
+                if (i < fntype->getNumParams()) {
+                    llvm::Type* expected_type = fntype->getParamType(i);
+                    if (args[i]->getType() != expected_type) {
+                        args[i] = builder->CreateBitCast(args[i], expected_type);
+                    }
+                }
+            }
+#endif
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
@@ -25917,6 +25930,19 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
 
+#if LLVM_VERSION_MAJOR < 15
+            // Bitcast arguments when their types don't match the function
+            // signature (e.g., [100 x double]* passed where double* expected
+            // for fixed-size array parameters called through procedure pointers).
+            for (size_t i = 0; i < args.size(); i++) {
+                if (i < fntype->getNumParams()) {
+                    llvm::Type* expected_type = fntype->getParamType(i);
+                    if (args[i]->getType() != expected_type) {
+                        args[i] = builder->CreateBitCast(args[i], expected_type);
+                    }
+                }
+            }
+#endif
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
