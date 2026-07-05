@@ -11,15 +11,16 @@ end type prif_coarray_handle
 
 program coarrays_05
 implicit none
-integer(4) :: exit_code
 integer(4), save :: i = 1
+integer(4) :: stat
 integer(4), pointer :: x
 type(c_ptr) :: x__coarray_data
 type(prif_coarray_handle) :: x__coarray_handle
 integer(4), dimension(2), save :: y = [20, 42]
-call __module_prif_prif_init(exit_code)
+call __module_prif_prif_init(stat)
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
 call c_f_pointer(x__coarray_data, x)
+call __module_prif_prif_sync_all()
 if (lcompilers_prif_this_image() == 1) then
     call lcompilers_prif_put_integer(4)(x__coarray_handle, [int(2, kind=8)], int(0, kind=8), 42)
 end if
