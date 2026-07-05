@@ -818,6 +818,15 @@ program continue_compilation_1
         print *, findloc(names, key)
     end subroutine
 
+    subroutine merge_kind_mismatch()
+        implicit none
+        integer(kind=8) :: a
+        integer(kind=4) :: b
+        a = 1
+        b = 2
+        print *, merge(a, b, .true.)
+    end subroutine
+
     subroutine co_max_complex_arg()
         implicit none
         complex :: z
