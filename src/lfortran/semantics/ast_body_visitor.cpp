@@ -7652,6 +7652,20 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    // Likewise, an assumed-size actual cannot be associated
+                    // with an assumed-shape dummy (assumed-rank is allowed).
+                    if (ASRUtils::is_array(actual_type) && ASRUtils::is_array(dummy_type) &&
+                        ASRUtils::extract_physical_type(actual_type) ==
+                            ASR::array_physical_typeType::UnboundedPointerArray &&
+                        ASRUtils::extract_physical_type(dummy_type) ==
+                            ASR::array_physical_typeType::DescriptorArray &&
+                        !ASRUtils::is_assumed_rank_array(dummy_type)) {
+                        diag.semantic_error_label(
+                            "actual argument for '" + std::string(dummy_var->m_name) +
+                            "' cannot be an assumed-size array",
+                            {args[i].m_value->base.loc}, "");
+                        throw SemanticAbort();
+                    }
                     if (ASRUtils::is_allocatable(dummy_type)) {
                         ASR::ttype_t* dummy_type_unwrapped = ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable(dummy_type));
@@ -8013,6 +8027,12 @@ public:
                 throw SemanticAbort();
             }
         }
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
+            && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
+            // check if asr owner is associate block.
+            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+        }
+        ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         if (f) {
             const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
             if (args.size() + offset > f->n_args) {
@@ -8023,7 +8043,6 @@ public:
                         diag::Label("", {args_loc})}));
                     throw SemanticAbort();
             }
-            validate_assumed_size_actual_arguments(args, f, offset);
 
             // Validate required arguments are provided
             for (size_t i = 0; i + offset < f->n_args; i++) {
@@ -8367,12 +8386,6 @@ public:
 
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
-            && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
-            // check if asr owner is associate block.
-            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
-        }
-        ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         ASR::stmt_t* cast_stmt = nullptr;
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();

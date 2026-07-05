@@ -489,15 +489,15 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Function `c_loc` is not permitted in an initialization expression
-   --> tests/errors/continue_compilation_1.f90:848:13
+   --> tests/errors/continue_compilation_1.f90:829:13
     |
-848 |             type(c_ptr) :: ptr = c_loc(target_value)
+829 |             type(c_ptr) :: ptr = c_loc(target_value)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: length specifier is only valid for character type
-   --> tests/errors/continue_compilation_1.f90:862:20
+   --> tests/errors/continue_compilation_1.f90:881:20
     |
-862 |         integer :: i*2
+881 |         integer :: i*2
     |                    ^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -1673,85 +1673,85 @@ semantic error: actual argument for 'items' cannot be an assumed-size array
     |                                    ^^^^^ 
 
 semantic error: actual argument for 'items' cannot be an assumed-size array
-   --> tests/errors/continue_compilation_1.f90:813:49
+   --> tests/errors/continue_compilation_1.f90:794:49
     |
-813 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+794 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                                 ^^^^^ 
 
 semantic error: select case expression must be of type integer, character, or logical
-   --> tests/errors/continue_compilation_1.f90:823:22
+   --> tests/errors/continue_compilation_1.f90:804:22
     |
-823 |         select case (nn)
+804 |         select case (nn)
     |                      ^^ 
 
 semantic error: select case expression must be of type integer, character, or logical
-   --> tests/errors/continue_compilation_1.f90:830:22
+   --> tests/errors/continue_compilation_1.f90:811:22
     |
-830 |         select case (x)
+811 |         select case (x)
     |                      ^ 
 
 semantic error: second argument of `lge` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:838:18
+   --> tests/errors/continue_compilation_1.f90:819:18
     |
-838 |         print *, lge("a", glyph)  
+819 |         print *, lge("a", glyph)  
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: second argument of `lgt` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:839:18
+   --> tests/errors/continue_compilation_1.f90:820:18
     |
-839 |         print *, lgt("a", glyph)  
+820 |         print *, lgt("a", glyph)  
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: first argument of `lle` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:840:18
+   --> tests/errors/continue_compilation_1.f90:821:18
     |
-840 |         print *, lle(glyph, "z")  
+821 |         print *, lle(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: first argument of `llt` must have kind equal to 1
-   --> tests/errors/continue_compilation_1.f90:841:18
+   --> tests/errors/continue_compilation_1.f90:822:18
     |
-841 |         print *, llt(glyph, "z")  
+822 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
 semantic error: Type and kind of the relevant arguments of Merge must be the same
-   --> tests/errors/continue_compilation_1.f90:820:18
+   --> tests/errors/continue_compilation_1.f90:839:18
     |
-820 |         print *, merge(a, b, .true.)
+839 |         print *, merge(a, b, .true.)
     |                  ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `a` argument of `co_max` must be of integer, real or character type, but got complex
-   --> tests/errors/continue_compilation_1.f90:826:21
+   --> tests/errors/continue_compilation_1.f90:845:21
     |
-826 |         call co_max(z)
+845 |         call co_max(z)
     |                     ^ must be integer, real or character type
 
 semantic error: `a` argument of `co_sum` must be of integer, real or complex type, but got logical
-   --> tests/errors/continue_compilation_1.f90:832:21
+   --> tests/errors/continue_compilation_1.f90:851:21
     |
-832 |         call co_sum(mask)
+851 |         call co_sum(mask)
     |                     ^^^^ must be integer, real or complex type
 
 semantic error: duplicate statement label 1000
-   --> tests/errors/continue_compilation_1.f90:837:9
+   --> tests/errors/continue_compilation_1.f90:856:9
     |
-837 | 1000    continue
+856 | 1000    continue
     |         ^^^^^^^^ 
 
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:843:22
+   --> tests/errors/continue_compilation_1.f90:862:22
     |
-843 |         select type (a)
+862 |         select type (a)
     |                      ^ 
 
 semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
-   --> tests/errors/continue_compilation_1.f90:852:18
+   --> tests/errors/continue_compilation_1.f90:871:18
     |
-852 |         print *, min(c1, c4)
+871 |         print *, min(c1, c4)
     |                  ^^^^^^^^^^^ 
 
 semantic error: Label 20 is not defined
-   --> tests/errors/continue_compilation_1.f90:857:9
+   --> tests/errors/continue_compilation_1.f90:876:9
     |
-857 |         goto 20  ! {Error} Label 20 is not defined
+876 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 

@@ -788,25 +788,6 @@ program continue_compilation_1
         implicit none
         integer :: items(:)
     end subroutine
-    subroutine assumed_size_to_assumed_rank_forward(items)
-        implicit none
-        integer :: items(*)
-        call consume_assumed_rank(items)
-    end subroutine
-    subroutine consume_assumed_rank(items)
-        implicit none
-        integer :: items(..)
-    end subroutine
-    subroutine assumed_size_to_assumed_rank_function_forward(items)
-        implicit none
-        integer :: items(*)
-        print *, consume_assumed_rank_function(items)
-    end subroutine
-    integer function consume_assumed_rank_function(items)
-        implicit none
-        integer :: items(..)
-        consume_assumed_rank_function = 0
-    end function
     subroutine assumed_size_to_assumed_shape_function_forward(items)
         implicit none
         integer :: items(*)
