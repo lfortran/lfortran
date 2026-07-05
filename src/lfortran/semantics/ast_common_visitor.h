@@ -1921,6 +1921,8 @@ public:
         {"system", IntrinsicSignature({"command"}, 1, 1)},
         {"sleep", IntrinsicSignature({"seconds"}, 1, 1)},
         {"co_sum", IntrinsicSignature({"a", "result_image", "stat", "errmsg"}, 1, 4)},
+        {"co_max", IntrinsicSignature({"a", "result_image", "stat", "errmsg"}, 1, 4)},
+        {"co_min", IntrinsicSignature({"a", "result_image", "stat", "errmsg"}, 1, 4)},
         {"move_alloc", IntrinsicSignature({"from", "to"}, 2, 2)},
         {"mvbits", IntrinsicSignature({"from", "frompos", "len", "to", "topos"}, 5, 5)},
         {"modulo", IntrinsicSignature({"a", "p"}, 2, 2)},
@@ -4811,7 +4813,7 @@ public:
                             al, loc, fn_scope, s2c(al, iface_name),
                             func_type,
                             nullptr, 0, nullptr, 0, nullptr, 0,
-                            nullptr, ASR::accessType::Public,
+                            nullptr, ASR::accessType::Private,
                             false, false, nullptr, nullptr, nullptr));
                     parent_scope->add_symbol(iface_name, iface_sym);
                     implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(iface_sym));
@@ -7552,7 +7554,14 @@ public:
                     } else {
                         lhs_type->m_len = char_length;
                     }
-                }                
+                } else if (s.m_length) {
+                    diag.add(Diagnostic(
+                        "length specifier is only valid for character type",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {s.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 ASR::Variable_t* variable_added_to_symtab = nullptr;
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
@@ -9941,7 +9950,7 @@ public:
                                 nullptr, 0,
                                 nullptr, 0,
                                 nullptr,
-                                ASR::accessType::Public,
+                                ASR::accessType::Private,
                                 false,
                                 false,
                                 nullptr,
@@ -11597,7 +11606,7 @@ public:
     }
 
     ASR::asr_t* create_GenericProcedureWithASTNode(const AST::FuncCallOrArray_t& x,
-                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
         const Location& loc = x.base.base.loc;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
             return symbol_resolve_external_generic_procedure_with_ast_node(x, v,
@@ -11609,7 +11618,7 @@ public:
                             diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
                         },
-                    false);
+                    false, is_dt_present);
             if( idx == -1 ) {
                 ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
@@ -11629,13 +11638,30 @@ public:
             ASR::ttype_t *type = nullptr;
             ASR::symbol_t *cp_s = nullptr;
             ASR::symbol_t *final_sym_past_ext = ASRUtils::symbol_get_past_external(final_sym);
+            bool is_nopass_method = false;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext)) {
+                is_nopass_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                    final_sym_past_ext)->m_is_nopass;
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     final_sym_past_ext, current_scope);
                 final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc;
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
+            // For a `nopass` specific selected from a type-bound generic call,
+            // `args[0]` is the passed-object, which a nopass procedure does not
+            // accept as an argument. Drop it so the actual arguments line up
+            // with the procedure's dummy arguments.
+            ASR::expr_t* passed_object = nullptr;
+            if (is_nopass_method && is_dt_present && args.size() >= 1) {
+                passed_object = args[0].m_value;
+                Vec<ASR::call_arg_t> args_no_dt;
+                args_no_dt.reserve(al, args.size() - 1);
+                for (size_t i = 1; i < args.size(); i++) {
+                    args_no_dt.push_back(al, args[i]);
+                }
+                args = args_no_dt;
+            }
             ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
             if (first_array_arg) {
                 ASR::dimension_t* array_dims;
@@ -11656,6 +11682,16 @@ public:
                 }
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
                 ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+                if (is_nopass_method) {
+                    // The passed-object has already been dropped from `args`, so
+                    // the call arguments map directly onto the procedure's args.
+                    validate_missing_required_arguments(loc, args, func);
+                    ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                    return ASRUtils::make_FunctionCall_t_util(al, loc,
+                        cp_s, nullptr, args.p, args.size(), type,
+                        nullptr, passed_object, current_scope, current_function_dependencies,
+                        compiler_options.implicit_argument_casting);
+                }
                 Vec<ASR::call_arg_t> args_without_dt; args_without_dt.reserve(al, args.size() - 1);
                 for (size_t i = 1; i < args.size(); i++) {
                     args_without_dt.push_back(al, args[i]);
@@ -12594,7 +12630,7 @@ public:
             return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v, is_dt_present);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2));
-            return create_GenericProcedureWithASTNode(x, new_args, v);
+            return create_GenericProcedureWithASTNode(x, new_args, v, is_dt_present);
         }
     }
 
@@ -15372,7 +15408,7 @@ public:
 
     void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
         std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
-        coarray_intrinsics = {"co_broadcast", "co_max", "co_min", "co_reduce", "lcobound", "ucobound", "failed_images",
+        coarray_intrinsics = {"co_broadcast", "co_reduce", "lcobound", "ucobound", "failed_images",
             "image_status", "get_team", "image_index", "stopped_images", "team_number", "coshape", "corank",
             "event_query"};
         atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
@@ -15411,6 +15447,39 @@ public:
     {
         ASR::expr_t* first_arg_ = ASRUtils::expr_value(args[array_indices_in_args[0]]);
         size_t max_array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(first_arg_));
+        if (max_array_size == 0) {
+            Vec<ASR::expr_t*> dummy_args;
+            dummy_args.reserve(al, args.size());
+            bool can_create_dummy = true;
+            for (size_t j = 0; j < args.size(); j++) {
+                if (std::find(array_indices_in_args.begin(), array_indices_in_args.end(), j) != array_indices_in_args.end()) {
+                    ASR::expr_t* arg_ = ASRUtils::expr_value(args[j]);
+                    ASR::ttype_t* s_type = ASRUtils::type_get_past_array(ASRUtils::expr_type(arg_));
+                    ASR::expr_t* dummy_val = ASRUtils::get_constant_zero_with_given_type(al, s_type);
+                    if (!dummy_val) {
+                        can_create_dummy = false;
+                        break;
+                    }
+                    dummy_args.push_back(al, dummy_val);
+                } else {
+                    dummy_args.push_back(al, args[j]);
+                }
+            }
+            if (can_create_dummy) {
+                ASR::asr_t* dummy_res = create_func(al, loc, dummy_args, diag);      
+                if (dummy_res) {
+                    ASR::expr_t* res_expr = ASRUtils::expr_value(ASRUtils::EXPR(dummy_res));
+                    ASR::ttype_t* res_type = ASRUtils::expr_type(res_expr);
+                    ASR::Array_t* orig_arr_type = ASR::down_cast<ASR::Array_t>((*result_array)->m_type);
+                    ASR::ttype_t* correct_type = ASRUtils::make_Array_t_util(al, orig_arr_type->base.base.loc,
+                                                res_type, orig_arr_type->m_dims,     
+                                                orig_arr_type->n_dims, ASR::abiType::Source, false,
+                                                orig_arr_type->m_physical_type);     
+                    (*result_array)->m_type = correct_type;
+                }
+            }
+            return;
+        }
         ASR::ttype_t* array_type = ASRUtils::expr_type(first_arg_);
         Vec<ASR::expr_t*> new_expr; new_expr.reserve(al, max_array_size);
 
