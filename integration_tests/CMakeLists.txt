@@ -432,6 +432,8 @@ RUN(NAME ilp64_logical_read_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer
 RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
+RUN(NAME procedure_pointer_array_01 LABELS gfortran llvm)
+
 RUN(NAME label_01 LABELS gfortran llvm)
 RUN(NAME format_hollerith_01 LABELS gfortran llvm)
 
