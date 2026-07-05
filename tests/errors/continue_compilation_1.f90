@@ -818,6 +818,18 @@ program continue_compilation_1
         print *, findloc(names, key)
     end subroutine
 
+    subroutine co_max_complex_arg()
+        implicit none
+        complex :: z
+        call co_max(z)
+    end subroutine
+
+    subroutine cosum_invalid_argument_type()
+        implicit none
+        logical :: mask
+        call co_sum(mask)
+    end subroutine
+
     subroutine duplicate_statement_label()
 1000    continue
 1000    continue
@@ -830,5 +842,21 @@ program continue_compilation_1
         type is (integer)
             print *, a
         end select
+    end subroutine
+    subroutine character_kind_mismatch()
+        implicit none
+        character(kind=1) :: c1
+        character(kind=4) :: c4
+        print *, min(c1, c4)
+    end subroutine
+
+    subroutine sub_undefined_goto_label()
+        implicit none
+        goto 20  ! {Error} Label 20 is not defined
+    end subroutine
+
+    subroutine length_specifier_non_character()
+        implicit none
+        integer :: i*2
     end subroutine
 end program
