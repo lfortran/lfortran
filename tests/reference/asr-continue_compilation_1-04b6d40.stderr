@@ -495,9 +495,9 @@ semantic error: Function `c_loc` is not permitted in an initialization expressio
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: length specifier is only valid for character type
-   --> tests/errors/continue_compilation_1.f90:869:20
+   --> tests/errors/continue_compilation_1.f90:862:20
     |
-869 |         integer :: i*2
+862 |         integer :: i*2
     |                    ^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -1702,50 +1702,50 @@ semantic error: first argument of `llt` must have kind equal to 1
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
-semantic error: `array` and `value` arguments of `findloc` must have the same character kind, but got character(4) and character(1)
-   --> tests/errors/continue_compilation_1.f90:818:18
-    |
-818 |         print *, findloc(names, key)
-    |                  ^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Type and kind of the relevant arguments of Merge must be the same
-   --> tests/errors/continue_compilation_1.f90:827:18
+   --> tests/errors/continue_compilation_1.f90:820:18
     |
-827 |         print *, merge(a, b, .true.)
+820 |         print *, merge(a, b, .true.)
     |                  ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `a` argument of `co_max` must be of integer, real or character type, but got complex
-   --> tests/errors/continue_compilation_1.f90:833:21
+   --> tests/errors/continue_compilation_1.f90:826:21
     |
-833 |         call co_max(z)
+826 |         call co_max(z)
     |                     ^ must be integer, real or character type
 
 semantic error: `a` argument of `co_sum` must be of integer, real or complex type, but got logical
-   --> tests/errors/continue_compilation_1.f90:839:21
+   --> tests/errors/continue_compilation_1.f90:832:21
     |
-839 |         call co_sum(mask)
+832 |         call co_sum(mask)
     |                     ^^^^ must be integer, real or complex type
 
 semantic error: duplicate statement label 1000
-   --> tests/errors/continue_compilation_1.f90:844:9
+   --> tests/errors/continue_compilation_1.f90:837:9
     |
-844 | 1000    continue
+837 | 1000    continue
     |         ^^^^^^^^ 
 
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:850:22
+   --> tests/errors/continue_compilation_1.f90:843:22
     |
-850 |         select type (a)
+843 |         select type (a)
     |                      ^ 
 
 semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
-   --> tests/errors/continue_compilation_1.f90:859:18
+   --> tests/errors/continue_compilation_1.f90:852:18
     |
-859 |         print *, min(c1, c4)
+852 |         print *, min(c1, c4)
     |                  ^^^^^^^^^^^ 
 
 semantic error: Label 20 is not defined
-   --> tests/errors/continue_compilation_1.f90:864:9
+   --> tests/errors/continue_compilation_1.f90:857:9
     |
-864 |         goto 20  ! {Error} Label 20 is not defined
+857 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
+
+semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1)(kind=4) and character(len=1)(kind=1)
+   --> tests/errors/continue_compilation_1.f90:869:18
+    |
+869 |         print *, findloc(names, key)
+    |                  ^^^^^^^^^^^^^^^^^^^ 

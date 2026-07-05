@@ -4701,18 +4701,18 @@ namespace FindLoc {
             // with mismatched kinds (which ICEs later).
             bool array_is_char = ASR::is_a<ASR::String_t>(*array_elt_type);
             bool value_is_char = ASR::is_a<ASR::String_t>(*value_elt_type);
-            if (array_is_char && value_is_char) {
-                int array_kind = extract_kind_from_ttype_t(expr_type(args[0]));
-                int value_kind = extract_kind_from_ttype_t(expr_type(args[1]));
-                append_error(diag, "`array` and `value` arguments of `findloc` "
-                    "must have the same character kind, but got character(" +
-                    std::to_string(array_kind) + ") and character(" +
-                    std::to_string(value_kind) + ")", loc);
-                return nullptr;
-            }
             if (array_is_char || value_is_char) {
-                append_error(diag, "`array` argument of `findloc` must be in type "
-                    "conformance to `value` argument", loc);
+                std::string array_str = type_to_str_fortran_symbol(array_elt_type, nullptr, true);
+                std::string value_str = type_to_str_fortran_symbol(value_elt_type, nullptr, true);
+                if (array_is_char) {
+                    array_str += "(kind=" + std::to_string(extract_kind_from_ttype_t(expr_type(args[0]))) + ")";
+                }
+                if (value_is_char) {
+                    value_str += "(kind=" + std::to_string(extract_kind_from_ttype_t(expr_type(args[1]))) + ")";
+                }
+                append_error(diag, "`array` and `value` arguments of `findloc` "
+                    "must have the same type and kind, but got " +
+                    array_str + " and " + value_str, loc);
                 return nullptr;
             }
             Vec<ASR::expr_t*> args_;
