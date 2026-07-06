@@ -3037,14 +3037,15 @@ namespace Eoshift {
                 shifting_dim = (int)dim_val;
             }
         }
-        declare_basic_variables("_lcompilers_eoshift");
         bool is_shift_array = ASRUtils::is_array(arg_types[1]);
+        std::string eoshift_fn_name = "_lcompilers_eoshift";
         if (is_shift_array) {
-            fn_name += "_array_shift";
+            eoshift_fn_name += "_array_shift";
         }
         if (shifting_dim != 1) {
-            fn_name += "_dim" + std::to_string(shifting_dim);
+            eoshift_fn_name += "_dim" + std::to_string(shifting_dim);
         }
+        declare_basic_variables(eoshift_fn_name);
         fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("shift", arg_types[1]);
         fill_func_arg("boundary", arg_types[2]);
@@ -5098,11 +5099,6 @@ namespace MatMul {
                                 is_real(*type_b) ||
                                 is_complex(*type_b);
         bool matrix_b_logical = is_logical(*type_b);
-        if (matrix_a_logical || matrix_b_logical) {
-            // TODO
-            append_error(diag, "The `matmul` intrinsic doesn't handle logical type yet", loc);
-            return nullptr;
-        }
         if ( !matrix_a_numeric && !matrix_a_logical ) {
             append_error(diag, "The argument `matrix_a` in `matmul` must be of type Integer, "
                 "Real, Complex or Logical", matrix_a->base.loc);
@@ -5133,8 +5129,9 @@ namespace MatMul {
             } else {
                 ret_type = extract_type(type_a);
             }
+        } else {
+            ret_type = extract_type(type_a);
         }
-        LCOMPILERS_ASSERT(!matrix_a_logical && !matrix_b_logical)
         ASR::dimension_t* matrix_a_dims = nullptr;
         ASR::dimension_t* matrix_b_dims = nullptr;
         int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
@@ -5222,27 +5219,26 @@ namespace MatMul {
         fill_func_arg("matrix_a_m", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("matrix_b_m", duplicate_type_with_empty_dims(al, arg_types[1]));
         ASR::ttype_t* return_type_ = return_type;
-        if( !ASRUtils::is_fixed_size_array(return_type) ) {
-            bool is_allocatable = ASRUtils::is_allocatable(return_type);
-            Vec<ASR::dimension_t> empty_dims;
-            int result_dims = 2;
-            if( overload_id == 1 || overload_id == 2 ) {
-                result_dims = 1;
-            }
-            empty_dims.reserve(al, result_dims);
-            for( int idim = 0; idim < result_dims; idim++ ) {
-                ASR::dimension_t empty_dim;
-                empty_dim.loc = loc;
-                empty_dim.m_start = nullptr;
-                empty_dim.m_length = nullptr;
-                empty_dims.push_back(al, empty_dim);
-            }
-            return_type_ = ASRUtils::make_Array_t_util(al, loc,
-                ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
-            if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
-            }
+        bool is_allocatable = ASRUtils::is_allocatable(return_type);
+        Vec<ASR::dimension_t> empty_dims;
+        int result_dims = 2;
+        if( overload_id == 1 || overload_id == 2 ) {
+            result_dims = 1;
         }
+        empty_dims.reserve(al, result_dims);
+        for( int idim = 0; idim < result_dims; idim++ ) {
+            ASR::dimension_t empty_dim;
+            empty_dim.loc = loc;
+            empty_dim.m_start = nullptr;
+            empty_dim.m_length = nullptr;
+            empty_dims.push_back(al, empty_dim);
+        }
+        return_type_ = ASRUtils::make_Array_t_util(al, loc,
+            ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
+        if( is_allocatable ) {
+            return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
+        }
+
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
@@ -5292,7 +5288,9 @@ namespace MatMul {
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));
         ASR::expr_t *mul_value;
-        if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
+        if (is_logical(*expr_type(a_ref))) {
+            mul_value = b.And(a_ref, b_ref);
+        } else if (is_real(*expr_type(a_ref)) && is_integer(*expr_type(b_ref))) {
             mul_value = b.Mul(a_ref, b.i2r_t(b_ref, expr_type(a_ref)));
         } else if (is_real(*expr_type(b_ref)) && is_integer(*expr_type(a_ref))) {
             mul_value = b.Mul(b.i2r_t(a_ref, expr_type(b_ref)), b_ref);
@@ -5311,11 +5309,20 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
+        ASR::stmt_t *init_stmt = nullptr;
+        ASR::stmt_t *update_stmt = nullptr;
+        if (is_logical(*expr_type(res_ref))) {
+            init_stmt = b.Assignment(res_ref, b.bool_t(false, expr_type(res_ref)));
+            update_stmt = b.Assignment(res_ref, b.Or(res_ref, mul_value));
+        } else {
+            init_stmt = b.Assign_Constant(res_ref, 0);
+            update_stmt = b.Assignment(res_ref, b.Add(res_ref, mul_value));
+        }
         body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
             b.DoLoop(j, b_lbound, b_ubound, {
-                b.Assign_Constant(res_ref, 0),
+                init_stmt,
                 b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
-                    b.Assignment(res_ref, b.Add(res_ref, mul_value))
+                    update_stmt
                 }),
             })
         }));
@@ -5403,9 +5410,15 @@ namespace Count {
             arg_values.push_back(al, mask_value);
         }
 
+        ASR::ttype_t* base_type = int32;
+        if ( kind ) {
+            int kind_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(kind))->m_n;
+            base_type = TYPE(ASR::make_Integer_t(al, loc, kind_value));
+        }
+
         ASR::ttype_t* return_type = nullptr;
         if( overload_id == id_mask ) {
-            return_type = int32;
+            return_type = base_type;
         } else if( overload_id == id_mask_dim ) {
             Vec<ASR::dimension_t> dims;
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(mask_type);
@@ -5418,12 +5431,8 @@ namespace Count {
                 dims.push_back(al, dim);
             }
             return_type = ASRUtils::make_Array_t_util(al, loc,
-                int32, dims.p, dims.n, ASR::abiType::Source,
+                base_type, dims.p, dims.n, ASR::abiType::Source,
                 false);
-        }
-        if ( kind ) {
-            int kind_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(kind))->m_n;
-            return_type = TYPE(ASR::make_Integer_t(al, loc, kind_value));
         }
         value = eval_Count(al, loc, return_type, arg_values, diag);
 
