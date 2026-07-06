@@ -573,6 +573,26 @@ class PRIFInterface {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, size_bytes, int64_type));
         }
 
+        ASR::expr_t* get_total_size_in_bytes_expr(const Location &loc,
+                                            ASR::Variable_t *var) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *orig_type = original_types[&(var->base)];
+            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+            ASR::expr_t *elem_size = get_size_in_bytes_expr(loc, var->m_type);
+            ASR::ttype_t *array_type =
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(orig_type));
+            if (!ASR::is_a<ASR::Array_t>(*array_type)) {
+                return elem_size;
+            }
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(array_type);
+            ASR::expr_t *total = elem_size;
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                ASR::expr_t *len = b.i2i_t(arr->m_dims[i].m_length, int64_type);
+                total = b.Mul(total, len);
+            }
+            return total;
+        }
+
     public:
         struct SavedCoarray {
             ASR::Variable_t *var;
@@ -1298,9 +1318,7 @@ class PRIFInterface {
                 uco_vec.push_back(uco_elems.p[i]);
             }
             ASR::expr_t *ucobounds_val = b.ArrayConstant(uco_vec, i64, false);
-            
-            ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(var->m_type);
-            ASR::expr_t *sz = get_size_in_bytes_expr(loc, base_type);
+            ASR::expr_t *sz = get_total_size_in_bytes_expr(loc, var);
             
             ASR::ttype_t *handle_type_fp = ASRUtils::make_StructType_t_util(
                 al, loc, handle_struct, true);
