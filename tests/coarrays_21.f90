@@ -1,11 +1,11 @@
 program coarrays_21
     implicit none
 
-    integer :: a(4)[*], b(4)[*]
+    integer :: a(4)[*], b(4)[*] = 0
     integer :: dest
     integer :: i = 1
-    integer :: expected = mod(this_image() + num_images() - 2, num_images()) + 1
-
+    integer :: expected
+    expected = mod(this_image() + num_images() - 2, num_images()) + 1
     a = this_image()
     b = 0
 
