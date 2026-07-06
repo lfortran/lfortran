@@ -74,41 +74,43 @@ define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
-  %1 = alloca float, align 4
+  %1 = call i8* @llvm.stacksave()
   %2 = alloca i64, align 8
   %3 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
   %4 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %3, i32 0, i32 1
   %5 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %4, align 8
   %6 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %5, i32 0, i32 0
   %7 = load float, float* %6, align 4
-  store float %7, float* %1, align 4
-  %8 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %1)
-  %9 = load i64, i64* %2, align 8
-  %10 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %8, i8** %10, align 8
-  %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %9, i64* %11, align 8
-  %12 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %13 = load i8*, i8** %12, align 8
-  %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %15 = load i64, i64* %14, align 8
-  %16 = trunc i64 %15 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %13, i32 %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  %17 = icmp eq i8* %8, null
-  br i1 %17, label %free_done, label %free_nonnull
+  %8 = alloca float, align 4
+  store float %7, float* %8, align 4
+  %9 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @serialization_info, i32 0, i32 0), i64* %2, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %8)
+  %10 = load i64, i64* %2, align 8
+  call void @llvm.stackrestore(i8* %1)
+  %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %9, i8** %11, align 8
+  %12 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %10, i64* %12, align 8
+  %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %14 = load i8*, i8** %13, align 8
+  %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %16 = load i64, i64* %15, align 8
+  %17 = trunc i64 %16 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %14, i32 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %18 = icmp eq i8* %9, null
+  br i1 %18, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %.entry
-  call void @_lfortran_free_alloc(i8* %0, i8* %8)
+  call void @_lfortran_free_alloc(i8* %0, i8* %9)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %.entry
-  %18 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
-  %19 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %18, i32 0, i32 1
-  %20 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %19, align 8
-  %21 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %20, i32 0, i32 0
-  %22 = load float, float* %21, align 4
-  %23 = fcmp une float %22, 1.000000e+00
-  br i1 %23, label %then, label %else
+  %19 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__get_i__self, align 8
+  %20 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %19, i32 0, i32 1
+  %21 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %20, align 8
+  %22 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %21, i32 0, i32 0
+  %23 = load float, float* %22, align 4
+  %24 = fcmp une float %23, 1.000000e+00
+  br i1 %24, label %then, label %else
 
 then:                                             ; preds = %free_done
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
@@ -129,9 +131,15 @@ FINALIZE_SYMTABLE_get_r:                          ; preds = %return
   ret void
 }
 
+; Function Attrs: nounwind
+declare i8* @llvm.stacksave() #0
+
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare i8* @_lfortran_get_default_allocator()
+
+; Function Attrs: nounwind
+declare void @llvm.stackrestore(i8*) #0
 
 declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
@@ -146,10 +154,10 @@ declare void @exit(i32)
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 ; Function Attrs: argmemonly nounwind willreturn writeonly
-declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
+declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #1
 
 ; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.memcpy.p0i8.p0i8.i32(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i32, i1 immarg) #1
+declare void @llvm.memcpy.p0i8.p0i8.i32(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i32, i1 immarg) #2
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -389,5 +397,6 @@ is_allocated.ifcont3:                             ; preds = %is_allocated.else2,
   ret void
 }
 
-attributes #0 = { argmemonly nounwind willreturn writeonly }
-attributes #1 = { argmemonly nounwind willreturn }
+attributes #0 = { nounwind }
+attributes #1 = { argmemonly nounwind willreturn writeonly }
+attributes #2 = { argmemonly nounwind willreturn }
