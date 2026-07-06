@@ -950,6 +950,13 @@ class PRIFInterface {
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym)));
         }
 
+        void select_errmsg_arg(ASR::expr_t *&errmsg, ASR::expr_t *&errmsg_alloc) {
+            if (errmsg &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(errmsg))) {
+                errmsg_alloc = errmsg;
+                errmsg = nullptr;
+            }
+        }
         ASR::symbol_t* get_or_create_prif_co_minmaxsum_sub(const Location &loc, const std::string &prif_name) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = get_mangled_name("prif", prif_name);
@@ -1066,8 +1073,9 @@ class PRIFInterface {
             ASR::symbol_t *sub = ASRUtils::is_character(*a_type)
                                         ? get_or_create_prif_co_minmax_character_sub(loc, prif_name + "_character")
                                         : get_or_create_prif_co_minmaxsum_sub(loc, prif_name);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
-
+            
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a;
             ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = result_image;
             ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = stat;
@@ -1091,6 +1099,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg = nullptr,
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_sync_all_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 3);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = stat;
@@ -1110,6 +1119,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg = nullptr,
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_sync_memory_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 3);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = stat;
