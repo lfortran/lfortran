@@ -26756,12 +26756,18 @@ public:
             llvm::Value* serialization_info = SerializeExprTypes(x.m_args, x.n_args);
             args.push_back(serialization_info);
 
+#if LLVM_VERSION_MAJOR >= 18
+            llvm::Value *string_format_saved_stack = builder->CreateStackSave();
+#else
+            llvm::Function *string_format_stacksave_fn =
+                llvm::Intrinsic::getDeclaration(module.get(), llvm::Intrinsic::stacksave);
+            llvm::Value *string_format_saved_stack =
+                builder->CreateCall(string_format_stacksave_fn);
+#endif
+
             // Create and Push a pointer to int64 to store the result size in.
-            // Emit the alloca in the function's entry block so that when this
-            // string format sits inside a loop, the stack slot is reused across
-            // iterations instead of accumulating (which would otherwise cause a
-            // stack overflow for long-running loops).
-            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context));
+            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(
+                *builder, llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
             // Check unallocated arguments
@@ -26879,9 +26885,13 @@ public:
                     visit_expr_load_wrapper(x.m_args[i], 0);
                     LCOMPILERS_ASSERT(llvm_utils->get_StringType(expr_type(x.m_args[i])) == llvm::Type::getInt8Ty(context))
                     LCOMPILERS_ASSERT(tmp->getType()->isPointerTy()); // atleast not `char`
-                    // Emit alloca in the entry block to avoid stack accumulation
-                    // when the enclosing string format sits inside a loop.
-                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
+                    // Dynamic alloca; reclaimed by llvm.stackrestore after
+                    // the variadic call (see stacksave above).  Hoisting
+                    // this into the entry block breaks the variadic call
+                    // ABI in the same way as result_size_ptr.
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(
+                        *builder,
+                        llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 } else {
@@ -26922,7 +26932,10 @@ public:
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
                     tmp = logical_store_val(tmp, x.m_args[i]);
-                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(tmp->getType());
+                    // Dynamic alloca; reclaimed by llvm.stackrestore after
+                    // the variadic call (see stacksave above).
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(
+                        *builder, tmp->getType());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 }
@@ -26937,6 +26950,18 @@ public:
 
             // Load result size
             llvm::Value *result_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), result_size_ptr);
+
+            // Reclaim the per-call allocas made above (result_size_ptr and
+            // any per-argument temporaries).  Must happen after the load of
+            // result_size and before create_string_descriptor (which only
+            // uses the entry-block-allocated stringFormat_desc).
+#if LLVM_VERSION_MAJOR >= 18
+            builder->CreateStackRestore(string_format_saved_stack);
+#else
+            llvm::Function *string_format_stackrestore_fn =
+                llvm::Intrinsic::getDeclaration(module.get(), llvm::Intrinsic::stackrestore);
+            builder->CreateCall(string_format_stackrestore_fn, {string_format_saved_stack});
+#endif
 
             tmp = llvm_utils->create_string_descriptor(tmp, result_size,"stringFormat_desc");
         } else {
