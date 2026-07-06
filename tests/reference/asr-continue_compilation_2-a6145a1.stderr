@@ -716,49 +716,49 @@ semantic error: `pos` argument of `ibclr` intrinsic must be non-negative
 448 |     print *, ibclr(1, -2)
     |              ^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Dshiftl must be the same
+semantic error: Type and kind of the relevant arguments of Dshiftl must be the same
    --> tests/errors/continue_compilation_2.f90:450:14
     |
 450 |     print *, dshiftl(1, 1_8, 1)
     |              ^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ior must be the same
+semantic error: Type and kind of the relevant arguments of Ior must be the same
    --> tests/errors/continue_compilation_2.f90:452:14
     |
 452 |     print *, ior(1, 1_8)
     |              ^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ieor must be the same
+semantic error: Type and kind of the relevant arguments of Ieor must be the same
    --> tests/errors/continue_compilation_2.f90:454:14
     |
 454 |     print *, ieor(1, 1_8)
     |              ^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Hypot must be the same
+semantic error: Type and kind of the relevant arguments of Hypot must be the same
    --> tests/errors/continue_compilation_2.f90:456:14
     |
 456 |     print *, hypot(1.0, 2.7_8)
     |              ^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ior must be the same
+semantic error: Type and kind of the relevant arguments of Ior must be the same
    --> tests/errors/continue_compilation_2.f90:458:14
     |
 458 |     print *, ior(intr8_x, intr8_y)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Iand must be the same
+semantic error: Type and kind of the relevant arguments of Iand must be the same
    --> tests/errors/continue_compilation_2.f90:460:14
     |
 460 |     print *, iand(intr9_x, intr9_y)
     |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Ieor must be the same
+semantic error: Type and kind of the relevant arguments of Ieor must be the same
    --> tests/errors/continue_compilation_2.f90:462:14
     |
 462 |     print *, ieor(intr10_x, intr10_y)
     |              ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Hypot must be the same
+semantic error: Type and kind of the relevant arguments of Hypot must be the same
    --> tests/errors/continue_compilation_2.f90:466:14
     |
 466 |     print *, hypot(intr11_x, intr11_y)

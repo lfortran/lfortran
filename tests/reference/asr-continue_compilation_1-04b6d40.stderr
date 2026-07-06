@@ -495,9 +495,9 @@ semantic error: Function `c_loc` is not permitted in an initialization expressio
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: length specifier is only valid for character type
-   --> tests/errors/continue_compilation_1.f90:853:20
+   --> tests/errors/continue_compilation_1.f90:862:20
     |
-853 |         integer :: i*2
+862 |         integer :: i*2
     |                    ^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -656,13 +656,13 @@ semantic error: `transpose` accepts arrays of rank 2 only, provided an array wit
 359 |     print *, transpose(a)
     |                        ^ 
 
-semantic error: Kind of all the arguments of Mergebits must be the same
+semantic error: Type and kind of the relevant arguments of Mergebits must be the same
    --> tests/errors/continue_compilation_1.f90:361:14
     |
 361 |     print *, merge_bits(8, 12_8, 2)
     |              ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Kind of all the arguments of Mergebits must be the same
+semantic error: Type and kind of the relevant arguments of Mergebits must be the same
    --> tests/errors/continue_compilation_1.f90:363:14
     |
 363 |     print *, merge_bits(a5, b5, c5)
@@ -1702,38 +1702,44 @@ semantic error: first argument of `llt` must have kind equal to 1
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
-semantic error: `a` argument of `co_max` must be of integer, real or character type, but got complex
-   --> tests/errors/continue_compilation_1.f90:817:21
+semantic error: Type and kind of the relevant arguments of Merge must be the same
+   --> tests/errors/continue_compilation_1.f90:820:18
     |
-817 |         call co_max(z)
+820 |         print *, merge(a, b, .true.)
+    |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `a` argument of `co_max` must be of integer, real or character type, but got complex
+   --> tests/errors/continue_compilation_1.f90:826:21
+    |
+826 |         call co_max(z)
     |                     ^ must be integer, real or character type
 
 semantic error: `a` argument of `co_sum` must be of integer, real or complex type, but got logical
-   --> tests/errors/continue_compilation_1.f90:823:21
+   --> tests/errors/continue_compilation_1.f90:832:21
     |
-823 |         call co_sum(mask)
+832 |         call co_sum(mask)
     |                     ^^^^ must be integer, real or complex type
 
 semantic error: duplicate statement label 1000
-   --> tests/errors/continue_compilation_1.f90:828:9
+   --> tests/errors/continue_compilation_1.f90:837:9
     |
-828 | 1000    continue
+837 | 1000    continue
     |         ^^^^^^^^ 
 
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:834:22
+   --> tests/errors/continue_compilation_1.f90:843:22
     |
-834 |         select type (a)
+843 |         select type (a)
     |                      ^ 
 
 semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
-   --> tests/errors/continue_compilation_1.f90:843:18
+   --> tests/errors/continue_compilation_1.f90:852:18
     |
-843 |         print *, min(c1, c4)
+852 |         print *, min(c1, c4)
     |                  ^^^^^^^^^^^ 
 
 semantic error: Label 20 is not defined
-   --> tests/errors/continue_compilation_1.f90:848:9
+   --> tests/errors/continue_compilation_1.f90:857:9
     |
-848 |         goto 20  ! {Error} Label 20 is not defined
+857 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
