@@ -27,7 +27,6 @@ call c_f_pointer(b__coarray_data, b, [4])
 call __module_prif_prif_sync_all()
 expected = Mod(lcompilers_prif_this_image() + lcompilers_prif_num_images() - 2, lcompilers_prif_num_images()) + 1
 a = lcompilers_prif_this_image()
-b = 0
 dest = Mod(lcompilers_prif_this_image(), lcompilers_prif_num_images()) + 1
 call lcompilers_prif_put_integer(4)(b__coarray_handle, [int(dest, kind=8)], (int(0, kind=8) + int(2 - lbound(b, 1),&
          kind=8)*int(1, kind=8))*4_8, a(2))

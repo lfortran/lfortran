@@ -7,7 +7,6 @@ program coarrays_21
     integer :: expected
     expected = mod(this_image() + num_images() - 2, num_images()) + 1
     a = this_image()
-    b = 0
 
     dest = mod(this_image(), num_images()) + 1
 
