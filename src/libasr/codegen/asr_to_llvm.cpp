@@ -6007,17 +6007,10 @@ public:
     }
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
-        llvm::Type* value_type;
-        if (ASRUtils::is_array(x.m_type) && ASRUtils::extract_physical_type(x.m_type) != ASR::array_physical_typeType::DescriptorArray) {
-            value_type = llvm_utils->get_el_type(x.m_var_expr, ASRUtils::extract_type(x.m_type), module.get())->getPointerTo();
-        } else {
-            value_type = llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
-        }
-
+        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
         if (ASRUtils::is_string_only(x.m_type)) {
             value_type = llvm_utils->i8_ptr;
         }
-        
         tmp = llvm::Constant::getNullValue(value_type);
     }
 
@@ -7224,10 +7217,6 @@ public:
                 LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(v->m_type) ==
                                      ASR::array_physical_typeType::DescriptorArray);
                 if (v->m_storage == ASR::storage_typeType::Save) {
-                    // Save pointer arrays are globals initialized to null,
-                    // which already represents "pointer not associated".
-                    // Attempting to dereference the null pointer to set
-                    // the descriptor's data field would segfault.
                 } else {
                     llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
                         ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
@@ -7239,7 +7228,14 @@ public:
                         false);
                     llvm::Value* data_ptr = llvm_utils->create_gep2(
                         array_desc_type, llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var), 0);
-                    builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
+                    
+                    llvm::Type* el_ptr_type = llvm_utils->get_el_type(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                            ASRUtils::extract_type(v->m_type),
+                            module.get())->getPointerTo();
+                    llvm::Value* null_data = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(el_ptr_type));
+                    
+                    builder->CreateStore(null_data, data_ptr, v->m_is_volatile);
                 }
         } else {
             if (v->m_storage == ASR::storage_typeType::Save
