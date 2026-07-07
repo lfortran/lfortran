@@ -10089,13 +10089,41 @@ public:
             AST::fnarg_t* m_args, size_t n_args, AST::keyword_t* kwargs,
             size_t n_kwargs, ASR::symbol_t *v, bool is_const = false) {
         Vec<ASR::call_arg_t> vals;
-        visit_expr_list(m_args, n_args, vals);
+        vals.reserve(al, n_args);
+
+        // Fetch the derived type structure so we can inspect its members
+        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
+
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::ttype_t *previous_type = current_variable_type_;
+            
+            if (i < struct_type->n_members) {
+                std::string member_name(struct_type->m_members[i]);
+                ASR::symbol_t* member_sym = struct_type->m_symtab->get_symbol(member_name);
+                if (member_sym) {
+                    current_variable_type_ = ASRUtils::symbol_type(member_sym);
+                }
+            }
+
+            ASR::expr_t *expr = nullptr;
+            if (m_args[i].m_end) {
+                this->visit_expr(*m_args[i].m_end);
+                expr = ASRUtils::EXPR(tmp);
+            }
+
+            current_variable_type_ = previous_type;
+
+            ASR::call_arg_t arg;
+            arg.loc = m_args[i].loc;
+            arg.m_value = expr;
+            vals.push_back(al, arg);
+        }
+
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
 
         // For PDTs with kind parameters, resolve to the instantiated type
         // and re-cast args to concrete member types (not sentinel types).
-        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
         if (struct_type->n_kind_params > 0) {
             std::string pdt_name = struct_type->m_name;
             std::vector<int64_t> kind_vals;
