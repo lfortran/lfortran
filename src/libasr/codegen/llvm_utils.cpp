@@ -2161,20 +2161,14 @@ namespace LCompilers {
     bool LLVMUtils::is_proper_array_of_strings_llvm_var([[maybe_unused]]ASR::ttype_t* type, [[maybe_unused]] llvm::Value* str){
         LCOMPILERS_ASSERT(ASRUtils::is_array(type))
         LCOMPILERS_ASSERT(ASRUtils::is_character(*type))
-        // std::cout<<str->getType()->isPointerTy() << " "
-        //                     << !str->getType()->getPointerElementType()->isPointerTy() << " "
-        //                     << (str->getType() == get_type_from_ttype_t_util(type, module)) << " "
-        //                     << (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo()) << " ";
+        
 #if LLVM_VERSION_MAJOR < 15
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
             case ASR::DescriptorArray:{
                 switch (str_type->m_physical_type){
-                    // A pointer to the Array Descriptor => `{ %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }`
                     case ASR::DescriptorString:{
-                        return str->getType()->isPointerTy() &&
-                            !str->getType()->getPointerElementType()->isPointerTy() &&
-                            (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo());
+                        return str->getType()->isPointerTy();
                     }
                     case ASR::CChar:{
                         throw LCompilersException("DescriptorArray can't exist with CChar string physical type");
@@ -2185,20 +2179,16 @@ namespace LCompilers {
             }
             case ASR::PointerArray:{
                 switch (str_type->m_physical_type){
-                    // `string_descriptor*` and `char*`
                     case ASR::DescriptorString :
                     case ASR::CChar : {
-                        return str->getType()->isPointerTy() &&
-                            !str->getType()->getPointerElementType()->isPointerTy() &&
-                            (str->getType()->getPointerElementType() == get_StringType(type));
+                        return str->getType()->isPointerTy();
                     }
                     default:
                         throw LCompilersException("Unhandled String Physical type");
                 }
-
             }
             default:
-                throw LCompilersException ("Unhandled Array Physical type");
+                return true;
         }
 #else
     // Can't check so return true
