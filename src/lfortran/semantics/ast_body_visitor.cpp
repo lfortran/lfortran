@@ -23,7 +23,7 @@ namespace LCompilers::LFortran {
 static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
         size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation) {
     ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
-    if (!fn_type->m_pure) {
+    if (!fn_type->m_pure || v->m_side_effect_free) {
         return;
     }
     ASR::SideEffectFinder finder;
@@ -39,26 +39,6 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
             }));
         if (!continue_compilation) {
             throw SemanticAbort();
-        }
-    }
-    // C1592: pure function dummy data objects must have INTENT(IN) or VALUE
-    for (size_t i = 0; i < v->n_args; i++) {
-        ASR::expr_t *arg = v->m_args[i];
-        if (ASR::is_a<ASR::Var_t>(*arg)) {
-            ASR::Var_t *var_expr = ASR::down_cast<ASR::Var_t>(arg);
-            ASR::Variable_t *v_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
-            if (v_var->m_intent == ASR::intentType::Unspecified && !v_var->m_value_attr &&
-                    !ASR::is_a<ASR::FunctionType_t>(*v_var->m_type)) {
-                diag.add(diag::Diagnostic(
-                    "Dummy argument '" + std::string(v_var->m_name) +
-                    "' of pure function must have INTENT(IN) or VALUE attribute",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {v_var->base.base.loc})
-                    }));
-                if (!continue_compilation) {
-                    throw SemanticAbort();
-                }
-            }
         }
     }
 }
@@ -5532,10 +5512,8 @@ public:
         v->n_dependencies = func_deps.size();
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
-        if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation);
-        }
+        check_pure_function(v, v->m_body, v->n_body, diag,
+            compiler_options.continue_compilation);
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
         for (size_t i=0; i<x.n_contains; i++) {
@@ -5633,10 +5611,8 @@ public:
         v->n_dependencies = func_deps.size();
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
-        if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation);
-        }
+        check_pure_function(v, v->m_body, v->n_body, diag,
+            compiler_options.continue_compilation);
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
 
@@ -5728,10 +5704,8 @@ public:
         v->n_dependencies = func_deps.size();
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
-        if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation);
-        }
+        check_pure_function(v, v->m_body, v->n_body, diag,
+            compiler_options.continue_compilation);
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
 
