@@ -6154,8 +6154,12 @@ namespace Ichar {
 namespace Char {
 
     static ASR::expr_t *eval_Char(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        if (i < 0) {
+            diag.semantic_error_label("Argument of `char` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
+        }
         int kind = ASR::down_cast<ASR::String_t>(
             ASRUtils::extract_type(t1))->m_kind;
         std::string svalue;
@@ -6222,8 +6226,12 @@ namespace Char {
 namespace Achar {
 
     static ASR::expr_t *eval_Achar(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        if (i < 0) {
+            diag.semantic_error_label("Argument of `achar` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
+        }
         int kind = ASR::down_cast<ASR::String_t>(
             ASRUtils::extract_type(t1))->m_kind;
         std::string svalue;

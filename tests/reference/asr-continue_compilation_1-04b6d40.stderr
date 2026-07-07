@@ -923,11 +923,23 @@ semantic error: reshape accepts arrays for `shape` argument, found logical inste
 451 |     print *, reshape([1, 2, 3, 4], .false.)
     |                                    ^^^^^^^ 
 
+semantic error: Argument of `achar` intrinsic must be non-negative
+   --> tests/errors/continue_compilation_1.f90:452:14
+    |
+452 |     print *, achar(-1, kind=4)
+    |              ^^^^^^^^^^^^^^^^^ 
+
 semantic error: reshape accepts `source` array with size greater than or equal to size specified by `shape` array
    --> tests/errors/continue_compilation_1.f90:453:14
     |
 453 |     print *, reshape([1, 2, 3, 4], [2, 3])
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `shape` specifies size of 6 which exceeds the `source` array size of 4
+
+semantic error: Argument of `char` intrinsic must be non-negative
+   --> tests/errors/continue_compilation_1.f90:454:14
+    |
+454 |     print *, char(-1, kind=4)
+    |              ^^^^^^^^^^^^^^^^ 
 
 semantic error: Division by zero
    --> tests/errors/continue_compilation_1.f90:456:14
