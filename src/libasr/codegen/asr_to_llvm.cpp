@@ -7227,9 +7227,15 @@ public:
                     // Attempting to dereference the null pointer to set
                     // the descriptor's data field would segfault.
                 } else {
-                    llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
-                        al, v->base.base.loc, &v->base)), v->m_type, module.get());
-                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(target_type, target_var);
+                    llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
+                        ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
+                        ASRUtils::type_get_past_allocatable_pointer(v->m_type),
+                        llvm_utils->get_el_type(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                            ASRUtils::extract_type(v->m_type),
+                            module.get()),
+                        false);
+                    llvm::Value* data_ptr = llvm_utils->create_gep2(array_desc_type, target_var, 0);
                     builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
                 }
         } else {
