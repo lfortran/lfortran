@@ -305,7 +305,7 @@ program continue_compilation_1
         integer, len :: n
         real :: data(n)
     end type
-
+    type(MyClass) :: eoshift_derived_array(1), eoshift_derived_result(1)
 
 
 
@@ -639,7 +639,7 @@ program continue_compilation_1
     interface undeclared_iface
         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     end interface
-
+    eoshift_derived_result = eoshift(eoshift_derived_array, 1)
     integer, parameter :: n2 = "abc"
     type(MyClass) :: ptr_src_no_target
     type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
@@ -809,6 +809,15 @@ program continue_compilation_1
         type :: holder
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
+    end subroutine
+
+    subroutine merge_kind_mismatch()
+        implicit none
+        integer(kind=8) :: a
+        integer(kind=4) :: b
+        a = 1
+        b = 2
+        print *, merge(a, b, .true.)
     end subroutine
 
     subroutine co_max_complex_arg()

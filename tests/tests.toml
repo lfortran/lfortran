@@ -2923,6 +2923,12 @@ pass = "coarray"
 options = "--coarray=true"
 
 [[test]]
+filename = "coarrays_17.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "coarrays_19.f90"
 fortran = true
 pass = "coarray"
