@@ -6008,15 +6008,17 @@ public:
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
         llvm::Type* value_type;
+        if (ASRUtils::is_array(x.m_type) && ASRUtils::extract_physical_type(x.m_type) != ASR::array_physical_typeType::DescriptorArray) {
+            value_type = llvm_utils->get_el_type(x.m_var_expr, ASRUtils::extract_type(x.m_type), module.get())->getPointerTo();
+        } else {
+            value_type = llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
+        }
 
-        value_type = ASRUtils::is_array(x.m_type)?
-            llvm_utils->get_el_type(x.m_var_expr,
-                ASRUtils::extract_type(x.m_type), module.get())->getPointerTo():
-            llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
         if (ASRUtils::is_string_only(x.m_type)) {
             value_type = llvm_utils->i8_ptr;
         }
-        tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
+        
+        tmp = llvm::Constant::getNullValue(value_type);
     }
 
     void visit_Enum(const ASR::Enum_t& x) {
@@ -7235,7 +7237,8 @@ public:
                             ASRUtils::extract_type(v->m_type),
                             module.get()),
                         false);
-                    llvm::Value* data_ptr = llvm_utils->create_gep2(array_desc_type, target_var, 0);
+                    llvm::Value* data_ptr = llvm_utils->create_gep2(
+                        array_desc_type, llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var), 0);
                     builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
                 }
         } else {
