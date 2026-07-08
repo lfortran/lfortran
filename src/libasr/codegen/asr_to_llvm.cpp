@@ -1150,11 +1150,13 @@ public:
         ASR::ttype_t* raw_type = ASRUtils::expr_type(str_expr);
         ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(raw_type);
         
+        // Strip array to get the actual String type for physical_type checking
         ASR::ttype_t* el_type = ASRUtils::type_get_past_array(base_type);
 
         LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*
             ASRUtils::extract_type(el_type)))
 
+        // Evaluate Expression
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(
             ASRUtils::extract_type(el_type));
             
@@ -1167,18 +1169,26 @@ public:
         {
             case ASR::DescriptorString:{
                 if (ASRUtils::is_array(base_type)) {
+                    // 1. Get the correct LLVM structure type for the array descriptor
                     llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(str_expr, base_type, module.get());
                     
+                    // 2. Dereference the descriptor pointer if the expression is allocatable/pointer
                     llvm::Value* arr_desc = tmp;
                     if (ASRUtils::is_allocatable_or_pointer(raw_type)) {
                         arr_desc = llvm_utils->CreateLoad2(arr_type_llvm->getPointerTo(), arr_desc);
                     }
-                    return arr_descr->get_array_data(arr_type_llvm, arr_desc);
+                    
+                    // 3. Manually extract the array data pointer (index 0 of the descriptor struct)
+                    return builder->CreateLoad(
+                        arr_type_llvm->getStructElementType(0),
+                        llvm_utils->create_gep2(arr_type_llvm, arr_desc, 0)
+                    );
                 } else {
                     // Extract data pointer from String Descriptor (scalar)
                     return builder->CreateLoad(
                         character_type,
-                        llvm_utils->create_gep2(string_descriptor, tmp, 0));
+                        llvm_utils->create_gep2(string_descriptor, tmp, 0)
+                    );
                 }
             }
             case ASR::CChar:{
