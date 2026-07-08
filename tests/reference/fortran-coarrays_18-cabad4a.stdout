@@ -10,54 +10,15 @@ type :: prif_coarray_handle
 end type prif_coarray_handle
 
 
-program coarrays_19
+program coarrays_18
 implicit none
-integer(4), dimension(3) :: ia
-logical(4) :: l
-real(4) :: r
-character(len=3, kind=1) :: s
-character(len=3, kind=1), dimension(2) :: sa
 integer(4) :: stat
-complex(4) :: z
+integer(4) :: x
 call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
-if (lcompilers_prif_this_image() == 2) then
-    ia = [10, 20, 30]
-    r = 2.50000000e+00
-    z = cmplx(2.00000000e+00, -3.00000000e+00, kind=4)
-    s = "yes"
-    sa = ["foo", "bar"]
-    l = .true.
-else
-    ia = [0, 0, 0]
-    r = 0.00000000e+00
-    z = cmplx(0.00000000e+00, 0.00000000e+00, kind=4)
-    s = "no "
-    sa = ["xxx", "yyy"]
-    l = .false.
-end if
-call __module_prif_prif_co_broadcast(ia, 2)
-call __module_prif_prif_co_broadcast(r, 2)
-call __module_prif_prif_co_broadcast(z, 2)
-call __module_prif_prif_co_broadcast(s, 2)
-call __module_prif_prif_co_broadcast(sa, 2)
-call __module_prif_prif_co_broadcast(l, 2)
-if (ia(1) /= 10 .or. ia(2) /= 20 .or. ia(3) /= 30) then
-    error stop
-end if
-if (r /= 2.50000000e+00) then
-    error stop
-end if
-if (z /= (cmplx(2.00000000e+00, -3.00000000e+00, kind=4))) then
-    error stop
-end if
-if (s /= "yes") then
-    error stop
-end if
-if (sa(1) /= "foo" .or. sa(2) /= "bar") then
-    error stop
-end if
-if (.not. l) then
+x = lcompilers_prif_this_image()
+call __module_prif_prif_co_broadcast(x, 1)
+if (x /= 1) then
     error stop
 end if
 call __module_prif_prif_stop(.false.)
@@ -107,4 +68,4 @@ integer(4) function lcompilers_prif_this_image()
     call __module_prif_prif_this_image_no_coarray(lcompilers_prif_this_image)
 end function lcompilers_prif_this_image
 
-end program coarrays_19
+end program coarrays_18
