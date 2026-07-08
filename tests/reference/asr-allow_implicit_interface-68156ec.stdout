@@ -69,7 +69,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8)
+                                                    (Real 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -89,7 +89,7 @@
                                     (FunctionType
                                         [(Real 8)
                                         (Logical 4)]
-                                        (Real 8)
+                                        (Real 4)
                                         BindC
                                         Interface
                                         ()
@@ -538,14 +538,20 @@
                                 ()
                             )
                             Add
-                            (FunctionCall
-                                2 alnorm
-                                ()
-                                [((Var 2 x))
-                                ((LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                ))]
+                            (Cast
+                                (FunctionCall
+                                    2 alnorm
+                                    ()
+                                    [((Var 2 x))
+                                    ((LogicalConstant
+                                        .true.
+                                        (Logical 4)
+                                    ))]
+                                    (Real 4)
+                                    ()
+                                    ()
+                                )
+                                RealToReal
                                 (Real 8)
                                 ()
                                 ()
