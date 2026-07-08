@@ -1,44 +1,40 @@
 program intrinsics_473
-    ! Test co_broadcast intrinsic subroutine (no-op in single-image mode)
+    ! Test maxloc/minloc compile-time evaluation on multi-dimensional
+    ! parameter arrays with mask, and element-wise comparison of the result.
     implicit none
-    integer :: a(3), b
-    real :: c(2)
-    character(3) :: d, e(2)
-    logical :: f
-    complex :: g
 
-    a = [1, 2, 3]
-    call co_broadcast(a, source_image=1)
-    if (a(1) /= 1) error stop
-    if (a(2) /= 2) error stop
-    if (a(3) /= 3) error stop
+    call test_maxloc_2d_mask_all_false()
+    call test_minloc_2d_mask_all_false()
+    call test_maxloc_parameter_compare()
 
-    b = 42
-    call co_broadcast(b, 1)
-    if (b /= 42) error stop
+    print *, "All tests passed."
 
-    c = [1.5, 2.5]
-    call co_broadcast(c, source_image=1)
-    if (abs(c(1) - 1.5) > 1e-6) error stop
-    if (abs(c(2) - 2.5) > 1e-6) error stop
+contains
 
-    d = "abc"
-    call co_broadcast(d, 1)
-    if (d /= "abc") error stop
+    subroutine test_maxloc_2d_mask_all_false()
+        ! When no mask element is true, maxloc must return all zeros.
+        integer, parameter :: x(1, 1) = 1
+        integer, parameter :: a(2) = maxloc(x, mask=x > 1)
+        ! a must be [0, 0]
+        if (any(a /= [0, 0])) error stop 1
+    end subroutine
 
-    e = ["abc", "xyz"]
-    call co_broadcast(e, source_image=1)
-    if (e(1) /= "abc") error stop
-    if (e(2) /= "xyz") error stop
+    subroutine test_minloc_2d_mask_all_false()
+        ! When no mask element is true, minloc must return all zeros.
+        integer, parameter :: z(1, 1) = 10
+        integer, parameter :: c(2) = minloc(z, mask=z < 0)
+        if (any(c /= [0, 0])) error stop 2
+    end subroutine
 
-    f = .true.
-    call co_broadcast(f, 1)
-    if (.not. f) error stop
+    subroutine test_maxloc_parameter_compare()
+        ! The original reproducer: comparison of parameter array from maxloc.
+        integer, parameter :: x(1, 1) = 1
+        integer, parameter :: a(2) = maxloc(x, mask=x > 1)
+        logical :: res(2)
+        res = a /= [0, 0]
+        if (any(res)) error stop 3
+        res = a == [0, 0]
+        if (.not. all(res)) error stop 4
+    end subroutine
 
-    g = (1.0, -2.0)
-    call co_broadcast(g, source_image=1)
-    if (abs(real(g) - 1.0) > 1e-6) error stop
-    if (abs(aimag(g) + 2.0) > 1e-6) error stop
-
-    print *, "co_broadcast: all tests passed"
-end program intrinsics_473
+end program

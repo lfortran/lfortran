@@ -1,4 +1,4 @@
-semantic error: Kind of all the arguments of Sign must be the same
+semantic error: Type and kind of the relevant arguments of Sign must be the same
  --> tests/errors/sign_01.f90:2:14
   |
 2 |     print *, sign(1, 1_8)
