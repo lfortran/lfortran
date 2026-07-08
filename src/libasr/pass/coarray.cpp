@@ -532,6 +532,7 @@ class PRIFInterface {
             return b.Mul(offset_elements, size_in_bytes);
         }
 
+        // Gets the size of a single element of the given type.
         ASR::expr_t* get_size_in_bytes_expr(const Location &loc, ASR::ttype_t *ttype) {
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::ttype_t *base_type = ASRUtils::type_get_past_array(
@@ -547,6 +548,9 @@ class PRIFInterface {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, size_bytes, int64_type));
         }
 
+        // Gets the total size in bytes of the variable.
+        // It accounts for the array size by multiplying the total number of elements
+        // by the size of a single element.
         ASR::expr_t* get_total_size_in_bytes_expr(const Location &loc,
                                             ASR::Variable_t *var) {
             ASRUtils::ASRBuilder b(al, loc);
@@ -561,6 +565,9 @@ class PRIFInterface {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(array_type);
             ASR::expr_t *total = elem_size;
             for (size_t i = 0; i < arr->n_dims; i++) {
+                if (!arr->m_dims[i].m_length) {
+                    return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int64_type));
+                }
                 ASR::expr_t *len = b.i2i_t(arr->m_dims[i].m_length, int64_type);
                 total = b.Mul(total, len);
             }
@@ -580,7 +587,7 @@ class PRIFInterface {
         std::map<ASR::symbol_t*, std::pair<ASR::symbol_t*, ASR::symbol_t*>> coarray_companions;
         std::map<ASR::symbol_t*, ASR::ttype_t*> original_types;
 
-        ASR::ttype_t* make_deferred_shape_type(const Location &loc, ASR::ttype_t *type) {
+        ASR::ttype_t* get_type_compatible_with_pointer(const Location &loc, ASR::ttype_t *type) {
             if (ASR::is_a<ASR::Array_t>(*type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
                 Vec<ASR::dimension_t> new_dims;
@@ -605,6 +612,12 @@ class PRIFInterface {
                 ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
                 for (size_t i = 0; i < arr->n_dims; i++) {
                     ASR::dimension_t d = arr->m_dims[i];
+                    int64_t lb = 1;
+                    if (d.m_start) {
+                        ASRUtils::extract_value(d.m_start, lb);
+                    }
+                    LCOMPILERS_ASSERT_MSG(lb == 1,
+                        "Array shape with lowerbound specified is not supported");
                     if (d.m_length) {
                         ASR::expr_t *len_expr = d.m_length;
                         if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
@@ -613,6 +626,8 @@ class PRIFInterface {
                             len_expr = b.i2i_t(len_expr, int32_type);
                         }
                         shape_vec.push_back(len_expr);
+                    } else {
+                        shape_vec.push_back(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type)));
                     }
                 }
                 if (shape_vec.size() > 0) {
@@ -1288,7 +1303,7 @@ class PRIFInterface {
 
                 ASR::ttype_t *orig_type = var->m_type;
                 original_types[sym] = orig_type;
-                ASR::ttype_t *deferred_type = make_deferred_shape_type(loc, orig_type);
+                ASR::ttype_t *deferred_type = get_type_compatible_with_pointer(loc, orig_type);
                 ASR::ttype_t *ptr_type = ASRUtils::TYPE(
                     ASR::make_Pointer_t(al, loc, deferred_type));
                 var->m_type = ptr_type;
