@@ -1170,7 +1170,7 @@ public:
                         character_type,
                         llvm_utils->create_gep2(string_descriptor, tmp, 0));
                 }
-            }s
+            }
             case ASR::CChar:{
                 llvm::Value* char_ptr = builder->CreateAlloca(llvm::Type::getInt8Ty(context));
                 return builder->CreateStore(tmp, char_ptr);
