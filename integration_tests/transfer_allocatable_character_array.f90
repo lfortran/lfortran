@@ -3,6 +3,8 @@ program transfer_allocatable_character_array
 
   character(len=1), allocatable :: chars(:)
 
+  allocate(chars(17))
+
   chars = transfer(" ABCDEFG abcdefg ", "A", size=17)
 
   print *, chars
