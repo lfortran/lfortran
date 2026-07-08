@@ -9979,19 +9979,11 @@ public:
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
             if (!sym_type->m_name) {
                 if (compiler_options.implicit_interface) {
+                    // procedure() with no explicit interface is completely
+                    // opaque — we don't know the return type (or whether it's
+                    // a function or subroutine).  Use nullptr (void) so the
+                    // LLVM backend emits a generic void()* function pointer.
                     ASR::ttype_t *return_type = nullptr;
-                    std::string first_letter = std::string(1, sym[0]);
-                    if (implicit_dictionary.find(first_letter) != implicit_dictionary.end()
-                            && implicit_dictionary[first_letter] != nullptr) {
-                        return_type = implicit_dictionary[first_letter];
-                    } else {
-                        char first_char = sym[0];
-                        if (first_char >= 'i' && first_char <= 'n') {
-                            return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                        } else {
-                            return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
-                        }
-                    }
                     Location &attr_loc = sym_type->base.base.loc;
                     type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                         al, loc,
@@ -16932,7 +16924,20 @@ public:
                     ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(ptype);
                     ASR::ttype_t* return_type = func_type->m_return_var_type;
                     if (!return_type) {
-                        return_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                        // Use implicit typing rules for the return type
+                        std::string first_letter = std::string(1, var_name[0]);
+                        if (compiler_options.implicit_typing &&
+                                implicit_dictionary.find(first_letter) != implicit_dictionary.end() &&
+                                implicit_dictionary[first_letter] != nullptr) {
+                            return_type = implicit_dictionary[first_letter];
+                        } else {
+                            char first_char = var_name[0];
+                            if (first_char >= 'i' && first_char <= 'n') {
+                                return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                            } else {
+                                return_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+                            }
+                        }
                     }
                     SymbolTable* parent_scope = current_scope->parent ? current_scope->parent : current_scope;
                     // Resolve arg types from the call arguments
@@ -17014,7 +17019,20 @@ public:
                 ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(ptype);
                 ASR::ttype_t* return_type = func_type->m_return_var_type;
                 if (!return_type) {
-                    return_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
+                    // Use implicit typing rules for the return type
+                    std::string first_letter = std::string(1, var_name[0]);
+                    if (compiler_options.implicit_typing &&
+                            implicit_dictionary.find(first_letter) != implicit_dictionary.end() &&
+                            implicit_dictionary[first_letter] != nullptr) {
+                        return_type = implicit_dictionary[first_letter];
+                    } else {
+                        char first_char = var_name[0];
+                        if (first_char >= 'i' && first_char <= 'n') {
+                            return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                        } else {
+                            return_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+                        }
+                    }
                 }
                 bool needs_update = false;
                 if (proc_var->m_type_declaration != nullptr) {
