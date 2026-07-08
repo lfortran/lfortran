@@ -1238,6 +1238,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg = nullptr,
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_sync_images_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = image_set;
