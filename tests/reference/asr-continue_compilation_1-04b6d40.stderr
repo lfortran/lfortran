@@ -1540,6 +1540,12 @@ semantic error: Duplicate value of `decimal` found
 636 |     open(unit=7, decimal="POINT", decimal="comma")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Missing 'boundary' argument to 'eoshift' intrinsic
+   --> tests/errors/continue_compilation_1.f90:642:38
+    |
+642 |     eoshift_derived_result = eoshift(eoshift_derived_array, 1)
+    |                                      ^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Implicit casting from LOGICAL to INTEGER is not allowed by default. Use `--logical-casting` flag to enable it.
    --> tests/errors/continue_compilation_1.f90:648:5
     |
