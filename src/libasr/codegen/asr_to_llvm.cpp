@@ -1068,12 +1068,16 @@ public:
     */
     llvm::Value* get_string_length(ASR::expr_t* str_expr){
         ASR::ttype_t* exp_type = ASRUtils::expr_type(str_expr);
+        
+
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(exp_type));
+
         LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*
-            ASRUtils::extract_type(exp_type)))
+            ASRUtils::extract_type(el_type)))
 
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(
-            ASRUtils::extract_type(exp_type));
-
+            ASRUtils::extract_type(el_type));
 
         switch (str->m_physical_type)
         {
@@ -1143,27 +1147,33 @@ public:
     }
 
     llvm::Value* get_string_data(ASR::expr_t* str_expr){
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*
-            ASRUtils::extract_type(ASRUtils::expr_type(str_expr))))
+        ASR::ttype_t* raw_type = ASRUtils::expr_type(str_expr);
+        ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(raw_type);
+        
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(base_type);
 
-        // Evaluate Expression
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*
+            ASRUtils::extract_type(el_type)))
+
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(
-            ASRUtils::extract_type(expr_type(str_expr)));
+            ASRUtils::extract_type(el_type));
+            
         int ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         visit_expr(*str_expr);
         ptr_loads = ptr_loads_copy;
+        
         switch (str->m_physical_type)
         {
             case ASR::DescriptorString:{
-                // CHANGED: Branch based on whether we are loading an array descriptor or scalar string descriptor
-                ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(expr_type(str_expr));
                 if (ASRUtils::is_array(base_type)) {
-                    // Extract data pointer from Array Descriptor
                     llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(str_expr, base_type, module.get());
-                    return builder->CreateLoad(
-                        arr_type_llvm->getStructElementType(0), 
-                        llvm_utils->create_gep2(arr_type_llvm, tmp, 0));
+                    
+                    llvm::Value* arr_desc = tmp;
+                    if (ASRUtils::is_allocatable_or_pointer(raw_type)) {
+                        arr_desc = llvm_utils->CreateLoad2(arr_type_llvm->getPointerTo(), arr_desc);
+                    }
+                    return arr_descr->get_array_data(arr_type_llvm, arr_desc);
                 } else {
                     // Extract data pointer from String Descriptor (scalar)
                     return builder->CreateLoad(
