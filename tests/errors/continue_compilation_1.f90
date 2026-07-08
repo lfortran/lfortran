@@ -305,7 +305,7 @@ program continue_compilation_1
         integer, len :: n
         real :: data(n)
     end type
-
+    type(MyClass) :: eoshift_derived_array(1), eoshift_derived_result(1)
 
 
 
@@ -639,7 +639,7 @@ program continue_compilation_1
     interface undeclared_iface
         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     end interface
-
+    eoshift_derived_result = eoshift(eoshift_derived_array, 1)
     integer, parameter :: n2 = "abc"
     type(MyClass) :: ptr_src_no_target
     type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
@@ -811,6 +811,15 @@ program continue_compilation_1
         end type
     end subroutine
 
+    subroutine merge_kind_mismatch()
+        implicit none
+        integer(kind=8) :: a
+        integer(kind=4) :: b
+        a = 1
+        b = 2
+        print *, merge(a, b, .true.)
+    end subroutine
+
     subroutine co_max_complex_arg()
         implicit none
         complex :: z
@@ -841,5 +850,15 @@ program continue_compilation_1
         character(kind=1) :: c1
         character(kind=4) :: c4
         print *, min(c1, c4)
+    end subroutine
+
+    subroutine sub_undefined_goto_label()
+        implicit none
+        goto 20  ! {Error} Label 20 is not defined
+    end subroutine
+
+    subroutine length_specifier_non_character()
+        implicit none
+        integer :: i*2
     end subroutine
 end program
