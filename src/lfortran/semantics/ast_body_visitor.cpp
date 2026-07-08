@@ -9451,6 +9451,10 @@ public:
                     }));
                 throw SemanticAbort();
             }
+            int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(image_set_type));
+            if (kind != 4) {
+                LCOMPILERS_ASSERT_MSG(false, "Only 32-bit integers are yet supported for `image_set` argument of `sync images`");
+            }
         } else if (x.m_sym != AST::symbolType::Asterisk) {
             diag.add(Diagnostic(
                 "`sync images` requires either an image_set or *",
