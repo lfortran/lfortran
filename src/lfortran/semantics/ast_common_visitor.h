@@ -12359,14 +12359,22 @@ public:
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
                     // An assumed-size actual has no extent for its last
-                    // dimension, so it cannot be associated with an
-                    // assumed-shape dummy (assumed-rank is allowed).
+                    // dimension, so it cannot be associated with a dummy
+                    // that needs the full shape: a pointer/allocatable dummy
+                    // (covers assumed-rank pointer/allocatable, which has no
+                    // dimensions) or an assumed-shape dummy (empty dimensions
+                    // lowered to a descriptor). Empty dimensions alone are not
+                    // enough: assumed-size dummies and implicit-interface
+                    // dummies also carry empty dimensions but legally accept
+                    // assumed-size actuals, as do plain assumed-rank dummies.
                     if (ASRUtils::is_array(actual_type) && ASRUtils::is_array(dummy_type) &&
                             ASRUtils::extract_physical_type(actual_type) ==
                                 ASR::array_physical_typeType::UnboundedPointerArray &&
-                            ASRUtils::extract_physical_type(dummy_type) ==
-                                ASR::array_physical_typeType::DescriptorArray &&
-                            !ASRUtils::is_assumed_rank_array(dummy_type)) {
+                            (ASRUtils::is_pointer(dummy_type) ||
+                             ASRUtils::is_allocatable(dummy_type) ||
+                             (ASRUtils::is_dimension_empty(dummy_type) &&
+                              ASRUtils::extract_physical_type(dummy_type) ==
+                                  ASR::array_physical_typeType::DescriptorArray))) {
                         diag.add(diag::Diagnostic(
                             "actual argument for '" + dummy_name +
                             "' cannot be an assumed-size array",

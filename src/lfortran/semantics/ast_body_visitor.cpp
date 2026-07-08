@@ -7634,32 +7634,23 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
-                    // An assumed-size array has no known extent for its last
-                    // dimension, so it cannot be used where the dummy requires
-                    // a descriptor (pointer or allocatable).
-                    if (ASRUtils::is_pointer(dummy_type) ||
-                        ASRUtils::is_allocatable(dummy_type)) {
-                        ASR::ttype_t* actual_array =
-                            ASRUtils::type_get_past_allocatable_pointer(actual_type);
-                        if (ASR::is_a<ASR::Array_t>(*actual_array) &&
-                            ASR::down_cast<ASR::Array_t>(actual_array)->m_physical_type ==
-                                ASR::array_physical_typeType::UnboundedPointerArray) {
-                            std::string dummy_name = dummy_var->m_name;
-                            diag.semantic_error_label(
-                                "Actual argument for '" + dummy_name +
-                                "' cannot be an assumed-size array",
-                                {args[i].m_value->base.loc}, "");
-                            throw SemanticAbort();
-                        }
-                    }
-                    // Likewise, an assumed-size actual cannot be associated
-                    // with an assumed-shape dummy (assumed-rank is allowed).
+                    // An assumed-size actual has no extent for its last
+                    // dimension, so it cannot be associated with a dummy
+                    // that needs the full shape: a pointer/allocatable dummy
+                    // (covers assumed-rank pointer/allocatable, which has no
+                    // dimensions) or an assumed-shape dummy (empty dimensions
+                    // lowered to a descriptor). Empty dimensions alone are not
+                    // enough: assumed-size dummies and implicit-interface
+                    // dummies also carry empty dimensions but legally accept
+                    // assumed-size actuals, as do plain assumed-rank dummies.
                     if (ASRUtils::is_array(actual_type) && ASRUtils::is_array(dummy_type) &&
                         ASRUtils::extract_physical_type(actual_type) ==
                             ASR::array_physical_typeType::UnboundedPointerArray &&
-                        ASRUtils::extract_physical_type(dummy_type) ==
-                            ASR::array_physical_typeType::DescriptorArray &&
-                        !ASRUtils::is_assumed_rank_array(dummy_type)) {
+                        (ASRUtils::is_pointer(dummy_type) ||
+                         ASRUtils::is_allocatable(dummy_type) ||
+                         (ASRUtils::is_dimension_empty(dummy_type) &&
+                          ASRUtils::extract_physical_type(dummy_type) ==
+                              ASR::array_physical_typeType::DescriptorArray))) {
                         diag.semantic_error_label(
                             "actual argument for '" + std::string(dummy_var->m_name) +
                             "' cannot be an assumed-size array",
