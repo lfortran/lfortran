@@ -1,11 +1,9 @@
 program coarrays_18
-    implicit none
+    integer :: x
 
-    integer :: x[*]
+    x = this_image()
 
-    if (this_image() == 1) x = 42
+    call co_broadcast(x, source_image=1)
 
-    sync images(*)
-
-    if (x[1] /= 42) error stop
+    if (x /= 1) error stop ! run with 2 or more images
 end program coarrays_18
