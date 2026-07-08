@@ -991,7 +991,9 @@ class PRIFInterface {
                 errmsg = nullptr;
             }
         }
-        ASR::symbol_t* get_or_create_prif_co_minmaxsum_sub(const Location &loc, const std::string &prif_name) {
+        ASR::symbol_t* get_or_create_prif_collective_sub(const Location &loc, const std::string &prif_name,
+                const std::string &image_arg_name = "result_image",
+                ASR::presenceType image_presence = ASR::presenceType::Optional) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = get_mangled_name("prif", prif_name);
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
@@ -1026,15 +1028,15 @@ class PRIFInterface {
             ASR::down_cast<ASR::Variable_t>(a_sym)->m_target_attr = true;
             ASR::expr_t *a = ASRUtils::EXPR(ASR::make_Var_t(al, loc, a_sym));
 
-            ASR::symbol_t *res_img_sym = declare_variable(
-                fn_symtab, loc, "result_image", int32_type, ASR::intentType::In, nullptr,
+            ASR::symbol_t *image_sym = declare_variable(
+                fn_symtab, loc, image_arg_name, int32_type, ASR::intentType::In, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *res_img = ASRUtils::EXPR(ASR::make_Var_t(al, loc, res_img_sym));
+                image_presence, false);
+            ASR::expr_t *image = ASRUtils::EXPR(ASR::make_Var_t(al, loc, image_sym));
 
             Vec<ASR::expr_t*> args; args.reserve(al, 5);
             args.push_back(al, a);
-            args.push_back(al, res_img);
+            args.push_back(al, image);
             declare_prif_status_args(fn_symtab, loc, args);
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
@@ -1106,7 +1108,7 @@ class PRIFInterface {
             ASR::ttype_t *a_type = ASRUtils::expr_type(a);
             ASR::symbol_t *sub = ASRUtils::is_character(*a_type)
                                         ? get_or_create_prif_co_minmax_character_sub(loc, prif_name + "_character")
-                                        : get_or_create_prif_co_minmaxsum_sub(loc, prif_name);
+                                        : get_or_create_prif_collective_sub(loc, prif_name);
             select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
             
@@ -1126,7 +1128,31 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
 
+        ASR::stmt_t* make_prif_co_broadcast_call(const Location &loc,
+                                           ASR::expr_t *a,
+                                           ASR::expr_t *source_image = nullptr,
+                                           ASR::expr_t *stat = nullptr,
+                                           ASR::expr_t *errmsg = nullptr,
+                                           ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_collective_sub(loc, "prif_co_broadcast",
+                "source_image", ASR::presenceType::Required);
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
 
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = source_image;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = stat;
+            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = errmsg;
+            ASR::call_arg_t arg5; arg5.loc = loc; arg5.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
+            call_args.push_back(al, arg5);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
 
         ASR::stmt_t* make_prif_sync_all_call(const Location &loc,
                                              ASR::expr_t *stat = nullptr,
@@ -1820,6 +1846,19 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                              
                         body.push_back(replacer.al, replacer.prif.make_prif_co_minmaxsum_call(
                             x->base.base.loc, "prif_co_min", a, result_image, stat, errmsg));
+                    }
+                    else if (intrinsic_name == "CoBroadcast") {
+                        ASR::expr_t *a = nullptr;
+                        ASR::expr_t *source_image = nullptr;
+                        ASR::expr_t *stat = nullptr;
+                        ASR::expr_t *errmsg = nullptr;
+                        if (x->n_args >= 1) a = x->m_args[0];
+                        if (x->n_args >= 2) source_image = x->m_args[1];
+                        if (x->n_args >= 3) stat = x->m_args[2];
+                        if (x->n_args >= 4) errmsg = x->m_args[3];
+
+                        body.push_back(replacer.al, replacer.prif.make_prif_co_broadcast_call(
+                            x->base.base.loc, a, source_image, stat, errmsg));
                     }
                     else {
                         body.push_back(replacer.al, m_body[i]);
