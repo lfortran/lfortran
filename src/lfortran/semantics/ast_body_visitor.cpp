@@ -9442,7 +9442,7 @@ public:
                     throw SemanticAbort();
                 }
             }
-            if (!ASRUtils::is_integer(*ASRUtils::type_get_past_array(image_set_type))) {
+            if (!ASRUtils::is_integer(*ASRUtils::extract_type(image_set_type))) {
                 diag.add(Diagnostic(
                     "`image_set` argument of `sync images` must be of type integer, found "
                     + ASRUtils::type_to_str_fortran_expr(image_set_type, image_set),
