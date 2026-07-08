@@ -1084,7 +1084,7 @@ public:
                     llvm::Value* len_value = llvm::ConstantInt::get(context, llvm::APInt(64, len->m_n));
                     return len_value;
                 } else { // Implicit Length
-                    if(ASRUtils::is_array(exp_type)){
+                    if(ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(exp_type))){
                         visit_expr_load_wrapper(str_expr, ASRUtils::is_allocatable_or_pointer(exp_type) ? 1 : 0);
                         return get_string_length_in_array(str_expr, tmp);
                     } else {
@@ -1156,10 +1156,21 @@ public:
         switch (str->m_physical_type)
         {
             case ASR::DescriptorString:{
-                return builder->CreateLoad(
-                    character_type,
-                    llvm_utils->create_gep2(string_descriptor, tmp, 0));
-            }
+                // CHANGED: Branch based on whether we are loading an array descriptor or scalar string descriptor
+                ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(expr_type(str_expr));
+                if (ASRUtils::is_array(base_type)) {
+                    // Extract data pointer from Array Descriptor
+                    llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(str_expr, base_type, module.get());
+                    return builder->CreateLoad(
+                        arr_type_llvm->getStructElementType(0), 
+                        llvm_utils->create_gep2(arr_type_llvm, tmp, 0));
+                } else {
+                    // Extract data pointer from String Descriptor (scalar)
+                    return builder->CreateLoad(
+                        character_type,
+                        llvm_utils->create_gep2(string_descriptor, tmp, 0));
+                }
+            }s
             case ASR::CChar:{
                 llvm::Value* char_ptr = builder->CreateAlloca(llvm::Type::getInt8Ty(context));
                 return builder->CreateStore(tmp, char_ptr);
