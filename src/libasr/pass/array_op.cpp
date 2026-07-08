@@ -1464,8 +1464,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (!realloc_lhs && !per_assign_realloc) {
             return;
         }
+        bool is_bitcast = ASR::is_a<ASR::BitCast_t>(*underlying_value);
         if( (!ASRUtils::is_allocatable(underlying_target_type) || vars.size() == 1) &&
-            !(array_copy && ASRUtils::is_allocatable(underlying_target_type)) ) {
+            !(array_copy && ASRUtils::is_allocatable(underlying_target_type)) &&
+            !(is_bitcast && ASRUtils::is_allocatable(underlying_target_type)) ) {
             return ;
         }
 
@@ -1988,16 +1990,19 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
-        if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 
-            ASRUtils::is_array(ASRUtils::expr_type(ASRUtils::get_past_array_broadcast(xx.m_value)))
-        ) {
-            return ;
-        }
-
         if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
             bool per_assign_realloc = xx.m_realloc_lhs ||
                 should_auto_realloc_component_assignment(xx.m_target);
             insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc);
+        }
+
+        if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 
+            ASRUtils::is_array(ASRUtils::expr_type(ASRUtils::get_past_array_broadcast(xx.m_value)))
+        ) {
+            if (pass_result.size() > 0) {
+                pass_result.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+            }
+            return ;
         }
 
         if (bounds_checking && 

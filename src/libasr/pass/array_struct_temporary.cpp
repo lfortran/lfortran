@@ -660,7 +660,9 @@ bool set_allocation_size(
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Product):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxVal):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal):
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
@@ -1575,6 +1577,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        ASR::expr_t* lhs_array_var = nullptr;
+        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
+            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
+        }
+        lhs_var = lhs_array_var;
+        visit_expr(*xx.m_value);
         // Handle case where LHS is StructInstanceMember over an array
         // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
         if (ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) {
@@ -1673,11 +1681,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
-        ASR::expr_t* lhs_array_var = nullptr;
-        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
-            lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
-        }
-        lhs_var = lhs_array_var;
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
         lhs_var = nullptr;
     }

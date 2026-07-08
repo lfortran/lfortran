@@ -336,7 +336,7 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             down_cast<decl_attribute_t>(attr), \
             nullptr, None)
 
-#define ATTR_NAME(x, l) make_AttrNamelist_t \
+#define ATTR_NAME(x, l) make_AttrName_t \
             (p.m_a, l, name2char(x))
 
 #define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
@@ -394,23 +394,13 @@ decl_attribute_t** VAR_DECL2b(Allocator &al,
     return a;
 }
 
-decl_attribute_t** VAR_DECL_NAMELISTb(Allocator &al,
-        Location &loc,
-            char *name) {
+decl_attribute_t** VAR_DECL_NAMELISTb(Allocator &al, Location &loc,
+        namelist_group_t* groups, size_t n_groups) {
     Vec<decl_attribute_t*> v;
     v.reserve(al, 1);
-    ast_t* a = make_AttrNamelist_t(al, loc, name);
+    ast_t* a = make_AttrNamelist_t(al, loc, groups, n_groups);
     v.push_back(al, down_cast<decl_attribute_t>(a));
     return v.p;
-}
-
-var_sym_t* VAR_DECL_NAMELISTc(Allocator &al,
-            Vec<ast_t*> id_list) {
-    var_sym_t* a = al.allocate<var_sym_t>(id_list.size());
-    for (size_t i=0; i<id_list.size(); i++) {
-        a[i].m_name = name2char(id_list[i]);
-    }
-    return a;
 }
 
 decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
@@ -435,11 +425,11 @@ decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
         VAR_DECL2b(p.m_a, xattr0), 1, \
         varsym.p, varsym.n, trivia_cast(trivia))
 
-#define VAR_DECL_NAMELIST(id, id_list, trivia, l) \
+#define VAR_DECL_NAMELIST(groups, trivia, l) \
         make_Declaration_t(p.m_a, l, \
         nullptr, \
-        VAR_DECL_NAMELISTb(p.m_a, l, name2char(id)), 1, \
-        VAR_DECL_NAMELISTc(p.m_a, id_list), id_list.n, \
+        VAR_DECL_NAMELISTb(p.m_a, l, groups.p, groups.n), 1, \
+        nullptr, 0, \
         trivia_cast(trivia))
 
 #define VAR_DECL_PARAMETER(varsym, trivia, l) \
@@ -497,6 +487,36 @@ static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
 		       nullptr, \
 		       COMMON(p.m_a, l, blks.p, blks.n), 1, nullptr, 0, trivia_cast(trivia))
 
+static inline namelist_group_t *make_namelist_group(Allocator &al,
+        Location const &loc, char *name, Vec<var_sym_t> const &objects) {
+    namelist_group_t *r = al.allocate<namelist_group_t>(1);
+    r->loc = loc;
+    r->m_name = name;
+    r->m_objects = objects.p;
+    r->n_objects = objects.n;
+    return r;
+}
+
+#define NAMELIST_GROUP_1(out, name, object) \
+    LIST_NEW(out); \
+    Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+    LIST_NEW(v); PLIST_ADD(v, object); \
+    PLIST_ADD(out, make_namelist_group(p.m_a, name->loc, name->m_name, v));
+
+#define NAMELIST_GROUP_2(out, groups, object) \
+    out = groups; \
+    LCompilers::LFortran::AST::namelist_group_t last = out.back(); \
+    Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+    v.from_pointer_n(last.m_objects, last.n_objects); \
+    PLIST_ADD(v, object); \
+    out.back().m_objects = v.data(); \
+    out.back().n_objects = v.size();
+
+#define NAMELIST_GROUP_3(out, groups, name, object) \
+    out = groups; \
+    Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+    LIST_NEW(v); PLIST_ADD(v, object); \
+    PLIST_ADD(out, make_namelist_group(p.m_a, name->loc, name->m_name, v));
 
 static inline common_block_t *make_common_block(Allocator &al, Location const &loc,
         ast_t const *name, Vec<var_sym_t> const & varsym) {

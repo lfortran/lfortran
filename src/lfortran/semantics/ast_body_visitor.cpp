@@ -1380,7 +1380,17 @@ public:
             if (!stmt) return;
             int64_t label = stmt_label(stmt);
             if (label != 0) {
-                labels.insert(std::to_string(label));
+                std::string label_name = std::to_string(label);
+                if (!labels.insert(label_name).second) {
+                    diag.add(Diagnostic(
+                        "duplicate statement label " + label_name,
+                        Level::Error, Stage::Semantic, {
+                            Label("", {stmt->base.loc})
+                        }));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                }
             }
 
             switch (stmt->type) {
@@ -1393,6 +1403,9 @@ public:
                 case AST::stmtType::DoLoop: {
                     AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    if (s->m_do_label != 0) {
+                        labels.insert(std::to_string(s->m_do_label));
+                    }
                     break;
                 }
                 case AST::stmtType::Where: {
@@ -1546,6 +1559,15 @@ public:
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
+        // Handle the abbreviated READ fmt [, iolist] form where m_format holds
+        // the format specifier string (e.g. read "(I2)", x ). This is distinct
+        // from the parenthesized form and from args. We set a_fmt directly.
+        if (_type == AST::stmtType::Read && r != nullptr && r->m_format != nullptr) {
+            this->visit_expr(*r->m_format);
+            a_fmt = ASRUtils::EXPR(tmp);
+            formatted = true;
+        }
+
         // check if format as a keyword arg
         for (size_t i = 0; i < n_kwargs; i++) {
             std::string kwarg_name = to_lower(std::string(m_kwargs[i].m_arg));
@@ -1595,6 +1617,18 @@ public:
                 this->visit_expr(*m_args[i].m_value);
                 *args[i] = ASRUtils::EXPR(tmp);
             }
+        }
+        // When a READ has a single positional arg that is a string constant,
+        // it is the `READ fmt [, iolist]` form — the string is the format
+        // specifier, not the unit. Move it to a_fmt and leave a_unit as
+        // nullptr (the LLVM backend treats nullptr unit as stdin).
+        if (_type == AST::stmtType::Read
+                && n_args == 1
+                && a_unit != nullptr && a_fmt == nullptr
+                && ASR::is_a<ASR::StringConstant_t>(*a_unit)) {
+            a_fmt = a_unit;
+            a_unit = nullptr;
+            formatted = true;
         }
         bool unit_explicit = false;
         bool iostat_explicit = false;
@@ -4089,6 +4123,24 @@ public:
         }
         visit_expr(*x.m_selector);
         ASR::expr_t* m_selector = ASRUtils::EXPR(tmp);
+        // The selector of `select type` must be polymorphic (i.e. of type
+        // `class(derived)` or `class(*)`). A non-polymorphic selector (e.g. a
+        // plain integer) used to segfault later when matching a `type is`
+        // branch; reject it up front, matching gfortran's "Selector shall be
+        // polymorphic in SELECT TYPE statement".
+        {
+            ASR::ttype_t* selector_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(m_selector));
+            if (!ASRUtils::is_class_type(selector_type)
+                    && !ASRUtils::is_unlimited_polymorphic_type(selector_type)) {
+                diag.add(Diagnostic(
+                    "Selector shall be polymorphic in SELECT TYPE statement",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.m_selector->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         // When the selector is a function call, create a temporary variable
         // to hold the result. The codegen expects Var or StructInstanceMember
         // as the selector, not a FunctionCall.
@@ -5881,6 +5933,21 @@ public:
     }
 
     void create_statement_function(const AST::Assignment_t &x) {
+        std::string var_name = to_lower(AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func);
+        if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner)
+                    && var_name == to_lower(ASRUtils::symbol_name(owner))) {
+                diag.add(Diagnostic(
+                    "Statement function '" + var_name
+                        + "' conflicts with function name",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
+
         current_function_dependencies.clear(al);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -5890,7 +5957,6 @@ public:
         }
 
         //create a new function, and add it to the symbol table
-        std::string var_name = to_lower(AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_func);
         auto v = AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
 
         Vec<ASR::expr_t*> args;
@@ -6403,7 +6469,8 @@ public:
             target->type == ASR::exprType::StructInstanceMember ||
             target->type == ASR::exprType::UnionInstanceMember ||
             target->type == ASR::exprType::ComplexRe ||
-            target->type == ASR::exprType::ComplexIm
+            target->type == ASR::exprType::ComplexIm ||
+            target->type == ASR::exprType::CoarrayRef
         );
 
         is_valid_lhs = is_valid_lhs || (target->type == ASR::exprType::Cast &&
@@ -6448,7 +6515,8 @@ public:
                 target->type == ASR::exprType::StructInstanceMember ||
                 target->type == ASR::exprType::UnionInstanceMember ||
                 (target->type == ASR::exprType::Cast &&
-                 ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic)
+                 ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic) ||
+                target->type == ASR::exprType::CoarrayRef
             );
             if (lhs_supports_implicit_cast &&
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
@@ -6858,6 +6926,10 @@ public:
                     ASRUtils::create_intrinsic_subroutine create_func =
                         ASRUtils::IntrinsicImpureSubroutineRegistry::get_create_subroutine(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);
+                    if (tmp == nullptr) {
+                        // create_func has already reported a diagnostic; abort this
+                        throw SemanticAbort();
+                    }
                     return tmp;
                 }
             }
@@ -7922,7 +7994,8 @@ public:
                                 create_or_update_implicit_interface(
                                     proc_var, x.base.base.loc,
                                     arg_types.p, arg_types.size(),
-                                    nullptr, parent_scope, sub_name);
+                                    nullptr, parent_scope, sub_name,
+                                    current_scope);
                             }
                         }
                     }
@@ -8061,39 +8134,25 @@ public:
                                     // If parameter has no arg info but passed function does,
                                     // create/update the parameter's interface using the passed function's type info.
                                     if (param_ft->n_arg_types == 0 && passed_ft->n_arg_types > 0) {
-                                        if (v->m_type_declaration) {
-                                            // Interface exists, update it
-                                            ASR::symbol_t* iface_sym = ASRUtils::symbol_get_past_external(
-                                                v->m_type_declaration);
-                                            if (ASR::is_a<ASR::Function_t>(*iface_sym)) {
-                                                ASR::Function_t* iface_func = ASR::down_cast<ASR::Function_t>(iface_sym);
-                                                ASR::FunctionType_t* iface_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                                    iface_func->m_function_signature);
-                                                iface_ft->m_arg_types = passed_ft->m_arg_types;
-                                                iface_ft->n_arg_types = passed_ft->n_arg_types;
-                                                ASR::ttype_t* new_type = iface_func->m_function_signature;
-                                                if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
-                                                    new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
-                                                }
-                                                v->m_type = new_type;
-                                                ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                                    f->m_function_signature);
-                                                callee_ft->m_arg_types[i + offset] = v->m_type;
-                                            }
-                                        } else {
-                                            // No interface yet, create one with the passed function's type info.
+                                        {
+                                            // Use create_or_update_implicit_interface to properly
+                                            // create/update the interface with matching args and arg_types.
+                                            // This handles both "interface exists" and "no interface" cases.
+                                            // For existing interfaces, it shares the source arg_types array
+                                            // directly for cross-scope type propagation (see #11924).
                                             SymbolTable* callee_scope = f->m_symtab;
-                                            SymbolTable* parent_scope = callee_scope->parent ? callee_scope->parent : callee_scope;
+                                            SymbolTable* iface_parent = callee_scope->parent ? callee_scope->parent : callee_scope;
                                             std::string var_name = v->m_name;
-                                            ASR::ttype_t* return_type = param_ft->m_return_var_type;
+                                            ASR::ttype_t* return_type = passed_ft->m_return_var_type;
                                             ASR::ttype_t* iface_type = create_or_update_implicit_interface(
                                                 v, passed_arg->base.loc,
                                                 passed_ft->m_arg_types, passed_ft->n_arg_types,
-                                                return_type, parent_scope, var_name);
+                                                return_type, iface_parent, var_name);
                                             // Update the callee function's signature
                                             ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
                                                 f->m_function_signature);
-                                            callee_ft->m_arg_types[i + offset] = iface_type;
+                                            callee_ft->m_arg_types[i + offset] = v->m_type;
+                                            (void)iface_type;
                                         }
                                     } else if (passed_ft->n_arg_types == 0 && param_ft->n_arg_types > 0) {
                                         // Reverse propagation: parameter has type info (from being called
@@ -8412,6 +8471,16 @@ public:
         body.reserve(al, x.n_values);
         ASR::expr_t *fmt=nullptr;
         if (x.m_fmt != nullptr) {
+            if (AST::is_a<AST::Name_t>(*x.m_fmt) && x.n_values == 0) {
+                AST::Name_t *name = AST::down_cast<AST::Name_t>(x.m_fmt);
+                ASR::symbol_t *sym = current_scope->resolve_symbol(name->m_id);
+                if (sym && ASR::is_a<ASR::Namelist_t>(*ASRUtils::symbol_get_past_external(sym))) {
+                    tmp = ASR::make_FileWrite_t(al, x.base.base.loc, x.m_label,
+                        nullptr, nullptr, nullptr, nullptr, nullptr, 0,
+                        nullptr, nullptr, nullptr, false, sym, nullptr, nullptr, nullptr);
+                    return;
+                }
+            }
             this->visit_expr(*x.m_fmt);
             fmt = ASRUtils::EXPR(tmp);
             //check if fmt is integer variable
@@ -8909,19 +8978,26 @@ public:
                 current_type = h.m_type;
             }
             if (current_type) {
-                AST::decl_attribute_t *decl_type = current_type;
-                Vec<ASR::dimension_t> dims;
-                dims.reserve(al, 1);
-                ASR::symbol_t *type_declaration;
-                ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, decl_type, false, false,
-                                                    dims, nullptr, type_declaration, ASR::abiType::Source);
-                ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, var_name),
-                        nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                        type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false,
-                        false, false, nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
-                current_scope->add_symbol(var_name, var_sym);
-                var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));                                    
+                // A type-spec (e.g. `do concurrent (integer :: j = ...)`)
+                // declares the index variable. If a variable of the same name
+                // already exists in the current scope, reuse it instead of
+                // adding a duplicate symbol.
+                ASR::symbol_t *var_sym = current_scope->get_symbol(var_name);
+                if (var_sym == nullptr) {
+                    AST::decl_attribute_t *decl_type = current_type;
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::symbol_t *type_declaration;
+                    ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, decl_type, false, false,
+                                                        dims, nullptr, type_declaration, ASR::abiType::Source);
+                    var_sym = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, var_name),
+                            nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                            type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false,
+                            false, false, nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
+                    current_scope->add_symbol(var_name, var_sym);
+                }
+                var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
             } else {
                 var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, var_name));
             }
@@ -9078,14 +9154,6 @@ public:
 
     void visit_ForAll(const AST::ForAll_t &x) {
         all_loops_blocks_nesting += 1;
-        if (x.n_body != 1) {
-            diag.add(Diagnostic(
-                "Forall block: one body statement is supported for now",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-            }));
-            throw SemanticAbort();
-        }
         for (size_t i = 0; i < x.n_control; i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             if (!h.m_var) {
@@ -9113,10 +9181,10 @@ public:
                 throw SemanticAbort();
             }
         }
-        
-        this->visit_stmt(*x.m_body[0]);
-        ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
-        for (int i = x.n_control - 1; i >= 0; i--) {
+
+        Vec<ASR::do_loop_head_t> heads;
+        heads.reserve(al, x.n_control);
+        for (size_t i = 0; i < x.n_control; i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             ASR::expr_t *var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(h.m_var)));
             visit_expr(*h.m_start);
@@ -9136,8 +9204,22 @@ public:
             head.m_end = end;
             head.m_increment = increment;
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, stmt);
-            stmt = ASRUtils::STMT(tmp);
+            heads.push_back(al, head);
+        }
+
+        if (x.n_body == 1) {
+            this->visit_stmt(*x.m_body[0]);
+            ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
+            for (int i = heads.size() - 1; i >= 0; i--) {
+                tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
+                stmt = ASRUtils::STMT(tmp);
+            }
+        } else {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, x.n_body);
+            transform_stmts(body, x.n_body, x.m_body);
+            tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
+                nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
         }
         all_loops_blocks_nesting -= 1;
     }
@@ -9167,6 +9249,16 @@ public:
         if (x.m_goto_label) {
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
                 int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
+                if (labels.find(std::to_string(goto_label)) == labels.end()) {
+                    diag.add(Diagnostic(
+                        "Label " + std::to_string(goto_label) + " is not defined",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                }
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label,
                         s2c(al, std::to_string(goto_label)));
             } else {
@@ -9310,62 +9402,69 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
-    void visit_SyncAll(const AST::SyncAll_t &x) {
-        ASR::expr_t *stat = nullptr;
-        ASR::expr_t *errmsg = nullptr;
-        for (size_t i = 0; i < x.n_stat; i++) {
-            AST::event_attribute_t *attr = x.m_stat[i];
+    void resolve_sync_stat_errmsg(AST::event_attribute_t **attrs, size_t n_attrs, const Location &loc, 
+        const std::string &stmt_name, ASR::expr_t *&stat, ASR::expr_t *&errmsg)
+    {
+        stat = nullptr;
+        errmsg = nullptr;
+        for (size_t i = 0; i < n_attrs; i++) {
+            AST::event_attribute_t *attr = attrs[i];
             if (AST::is_a<AST::AttrStat_t>(*attr)) {
                 auto *s = AST::down_cast<AST::AttrStat_t>(attr);
-                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
-                    to_lower(s->m_variable)));
+                stat = ASRUtils::EXPR(resolve_variable(
+                    loc, to_lower(s->m_variable)));
                 ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
                 if (ASRUtils::is_array(stat_type)) {
                     diag.add(Diagnostic(
-                        "`stat` argument of `sync all` must be scalar",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`stat` argument of `" + stmt_name + "` must be scalar",
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
                 if (!ASRUtils::is_integer(*stat_type)) {
                     diag.add(Diagnostic(
-                        "`stat` argument of `sync all` must be of type integer, found "
-                        + ASRUtils::type_to_str_fortran_expr(stat_type, stat),
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`stat` argument of `" + stmt_name +
+                        "` must be of type integer, found " +
+                        ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
             } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
                 auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
-                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc,
-                    to_lower(e->m_variable)));
+                errmsg = ASRUtils::EXPR(resolve_variable(loc, to_lower(e->m_variable)));
                 ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
                 if (ASRUtils::is_array(errmsg_type)) {
                     diag.add(Diagnostic(
-                        "`errmsg` argument of `sync all` must be scalar",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`errmsg` argument of `" + stmt_name + "` must be scalar",
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
                 if (!ASRUtils::is_character(*errmsg_type)) {
                     diag.add(Diagnostic(
-                        "`errmsg` argument of `sync all` must be of type character, found "
-                        + ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
+                        "`errmsg` argument of `" + stmt_name +
+                        "` must be of type character, found " +
+                        ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
                     throw SemanticAbort();
                 }
             }
         }
+    }
+    void visit_SyncAll(const AST::SyncAll_t &x) {
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        resolve_sync_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync all", stat, errmsg);
         tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
     }
 
     void visit_SyncMemory(const AST::SyncMemory_t &x) {
-        tmp = ASR::make_SyncMemory_t(al, x.base.base.loc);
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        resolve_sync_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync memory", stat, errmsg);
+        tmp = ASR::make_SyncMemory_t(al, x.base.base.loc, stat, errmsg);
     }
 
     void visit_Nullify(const AST::Nullify_t &x) {
@@ -9986,6 +10085,31 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                     }
                 }
             }
+        }
+    }
+    if (compiler_options.implicit_interface) {
+        // Sync the types of the m_args Variables with the FunctionType's arg_types.
+        // This is necessary because some functions share the m_arg_types array,
+        // and if it was updated in-place by another function, the m_args
+        // variables might have stale m_type pointers.
+        auto sync_func = [&](ASR::Function_t* func) {
+            ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+            if (ft->m_abi == ASR::abiType::Source || ft->m_abi == ASR::abiType::BindC) {
+                if (ft->n_arg_types == func->n_args) {
+                    for (size_t i = 0; i < func->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+                            if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                                ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                                arg_var->m_type = ft->m_arg_types[i];
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        for (ASR::Function_t* func : b.implicit_interfaces_to_sync) {
+            sync_func(func);
         }
     }
 

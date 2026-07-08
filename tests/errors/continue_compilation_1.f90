@@ -66,14 +66,14 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
-
 contains
 
+    integer function statement_function_name_conflict()
+        statement_function_name_conflict(argument) = 0
+    contains
+        integer function argument()
+        end function
+    end function
     subroutine my_undefined_type_test()
         implicit none
         type(another_undefined_type) :: s3_in_subroutine
@@ -305,7 +305,7 @@ program continue_compilation_1
         integer, len :: n
         real :: data(n)
     end type
-
+    type(MyClass) :: eoshift_derived_array(1), eoshift_derived_result(1)
 
 
 
@@ -639,7 +639,7 @@ program continue_compilation_1
     interface undeclared_iface
         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     end interface
-
+    eoshift_derived_result = eoshift(eoshift_derived_array, 1)
     integer, parameter :: n2 = "abc"
     type(MyClass) :: ptr_src_no_target
     type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
@@ -809,5 +809,56 @@ program continue_compilation_1
         type :: holder
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
+    end subroutine
+
+    subroutine merge_kind_mismatch()
+        implicit none
+        integer(kind=8) :: a
+        integer(kind=4) :: b
+        a = 1
+        b = 2
+        print *, merge(a, b, .true.)
+    end subroutine
+
+    subroutine co_max_complex_arg()
+        implicit none
+        complex :: z
+        call co_max(z)
+    end subroutine
+
+    subroutine cosum_invalid_argument_type()
+        implicit none
+        logical :: mask
+        call co_sum(mask)
+    end subroutine
+
+    subroutine duplicate_statement_label()
+1000    continue
+1000    continue
+    end subroutine
+
+    subroutine select_type_nonpolymorphic()
+        implicit none
+        integer :: a
+        select type (a)
+        type is (integer)
+            print *, a
+        end select
+    end subroutine
+    subroutine character_kind_mismatch()
+        implicit none
+        character(kind=1) :: c1
+        character(kind=4) :: c4
+        print *, min(c1, c4)
+    end subroutine
+
+    subroutine sub_undefined_goto_label()
+        implicit none
+        goto 20  ! {Error} Label 20 is not defined
+    end subroutine
+
+    subroutine length_specifier_non_character()
+        implicit none
+        integer :: i*2
     end subroutine
 end program
