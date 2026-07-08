@@ -9022,7 +9022,9 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        do_concurrent_nesting_level++;
         transform_stmts(body, x.n_body, x.m_body);
+        do_concurrent_nesting_level--;
         Vec<ASR::reduction_expr_t> reductions; reductions.reserve(al, 1);
         Vec<ASR::expr_t*> shared_expr; shared_expr.reserve(al, 1);
         Vec<ASR::expr_t*> local_expr; local_expr.reserve(al, 1);

@@ -1749,3 +1749,15 @@ semantic error: Label 20 is not defined
     |
 857 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
+
+warning: `rand` is an LFortran extension
+   --> tests/errors/continue_compilation_1.f90:870:21
+    |
+870 |                 x = rand()
+    |                     ^^^^^^ Use `random_number` instead
+
+semantic error: Call to impure intrinsic function 'rand' is not allowed inside a DO CONCURRENT block
+   --> tests/errors/continue_compilation_1.f90:870:21
+    |
+870 |                 x = rand()
+    |                     ^^^^^^ 

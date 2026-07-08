@@ -2228,6 +2228,7 @@ public:
 
     // implied do loop nesting
     int idl_nesting_level = 0;
+    int do_concurrent_nesting_level = 0;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
 
     struct PendingProcPtrInit {
@@ -15708,6 +15709,13 @@ public:
                         tmp = (ASR::asr_t*) result_array;
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
+                    }
+                    if (var_name == "rand" && do_concurrent_nesting_level > 0) {
+                        diag.add(Diagnostic("Call to impure intrinsic function 'rand' is not allowed inside a DO CONCURRENT block",
+                                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                        if (!compiler_options.continue_compilation) {
+                            throw SemanticAbort();
+                        }
                     }
                     
                     if (tmp != nullptr && is_specific_type_intrinsic) {
