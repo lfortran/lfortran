@@ -4499,11 +4499,11 @@ public:
                     ASR::ttype_t* view_type = nullptr;
                     // Whether the selector is an array — determines which path we use
                     bool is_selector_array = false;
+                    ASR::symbol_t *type_declaration = nullptr;
                     if( assoc_variable ) {
                         Vec<ASR::dimension_t> m_dims;
                         m_dims.reserve(al, 1);
                         std::string assoc_variable_name = std::string(assoc_variable->m_name);
-                        ASR::symbol_t *type_declaration;
                         selector_type = determine_type(type_stmt_type->base.base.loc,
                                                        assoc_variable_name,
                                                        type_stmt_type->m_vartype, false, false, m_dims,
@@ -4517,6 +4517,87 @@ public:
                                 str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
                             }
                         }
+                    }
+
+                    // type is (derived) / type is (pdt(kind)): treat like TypeStmtName
+                    // (ClassToStruct) so members are accessible on the associate name.
+                    ASR::symbol_t* struct_sym = type_declaration
+                        ? ASRUtils::symbol_get_past_external(type_declaration) : nullptr;
+                    if (struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                        ASR::symbol_t* sym = type_declaration;
+                        if (assoc_variable) {
+                            ASR::ttype_t* stype = ASRUtils::make_StructType_t_util(
+                                al, sym->base.loc, sym, true);
+                            if (selector_variable_type && ASRUtils::is_array(selector_variable_type)) {
+                                stype = make_typed_selector_view_type(
+                                    type_stmt_type->base.base.loc,
+                                    ASRUtils::type_get_past_allocatable(selector_variable_type),
+                                    stype);
+                            } else if (!selector_variable_type
+                                    || ASRUtils::is_pointer(selector_variable_type)
+                                    || assoc_sym) {
+                                stype = ASRUtils::make_Pointer_t_util(
+                                    al, sym->base.loc, ASRUtils::extract_type(stype));
+                            }
+                            SetChar assoc_deps;
+                            assoc_deps.reserve(al, 1);
+                            ASRUtils::collect_variable_dependencies(al, assoc_deps, stype,
+                                nullptr, nullptr, ASRUtils::symbol_name(struct_sym));
+                            assoc_variable->m_dependencies = assoc_deps.p;
+                            assoc_variable->n_dependencies = assoc_deps.size();
+                            assoc_variable->m_type = stype;
+                            assoc_variable->m_type_declaration = sym;
+                        }
+                        Vec<ASR::stmt_t*> type_stmt_name_body;
+                        type_stmt_name_body.reserve(al, type_stmt_type->n_body);
+                        ASR::expr_t* dest_expr_tsn = assoc_sym
+                            ? ASRUtils::EXPR(ASR::make_Var_t(al, type_stmt_type->base.base.loc, assoc_sym))
+                            : m_selector;
+                        ASR::expr_t* casted_selector_tsn = m_selector;
+                        if (!ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
+                            casted_selector_tsn = ASRUtils::EXPR(ASR::make_Cast_t(al,
+                                type_stmt_type->base.base.loc, m_selector,
+                                ASR::cast_kindType::ClassToStruct,
+                                assoc_variable->m_type, nullptr, dest_expr_tsn));
+                        }
+                        if (assoc_sym) {
+                            type_stmt_name_body.push_back(al, ASRUtils::STMT(
+                                ASRUtils::make_Associate_t_util(al, type_stmt_type->base.base.loc,
+                                    dest_expr_tsn, casted_selector_tsn)));
+                        }
+                        std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                        ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                            al, type_stmt_type->base.base.loc,
+                            current_scope, s2c(al, block_name), nullptr, 0));
+                        ASR::symbol_t* selector_sym_for_map_tsn = nullptr;
+                        if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector) &&
+                                !ASRUtils::is_unlimited_polymorphic_type(m_selector)) {
+                            selector_sym_for_map_tsn = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+                            select_type_casts_map[selector_sym_for_map_tsn] = {
+                                ASR::cast_kindType::ClassToStruct, assoc_variable->m_type, sym};
+                        }
+                        transform_stmts(type_stmt_name_body, type_stmt_type->n_body,
+                            type_stmt_type->m_body);
+                        if (selector_sym_for_map_tsn) {
+                            select_type_casts_map.erase(selector_sym_for_map_tsn);
+                        }
+                        ASR::Block_t* block_t_ = ASR::down_cast<ASR::Block_t>(block_sym);
+                        block_t_->m_body = type_stmt_name_body.p;
+                        block_t_->n_body = type_stmt_name_body.size();
+                        parent_scope->add_symbol(block_name, block_sym);
+                        Vec<ASR::stmt_t*> block_call_stmt;
+                        block_call_stmt.reserve(al, 1);
+                        block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
+                            al, type_stmt_type->base.base.loc, -1, block_sym)));
+                        // Prefer TypeStmtName so the branch carries the concrete Struct symbol
+                        // (used by runtime type matching for monomorphized PDTs).
+                        select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(
+                            ASR::make_TypeStmtName_t(al, type_stmt_type->base.base.loc, sym,
+                                block_call_stmt.p, block_call_stmt.size())));
+                        break;
+                    }
+
+                    if( assoc_variable ) {
                         selector_ttype = selector_variable ? selector_variable->m_type : nullptr;
                         if (selector_ttype) {
                             view_type = make_typed_selector_view_type(
@@ -4567,6 +4648,7 @@ public:
                         // Dependencies are still computed from the guard type.
                         SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
+                        std::string assoc_variable_name = std::string(assoc_variable->m_name);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, view_type, nullptr, nullptr, assoc_variable_name);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
