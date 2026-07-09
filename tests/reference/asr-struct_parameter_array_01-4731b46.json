@@ -1,0 +1,13 @@
+{
+    "basename": "asr-struct_parameter_array_01-4731b46",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/struct_parameter_array_01.f90",
+    "infile_hash": "ac01cce47959db3d543a47ff0fe6be52f4243dcb3af3d72a7fc89f97",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-struct_parameter_array_01-4731b46.stdout",
+    "stdout_hash": "ab7ac81351d13a33c13c5d9fcf167eff818437c3d3f5a28602735b68",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
