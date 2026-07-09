@@ -2065,7 +2065,6 @@ RUN(NAME select_type_49 LABELS gfortran llvm)
 RUN(NAME select_type_50 LABELS gfortran llvm)
 RUN(NAME select_type_51 LABELS gfortran llvm)
 RUN(NAME select_type_52 LABELS gfortran llvm)
-# type is (pdt(kind)) — not supported by gfortran
 RUN(NAME select_type_53 LABELS llvm)
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
