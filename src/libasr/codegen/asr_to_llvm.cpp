@@ -17722,8 +17722,26 @@ public:
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
                     str_offset);
-                std::tie(str_src_data, str_src_len) = llvm_utils->get_string_length_data(
-                    ASRUtils::get_string_type(x.m_unit), unit_val);
+                if (ASRUtils::is_array(expr_type(x.m_unit)) && !ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
+                    ASR::ttype_t* unit_type = expr_type(x.m_unit);
+                    llvm::Value* arr_desc = unit_val;
+                    if (ASR::is_a<ASR::Allocatable_t>(*unit_type) || ASR::is_a<ASR::Pointer_t>(*unit_type)) {
+                        llvm::Type* desc_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_unit, ASRUtils::type_get_past_allocatable_pointer(unit_type),
+                            module.get())->getPointerTo();
+                        arr_desc = llvm_utils->CreateLoad2(desc_ptr_type, unit_val);
+                    }
+                    str_src_data = llvm_utils->get_stringArray_data(unit_type, arr_desc);
+                    llvm::Value* elem_len = llvm_utils->get_stringArray_length(unit_type, arr_desc);
+                    ASR::ttype_t* past_unit = ASRUtils::type_get_past_allocatable_pointer(unit_type);
+                    llvm::Type* llvm_unit_type = llvm_utils->get_type_from_ttype_t_util(x.m_unit, past_unit, module.get());
+                    llvm::Value* arr_size = llvm_utils->get_array_size(arr_desc, llvm_unit_type, past_unit, this);
+                    arr_size = builder->CreateIntCast(arr_size, llvm::Type::getInt64Ty(context), true);
+                    str_src_len = builder->CreateMul(elem_len, arr_size);
+                } else {
+                    std::tie(str_src_data, str_src_len) = llvm_utils->get_string_length_data(
+                        ASRUtils::get_string_type(x.m_unit), unit_val);
+                }
             }
             for (size_t i=0; i<x.n_values; i++) {
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
@@ -20318,8 +20336,28 @@ public:
                 std::tie(unit, string_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(x.m_unit), str_desc, true, true);
             } else {
-                std::tie(unit, string_len) = llvm_utils->get_string_length_data(
-                    ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+                if (ASRUtils::is_array(ASRUtils::expr_type(x.m_unit)) && !ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
+                    ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
+                    llvm::Value* arr_desc = tmp;
+                    if (ASR::is_a<ASR::Allocatable_t>(*unit_type) || ASR::is_a<ASR::Pointer_t>(*unit_type)) {
+                        llvm::Type* desc_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_unit, ASRUtils::type_get_past_allocatable_pointer(unit_type),
+                            module.get())->getPointerTo();
+                        arr_desc = llvm_utils->CreateLoad2(desc_ptr_type, tmp);
+                    }
+                    unit = llvm_utils->get_stringArray_data(unit_type, arr_desc, true);
+                    llvm::Value* elem_len = llvm_utils->get_stringArray_length(unit_type, arr_desc);
+                    ASR::ttype_t* past_unit = ASRUtils::type_get_past_allocatable_pointer(unit_type);
+                    llvm::Type* llvm_unit_type = llvm_utils->get_type_from_ttype_t_util(x.m_unit, past_unit, module.get());
+                    llvm::Value* arr_size = llvm_utils->get_array_size(arr_desc, llvm_unit_type, past_unit, this);
+                    arr_size = builder->CreateIntCast(arr_size, llvm::Type::getInt64Ty(context), true);
+                    llvm::Value* total_len_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
+                    builder->CreateStore(elem_len, total_len_ptr);
+                    string_len = total_len_ptr;
+                } else {
+                    std::tie(unit, string_len) = llvm_utils->get_string_length_data(
+                        ASRUtils::get_string_type(x.m_unit), tmp, true, true);
+                }
             }
             if (is_string_array_unit) {
                 if (ASR::is_a<ASR::ArraySection_t>(*x.m_unit)) {
