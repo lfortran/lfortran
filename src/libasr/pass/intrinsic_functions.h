@@ -6467,22 +6467,9 @@ namespace Rrspacing {
 
 namespace Repeat {
 
-    static inline ASR::ttype_t* character_type_with_kind(Allocator &al,
-            const Location &loc, int kind, ASR::expr_t *len,
-            ASR::string_length_kindType len_kind) {
-        return ASRUtils::TYPE(ASR::make_String_t(al, loc, kind, len,
-            len_kind, ASR::string_physical_typeType::DescriptorString));
-    }
-
-    static inline ASR::ttype_t* allocatable_deferred_string_with_kind(
-            Allocator &al, const Location &loc, int kind) {
-        return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-            character_type_with_kind(al, loc, kind, nullptr,
-                ASR::string_length_kindType::DeferredLength)));
-    }
-
     static ASR::expr_t *eval_Repeat(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASRUtils::ASRBuilder b(al, loc);
         char* str = ASR::down_cast<ASR::StringConstant_t>(expr_value(args[0]))->m_s;
         int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(expr_value(args[1]))->m_n;
         size_t len = std::strlen(str);
@@ -6493,10 +6480,11 @@ namespace Repeat {
         }
         result[new_len] = '\0';
         int char_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-        ASR::ttype_t *return_type = character_type_with_kind(al, loc, char_kind,
+        ASR::ttype_t *return_type = b.String(
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, new_len,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-            ASR::string_length_kindType::ExpressionLength);
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString, char_kind);
         return make_ConstantWithType(make_StringConstant_t, result, return_type, loc);
     }
 
@@ -6511,12 +6499,12 @@ namespace Repeat {
             return b.Call(s, new_args, return_type, nullptr);
         }
         int char_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
-        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind, nullptr, 
-            ASR::string_length_kindType::AssumedLength,
-            ASR::string_physical_typeType::DescriptorString)));
+        fill_func_arg("x", b.String(nullptr, ASR::string_length_kindType::AssumedLength,
+            ASR::string_physical_typeType::DescriptorString, char_kind));
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name,
-            allocatable_deferred_string_with_kind(al, loc, char_kind), ReturnVar);
+            b.allocatable(b.String(nullptr, ASR::string_length_kindType::DeferredLength,
+                ASR::string_physical_typeType::DescriptorString, char_kind)), ReturnVar);
         auto i = declare("i", int32, Local);
         auto j = declare("j", int32, Local);
         auto m = declare("m", int32, Local);
@@ -6593,8 +6581,11 @@ namespace Repeat {
             if (diag.has_error()) return nullptr;
             return_type = expr_type(m_value);
         } else {
-            return_type = allocatable_deferred_string_with_kind(al, loc,
-                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])));
+            ASRUtils::ASRBuilder b(al, loc);
+            int char_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+            return_type = b.allocatable(b.String(nullptr,
+                ASR::string_length_kindType::DeferredLength,
+                ASR::string_physical_typeType::DescriptorString, char_kind));
         }
         
         for( size_t i = 0; i < 2; i++ ) {
