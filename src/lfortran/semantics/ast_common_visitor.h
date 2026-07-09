@@ -10112,8 +10112,46 @@ public:
     ASR::asr_t* create_DerivedTypeConstructor(const Location &loc,
             AST::fnarg_t* m_args, size_t n_args, AST::keyword_t* kwargs,
             size_t n_kwargs, ASR::symbol_t *v, bool is_const = false) {
+        
+        std::vector<ASR::ttype_t*> member_types;
+        ASR::symbol_t* fn = ASRUtils::symbol_get_past_external(v);
+        if (ASR::is_a<ASR::Struct_t>(*fn)) {
+            std::deque<ASR::ttype_t*> temp_types;
+            ASR::Struct_t* fn_struct_type = ASR::down_cast<ASR::Struct_t>(fn);
+            while( fn_struct_type ) {
+                for( int i = (int) fn_struct_type->n_members - 1; i >= 0; i-- ) {
+                    ASR::symbol_t* mem_sym = fn_struct_type->m_symtab->get_symbol(fn_struct_type->m_members[i]);
+                    temp_types.push_front(ASRUtils::symbol_type(mem_sym));
+                }
+                if( fn_struct_type->m_parent != nullptr ) {
+                    fn_struct_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(fn_struct_type->m_parent));
+                } else {
+                    fn_struct_type = nullptr;
+                }
+            }
+            member_types.assign(temp_types.begin(), temp_types.end());
+        }
+
         Vec<ASR::call_arg_t> vals;
-        visit_expr_list(m_args, n_args, vals);
+        vals.reserve(al, n_args);
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+            if (i < member_types.size()) {
+                current_variable_type_ = member_types[i];
+            }
+            
+            LCOMPILERS_ASSERT(m_args[i].m_end != nullptr);
+            this->visit_expr(*m_args[i].m_end);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            
+            ASR::call_arg_t call_arg;
+            call_arg.loc = expr->base.loc;
+            call_arg.m_value = expr;
+            vals.push_back(al, call_arg);
+            
+            current_variable_type_ = temp_current_variable_type_;
+        }
+
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
 
         // For PDTs with kind parameters, resolve to the instantiated type
@@ -19772,11 +19810,21 @@ public:
         LCOMPILERS_ASSERT(args.size() == constructor_args.size());
 
         for (size_t i = 0; i < n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
                                     constructor_args.end(), name);
+            
+            ASR::ttype_t* temp_current_variable_type = current_variable_type_;
+            if (search != constructor_args.end()) {
+                size_t idx = std::distance(constructor_args.begin(), search);
+                current_variable_type_ = ASRUtils::symbol_type(constructor_arg_syms[idx]);
+            }
+
+            this->visit_expr(*kwargs[i].m_value);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            
+            current_variable_type_ = temp_current_variable_type;
+
             if (search == constructor_args.end()) {
                 diag.semantic_error_label(
                     "Keyword argument not found",
