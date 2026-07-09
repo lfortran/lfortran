@@ -1749,3 +1749,9 @@ semantic error: Label 20 is not defined
     |
 857 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
+
+semantic error: `delim` argument of `inquire` must be a scalar default-character variable
+   --> tests/errors/continue_compilation_1.f90:868:26
+    |
+868 |         inquire(6, delim=trim(del))
+    |                          ^^^^^^^^^ 

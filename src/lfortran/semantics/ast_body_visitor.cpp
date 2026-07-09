@@ -2796,6 +2796,18 @@ public:
         ASR::expr_t *iolength = args[32], *sign=args[33], *encoding=args[34];
         ASR::expr_t *stream = args[35], *iomsg = args[36], *round = args[37];
         ASR::expr_t *pending = args[38], *asynchronous = args[39];
+        if (delim) {
+            ASR::ttype_t *delim_type = ASRUtils::expr_type(delim);
+            if (!ASRUtils::is_variable(delim) || !ASRUtils::is_character(*delim_type) ||
+                    ASRUtils::is_array(delim_type) ||ASRUtils::extract_kind_from_ttype_t(delim_type) != 1) {
+                diag.add(Diagnostic(
+                    "`delim` argument of `inquire` must be a scalar default-character variable",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {delim->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
             if( is_iolength_present && i!=32 && args[i] ) {

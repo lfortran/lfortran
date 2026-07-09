@@ -861,4 +861,10 @@ program continue_compilation_1
         implicit none
         integer :: i*2
     end subroutine
+
+    subroutine inquire_delim_expression()
+        character(20) :: del
+        del = "WHAT"
+        inquire(6, delim=trim(del))
+    end subroutine
 end program
