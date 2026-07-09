@@ -1302,6 +1302,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg = nullptr,
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_critical_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
 
             ASR::expr_t *coarray = ASRUtils::EXPR(ASR::make_Var_t(al, loc, get_local_critical_handle(loc, current_scope)));
