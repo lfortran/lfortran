@@ -1666,10 +1666,10 @@ semantic error: Variable 'nosuch' is not declared
 773 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
 
-semantic error: Actual argument for 'x' cannot be an assumed-size array
+semantic error: actual argument for 'x' cannot be an assumed-size array
    --> tests/errors/continue_compilation_1.f90:777:23
     |
-777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+777 |         call ptr_sink(x)  ! {Error} actual argument for 'x' cannot be an assumed-size array
     |                       ^ 
 
 semantic error: select case expression must be of type integer, character, or logical
@@ -1749,3 +1749,15 @@ semantic error: Label 20 is not defined
     |
 857 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
+
+semantic error: actual argument for 'items' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:868:36
+    |
+868 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    |                                    ^^^^^ 
+
+semantic error: actual argument for 'items' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:877:49
+    |
+877 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    |                                                 ^^^^^ 

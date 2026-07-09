@@ -12356,6 +12356,34 @@ public:
                 ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                 dummy_name = dummy_var->m_name;
                 is_required = dummy_var->m_presence != ASR::presenceType::Optional;
+                if (i < args.size() && args[i].m_value != nullptr) {
+                    ASR::ttype_t* dummy_type = dummy_var->m_type;
+                    ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // An assumed-size actual has no extent for its last
+                    // dimension, so it cannot be associated with a dummy
+                    // that needs the full shape: a pointer/allocatable dummy
+                    // (covers assumed-rank pointer/allocatable, which has no
+                    // dimensions) or an assumed-shape dummy (empty dimensions
+                    // lowered to a descriptor). Empty dimensions alone are not
+                    // enough: assumed-size dummies and implicit-interface
+                    // dummies also carry empty dimensions but legally accept
+                    // assumed-size actuals, as do plain assumed-rank dummies.
+                    if (ASRUtils::is_array(actual_type) && ASRUtils::is_array(dummy_type) &&
+                            ASRUtils::extract_physical_type(actual_type) ==
+                                ASR::array_physical_typeType::UnboundedPointerArray &&
+                            (ASRUtils::is_pointer(dummy_type) ||
+                             ASRUtils::is_allocatable(dummy_type) ||
+                             (ASRUtils::is_dimension_empty(dummy_type) &&
+                              ASRUtils::extract_physical_type(dummy_type) ==
+                                  ASR::array_physical_typeType::DescriptorArray))) {
+                        diag.add(diag::Diagnostic(
+                            "actual argument for '" + dummy_name +
+                            "' cannot be an assumed-size array",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {args[i].m_value->base.loc})}));
+                        throw SemanticAbort();
+                    }
+                }
             } else if (ASR::is_a<ASR::Function_t>(*dummy_sym)) {
                 dummy_name = ASR::down_cast<ASR::Function_t>(dummy_sym)->m_name;
                 is_required = true;

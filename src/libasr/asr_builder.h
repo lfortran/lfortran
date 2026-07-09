@@ -185,8 +185,9 @@ class ASRBuilder {
     }
 
     ASR::ttype_t* String(ASR::expr_t* len,
-        ASR::string_length_kindType len_kind, 
-        ASR::string_physical_typeType physical_type = ASR::DescriptorString) {
+        ASR::string_length_kindType len_kind,
+        ASR::string_physical_typeType physical_type = ASR::DescriptorString,
+        int character_kind = 1) {
         if(!(
                 (len_kind == ASR::AssumedLength && !len) || 
                 (len_kind == ASR::DeferredLength && !len) ||
@@ -201,7 +202,7 @@ class ASRBuilder {
                 LCompilersException("Invalid String Node Status");
         }
 
-        return ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, len,
+        return ASRUtils::TYPE(ASR::make_String_t(al, loc, character_kind, len,
             len_kind, physical_type));
     }
 
@@ -360,13 +361,17 @@ class ASRBuilder {
     inline ASR::expr_t* StringSection(ASR::expr_t* s, ASR::expr_t* start, ASR::expr_t* end) {
         int64_t start_const, end_const;
         ASR::ttype_t* string_type {};
+        int character_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(s));
         LCOMPILERS_ASSERT(start && end)
         if( ASRUtils::is_value_constant(start, start_const) &&
             ASRUtils::is_value_constant(end, end_const)){
-            string_type = character(end_const - start_const + 1);
+            string_type = String(i_t(end_const - start_const + 1, int32),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString, character_kind);
         } else {
             string_type = String(Add(Sub(end, start),i_t(1, expr_type(start))),
-                ASR::string_length_kindType::ExpressionLength);
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString, character_kind);
         }
         return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), string_type, nullptr));
     }
