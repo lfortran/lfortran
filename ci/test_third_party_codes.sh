@@ -158,6 +158,12 @@ time_section "🧪 Testing caffeine" '
   git checkout 0.8.0
   assert_git_commit 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
 
+  # An LFortran-specific fix to the Caffeine test suite
+  # until issue #11191 is resolved
+  git config --global user.email "nobody@nowhere.com"
+  git config --global user.name  "Nobody"
+  git cherry-pick fa9456c34af1914cc02b9d9bffeaca7d880313ac
+
   # Now build and test caffeine with LFortran
   export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
   ./install.sh --yes --prefix=$PWD/inst --verbose
