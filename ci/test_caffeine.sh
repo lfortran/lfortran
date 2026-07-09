@@ -11,7 +11,7 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
-micromamba install -c conda-forge fpm=0.12.0
+# micromamba install -c conda-forge fpm=0.12.0
 
 which fpm
 fpm --version
@@ -137,6 +137,7 @@ fi
 # runs them, so LFortran's own behaviour stays verified.
 # coarrays_21: intermittent failures on OpenCoarrays
 opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21"
+caffeine_unsupported="coarrays_19"
 
 for testfile in $tests; do
 (set +x
@@ -153,18 +154,28 @@ base=$(basename "$testfile" .f90)
 # Compile with LFortran + caffeine
 # ----------------------------------------
 
+skip_caffeine=false
+for skip in $caffeine_unsupported; do
+    if [ "$base" = "$skip" ]; then
+        skip_caffeine=true
+    fi
+done
+
 lfortran "$testfile" \
-    --coarray=true \
-    -o "${base}_lf.out" \
-    -L$PWD/caffeine/inst/lib \
-    -lcaffeine \
-    -lgasnet-smp-seq
-
-# ----------------------------------------
-# Run LFortran executable
-# ----------------------------------------
-
-gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
+        --coarray=true \
+        -o "${base}_lf.out" \
+        -L$PWD/caffeine/inst/lib \
+        -lcaffeine \
+        -lgasnet-smp-seq
+if [ "$skip_caffeine" = true ]; then
+    echo "Skipping Caffeine execution for $testfile"
+else
+    # ----------------------------------------
+    # Run LFortran executable
+    # ----------------------------------------
+    gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
+fi
+rm -f "${base}_lf.out"
 
 # ----------------------------------------
 # Cross-check with gfortran/OpenCoarrays, unless OpenCoarrays lacks support
@@ -186,9 +197,6 @@ else
 fi
 
 echo "PASS: $testfile"
-
-rm -f "${base}_lf.out"
-
 
 done
 

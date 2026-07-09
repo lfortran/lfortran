@@ -1823,6 +1823,26 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_SyncMemory(x);
     }
 
+    void visit_SyncCritical(const SyncCritical_t &x) {
+        if (x.m_stat) {
+            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
+            require(!ASRUtils::is_array(stat_type),
+                "SyncCritical::m_stat must be a scalar");
+            require(ASRUtils::is_integer(*stat_type),
+                "SyncCritical::m_stat must be of integer type, found " +
+                std::string(ASRUtils::get_type_code(stat_type)));
+        }
+        if (x.m_errmsg) {
+            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
+            require(!ASRUtils::is_array(errmsg_type),
+                "SyncCritical::m_errmsg must be a scalar");
+            require(ASRUtils::is_character(*errmsg_type),
+                "SyncCritical::m_errmsg must be of string type, found " +
+                std::string(ASRUtils::get_type_code(errmsg_type)));
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_SyncCritical(x);
+    }
+
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
         for ( size_t i = 0; i < x.n_local; i++ ) {
             require(ASR::is_a<ASR::Var_t>(*x.m_local[i]),
