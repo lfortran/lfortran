@@ -3027,10 +3027,11 @@ RUN(NAME file_open_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_open_08 LABELS gfortran llvm)
 RUN(NAME file_open_09 LABELS gfortran llvm)
 RUN(NAME file_open_10 LABELS gfortran llvm)
+RUN(NAME file_open_11 LABELS gfortran llvm)
 
 RUN(NAME file_overwrite LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME inquire_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME inquire_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME inquire_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME inquire_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
