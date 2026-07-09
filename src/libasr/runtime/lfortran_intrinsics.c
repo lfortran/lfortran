@@ -11944,13 +11944,6 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             }
         }
 
-        char open_delim = '\0', close_delim = '\0';
-        if (delim == 1) {        // APOSTROPHE
-            open_delim = close_delim = '\'';
-        } else if (delim == 2) { // QUOTE
-            open_delim = close_delim = '"';
-        }
-
         char* end = NULL;
         int64_t end_len = 0;
         if(strcmp(format_data, "%s%s") == 0){
@@ -12003,25 +11996,12 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
                 if (uf_) is_child = uf_->lf_child_io_mode != 0;
             }
             if (end != NULL && !is_child) {
-                if(open_delim != '\0') {
-                    fprintf(filep, "%c%.*s%c%.*s",
-                        open_delim, (int)str_len, str, close_delim,
-                        (int)end_len, end
-                    );
-                } else {
-                    fprintf(filep, "%.*s%.*s",
-                        (int)str_len, str,
-                        (int)end_len, end
-                    );
-                }
+                fprintf(filep, "%.*s%.*s",
+                    (int)str_len, str,
+                    (int)end_len, end
+                );
             } else {
-                if(open_delim != '\0') {
-                    fprintf(filep, "%c%.*s%c",
-                        open_delim, (int)str_len, str, close_delim
-                    );
-                } else {
-                    fprintf(filep, "%.*s", (int)str_len, str);
-                }
+                fprintf(filep, "%.*s", (int)str_len, str);
             }
         }
 
@@ -13575,6 +13555,7 @@ typedef struct {
     int64_t n_elems;
     int64_t elem_idx;
     int64_t pos;
+    int delim;
     bool is_file;
 } nml_writer_t;
 
@@ -13674,18 +13655,30 @@ static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, in
 
         case LFORTRAN_NML_CHAR: {
             char *str = (char*)ptr;
+            char quote = '\0';
 
-            write_char(w, '\'');
+            if (w->delim == 1) {
+                quote = '\'';
+            } else if (w->delim == 2) {
+                quote = '"';
+            }
+
+            if (quote != '\0') {
+                write_char(w, quote);
+            }
 
             for (int64_t i = 0; i < item->elem_len; i++) {
-                if (str[i] == '\'') {
-                    write_str(w, "''");
+                if (str[i] == quote) {
+                    write_char(w, quote);
+                    write_char(w, quote);
                 } else {
                     write_char(w, str[i]);
                 }
             }
 
-            write_char(w, '\'');
+            if (quote != '\0') {
+                write_char(w, quote);
+            }
             break;
         }
     }
@@ -13802,6 +13795,7 @@ LFORTRAN_API void _lfortran_namelist_write(
 
     w.fp = filep;
     w.is_file = true;
+    w.delim = delim;
 
     namelist_write_impl(&w, group);
 
