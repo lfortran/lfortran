@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+echo "##[group] Setup"
 set -ex
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
@@ -18,6 +18,11 @@ fpm --version
 
 micromamba install -y -c conda-forge openmpi
 
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Install OpenCoarrays"
+)
+
 git clone https://github.com/sourceryinstitute/OpenCoarrays.git
 cd OpenCoarrays
 
@@ -33,6 +38,11 @@ which caf
 caf --version
 
 cd ..
+
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Install Caffeine"
+)
 
 # Clone caffeine
 
@@ -77,6 +87,11 @@ cd ..
 # Make caffeine launcher available
 
 export PATH="$PWD/caffeine/inst/bin:$PATH"
+
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Test setup"
+)
 
 # Number of coarray images
 
@@ -124,10 +139,13 @@ fi
 opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21"
 
 for testfile in $tests; do
-echo "========================================="
-echo "Running coarray test: $testfile"
-echo "========================================="
-
+(set +x
+ echo "##[endgroup]"
+ echo "##[group] testing: $testfile"
+ echo "========================================="
+ echo "Running coarray test: $testfile"
+ echo "========================================="
+)
 
 base=$(basename "$testfile" .f90)
 
@@ -173,6 +191,10 @@ rm -f "${base}_lf.out"
 
 
 done
+
+(set +x 
+ echo "##[endgroup]"
+)
 
 echo
 echo "All coarray runtime tests passed"
