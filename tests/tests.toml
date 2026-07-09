@@ -2917,7 +2917,49 @@ pass = "coarray"
 options = "--coarray=true"
 
 [[test]]
+filename = "coarrays_16.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_17.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_18.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "coarrays_19.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_20.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_21.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_24.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_26.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"

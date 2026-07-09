@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+echo "##[group] Setup"
 set -ex
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
@@ -16,7 +16,12 @@ lfortran --version
 which fpm
 fpm --version
 
-# micromamba install -y -c conda-forge openmpi
+micromamba install -y -c conda-forge openmpi
+
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Install OpenCoarrays"
+)
 
 git clone https://github.com/sourceryinstitute/OpenCoarrays.git
 cd OpenCoarrays
@@ -34,12 +39,18 @@ caf --version
 
 cd ..
 
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Install Caffeine"
+)
+
 # Clone caffeine
 
 git clone -b main https://github.com/BerkeleyLab/caffeine.git
 cd caffeine
 
-git checkout 0388cf70cd193214952d8be9a00e968c4c5061e2
+# Release 0.8.0
+git checkout 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
 
 # Toolchain setup
 
@@ -67,11 +78,20 @@ export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug"
 
 ./install.sh --yes --prefix=$PWD/inst --verbose
 
+# Output Caffeine configuration information
+
+./run-fpm.sh info
+
 cd ..
 
 # Make caffeine launcher available
 
 export PATH="$PWD/caffeine/inst/bin:$PATH"
+
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Test setup"
+)
 
 # Number of coarray images
 
@@ -115,14 +135,18 @@ fi
 # OpenCoarrays (caf/cafrun) does not support character arguments to co_max/co_min,
 # so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
 # runs them, so LFortran's own behaviour stays verified.
-opencoarrays_unsupported="coarrays_11 coarrays_13"
+# coarrays_21: intermittent failures on OpenCoarrays
+opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21"
 caffeine_unsupported="coarrays_19"
 
 for testfile in $tests; do
-echo "========================================="
-echo "Running coarray test: $testfile"
-echo "========================================="
-
+(set +x
+ echo "##[endgroup]"
+ echo "##[group] testing: $testfile"
+ echo "========================================="
+ echo "Running coarray test: $testfile"
+ echo "========================================="
+)
 
 base=$(basename "$testfile" .f90)
 
@@ -175,6 +199,10 @@ fi
 echo "PASS: $testfile"
 
 done
+
+(set +x 
+ echo "##[endgroup]"
+)
 
 echo
 echo "All coarray runtime tests passed"

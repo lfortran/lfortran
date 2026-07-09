@@ -5231,39 +5231,40 @@ template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
     const std::function<void (const std::string &, const Location &)> err,
-    bool raise_error=true) {
+    bool raise_error=true, bool is_dt_present=false) {
+    // When `is_dt_present` is true, `args[0]` is the passed-object (the `dt`
+    // of a type-bound procedure call). A `nopass` specific procedure does not
+    // receive the passed-object, so it must be matched against the arguments
+    // excluding `args[0]`.
+    auto matches = [&](ASR::symbol_t* proc_sym) -> bool {
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
+            ASR::StructMethodDeclaration_t *clss_fn
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
+            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
+            if( is_dt_present && clss_fn->m_is_nopass && args.n >= 1 ) {
+                Vec<ASR::call_arg_t> args_no_dt;
+                args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
+                return select_func_subrout(proc, args_no_dt, loc, err);
+            }
+            return select_func_subrout(proc, args, loc, err);
+        } else {
+            return select_func_subrout(proc_sym, args, loc, err);
+        }
+    };
     for (size_t i=0; i < p.n_procs; i++) {
         if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
             continue;
         }
-        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
-            ASR::StructMethodDeclaration_t *clss_fn
-                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
+        if( matches(p.m_procs[i]) ) {
+            return i;
         }
     }
     for (size_t i=0; i < p.n_procs; i++) {
         if (!is_elemental(p.m_procs[i])) {
             continue;
         }
-        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
-            ASR::StructMethodDeclaration_t *clss_fn
-                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
+        if( matches(p.m_procs[i]) ) {
+            return i;
         }
     }
     if( raise_error ) {
@@ -6090,6 +6091,10 @@ class SymbolDuplicator {
         SymbolTable* destination_symtab) {
         ASR::symbol_t* new_symbol = nullptr;
         std::string new_symbol_name = "";
+        std::string symbol_name = ASRUtils::symbol_name(symbol);
+        if (destination_symtab->get_symbol(symbol_name)) {
+            return;
+        }
         switch( symbol->type ) {
             case ASR::symbolType::Variable: {
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(symbol);
@@ -6149,6 +6154,12 @@ class SymbolDuplicator {
                 ASR::StructMethodDeclaration_t* struct_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(symbol);
                 new_symbol = duplicate_StructMethodDeclaration(struct_method, destination_symtab);
                 new_symbol_name = struct_method->m_name;
+                break;
+            }
+            case ASR::symbolType::Namelist: {
+                ASR::Namelist_t* namelist = ASR::down_cast<ASR::Namelist_t>(symbol);
+                new_symbol = duplicate_Namelist(namelist, destination_symtab);
+                new_symbol_name = namelist->m_group_name;
                 break;
             }
             default: {
@@ -6404,6 +6415,26 @@ class SymbolDuplicator {
             structMethod->m_proc_name, structMethod->m_proc,
             structMethod->m_abi, structMethod->m_is_deferred,
             structMethod->m_is_nopass));
+    }
+
+    ASR::symbol_t* duplicate_Namelist(ASR::Namelist_t* namelist,
+        SymbolTable* destination_symtab) {
+        Vec<ASR::symbol_t*> var_list;
+        var_list.reserve(al, namelist->n_var_list);
+        for (size_t i = 0; i < namelist->n_var_list; i++) {
+            ASR::symbol_t* var = namelist->m_var_list[i];
+            std::string var_name = ASRUtils::symbol_name(var);
+            ASR::symbol_t* new_var = destination_symtab->get_symbol(var_name);
+            if (!new_var) {
+                duplicate_symbol(var, destination_symtab);
+                new_var = destination_symtab->get_symbol(var_name);
+            }
+            LCOMPILERS_ASSERT(new_var);
+            var_list.push_back(al, new_var);
+        }
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Namelist_t(
+            al, namelist->base.base.loc, destination_symtab,
+            namelist->m_group_name, var_list.p, var_list.size()));
     }
 
 };
@@ -7235,11 +7266,17 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
     const Location& loc, ASR::expr_t* v_expr, SymbolTable* current_scope) {
     ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(v_expr);
     if (struct_sym == nullptr) return nullptr;
-    std::string struct_name = symbol_name(struct_sym);
+    // ExternalSymbol.m_external must point at the original definition (e.g.
+    // Struct), never another ExternalSymbol. Expressions like s%component can
+    // yield a use-associated ExternalSymbol when the component type is only
+    // reached transitively (not imported into the current scope).
+    ASR::symbol_t* original_struct = symbol_get_past_external(struct_sym);
+    if (original_struct == nullptr) return nullptr;
+    std::string struct_name = symbol_name(original_struct);
     if (current_scope->resolve_symbol(struct_name) == nullptr) {
         struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-            al, loc, current_scope, s2c(al, struct_name), struct_sym,
-            ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+            al, loc, current_scope, s2c(al, struct_name), original_struct,
+            ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_struct)), nullptr, 0,
             s2c(al, struct_name), ASR::accessType::Public));
         current_scope->add_symbol(struct_name, struct_sym);
     } else {
@@ -7250,8 +7287,8 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
         } else {
             std::string unique_name = current_scope->get_unique_name(struct_name);
             struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, loc, current_scope, s2c(al, unique_name), struct_sym,
-                ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+                al, loc, current_scope, s2c(al, unique_name), original_struct,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_struct)), nullptr, 0,
                 s2c(al, struct_name), ASR::accessType::Public));
             current_scope->add_symbol(unique_name, struct_sym);
         }

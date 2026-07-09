@@ -578,3 +578,12 @@ program second_program_test
     implicit none
     print *, "This is a second program - should cause error"
 end program second_program_test
+! Test for pure function without INTENT(IN)
+module pure_intent_check_mod
+contains
+    pure function add(x, y) result(res)
+        integer :: x, y
+        integer :: res
+        res = x + y
+    end function
+end module pure_intent_check_mod
