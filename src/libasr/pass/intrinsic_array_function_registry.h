@@ -4757,6 +4757,11 @@ namespace FindLoc {
         ASRUtils::ASRBuilder b(al, loc);
         ASR::expr_t* array = nullptr;
         ASR::expr_t* value = nullptr;
+        if (is_character(*expr_type(args[0])) && is_character(*expr_type(args[1])) &&
+                extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))) {
+            append_error(diag, "`array` and `value` arguments of `findloc` must have the same character kind", loc);
+            return nullptr;
+        }
         if (extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))){
             Vec<ASR::expr_t*> args_;
             args_.reserve(al, 2);

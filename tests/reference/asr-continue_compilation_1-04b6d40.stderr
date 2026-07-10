@@ -1761,3 +1761,9 @@ semantic error: actual argument for 'items' cannot be an assumed-size array
     |
 877 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                                 ^^^^^ 
+
+semantic error: `array` and `value` arguments of `findloc` must have the same character kind
+   --> tests/errors/continue_compilation_1.f90:887:18
+    |
+887 |         print *, findloc(x, y, 1)
+    |                  ^^^^^^^^^^^^^^^^ 

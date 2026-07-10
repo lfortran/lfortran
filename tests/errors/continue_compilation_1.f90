@@ -881,4 +881,9 @@ program continue_compilation_1
         integer :: items(:)
         consume_assumed_shape_function = size(items)
     end function
+    subroutine findloc_character_kind_mismatch()
+        character(kind=4) :: x(1)
+        character :: y
+        print *, findloc(x, y, 1)
+    end subroutine
 end program
