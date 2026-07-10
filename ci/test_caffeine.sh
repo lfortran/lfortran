@@ -11,12 +11,12 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
-# micromamba install -c conda-forge fpm=0.12.0
+micromamba install -c conda-forge fpm=0.12.0
 
 which fpm
 fpm --version
 
-# micromamba install -y -c conda-forge openmpi
+micromamba install -y -c conda-forge openmpi
 
 (set +x 
  echo "##[endgroup]"
