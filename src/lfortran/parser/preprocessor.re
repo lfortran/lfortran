@@ -335,7 +335,23 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
 Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
-    unsigned char *string_start=(unsigned char*)(&input[0]);
+    std::string spliced_input = input;
+    for (size_t i = 0; i + 1 < spliced_input.size(); ) {
+        if (spliced_input[i] == '\\' && spliced_input[i+1] == '\n') {
+            spliced_input[i] = ' ';
+            spliced_input[i+1] = ' ';
+            i += 2;
+        } else if (spliced_input[i] == '\\' && i + 2 < spliced_input.size()
+                && spliced_input[i+1] == '\r' && spliced_input[i+2] == '\n') {
+            spliced_input[i] = ' ';
+            spliced_input[i+1] = ' ';
+            spliced_input[i+2] = ' ';
+            i += 3;
+        } else {
+            i++;
+        }
+    }
+    unsigned char *string_start=(unsigned char*)(&spliced_input[0]);
     unsigned char *cur = string_start;
     std::string output;
     lm.files.back().preprocessor = true;
