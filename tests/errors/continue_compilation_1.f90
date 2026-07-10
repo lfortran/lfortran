@@ -315,14 +315,14 @@ program continue_compilation_1
 
 
 
-
-
-
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
     ! Only put statements below. If you need to call a function, put it into a
     ! module above.
+    select type (derived_cls)
+    class is (bad_id)
+    end select
     print 1+2
     a = 1
     print *, a(10)

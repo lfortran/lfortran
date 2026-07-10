@@ -4337,6 +4337,16 @@ public:
                 case AST::type_stmtType::ClassStmt: {
                     AST::ClassStmt_t* class_stmt = AST::down_cast<AST::ClassStmt_t>(x.m_body[i]);
                     ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(class_stmt->m_id)));
+                    if (sym == nullptr) {
+                        diag.add(Diagnostic(
+                            "Derived type `" + std::string(class_stmt->m_id) + "` is not defined",
+                            Level::Error, Stage::Semantic, {
+                                Label("Type used here is not defined in any scope", {class_stmt->base.base.loc})
+                            }));
+                        current_scope = parent_scope;
+                        all_loops_blocks_nesting--;
+                        throw SemanticAbort();
+                    }
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
@@ -4415,6 +4425,16 @@ public:
                 case AST::type_stmtType::TypeStmtName: {
                     AST::TypeStmtName_t* type_stmt_name = AST::down_cast<AST::TypeStmtName_t>(x.m_body[i]);
                     ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(type_stmt_name->m_name)));
+                    if (sym == nullptr) {
+                        diag.add(Diagnostic(
+                            "Derived type `" + std::string(type_stmt_name->m_name) + "` is not defined",
+                            Level::Error, Stage::Semantic, {
+                                Label("Type used here is not defined in any scope", {type_stmt_name->base.base.loc})
+                            }));
+                        current_scope = parent_scope;
+                        all_loops_blocks_nesting--;
+                        throw SemanticAbort();
+                    }
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
