@@ -137,7 +137,7 @@ fi
 # runs them, so LFortran's own behaviour stays verified.
 # coarrays_21: intermittent failures on OpenCoarrays
 opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21"
-caffeine_unsupported="coarrays_19"
+caffeine_unsupported="coarrays_26"
 
 for testfile in $tests; do
 (set +x
