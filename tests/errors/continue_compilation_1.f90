@@ -8,7 +8,7 @@ module continue_compilation_1_mod
     contains
         procedure :: display
     end type MyClass
-
+    integer :: values(command_argument_count()) = 1
     type :: logger_type
     contains
         private

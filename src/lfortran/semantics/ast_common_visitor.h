@@ -8175,6 +8175,14 @@ public:
                             which is equivalent to x(2) = [1,1]
                         */
                         int64_t size = ASRUtils::get_fixed_size_of_array(type);
+                        if (size < 0) {
+                            diag.add(Diagnostic(
+                                "explicit shaped array has nonconstant bounds",
+                                Level::Error,
+                                Stage::Semantic,
+                                { Label("", { x.base.base.loc }) }));
+                            throw SemanticAbort();
+                        }
                         Vec<ASR::expr_t*> args;
                         args.reserve(al, size);
                         LCOMPILERS_ASSERT(tmp_init != nullptr)
