@@ -2510,9 +2510,13 @@ RUN(NAME derived_types_147 LABELS gfortran llvm)
 RUN(NAME derived_types_148 LABELS gfortran llvm)
 RUN(NAME derived_types_149 LABELS gfortran llvm)
 RUN(NAME derived_types_150 LABELS gfortran llvm) # SEQUENCE char(len>1) inline + storage_size + memcpy
-RUN(NAME derived_types_151 LABELS gfortran llvm)
-RUN(NAME derived_types_152 LABELS gfortran llvm)
-RUN(NAME derived_types_153 LABELS gfortran llvm)
+# llvm only (no gfortran): non-elemental defined assignment(=) on arrays is
+# the behavior under test. GFortran/Flang compile this code but use intrinsic
+# componentwise assignment for array LHS, so is_temporary/pointer-share checks
+# fail there (CI). Source validated with Flang (compiles cleanly).
+RUN(NAME derived_types_151 LABELS llvm)
+RUN(NAME derived_types_152 LABELS llvm)
+RUN(NAME derived_types_153 LABELS llvm)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
