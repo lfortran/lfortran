@@ -496,19 +496,27 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
-            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC);
+            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC) || der_type->m_is_sequence;
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
                 llvm::Type* llvm_mem_type;
-                // bind(C) struct: non-pointer, non-allocatable character maps to i8
+                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps to inline [len x i8]
                 ASR::ttype_t* mem_type = member->m_type;
                 bool is_direct_char = is_bindc &&
                     !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
                     !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
                     ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
                 if (is_direct_char) {
-                    llvm_mem_type = llvm::Type::getInt8Ty(context);
+                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::type_get_past_array(mem_type));
+                    int64_t slen = 1;
+                    if (s->m_len) {
+                        ASRUtils::extract_value(s->m_len, slen);
+                    }
+                    if (slen < 1) slen = 1;
+                    llvm_mem_type = llvm::ArrayType::get(
+                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
@@ -2673,7 +2681,10 @@ namespace LCompilers {
         std::tie(str_data, str_len) = get_string_length_data(str_type, str, true, true);
         builder->CreateCall(_Deallocate(),{get_allocator(module), builder->CreateLoad(character_type, str_data)});
         builder->CreateStore(llvm::ConstantPointerNull::getNullValue(character_type), str_data);
-        builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+
+        if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+        }
     }
 
 
@@ -10606,6 +10617,22 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     llvm::Type *mem_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, mem_sym),
                         ASRUtils::symbol_type(mem_sym), module);
                     ASR::ttype_t* member_type = ASRUtils::symbol_type(mem_sym);
+                    bool is_inline_char = (struct_sym->m_abi == ASR::abiType::BindC ||
+                            struct_sym->m_is_sequence) &&
+                        !ASR::is_a<ASR::Pointer_t>(*member_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*member_type) &&
+                        ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_type));
+                    if (is_inline_char) {
+                        llvm::Type* inline_type = llvm_utils->name2dertype[
+                            der_type_name]->getElementType(mem_idx);
+                        if (src_member->getType()->isPointerTy()) {
+                            src_member = llvm_utils->CreateLoad2(inline_type, src_member);
+                        }
+                        llvm::Value* dest_member = llvm_utils->create_gep2(
+                            llvm_utils->name2dertype[der_type_name], dest, mem_idx);
+                        builder->CreateStore(src_member, dest_member);
+                        continue;
+                    }
                     if( !LLVM::is_llvm_struct(member_type) &&
                         !ASRUtils::is_array(member_type) &&
                         !ASRUtils::is_pointer(member_type) &&
