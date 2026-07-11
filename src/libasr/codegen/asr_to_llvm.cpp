@@ -8120,6 +8120,14 @@ public:
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
+                // Compiler-generated helper functions (e.g.
+                // _lcompiler_optimization_exponent_*) are emitted identically
+                // in every compilation unit that uses them.  Use
+                // LinkOnceODRLinkage so the linker keeps only one copy
+                // instead of erroring with "multiple definition".
+                if (fn_name.rfind("_lcompiler_", 0) == 0) {
+                    F->setLinkage(llvm::Function::LinkOnceODRLinkage);
+                }
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
