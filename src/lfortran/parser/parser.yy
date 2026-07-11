@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    238 // shift/reduce conflicts
+%expect    241 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -2146,6 +2146,10 @@ select_type_body_statements
 
 select_type_body_statement
     : KW_TYPE KW_IS "(" TK_NAME ")" sep statements { $$ = TYPE_STMTNAME($4, TRIVIA_AFTER($6, @$), $7, @$); }
+    // type is (pdt(kind)) — TK_NAME keeps integer(4)/real(8) on the var_type path
+    | KW_TYPE KW_IS "(" TK_NAME "(" kind_arg_list ")" ")" sep statements {
+            $$ = TYPE_STMTVAR(ATTR_TYPE_NAME_KIND(Type, SYMBOL($4, @4), $6, @$),
+                TRIVIA_AFTER($9, @$), $10, @$); }
     | KW_TYPE KW_IS "(" var_type ")" sep statements { $$ = TYPE_STMTVAR($4, TRIVIA_AFTER($6, @$), $7, @$); }
     | KW_CLASS KW_IS "(" id ")" sep statements { $$ = CLASS_STMT($4, TRIVIA_AFTER($6, @$), $7, @$); }
     | KW_CLASS KW_DEFAULT sep statements { $$ = CLASS_DEFAULT(TRIVIA_AFTER($3, @$), $4, @$); }

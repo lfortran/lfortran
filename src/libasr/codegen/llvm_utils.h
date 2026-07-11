@@ -1463,10 +1463,10 @@ class ASRToLLVMVisitor;
             }
 
             // Finalize members
-            bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC);
+            bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC) || struct_sym->m_is_sequence;
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
-                // bind(C) struct: non-pointer character members are inline i8, nothing to free
+                // bind(C)/SEQUENCE: non-pointer character members are inline, nothing to free
                 if(is_bindc &&
                    !ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) &&
                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }

@@ -1540,6 +1540,12 @@ semantic error: Duplicate value of `decimal` found
 636 |     open(unit=7, decimal="POINT", decimal="comma")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Missing 'boundary' argument to 'eoshift' intrinsic
+   --> tests/errors/continue_compilation_1.f90:642:38
+    |
+642 |     eoshift_derived_result = eoshift(eoshift_derived_array, 1)
+    |                                      ^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Implicit casting from LOGICAL to INTEGER is not allowed by default. Use `--logical-casting` flag to enable it.
    --> tests/errors/continue_compilation_1.f90:648:5
     |
@@ -1660,10 +1666,10 @@ semantic error: Variable 'nosuch' is not declared
 773 |         sync all (stat=nosuch)  ! {Error} Variable 'nosuch' is not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^ 'nosuch' is undeclared
 
-semantic error: Actual argument for 'x' cannot be an assumed-size array
+semantic error: actual argument for 'x' cannot be an assumed-size array
    --> tests/errors/continue_compilation_1.f90:777:23
     |
-777 |         call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+777 |         call ptr_sink(x)  ! {Error} actual argument for 'x' cannot be an assumed-size array
     |                       ^ 
 
 semantic error: select case expression must be of type integer, character, or logical
@@ -1749,3 +1755,21 @@ semantic error: `array` and `value` arguments of `findloc` must have the same ty
     |
 869 |         print *, findloc(names, key)
     |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual argument for 'items' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:875:36
+    |
+875 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    |                                    ^^^^^ 
+
+semantic error: actual argument for 'items' cannot be an assumed-size array
+   --> tests/errors/continue_compilation_1.f90:884:49
+    |
+884 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    |                                                 ^^^^^ 
+
+semantic error: Association target cannot be a BOZ literal constant
+   --> tests/errors/continue_compilation_1.f90:892:25
+    |
+892 |         associate (y => z'1') 
+    |                         ^^^^ 
