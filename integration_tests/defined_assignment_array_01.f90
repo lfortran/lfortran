@@ -36,17 +36,9 @@ program defined_assignment_array_01
 
    b = a   ! rank-1 actuals, scalar dummies, non-elemental -> intrinsic
 
-   print *, "b%v  =", b%v
-   print *, "b%hit=", b%hit
-   if (all(b%hit)) then
-      print *, "RESULT: defined assignment was called (LFortran)"
-      error stop 1
-   else
-      print *, "RESULT: defined assignment was NOT called (Flang/GFortran)"
-   end if
-
-   ! Values must still be assigned intrinsically
-   if (b(1)%v /= 10 .or. b(2)%v /= 20) error stop 2
+   ! Intrinsic componentwise assign: values copied, assign_t not called
+   if (b(1)%v /= 10 .or. b(2)%v /= 20) error stop 1
+   if (any(b%hit)) error stop 2
 
    ! Scalar defined assignment still applies
    b(1)%hit = .false.
