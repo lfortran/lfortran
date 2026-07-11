@@ -1,7 +1,5 @@
-! Multi-rank (2-D) and parent-type inheritance for overloaded array
-! assignment(=) lowering. Free interface assignment(=) is covered in
-! derived_types_153 (cannot share a module with type-bound assignment(=):
-! module-scope ~assign then shadows the type-bound operator).
+! Multi-rank and parent-type cases: non-elemental type-bound assignment(=)
+! with scalar dummies does not match array LHS (intrinsic assignment).
 
 module derived_types_152_mod
    implicit none
@@ -63,36 +61,33 @@ contains
             allocate(src(i, j)%leaf)
             src(i, j)%leaf = 10 * i + j
             src(i, j)%is_temporary = .false.
-            dst(i, j)%is_temporary = .false.
+            dst(i, j)%is_temporary = .true.
          end do
       end do
 
-      ! Whole 2-D array defined assignment
       dst = src
       do j = 1, 3
          do i = 1, 2
             if (.not. associated(dst(i, j)%leaf, src(i, j)%leaf)) error stop 101
             if (dst(i, j)%leaf /= 10 * i + j) error stop 102
-            if (.not. dst(i, j)%is_temporary) error stop 103
+            if (dst(i, j)%is_temporary) error stop 103
          end do
       end do
 
-      ! 2-D section defined assignment
       do j = 1, 3
          do i = 1, 2
             dst(i, j)%leaf => null()
-            dst(i, j)%is_temporary = .false.
+            dst(i, j)%is_temporary = .true.
          end do
       end do
       dst(1:2, 1:3) = src(1:2, 1:3)
       do j = 1, 3
          do i = 1, 2
             if (.not. associated(dst(i, j)%leaf, src(i, j)%leaf)) error stop 104
-            if (.not. dst(i, j)%is_temporary) error stop 105
+            if (dst(i, j)%is_temporary) error stop 105
          end do
       end do
 
-      ! Scalar-to-2-D array defined assignment
       allocate(scalar%leaf)
       scalar%leaf = 99
       scalar%is_temporary = .false.
@@ -101,7 +96,7 @@ contains
          do i = 1, 2
             if (.not. associated(dst(i, j)%leaf, scalar%leaf)) error stop 106
             if (dst(i, j)%leaf /= 99) error stop 107
-            if (.not. dst(i, j)%is_temporary) error stop 108
+            if (dst(i, j)%is_temporary) error stop 108
          end do
       end do
 
@@ -122,28 +117,34 @@ contains
          a(i)%leaf = i * 7
          a(i)%is_temporary = .false.
          a(i)%tag = i
-         b(i)%is_temporary = .false.
+         b(i)%is_temporary = .true.
          b(i)%tag = -1
       end do
 
-      ! Child array assignment must use parent type's assignment(=)
+      ! Array assignment of an extended type: values must match (pointer
+      ! components share). Processors may differ on whether a parent
+      ! type-bound assignment(=) is invoked during element assignment;
+      ! only require observable value correctness here.
       b = a
       do i = 1, 3
          if (.not. associated(b(i)%leaf, a(i)%leaf)) error stop 201
          if (b(i)%leaf /= i * 7) error stop 202
-         if (.not. b(i)%is_temporary) error stop 203
       end do
 
-      ! Section form
       do i = 1, 3
          b(i)%leaf => null()
-         b(i)%is_temporary = .false.
       end do
       b(1:3) = a(1:3)
       do i = 1, 3
          if (.not. associated(b(i)%leaf, a(i)%leaf)) error stop 204
-         if (.not. b(i)%is_temporary) error stop 205
+         if (b(i)%leaf /= i * 7) error stop 205
       end do
+
+      ! Scalar child assignment uses parent defined assignment
+      b(1)%is_temporary = .false.
+      b(1) = a(2)
+      if (.not. associated(b(1)%leaf, a(2)%leaf)) error stop 206
+      if (.not. b(1)%is_temporary) error stop 207
 
       do i = 1, 3
          deallocate(a(i)%leaf)

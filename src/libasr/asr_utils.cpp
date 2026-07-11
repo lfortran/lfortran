@@ -2111,6 +2111,19 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     if( subrout->n_args == 2 ) {
         ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
         ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
+        // F2023 10.2.1.4 / 15.5.2.4: non-elemental defined assignment requires
+        // matching ranks of actuals and dummies. types_equal peels arrays, so
+        // enforce ranks explicitly unless the procedure is elemental.
+        bool is_elemental = ASRUtils::is_elemental(proc);
+        if (!is_elemental) {
+            int target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+            int value_rank = ASRUtils::extract_n_dims_from_ttype(value_type);
+            int arg0_rank = ASRUtils::extract_n_dims_from_ttype(target_arg_type);
+            int arg1_rank = ASRUtils::extract_n_dims_from_ttype(value_arg_type);
+            if (target_rank != arg0_rank || value_rank != arg1_rank) {
+                return;
+            }
+        }
         if( ASRUtils::types_equal(target_arg_type, target_type, subrout->m_args[0], target) &&
             ASRUtils::types_equal(value_arg_type, value_type, subrout->m_args[1], value) ) {
             std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);

@@ -1,3 +1,8 @@
+! Intrinsic array assignment of derived type with non-elemental type-bound
+! assignment(=) that does not match array ranks (F2023 10.2.1.4).
+! Pointer components are associated intrinsically; is_temporary is copied,
+! not set by assign_t.
+
 module derived_types_151_mod
    implicit none
    type :: t
@@ -12,7 +17,7 @@ contains
    subroutine assign_t(lhs, rhs)
       class(t), intent(inout) :: lhs
       class(t), intent(in)    :: rhs
-      ! Share the leaf without owning it (the original owns it).
+      ! Would mark defined assignment if it ran (it must not for array LHS).
       lhs%leaf => rhs%leaf
       lhs%is_temporary = .true.
    end subroutine assign_t
@@ -21,8 +26,7 @@ contains
       type(t), dimension(:), intent(in) :: src
       type(t), dimension(:), allocatable :: out
       allocate(out(size(src)))
-      ! Array slice assignment of derived type with user-defined assignment
-      ! must call assign_t element-wise, not perform intrinsic copy.
+      ! Section assignment: intrinsic for non-elemental scalar assignment(=)
       out(1:size(src)) = src(1:size(src))
    end function get_data
 end module derived_types_151_mod
@@ -41,7 +45,7 @@ program derived_types_151
       arr(i)%is_temporary = .false.
    end do
 
-   ! ---- section-to-section (via function return + allocate source=) ----
+   ! ---- section-to-section via function + allocate source= ----
    allocate(copy, source = get_data(arr))
 
    if (size(copy) /= 3) error stop
@@ -50,20 +54,24 @@ program derived_types_151
       if (arr(i)%leaf /= i * 100) error stop
       if (.not. associated(copy(i)%leaf)) error stop
       if (copy(i)%leaf /= i * 100) error stop
-      ! Both must point to the same object (shared, not deep copy).
+      ! Intrinsic assignment of pointer components shares the target
       if (.not. associated(arr(i)%leaf, copy(i)%leaf)) error stop
-      if (.not. copy(i)%is_temporary) error stop
+      ! Defined assignment must not have run
+      if (copy(i)%is_temporary) error stop
    end do
 
    ! ---- whole-array assignment ----
    allocate(whole(3))
+   do i = 1, 3
+      whole(i)%is_temporary = .true.  ! will be overwritten by intrinsic copy
+   end do
    whole = arr
    do i = 1, 3
       if (.not. associated(whole(i)%leaf, arr(i)%leaf)) error stop
-      if (.not. whole(i)%is_temporary) error stop
+      if (whole(i)%is_temporary) error stop  ! copied from arr (.false.)
    end do
 
-   ! ---- scalar-to-array defined assignment ----
+   ! ---- scalar-to-array (intrinsic broadcast of components) ----
    allocate(scalar%leaf)
    scalar%leaf = 42
    scalar%is_temporary = .false.
@@ -71,10 +79,15 @@ program derived_types_151
    do i = 1, 3
       if (.not. associated(whole(i)%leaf, scalar%leaf)) error stop
       if (whole(i)%leaf /= 42) error stop
-      if (.not. whole(i)%is_temporary) error stop
+      if (whole(i)%is_temporary) error stop
    end do
 
-   ! Free the heap-allocated leaves owned by arr / scalar (copies share them).
+   ! Scalar defined assignment still applies
+   whole(1)%is_temporary = .false.
+   whole(1) = arr(2)
+   if (.not. associated(whole(1)%leaf, arr(2)%leaf)) error stop
+   if (.not. whole(1)%is_temporary) error stop
+
    do i = 1, 3
       deallocate(arr(i)%leaf)
    end do
