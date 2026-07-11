@@ -2510,13 +2510,11 @@ RUN(NAME derived_types_147 LABELS gfortran llvm)
 RUN(NAME derived_types_148 LABELS gfortran llvm)
 RUN(NAME derived_types_149 LABELS gfortran llvm)
 RUN(NAME derived_types_150 LABELS gfortran llvm) # SEQUENCE char(len>1) inline + storage_size + memcpy
-# Non-elemental defined assignment(=) with scalar dummies does not apply to
-# array LHS (F2023 10.2.1.4); intrinsic componentwise assignment is used.
-RUN(NAME defined_assignment_array_01 LABELS gfortran llvm flang)
-RUN(NAME defined_assignment_parent_array_01 LABELS gfortran llvm flang)
-RUN(NAME derived_types_151 LABELS gfortran llvm flang)
-RUN(NAME derived_types_152 LABELS gfortran llvm flang)
-RUN(NAME derived_types_153 LABELS gfortran llvm flang)
+# Non-elemental defined assignment(=) with scalar dummies (F2023 10.2.1.3–4).
+# Free-interface case is a separate file: coexisting with type-bound
+# assignment(=) in one module breaks resolution under LFortran.
+RUN(NAME defined_assignment_01 LABELS gfortran llvm flang)
+RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
