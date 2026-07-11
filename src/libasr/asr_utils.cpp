@@ -2181,22 +2181,28 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     }
 }
 
-// Resolve ~assign on a struct (and parents). Returns nullptr if expr is not a
-// struct-typed expression or no ~assign is found in the type hierarchy.
-static ASR::symbol_t* resolve_assign_from_struct_expr(ASR::expr_t* expr) {
-    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s) {
+    while (s != nullptr) {
+        ASR::symbol_t* result = s->m_symtab->resolve_symbol("~assign");
+        if (result != nullptr) {
+            return result;
+        }
+        if (s->m_parent == nullptr) {
+            break;
+        }
+        s = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(s->m_parent));
+    }
+    return nullptr;
+}
+
+ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
+    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expression);
     if (struct_sym == nullptr) {
         return nullptr;
     }
-    ASR::Struct_t* s = ASR::down_cast<ASR::Struct_t>(
-        ASRUtils::symbol_get_past_external(struct_sym));
-    ASR::symbol_t* result = s->m_symtab->resolve_symbol("~assign");
-    while (result == nullptr && s->m_parent != nullptr) {
-        s = ASR::down_cast<ASR::Struct_t>(
-            ASRUtils::symbol_get_past_external(s->m_parent));
-        result = s->m_symtab->resolve_symbol("~assign");
-    }
-    return result;
+    return resolve_struct_assign_symbol(ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(struct_sym)));
 }
 
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
@@ -2216,12 +2222,12 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
         ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
         ASR::ttype_t* value_elem = ASRUtils::extract_type(value_type);
         if (ASR::is_a<ASR::StructType_t>(*target_elem)) {
-            sym = resolve_assign_from_struct_expr(target);
+            sym = resolve_struct_assign_symbol(target);
             if (sym) {
                 expr_dt = target;
             }
         } else if (ASR::is_a<ASR::StructType_t>(*value_elem)) {
-            sym = resolve_assign_from_struct_expr(value);
+            sym = resolve_struct_assign_symbol(value);
             if (sym) {
                 expr_dt = value;
             }

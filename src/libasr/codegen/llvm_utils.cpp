@@ -10259,18 +10259,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
             llvm::Value* dest, llvm::Value* src, llvm::Module* module,
             bool value_is_class) {
-        // Resolve ~assign on struct_t or an ancestor (inherited binding).
-        ASR::Struct_t* walk = struct_t;
-        ASR::symbol_t* da_sym = nullptr;
-        while (walk != nullptr && da_sym == nullptr) {
-            da_sym = walk->m_symtab->resolve_symbol("~assign");
-            if (da_sym == nullptr && walk->m_parent != nullptr) {
-                walk = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(walk->m_parent));
-            } else if (da_sym == nullptr) {
-                walk = nullptr;
-            }
-        }
+        ASR::symbol_t* da_sym = ASRUtils::resolve_struct_assign_symbol(struct_t);
         if (da_sym == nullptr) {
             return false;
         }
@@ -10323,28 +10312,37 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
 
         ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(matching_func_sym);
-        ASR::FunctionType_t* ftype =
-            ASR::down_cast<ASR::FunctionType_t>(func_t->m_function_signature);
-        std::string func_name;
-        if (ftype->m_abi == ASR::abiType::BindC) {
-            func_name = ftype->m_bindc_name ? ftype->m_bindc_name
-                : std::string(ASRUtils::symbol_name(matching_func_sym));
+        llvm::Function* assign_fn = nullptr;
+        // Prefer the already-emitted function from the codegen symbol table.
+        uint64_t fh = get_hash((ASR::asr_t*)matching_func_sym);
+        auto it = llvm_symtab_fn.find(fh);
+        if (it != llvm_symtab_fn.end()) {
+            assign_fn = it->second;
         } else {
-            ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
-            if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
-                func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
-                    + "_" + ASRUtils::symbol_name(matching_func_sym);
+            // Fallback: declare by mangled name (e.g. assign not yet visited).
+            ASR::FunctionType_t* ftype =
+                ASR::down_cast<ASR::FunctionType_t>(func_t->m_function_signature);
+            std::string func_name;
+            if (ftype->m_abi == ASR::abiType::BindC) {
+                func_name = ftype->m_bindc_name ? ftype->m_bindc_name
+                    : std::string(ASRUtils::symbol_name(matching_func_sym));
             } else {
-                func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
+                if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                    func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
+                        + "_" + ASRUtils::symbol_name(matching_func_sym);
+                } else {
+                    func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
+                }
             }
-        }
-
-        llvm::Function* assign_fn = module->getFunction(func_name);
-        if (!assign_fn) {
-            llvm::FunctionType* fntype =
-                llvm_utils->get_function_type(*func_t, module);
-            assign_fn = llvm::Function::Create(fntype,
-                llvm::Function::ExternalLinkage, func_name, module);
+            assign_fn = module->getFunction(func_name);
+            if (!assign_fn) {
+                llvm::FunctionType* fntype =
+                    llvm_utils->get_function_type(*func_t, module);
+                assign_fn = llvm::Function::Create(fntype,
+                    llvm::Function::ExternalLinkage, func_name, module);
+            }
+            llvm_symtab_fn[fh] = assign_fn;
         }
 
         ASR::Variable_t* fn_lhs_var = ASRUtils::EXPR2VAR(func_t->m_args[0]);
