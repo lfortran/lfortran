@@ -75,7 +75,7 @@ class PRIFInterface {
                 al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0,
                 ASR::abiType::Source, ASR::accessType::Public,
-                false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
@@ -107,7 +107,7 @@ class PRIFInterface {
                 al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
                 nullptr, 0, members.p, members.n, nullptr, 0,
                 ASR::abiType::BindC, ASR::accessType::Public,
-                false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
@@ -166,30 +166,6 @@ class PRIFInterface {
             ASR::expr_t *size_in_bytes = b.Variable(fn_symtab, "size_in_bytes", int64_type,
                                                     ASR::intentType::In, nullptr,
                                                     ASR::abiType::Source, true);
-            ASR::ttype_t *errmsg_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1, nullptr,
-                ASR::string_length_kindType::AssumedLength,
-                ASR::string_physical_typeType::DescriptorString));
-            ASR::ttype_t *errmsg_alloc_type = allocatable_deferred_string();
-
-            ASR::symbol_t *stat_sym = declare_variable(
-                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
-
-            ASR::symbol_t *errmsg_sym = declare_variable(
-                fn_symtab, loc, "errmsg", errmsg_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
-
-            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
-                fn_symtab, loc, "errmsg_alloc", errmsg_alloc_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
-
             Vec<ASR::expr_t*> args;
             args.reserve(al, 8);
             args.push_back(al, image_num);
@@ -197,9 +173,7 @@ class PRIFInterface {
             args.push_back(al, offset);
             args.push_back(al, current_image_buffer);
             args.push_back(al, size_in_bytes);
-            args.push_back(al, stat);
-            args.push_back(al, errmsg);
-            args.push_back(al, errmsg_alloc);
+            declare_prif_status_args(fn_symtab, loc, args);
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, symbol_name), nullptr, 0,
@@ -538,7 +512,7 @@ class PRIFInterface {
 
             for (size_t i = 0; i < n_args; i++) {
                 ASR::array_index_t idx = item->m_args[i];
-                if (!idx.m_left) {
+                if (!idx.m_right) {
                     continue;
                 }
                 ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
@@ -549,7 +523,7 @@ class PRIFInterface {
                     ASR::arrayboundType::LBound, nullptr));
                 ASR::expr_t *extent = ASRUtils::get_size(arr_expr, static_cast<int>(i + 1), al);
 
-                ASR::expr_t *index_offset = b.Sub(idx.m_left, lbound);
+                ASR::expr_t *index_offset = b.Sub(idx.m_right, lbound);
                 ASR::expr_t *index_offset64 = b.i2i_t(index_offset, int64_type);
                 offset_elements = b.Add(offset_elements, b.Mul(index_offset64, stride));
                 stride = b.Mul(stride, b.i2i_t(extent, int64_type));
@@ -558,6 +532,7 @@ class PRIFInterface {
             return b.Mul(offset_elements, size_in_bytes);
         }
 
+        // Gets the size of a single element of the given type.
         ASR::expr_t* get_size_in_bytes_expr(const Location &loc, ASR::ttype_t *ttype) {
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::ttype_t *base_type = ASRUtils::type_get_past_array(
@@ -573,6 +548,32 @@ class PRIFInterface {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, size_bytes, int64_type));
         }
 
+        // Gets the total size in bytes of the variable.
+        // It accounts for the array size by multiplying the total number of elements
+        // by the size of a single element.
+        ASR::expr_t* get_total_size_in_bytes_expr(const Location &loc,
+                                            ASR::Variable_t *var) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *orig_type = original_types[&(var->base)];
+            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+            ASR::expr_t *elem_size = get_size_in_bytes_expr(loc, var->m_type);
+            ASR::ttype_t *array_type =
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(orig_type));
+            if (!ASR::is_a<ASR::Array_t>(*array_type)) {
+                return elem_size;
+            }
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(array_type);
+            ASR::expr_t *total = elem_size;
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                if (!arr->m_dims[i].m_length) {
+                    return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int64_type));
+                }
+                ASR::expr_t *len = b.i2i_t(arr->m_dims[i].m_length, int64_type);
+                total = b.Mul(total, len);
+            }
+            return total;
+        }
+
     public:
         struct SavedCoarray {
             ASR::Variable_t *var;
@@ -584,6 +585,57 @@ class PRIFInterface {
         Vec<SavedCoarray> saved_coarrays;
 
         std::map<ASR::symbol_t*, std::pair<ASR::symbol_t*, ASR::symbol_t*>> coarray_companions;
+        std::map<ASR::symbol_t*, ASR::ttype_t*> original_types;
+
+        ASR::ttype_t* get_type_compatible_with_pointer(const Location &loc, ASR::ttype_t *type) {
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.reserve(al, arr->n_dims);
+                for (size_t i = 0; i < arr->n_dims; i++) {
+                    ASR::dimension_t d;
+                    d.loc = arr->m_dims[i].loc;
+                    d.m_start = nullptr;
+                    d.m_length = nullptr;
+                    new_dims.push_back(al, d);
+                }
+                return ASRUtils::make_Array_t_util(al, loc, arr->m_type, new_dims.p, new_dims.n);
+            }
+            return type;
+        }
+
+        ASR::expr_t* create_shape_expr(const Location &loc, ASR::ttype_t *type) {
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                std::vector<ASR::expr_t*> shape_vec;
+                ASRUtils::ASRBuilder b(al, loc);
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                for (size_t i = 0; i < arr->n_dims; i++) {
+                    ASR::dimension_t d = arr->m_dims[i];
+                    int64_t lb = 1;
+                    if (d.m_start) {
+                        ASRUtils::extract_value(d.m_start, lb);
+                    }
+                    LCOMPILERS_ASSERT_MSG(lb == 1,
+                        "Array shape with lowerbound specified is not supported");
+                    if (d.m_length) {
+                        ASR::expr_t *len_expr = d.m_length;
+                        if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
+                            throw LCompilersException("Array dimension length must be an integer");
+                        } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr)) != 4) {
+                            len_expr = b.i2i_t(len_expr, int32_type);
+                        }
+                        shape_vec.push_back(len_expr);
+                    } else {
+                        shape_vec.push_back(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type)));
+                    }
+                }
+                if (shape_vec.size() > 0) {
+                    return b.ArrayConstant(shape_vec, int32_type, false);
+                }
+            }
+            return nullptr;
+        }
 
         std::pair<ASR::symbol_t*, ASR::symbol_t*> get_coarray_companions(ASR::symbol_t *sym) {
             auto it = coarray_companions.find(sym);
@@ -747,7 +799,7 @@ class PRIFInterface {
                 al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0,
                 ASR::abiType::Source, ASR::accessType::Public,
-                false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             global_scope->add_symbol(symbol_name, struct_sym);
@@ -962,6 +1014,67 @@ class PRIFInterface {
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
+        ASR::symbol_t* get_or_create_prif_sync_images_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_sync_images");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = int32;
+            
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t d; d.loc = loc; d.m_start = nullptr; d.m_length = nullptr;
+            dims.push_back(al, d);
+            ASR::ttype_t *image_set_type_assumed = ASRUtils::make_Array_t_util(al, loc, int32_type, dims.p, dims.n);
+                
+            ASR::symbol_t *image_set_sym = declare_variable(
+                fn_symtab, loc, "image_set", image_set_type_assumed, ASR::intentType::In, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *image_set = ASRUtils::EXPR(ASR::make_Var_t(al, loc, image_set_sym));
+            
+            Vec<ASR::expr_t*> args; args.reserve(al, 4);
+            args.push_back(al, image_set);
+            
+            declare_prif_status_args(fn_symtab, loc, args);
+            
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+
+        ASR::symbol_t* get_or_create_prif_sync_memory_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_sync_memory");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            Vec<ASR::expr_t*> args; args.reserve(al, 3);
+            declare_prif_status_args(fn_symtab, loc, args);
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
         void declare_prif_status_args(SymbolTable *fn_symtab, const Location &loc, Vec<ASR::expr_t*> &args) {
             ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, loc, 1, nullptr,
@@ -987,7 +1100,16 @@ class PRIFInterface {
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym)));
         }
 
-        ASR::symbol_t* get_or_create_prif_co_minmaxsum_sub(const Location &loc, const std::string &prif_name) {
+        void select_errmsg_arg(ASR::expr_t *&errmsg, ASR::expr_t *&errmsg_alloc) {
+            if (errmsg &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(errmsg))) {
+                errmsg_alloc = errmsg;
+                errmsg = nullptr;
+            }
+        }
+        ASR::symbol_t* get_or_create_prif_collective_sub(const Location &loc, const std::string &prif_name,
+                const std::string &image_arg_name = "result_image",
+                ASR::presenceType image_presence = ASR::presenceType::Optional) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = get_mangled_name("prif", prif_name);
             if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
@@ -1003,7 +1125,7 @@ class PRIFInterface {
                 SymbolTable *struct_symtab = al.make_new<SymbolTable>(global_scope);
                 ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                 s2c(al, derived_type_name), nullptr, nullptr, 0, nullptr, 0,
-                                                nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, true,
+                                                nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, true, false,
                                                 nullptr, 0, nullptr, nullptr, nullptr, 0);
                 ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                 ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
@@ -1022,15 +1144,15 @@ class PRIFInterface {
             ASR::down_cast<ASR::Variable_t>(a_sym)->m_target_attr = true;
             ASR::expr_t *a = ASRUtils::EXPR(ASR::make_Var_t(al, loc, a_sym));
 
-            ASR::symbol_t *res_img_sym = declare_variable(
-                fn_symtab, loc, "result_image", int32_type, ASR::intentType::In, nullptr,
+            ASR::symbol_t *image_sym = declare_variable(
+                fn_symtab, loc, image_arg_name, int32_type, ASR::intentType::In, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *res_img = ASRUtils::EXPR(ASR::make_Var_t(al, loc, res_img_sym));
+                image_presence, false);
+            ASR::expr_t *image = ASRUtils::EXPR(ASR::make_Var_t(al, loc, image_sym));
 
             Vec<ASR::expr_t*> args; args.reserve(al, 5);
             args.push_back(al, a);
-            args.push_back(al, res_img);
+            args.push_back(al, image);
             declare_prif_status_args(fn_symtab, loc, args);
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
@@ -1102,9 +1224,10 @@ class PRIFInterface {
             ASR::ttype_t *a_type = ASRUtils::expr_type(a);
             ASR::symbol_t *sub = ASRUtils::is_character(*a_type)
                                         ? get_or_create_prif_co_minmax_character_sub(loc, prif_name + "_character")
-                                        : get_or_create_prif_co_minmaxsum_sub(loc, prif_name);
+                                        : get_or_create_prif_collective_sub(loc, prif_name);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
-
+            
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a;
             ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = result_image;
             ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = stat;
@@ -1121,13 +1244,58 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
 
+        ASR::stmt_t* make_prif_co_broadcast_call(const Location &loc,
+                                           ASR::expr_t *a,
+                                           ASR::expr_t *source_image = nullptr,
+                                           ASR::expr_t *stat = nullptr,
+                                           ASR::expr_t *errmsg = nullptr,
+                                           ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_collective_sub(loc, "prif_co_broadcast",
+                "source_image", ASR::presenceType::Required);
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 5);
 
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = source_image;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = stat;
+            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = errmsg;
+            ASR::call_arg_t arg5; arg5.loc = loc; arg5.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
+            call_args.push_back(al, arg5);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
 
         ASR::stmt_t* make_prif_sync_all_call(const Location &loc,
                                              ASR::expr_t *stat = nullptr,
                                              ASR::expr_t *errmsg = nullptr,
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_sync_all_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 3);
+
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = stat;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = errmsg;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
+
+        ASR::stmt_t* make_prif_sync_memory_call(const Location &loc,
+                                             ASR::expr_t *stat = nullptr,
+                                             ASR::expr_t *errmsg = nullptr,
+                                             ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_sync_memory_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 3);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = stat;
@@ -1142,6 +1310,29 @@ class PRIFInterface {
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
         
+        ASR::stmt_t* make_prif_sync_images_call(const Location &loc,
+                                             ASR::expr_t *image_set = nullptr,
+                                             ASR::expr_t *stat = nullptr,
+                                             ASR::expr_t *errmsg = nullptr,
+                                             ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_sync_images_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
+
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = image_set;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = stat;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = errmsg;
+            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
+
         void declare_coarray_companions(SymbolTable *scope, const Location &loc) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *cptr = b.CPtr();
@@ -1198,8 +1389,10 @@ class PRIFInterface {
                 }
 
                 ASR::ttype_t *orig_type = var->m_type;
+                original_types[sym] = orig_type;
+                ASR::ttype_t *deferred_type = get_type_compatible_with_pointer(loc, orig_type);
                 ASR::ttype_t *ptr_type = ASRUtils::TYPE(
-                    ASR::make_Pointer_t(al, loc, orig_type));
+                    ASR::make_Pointer_t(al, loc, deferred_type));
                 var->m_type = ptr_type;
             }
         }
@@ -1253,9 +1446,7 @@ class PRIFInterface {
                 uco_vec.push_back(uco_elems.p[i]);
             }
             ASR::expr_t *ucobounds_val = b.ArrayConstant(uco_vec, i64, false);
-            
-            ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(var->m_type);
-            ASR::expr_t *sz = get_size_in_bytes_expr(loc, base_type);
+            ASR::expr_t *sz = get_total_size_in_bytes_expr(loc, var);
             
             ASR::ttype_t *handle_type_fp = ASRUtils::make_StructType_t_util(
                 al, loc, handle_struct, true);
@@ -1309,8 +1500,10 @@ class PRIFInterface {
                     ASR::symbol_t *sym_use = get_symbol_in_scope(scope, body_scope, sym, loc);
                     ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
                     ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
+                    ASR::ttype_t *orig_type = original_types[sym];
+                    ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
                     ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, nullptr, nullptr));
+                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, nullptr));
                     new_body.push_back(al, cfp_stmt);
                     continue;
                 }
@@ -1332,8 +1525,10 @@ class PRIFInterface {
                 emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
 
                 ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
+                ASR::ttype_t *orig_type = original_types[sym];
+                ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
                 ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                    ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, nullptr, nullptr));
+                    ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, nullptr));
                 new_body.push_back(al, cfp_stmt);
 
                 if (var->m_value) {
@@ -1433,32 +1628,29 @@ class PRIFInterface {
 
                 emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, body);
 
-                if (init_value != nullptr) {
-                    int64_t val = 0;
-                    if (ASRUtils::extract_value(init_value, val)) {
-                        LCOMPILERS_ASSERT_MSG(val == 0, "Initialization of coarrays is not yet supported");
-                    }
-                }
                 // If the saved coarray had an initial value (e.g., x[*] = 0),
                 // bind the data pointer to a local variable and assign the value.
-                // if (init_value) {
-                //     std::string local_name = std::string(var->m_name) + "__init_ptr";
-                //     ASR::ttype_t *var_ptr_type = var->m_type; // already Pointer_t
-                //     ASR::symbol_t *local_sym = declare_variable(
-                //         fn_symtab, loc, local_name, var_ptr_type,
-                //         ASR::intentType::Local, nullptr,
-                //         ASR::abiType::Source, ASR::accessType::Public,
-                //         ASR::presenceType::Required, false);
-                //     ASR::expr_t *local_expr = ASRUtils::EXPR(
-                //         ASR::make_Var_t(al, loc, local_sym));
+                if (init_value) {
+                    std::string local_name = std::string(var->m_name) + "__init_ptr";
+                    ASR::ttype_t *var_ptr_type = var->m_type; // already Pointer_t
+                    ASR::symbol_t *local_sym = declare_variable(
+                        fn_symtab, loc, local_name, var_ptr_type,
+                        ASR::intentType::Local, nullptr,
+                        ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::presenceType::Required, false);
+                    ASR::expr_t *local_expr = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, local_sym));
+                    ASR::symbol_t *var_sym = &(var->base);
+                    ASR::ttype_t *orig_type = original_types[var_sym];
+                    ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
 
-                //     body.push_back(al, ASRUtils::STMT(
-                //         ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
-                //                                   nullptr, nullptr)));
-                //     body.push_back(al, ASRUtils::STMT(
-                //         ASR::make_Assignment_t(al, loc, local_expr, init_value,
-                //                               nullptr, false, false)));
-                // }
+                    body.push_back(al, ASRUtils::STMT(
+                        ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
+                                                  shape_expr, nullptr)));
+                    body.push_back(al, ASRUtils::STMT(
+                        ASR::make_Assignment_t(al, loc, local_expr, init_value,
+                                              nullptr, false, false)));
+                }
             }
 
             Vec<char*> deps; deps.reserve(al, 2);
@@ -1749,6 +1941,24 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                     ASR::SyncAll_t *x = ASR::down_cast<ASR::SyncAll_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_sync_all_call(
                         x->base.base.loc, x->m_stat, x->m_errmsg));
+                } else if (m_body[i]->type == ASR::stmtType::SyncImages) {
+                    ASR::SyncImages_t *x = ASR::down_cast<ASR::SyncImages_t>(m_body[i]);
+                    ASR::expr_t *image_set = x->m_image_set;
+                    if (image_set && !ASRUtils::is_array(ASRUtils::expr_type(image_set))) {
+                        ASRUtils::ASRBuilder b(replacer.al, x->base.base.loc);
+                        Vec<ASR::dimension_t> dims; dims.reserve(replacer.al, 1);
+                        ASR::dimension_t d; d.loc = x->base.base.loc; d.m_start = b.i32(1); d.m_length = b.i32(1);
+                        dims.push_back(replacer.al, d);
+                        ASR::ttype_t *scalar_type = ASRUtils::expr_type(image_set);
+                        std::vector<ASR::expr_t*> elems = {image_set};
+                        image_set = b.ArrayConstant(elems, scalar_type, false);
+                    }
+                    body.push_back(replacer.al, replacer.prif.make_prif_sync_images_call(
+                        x->base.base.loc, image_set, x->m_stat, x->m_errmsg));
+                } else if (m_body[i]->type == ASR::stmtType::SyncMemory) {
+                    ASR::SyncMemory_t *x = ASR::down_cast<ASR::SyncMemory_t>(m_body[i]);
+                    body.push_back(replacer.al, replacer.prif.make_prif_sync_memory_call(
+                        x->base.base.loc, x->m_stat, x->m_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::IntrinsicImpureSubroutine) {
                     ASR::IntrinsicImpureSubroutine_t *x = ASR::down_cast<ASR::IntrinsicImpureSubroutine_t>(m_body[i]);
                     std::string intrinsic_name = ASRUtils::get_intrinsic_subroutine_name(x->m_sub_intrinsic_id);
@@ -1790,6 +2000,19 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                              
                         body.push_back(replacer.al, replacer.prif.make_prif_co_minmaxsum_call(
                             x->base.base.loc, "prif_co_min", a, result_image, stat, errmsg));
+                    }
+                    else if (intrinsic_name == "CoBroadcast") {
+                        ASR::expr_t *a = nullptr;
+                        ASR::expr_t *source_image = nullptr;
+                        ASR::expr_t *stat = nullptr;
+                        ASR::expr_t *errmsg = nullptr;
+                        if (x->n_args >= 1) a = x->m_args[0];
+                        if (x->n_args >= 2) source_image = x->m_args[1];
+                        if (x->n_args >= 3) stat = x->m_args[2];
+                        if (x->n_args >= 4) errmsg = x->m_args[3];
+
+                        body.push_back(replacer.al, replacer.prif.make_prif_co_broadcast_call(
+                            x->base.base.loc, a, source_image, stat, errmsg));
                     }
                     else {
                         body.push_back(replacer.al, m_body[i]);

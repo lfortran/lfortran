@@ -994,7 +994,12 @@ namespace LCompilers {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, array_name, infile, expr->base.loc);
                 if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
-                    tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
+                    ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type));
+                    if (string_type->m_physical_type == ASR::string_physical_typeType::CChar) {
+                        tmp = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), array, idx);
+                    } else {
+                        tmp = llvm_utils->get_string_element_in_array(string_type, array, idx);
+                    }
                 } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
                     tmp = llvm_utils->get_class_element_from_array(ASR::down_cast<ASR::Struct_t>(variable_type_decl),
                         ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_type)), array, idx);
