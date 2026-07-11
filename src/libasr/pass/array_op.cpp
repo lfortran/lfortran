@@ -1830,8 +1830,19 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
-    bool try_lower_overloaded_scalar_array_assignment(
-            const ASR::Assignment_t& x) {
+    // Lower non-elemental overloaded assignment(=) whose formals are scalar
+    // (e.g. user-defined assignment for derived types) when the LHS is an
+    // array. Elemental procedures already go through generate_loop later;
+    // non-elemental ones would otherwise keep whole-array formals, and array
+    // sections would take generate_loop_for_array_indexed_with_array_indices
+    // without indexing the overloaded call. We build an element-wise
+    // SubroutineCall loop with PassUtils bounds / index helpers.
+    //
+    // Note: element refs are built from the Assignment's target/value (not
+    // from a naive ArrayItem rewrite of the call args). generate_loop-style
+    // rewriting of ArraySection args does not produce writable lvalues for
+    // class(t) intent(inout) formals.
+    bool try_lower_overloaded_array_assignment(const ASR::Assignment_t& x) {
         if (x.m_overloaded == nullptr) return false;
         if (!ASR::is_a<ASR::SubroutineCall_t>(*x.m_overloaded)) return false;
         ASR::SubroutineCall_t* sc = ASR::down_cast<ASR::SubroutineCall_t>(
@@ -1845,49 +1856,90 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (!ASR::is_a<ASR::Function_t>(*proc)) return false;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
         if (func->n_args == 0 || func->m_args[0] == nullptr) return false;
-        ASR::ttype_t* arg0_type = ASRUtils::expr_type(func->m_args[0]);
-        if (ASRUtils::is_array(arg0_type)) return false;
+        if (ASRUtils::is_array(ASRUtils::expr_type(func->m_args[0]))) return false;
         if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) return false;
 
         const Location& loc = x.base.base.loc;
         ASR::expr_t* target = x.m_target;
         ASR::expr_t* value = x.m_value;
-        ASR::expr_t* value_unbroadcast = ASRUtils::get_past_array_broadcast(value);
-        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
-        size_t rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+        ASR::expr_t* value_unbroadcast =
+            ASRUtils::get_past_array_broadcast(value);
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(target));
         if (rank == 0) return false;
         bool value_is_scalar = !ASRUtils::is_array(
             ASRUtils::expr_type(value_unbroadcast));
 
+        int idx_kind = get_index_kind();
         Vec<ASR::expr_t*> idx_vars;
-        PassUtils::create_idx_vars(idx_vars, rank, loc, al, current_scope,
-            "__libasr_ov_idx_");
+        PassUtils::create_idx_vars(idx_vars, (int)rank, loc, al, current_scope,
+            "__libasr_ov_idx_", idx_kind);
 
+        // Build element refs from the Assignment's target/value. Using the
+        // call-arg ArraySection nodes directly can fail to produce a writable
+        // lvalue for class(t) intent(inout); the assignment sides are the
+        // expressions array_op already treats as the true LHS/RHS.
         ASR::expr_t* indexed_target = PassUtils::create_array_ref(target,
             idx_vars, al, current_scope);
+        // Scalar RHS must pass the unbroadcast scalar, not ArrayBroadcast.
         ASR::expr_t* indexed_value = value_is_scalar
-            ? value
+            ? value_unbroadcast
             : PassUtils::create_array_ref(value_unbroadcast, idx_vars, al,
                 current_scope);
 
+        auto is_target_arg = [&](ASR::expr_t* e) {
+            if (e == nullptr) return false;
+            return e == target
+                || ASRUtils::get_past_array_broadcast(e) == target;
+        };
+        auto is_value_arg = [&](ASR::expr_t* e) {
+            if (e == nullptr) return false;
+            ASR::expr_t* ub = ASRUtils::get_past_array_broadcast(e);
+            return e == value || ub == value || ub == value_unbroadcast;
+        };
+
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, sc->n_args);
+        bool matched_target = false, matched_value = false;
         for (size_t i = 0; i < sc->n_args; i++) {
             ASR::call_arg_t a;
             a.loc = sc->m_args[i].loc;
-            if (i == 0) {
+            ASR::expr_t* arg = sc->m_args[i].m_value;
+            if (is_target_arg(arg)) {
                 a.m_value = indexed_target;
-            } else if (i == 1) {
+                matched_target = true;
+            } else if (is_value_arg(arg)) {
                 a.m_value = indexed_value;
+                matched_value = true;
+            } else if (arg != nullptr) {
+                // Keep non-matching args (optional extras). Peel broadcast so
+                // a scalar actual is not left array-typed.
+                a.m_value = ASRUtils::get_past_array_broadcast(arg);
             } else {
-                a.m_value = sc->m_args[i].m_value;
+                a.m_value = nullptr;
             }
             new_args.push_back(al, a);
         }
+
+        // Common 2-arg assignment(=) layout is (lhs, rhs). If the call args
+        // are not pointer-identical to m_target/m_value (e.g. rewritten by an
+        // earlier pass), fall back to that layout. Element refs must come
+        // from the assignment sides so ArraySection lvalues stay writable.
+        if (sc->n_args >= 2 && (!matched_target || !matched_value)) {
+            new_args.p[0].m_value = indexed_target;
+            new_args.p[1].m_value = indexed_value;
+        }
+
+        ASR::expr_t* new_dt = sc->m_dt;
+        if (new_dt != nullptr && (is_target_arg(new_dt)
+                || ASRUtils::is_array(ASRUtils::expr_type(new_dt)))) {
+            new_dt = indexed_target;
+        }
+
         ASR::stmt_t* call_stmt = ASRUtils::STMT(
             ASRUtils::make_SubroutineCall_t_util(al, loc, sc->m_name,
                 sc->m_original_name, new_args.p, new_args.size(),
-                sc->m_dt, nullptr, false));
+                new_dt, nullptr, false));
 
         ASR::stmt_t* loop = call_stmt;
         for (size_t k = 0; k < rank; k++) {
@@ -1895,8 +1947,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::do_loop_head_t head;
             head.loc = loc;
             head.m_v = idx_vars[dim];
-            head.m_start = ASRUtils::get_bound(target, dim + 1, "lbound", al);
-            head.m_end = ASRUtils::get_bound(target, dim + 1, "ubound", al);
+            head.m_start = PassUtils::get_bound(target, (int)dim + 1, "lbound",
+                al, idx_kind);
+            head.m_end = PassUtils::get_bound(target, (int)dim + 1, "ubound",
+                al, idx_kind);
             head.m_increment = nullptr;
             Vec<ASR::stmt_t*> body;
             body.reserve(al, 1);
@@ -1940,8 +1994,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             (ASRUtils::is_simd_array(xx.m_target) && ASRUtils::is_simd_array(xx.m_value)) ) {
             return ;
         }
-        if (try_lower_overloaded_scalar_array_assignment(x)) {
-            remove_original_stmt = true;
+        if (try_lower_overloaded_array_assignment(x)) {
             return;
         }
         bool is_target_assumed_rank = (ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_target) && 

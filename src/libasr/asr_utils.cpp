@@ -2146,6 +2146,24 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     }
 }
 
+// Resolve ~assign on a struct (and parents). Returns nullptr if expr is not a
+// struct-typed expression or no ~assign is found in the type hierarchy.
+static ASR::symbol_t* resolve_assign_from_struct_expr(ASR::expr_t* expr) {
+    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+    if (struct_sym == nullptr) {
+        return nullptr;
+    }
+    ASR::Struct_t* s = ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(struct_sym));
+    ASR::symbol_t* result = s->m_symtab->resolve_symbol("~assign");
+    while (result == nullptr && s->m_parent != nullptr) {
+        s = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(s->m_parent));
+        result = s->m_symtab->resolve_symbol("~assign");
+    }
+    return result;
+}
+
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
@@ -2157,59 +2175,20 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     bool found = false;
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
-    if(!sym) {
-        if( ASR::is_a<ASR::StructType_t>(*target_type) ) {
-            ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target)));
-            sym = target_struct->m_symtab->resolve_symbol("~assign");
-            while (sym == nullptr && target_struct->m_parent != nullptr) {
-                target_struct = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(target_struct->m_parent));
-                sym = target_struct->m_symtab->resolve_symbol("~assign");
+    if (!sym) {
+        // extract_type peels array/pointer/allocatable so both scalar and
+        // array-of-struct assignments share one lookup path.
+        ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
+        ASR::ttype_t* value_elem = ASRUtils::extract_type(value_type);
+        if (ASR::is_a<ASR::StructType_t>(*target_elem)) {
+            sym = resolve_assign_from_struct_expr(target);
+            if (sym) {
+                expr_dt = target;
             }
-            expr_dt = target;
-        } else if( ASR::is_a<ASR::StructType_t>(*value_type) ) {
-            ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value)));
-            sym = value_struct->m_symtab->resolve_symbol("~assign");
-            while (sym == nullptr && value_struct->m_parent != nullptr) {
-                value_struct = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(value_struct->m_parent));
-                sym = value_struct->m_symtab->resolve_symbol("~assign");
-            }
-            expr_dt = value;
-        }
-    }
-    if(!sym) {
-        ASR::ttype_t* target_element_type = ASRUtils::extract_type(target_type);
-        ASR::ttype_t* value_element_type = ASRUtils::extract_type(value_type);
-        if( ASRUtils::is_array(target_type) &&
-                ASR::is_a<ASR::StructType_t>(*target_element_type) ) {
-            ASR::symbol_t* struct_sym =
-                ASRUtils::get_struct_sym_from_struct_expr(target);
-            if (struct_sym != nullptr) {
-                ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_sym));
-                sym = target_struct->m_symtab->resolve_symbol("~assign");
-                while (sym == nullptr && target_struct->m_parent != nullptr) {
-                    target_struct = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(target_struct->m_parent));
-                    sym = target_struct->m_symtab->resolve_symbol("~assign");
-                }
-                if (sym) expr_dt = target;
-            }
-        } else if( ASRUtils::is_array(value_type) &&
-                ASR::is_a<ASR::StructType_t>(*value_element_type) ) {
-            ASR::symbol_t* struct_sym =
-                ASRUtils::get_struct_sym_from_struct_expr(value);
-            if (struct_sym != nullptr) {
-                ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_sym));
-                sym = value_struct->m_symtab->resolve_symbol("~assign");
-                while (sym == nullptr && value_struct->m_parent != nullptr) {
-                    value_struct = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(value_struct->m_parent));
-                    sym = value_struct->m_symtab->resolve_symbol("~assign");
-                }
-                if (sym) expr_dt = value;
+        } else if (ASR::is_a<ASR::StructType_t>(*value_elem)) {
+            sym = resolve_assign_from_struct_expr(value);
+            if (sym) {
+                expr_dt = value;
             }
         }
     }

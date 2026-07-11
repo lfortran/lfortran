@@ -30,7 +30,8 @@ end module derived_types_149_mod
 program derived_types_149
    use derived_types_149_mod
    implicit none
-   type(t), dimension(:), allocatable :: arr, copy
+   type(t), dimension(:), allocatable :: arr, copy, whole
+   type(t) :: scalar
    integer :: i
 
    allocate(arr(3))
@@ -40,6 +41,7 @@ program derived_types_149
       arr(i)%is_temporary = .false.
    end do
 
+   ! ---- section-to-section (via function return + allocate source=) ----
    allocate(copy, source = get_data(arr))
 
    if (size(copy) /= 3) error stop
@@ -50,12 +52,34 @@ program derived_types_149
       if (copy(i)%leaf /= i * 100) error stop
       ! Both must point to the same object (shared, not deep copy).
       if (.not. associated(arr(i)%leaf, copy(i)%leaf)) error stop
+      if (.not. copy(i)%is_temporary) error stop
    end do
 
-   ! Free the heap-allocated leaves owned by arr (copies share them).
+   ! ---- whole-array assignment ----
+   allocate(whole(3))
+   whole = arr
+   do i = 1, 3
+      if (.not. associated(whole(i)%leaf, arr(i)%leaf)) error stop
+      if (.not. whole(i)%is_temporary) error stop
+   end do
+
+   ! ---- scalar-to-array defined assignment ----
+   allocate(scalar%leaf)
+   scalar%leaf = 42
+   scalar%is_temporary = .false.
+   whole = scalar
+   do i = 1, 3
+      if (.not. associated(whole(i)%leaf, scalar%leaf)) error stop
+      if (whole(i)%leaf /= 42) error stop
+      if (.not. whole(i)%is_temporary) error stop
+   end do
+
+   ! Free the heap-allocated leaves owned by arr / scalar (copies share them).
    do i = 1, 3
       deallocate(arr(i)%leaf)
    end do
+   deallocate(scalar%leaf)
    deallocate(copy)
+   deallocate(whole)
    deallocate(arr)
 end program derived_types_149
