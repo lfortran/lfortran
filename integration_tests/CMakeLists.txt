@@ -2513,7 +2513,7 @@ RUN(NAME derived_types_150 LABELS gfortran llvm) # SEQUENCE char(len>1) inline +
 # Non-elemental defined assignment(=) with scalar dummies (F2023 10.2.1.3–4).
 # Free-interface case is a separate file: coexisting with type-bound
 # assignment(=) in one module breaks resolution under LFortran.
-RUN(NAME defined_assignment_01 LABELS gfortran llvm flang)
+RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
