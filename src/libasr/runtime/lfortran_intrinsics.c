@@ -1948,6 +1948,10 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                         }
                         format_values_2[format_values_count++] = substring(cformat, start, index + repeat);
                         index += repeat - 1;
+                    } else if (cformat[index] == '/') {
+                        for (int i = 0; i < repeat; i++) {
+                            format_values_2[format_values_count++] = substring(cformat, index, index + 1);
+                        }
                     } else if (cformat[index] == '(') {
                         start = index;
                         index = find_matching_parentheses(format, format_len, index);
@@ -3165,6 +3169,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
             if(format_values[i] == NULL) continue;
             value = format_values[i];
             int64_t value_len = strlen(value);
+            if (value_len == 0) continue;
             if (value_len >= 2 && value[0] == '(' && value[value_len - 1] == ')') {
                 value[value_len - 1] = '\0';
                 int64_t new_fmt_val_count = 0;

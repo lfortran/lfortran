@@ -36,9 +36,12 @@ contains
 
 subroutine __lfortran_coarray_init_coarrays_16_coarrays_16_sub()
     integer(4) :: stat
+    integer(4), pointer :: x__init_ptr
     call __module_prif_prif_init(stat)
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), y__coarray_handle, y__coarray_data)
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
+    call c_f_pointer(x__coarray_data, x__init_ptr)
+    x__init_ptr = 0
 end subroutine __lfortran_coarray_init_coarrays_16_coarrays_16_sub
 
 interface

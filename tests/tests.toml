@@ -2923,6 +2923,54 @@ pass = "coarray"
 options = "--coarray=true"
 
 [[test]]
+filename = "coarrays_17.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_18.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_19.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_20.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_21.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_22.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_23.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_24.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "../integration_tests/program_03.f90"
 asr = true
 llvm = true
@@ -4705,6 +4753,10 @@ asr = true
 
 [[test]]
 filename = "warnings/sizeof_01.f90"
+asr = true
+
+[[test]]
+filename = "warnings/bindc_char_len_01.f90"
 asr = true
 
 [[test]]
