@@ -2511,6 +2511,8 @@ RUN(NAME derived_types_148 LABELS gfortran llvm)
 RUN(NAME derived_types_149 LABELS gfortran llvm)
 RUN(NAME derived_types_150 LABELS gfortran llvm) # SEQUENCE char(len>1) inline + storage_size + memcpy
 RUN(NAME derived_types_151 LABELS gfortran llvm)
+RUN(NAME derived_types_152 LABELS gfortran llvm)
+RUN(NAME derived_types_153 LABELS gfortran llvm)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
