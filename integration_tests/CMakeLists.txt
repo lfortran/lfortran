@@ -2513,6 +2513,7 @@ RUN(NAME derived_types_150 LABELS gfortran llvm) # SEQUENCE char(len>1) inline +
 # Non-elemental defined assignment(=) with scalar dummies does not apply to
 # array LHS (F2023 10.2.1.4); intrinsic componentwise assignment is used.
 RUN(NAME defined_assignment_array_01 LABELS gfortran llvm flang)
+RUN(NAME defined_assignment_parent_array_01 LABELS gfortran llvm flang)
 RUN(NAME derived_types_151 LABELS gfortran llvm flang)
 RUN(NAME derived_types_152 LABELS gfortran llvm flang)
 RUN(NAME derived_types_153 LABELS gfortran llvm flang)

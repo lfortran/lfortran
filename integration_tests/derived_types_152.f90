@@ -121,30 +121,31 @@ contains
          b(i)%tag = -1
       end do
 
-      ! Array assignment of an extended type: values must match (pointer
-      ! components share). Processors may differ on whether a parent
-      ! type-bound assignment(=) is invoked during element assignment;
-      ! only require observable value correctness here.
+      ! Array assignment of extended type: parent component uses defined
+      ! assignment (is_temporary set); extension components still copy.
       b = a
       do i = 1, 3
          if (.not. associated(b(i)%leaf, a(i)%leaf)) error stop 201
          if (b(i)%leaf /= i * 7) error stop 202
+         if (.not. b(i)%is_temporary) error stop 203
       end do
 
       do i = 1, 3
          b(i)%leaf => null()
+         b(i)%is_temporary = .false.
       end do
       b(1:3) = a(1:3)
       do i = 1, 3
          if (.not. associated(b(i)%leaf, a(i)%leaf)) error stop 204
          if (b(i)%leaf /= i * 7) error stop 205
+         if (.not. b(i)%is_temporary) error stop 206
       end do
 
       ! Scalar child assignment uses parent defined assignment
       b(1)%is_temporary = .false.
       b(1) = a(2)
-      if (.not. associated(b(1)%leaf, a(2)%leaf)) error stop 206
-      if (.not. b(1)%is_temporary) error stop 207
+      if (.not. associated(b(1)%leaf, a(2)%leaf)) error stop 207
+      if (.not. b(1)%is_temporary) error stop 208
 
       do i = 1, 3
          deallocate(a(i)%leaf)

@@ -10970,7 +10970,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                 }
                 if( struct_sym->m_parent != nullptr ) {
-                    // gep the parent struct, which is the 0th member of the child struct
+                    // Parent component is the 0th member of the child struct
+                    // (F2023 7.5.7.2). Per 10.2.1.3, intrinsic assignment of an
+                    // extended type assigns that parent component using defined
+                    // assignment when the parent type has a type-bound
+                    // assignment(=); otherwise fall through to member-wise copy.
                     if (src->getType()->isPointerTy()) {
                         src = llvm_utils->create_gep2(llvm_utils->name2dertype[get_type_key(struct_sym)], src, 0);
                     } else {
@@ -10981,8 +10985,158 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     ASR::Struct_t* parent_struct_type_t =
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
 
-                    der_type_name = get_type_key(parent_struct_type_t);
-                    struct_sym = parent_struct_type_t;
+                    bool called_parent_defined_assign = false;
+                    if (use_defined_assignment) {
+                        // Walk parent type hierarchy for ~assign (inherited bindings).
+                        ASR::Struct_t* walk = parent_struct_type_t;
+                        ASR::symbol_t* da_sym = nullptr;
+                        while (walk != nullptr && da_sym == nullptr) {
+                            da_sym = walk->m_symtab->resolve_symbol("~assign");
+                            if (da_sym == nullptr && walk->m_parent != nullptr) {
+                                walk = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(walk->m_parent));
+                            } else if (da_sym == nullptr) {
+                                walk = nullptr;
+                            }
+                        }
+                        if (da_sym != nullptr) {
+                            da_sym = ASRUtils::symbol_get_past_external(da_sym);
+                        }
+                        if (da_sym != nullptr && ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
+                            ASR::CustomOperator_t* custom_op =
+                                ASR::down_cast<ASR::CustomOperator_t>(da_sym);
+                            // Parent component is of type parent_struct_type_t;
+                            // match a procedure whose formals are that type
+                            // (or class of that type).
+                            ASR::symbol_t* matching_func_sym = nullptr;
+                            for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
+                                ASR::symbol_t* assign_proc = ASRUtils::symbol_get_past_external(
+                                    custom_op->m_procs[ip]);
+                                ASR::symbol_t* candidate;
+                                if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
+                                    candidate = ASRUtils::symbol_get_past_external(
+                                        ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                                            assign_proc)->m_proc);
+                                } else {
+                                    candidate = assign_proc;
+                                }
+                                if (!ASR::is_a<ASR::Function_t>(*candidate)) continue;
+                                ASR::Function_t* cand_func =
+                                    ASR::down_cast<ASR::Function_t>(candidate);
+                                if (cand_func->n_args < 2) continue;
+                                auto formal_is_parent = [&](ASR::expr_t* arg) {
+                                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
+                                    ASR::ttype_t* t = ASRUtils::type_get_past_array(
+                                        ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::type_get_past_pointer(var->m_type)));
+                                    if (!ASR::is_a<ASR::StructType_t>(*t) ||
+                                            var->m_type_declaration == nullptr) {
+                                        return false;
+                                    }
+                                    ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                                        var->m_type_declaration);
+                                    // Exact parent type, or any ancestor of parent
+                                    // (class(grandparent) formal with parent component).
+                                    ASR::Struct_t* check = parent_struct_type_t;
+                                    while (check != nullptr) {
+                                        if (&check->base == decl) return true;
+                                        if (check->m_parent == nullptr) break;
+                                        check = ASR::down_cast<ASR::Struct_t>(
+                                            ASRUtils::symbol_get_past_external(
+                                                check->m_parent));
+                                    }
+                                    return false;
+                                };
+                                if (formal_is_parent(cand_func->m_args[0]) &&
+                                        formal_is_parent(cand_func->m_args[1])) {
+                                    matching_func_sym = candidate;
+                                    break;
+                                }
+                            }
+                            if (matching_func_sym != nullptr) {
+                                ASR::Function_t* func_t =
+                                    ASR::down_cast<ASR::Function_t>(matching_func_sym);
+                                ASR::FunctionType_t* ftype = ASR::down_cast<ASR::FunctionType_t>(
+                                    func_t->m_function_signature);
+                                std::string func_name;
+                                if (ftype->m_abi == ASR::abiType::BindC) {
+                                    func_name = ftype->m_bindc_name ? ftype->m_bindc_name
+                                        : std::string(ASRUtils::symbol_name(matching_func_sym));
+                                } else {
+                                    ASR::symbol_t* owner =
+                                        ASRUtils::get_asr_owner(matching_func_sym);
+                                    if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                                        func_name = "__module_" +
+                                            std::string(ASRUtils::symbol_name(owner)) +
+                                            "_" + ASRUtils::symbol_name(matching_func_sym);
+                                    } else {
+                                        func_name = std::string(
+                                            ASRUtils::symbol_name(matching_func_sym));
+                                    }
+                                }
+
+                                llvm::Function* assign_fn = module->getFunction(func_name);
+                                if (!assign_fn) {
+                                    llvm::FunctionType* fntype =
+                                        llvm_utils->get_function_type(*func_t, module);
+                                    assign_fn = llvm::Function::Create(fntype,
+                                        llvm::Function::ExternalLinkage, func_name, module);
+                                }
+
+                                ASR::Variable_t* fn_lhs_var =
+                                    ASRUtils::EXPR2VAR(func_t->m_args[0]);
+                                ASR::ttype_t* fn_lhs_type = ASRUtils::type_get_past_array(
+                                    ASRUtils::type_get_past_allocatable(
+                                        ASRUtils::type_get_past_pointer(fn_lhs_var->m_type)));
+                                bool fn_lhs_is_class = ASRUtils::is_class_type(fn_lhs_type);
+
+                                ASR::Variable_t* fn_rhs_var =
+                                    ASRUtils::EXPR2VAR(func_t->m_args[1]);
+                                ASR::ttype_t* fn_rhs_type = ASRUtils::type_get_past_array(
+                                    ASRUtils::type_get_past_allocatable(
+                                        ASRUtils::type_get_past_pointer(fn_rhs_var->m_type)));
+                                bool fn_rhs_is_class = ASRUtils::is_class_type(fn_rhs_type);
+
+                                llvm::Type* parent_struct_llvm =
+                                    llvm_utils->name2dertype[get_type_key(parent_struct_type_t)];
+                                // Ensure parent subobjects are addressable.
+                                llvm::Value* dest_parent = dest;
+                                llvm::Value* src_parent = src;
+                                if (!dest_parent->getType()->isPointerTy()) {
+                                    llvm::Value* tmp_alloca =
+                                        llvm_utils->CreateAlloca(*builder, parent_struct_llvm);
+                                    builder->CreateStore(dest_parent, tmp_alloca);
+                                    dest_parent = tmp_alloca;
+                                }
+                                if (!src_parent->getType()->isPointerTy()) {
+                                    llvm::Value* tmp_alloca =
+                                        llvm_utils->CreateAlloca(*builder, parent_struct_llvm);
+                                    builder->CreateStore(src_parent, tmp_alloca);
+                                    src_parent = tmp_alloca;
+                                }
+
+                                auto adjust_arg = [&](llvm::Value* v, bool fn_arg_is_class)
+                                        -> llvm::Value* {
+                                    if (fn_arg_is_class) {
+                                        return create_class_view(parent_struct_type_t, v);
+                                    }
+                                    return v;
+                                };
+                                llvm::Value* dest_arg = adjust_arg(dest_parent, fn_lhs_is_class);
+                                llvm::Value* src_arg = adjust_arg(src_parent, fn_rhs_is_class);
+                                builder->CreateCall(assign_fn, {dest_arg, src_arg});
+                                called_parent_defined_assign = true;
+                            }
+                        }
+                    }
+
+                    if (called_parent_defined_assign) {
+                        // Parent component fully handled by defined assignment.
+                        struct_sym = nullptr;
+                    } else {
+                        der_type_name = get_type_key(parent_struct_type_t);
+                        struct_sym = parent_struct_type_t;
+                    }
                 } else {
                     struct_sym = nullptr;
                 }
