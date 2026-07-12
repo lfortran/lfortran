@@ -10026,6 +10026,15 @@ public:
                         ASR::is_a<ASR::FunctionType_t>(*value_type)) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                 llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
+                // Bitcast procedure pointer if source and target LLVM types differ.
+                // This happens when a typed procedure pointer (with concrete interface)
+                // is assigned to a generic procedure() pointer slot (void()*).
+#if LLVM_VERSION_MAJOR < 15
+                llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
+                if (llvm_value->getType() != llvm_target_type) {
+                    llvm_value = builder->CreateBitCast(llvm_value, llvm_target_type);
+                }
+#endif
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (is_target_class &&
                        !ASRUtils::is_array(target_type) &&
@@ -10653,6 +10662,24 @@ public:
                         llvm_target_contents_type->getPointerTo(), llvm_target);
                     builder->CreateStore(llvm_value, loaded_target);
                 } else {
+#if LLVM_VERSION_MAJOR < 15
+                    // Bitcast procedure pointer if source and target LLVM types
+                    // differ. This handles Pointer(FunctionType) associations where
+                    // the source has a concrete interface and the target has a
+                    // generic procedure() slot (void()*).
+                    if (ASR::is_a<ASR::Pointer_t>(*value_type) &&
+                        ASR::is_a<ASR::FunctionType_t>(
+                            *ASRUtils::type_get_past_pointer(value_type)) &&
+                        ASR::is_a<ASR::Pointer_t>(*target_type) &&
+                        ASR::is_a<ASR::FunctionType_t>(
+                            *ASRUtils::type_get_past_pointer(target_type))) {
+                        llvm::Type* llvm_target_el_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_target, target_type, module.get());
+                        if (llvm_value->getType() != llvm_target_el_type) {
+                            llvm_value = builder->CreateBitCast(llvm_value, llvm_target_el_type);
+                        }
+                    }
+#endif
                     builder->CreateStore(llvm_value, llvm_target);
                 }
             }
