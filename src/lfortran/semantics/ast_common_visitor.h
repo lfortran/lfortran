@@ -384,6 +384,11 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {
+            value = ASRUtils::make_RealConstant_r16(al, x.base.base.loc,
+                ASRUtils::real_constant_get_r16(&x), x.m_type);
+            return;
+        }
         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, x.m_r, x.m_type));
     }
 
@@ -518,6 +523,41 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {
+            this->visit_expr(*x.m_left);
+            lf_float128 left_val = ASRUtils::real_constant_get_r16(ASR::down_cast<ASR::RealConstant_t>(value));
+            this->visit_expr(*x.m_right);
+            lf_float128 right_val;
+            if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                right_val = ASRUtils::real_constant_get_r16(ASR::down_cast<ASR::RealConstant_t>(value));
+            } else if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+                right_val = lf_f128_from_int64(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+            }
+            lf_float128 res;
+            switch (x.m_op) {
+                case ASR::binopType::Mul:
+                    res = lf_f128_mul(left_val, right_val);
+                    break;
+                case ASR::binopType::Add:
+                    res = lf_f128_add(left_val, right_val);
+                    break;
+                case ASR::binopType::Sub:
+                    res = lf_f128_sub(left_val, right_val);
+                    break;
+                case ASR::binopType::Div:
+                    res = lf_f128_div(left_val, right_val);
+                    break;
+                case ASR::binopType::Pow:
+                    res = lf_f128_pow(left_val, right_val);
+                    break;
+                default:
+                    diag.add(Diagnostic("Unsupported binary operation in implied do loop",
+                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+            }
+            value = ASRUtils::make_RealConstant_r16(al, x.base.base.loc, res, x.m_type);
+            return;
+        }
         double left_val, right_val;
         this->visit_expr(*x.m_left);
         if (ASR::is_a<ASR::RealConstant_t>(*value)) {
@@ -5561,7 +5601,7 @@ public:
                                                                 rc->m_r, rc->m_type)),
                                                             ASR::cast_kindType::RealToComplex, v->m_type, complex_value, nullptr));
                                                     } else {
-                                                        init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
+                                                        init_val = ASRUtils::make_RealConstant_util(al, x.base.base.loc, rc->m_r, v->m_type);
                                                     }
                                                 } else if (ASR::is_a<ASR::IntegerConstant_t>(*init_val)) {
                                                     ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(init_val);
@@ -5574,9 +5614,8 @@ public:
                                                                 ic->m_n, ic->m_type)),
                                                             ASR::cast_kindType::IntegerToComplex, v->m_type, complex_value, nullptr));
                                                     } else if (ASRUtils::is_real(*v->m_type)) {
-                                                        ASR::expr_t* real_value = ASRUtils::EXPR(
-                                                            ASR::make_RealConstant_t(al, x.base.base.loc,
-                                                                (double)ic->m_n, v->m_type));
+                                                        ASR::expr_t* real_value = ASRUtils::make_RealConstant_util(
+                                                            al, x.base.base.loc, (double)ic->m_n, v->m_type);
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                                 ic->m_n, ic->m_type)),
@@ -5598,7 +5637,7 @@ public:
                                                         }
                                                     }
                                                     if (ASRUtils::is_real(*v->m_type)) {
-                                                        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, re_val, v->m_type));
+                                                        value = ASRUtils::make_RealConstant_util(al, x.base.base.loc, re_val, v->m_type);
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc, init_val,
                                                             ASR::cast_kindType::ComplexToReal, v->m_type, value, nullptr));
                                                     } else if (ASRUtils::is_integer(*v->m_type)) {
