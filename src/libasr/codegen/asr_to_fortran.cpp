@@ -1796,6 +1796,29 @@ public:
         src += "\n";
     }
 
+    void visit_SyncImages(const ASR::SyncImages_t &x) {
+        std::string r = indent;
+        r += "sync images(";
+        if (x.m_image_set) {
+            visit_expr(*x.m_image_set);
+            r += src;
+        } else {
+            r += "*";
+        }
+        if (x.m_stat) {
+            r += ", stat=";
+            visit_expr(*x.m_stat);
+            r += src;
+        }
+        if (x.m_errmsg) {
+            r += ", errmsg=";
+            visit_expr(*x.m_errmsg);
+            r += src;
+        }
+        r += ")\n";
+        src = r;
+    }
+
     // void visit_Assert(const ASR::Assert_t &x) {}
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {

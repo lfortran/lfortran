@@ -14,8 +14,10 @@ macro(ADDTESTC name)
     add_test(${name} ${PROJECT_BINARY_DIR}/${name})
 endmacro(ADDTESTC)
 
-ADDTESTC(test_cwrapper lfortran_c)
-ADDTEST(test_stacktrace)
+if (NOT XEUS_LFORTRAN_WASM_BUILD)
+    ADDTESTC(test_cwrapper lfortran_c)
+    ADDTEST(test_stacktrace)
+endif()
 
 set(SRC
     test_parse.cpp
@@ -44,6 +46,12 @@ if (WITH_LSP)
     )
 endif()
 
+# For the JupyterLite kernel build we only need to exercise the evaluator path
+# (FortranEvaluator -> WasmLFortranExecutor). The other tests are already
+# covered by the HAVE_BUILD_TO_WASM CI job.
+if (XEUS_LFORTRAN_WASM_BUILD)
+    set(SRC test_llvm.cpp)
+endif()
 
 # Add one main test suite for LFortran, composed of many individual cpp files:
 add_executable(test_lfortran ${SRC})
@@ -56,6 +64,17 @@ if (HAVE_BUILD_TO_WASM)
     )
     set_target_properties(test_lfortran PROPERTIES COMPILE_FLAGS ${WASM_COMPILE_FLAGS})
     set_target_properties(test_lfortran PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS})
+endif()
+
+if (XEUS_LFORTRAN_WASM_BUILD)
+    # WasmLFortranExecutor uses dlopen — test binary must be a MAIN_MODULE.
+    target_link_options(test_lfortran PRIVATE
+        "SHELL:-fwasm-exceptions"
+        "SHELL:-s MAIN_MODULE=1"
+        "SHELL:-s ALLOW_MEMORY_GROWTH=1"
+        "SHELL:-s STACK_SIZE=32mb"
+        "SHELL:-s INITIAL_MEMORY=128mb"
+    )
 endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 

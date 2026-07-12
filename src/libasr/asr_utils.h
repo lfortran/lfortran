@@ -88,6 +88,11 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
 
+// Resolve type-bound assignment(=) (~assign) on a struct or its ancestors.
+// Returns the CustomOperator symbol, or nullptr if none is found.
+ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s);
+ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression);
+
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
 static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
 

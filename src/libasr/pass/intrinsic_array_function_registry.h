@@ -2728,6 +2728,24 @@ namespace Spread {
         ASR::dimension_t* source_dims = nullptr;
         int source_rank = extract_dimensions_from_ttype(type_source, source_dims);
         ASRUtils::require_impl(source_rank > 0, "The argument `source` in `spread` must be of rank > 0", source->base.loc, diag);
+        // `dim` must satisfy 1 <= dim <= source_rank + 1 (spread adds a new
+        // dimension). For a scalar source the original rank is 0, so only
+        // dim == 1 is valid, even though the scalar is wrapped into a rank-1
+        // array internally above. A compile-time-constant dim outside this
+        // range used to crash later (out-of-bounds dimension access); reject
+        // it up front, matching gfortran's "is not a valid dimension index"
+        // error. A runtime dim cannot be validated here.
+        if (ASRUtils::is_value_constant(dim)) {
+            int max_dim = (is_scalar ? 1 : source_rank + 1);
+            int64_t dim_value = 0;
+            if (ASRUtils::extract_value(dim, dim_value)
+                    && (dim_value < 1 || dim_value > max_dim)) {
+                append_error(diag, "Dimension index " + std::to_string(dim_value) +
+                    " is out of range for `spread`; expected 1 <= dim <= " +
+                    std::to_string(max_dim), dim->base.loc);
+                return nullptr;
+            }
+        }
         if( is_scalar ){
             Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
             result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
