@@ -25,8 +25,11 @@ class PRIFInterface {
                                            ASR::symbol_t *sym, const Location &loc) {
             if (decl_scope == use_scope || decl_scope == unit.m_symtab) return sym;
             std::string sym_name = ASRUtils::symbol_name(sym);
-            if (ASR::symbol_t *existing = use_scope->get_symbol(sym_name)) {
-                return existing;
+            for (auto &item: use_scope->get_scope()) {
+                if (ASRUtils::symbol_get_past_external(item.second) ==
+                    ASRUtils::symbol_get_past_external(sym)) {
+                    return item.second;
+                }
             }
             std::string mod_name = "";
             if (decl_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*decl_scope->asr_owner) && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(decl_scope->asr_owner))) {
@@ -1629,7 +1632,7 @@ class PRIFInterface {
                 // If the saved coarray had an initial value (e.g., x[*] = 0),
                 // bind the data pointer to a local variable and assign the value.
                 if (init_value) {
-                    std::string local_name = std::string(var->m_name) + "__init_ptr";
+                    std::string local_name = fn_symtab->get_unique_name(std::string(var->m_name) + "__init_ptr");
                     ASR::ttype_t *var_ptr_type = var->m_type; // already Pointer_t
                     ASR::symbol_t *local_sym = declare_variable(
                         fn_symtab, loc, local_name, var_ptr_type,
