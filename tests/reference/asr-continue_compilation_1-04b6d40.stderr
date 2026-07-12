@@ -495,9 +495,9 @@ semantic error: Function `c_loc` is not permitted in an initialization expressio
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: length specifier is only valid for character type
-   --> tests/errors/continue_compilation_1.f90:862:20
+   --> tests/errors/continue_compilation_1.f90:869:20
     |
-862 |         integer :: i*2
+869 |         integer :: i*2
     |                    ^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -1708,62 +1708,68 @@ semantic error: first argument of `llt` must have kind equal to 1
 803 |         print *, llt(glyph, "z")  
     |                  ^^^^^^^^^^^^^^^ 
 
-semantic error: Type and kind of the relevant arguments of Merge must be the same
-   --> tests/errors/continue_compilation_1.f90:820:18
+semantic error: Dimension index 5 is out of range for `spread`; expected 1 <= dim <= 2
+   --> tests/errors/continue_compilation_1.f90:818:28
     |
-820 |         print *, merge(a, b, .true.)
+818 |         print *, spread(a, 5, 2)
+    |                            ^ 
+
+semantic error: Type and kind of the relevant arguments of Merge must be the same
+   --> tests/errors/continue_compilation_1.f90:827:18
+    |
+827 |         print *, merge(a, b, .true.)
     |                  ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `a` argument of `co_max` must be of integer, real or character type, but got complex
-   --> tests/errors/continue_compilation_1.f90:826:21
+   --> tests/errors/continue_compilation_1.f90:833:21
     |
-826 |         call co_max(z)
+833 |         call co_max(z)
     |                     ^ must be integer, real or character type
 
 semantic error: `a` argument of `co_sum` must be of integer, real or complex type, but got logical
-   --> tests/errors/continue_compilation_1.f90:832:21
+   --> tests/errors/continue_compilation_1.f90:839:21
     |
-832 |         call co_sum(mask)
+839 |         call co_sum(mask)
     |                     ^^^^ must be integer, real or complex type
 
 semantic error: duplicate statement label 1000
-   --> tests/errors/continue_compilation_1.f90:837:9
+   --> tests/errors/continue_compilation_1.f90:844:9
     |
-837 | 1000    continue
+844 | 1000    continue
     |         ^^^^^^^^ 
 
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:843:22
+   --> tests/errors/continue_compilation_1.f90:850:22
     |
-843 |         select type (a)
+850 |         select type (a)
     |                      ^ 
 
 semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
-   --> tests/errors/continue_compilation_1.f90:852:18
+   --> tests/errors/continue_compilation_1.f90:859:18
     |
-852 |         print *, min(c1, c4)
+859 |         print *, min(c1, c4)
     |                  ^^^^^^^^^^^ 
 
 semantic error: Label 20 is not defined
-   --> tests/errors/continue_compilation_1.f90:857:9
+   --> tests/errors/continue_compilation_1.f90:864:9
     |
-857 |         goto 20  ! {Error} Label 20 is not defined
+864 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
 
 semantic error: actual argument for 'items' cannot be an assumed-size array
-   --> tests/errors/continue_compilation_1.f90:868:36
+   --> tests/errors/continue_compilation_1.f90:875:36
     |
-868 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+875 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                    ^^^^^ 
 
 semantic error: actual argument for 'items' cannot be an assumed-size array
-   --> tests/errors/continue_compilation_1.f90:877:49
+   --> tests/errors/continue_compilation_1.f90:884:49
     |
-877 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+884 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                                 ^^^^^ 
 
 semantic error: Association target cannot be a BOZ literal constant
-   --> tests/errors/continue_compilation_1.f90:885:25
+   --> tests/errors/continue_compilation_1.f90:892:25
     |
-885 |         associate (y => z'1') 
+892 |         associate (y => z'1') 
     |                         ^^^^ 

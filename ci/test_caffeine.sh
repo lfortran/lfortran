@@ -99,30 +99,19 @@ CAF_IMAGES=${CAF_IMAGES:-2}
 
 echo "Using CAF_IMAGES=$CAF_IMAGES"
 
-# Remove benign STOP output differences
-
-normalize_output() {
-    sed '/^STOP$/d' | awk '{$1=$1;print}' | sort
-}
-
 # Find all coarray-enabled tests
 
 tests=$(python3 -c '
+import re
 filenames = []
-current_file = None
 
-for line in open("tests/tests.toml"):
-    line = line.strip()
-
-    if line.startswith("[[test]]"):
-        current_file = None
-
-    elif line.startswith("filename ="):
-        current_file = "tests/" + line.split("\"")[1]
-
-    elif "--coarray=true" in line:
-        if current_file:
-            filenames.append(current_file)
+with open("integration_tests/CMakeLists.txt") as f:
+    for line in f:
+        line = line.strip()
+        if line.startswith("RUN(") and "coarray=true" in line:
+            m = re.search(r"NAME\s+(\w+)", line)
+            if m:
+                filenames.append(f"integration_tests/{m.group(1)}.f90")
 
 print(" ".join(filenames))
 ')
@@ -200,3 +189,4 @@ echo
 echo "All coarray runtime tests passed"
 
 rm -rf caffeine
+rm -rf OpenCoarrays

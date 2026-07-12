@@ -2780,6 +2780,13 @@ class ASRToLLVMVisitor;
             std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_struct_array_members;
             LLVMFinalize &finalizer_instnace;
 
+            // F2023 10.2.1.3: if struct_t has type-bound assignment(=), call it
+            // for dest = src. value_is_class when src/dest are class wrappers.
+            // Returns true if a defined-assignment call was emitted.
+            bool try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
+                llvm::Value* dest, llvm::Value* src, llvm::Module* module,
+                bool value_is_class);
+
         public:
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct

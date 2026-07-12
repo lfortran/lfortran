@@ -71,6 +71,26 @@ static ASR::symbol_t *make_external_symbol(Allocator &al, SymbolTable *scope,
     return ext_sym;
 }
 
+// Resolve an ExternalSymbol for `target` in `scope`, or create one if missing
+// or if the name resolves to a different symbol.
+static ASR::symbol_t *resolve_or_create_external_symbol(Allocator &al,
+        SymbolTable *scope, ASR::symbol_t *target,
+        const std::string &module_name) {
+    std::string name(ASRUtils::symbol_name(target));
+    ASR::symbol_t *ext = scope->resolve_symbol(name);
+    if (ext != nullptr &&
+            ASR::is_a<ASR::ExternalSymbol_t>(*ext) &&
+            ASRUtils::symbol_get_past_external(ext) == target) {
+        return ext;
+    }
+    std::string unique_name = name;
+    if (ext != nullptr) {
+        unique_name = scope->get_unique_name(name, false);
+    }
+    return make_external_symbol(al, scope, target, unique_name,
+        module_name, name, ASR::accessType::Public);
+}
+
 static ASR::ttype_t *duplicate_type_for_nested_context(Allocator &al,
         ASR::ttype_t *var_type) {
     ASR::ttype_t *array_type = ASRUtils::type_get_past_allocatable_pointer(var_type);
@@ -448,6 +468,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> nested_var_to_ext_var;
     std::map<ASR::symbol_t*, ASR::symbol_t*> func_to_nested_module;
     std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>, ASR::symbol_t*> nested_namelists;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> assumed_length_ctx_var_len;
 
     ReplaceNestedVisitor(Allocator& al_,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
@@ -507,6 +528,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             std::map<ASR::symbol_t*, std::string> sym_to_name;
             module_name = x.m_symtab->get_unique_name(module_name, false);
             for (auto &it2: it.second) {
+                ASR::symbol_t* pending_length_ctx_sym = nullptr;
                 std::string new_ext_var = std::string(ASRUtils::symbol_name(it2));
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                             ASRUtils::symbol_get_past_external(it2));
@@ -656,7 +678,22 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 } else if(ASRUtils::is_array_of_strings(var_type)){ // e.g -> `character(len=foo()) :: str(10)`
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(var_type));
                     ASR::String_t* string_t = ASRUtils::get_string_type(var_type);
-                    if(string_t->m_len_kind == ASR::AssumedLength || (string_t->m_len && !ASRUtils::is_value_constant(string_t->m_len))){
+                    bool non_constant_len = string_t->m_len &&
+                        !ASRUtils::is_value_constant(string_t->m_len);
+                    if(string_t->m_len_kind == ASR::AssumedLength || non_constant_len){
+                        // Rewriting to deferred-length requires a companion
+                        // length context var for allocatable arrays so nested
+                        // allocate statements can provide m_len_expr.
+                        if (is_allocatable) {
+                            std::string len_name = current_scope->get_unique_name(
+                                new_ext_var + "__lc_slen", false);
+                            ASR::ttype_t* int8_type = ASRUtils::TYPE(
+                                ASR::make_Integer_t(al, it2->base.loc, 8));
+                            ASR::expr_t* len_expr_var = PassUtils::create_auxiliary_variable(
+                                it2->base.loc, len_name, al, current_scope, int8_type,
+                                ASR::intentType::Local, nullptr, nullptr);
+                            pending_length_ctx_sym = ASR::down_cast<ASR::Var_t>(len_expr_var)->m_v;
+                        }
                         // Create a new ASR::String node, To avoid using the original one.
                         array_t->m_type = ASRUtils::TYPE(ASR::make_String_t(al, string_t->base.base.loc, 1,
                                             nullptr, ASR::DeferredLength, ASR::DescriptorString));
@@ -677,6 +714,10 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     ASR::intentType::Local, type_decl, nullptr);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
+                if (pending_length_ctx_sym) {
+                    assumed_length_ctx_var_len[sym] = pending_length_ctx_sym;
+                    pending_length_ctx_sym = nullptr;
+                }
             }
             ASR::asr_t *tmp = ASR::make_Module_t(al, x.base.base.loc,
                                             /* a_symtab */ current_scope,
@@ -974,6 +1015,33 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         }
     }
 
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceNestedVisitor>::visit_Allocate(x);
+        ASR::Allocate_t &xx = const_cast<ASR::Allocate_t&>(x);
+        // Length comes from the source expression when present; do not inject.
+        if (xx.m_source) return;
+        for (size_t i = 0; i < xx.n_args; i++) {
+            ASR::alloc_arg_t &a = xx.m_args[i];
+            if (a.m_len_expr) continue;
+            if (!a.m_a) continue;
+            if (!ASR::is_a<ASR::Var_t>(*a.m_a)) continue;
+            ASR::symbol_t *v_sym = ASR::down_cast<ASR::Var_t>(a.m_a)->m_v;
+            ASR::symbol_t *v_target = ASRUtils::symbol_get_past_external(v_sym);
+            auto it_len = assumed_length_ctx_var_len.find(v_target);
+            if (it_len == assumed_length_ctx_var_len.end()) continue;
+            ASR::ttype_t *var_type = ASRUtils::expr_type(a.m_a);
+            if (!ASRUtils::is_character(*var_type)) continue;
+            ASR::String_t *st = ASRUtils::get_string_type(var_type);
+            if (st->m_len_kind != ASR::DeferredLength) continue;
+            ASR::symbol_t *len_sym = it_len->second;
+            std::string module_name(ASRUtils::symbol_name(
+                ASRUtils::get_asr_owner(len_sym)));
+            ASR::symbol_t *len_ext = resolve_or_create_external_symbol(
+                al, current_scope, len_sym, module_name);
+            a.m_len_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, len_ext));
+        }
+    }
+
 };
 
 class AssignNestedVars: public PassUtils::PassVisitor<AssignNestedVars> {
@@ -1074,6 +1142,7 @@ private :
 public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &assumed_length_ctx_var_len;
     std::map<ASR::symbol_t*, ASR::symbol_t*> module_var_to_external;
 
     ASR::symbol_t *cur_func_sym = nullptr;
@@ -1145,8 +1214,10 @@ public:
 
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
-    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm) :
-    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm) { }
+    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm,
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &al_map) :
+    PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm),
+    assumed_length_ctx_var_len(al_map) { }
 
     void visit_Associate(const ASR::Associate_t &x) {
         record_nested_dispatch_host(x.m_target, x.m_value);
@@ -1287,6 +1358,23 @@ public:
                             (ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration));
                         if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ) {
                             if( ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) && ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)) ) {
+                                auto it_len = assumed_length_ctx_var_len.find(t);
+                                if (it_len != assumed_length_ctx_var_len.end()) {
+                                    ASR::symbol_t* len_sym_target = it_len->second;
+                                    ASR::symbol_t* len_ext_sym = resolve_or_create_external_symbol(
+                                        al, current_scope, len_sym_target, m_name);
+                                    ASR::expr_t* len_target = ASRUtils::EXPR(
+                                        ASR::make_Var_t(al, t->base.loc, len_ext_sym));
+                                    ASR::ttype_t* int8_ty = ASRUtils::TYPE(
+                                        ASR::make_Integer_t(al, t->base.loc, 8));
+                                    ASR::expr_t* len_call = ASRUtils::EXPR(
+                                        ASR::make_StringLen_t(al, t->base.loc, val,
+                                            int8_ty, nullptr));
+                                    ASR::stmt_t* len_assign = ASRUtils::STMT(
+                                        ASRUtils::make_Assignment_t_util(al, t->base.loc,
+                                            len_target, len_call, nullptr, false, false));
+                                    body.push_back(al, len_assign);
+                                }
                                 // For allocatable arrays, use Assignment instead of Associate
                                 // to properly handle reallocation in nested functions
                                 ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
@@ -1620,7 +1708,8 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     v.visit_TranslationUnit(unit);
     ReplaceNestedVisitor w(al, v.nesting_map);
     w.visit_TranslationUnit(unit);
-    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map);
+    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
+        w.assumed_length_ctx_var_len);
     z.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
