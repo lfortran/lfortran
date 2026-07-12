@@ -1,8 +1,8 @@
 module coarray_saved_mod
     integer :: w[*]
     integer :: x(10)[*]
-!    integer, save :: y[*]      ! disabled pending #12114
-!    integer, save :: z(10)[*]  ! disabled pending #12114
+    integer, save :: y[*]
+    integer, save :: z(10)[*]
 contains
     subroutine mod_sub()
     end subroutine
