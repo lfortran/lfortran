@@ -2510,6 +2510,11 @@ RUN(NAME derived_types_147 LABELS gfortran llvm)
 RUN(NAME derived_types_148 LABELS gfortran llvm)
 RUN(NAME derived_types_149 LABELS gfortran llvm)
 RUN(NAME derived_types_150 LABELS gfortran llvm) # SEQUENCE char(len>1) inline + storage_size + memcpy
+# Non-elemental defined assignment(=) with scalar dummies (F2023 10.2.1.3–4).
+# Free-interface case is a separate file: coexisting with type-bound
+# assignment(=) in one module breaks resolution under LFortran.
+RUN(NAME defined_assignment_01 LABELS llvm flang)
+RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3035,6 +3040,7 @@ RUN(NAME inquire_12 LABELS gfortran llvm)
 RUN(NAME inquire_13 LABELS gfortran llvm)
 RUN(NAME inquire_14 LABELS llvm EXTRA_ARGS --cpp)
 RUN(NAME inquire_15 LABELS gfortran llvm)
+RUN(NAME inquire_16 LABELS gfortran llvm)
 RUN(NAME inquire_unit_exist LABELS gfortran llvm)
 RUN(NAME asynchronous_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
@@ -3504,9 +3510,9 @@ RUN(NAME nested_vars_05 LABELS gfortran llvm)
 RUN(NAME nested_vars_06 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME nested_vars_07 LABELS gfortran llvm)
 RUN(NAME nested_vars_08 LABELS gfortran llvm)
-RUN(NAME nested_vars_11 LABELS gfortran llvm)
-
+RUN(NAME nested_vars_09 LABELS gfortran llvm)
 RUN(NAME nested_vars_10 LABELS gfortran llvm)
+RUN(NAME nested_vars_11 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -4055,6 +4061,10 @@ RUN(NAME cpp_pre_16 LABELS gfortran llvm
     EXTRA_ARGS --cpp
     GFORTRAN_ARGS -cpp)
 
+RUN(NAME cpp_pre_17 LABELS gfortran llvm
+    EXTRA_ARGS --cpp
+    GFORTRAN_ARGS -cpp)
+
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME minpack_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4431,6 +4441,7 @@ RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_component_struct_array_01 LABELS gfortran llvm)
 RUN(NAME allocatable_component_struct_array_02 LABELS gfortran llvm)
+RUN(NAME allocatable_component_scalar_use_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_02 LABELS gfortran llvm)
 RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
@@ -4513,6 +4524,7 @@ RUN(NAME separate_compilation_46 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_47 LABELS gfortran llvm EXTRAFILES separate_compilation_47a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_48 LABELS gfortran llvm EXTRAFILES separate_compilation_48a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_49 LABELS gfortran llvm EXTRAFILES separate_compilation_49a.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_50 LABELS gfortran llvm EXTRAFILES separate_compilation_50a.f90 separate_compilation_50b.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
@@ -4678,6 +4690,27 @@ RUN(NAME char4_string_intrinsics_01 LABELS gfortran llvm)
 
 #test for coarray
 RUN(NAME coarray_01 LABELS gfortran GFORTRAN_ARGS -fcoarray=single)
+RUN(NAME coarrays_03 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_04 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_05 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_06 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_07 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_09 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_10 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_11 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_12 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_13 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_14 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_15 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_16 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_17 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_18 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_19 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_20 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_21 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_22 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_23 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_24 EXTRA_ARGS --coarray=true)
 
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)

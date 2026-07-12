@@ -110,6 +110,7 @@ public:
     ~WasmLFortranExecutor();
 
     void add_module(std::unique_ptr<LLVMModule> m, int eval_count);
+    std::unique_ptr<LLVMModule> parse_module2(const std::string &source, const std::string &filename);
     intptr_t get_symbol_address(const std::string &name);
     llvm::LLVMContext &get_context();
 
@@ -123,6 +124,11 @@ public:
 private:
     std::unique_ptr<llvm::LLVMContext> context;
     std::string TempDir;
+    // Each executor instance gets a unique ID so that __lfortran_evaluate_N
+    // function names are globally unique across all loaded side modules.
+    // This allows dlsym(RTLD_DEFAULT) to always find the right symbol without
+    // needing to track per-module dlopen handles.
+    int m_id;
 };
 
 #endif // __EMSCRIPTEN__
