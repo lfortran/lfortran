@@ -433,6 +433,10 @@ namespace LCompilers {
             apply_default_passes = false;
         }
 
+        bool has_user_defined_passes() const {
+            return !_user_defined_passes.empty();
+        }
+
         void use_fortran_passes() {
             _user_defined_passes.push_back("unique_symbols");
         }

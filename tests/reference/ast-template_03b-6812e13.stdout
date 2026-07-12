@@ -145,16 +145,16 @@
             (Require
                 [(UnitRequire
                     op
-                    [(AttrNamelist
+                    [(AttrName
                         V
                     )
-                    (AttrNamelist
+                    (AttrName
                         W
                     )
-                    (AttrNamelist
+                    (AttrName
                         V
                     )
-                    (AttrNamelist
+                    (AttrName
                         plus
                     )]
                 )]
@@ -162,16 +162,16 @@
             (Require
                 [(UnitRequire
                     op
-                    [(AttrNamelist
+                    [(AttrName
                         T
                     )
-                    (AttrNamelist
+                    (AttrName
                         U
                     )
-                    (AttrNamelist
+                    (AttrName
                         W
                     )
-                    (AttrNamelist
+                    (AttrName
                         times
                     )]
                 )]

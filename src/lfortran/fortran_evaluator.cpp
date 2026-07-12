@@ -245,7 +245,14 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
     if (compiler_options.c_preprocessor) {
         // Preprocessor
         LFortran::CPreprocessor cpp(compiler_options);
-        Result<std::string> res = cpp.run(code_orig, lm, cpp.macro_definitions, diagnostics);
+        const std::string *cpp_input = &code_orig;
+        std::string cpp_input_with_newline;
+        if (!code_orig.empty() && code_orig.back() != '\n') {
+            cpp_input_with_newline = code_orig;
+            cpp_input_with_newline.push_back('\n');
+            cpp_input = &cpp_input_with_newline;
+        }
+        Result<std::string> res = cpp.run(*cpp_input, lm, cpp.macro_definitions, diagnostics);
         if (res.ok) {
             tmp = res.result;
         } else {
@@ -622,7 +629,8 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
-    LocationManager &lm, diag::Diagnostics &diagnostics)
+    LocationManager &lm, diag::Diagnostics &diagnostics,
+    LCompilers::PassManager& pass_manager)
 {
     // SRC -> AST -> ASR -> Fortran
     SymbolTable *old_symbol_table = symbol_table;
@@ -630,8 +638,9 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        LCompilers::PassManager pass_manager;
-        pass_manager.use_fortran_passes();
+        if (!pass_manager.has_user_defined_passes()) {
+            pass_manager.use_fortran_passes();
+        }
         pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {

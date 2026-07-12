@@ -65,7 +65,7 @@
             [(Require
                 [(UnitRequire
                     r
-                    [(AttrNamelist
+                    [(AttrName
                         t
                     )]
                 )]

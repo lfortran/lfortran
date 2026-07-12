@@ -292,7 +292,9 @@ const std::vector<std::string> declarators{
             "bytes",
             "data",
             "type",
-            "class"
+            "class",
+            "public",
+            "private"
         };
 
 std::vector<std::string> lines{};

@@ -23,7 +23,7 @@ concurrency:
 
 
 env:
-  MACOSX_DEPLOYMENT_TARGET: 15.0
+  MACOSX_DEPLOYMENT_TARGET: 26.0
 
 jobs:
   Build:
@@ -44,7 +44,7 @@ jobs:
           - os: windows-2025
             llvm-version: "11"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -124,7 +124,9 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
+                call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+            )
             set CC=cl.exe
             set CXX=cl.exe
             set "PATH=%PATH:C:\mingw64\bin;=%"
@@ -174,7 +176,9 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
+                call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+            )
             set CC=cl.exe
             set CXX=cl.exe
             set "PATH=%PATH:C:\mingw64\bin;=%"
@@ -334,7 +338,7 @@ jobs:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

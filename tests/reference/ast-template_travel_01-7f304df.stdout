@@ -576,25 +576,25 @@
             [(Require
                 [(UnitRequire
                     operations
-                    [(AttrNamelist
+                    [(AttrName
                         D
                     )
-                    (AttrNamelist
+                    (AttrName
                         T
                     )
-                    (AttrNamelist
+                    (AttrName
                         S
                     )
-                    (AttrNamelist
+                    (AttrName
                         plus_D
                     )
-                    (AttrNamelist
+                    (AttrName
                         plus_T
                     )
-                    (AttrNamelist
+                    (AttrName
                         D_divided_by_T
                     )
-                    (AttrNamelist
+                    (AttrName
                         D_divided_by_S
                     )]
                 )]
@@ -981,16 +981,16 @@
                     ()
                     None
                 )
-                (AttrNamelist
+                (AttrName
                     add_real
                 )
-                (AttrNamelist
+                (AttrName
                     add_real
                 )
-                (AttrNamelist
+                (AttrName
                     slash_real
                 )
-                (AttrNamelist
+                (AttrName
                     slash_real
                 )]
                 [(UseSymbol
@@ -1021,16 +1021,16 @@
                     ()
                     None
                 )
-                (AttrNamelist
+                (AttrName
                     add_real
                 )
-                (AttrNamelist
+                (AttrName
                     add_real
                 )
-                (AttrNamelist
+                (AttrName
                     slash_real
                 )
-                (AttrNamelist
+                (AttrName
                     slash_real
                 )]
                 [(UseSymbol

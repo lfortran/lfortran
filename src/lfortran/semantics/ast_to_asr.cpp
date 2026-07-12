@@ -99,6 +99,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         outfile << "! Fortran code after SymbolTable Visitor\n" << fortran_code.result << "\n";
         outfile.close();
     }
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(*tu);
 #if defined(WITH_LFORTRAN_ASSERT)
     if (!asr_verify(*tu, true, diagnostics)) {
         return Error();

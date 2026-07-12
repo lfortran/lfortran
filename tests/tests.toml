@@ -2843,6 +2843,131 @@ ast_f90 = true
 filename = "coarrays_03.f90"
 fortran = true
 pass = "coarray"
+options = "--coarray=true --show-fortran"
+
+[[test]]
+filename = "coarrays_04.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true --show-fortran"
+
+[[test]]
+filename = "coarrays_05.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_06.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_07.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_08.f90"
+ast = true
+ast_f90 = true
+
+[[test]]
+filename = "coarrays_09.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_10.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_11.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_12.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_13.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_14.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_15.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_16.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_17.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_18.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_19.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_20.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_21.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_22.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_23.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarrays_24.f90"
+fortran = true
+pass = "coarray"
 options = "--coarray=true"
 
 [[test]]
@@ -4631,6 +4756,10 @@ filename = "warnings/sizeof_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/bindc_char_len_01.f90"
+asr = true
+
+[[test]]
 filename = "char_arr_assignment.f90"
 asr = true
 
@@ -4858,6 +4987,10 @@ asr = true
 
 [[test]]
 filename = "errors/array_shape_05.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_06.f90"
 run = true
 
 [[test]]
@@ -5195,6 +5328,10 @@ filename = "../integration_tests/read_83.f90"
 llvm = true
 
 [[test]]
+filename = "../integration_tests/read_97.f90"
+asr = true
+
+[[test]]
 filename = "no_main_program_1.f90"
 run = true
 
@@ -5210,4 +5347,8 @@ run = true
 
 [[test]]
 filename = "errors/read_eof_01.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/shadow_same_symbol.f90"
 run = true

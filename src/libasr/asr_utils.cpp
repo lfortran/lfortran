@@ -29,11 +29,33 @@ namespace LCompilers {
 inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type){
     LCOMPILERS_ASSERT(is_string_only(expr_type(string_expr)))
     LCOMPILERS_ASSERT(is_array_of_strings(array_type))
-    if(extract_n_dims_from_ttype(array_type) != 1) throw LCompilersException("Can't cast string to array of n_dims != 1");
 
     ASR::ttype_t*  const array_type_dup = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(array_type);
     ASR::Array_t*  const array_t = ASR::down_cast<ASR::Array_t>(type_get_past_allocatable_pointer(array_type_dup));
     ASR::String_t* const dest_string_t = get_string_type(array_type_dup);
+    if (array_t->n_dims != 1) {
+        ASRBuilder b(al, string_expr->base.loc);
+        ASR::expr_t* known_size = b.i32(1);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            if (array_t->m_dims[i].m_start == nullptr) {
+                array_t->m_dims[i].m_start = b.i32(1);
+            }
+            if (array_t->m_dims[i].m_length != nullptr) {
+                known_size = b.Mul(known_size, array_t->m_dims[i].m_length);
+            }
+        }
+        ASR::expr_t* string_len = b.StringLen(string_expr);
+        ASR::expr_t* elem_count = b.Div(string_len, dest_string_t->m_len);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            if (array_t->m_dims[i].m_length == nullptr) {
+                array_t->m_dims[i].m_length = b.Div(elem_count, known_size);
+                known_size = b.Mul(known_size, array_t->m_dims[i].m_length);
+            }
+        }
+       return ASR::down_cast2<ASR::Cast_t>(
+                ASR::make_Cast_t(al, string_expr->base.loc, string_expr
+                            , ASR::StringToArray, array_type_dup, nullptr, nullptr));
+    }
     const bool is_length_present = dest_string_t->m_len_kind == ASR::ExpressionLength;
     const bool is_size_present = !is_dimension_empty(array_type_dup); 
 
@@ -1761,14 +1783,26 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
                                     if (n_ret_dims > 0) {
-                                        ReplaceFunctionParamWithArg r(al, call_args1, n_call_args1);
-                                        for (size_t di = 0; di < n_ret_dims; di++) {
-                                            if (ret_dims[di].m_length) {
-                                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
-                                            }
-                                            if (ret_dims[di].m_start) {
-                                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
-                                            }
+                                       // Keep whichever 'r' initialization is currently there, for example:
+                                       ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n); // OR call_args1, n_call_args1
+
+                                       // 1. Initialize the caller's duplicator OUTSIDE the loop
+                                       ASRUtils::ExprStmtDuplicator caller_dup(al);
+                                       caller_dup.allow_procedure_calls = true;
+                                       caller_dup.success = true;
+
+                                       for (size_t di = 0; di < n_ret_dims; di++) {
+                                          if (ret_dims[di].m_length) {
+                                          // 2. Extract and safely duplicate m_length
+                                          ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                                          ret_dims[di].m_length = (replaced_length == ret_dims[di].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
+                                           }
+        
+                                          if (ret_dims[di].m_start) {
+                                          // 3. Extract and safely duplicate m_start
+                                          ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                                          ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
+                                           }
                                         }
                                     }
                                 }
@@ -1862,13 +1896,25 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                     ASR::dimension_t* ret_dims = nullptr;
                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
                     if (n_ret_dims > 0) {
-                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n);
-                        for (size_t di = 0; di < n_ret_dims; di++) {
-                            if (ret_dims[di].m_length) {
-                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                       // Keep whichever 'r' initialization is currently there, for example:
+                       ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n); // OR call_args1, n_call_args1
+
+                       // 1. Initialize the caller's duplicator OUTSIDE the loop
+                       ASRUtils::ExprStmtDuplicator caller_dup(al);
+                       caller_dup.allow_procedure_calls = true;
+                       caller_dup.success = true;
+
+                       for (size_t di = 0; di < n_ret_dims; di++) {
+                           if (ret_dims[di].m_length) {
+                              // 2. Extract and safely duplicate m_length
+                              ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                              ret_dims[di].m_length = (replaced_length == ret_dims[di].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
                             }
+        
                             if (ret_dims[di].m_start) {
-                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                               // 3. Extract and safely duplicate m_start
+                               ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                               ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                             }
                         }
                     }
@@ -2747,17 +2793,29 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
-                                    if (n_ret_dims > 0) {
-                                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n);
-                                        for (size_t di = 0; di < n_ret_dims; di++) {
-                                            if (ret_dims[di].m_length) {
-                                                ret_dims[di].m_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
-                                            }
-                                            if (ret_dims[di].m_start) {
-                                                ret_dims[di].m_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
-                                            }
+                                     if (n_ret_dims > 0) {
+                                        // Keep whichever 'r' initialization is currently there, for example:
+                                        ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n); // OR call_args1, n_call_args1
+
+                                        // 1. Initialize the caller's duplicator OUTSIDE the loop
+                                        ASRUtils::ExprStmtDuplicator caller_dup(al);
+                                        caller_dup.allow_procedure_calls = true;
+                                        caller_dup.success = true;
+
+                                     for (size_t di = 0; di < n_ret_dims; di++) {
+                                         if (ret_dims[di].m_length) {
+                                            // 2. Extract and safely duplicate m_length
+                                            ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(ret_dims[di].m_length);
+                                            ret_dims[di].m_length = (replaced_length == ret_dims[di].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
+                                         }
+        
+                                         if (ret_dims[di].m_start) {
+                                            // 3. Extract and safely duplicate m_start
+                                            ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(ret_dims[di].m_start);
+                                            ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
+                                         }
                                         }
-                                    }
+                                     }
                                 }
                             }
                             asr = ASRUtils::make_FunctionCall_t_util(
@@ -3542,6 +3600,7 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     if( d == nullptr ) {
         implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
     } else {
+        d = builder.i2i_t(d, ASRUtils::expr_type(end));
         implied_doloop_size = builder.Add(builder.Div(
             builder.Sub(end, start), d),
             make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
@@ -3839,10 +3898,14 @@ ASR::asr_t* make_ArraySize_t_util(
             }
         } else {
             if( a_dim == nullptr ) {
-                LCOMPILERS_ASSERT(m_dims[0].m_length);
+                if( n_dims == 0 || m_dims[0].m_length == nullptr ) {
+                    return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                }
                 ASR::expr_t* result = m_dims[0].m_length;
                 for( size_t i = 1; i < n_dims; i++ ) {
-                    LCOMPILERS_ASSERT(m_dims[i].m_length);
+                    if( m_dims[i].m_length == nullptr ) {
+                        return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+                    }
                     result = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
                         result, ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr));
                 }
@@ -3893,8 +3956,7 @@ ASR::asr_t* make_ArraySize_t_util(
         ASR::IntrinsicElementalFunction_t* elemental = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a_v);
         for( size_t i = 0; i < elemental->n_args; i++ ) {
             if( ASRUtils::is_array(ASRUtils::expr_type(elemental->m_args[i])) ) {
-                a_v = elemental->m_args[i];
-                break;
+                return make_ArraySize_t_util(al, a_loc, elemental->m_args[i], a_dim, a_type, a_value, for_type);
             }
         }
     }
@@ -4203,7 +4265,8 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ||
         ASR::is_a<ASR::BitCast_t>(*x) ||
         ASR::is_a<ASR::ArrayConstant_t>(*x) ||
-        ASR::is_a<ASR::ArrayConstructor_t>(*x)) {
+        ASR::is_a<ASR::ArrayConstructor_t>(*x) ||
+        ASR::is_a<ASR::ArraySection_t>(*x)) {
         return x;
     }
 

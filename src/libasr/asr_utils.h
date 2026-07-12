@@ -6,6 +6,8 @@
 #include <set>
 #include <limits>
 #include <optional>
+#include <vector>
+#include <utility>
 #include <cstdint>
 #include <cstring>
 
@@ -1764,6 +1766,14 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
         }
+        case ASR::exprType::ComplexRe: {
+            ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(a_value);
+            return is_modifiable_actual_argument_expr(re->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(a_value);
+            return is_modifiable_actual_argument_expr(im->m_arg);
+        }
         case ASR::exprType::DictItem: {
             return true;
         }
@@ -2746,10 +2756,10 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
         case ASR::ttypeType::Integer: {
             int64_t val;
             switch (kind) {
-                case 1: val = std::numeric_limits<int8_t>::min()+1; break;
-                case 2: val = std::numeric_limits<int16_t>::min()+1; break;
-                case 4: val = std::numeric_limits<int32_t>::min()+1; break;
-                case 8: val = std::numeric_limits<int64_t>::min()+1; break;
+                case 1: val = std::numeric_limits<int8_t>::min(); break;
+                case 2: val = std::numeric_limits<int16_t>::min(); break;
+                case 4: val = std::numeric_limits<int32_t>::min(); break;
+                case 8: val = std::numeric_limits<int64_t>::min(); break;
                 default:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
             }
@@ -3288,9 +3298,16 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
     } else if (ASR::is_a<ASR::CPtr_t>(*type)) {
         return {8, 8};
     } else if (ASR::is_a<ASR::String_t>(*type)) {
-        int64_t kind = ASR::down_cast<ASR::String_t>(type)->m_kind;
-        if (kind > 0) return {kind, 1};
-        return {-1, -1};
+        ASR::String_t* st = ASR::down_cast<ASR::String_t>(type);
+        int64_t kind = st->m_kind;
+        if (kind <= 0) return {-1, -1};
+        int64_t len = 1;
+        if (st->m_len == nullptr ||
+            !ASRUtils::extract_value(st->m_len, len)) {
+            return {-1, -1};
+        }
+        if (len < 0) return {-1, -1};
+        return {kind * len, 1};
     } else if (ASR::is_a<ASR::StructType_t>(*type)) {
         ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
         int64_t offset = 0;
@@ -3496,27 +3513,35 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
     private:
-
     Allocator& al;
     ASR::call_arg_t* m_args;
     size_t n_args;
+    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> replacements;
 
     public:
-
     ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_) :
         al(al_), m_args(m_args_), n_args(n_args_) {}
 
     void replace_FunctionParam(ASR::FunctionParam_t *x) {
         if (current_expr) {
             size_t n = x->m_param_number;
-            if (n >= n_args) {
-                LCOMPILERS_ASSERT("FunctionParam param number not in range.");
-            };
+            LCOMPILERS_ASSERT_MSG(n < n_args,"FunctionParam param number not in range.");
+            
+            replacements.push_back({current_expr, *current_expr});
             *current_expr = m_args[n].m_value;
         }
     }
 
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
+        
+
+        LCOMPILERS_ASSERT(replacements.empty()) 
+        ASR::expr_t** current_copy = current_expr;
+        current_expr = &t;
+        
+        replace_expr(t);
+        current_expr = current_copy;
+
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
         duplicator.success = true;
@@ -3524,10 +3549,10 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
         ASR::expr_t* tc = duplicator.duplicate_expr(t);
         LCOMPILERS_ASSERT(duplicator.success);
 
-        ASR::expr_t** current_copy = current_expr;
-        current_expr = &tc;
-        replace_expr(tc);
-        current_expr = current_copy;
+        for (auto& rep : replacements) {
+            *(rep.first) = rep.second; 
+        }
+        replacements.clear();
 
         return tc;
     }
@@ -3592,7 +3617,8 @@ static inline bool is_binop_expr(ASR::expr_t* x) {
         case ASR::exprType::ComplexCompare:
         case ASR::exprType::LogicalCompare:
         case ASR::exprType::UnsignedIntegerCompare:
-        case ASR::exprType::StringCompare: {
+        case ASR::exprType::StringCompare:
+        case ASR::exprType::StringConcat: {
             return true;
         }
         default: {
@@ -3656,6 +3682,7 @@ static inline ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t memb
         BINOP_MEMBER_CASE(LogicalCompare, LogicalCompare_t)
         BINOP_MEMBER_CASE(UnsignedIntegerCompare, UnsignedIntegerCompare_t)
         BINOP_MEMBER_CASE(StringCompare, StringCompare_t)
+        BINOP_MEMBER_CASE(StringConcat, StringConcat_t)
         default: {
             LCOMPILERS_ASSERT(false)
         }
@@ -5211,39 +5238,40 @@ template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
     const std::function<void (const std::string &, const Location &)> err,
-    bool raise_error=true) {
+    bool raise_error=true, bool is_dt_present=false) {
+    // When `is_dt_present` is true, `args[0]` is the passed-object (the `dt`
+    // of a type-bound procedure call). A `nopass` specific procedure does not
+    // receive the passed-object, so it must be matched against the arguments
+    // excluding `args[0]`.
+    auto matches = [&](ASR::symbol_t* proc_sym) -> bool {
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
+            ASR::StructMethodDeclaration_t *clss_fn
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
+            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
+            if( is_dt_present && clss_fn->m_is_nopass && args.n >= 1 ) {
+                Vec<ASR::call_arg_t> args_no_dt;
+                args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
+                return select_func_subrout(proc, args_no_dt, loc, err);
+            }
+            return select_func_subrout(proc, args, loc, err);
+        } else {
+            return select_func_subrout(proc_sym, args, loc, err);
+        }
+    };
     for (size_t i=0; i < p.n_procs; i++) {
         if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
             continue;
         }
-        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
-            ASR::StructMethodDeclaration_t *clss_fn
-                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
+        if( matches(p.m_procs[i]) ) {
+            return i;
         }
     }
     for (size_t i=0; i < p.n_procs; i++) {
         if (!is_elemental(p.m_procs[i])) {
             continue;
         }
-        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
-            ASR::StructMethodDeclaration_t *clss_fn
-                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
-            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( select_func_subrout(proc, args, loc, err) ) {
-                return i;
-            }
-        } else {
-            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
-                return i;
-            }
+        if( matches(p.m_procs[i]) ) {
+            return i;
         }
     }
     if( raise_error ) {
@@ -5492,7 +5520,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
         ASR::asr_t* dtype = ASR::make_Struct_t(al, struct_sym->base.loc,
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
-            ASR::accessType::Public, false, true, nullptr, 0,
+            ASR::accessType::Public, false, true, false, nullptr, 0,
             nullptr, nullptr, nullptr, 0);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
@@ -6070,6 +6098,10 @@ class SymbolDuplicator {
         SymbolTable* destination_symtab) {
         ASR::symbol_t* new_symbol = nullptr;
         std::string new_symbol_name = "";
+        std::string symbol_name = ASRUtils::symbol_name(symbol);
+        if (destination_symtab->get_symbol(symbol_name)) {
+            return;
+        }
         switch( symbol->type ) {
             case ASR::symbolType::Variable: {
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(symbol);
@@ -6129,6 +6161,12 @@ class SymbolDuplicator {
                 ASR::StructMethodDeclaration_t* struct_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(symbol);
                 new_symbol = duplicate_StructMethodDeclaration(struct_method, destination_symtab);
                 new_symbol_name = struct_method->m_name;
+                break;
+            }
+            case ASR::symbolType::Namelist: {
+                ASR::Namelist_t* namelist = ASR::down_cast<ASR::Namelist_t>(symbol);
+                new_symbol = duplicate_Namelist(namelist, destination_symtab);
+                new_symbol_name = namelist->m_group_name;
                 break;
             }
             default: {
@@ -6356,6 +6394,7 @@ class SymbolDuplicator {
             struct_type_t->m_members, struct_type_t->n_members,
             struct_type_t->m_member_functions, struct_type_t->n_member_functions, struct_type_t->m_abi,
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
+            struct_type_t->m_is_sequence,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent,
             struct_type_t->m_kind_params, struct_type_t->n_kind_params));
@@ -6384,6 +6423,26 @@ class SymbolDuplicator {
             structMethod->m_proc_name, structMethod->m_proc,
             structMethod->m_abi, structMethod->m_is_deferred,
             structMethod->m_is_nopass));
+    }
+
+    ASR::symbol_t* duplicate_Namelist(ASR::Namelist_t* namelist,
+        SymbolTable* destination_symtab) {
+        Vec<ASR::symbol_t*> var_list;
+        var_list.reserve(al, namelist->n_var_list);
+        for (size_t i = 0; i < namelist->n_var_list; i++) {
+            ASR::symbol_t* var = namelist->m_var_list[i];
+            std::string var_name = ASRUtils::symbol_name(var);
+            ASR::symbol_t* new_var = destination_symtab->get_symbol(var_name);
+            if (!new_var) {
+                duplicate_symbol(var, destination_symtab);
+                new_var = destination_symtab->get_symbol(var_name);
+            }
+            LCOMPILERS_ASSERT(new_var);
+            var_list.push_back(al, new_var);
+        }
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Namelist_t(
+            al, namelist->base.base.loc, destination_symtab,
+            namelist->m_group_name, var_list.p, var_list.size()));
     }
 
 };
@@ -7215,11 +7274,17 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
     const Location& loc, ASR::expr_t* v_expr, SymbolTable* current_scope) {
     ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(v_expr);
     if (struct_sym == nullptr) return nullptr;
-    std::string struct_name = symbol_name(struct_sym);
+    // ExternalSymbol.m_external must point at the original definition (e.g.
+    // Struct), never another ExternalSymbol. Expressions like s%component can
+    // yield a use-associated ExternalSymbol when the component type is only
+    // reached transitively (not imported into the current scope).
+    ASR::symbol_t* original_struct = symbol_get_past_external(struct_sym);
+    if (original_struct == nullptr) return nullptr;
+    std::string struct_name = symbol_name(original_struct);
     if (current_scope->resolve_symbol(struct_name) == nullptr) {
         struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-            al, loc, current_scope, s2c(al, struct_name), struct_sym,
-            ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+            al, loc, current_scope, s2c(al, struct_name), original_struct,
+            ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_struct)), nullptr, 0,
             s2c(al, struct_name), ASR::accessType::Public));
         current_scope->add_symbol(struct_name, struct_sym);
     } else {
@@ -7230,8 +7295,8 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
         } else {
             std::string unique_name = current_scope->get_unique_name(struct_name);
             struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, loc, current_scope, s2c(al, unique_name), struct_sym,
-                ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym)), nullptr, 0,
+                al, loc, current_scope, s2c(al, unique_name), original_struct,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_struct)), nullptr, 0,
                 s2c(al, struct_name), ASR::accessType::Public));
             current_scope->add_symbol(unique_name, struct_sym);
         }
@@ -8207,32 +8272,44 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // type is a proper Array, not a bare element type.
                     dimensions = &dimension_;
                 } else if (current_scope) {
-                    // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                    // Self is already in a_args (at the PASS position), so
-                    // FunctionParam indices align 1:1 with a_args indices.
-                    ReplaceFunctionParamWithArg r(al, a_args, n_args);
-                    SetChar temp_function_dependencies;
-                    CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
-                    bool valid_symbols = true;
-                    for (size_t i = 0; i < dimension_.size(); i++) {
-                        dimension_.p[i].loc = arg->base.loc;
-                        dimension_.p[i].m_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
-                        dimension_.p[i].m_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
-                        valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+                      // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
+                      // Self is already in a_args (at the PASS position), so
+                      // FunctionParam indices align 1:1 with a_args indices.
+                      ReplaceFunctionParamWithArg r(al, a_args, n_args);
+                      SetChar temp_function_dependencies;
+                      CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
+    
+                      // 1. Initialize the caller's duplicator
+                      ASRUtils::ExprStmtDuplicator caller_dup(al);
+                      caller_dup.allow_procedure_calls = true;
+                      caller_dup.success = true;
 
-                        if (!valid_symbols) {
+                      bool valid_symbols = true;
+                      for (size_t i = 0; i < dimension_.size(); i++) {
+                          dimension_.p[i].loc = arg->base.loc;
+        
+                          // 2. Safely extract the replaced memory (optimized or mutated)
+                          ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
+                          ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
+        
+                          // 3. Caller takes responsibility for duplication to prevent the DAG crash
+                          dimension_.p[i].m_length = (replaced_length == dimension_.p[i].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
+                          dimension_.p[i].m_start = (replaced_start == dimension_.p[i].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
+                          valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+
+                          if (!valid_symbols) {
                             break;
+                          }
                         }
-                    }
-                    // If the symbols are valid then include the dimension in ArrayPhysicalCast
-                    if (valid_symbols) {
-                        dimensions = &dimension_;
-                        if (current_function_dependencies.has_value()) {
+                          // If the symbols are valid then include the dimension in ArrayPhysicalCast
+                       if (valid_symbols) {
+                          dimensions = &dimension_;
+                           if (current_function_dependencies.has_value()) {
                             for (size_t j = 0; j < temp_function_dependencies.n; j++) {
                                 current_function_dependencies->get().push_back(al, temp_function_dependencies[j]);
                             }
-                        }
-                    } else {
+                          }
+                        } else {
                         dimensions = nullptr;
                     }
                 }
@@ -8286,8 +8363,14 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             }
         }
         if(is_stringToArray_cast_needed(arg_type, orig_arg_type)){
-            LCOMPILERS_ASSERT_MSG(extract_n_dims_from_ttype(orig_arg_type)==1, "Casting string to array of rank == 1 is only possible")
-            a_args[i].m_value = &cast_string_to_array(al, arg, orig_arg_type)->base;
+            ASR::ttype_t* string_array_target = orig_arg_type;
+            //handle assumed rank case also
+            if (ASRUtils::is_assumed_rank_array(orig_arg_type)) {
+                Vec<ASR::dimension_t> one_dim; one_dim.reserve(al, 1);
+                one_dim.push_back(al, {arg->base.loc, nullptr, nullptr});
+                string_array_target = ASRUtils::duplicate_type(al, orig_arg_type,&one_dim, ASR::array_physical_typeType::DescriptorArray, true);
+            }
+            a_args[i].m_value = &cast_string_to_array(al, arg, string_array_target)->base;
         }
     }
 }

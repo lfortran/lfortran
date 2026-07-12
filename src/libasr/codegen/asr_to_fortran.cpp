@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
@@ -270,13 +271,13 @@ public:
                     throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
                 }
                 std::string struct_name = ASRUtils::symbol_name(type_decl);
+                if (struct_name == "~assumed_type") {
+                    r = "type(*)";
+                    break;
+                }
                 if (ASRUtils::is_unlimited_polymorphic_type(type_decl) ||
                         struct_name == "~unlimited_polymorphic_type") {
                     r = "class(*)";
-                    break;
-                }
-                if (struct_name == "~assumed_type") {
-                    r = "type(*)";
                     break;
                 }
                 r = "type(";
@@ -362,6 +363,30 @@ public:
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
+            }
+        }
+
+        // Emit Struct/Enum/Union definitions from Translational Unit scope
+        std::map<std::string, std::vector<std::string>> struct_deps;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_deps[item.first] = struct_deps_vec;
+            }
+        }
+        if (!struct_deps.empty()) {
+            std::vector<std::string> tu_struct_deps = ASRUtils::order_deps(struct_deps);
+            for (auto &item : tu_struct_deps) {
+                ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+                visit_symbol(*struct_sym);
+                r += src;
+                r += "\n";
             }
         }
 
@@ -2208,9 +2233,12 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(Abort, "abort")
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoMax, "co_max")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoMin, "co_min")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
-                    + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)
+                    + ASRUtils::get_intrinsic_subroutine_name(x.m_sub_intrinsic_id)
                     + "` is not implemented");
             }
         }
