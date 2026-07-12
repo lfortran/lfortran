@@ -15,6 +15,7 @@ implicit none
 integer(4) :: me
 integer(4) :: n_images
 integer(4) :: stat
+character(len=2, kind=1), save :: str = "hi"
 integer(4) :: val
 call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
@@ -25,6 +26,8 @@ val = me
 call __module_prif_prif_co_sum(val)
 call __module_prif_prif_co_max(val)
 call __module_prif_prif_co_min(val)
+call __module_prif_prif_co_max_character(str)
+call __module_prif_prif_co_min_character(str)
 call __module_prif_prif_co_broadcast(val, 1)
 call __module_prif_prif_sync_all()
 call __module_prif_prif_stop(.false.)
@@ -52,6 +55,16 @@ interface
 end interface
 
 interface
+    subroutine __module_prif_prif_co_max_character(a, result_image, stat, errmsg, errmsg_alloc)
+        character(len=*, kind=1), dimension(..), intent(inout), target :: a
+        character(len=*, kind=1), intent(inout), optional :: errmsg
+        character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
+        integer(4), intent(in), optional :: result_image
+        integer(4), intent(out), optional :: stat
+    end subroutine __module_prif_prif_co_max_character
+end interface
+
+interface
     subroutine __module_prif_prif_co_min(a, result_image, stat, errmsg, errmsg_alloc)
         type(*), dimension(..), intent(inout), target :: a
         character(len=*, kind=1), intent(inout), optional :: errmsg
@@ -59,6 +72,16 @@ interface
         integer(4), intent(in), optional :: result_image
         integer(4), intent(out), optional :: stat
     end subroutine __module_prif_prif_co_min
+end interface
+
+interface
+    subroutine __module_prif_prif_co_min_character(a, result_image, stat, errmsg, errmsg_alloc)
+        character(len=*, kind=1), dimension(..), intent(inout), target :: a
+        character(len=*, kind=1), intent(inout), optional :: errmsg
+        character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
+        integer(4), intent(in), optional :: result_image
+        integer(4), intent(out), optional :: stat
+    end subroutine __module_prif_prif_co_min_character
 end interface
 
 interface

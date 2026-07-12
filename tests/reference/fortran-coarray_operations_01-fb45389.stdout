@@ -25,6 +25,7 @@ a = me
 call __module_prif_prif_sync_all()
 if (me == 1) then
     a = lcompilers_prif_get_integer(4)(a__coarray_handle, [int(2, kind=8)], int(0, kind=8))
+    call lcompilers_prif_put_integer(4)(a__coarray_handle, [int(2, kind=8)], int(0, kind=8), me)
 end if
 call __module_prif_prif_sync_all()
 call __module_prif_prif_stop(.false.)
@@ -78,6 +79,21 @@ interface
 end interface
 
 interface
+    subroutine __module_prif_prif_put(image_num, coarray_handle, offset, current_image_buffer, size_in_bytes,&
+        &
+         stat, errmsg, errmsg_alloc)
+        type(prif_coarray_handle), intent(in) :: coarray_handle
+        type(c_ptr), intent(in), value :: current_image_buffer
+        character(len=*, kind=1), intent(inout), optional :: errmsg
+        character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
+        integer(4), intent(in), value :: image_num
+        integer(8), intent(in), value :: offset
+        integer(8), intent(in), value :: size_in_bytes
+        integer(4), intent(out), optional :: stat
+    end subroutine __module_prif_prif_put
+end interface
+
+interface
     subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
         logical(1), intent(in), value :: quiet
         character(len=*, kind=1), intent(in), optional, value :: stop_code_char
@@ -108,6 +124,16 @@ integer(4) function lcompilers_prif_get_integer(4)(coarray_handle, sub, offset) 
     call __module_prif_prif_initial_team_index(coarray_handle, sub, image_num)
     call __module_prif_prif_get(image_num, coarray_handle, offset, c_loc(result), 4_8)
 end function lcompilers_prif_get_integer(4)
+
+subroutine lcompilers_prif_put_integer(4)(coarray_handle, sub, offset, value)
+    type(prif_coarray_handle), intent(in) :: coarray_handle
+    integer(4) :: image_num
+    integer(8), intent(in), value :: offset
+    integer(8), dimension(:), intent(in), value :: sub
+    integer(4), intent(in), value :: value
+    call __module_prif_prif_initial_team_index(coarray_handle, sub, image_num)
+    call __module_prif_prif_put(image_num, coarray_handle, offset, c_loc(value), 4_8)
+end subroutine lcompilers_prif_put_integer(4)
 
 integer(4) function lcompilers_prif_this_image()
     call __module_prif_prif_this_image_no_coarray(lcompilers_prif_this_image)

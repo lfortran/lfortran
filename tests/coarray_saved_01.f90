@@ -1,16 +1,27 @@
+module coarray_saved_mod
+    integer :: w[*]
+    integer :: x(10)[*]
+!    integer, save :: y[*]      ! disabled pending #12114
+!    integer, save :: z(10)[*]  ! disabled pending #12114
+contains
+    subroutine mod_sub()
+    end subroutine
+end module coarray_saved_mod
+
+subroutine coarray_saved_sub()
+    integer, save :: w[*]
+    integer, save :: x(10)[*]
+end subroutine coarray_saved_sub
+
 program coarray_saved_01
-    implicit none
+
+    use coarray_saved_mod
+
     integer, save :: a[*]
-    integer :: me
+    integer, save :: b(10)[*]
+    integer :: c[*]
+    integer :: d(10)[*]
 
-    me = this_image()
-    a = me
-
-    sync all
-
-    if (me == 1) then
-        a = a[2]
-    end if
-
-    sync all
-end program
+    call mod_sub()
+    call coarray_saved_sub()
+end program coarray_saved_01

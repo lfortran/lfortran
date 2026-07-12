@@ -9,6 +9,7 @@ program coarray_operations_01
     
     if (me == 1) then
         a = a[2]
+        a[2] = me
     end if
     
     sync all
