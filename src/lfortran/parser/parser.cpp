@@ -212,6 +212,67 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     nullptr);
 
                     body.push_back(al, AST::down_cast<AST::stmt_t>(flush_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "rewind") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* rewind_ast = AST::make_Rewind_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(rewind_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "backspace") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* backspace_ast = AST::make_Backspace_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(backspace_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "endfile" || to_lower(func_call_or_array->m_func) == "end_file") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* endfile_ast = AST::make_Endfile_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(endfile_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "inquire") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* inquire_ast = AST::make_Inquire_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr, 0,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(inquire_ast));
                 }
             } else {
                 diagnostics.add(diag::Diagnostic(
