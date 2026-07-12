@@ -245,7 +245,14 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
     if (compiler_options.c_preprocessor) {
         // Preprocessor
         LFortran::CPreprocessor cpp(compiler_options);
-        Result<std::string> res = cpp.run(code_orig, lm, cpp.macro_definitions, diagnostics);
+        const std::string *cpp_input = &code_orig;
+        std::string cpp_input_with_newline;
+        if (!code_orig.empty() && code_orig.back() != '\n') {
+            cpp_input_with_newline = code_orig;
+            cpp_input_with_newline.push_back('\n');
+            cpp_input = &cpp_input_with_newline;
+        }
+        Result<std::string> res = cpp.run(*cpp_input, lm, cpp.macro_definitions, diagnostics);
         if (res.ok) {
             tmp = res.result;
         } else {
