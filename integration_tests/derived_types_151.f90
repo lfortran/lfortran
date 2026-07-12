@@ -1,9 +1,4 @@
-! Test: procedure pointer in struct constructor with implicit interface
-! and date_and_time with integer(8) values array.
-! Verifies two LLVM codegen fixes:
-! 1. Procedure pointer type mismatch in struct constructors (asr_to_llvm.cpp)
-! 2. i32 to i64 cast for date_and_time values array (intrinsic_subroutines.h)
-module m_compute_150
+module m_compute_151
     implicit none
 contains
     subroutine compute(n)
@@ -14,7 +9,7 @@ contains
         end select
     end subroutine
 end module
-module m_150
+module m_151
     implicit none
     type :: method
         integer :: nargs = 0
@@ -32,9 +27,9 @@ contains
         that%nargs = 1
     end function
 end module
-program derived_types_150
-    use m_150
-    use m_compute_150
+program derived_types_151
+    use m_151
+    use m_compute_151
     implicit none
     integer, parameter :: i8 = selected_int_kind(18)
     type(method) :: mtd
