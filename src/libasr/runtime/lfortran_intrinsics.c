@@ -1199,9 +1199,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
 
     int digits = decimal_digits;
-    int sign_width = (val < 0) ? 1 : 0;
-    bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
-    bool is_negative = (val < 0);
+    bool is_negative = signbit(val);
+    int sign_width = is_negative ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && !is_negative); // Positive sign
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
@@ -1228,7 +1228,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
     // val_str = "11230000128"
 
-    if (val < 0) {
+    if (is_negative && val_str[0] == '-') {
         // removes `-` (negative) sign
         memmove(val_str, val_str + 1, strlen(val_str));
     }
@@ -1281,38 +1281,41 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         integer_length = strlen(val_str);
     }
 
-    int exp = 2;
+    int abs_exp = (exponent_value < 0 ? -exponent_value : exponent_value);
+    int exp;
     if (exp_digits > 0) {
         exp = exp_digits;
-    } else if (is_s_format && (exponent_value < 0 ? -exponent_value : exponent_value) >= 10) {
-        int abs_exp = (exponent_value < 0 ? -exponent_value : exponent_value);
-        exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
-    } else if ((exponent_value < 0 ? -exponent_value : exponent_value) >= 100) {
-        exp = 3;
+    } else if (exp_digits == 0 || width_digits == 0) {
+        // Ee0 or auto-width (w=0): use the minimum number of digits needed
+        // for the exponent (still at least 1 so we render "+0" for a zero
+        // exponent).
+        exp = (abs_exp == 0) ? 1 : ((int)log10(abs_exp) + 1);
+    } else {
+        exp = 2;
+        if (is_s_format && abs_exp >= 10) {
+            exp = (int)log10(abs_exp) + 1;
+        } else if (abs_exp >= 100) {
+            exp = 3;
+        }
     }
-    // exp = 2;
-    if (exp != -1 && exponent_value >= (pow(10, exp))) {
+    // When an explicit Ee width was specified, the exponent must fit in e digits
+    if (exp_digits > 0 && abs_exp >= (int)pow(10, exp)) {
         goto overflow;
     }
 
     char exponent[12];
-    if (width_digits == 0) {
-        sprintf(exponent, "%+02d", exponent_value);
-    } else {
-        int exp_width = exp + 1;
-        if (exp_width > 10) exp_width = 10;
-
-        int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
-        if (len < 0 || len >= sizeof(exponent)) {
-            goto overflow;
-        }
-        // exponent = "+10"
+    int exp_width = exp + 1;
+    if (exp_width > 10) exp_width = 10;
+    int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+    if (len < 0 || (size_t)len >= sizeof(exponent)) {
+        goto overflow;
     }
 
     int exp_length = strlen(exponent);
     // The 'E' is dropped for 3+ digit exponents ONLY when no explicit Ee width is given
-    // (i.e., when exp_digits <= 0). When an explicit Ee is specified, 'E' is always kept.
-    bool drop_e = (exp_digits <= 0 && (exponent_value < 0 ? -exponent_value : exponent_value) >= 100 && exp_length >= 4 && width_digits != 0);
+    // (i.e., when exp_digits < 0). When an explicit Ee (including E0) is specified,
+    // 'E' is always kept.
+    bool drop_e = (exp_digits < 0 && abs_exp >= 100 && exp_length >= 4 && width_digits != 0);
     int FIXED_CHARS_LENGTH = drop_e ? 2 : 3; // digit, ., [E]
 
     if (width == 0) {
@@ -1392,23 +1395,28 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         strncat(formatted_value, val_str, digits);
     } else {
         char* temp = substring(val_str, 0, scale);
-        strcat(formatted_value, temp);
-        strcat(formatted_value, ".");
-        // formatted_value = "  1."
         char* new_str = substring(val_str, scale, strlen(val_str));
-        // new_str = "1230000128" case:  1.123e+10
+        bool frac_carry = false;
         int zeros = 0;
-        if (digits < strlen(new_str)) {
+        if (digits < (int)strlen(new_str)) {
             if (digits + scale <= 15) {
                 new_str[15] = '\0';
                 zeros = strspn(new_str, "0");
                 int drop_digits = strlen(new_str) - digits;
                 long long t = round_scaled_digits(new_str, drop_digits, rounding_mode, is_negative);
                 sprintf(new_str, "%lld", t);
-                int index = zeros;
-                while(index--) {
-                    memmove(new_str + 1, new_str, strlen(new_str)+1);
-                    new_str[0] = '0';
+                if ((int)strlen(new_str) > digits) {
+                    // Rounding produced a carry out of the fractional part
+                    // (e.g., "99" rounded to 2 digits from "9976" gives "100")
+                    frac_carry = true;
+                    for (int k = 0; k < digits; k++) new_str[k] = '0';
+                    new_str[digits] = '\0';
+                } else {
+                    int index = zeros;
+                    while(index--) {
+                        memmove(new_str + 1, new_str, strlen(new_str)+1);
+                        new_str[0] = '0';
+                    }
                 }
             } else {
                 if (should_round_up_digits(new_str, digits, rounding_mode, is_negative)) {
@@ -1418,12 +1426,35 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                         new_str[k] = (d % 10) + '0';
                         carry = d / 10;
                     }
+                    if (carry) frac_carry = true;
                 }
             }
         }
         new_str[digits] = '\0';
+
+        if (frac_carry) {
+            // Propagate the carry from the fractional part into the integer
+            // part (temp).  For ES format this can overflow the single-digit
+            // integer part ("9" -> "10"): renormalize the mantissa to "1"
+            // (with fractional zeros) and remember that we need to bump the
+            // exponent value later.
+            int carry = 1;
+            int temp_len = (int)strlen(temp);
+            for (int k = temp_len - 1; k >= 0 && carry; k--) {
+                int d = (temp[k] - '0') + carry;
+                temp[k] = (d % 10) + '0';
+                carry = d / 10;
+            }
+            if (carry) {
+                for (int k = 0; k < temp_len; k++) temp[k] = '0';
+                temp[0] = '1';
+                rounding_carry = true;
+            }
+        }
+
+        strcat(formatted_value, temp);
+        strcat(formatted_value, ".");
         strcat(formatted_value, new_str);
-        // formatted_value = "  1.12"
         internal_free(new_str);
         internal_free(temp);
     }
@@ -1431,37 +1462,44 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     // Adjust exponent when rounding caused a carry in the mantissa
     if (rounding_carry) {
         exponent_value++;
-        if (width_digits == 0) {
-            sprintf(exponent, "%+02d", exponent_value);
-        } else {
-            int exp_width = exp + 1;
-            if (exp_width > 10) exp_width = 10;
-            if (exp_width < 1) exp_width = 1;
-            int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
-            if (len < 0 || len >= (int)sizeof(exponent)) {
-                goto overflow;
+        int abs_exp2 = (exponent_value < 0 ? -exponent_value : exponent_value);
+        int new_exp_width = exp + 1;
+        if (exp_digits < 0) {
+            // No explicit Ee width: recompute so a bumped exponent can widen
+            // (e.g. going from 99 -> 100 requires 3 digits).
+            int new_exp = 2;
+            if (is_s_format && abs_exp2 >= 10) {
+                new_exp = (int)log10(abs_exp2) + 1;
+            } else if (abs_exp2 >= 100) {
+                new_exp = 3;
             }
+            new_exp_width = new_exp + 1;
         }
-        // Recalculate spaces if exponent length changed
+        if (new_exp_width > 10) new_exp_width = 10;
+        if (new_exp_width < 1) new_exp_width = 1;
+        int wlen = snprintf(exponent, sizeof(exponent), "%+0*d", new_exp_width, exponent_value);
+        if (wlen < 0 || (size_t)wlen >= sizeof(exponent)) {
+            goto overflow;
+        }
+        // Recalculate spaces if the exponent length changed.  Preserve the
+        // existing mantissa portion of formatted_value instead of rebuilding
+        // it (the mantissa was already computed with any renormalization for
+        // ES format).
         int new_exp_length = strlen(exponent);
         if (new_exp_length != exp_length) {
             int space_diff = exp_length - new_exp_length;
-            // Rebuild formatted_value with adjusted spacing
+            int lead_spaces = 0;
+            while (formatted_value[lead_spaces] == ' ') lead_spaces++;
+            char mantissa_saved[512];
+            strncpy(mantissa_saved, formatted_value + lead_spaces, sizeof(mantissa_saved) - 1);
+            mantissa_saved[sizeof(mantissa_saved) - 1] = '\0';
             formatted_value[0] = '\0';
-            int new_spaces = spaces + space_diff;
+            int new_spaces = lead_spaces + space_diff;
+            if (new_spaces < 0) new_spaces = 0;
             for (int i = 0; i < new_spaces; i++) {
                 strcat(formatted_value, " ");
             }
-            if (sign_width == 1) {
-                strcat(formatted_value, "-");
-            } else if (sign_plus_exist) {
-                strcat(formatted_value, "+");
-            }
-            strcat(formatted_value, "0.");
-            for (int k = 0; k < (scale < 0 ? -scale : scale); k++) {
-                strcat(formatted_value, "0");
-            }
-            strncat(formatted_value, val_str, digits);
+            strcat(formatted_value, mantissa_saved);
             exp_length = new_exp_length;
         }
     }
@@ -1476,7 +1514,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     if (strlen(formatted_value) > width) {
         size_t formatted_len = strlen(formatted_value);
-        if (formatted_len - width == 1) {
+        // For E/D formats (mantissa in [0.1, 1)), fortran conventionally drops
+        // the leading zero when needed to fit the field.  ES format has a
+        // mantissa in [1, 10) so the leading digit is significant and must
+        // never be dropped.
+        if (!is_s_format && formatted_len - width == 1) {
             if (formatted_value[0] == '0' && formatted_value[1] == '.') {
                 memmove(formatted_value, formatted_value + 1, formatted_len);
                 *result = append_to_string(*result, formatted_value);
