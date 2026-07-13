@@ -14801,13 +14801,11 @@ public:
                 ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
 
-                // 1. Ensure we have an expression for the source size
                 if (src_bytes > 0 && !src_len_expr) {
                     src_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, x.base.base.loc, src_bytes, int_type));
                 }
 
-                // 2. Compute mold byte size or build an expression for it
                 ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                 int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
@@ -14830,7 +14828,6 @@ public:
                     }
                 }
 
-                // 3. Compute result_size (constant) or result_size_expr (runtime)
                 if (mold_bytes > 0) {
                     mold_bytes_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, x.base.base.loc, mold_bytes, int_type));
