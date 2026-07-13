@@ -6522,16 +6522,22 @@ _lfortran_open(int32_t unit_num,
             if (iostat != NULL) {
                 *iostat = 2;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
-                    // Emit a message consistent with gfortran-style diagnostics.
                     const char* reason = strerror(errno);
-                    if (f_name_c && f_name_c[0] != '\0') {
-                        snprintf(iomsg, iomsg_len + 1,
-                                 "Cannot open file '%s': %s", f_name_c, reason);
-                    } else {
-                        snprintf(iomsg, iomsg_len + 1,
-                                 "Cannot open file '': %s", reason);
+                    const char* name = (f_name_c && f_name_c[0] != '\0') ? f_name_c : "";
+                    int needed = snprintf(NULL, 0,
+                                          "Cannot open file '%s': %s", name, reason);
+                    if (needed > 0) {
+                        char* temp = (char*)internal_malloc((size_t)needed + 1);
+                        if (temp) {
+                            snprintf(temp, (size_t)needed + 1,
+                                     "Cannot open file '%s': %s", name, reason);
+                            int64_t msg_len = (int64_t)needed;
+                            if (msg_len > iomsg_len) msg_len = iomsg_len;
+                            memcpy(iomsg, temp, (size_t)msg_len);
+                            pad_with_spaces(iomsg, msg_len, iomsg_len);
+                            internal_free(temp);
+                        }
                     }
-                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
                 }
                 internal_free(f_name_c);
                 internal_free(status_c);
