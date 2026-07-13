@@ -4448,24 +4448,26 @@ LFORTRAN_API float _lfortran_sbesselyn( int n, float x ) {
     return yn(n, x);
 }
 
-uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_size) {
-    if (bits_size == max_bits_size) {
-        return num;
-    }
-    return (num & ((1lu << bits_size) - 1lu));
-}
-
 LFORTRAN_API int _lfortran_sishftc(int val, int shift_signed, int bits_size) {
     uint32_t max_bits_size = 64;
     bool negative_shift = (shift_signed < 0);
     uint32_t shift = (shift_signed < 0 ? -shift_signed : shift_signed);
 
-    uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
+    // Rotate only the low `bits_size` bits of val; leave the higher bits
+    // unchanged. The high bits are captured before the rotation and OR'd
+    // back into the result, so they survive even when bits_size < bit_width.
+    uint64_t mask = ((uint32_t)bits_size == max_bits_size)
+        ? ~0lu
+        : ((1lu << bits_size) - 1lu);
+    uint64_t high = (uint64_t)val & ~mask;
+    uint64_t low = (uint64_t)val & mask;
     uint64_t result;
-    if (negative_shift) {
-        result = (val1 >> shift) | cutoff_extra_bits(val1 << (bits_size - shift), bits_size, max_bits_size);
+    if (shift == 0) {
+        result = (uint64_t)val;
+    } else if (negative_shift) {
+        result = high | ((low >> shift) | ((low << (bits_size - shift)) & mask));
     } else {
-        result = cutoff_extra_bits(val1 << shift, bits_size, max_bits_size) | ((val1 >> (bits_size - shift)));
+        result = high | (((low << shift) & mask) | (low >> (bits_size - shift)));
     }
     return result;
 }
@@ -4475,12 +4477,21 @@ LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_
     bool negative_shift = (shift_signed < 0);
     uint32_t shift = llabs(shift_signed);
 
-    uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
+    // Rotate only the low `bits_size` bits of val; leave the higher bits
+    // unchanged. The high bits are captured before the rotation and OR'd
+    // back into the result, so they survive even when bits_size < bit_width.
+    uint64_t mask = ((uint32_t)bits_size == max_bits_size)
+        ? ~0lu
+        : ((1lu << bits_size) - 1lu);
+    uint64_t high = (uint64_t)val & ~mask;
+    uint64_t low = (uint64_t)val & mask;
     uint64_t result;
-    if (negative_shift) {
-        result = (val1 >> shift) | cutoff_extra_bits(val1 << (bits_size - shift), bits_size, max_bits_size);
+    if (shift == 0) {
+        result = (uint64_t)val;
+    } else if (negative_shift) {
+        result = high | ((low >> shift) | ((low << (bits_size - shift)) & mask));
     } else {
-        result = cutoff_extra_bits(val1 << shift, bits_size, max_bits_size) | ((val1 >> (bits_size - shift)));
+        result = high | (((low << shift) & mask) | (low >> (bits_size - shift)));
     }
     return result;
 }
