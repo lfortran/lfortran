@@ -1,14 +1,14 @@
-module m
+module coarrays_26_m
     implicit none
     integer :: x[*]
 end module
 
-module m2
+module coarrays_26_m2
     implicit none
     integer :: x[*]
 end module
 
-subroutine foo()
+subroutine coarrays_26_sub()
     implicit none
     integer, save :: x[*]
 
@@ -21,8 +21,8 @@ subroutine foo()
 end subroutine
 
 program coarrays_26
-    use m, only: module_x => x
-    use m2, only: module_x2 => x
+    use coarrays_26_m, only: module_x => x
+    use coarrays_26_m2, only: module_x2 => x
     implicit none
 
     integer :: x[*]
@@ -31,7 +31,7 @@ program coarrays_26
     module_x2 = this_image() + 1
     x = this_image() * 10
 
-    call foo()
+    call coarrays_26_sub()
 
     sync all
 
