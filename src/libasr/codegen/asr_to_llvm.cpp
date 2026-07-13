@@ -11904,22 +11904,30 @@ public:
             return;
         }
 
-        if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
+        // Extract base variable if the target is an ArraySection (e.g., p(4:) => ...)
+        ASR::expr_t* ptr_target_base = x.m_target;
+        if (ASR::is_a<ASR::ArraySection_t>(*ptr_target_base)) {
+            ptr_target_base = ASR::down_cast<ASR::ArraySection_t>(ptr_target_base)->m_v;
+        }
+
+        if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(ptr_target_base)) &&
             ASR::is_a<ASR::GetPointer_t>(*x.m_value) ) {
-            ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
+            ASR::Variable_t *asr_target = EXPR2VAR(ptr_target_base);
             ASR::GetPointer_t* get_ptr = ASR::down_cast<ASR::GetPointer_t>(x.m_value);
             uint32_t target_h = get_hash((ASR::asr_t*)asr_target);
             int ptr_loads_copy = ptr_loads;
             ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(get_ptr->m_arg));
             visit_expr_wrapper(get_ptr->m_arg, true);
             ptr_loads = ptr_loads_copy;
+            
             if( ASRUtils::is_array(ASRUtils::expr_type(get_ptr->m_arg)) &&
                 ASRUtils::extract_physical_type(ASRUtils::expr_type(get_ptr->m_arg)) !=
                 ASR::array_physical_typeType::DescriptorArray) {
+                
                 visit_ArrayPhysicalCastUtil(
                     tmp, get_ptr->m_arg, ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_target))),
-                        ASRUtils::expr_type(get_ptr->m_arg),
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(ptr_target_base))),
+                        ASRUtils::expr_type(x.m_target), 
                     ASRUtils::extract_physical_type(ASRUtils::expr_type(get_ptr->m_arg)),
                     ASR::array_physical_typeType::DescriptorArray);
             }
@@ -12999,16 +13007,22 @@ public:
     }
 
     void PointerToData_to_Descriptor(ASR::expr_t* expr, ASR::ttype_t* m_type, ASR::ttype_t* m_type_for_dimensions) {
-        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(expr,
+        // Pass nullptr instead of expr to enforce returning a StructType descriptor
+        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
+            nullptr, 
             ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(m_type)), module.get());
+        
         llvm::Value *target = arr_descr->create_descriptor_alloca(
             target_type,
             "array_descriptor");
+            
         ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(m_type));
+            
         llvm::Type* llvm_data_type = llvm_utils->get_el_type(
             expr, ASRUtils::extract_type(array_ttype), module.get());
+            
         llvm::Type* expected_data_ptr_type = llvm_data_type->getPointerTo();
         if (llvm::StructType* desc_struct = llvm::dyn_cast<llvm::StructType>(target_type)) {
             if (desc_struct->getNumElements() > 0 &&
@@ -13016,14 +13030,17 @@ public:
                 expected_data_ptr_type = desc_struct->getElementType(0);
             }
         }
+        
         llvm::Value* data_ptr = arr_descr->get_pointer_to_data(target_type, target);
         llvm::Value* tmp_cast = tmp;
         if (tmp_cast->getType() != expected_data_ptr_type) {
             tmp_cast = builder->CreateBitCast(tmp_cast, expected_data_ptr_type);
         }
         builder->CreateStore(tmp_cast, data_ptr);
+        
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(m_type_for_dimensions, m_dims);
+        
         fill_array_details(target_type, target, llvm_data_type, m_dims, n_dims, false, false);
         
         // Set CFI descriptor fields (elem_len, type, attribute)
@@ -13031,6 +13048,7 @@ public:
         llvm::DataLayout data_layout(module->getDataLayout());
         uint64_t elem_size = data_layout.getTypeAllocSize(llvm_data_type);
         set_cfi_descriptor_fields(target_type, target, elem_asr_type, elem_size, m_type);
+        
         if( LLVM::is_llvm_pointer(*m_type) ) {
             llvm::AllocaInst* target_ptr = llvm_utils->CreateAlloca(
                 target_type->getPointerTo(), nullptr, "array_descriptor_ptr");
