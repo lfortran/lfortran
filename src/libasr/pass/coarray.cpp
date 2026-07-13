@@ -37,11 +37,12 @@ class PRIFInterface {
             } else {
                 throw LCompilersException("Coarray companion is in another scope that is not a module");
             }
+            std::string local_sym_name = use_scope->get_unique_name(sym_name, false);
             ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
-                al, loc, use_scope, s2c(al, sym_name), sym,
+                al, loc, use_scope, s2c(al, local_sym_name), sym,
                 s2c(al, mod_name), nullptr, 0, s2c(al, sym_name), ASR::accessType::Private);
             ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(ext);
-            use_scope->add_symbol(sym_name, ext_sym);
+            use_scope->add_symbol(local_sym_name, ext_sym);
             return ext_sym;
         }
         ASR::symbol_t* declare_variable(SymbolTable *symtab, const Location &loc,
