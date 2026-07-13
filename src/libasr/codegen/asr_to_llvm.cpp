@@ -11918,7 +11918,7 @@ public:
                 ASR::array_physical_typeType::DescriptorArray) {
                 visit_ArrayPhysicalCastUtil(
                     tmp, get_ptr->m_arg, ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(get_ptr->m_type)),
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_target))),
                         ASRUtils::expr_type(get_ptr->m_arg),
                     ASRUtils::extract_physical_type(ASRUtils::expr_type(get_ptr->m_arg)),
                     ASR::array_physical_typeType::DescriptorArray);
