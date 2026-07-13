@@ -844,9 +844,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | ':'
                 ;
 
-            hollerith_string
-                = int 'H' [^\s,)'\"\x00]+
-                ;
+
 
             * {
                 token_loc(loc, cur, tok, string_start);
@@ -912,7 +910,19 @@ void lex_format(unsigned char *&cur, Location &loc,
             '-' | '+' { continue; }
             (int)? whitespace? data_edit_desc { continue; }
             control_edit_desc { continue; }
-            (int)? whitespace? hollerith_string { continue; }
+            int [hH] {
+                uint64_t len = 0;
+                for (unsigned char *s = tok; s < cur - 1; ++s) {
+                    if (*s >= '0' && *s <= '9') {
+                        len = len * 10 + (*s - '0');
+                    }
+                }
+                for (uint64_t i = 0; i < len; ++i) {
+                    if (*cur == '\0') break;
+                    cur++;
+                }
+                continue;
+            }
         */
     }
 }

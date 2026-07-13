@@ -2213,6 +2213,34 @@ public:
                             diag::Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
             }
+
+            // Loop through function attributes to catch inline allocatable/pointer declarations
+            for (size_t i = 0; i < x.n_attributes; i++) {
+                if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i])) {
+                    AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i]);
+                    if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                        if (!ASRUtils::is_allocatable(type)) {
+                            type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
+                        }
+                    } else if (sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                        if (!ASRUtils::is_pointer(type)) {
+                            type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+                        }
+                    }
+                }
+            }
+
+            // Catch standalone declarations (e.g., `allocatable :: value`) parsed earlier in this pass
+            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name);
+            bool is_ptr_standalone = assgnd_pointer.count(return_var_name);
+
+            if (is_alloc_standalone && !ASRUtils::is_allocatable(type)) {
+                type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, type));
+            }
+            if (is_ptr_standalone && !ASRUtils::is_pointer(type)) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+            }
+
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
@@ -2225,17 +2253,38 @@ public:
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
+            bool is_alloc_standalone = assgnd_allocatable.count(return_var_name);
+            bool is_ptr_standalone = assgnd_pointer.count(return_var_name);
+
             if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
-                diag.add(diag::Diagnostic(
-                    "Cannot specify the return type twice",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                // Bypass the strict F23 guard if the duplicate was just caused by a standalone attribute
+                if (!is_alloc_standalone && !is_ptr_standalone) {
+                    diag.add(diag::Diagnostic(
+                        "Cannot specify the return type twice",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
             }
             // Extract the variable from the local scope
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
+
+            if (return_type && (is_alloc_standalone || is_ptr_standalone)) {
+                Vec<ASR::dimension_t> dummy_dims;
+                dummy_dims.reserve(al, 0);
+                ASR::symbol_t* dummy_type_decl = nullptr;
+                return_variable->m_type = determine_type(x.base.base.loc, return_var_name, (AST::decl_attribute_t*)return_type, false, false, dummy_dims, nullptr, dummy_type_decl, current_procedure_abi_type);
+            }
+
+            if (is_alloc_standalone && !ASRUtils::is_allocatable(return_variable->m_type)) {
+                return_variable->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, return_variable->m_type));
+            }
+            if (is_ptr_standalone && !ASRUtils::is_pointer(return_variable->m_type)) {
+                return_variable->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, return_variable->m_type));
+            }
+
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
@@ -2243,7 +2292,6 @@ public:
             return_variable->m_dependencies = variable_dependencies_vec.p;
             return_variable->n_dependencies = variable_dependencies_vec.size();
         }
-
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
 
@@ -2725,6 +2773,22 @@ public:
                 }
             }
 
+            // Detect SEQUENCE attribute among declarations.
+            bool is_sequence = false;
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
+                AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+                if (decl.m_vartype != nullptr) continue;
+                for (size_t j = 0; j < decl.n_attributes; j++) {
+                    if (AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[j])) {
+                        AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(decl.m_attributes[j]);
+                        if (sa->m_attr == AST::simple_attributeType::AttrSequence) {
+                            is_sequence = true;
+                        }
+                    }
+                }
+            }
+
             // Create a preliminary Struct_t and add it to the parent scope
             // so that recursive self-references (e.g., type(recursive_t(k))
             // inside recursive_t) can resolve during member processing.
@@ -2734,6 +2798,7 @@ public:
                 nullptr, 0,
                 nullptr, 0,
                 is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
+                is_sequence,
                 nullptr, 0, nullptr, parent_sym,
                 kind_params.p, kind_params.size());
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -2828,17 +2893,67 @@ public:
                 struct_dependencies.push_back(al, aggregate_type_name);
             }
         }
+        bool is_sequence = false;
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
+            AST::Declaration_t &decl = *AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+            if (decl.m_vartype != nullptr) continue;
+            for (size_t j = 0; j < decl.n_attributes; j++) {
+                if (AST::is_a<AST::SimpleAttribute_t>(*decl.m_attributes[j])) {
+                    AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(decl.m_attributes[j]);
+                    if (sa->m_attr == AST::simple_attributeType::AttrSequence) {
+                        is_sequence = true;
+                    }
+                }
+            }
+        }
         tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             final_proc_names.p, final_proc_names.size(),
-            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym,
+            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
+            is_sequence,
+            nullptr, 0, nullptr, parent_sym,
             nullptr, 0);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
         struct_->m_struct_signature = struct_signature;
+
+        // Fortran requires CHARACTER components of BIND(C) types to have
+        // length 1 (F2023 18.3.1 / C1806). Accepting len>1 is an extension
+        // (also offered by Flang and ifx); warn for portability.
+        if (is_bindc) {
+            for (size_t i = 0; i < data_member_names.size(); i++) {
+                ASR::symbol_t* mem_sym = current_scope->get_symbol(
+                    std::string(data_member_names[i]));
+                if (!mem_sym || !ASR::is_a<ASR::Variable_t>(*mem_sym)) continue;
+                ASR::Variable_t* mem = ASR::down_cast<ASR::Variable_t>(mem_sym);
+                ASR::ttype_t* mt = mem->m_type;
+                if (ASR::is_a<ASR::Pointer_t>(*mt) ||
+                    ASR::is_a<ASR::Allocatable_t>(*mt)) {
+                    continue;
+                }
+                ASR::ttype_t* base = ASRUtils::type_get_past_array(mt);
+                if (!ASR::is_a<ASR::String_t>(*base)) continue;
+                ASR::String_t* st = ASR::down_cast<ASR::String_t>(base);
+                int64_t char_len = 1;
+                bool has_len = st->m_len &&
+                    ASRUtils::extract_value(st->m_len, char_len);
+                if (!has_len || char_len != 1) {
+                    diag.semantic_warning_label(
+                        "character component of a BIND(C) type with length "
+                        "other than 1 is not standard-conforming "
+                        "(LFortran extension)",
+                        {mem->base.base.loc},
+                        "use character(len=1) or a character array of length-1 "
+                        "elements to make the type standard-conforming"
+                    );
+                }
+            }
+        }
+
         tmp = (ASR::asr_t*) derived_type_sym;
         derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         if (compiler_options.implicit_typing) {
@@ -4476,8 +4591,8 @@ public:
             std::string req_param = req->m_args[i];
             std::string req_arg = "";
 
-            if (AST::is_a<AST::AttrNamelist_t>(*attr)) {
-                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(attr);
+            if (AST::is_a<AST::AttrName_t>(*attr)) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(attr);
                 req_arg = to_lower(attr_name->m_name);
                 if (std::find(current_procedure_args.begin(),
                         current_procedure_args.end(),
@@ -4673,8 +4788,8 @@ public:
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
                     type_subs[param].second = type_declaration;
                 }
-            } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_args[i])) {
-                AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(x.m_args[i]);
+            } else if (AST::is_a<AST::AttrName_t>(*x.m_args[i])) {
+                AST::AttrName_t *attr_name = AST::down_cast<AST::AttrName_t>(x.m_args[i]);
                 std::string arg = to_lower(attr_name->m_name);
                 if (ASR::is_a<ASR::Function_t>(*param_sym)) {
                     // Handling functions passed as instantiate's arguments

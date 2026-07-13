@@ -20,6 +20,10 @@ using LCompilers::TRY;
 using LCompilers::FortranEvaluator;
 using LCompilers::CompilerOptions;
 
+// Raw LLVMEvaluator tests use ORC JIT which is not available under Emscripten;
+// FortranEvaluator tests below are WASM-compatible via WasmLFortranExecutor dispatch.
+#ifndef __EMSCRIPTEN__
+
 TEST_CASE("llvm 1") {
     //std::cout << "LLVM Version:" << std::endl;
     //LFortran::LLVMEvaluator::print_version_message();
@@ -438,6 +442,8 @@ end function)";
     CHECK(e.execfn<int32_t>("f") == 4);
 }
 
+#endif // __EMSCRIPTEN__
+
 TEST_CASE("FortranEvaluator 1") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -520,20 +526,24 @@ end function
 */
 }
 
+// FortranEvaluator 5 uses "fn_sub" (not "fn") to avoid an RTLD_GLOBAL collision
+// with FortranEvaluator 4's "fn" function: Emscripten side-module instantiation
+// fails with a LinkError if two WASM modules export the same name with different
+// function signatures.
 TEST_CASE("FortranEvaluator 5") {
     CompilerOptions cu;
     cu.interactive = true;
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     FortranEvaluator e(cu);
     e.evaluate2(R"(
-integer subroutine fn(i, j, r)
+integer subroutine fn_sub(i, j, r)
 integer, intent(in) :: i, j
 integer, intent(out) :: r
 r = i + j
 end subroutine
 )");
     e.evaluate2("integer :: r");
-    e.evaluate2("call fn(2, 3, r)");
+    e.evaluate2("call fn_sub(2, 3, r)");
     LCompilers::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2("r");
     CHECK(r.ok);
@@ -632,6 +642,8 @@ end module funcmod)");
     CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
     CHECK(std::abs(r.result.f32 - (-3.0)) <= 1e-8 );
 }
+
+#ifndef __EMSCRIPTEN__
 
 // Tests passing the complex struct by reference
 TEST_CASE("llvm complex type") {
@@ -888,6 +900,8 @@ define float @f()
     CHECK(std::abs(r - 8) < 1e-6);
 }
 
+#endif // __EMSCRIPTEN__
+
 TEST_CASE("FortranEvaluator 7") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -918,16 +932,19 @@ TEST_CASE("FortranEvaluator 8") {
     CHECK(r.result.f32 == 3.5);
 }
 
+// "ad" avoids an RTLD_GLOBAL collision with FortranEvaluator 8's "a" (float):
+// both tests are in the same process and RTLD_GLOBAL uses first-defined-wins,
+// so GOT.mem.a set by the f32 test would shadow the f64 global here.
 TEST_CASE("FortranEvaluator 8 double") {
     CompilerOptions cu;
     cu.interactive = true;
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     FortranEvaluator e(cu);
     LCompilers::Result<FortranEvaluator::EvalResult>
-    r = e.evaluate2("real(8) :: a = 3.5");
+    r = e.evaluate2("real(8) :: ad = 3.5");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::none);
-    r = e.evaluate2("a");
+    r = e.evaluate2("ad");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
     CHECK(r.result.f64 == 3.5);
@@ -1148,6 +1165,8 @@ TEST_CASE("FortranEvaluator re-declaration 1") {
 */
 }
 
+// "fn_redecl" avoids an RTLD_GLOBAL collision with FortranEvaluator 4's "fn"
+// function (different arity → LinkError at WASM side-module instantiation).
 TEST_CASE("FortranEvaluator re-declaration 2") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -1155,14 +1174,14 @@ TEST_CASE("FortranEvaluator re-declaration 2") {
     FortranEvaluator e(cu);
     LCompilers::Result<FortranEvaluator::EvalResult>
     r = e.evaluate2(R"(
-integer function fn(i)
+integer function fn_redecl(i)
 integer, intent(in) :: i
-fn = i+1
+fn_redecl = i+1
 end function
 )");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::none);
-    r = e.evaluate2("fn(3)");
+    r = e.evaluate2("fn_redecl(3)");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
     CHECK(r.result.i32 == 4);
@@ -1314,6 +1333,7 @@ end function sub
     CHECK(r.result.f32 == -1.0);
 }
 
+#ifndef __EMSCRIPTEN__
 TEST_CASE("llvm ir 1") {
     LCompilers::LLVMEvaluator e;
     std::string file_name = std::string(LFORTRAN_PROJECT_SOURCE_DIR) + "/src/lfortran/tests/ir.ll";
@@ -1328,6 +1348,7 @@ TEST_CASE("llvm ir 1") {
     CHECK_THROWS_AS(e.parse_module2("", file_name), LCompilers::LCompilersException);
     CHECK_THROWS_WITH(e.parse_module2("", file_name), "parse_module(): Invalid LLVM IR");
 }
+#endif // __EMSCRIPTEN__
 
 // This test does not work on Windows yet
 // https://github.com/lfortran/lfortran/issues/913
@@ -1376,6 +1397,9 @@ TEST_CASE("FortranEvaluator kind parameter from global symtab") {
     CHECK(r.ok);
 }
 
+#if !defined(__EMSCRIPTEN__)
+// TODO: The 80 MB stack allocation (real(dp) :: x(10**7)) exceeds the WASM
+// shadow-stack budget and causes a memory-access-out-of-bounds at runtime.
 TEST_CASE("FortranEvaluator pass_array_by_data on global random_number") {
     // Regression test: in interactive mode the global symbol table persists
     // across evaluate2 calls, and the pass_array_by_data pass would re-add
@@ -1401,3 +1425,19 @@ TEST_CASE("FortranEvaluator pass_array_by_data on global random_number") {
     r = e.evaluate2("print*,sum(x)/size(x)");
     CHECK(r.ok);
 }
+#endif
+
+#ifdef __EMSCRIPTEN__
+TEST_CASE("WasmLFortranExecutor basic") {
+    // Directly exercise WasmLFortranExecutor bypassing FortranEvaluator
+    LCompilers::WasmLFortranExecutor we;
+    auto m = we.parse_module2(R"""(
+define i64 @__lfortran_evaluate_1()
+{
+    ret i64 42
+}
+    )""", "test.ll");
+    we.add_module(std::move(m), 1);
+    CHECK(we.execfn<int64_t>("__lfortran_evaluate_1") == 42);
+}
+#endif

@@ -254,8 +254,8 @@ program continue_compilation_2
     character(8) :: badfmt_s = '(a i0)'
     character(:), allocatable :: ax
     integer :: a_deferred(:)
-    
-
+    type(c_ptr) :: queries_3
+    integer, pointer :: cfp_y_3(:)
 
 
 
@@ -537,8 +537,8 @@ program continue_compilation_2
     print "(aai6)", a,"hi",15
     call sleep(1)
     a = cmplx(y = 2)
-    
-
+    ! c_f_pointer_03
+    call c_f_pointer(queries_3, cfp_y_3)    
 
 
 
@@ -578,3 +578,12 @@ program second_program_test
     implicit none
     print *, "This is a second program - should cause error"
 end program second_program_test
+! Test for pure function without INTENT(IN)
+module pure_intent_check_mod
+contains
+    pure function add(x, y) result(res)
+        integer :: x, y
+        integer :: res
+        res = x + y
+    end function
+end module pure_intent_check_mod
