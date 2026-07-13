@@ -1803,6 +1803,33 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_SyncAll(x);
     }
 
+    void visit_SyncImages(const SyncImages_t &x) {
+        if (x.m_image_set) {
+            ASR::ttype_t *image_set_type = ASRUtils::expr_type(x.m_image_set);
+            require(!ASRUtils::is_array(image_set_type) || ASRUtils::extract_n_dims_from_ttype(image_set_type) == 1,
+                "SyncImages::m_image_set must be a scalar");
+            require(ASRUtils::is_integer(*image_set_type),
+                "SyncImages::m_image_set must be of integer type");
+        }
+        if (x.m_stat) {
+            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
+            require(!ASRUtils::is_array(stat_type),
+                "SyncImages::m_stat must be a scalar");
+            require(ASRUtils::is_integer(*stat_type),
+                "SyncImages::m_stat must be of integer type, found " +
+                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_stat), x.m_stat));
+        }
+        if (x.m_errmsg) {
+            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
+            require(!ASRUtils::is_array(errmsg_type),
+                "SyncImages::m_errmsg must be a scalar");
+            require(ASRUtils::is_character(*errmsg_type),
+                "SyncImages::m_errmsg must be of string type, found " +
+                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_errmsg), x.m_errmsg));
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_SyncImages(x);
+    }
+
     void visit_SyncMemory(const SyncMemory_t &x) {
         if (x.m_stat) {
             ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);

@@ -511,7 +511,7 @@ program continue_compilation_1
     print *, ieor()
     print *, min(c, c)
     exit
-
+    cycle
     ! calling function with less arguments
     call my_func(10)
     call my_func()
@@ -774,7 +774,7 @@ program continue_compilation_1
     end subroutine
     subroutine assumed_size_to_pointer_dummy(x)
         integer :: x(*)
-        call ptr_sink(x)  ! {Error} Actual argument for 'x' cannot be an assumed-size array
+        call ptr_sink(x)  ! {Error} actual argument for 'x' cannot be an assumed-size array
     end subroutine
     subroutine ptr_sink(x)
         integer, pointer :: x(..)
@@ -809,6 +809,13 @@ program continue_compilation_1
         type :: holder
             type(c_ptr) :: ptr = c_loc(target_value)
         end type
+    end subroutine
+
+    subroutine spread_dim_out_of_range()
+        implicit none
+        integer :: a(3)
+        a = [1,2,3]
+        print *, spread(a, 5, 2)
     end subroutine
 
     subroutine merge_kind_mismatch()
@@ -860,5 +867,29 @@ program continue_compilation_1
     subroutine length_specifier_non_character()
         implicit none
         integer :: i*2
+    end subroutine
+
+    subroutine assumed_size_to_assumed_shape_forward(items)
+        implicit none
+        integer :: items(*)
+        call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    end subroutine
+    subroutine consume_assumed_shape(items)
+        implicit none
+        integer :: items(:)
+    end subroutine
+    subroutine assumed_size_to_assumed_shape_function_forward(items)
+        implicit none
+        integer :: items(*)
+        print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+    end subroutine
+    integer function consume_assumed_shape_function(items)
+        implicit none
+        integer :: items(:)
+        consume_assumed_shape_function = size(items)
+    end function
+    subroutine associate_boz_target()
+        associate (y => z'1') 
+        end associate
     end subroutine
 end program

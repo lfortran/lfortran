@@ -1463,10 +1463,10 @@ class ASRToLLVMVisitor;
             }
 
             // Finalize members
-            bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC);
+            bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC) || struct_sym->m_is_sequence;
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
-                // bind(C) struct: non-pointer character members are inline i8, nothing to free
+                // bind(C)/SEQUENCE: non-pointer character members are inline, nothing to free
                 if(is_bindc &&
                    !ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) &&
                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
@@ -2779,6 +2779,13 @@ class ASRToLLVMVisitor;
             std::map<uint64_t, llvm::Function*>& llvm_symtab_fn;
             std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_struct_array_members;
             LLVMFinalize &finalizer_instnace;
+
+            // F2023 10.2.1.3: if struct_t has type-bound assignment(=), call it
+            // for dest = src. value_is_class when src/dest are class wrappers.
+            // Returns true if a defined-assignment call was emitted.
+            bool try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
+                llvm::Value* dest, llvm::Value* src, llvm::Module* module,
+                bool value_is_class);
 
         public:
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;

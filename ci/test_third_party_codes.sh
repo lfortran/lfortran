@@ -158,6 +158,12 @@ time_section "🧪 Testing caffeine" '
   git checkout 0.8.0
   assert_git_commit 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
 
+  # An LFortran-specific fix to the Caffeine test suite
+  # until issue #11191 is resolved
+  git config --global user.email "nobody@nowhere.com"
+  git config --global user.name  "Nobody"
+  git cherry-pick fa9456c34af1914cc02b9d9bffeaca7d880313ac
+
   # Now build and test caffeine with LFortran
   export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
   ./install.sh --yes --prefix=$PWD/inst --verbose
@@ -283,9 +289,9 @@ time_section "🧪 Testing Julienne" '
   cd julienne
   micromamba install -c conda-forge fpm
 
-  # Release 3.6.2
-  git checkout 3.6.2
-  assert_git_commit b29fe49efc4547b88cde59e19462956df9c3050a
+  # Release 4.1.0
+  git checkout 4.1.0
+  assert_git_commit 632dbbe876fc2567f27a2c906429a3b596b6fd63
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   print_success "Done with Julienne"

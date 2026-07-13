@@ -496,19 +496,27 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
-            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC);
+            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC) || der_type->m_is_sequence;
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
                 llvm::Type* llvm_mem_type;
-                // bind(C) struct: non-pointer, non-allocatable character maps to i8
+                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps to inline [len x i8]
                 ASR::ttype_t* mem_type = member->m_type;
                 bool is_direct_char = is_bindc &&
                     !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
                     !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
                     ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
                 if (is_direct_char) {
-                    llvm_mem_type = llvm::Type::getInt8Ty(context);
+                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::type_get_past_array(mem_type));
+                    int64_t slen = 1;
+                    if (s->m_len) {
+                        ASRUtils::extract_value(s->m_len, slen);
+                    }
+                    if (slen < 1) slen = 1;
+                    llvm_mem_type = llvm::ArrayType::get(
+                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
@@ -2673,7 +2681,10 @@ namespace LCompilers {
         std::tie(str_data, str_len) = get_string_length_data(str_type, str, true, true);
         builder->CreateCall(_Deallocate(),{get_allocator(module), builder->CreateLoad(character_type, str_data)});
         builder->CreateStore(llvm::ConstantPointerNull::getNullValue(character_type), str_data);
-        builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+
+        if (str_type->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
+        }
     }
 
 
@@ -10245,6 +10256,140 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm_utils->arr_api->set_rank(llvm_array_type, dest, n_dims);
     }
 
+    bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
+            llvm::Value* dest, llvm::Value* src, llvm::Module* module,
+            bool value_is_class) {
+        ASR::symbol_t* da_sym = ASRUtils::resolve_struct_assign_symbol(struct_t);
+        if (da_sym == nullptr) {
+            return false;
+        }
+        da_sym = ASRUtils::symbol_get_past_external(da_sym);
+        if (!ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
+            return false;
+        }
+
+        ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
+        ASR::symbol_t* matching_func_sym = nullptr;
+        for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
+            ASR::symbol_t* assign_proc =
+                ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
+            ASR::symbol_t* candidate;
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
+                candidate = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                        assign_proc)->m_proc);
+            } else {
+                candidate = assign_proc;
+            }
+            if (!ASR::is_a<ASR::Function_t>(*candidate)) {
+                continue;
+            }
+            ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
+            if (cand_func->n_args < 2) {
+                continue;
+            }
+            // Both formals must be type/class of struct_t (type_declaration).
+            auto formal_matches = [&](ASR::expr_t* arg) {
+                ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
+                ASR::ttype_t* t = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(var->m_type)));
+                if (!ASR::is_a<ASR::StructType_t>(*t) ||
+                        var->m_type_declaration == nullptr) {
+                    return false;
+                }
+                return ASRUtils::symbol_get_past_external(var->m_type_declaration)
+                    == &struct_t->base;
+            };
+            if (formal_matches(cand_func->m_args[0]) &&
+                    formal_matches(cand_func->m_args[1])) {
+                matching_func_sym = candidate;
+                break;
+            }
+        }
+        if (matching_func_sym == nullptr) {
+            return false;
+        }
+
+        ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(matching_func_sym);
+        llvm::Function* assign_fn = nullptr;
+        // Prefer the already-emitted function from the codegen symbol table.
+        uint64_t fh = get_hash((ASR::asr_t*)matching_func_sym);
+        auto it = llvm_symtab_fn.find(fh);
+        if (it != llvm_symtab_fn.end()) {
+            assign_fn = it->second;
+        } else {
+            // Fallback: declare by mangled name (e.g. assign not yet visited).
+            ASR::FunctionType_t* ftype =
+                ASR::down_cast<ASR::FunctionType_t>(func_t->m_function_signature);
+            std::string func_name;
+            if (ftype->m_abi == ASR::abiType::BindC) {
+                func_name = ftype->m_bindc_name ? ftype->m_bindc_name
+                    : std::string(ASRUtils::symbol_name(matching_func_sym));
+            } else {
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
+                if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                    func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
+                        + "_" + ASRUtils::symbol_name(matching_func_sym);
+                } else {
+                    func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
+                }
+            }
+            assign_fn = module->getFunction(func_name);
+            if (!assign_fn) {
+                llvm::FunctionType* fntype =
+                    llvm_utils->get_function_type(*func_t, module);
+                assign_fn = llvm::Function::Create(fntype,
+                    llvm::Function::ExternalLinkage, func_name, module);
+            }
+            llvm_symtab_fn[fh] = assign_fn;
+        }
+
+        ASR::Variable_t* fn_lhs_var = ASRUtils::EXPR2VAR(func_t->m_args[0]);
+        ASR::ttype_t* fn_lhs_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(fn_lhs_var->m_type)));
+        bool fn_lhs_is_class = ASRUtils::is_class_type(fn_lhs_type);
+
+        ASR::Variable_t* fn_rhs_var = ASRUtils::EXPR2VAR(func_t->m_args[1]);
+        ASR::ttype_t* fn_rhs_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(fn_rhs_var->m_type)));
+        bool fn_rhs_is_class = ASRUtils::is_class_type(fn_rhs_type);
+
+        llvm::Type* struct_llvm =
+            llvm_utils->name2dertype[get_type_key(struct_t)];
+        llvm::Type* class_llvm = llvm_utils->getClassType(struct_t);
+
+        // Defined-assignment formals take addresses; spill value-typed operands.
+        auto ensure_ptr = [&](llvm::Value* v) -> llvm::Value* {
+            if (v->getType()->isPointerTy()) {
+                return v;
+            }
+            llvm::Value* tmp = llvm_utils->CreateAlloca(*builder, struct_llvm);
+            builder->CreateStore(v, tmp);
+            return tmp;
+        };
+        dest = ensure_ptr(dest);
+        src = ensure_ptr(src);
+
+        auto adjust_arg = [&](llvm::Value* v, bool fn_arg_is_class) -> llvm::Value* {
+            if (value_is_class && !fn_arg_is_class) {
+                llvm::Value* gep = llvm_utils->create_gep2(class_llvm, v, 1);
+                return llvm_utils->CreateLoad2(struct_llvm->getPointerTo(), gep);
+            } else if (!value_is_class && fn_arg_is_class) {
+                return create_class_view(struct_t, v);
+            }
+            return v;
+        };
+
+        builder->CreateCall(assign_fn, {
+            adjust_arg(dest, fn_lhs_is_class),
+            adjust_arg(src, fn_rhs_is_class)
+        });
+        return true;
+    }
+
     void LLVMStruct::struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                                     ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                                     bool use_defined_assignment)
@@ -10606,6 +10751,22 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     llvm::Type *mem_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, mem_sym),
                         ASRUtils::symbol_type(mem_sym), module);
                     ASR::ttype_t* member_type = ASRUtils::symbol_type(mem_sym);
+                    bool is_inline_char = (struct_sym->m_abi == ASR::abiType::BindC ||
+                            struct_sym->m_is_sequence) &&
+                        !ASR::is_a<ASR::Pointer_t>(*member_type) &&
+                        !ASR::is_a<ASR::Allocatable_t>(*member_type) &&
+                        ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_type));
+                    if (is_inline_char) {
+                        llvm::Type* inline_type = llvm_utils->name2dertype[
+                            der_type_name]->getElementType(mem_idx);
+                        if (src_member->getType()->isPointerTy()) {
+                            src_member = llvm_utils->CreateLoad2(inline_type, src_member);
+                        }
+                        llvm::Value* dest_member = llvm_utils->create_gep2(
+                            llvm_utils->name2dertype[der_type_name], dest, mem_idx);
+                        builder->CreateStore(src_member, dest_member);
+                        continue;
+                    }
                     if( !LLVM::is_llvm_struct(member_type) &&
                         !ASRUtils::is_array(member_type) &&
                         !ASRUtils::is_pointer(member_type) &&
@@ -10702,120 +10863,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                 dest_member = llvm_utils->CreateLoad2(struct_type->getPointerTo(), dest_member_orig);
                             }
 
-                            // Check if member struct has defined assignment (~assign)
-                            // Per Fortran standard (10.2.1.3), intrinsic assignment of
-                            // a derived type uses defined assignment for components
-                            // that have one, but only when a matching overload exists
-                            // (i.e., both LHS and RHS arguments are the same struct type).
+                            // F2023 10.2.1.3: use defined assignment for struct
+                            // components that have a type-bound assignment(=).
                             ASR::Struct_t* mem_struct_t = ASR::down_cast<ASR::Struct_t>(mem_struct);
-                            ASR::symbol_t* da_sym = use_defined_assignment ?
-                                mem_struct_t->m_symtab->resolve_symbol("~assign") : nullptr;
-                            if (da_sym) {
-                                da_sym = ASRUtils::symbol_get_past_external(da_sym);
-                                if (ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
-                                    ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
-                                    // Find a proc whose both args are the same struct type
-                                    ASR::symbol_t* matching_func_sym = nullptr;
-                                    for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
-                                        ASR::symbol_t* assign_proc = ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
-                                        ASR::symbol_t* candidate;
-                                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
-                                            candidate = ASRUtils::symbol_get_past_external(
-                                                ASR::down_cast<ASR::StructMethodDeclaration_t>(assign_proc)->m_proc);
-                                        } else {
-                                            candidate = assign_proc;
-                                        }
-                                        ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
-                                        if (cand_func->n_args < 2) continue;
-                                        // Check first arg (LHS) type
-                                        ASR::Variable_t* lhs_var = ASRUtils::EXPR2VAR(cand_func->m_args[0]);
-                                        ASR::ttype_t* lhs_type = ASRUtils::type_get_past_allocatable(
-                                            ASRUtils::type_get_past_pointer(lhs_var->m_type));
-                                        lhs_type = ASRUtils::type_get_past_array(lhs_type);
-                                        if (!ASR::is_a<ASR::StructType_t>(*lhs_type) ||
-                                                !lhs_var->m_type_declaration ||
-                                                ASRUtils::symbol_get_past_external(
-                                                    lhs_var->m_type_declaration) != mem_struct) {
-                                            continue;
-                                        }
-                                        // Check second arg (RHS) type
-                                        ASR::Variable_t* rhs_var = ASRUtils::EXPR2VAR(cand_func->m_args[1]);
-                                        ASR::ttype_t* rhs_type = ASRUtils::type_get_past_allocatable(
-                                            ASRUtils::type_get_past_pointer(rhs_var->m_type));
-                                        rhs_type = ASRUtils::type_get_past_array(rhs_type);
-                                        if (ASR::is_a<ASR::StructType_t>(*rhs_type) &&
-                                                rhs_var->m_type_declaration &&
-                                                ASRUtils::symbol_get_past_external(
-                                                    rhs_var->m_type_declaration) == mem_struct) {
-                                            matching_func_sym = candidate;
-                                            break;
-                                        }
-                                    }
-                                    if (matching_func_sym) {
-                                        // Compute the mangled function name
-                                        ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(matching_func_sym);
-                                        ASR::FunctionType_t* ftype = ASR::down_cast<ASR::FunctionType_t>(
-                                            func_t->m_function_signature);
-                                        std::string func_name;
-                                        if (ftype->m_abi == ASR::abiType::BindC) {
-                                            func_name = ftype->m_bindc_name ? ftype->m_bindc_name
-                                                : std::string(ASRUtils::symbol_name(matching_func_sym));
-                                        } else {
-                                            ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
-                                            if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
-                                                func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
-                                                    + "_" + ASRUtils::symbol_name(matching_func_sym);
-                                            } else {
-                                                func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
-                                            }
-                                        }
-
-                                        // Get or declare the LLVM function
-                                        llvm::Function* assign_fn = module->getFunction(func_name);
-                                        if (!assign_fn) {
-                                            llvm::FunctionType* fntype = llvm_utils->get_function_type(
-                                                *func_t, module);
-                                            assign_fn = llvm::Function::Create(fntype,
-                                                llvm::Function::ExternalLinkage, func_name, module);
-                                        }
-
-                                        ASR::Variable_t* fn_lhs_var = ASRUtils::EXPR2VAR(func_t->m_args[0]);
-                                        ASR::ttype_t* fn_lhs_type = ASRUtils::type_get_past_array(
-                                            ASRUtils::type_get_past_allocatable(
-                                                ASRUtils::type_get_past_pointer(fn_lhs_var->m_type)));
-                                        bool fn_lhs_is_class = ASRUtils::is_class_type(fn_lhs_type);
-
-                                        ASR::Variable_t* fn_rhs_var = ASRUtils::EXPR2VAR(func_t->m_args[1]);
-                                        ASR::ttype_t* fn_rhs_type = ASRUtils::type_get_past_array(
-                                            ASRUtils::type_get_past_allocatable(
-                                                ASRUtils::type_get_past_pointer(fn_rhs_var->m_type)));
-                                        bool fn_rhs_is_class = ASRUtils::is_class_type(fn_rhs_type);
-
-                                        bool member_is_class = ASRUtils::is_class_type(
-                                            ASRUtils::extract_type(member_type));
-
-                                        llvm::Type* mem_class_llvm = llvm_utils->getClassType(mem_struct_t);
-                                        llvm::Type* mem_struct_llvm = llvm_utils->get_type_from_ttype_t_util(
-                                            ASRUtils::symbol_type(mem_struct), mem_struct, module);
-
-                                        auto adjust_arg = [&](llvm::Value* v, bool fn_arg_is_class) -> llvm::Value* {
-                                            if (member_is_class && !fn_arg_is_class) {
-                                                llvm::Value* gep = llvm_utils->create_gep2(mem_class_llvm, v, 1);
-                                                return llvm_utils->CreateLoad2(mem_struct_llvm->getPointerTo(), gep);
-                                            } else if (!member_is_class && fn_arg_is_class) {
-                                                return create_class_view(mem_struct_t, v);
-                                            }
-                                            return v;
-                                        };
-
-                                        llvm::Value* dest_arg = adjust_arg(dest_member, fn_lhs_is_class);
-                                        llvm::Value* src_arg = adjust_arg(src_member, fn_rhs_is_class);
-
-                                        // Call defined assignment: assign(lhs=dest, rhs=src)
-                                        builder->CreateCall(assign_fn, {dest_arg, src_arg});
-                                        return;
-                                    }
-                                }
+                            if (use_defined_assignment &&
+                                    try_call_struct_defined_assignment(
+                                        mem_struct_t, dest_member, src_member,
+                                        module,
+                                        ASRUtils::is_class_type(
+                                            ASRUtils::extract_type(member_type)))) {
+                                return;
                             }
 
                             // Get Copy function pointer
@@ -10943,7 +11000,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                 }
                 if( struct_sym->m_parent != nullptr ) {
-                    // gep the parent struct, which is the 0th member of the child struct
+                    // Parent component is the 0th member of the child struct
+                    // (F2023 7.5.7.2 / 10.2.1.3).
                     if (src->getType()->isPointerTy()) {
                         src = llvm_utils->create_gep2(llvm_utils->name2dertype[get_type_key(struct_sym)], src, 0);
                     } else {
@@ -10954,8 +11012,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     ASR::Struct_t* parent_struct_type_t =
                         ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
 
-                    der_type_name = get_type_key(parent_struct_type_t);
-                    struct_sym = parent_struct_type_t;
+                    if (use_defined_assignment &&
+                            try_call_struct_defined_assignment(
+                                parent_struct_type_t, dest, src, module,
+                                /*value_is_class=*/false)) {
+                        // Parent component fully handled by defined assignment.
+                        struct_sym = nullptr;
+                    } else {
+                        der_type_name = get_type_key(parent_struct_type_t);
+                        struct_sym = parent_struct_type_t;
+                    }
                 } else {
                     struct_sym = nullptr;
                 }

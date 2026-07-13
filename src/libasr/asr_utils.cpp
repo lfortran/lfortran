@@ -29,11 +29,33 @@ namespace LCompilers {
 inline ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type){
     LCOMPILERS_ASSERT(is_string_only(expr_type(string_expr)))
     LCOMPILERS_ASSERT(is_array_of_strings(array_type))
-    if(extract_n_dims_from_ttype(array_type) != 1) throw LCompilersException("Can't cast string to array of n_dims != 1");
 
     ASR::ttype_t*  const array_type_dup = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(array_type);
     ASR::Array_t*  const array_t = ASR::down_cast<ASR::Array_t>(type_get_past_allocatable_pointer(array_type_dup));
     ASR::String_t* const dest_string_t = get_string_type(array_type_dup);
+    if (array_t->n_dims != 1) {
+        ASRBuilder b(al, string_expr->base.loc);
+        ASR::expr_t* known_size = b.i32(1);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            if (array_t->m_dims[i].m_start == nullptr) {
+                array_t->m_dims[i].m_start = b.i32(1);
+            }
+            if (array_t->m_dims[i].m_length != nullptr) {
+                known_size = b.Mul(known_size, array_t->m_dims[i].m_length);
+            }
+        }
+        ASR::expr_t* string_len = b.StringLen(string_expr);
+        ASR::expr_t* elem_count = b.Div(string_len, dest_string_t->m_len);
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            if (array_t->m_dims[i].m_length == nullptr) {
+                array_t->m_dims[i].m_length = b.Div(elem_count, known_size);
+                known_size = b.Mul(known_size, array_t->m_dims[i].m_length);
+            }
+        }
+       return ASR::down_cast2<ASR::Cast_t>(
+                ASR::make_Cast_t(al, string_expr->base.loc, string_expr
+                            , ASR::StringToArray, array_type_dup, nullptr, nullptr));
+    }
     const bool is_length_present = dest_string_t->m_len_kind == ASR::ExpressionLength;
     const bool is_size_present = !is_dimension_empty(array_type_dup); 
 
@@ -2089,6 +2111,19 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     if( subrout->n_args == 2 ) {
         ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
         ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
+        // F2023 10.2.1.4 / 15.5.2.4: non-elemental defined assignment requires
+        // matching ranks of actuals and dummies. types_equal peels arrays, so
+        // enforce ranks explicitly unless the procedure is elemental.
+        bool is_elemental = ASRUtils::is_elemental(proc);
+        if (!is_elemental) {
+            int target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+            int value_rank = ASRUtils::extract_n_dims_from_ttype(value_type);
+            int arg0_rank = ASRUtils::extract_n_dims_from_ttype(target_arg_type);
+            int arg1_rank = ASRUtils::extract_n_dims_from_ttype(value_arg_type);
+            if (target_rank != arg0_rank || value_rank != arg1_rank) {
+                return;
+            }
+        }
         if( ASRUtils::types_equal(target_arg_type, target_type, subrout->m_args[0], target) &&
             ASRUtils::types_equal(value_arg_type, value_type, subrout->m_args[1], value) ) {
             std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
@@ -2146,6 +2181,30 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     }
 }
 
+ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s) {
+    while (s != nullptr) {
+        ASR::symbol_t* result = s->m_symtab->resolve_symbol("~assign");
+        if (result != nullptr) {
+            return result;
+        }
+        if (s->m_parent == nullptr) {
+            break;
+        }
+        s = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(s->m_parent));
+    }
+    return nullptr;
+}
+
+ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
+    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expression);
+    if (struct_sym == nullptr) {
+        return nullptr;
+    }
+    return resolve_struct_assign_symbol(ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(struct_sym)));
+}
+
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
@@ -2157,25 +2216,21 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     bool found = false;
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
-    if(!sym) {
-        if( ASR::is_a<ASR::StructType_t>(*target_type) ) {
-            ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target)));
-            sym = target_struct->m_symtab->resolve_symbol("~assign");
-            while (sym == nullptr && target_struct->m_parent != nullptr) {
-                target_struct = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(target_struct->m_parent));
-                sym = target_struct->m_symtab->resolve_symbol("~assign");
+    if (!sym) {
+        // extract_type peels array/pointer/allocatable so both scalar and
+        // array-of-struct assignments share one lookup path.
+        ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
+        ASR::ttype_t* value_elem = ASRUtils::extract_type(value_type);
+        if (ASR::is_a<ASR::StructType_t>(*target_elem)) {
+            sym = resolve_struct_assign_symbol(target);
+            if (sym) {
+                expr_dt = target;
             }
-            expr_dt = target;
-        } else if( ASR::is_a<ASR::StructType_t>(*value_type) ) {
-            ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value)));
-            sym = value_struct->m_symtab->resolve_symbol("~assign");
-            while (sym == nullptr && value_struct->m_parent != nullptr) {
-                value_struct = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(value_struct->m_parent));
-                sym = value_struct->m_symtab->resolve_symbol("~assign");
+        } else if (ASR::is_a<ASR::StructType_t>(*value_elem)) {
+            sym = resolve_struct_assign_symbol(value);
+            if (sym) {
+                expr_dt = value;
             }
-            expr_dt = value;
         }
     }
     if (sym) {
@@ -2966,7 +3021,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 // Check if formal argument is an implicit interface procedure (e.g. procedure() :: f)
                 // If it is, it accepts any explicit interface procedure as actual argument.
-                if (v->m_type_declaration) {
+                if (v->m_type_declaration && ASR::is_a<ASR::FunctionType_t>(*arg1)) {
                     ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
                     if (ASR::is_a<ASR::Function_t>(*type_decl)) {
                         std::string decl_name = ASR::down_cast<ASR::Function_t>(type_decl)->m_name;
@@ -2978,9 +3033,12 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 // Check if actual argument is an implicit interface procedure (e.g. external :: f)
                 // If it is, it is compatible with any explicit interface formal argument.
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                // Similarly, if formal argument is an implicit interface, it accepts an explicit interface actual argument.
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                    ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
+                    if ((arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) ||
+                        (arg2_func_type->n_arg_types == 0 && arg2_func_type->m_deftype == ASR::deftypeType::Interface)) {
                         continue;
                     }
                 }
@@ -3031,7 +3089,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 // Check if actual argument is an implicit interface procedure (e.g. external :: f)
                 // If it is, it is compatible with any explicit interface formal argument.
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
                     if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
                         continue;

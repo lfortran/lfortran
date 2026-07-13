@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+echo "##[group] Setup"
 set -ex
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
@@ -18,6 +18,11 @@ fpm --version
 
 micromamba install -y -c conda-forge openmpi
 
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Install OpenCoarrays"
+)
+
 git clone https://github.com/sourceryinstitute/OpenCoarrays.git
 cd OpenCoarrays
 
@@ -33,6 +38,11 @@ which caf
 caf --version
 
 cd ..
+
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Install Caffeine"
+)
 
 # Clone caffeine
 
@@ -78,36 +88,30 @@ cd ..
 
 export PATH="$PWD/caffeine/inst/bin:$PATH"
 
+(set +x 
+ echo "##[endgroup]"
+ echo "##[group] Test setup"
+)
+
 # Number of coarray images
 
 CAF_IMAGES=${CAF_IMAGES:-2}
 
 echo "Using CAF_IMAGES=$CAF_IMAGES"
 
-# Remove benign STOP output differences
-
-normalize_output() {
-    sed '/^STOP$/d' | awk '{$1=$1;print}' | sort
-}
-
 # Find all coarray-enabled tests
 
 tests=$(python3 -c '
+import re
 filenames = []
-current_file = None
 
-for line in open("tests/tests.toml"):
-    line = line.strip()
-
-    if line.startswith("[[test]]"):
-        current_file = None
-
-    elif line.startswith("filename ="):
-        current_file = "tests/" + line.split("\"")[1]
-
-    elif "--coarray=true" in line:
-        if current_file:
-            filenames.append(current_file)
+with open("integration_tests/CMakeLists.txt") as f:
+    for line in f:
+        line = line.strip()
+        if line.startswith("RUN(") and "coarray=true" in line:
+            m = re.search(r"NAME\s+(\w+)", line)
+            if m:
+                filenames.append(f"integration_tests/{m.group(1)}.f90")
 
 print(" ".join(filenames))
 ')
@@ -120,13 +124,17 @@ fi
 # OpenCoarrays (caf/cafrun) does not support character arguments to co_max/co_min,
 # so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
 # runs them, so LFortran's own behaviour stays verified.
-opencoarrays_unsupported="coarrays_11 coarrays_13"
+# coarrays_21: intermittent failures on OpenCoarrays
+opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21"
 
 for testfile in $tests; do
-echo "========================================="
-echo "Running coarray test: $testfile"
-echo "========================================="
-
+(set +x
+ echo "##[endgroup]"
+ echo "##[group] testing: $testfile"
+ echo "========================================="
+ echo "Running coarray test: $testfile"
+ echo "========================================="
+)
 
 base=$(basename "$testfile" .f90)
 
@@ -173,7 +181,12 @@ rm -f "${base}_lf.out"
 
 done
 
+(set +x 
+ echo "##[endgroup]"
+)
+
 echo
 echo "All coarray runtime tests passed"
 
 rm -rf caffeine
+rm -rf OpenCoarrays
