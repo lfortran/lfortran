@@ -3,7 +3,11 @@
 set -e
 set -x
 
+BUILD_DIR="build-lfortran"
+
 cmake \
+    -S . \
+    -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=yes \
     -DLFORTRAN_BUILD_ALL=yes \
@@ -17,6 +21,6 @@ cmake \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DCMAKE_C_FLAGS="${CFLAGS} -fdiagnostics-color=always" \
     -DCMAKE_CXX_FLAGS="${CXXFLAGS} -fdiagnostics-color=always" \
-    -G Ninja \
-    .
-cmake --build .
+    -G Ninja
+
+cmake --build "$BUILD_DIR"
