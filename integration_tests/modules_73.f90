@@ -1,4 +1,4 @@
-﻿module xutil_all_min_mod
+﻿module modules_73
 implicit none
 
 interface str
@@ -41,10 +41,10 @@ else
 end if
 end function repeat_char_vec
 
-end module xutil_all_min_mod
+end module modules_73
 
 program main
-use xutil_all_min_mod
+use modules_73
 implicit none
 character(len=4) :: words(2)
 words = [character(len=4) :: "ab", "cd"]
