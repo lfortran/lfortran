@@ -6525,10 +6525,10 @@ _lfortran_open(int32_t unit_num,
                     // Emit a message consistent with gfortran-style diagnostics.
                     const char* reason = strerror(errno);
                     if (f_name_c && f_name_c[0] != '\0') {
-                        snprintf(iomsg, iomsg_len + 1,
+                        snprintf(iomsg, iomsg_len,
                                  "Cannot open file '%s': %s", f_name_c, reason);
                     } else {
-                        snprintf(iomsg, iomsg_len + 1,
+                        snprintf(iomsg, iomsg_len,
                                  "Cannot open file '': %s", reason);
                     }
                     pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
