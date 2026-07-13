@@ -111,7 +111,11 @@ with open("integration_tests/CMakeLists.txt") as f:
         if line.startswith("RUN(") and "coarray=true" in line:
             m = re.search(r"NAME\s+(\w+)", line)
             if m:
-                filenames.append(f"integration_tests/{m.group(1)}.f90")
+                num_images = ""
+                m_img = re.search(r"NUM_IMAGES[\s=]+(\d+)", line)
+                if m_img:
+                    num_images = m_img.group(1)
+                filenames.append(f"integration_tests/{m.group(1)}.f90:{num_images}")
 
 print(" ".join(filenames))
 ')
@@ -127,12 +131,19 @@ fi
 # coarrays_21: intermittent failures on OpenCoarrays
 opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21"
 
-for testfile in $tests; do
+for test_info in $tests; do
+testfile="${test_info%%:*}"
+num_images="${test_info##*:}"
+
+if [ -z "$num_images" ]; then
+    num_images=$CAF_IMAGES
+fi
+
 (set +x
  echo "##[endgroup]"
  echo "##[group] testing: $testfile"
  echo "========================================="
- echo "Running coarray test: $testfile"
+ echo "Running coarray test: $testfile (images: $num_images)"
  echo "========================================="
 )
 
@@ -153,7 +164,7 @@ lfortran "$testfile" \
 # Run LFortran executable
 # ----------------------------------------
 
-gasnetrun_smp -n "$CAF_IMAGES" ./"${base}_lf.out"
+gasnetrun_smp -n "$num_images" ./"${base}_lf.out"
 
 # ----------------------------------------
 # Cross-check with gfortran/OpenCoarrays, unless OpenCoarrays lacks support
@@ -170,7 +181,7 @@ if [ "$skip_opencoarrays" = true ]; then
     echo "Skipping OpenCoarrays cross-check for $testfile (character co_max/co_min not supported by OpenCoarrays)"
 else
     caf "$testfile" -o "${base}_gf.out"
-    cafrun -np "$CAF_IMAGES" ./"${base}_gf.out"
+    cafrun -np "$num_images" ./"${base}_gf.out"
     rm -f "${base}_gf.out"
 fi
 

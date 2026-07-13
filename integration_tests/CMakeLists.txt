@@ -303,7 +303,7 @@ endmacro(RUN_UTIL)
 
 macro(RUN)
     set(options FAIL NOFAST_TILL_LLVM16 NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC)
-    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN)
+    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
@@ -4716,6 +4716,8 @@ RUN(NAME coarrays_21 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_22 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_23 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_24 EXTRA_ARGS --coarray=true)
+
+RUN(NAME coarrays_27 EXTRA_ARGS --coarray=true NUM_IMAGES 4)
 
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)
