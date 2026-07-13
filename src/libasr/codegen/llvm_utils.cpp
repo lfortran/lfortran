@@ -1981,7 +1981,7 @@ namespace LCompilers {
 #endif
         return value;
     }
-  
+
     /*
     TODO: To avoid the dyn_cast checks here, the alternative is to standardize
     llvm_symtab to always store the descriptor pointer value (not the slot) for
