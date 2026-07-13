@@ -1841,6 +1841,11 @@ public:
             } else {
                 module->setDataLayout("");
             }
+#if LLVM_VERSION_MAJOR >= 21
+            module->setTargetTriple(llvm::Triple(target_triple));
+#else
+            module->setTargetTriple(target_triple);
+#endif
         }
         llvm_utils->set_module(module.get());
 
