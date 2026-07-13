@@ -14798,56 +14798,61 @@ public:
                 }
                 int64_t result_size = 64; // Fallback for runtime-sized sources
                 ASR::expr_t* result_size_expr = nullptr;
-                if( src_bytes > 0 ) {
-                    ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
-                    int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
-                    // For character types: mold_bytes = kind * length
-                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
-                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
-                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
-                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
-                            mold_bytes = mold_bytes * str_len;
+                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, x.base.base.loc, compiler_options.po.default_integer_kind));
+
+                // 1. Ensure we have an expression for the source size
+                if (src_bytes > 0 && !src_len_expr) {
+                    src_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x.base.base.loc, src_bytes, int_type));
+                }
+
+                // 2. Compute mold byte size or build an expression for it
+                ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
+                int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
+                ASR::expr_t* mold_bytes_expr = nullptr;
+
+                if (ASR::is_a<ASR::String_t>(*mold_elem_type)) {
+                    ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
+                    if (mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len)) {
+                        int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
+                            ASRUtils::expr_value(mold_str_type->m_len))->m_n;
+                        mold_bytes = mold_bytes * str_len;
+                    } else {
+                        mold_bytes = -1; // Runtime-sized string
+                        if (mold_str_type->m_len) {
+                            mold_bytes_expr = mold_str_type->m_len;
                         } else {
-                            mold_bytes = -1; // Runtime-sized string
+                            mold_bytes_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                                al, x.base.base.loc, mold, int_type, nullptr));
                         }
                     }
-                    if( mold_bytes > 0 ) {
+                }
+
+                // 3. Compute result_size (constant) or result_size_expr (runtime)
+                if (mold_bytes > 0) {
+                    mold_bytes_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x.base.base.loc, mold_bytes, int_type));
+                    if (src_bytes > 0) {
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                     }
-                } else if( src_len_expr ) {
-                    // For runtime-sized strings with known length expression, use it
-                    ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
-                    int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
-                    // For character types: mold_bytes = kind * length
-                    if( ASR::is_a<ASR::String_t>(*mold_elem_type) ) {
-                        ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
-                        if( mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len) ) {
-                            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(mold_str_type->m_len))->m_n;
-                            mold_bytes = mold_bytes * str_len;
-                        } else {
-                            mold_bytes = -1;
-                        }
-                    }
-                    if( mold_bytes > 0 ) {
-                        // Calculate: ceiling(src_len_expr / mold_bytes)
-                        // = (src_len_expr + mold_bytes - 1) / mold_bytes
-                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
-                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
-                        ASR::expr_t* mold_bytes_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, x.base.base.loc, mold_bytes, int_type));
-                        ASR::expr_t* mold_bytes_minus_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, x.base.base.loc, mold_bytes - 1, int_type));
-                        ASR::expr_t* numerator = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                            al, x.base.base.loc, src_len_expr, ASR::binopType::Add,
-                            mold_bytes_minus_one, int_type, nullptr));
-                        result_size_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                            al, x.base.base.loc, numerator, ASR::binopType::Div,
-                            mold_bytes_expr, int_type, nullptr));
-                    }
+                }
+
+                if ((src_bytes <= 0 || mold_bytes <= 0) && src_len_expr && mold_bytes_expr) {
+                    // Calculate runtime dimension: ceiling(src_len_expr / mold_bytes_expr)
+                    // = (src_len_expr + mold_bytes_expr - 1) / mold_bytes_expr
+                    ASR::expr_t* one_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x.base.base.loc, 1, int_type));
+                    ASR::expr_t* mold_bytes_minus_one = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, x.base.base.loc, mold_bytes_expr, ASR::binopType::Sub,
+                        one_expr, int_type, nullptr));
+                    ASR::expr_t* numerator = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, x.base.base.loc, src_len_expr, ASR::binopType::Add,
+                        mold_bytes_minus_one, int_type, nullptr));
+                    result_size_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, x.base.base.loc, numerator, ASR::binopType::Div,
+                        mold_bytes_expr, int_type, nullptr));
                 }
                 ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));

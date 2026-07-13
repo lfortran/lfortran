@@ -1,10 +1,10 @@
-program main
+program array_130
   call f("a")
 contains
 
   subroutine f(mold)
     character(*), intent(in) :: mold
 
-    print *, size(transfer(0.0, [mold]))
+    if (size(transfer(0.0, [mold])) /= 4) error stop
   end subroutine f
-end program main
+end program array_130
