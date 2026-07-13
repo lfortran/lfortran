@@ -33,6 +33,7 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/utils.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 
@@ -85,6 +86,8 @@ namespace LCompilers::LFortran {
     public:
         custom_interpreter() : compiler_options{}, e{compiler_options} {
             e.compiler_options.interactive = true;
+            e.compiler_options.po.runtime_library_dir =
+                LCompilers::LFortran::get_runtime_library_dir();
         }
         virtual ~custom_interpreter() = default;
 
