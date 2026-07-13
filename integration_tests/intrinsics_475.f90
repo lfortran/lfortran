@@ -60,6 +60,22 @@ program intrinsics_475
     res_8 = ishftc(120_8, -2_8, 4_8)
     if (res_8 /= 114_8) error stop
 
+    ! ----- SHIFT == 0: value is unchanged (early-return path) -----
+
+    if (ishftc(120_4, 0_4, 4_4)   /= 120)           error stop
+    if (ishftc(120_4, 0_4, 32_4)  /= 120)           error stop
+    if (ishftc(120_8, 0_8, 64_8)  /= 120_8)         error stop
+    if (ishftc(huge(0_8), 0_8, 64_8) /= huge(0_8))  error stop
+
+    ! ----- SIZE == BIT_SIZE(I): full-width rotation (mask == ~0ULL branch) -----
+
+    ! kind=4, SIZE=32
+    if (ishftc(120_4, 2_4, 32_4)  /= 480)           error stop
+    ! kind=8, SIZE=64 -> exercises the bits_size == 64 mask branch
+    if (ishftc(120_8, 2_8, 64_8)  /= 480_8)         error stop
+    if (ishftc(120_8, -2_8, 64_8) /= 30_8)          error stop
+    if (ishftc(huge(0_8), 2_8, 64_8) /= -3_8)       error stop
+
     print *, "pass"
 
 contains

@@ -5107,9 +5107,10 @@ namespace Ishftc {
         // Rotate only the low `bits_size` bits of val; leave the higher bits
         // unchanged. The high bits are captured before the rotation and OR'd
         // back into the result, so they survive even when bits_size < bit_width.
+        // 64-bit literals (0ULL/1ULL) keep the mask correct on LLP64 targets (MSVC).
         uint64_t mask = (bits_size == max_bits_size)
-            ? ~0lu
-            : ((1lu << bits_size) - 1lu);
+            ? ~0ULL
+            : ((1ULL << bits_size) - 1ULL);
         uint64_t high = val & ~mask;
         uint64_t low = val & mask;
         uint64_t result;
