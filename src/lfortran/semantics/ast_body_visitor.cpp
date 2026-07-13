@@ -97,7 +97,7 @@ public:
     bool needs_implicit_interface_postprocessing = false;
     std::set<std::string> labels;
     size_t starting_n_body = 0;
-    int loop_nesting = 0;
+    bool in_loop = false;
     int all_loops_blocks_nesting = 0;
     int all_blocks_nesting = 0;
     int pragma_nesting_level = 0;
@@ -8886,6 +8886,8 @@ public:
 
     void visit_WhileLoop(const AST::WhileLoop_t &x) {
         all_loops_blocks_nesting += 1;
+        bool in_loop_copy = in_loop;
+        in_loop = true;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
@@ -8894,6 +8896,7 @@ public:
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);
         all_loops_blocks_nesting -= 1;
+        in_loop = in_loop_copy;
     }
 
     #define cast_as_loop_var(conv_candidate) \
@@ -8914,7 +8917,8 @@ public:
                 throw SemanticAbort();
             }
         }
-        loop_nesting += 1;
+        bool in_loop_copy = in_loop;
+        in_loop = true;
         all_loops_blocks_nesting += 1;
         all_blocks_nesting++;
         ASR::expr_t *var, *start, *end;
@@ -9062,13 +9066,15 @@ public:
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
             tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size(), nullptr, 0);
         }
-        loop_nesting -= 1;
+        in_loop = in_loop_copy;
         all_loops_blocks_nesting -= 1;
         all_blocks_nesting--;
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
+        bool in_loop_copy = in_loop;
+        in_loop = true;
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         AST::decl_attribute_t *current_type = nullptr;
@@ -9212,6 +9218,7 @@ public:
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
         all_loops_blocks_nesting -= 1;
+        in_loop = in_loop_copy;
     }
 
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
@@ -9362,6 +9369,13 @@ public:
     }
 
     void visit_Cycle(const AST::Cycle_t &x) {
+        if (!in_loop) {
+            diag.add(Diagnostic("`cycle` statements cannot be outside of loops",
+                                Level::Error,
+                                Stage::Semantic,
+                                { Label("", { x.base.base.loc }) }));
+            throw SemanticAbort();
+        }
         tmp = ASR::make_Cycle_t(al, x.base.base.loc, x.m_stmt_name);
     }
 

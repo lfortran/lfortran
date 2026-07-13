@@ -495,9 +495,9 @@ semantic error: Function `c_loc` is not permitted in an initialization expressio
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: length specifier is only valid for character type
-   --> tests/errors/continue_compilation_1.f90:875:20
+   --> tests/errors/continue_compilation_1.f90:869:20
     |
-875 |         integer :: i*2
+869 |         integer :: i*2
     |                    ^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -1205,6 +1205,12 @@ semantic error: `exit` statements cannot be outside of loops or blocks
 513 |     exit
     |     ^^^^ 
 
+semantic error: `cycle` statements cannot be outside of loops
+   --> tests/errors/continue_compilation_1.f90:514:5
+    |
+514 |     cycle
+    |     ^^^^^ 
+
 semantic error: Required argument `y` at position 2 is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:516:18
     |
@@ -1738,44 +1744,44 @@ semantic error: duplicate statement label 1000
 844 | 1000    continue
     |         ^^^^^^^^ 
 
-semantic error: Cannot initialize integer(4) variable with character(len=3) value in DATA statement
-   --> tests/errors/continue_compilation_1.f90:850:9
-    |
-850 |         data x / "abc" /
-    |         ^^^^^^^^^^^^^^^^ 
-
 semantic error: Selector shall be polymorphic in SELECT TYPE statement
-   --> tests/errors/continue_compilation_1.f90:856:22
+   --> tests/errors/continue_compilation_1.f90:850:22
     |
-856 |         select type (a)
+850 |         select type (a)
     |                      ^ 
 
 semantic error: The `MIN` intrinsic requires all CHARACTER arguments to have the same kind; found kind 1 and 4
-   --> tests/errors/continue_compilation_1.f90:865:18
+   --> tests/errors/continue_compilation_1.f90:859:18
     |
-865 |         print *, min(c1, c4)
+859 |         print *, min(c1, c4)
     |                  ^^^^^^^^^^^ 
 
 semantic error: Label 20 is not defined
-   --> tests/errors/continue_compilation_1.f90:870:9
+   --> tests/errors/continue_compilation_1.f90:864:9
     |
-870 |         goto 20  ! {Error} Label 20 is not defined
+864 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
 
 semantic error: actual argument for 'items' cannot be an assumed-size array
-   --> tests/errors/continue_compilation_1.f90:881:36
+   --> tests/errors/continue_compilation_1.f90:875:36
     |
-881 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+875 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                    ^^^^^ 
 
 semantic error: actual argument for 'items' cannot be an assumed-size array
-   --> tests/errors/continue_compilation_1.f90:890:49
+   --> tests/errors/continue_compilation_1.f90:884:49
     |
-890 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+884 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                                 ^^^^^ 
 
 semantic error: Association target cannot be a BOZ literal constant
-   --> tests/errors/continue_compilation_1.f90:898:25
+   --> tests/errors/continue_compilation_1.f90:892:25
     |
-898 |         associate (y => z'1') 
+892 |         associate (y => z'1') 
     |                         ^^^^ 
+
+semantic error: Cannot initialize integer(4) variable with character(len=3) value in DATA statement
+   --> tests/errors/continue_compilation_1.f90:899:9
+    |
+899 |         data x / "abc" /
+    |         ^^^^^^^^^^^^^^^^ 

@@ -16,6 +16,7 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
+#include <complex>
 #include <string>
 #include <sstream>
 #include <set>
@@ -411,9 +412,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
-        diag.add(Diagnostic("Complex constant in compiletime evaluation implied do loop not supported",
-                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-        throw SemanticAbort();
+        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc, x.m_re, x.m_im, x.m_type));
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
@@ -16503,6 +16502,11 @@ public:
             res = ASR::down_cast<ASR::IntegerConstant_t>(visitor.value)->m_n;
         } else if constexpr (std::is_same_v<T,float> || std::is_same_v<T,double>) {
             res = ASR::down_cast<ASR::RealConstant_t>(visitor.value)->m_r;
+        } else if constexpr (std::is_same_v<T,std::complex<float>>
+                || std::is_same_v<T,std::complex<double>>) {
+            ASR::ComplexConstant_t* cc =
+                ASR::down_cast<ASR::ComplexConstant_t>(visitor.value);
+            res = T(cc->m_re, cc->m_im);
         } else if constexpr (std::is_same_v<T,char*>) {
             res = ASR::down_cast<ASR::StringConstant_t>(visitor.value)->m_s;
         }
@@ -16727,6 +16731,26 @@ public:
                     data = &array.p[0];
                 } else {
                     diag.add(Diagnostic("Unsupported kind for real type in compiletime evaluation of implied do loop",
+                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            } else if (ASRUtils::is_complex(*type)) {
+                // Complex ArrayConstant stores elements as pairs [re, im] in
+                // contiguous memory (see set_data_complex in asr_utils.h and
+                // fetch_ArrayConstant_value). std::complex<T> is guaranteed to
+                // be layout-compatible with T[2] (C++11 [complex.numbers.general]),
+                // so we can feed the raw buffer directly to ArrayConstant.
+                int kind = ASRUtils::extract_kind_from_ttype_t(type);
+                if (kind == 4) {
+                    Vec<std::complex<float>> array; array.reserve(al, 1);
+                    populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                    data = &array.p[0];
+                } else if (kind == 8) {
+                    Vec<std::complex<double>> array; array.reserve(al, 1);
+                    populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                    data = &array.p[0];
+                } else {
+                    diag.add(Diagnostic("Unsupported kind for complex type in compiletime evaluation of implied do loop",
                                         Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
                 }

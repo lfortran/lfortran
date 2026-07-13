@@ -13614,9 +13614,15 @@ static void write_str(nml_writer_t *w, const char *s) {
 }
 
 // Helper function to write a single namelist item value
-static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, int64_t offset) {
+static int64_t get_element_size(const lfortran_nml_item_t *item);
+
+static int64_t get_item_stride(const lfortran_nml_item_t *item) {
+    return item->stride > 0 ? item->stride : get_element_size(item);
+}
+
+static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, int64_t index) {
     char buf[128];
-    void *ptr = (char*)item->data + offset;
+    void *ptr = (char*)item->data + index * get_item_stride(item);
 
     switch (item->type) {
         case LFORTRAN_NML_INT1:
@@ -13752,11 +13758,9 @@ void namelist_write_impl(nml_writer_t *w,
             write_nml_value(w, item, 0);
         } else {
             int64_t total = compute_array_size(item);
-            int64_t elem_size = get_element_size(item);
-
             for (int64_t j = 0; j < total; j++) {
                 if (j > 0) write_char(w, ',');
-                write_nml_value(w, item, j * elem_size);
+                write_nml_value(w, item, j);
             }
         }
 
@@ -14085,8 +14089,8 @@ static void to_lowercase(char *str) {
 }
 
 // Helper to parse a value into a namelist item
-static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, int64_t offset) {
-    void *ptr = (char*)item->data + offset;
+static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, int64_t index) {
+    void *ptr = (char*)item->data + index * get_item_stride(item);
     switch (item->type) {
         case LFORTRAN_NML_INT1:
             *(int8_t*)ptr = (int8_t)atoi(value_str);
@@ -14248,7 +14252,6 @@ typedef struct {
     int n_items;
     int item_idx;
     int64_t value_idx;
-    int64_t elem_size;
     int64_t total_size;
 } nml_value_iter_t;
 
@@ -14258,7 +14261,6 @@ static void nml_value_iter_init(nml_value_iter_t *it, lfortran_nml_item_t **item
     it->n_items = n_items;
     it->item_idx = 0;
     it->value_idx = value_idx;
-    it->elem_size = get_element_size(items[0]);
     it->total_size = total_size;
 }
 
@@ -14268,7 +14270,6 @@ static bool nml_value_iter_next_item(nml_value_iter_t *it) {
         if (it->item_idx >= it->n_items) {
             return false;
         }
-        it->elem_size = get_element_size(it->items[it->item_idx]);
         it->total_size = compute_array_size(it->items[it->item_idx]);
         it->value_idx = 0;
         if (it->total_size > 0) {
@@ -14337,7 +14338,7 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
             }
             // Repeat count found - assign same value multiple times
             for (int r = 0; r < repeat_count && it->item_idx < it->n_items; r++) {
-                parse_nml_value(value_str, it->items[it->item_idx], it->value_idx * it->elem_size);
+                parse_nml_value(value_str, it->items[it->item_idx], it->value_idx);
                 if (!nml_value_iter_advance(it)) {
                     done = true;
                     break;
@@ -14345,7 +14346,7 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
             }
         } else {
             // No repeat count - single value
-            parse_nml_value(token, it->items[it->item_idx], it->value_idx * it->elem_size);
+            parse_nml_value(token, it->items[it->item_idx], it->value_idx);
             if (!nml_value_iter_advance(it)) {
                 done = true;
             }

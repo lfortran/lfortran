@@ -1134,6 +1134,9 @@ RUN(NAME namelist_32 LABELS gfortran llvm)
 RUN(NAME namelist_33 LABELS gfortran llvm)
 RUN(NAME namelist_34 LABELS gfortran llvm)
 
+
+RUN(NAME namelist_35 LABELS gfortran llvm)
+
 RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 
 RUN(NAME format_quotes_01 LABELS gfortran llvm)
@@ -1827,6 +1830,7 @@ RUN(NAME intrinsics_472 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_A
 RUN(NAME intrinsics_473 LABELS gfortran llvm) # maxloc/minloc with compile-time mask evaluation on 2D arrays
 RUN(NAME intrinsics_474 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_broadcast
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -3421,7 +3425,8 @@ RUN(NAME implied_do_loops41 LABELS gfortran llvm)
 RUN(NAME implied_do_loops42 LABELS gfortran llvm)
 RUN(NAME implied_do_loops43 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME implied_do_loops44 LABELS gfortran llvm)
-RUN(NAME implied_do_loops45 LABELS gfortran llvm)
+RUN(NAME implied_do_loops45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME implied_do_loops46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
