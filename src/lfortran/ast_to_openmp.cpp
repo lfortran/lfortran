@@ -197,13 +197,18 @@ public:
             // The namelist statement is printed differently than other
             // atttributes
             r.append("namelist");
-            r.append(" /");
-            r += down_cast<AttrNamelist_t>(x.m_attributes[0])->m_name;
-            r.append("/ ");
-            for (size_t i=0; i<x.n_syms; i++) {
-                visit_var_sym(x.m_syms[i]);
-                r += s;
-                if (i < x.n_syms-1) r.append(", ");
+            AttrNamelist_t *namelist = down_cast<AttrNamelist_t>(x.m_attributes[0]);
+            for (size_t j = 0; j < namelist->n_groups; j++) {
+                namelist_group_t &group = namelist->m_groups[j];
+                if (j > 0) r.append(" ");
+                r.append(" /");
+                r += group.m_name;
+                r.append("/ ");
+                for (size_t i = 0; i < group.n_objects; i++) {
+                    visit_var_sym(group.m_objects[i]);
+                    r += s;
+                    if (i < group.n_objects - 1) r.append(", ");
+                }
             }
         } else {
             if (x.m_vartype) {
