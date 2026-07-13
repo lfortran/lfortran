@@ -8,6 +8,7 @@ program p
     
     varr%arr = [1,2,3]
     varr = ff(varr)
+    if (.not. all(varr%arr == [1, 2, 3])) error stop
 
     contains 
 
