@@ -2883,6 +2883,21 @@ static inline void mark_submodule_related_loaded_modules_as_external(
     }
 }
 
+static inline void mark_local_regular_modules_as_external_when_submodule_present(
+        const ASR::TranslationUnit_t &unit)
+{
+    Allocator al(4 * 1024);
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Module_t>(*a.second)) continue;
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(a.second);
+        if (m->m_loaded_from_mod) continue;
+        if (m->m_parent_module) continue;
+        if (m->m_has_submodules) continue;
+        if (startswith(std::string(m->m_name), "lfortran_intrinsic")) continue;
+        m->m_symtab->mark_all_variables_external(al);
+    }
+}
+
 static inline void mark_loaded_from_mod_modules_as_external(
         const ASR::TranslationUnit_t &unit)
 {

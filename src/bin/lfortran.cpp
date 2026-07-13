@@ -1236,6 +1236,7 @@ int compile_src_to_object_file(const std::string &infile,
         && LCompilers::ASRUtils::submodule_present(*asr)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr);
+    bool user_separate_compilation = compiler_options.separate_compilation;
     if (submodule_lib_unit) {
         compiler_options.separate_compilation = true;
         compiler_options.po.intrinsic_symbols_mangling = true;
@@ -1253,6 +1254,9 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     if (submodule_lib_unit) {
+        if (!user_separate_compilation) {
+            LCompilers::ASRUtils::mark_local_regular_modules_as_external_when_submodule_present(*asr);
+        }
         LCompilers::ASRUtils::mark_loaded_from_mod_modules_as_external(*asr);
     } else if (arg_c) {
         LCompilers::ASRUtils::mark_submodule_related_loaded_modules_as_external(*asr);
