@@ -1785,3 +1785,15 @@ semantic error: Cannot initialize integer(4) variable with character(len=3) valu
     |
 899 |         data x / "abc" /
     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface mismatch in global procedure 'cc1_charlenmismatch': Character length mismatch in function result
+   --> tests/errors/continue_compilation_1.f90:906:25
+    |
+906 |         character(4) :: cc1_charlenmismatch
+    |                         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface mismatch in global procedure 'cc1_typemismatch': Type mismatch in function result
+   --> tests/errors/continue_compilation_1.f90:915:17
+    |
+915 |         real :: cc1_typemismatch
+    |                 ^^^^^^^^^^^^^^^^ 
