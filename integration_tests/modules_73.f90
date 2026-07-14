@@ -43,7 +43,7 @@ end function repeat_char_vec
 
 end module modules_73
 
-program modules_73
+program test_modules_73
 use modules_73
 implicit none
 character(len=4) :: words(2)
@@ -56,4 +56,4 @@ if (trim(result) /= "ab") then
 end if
 
 print "(100(a,1x))", repeat_char_vec(2, words)
-end program modules_73
+end program test_modules_73
