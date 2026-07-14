@@ -57,6 +57,9 @@ integer, parameter :: initial_team = 0
 integer, parameter :: current_team = 1
 integer, parameter :: parent_team = 2
 
+type :: team_type
+end type
+
 contains
 function compiler_version() result(version)
     character(len=:), allocatable :: version

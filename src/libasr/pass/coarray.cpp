@@ -891,7 +891,7 @@ class PRIFInterface {
             ASR::ttype_t *int32_type = int32;
 
             ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
-            ASR::ttype_t *team_type = ASRUtils::make_StructType_t_util(al, loc, team_type_sym, true);
+            ASR::ttype_t *team_type = ASRUtils::make_StructType_t_util(al, loc, team_type_sym, false);
 
             ASR::symbol_t *team_sym = declare_variable(
                 fn_symtab, loc, "team", team_type, ASR::intentType::In, team_type_sym,
@@ -915,7 +915,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -963,6 +963,94 @@ class PRIFInterface {
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        ASR::symbol_t* get_or_create_prif_form_team_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_form_team");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = int32;
+            ASR::ttype_t *int64_type = int64;
+            
+            ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
+            ASR::ttype_t *team_type = ASRUtils::make_StructType_t_util(al, loc, team_type_sym, false);
+
+            ASR::symbol_t *team_number_sym = declare_variable(
+                fn_symtab, loc, "team_number", int64_type, ASR::intentType::In, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *team_number = ASRUtils::EXPR(ASR::make_Var_t(al, loc, team_number_sym));
+
+            ASR::symbol_t *team_sym = declare_variable(
+                fn_symtab, loc, "team", team_type, ASR::intentType::Out, team_type_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *team = ASRUtils::EXPR(ASR::make_Var_t(al, loc, team_sym));
+
+            ASR::symbol_t *new_index_sym = declare_variable(
+                fn_symtab, loc, "new_index", int32_type, ASR::intentType::In, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Optional, false);
+            ASR::expr_t *new_index = ASRUtils::EXPR(ASR::make_Var_t(al, loc, new_index_sym));
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 6);
+            args.push_back(al, team_number);
+            args.push_back(al, team);
+            args.push_back(al, new_index);
+            declare_prif_status_args(fn_symtab, loc, args);
+
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, true, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        ASR::stmt_t* make_prif_form_team_call(const Location &loc,
+                                             ASR::expr_t *team_number,
+                                             ASR::expr_t *team,
+                                             ASR::expr_t *new_index = nullptr,
+                                             ASR::expr_t *stat = nullptr,
+                                             ASR::expr_t *errmsg = nullptr,
+                                             ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_form_team_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
+            
+            // Note: team_number might be passed as int32, we should cast to int64
+            ASRUtils::ASRBuilder b(al, loc);
+            if (team_number) {
+                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(team_number)) != 8) {
+                    team_number = b.i2i_t(team_number, int64);
+                }
+            }
+            
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 6);
+
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = team_number;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = team;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = new_index;
+            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = stat;
+            ASR::call_arg_t arg5; arg5.loc = loc; arg5.m_value = errmsg;
+            ASR::call_arg_t arg6; arg6.loc = loc; arg6.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
+            call_args.push_back(al, arg5);
+            call_args.push_back(al, arg6);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
         }
 
         ASR::symbol_t* get_or_create_prif_sync_all_sub(const Location &loc) {
@@ -1957,6 +2045,10 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                     ASR::SyncMemory_t *x = ASR::down_cast<ASR::SyncMemory_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_sync_memory_call(
                         x->base.base.loc, x->m_stat, x->m_errmsg));
+                } else if (m_body[i]->type == ASR::stmtType::FormTeam) {
+                    ASR::FormTeam_t *x = ASR::down_cast<ASR::FormTeam_t>(m_body[i]);
+                    body.push_back(replacer.al, replacer.prif.make_prif_form_team_call(
+                        x->base.base.loc, x->m_team_number, x->m_team, x->m_new_index, x->m_stat, x->m_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::IntrinsicImpureSubroutine) {
                     ASR::IntrinsicImpureSubroutine_t *x = ASR::down_cast<ASR::IntrinsicImpureSubroutine_t>(m_body[i]);
                     std::string intrinsic_name = ASRUtils::get_intrinsic_subroutine_name(x->m_sub_intrinsic_id);

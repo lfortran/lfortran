@@ -9655,6 +9655,38 @@ public:
         tmp = ASR::make_SyncMemory_t(al, x.base.base.loc, stat, errmsg);
     }
 
+    void visit_FormTeam(const AST::FormTeam_t &x) {
+        ASR::expr_t *team_number = nullptr;
+        if (x.m_team_number) {
+            visit_expr(*x.m_team_number);
+            team_number = ASRUtils::EXPR(tmp);
+        }
+        ASR::expr_t *team = nullptr;
+        if (x.m_team_var) {
+            team = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_team_var)));
+        }
+        
+        ASR::expr_t *new_index = nullptr;
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        
+        for (size_t i = 0; i < x.n_sync_stat; i++) {
+            AST::event_attribute_t *attr = x.m_sync_stat[i];
+            if (AST::is_a<AST::AttrStat_t>(*attr)) {
+                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
+                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(s->m_variable)));
+            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
+                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
+                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(e->m_variable)));
+            } else if (AST::is_a<AST::AttrNewIndex_t>(*attr)) {
+                auto *n = AST::down_cast<AST::AttrNewIndex_t>(attr);
+                visit_expr(*n->m_value);
+                new_index = ASRUtils::EXPR(tmp);
+            }
+        }
+        tmp = ASR::make_FormTeam_t(al, x.base.base.loc, team_number, team, new_index, stat, errmsg);
+    }
+
     void visit_Nullify(const AST::Nullify_t &x) {
         Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
