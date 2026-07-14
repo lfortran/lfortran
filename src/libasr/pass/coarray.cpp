@@ -1355,9 +1355,7 @@ class PRIFInterface {
                 std::string hname = vname + "__coarray_handle";
                 std::string dname = vname + "__coarray_data";
 
-                bool is_module = (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner)));
-
-                if (is_save && scope != unit.m_symtab && !is_module) {
+                if (is_save && scope != unit.m_symtab) {
                     companion_scope = unit.m_symtab;
                     hname = companion_scope->get_unique_name(vname + "__coarray_handle");
                     dname = companion_scope->get_unique_name(vname + "__coarray_data");

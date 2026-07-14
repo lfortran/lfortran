@@ -1203,6 +1203,7 @@ public:
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
             arg_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg;
         }
+
         if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg_expr);
             if (is_nested_call_symbol(current_scope, var->m_v) ||

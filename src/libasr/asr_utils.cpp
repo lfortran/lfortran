@@ -3021,7 +3021,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 // Check if formal argument is an implicit interface procedure (e.g. procedure() :: f)
                 // If it is, it accepts any explicit interface procedure as actual argument.
-                if (v->m_type_declaration) {
+                if (v->m_type_declaration && ASR::is_a<ASR::FunctionType_t>(*arg1)) {
                     ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
                     if (ASR::is_a<ASR::Function_t>(*type_decl)) {
                         std::string decl_name = ASR::down_cast<ASR::Function_t>(type_decl)->m_name;
@@ -3033,9 +3033,12 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 // Check if actual argument is an implicit interface procedure (e.g. external :: f)
                 // If it is, it is compatible with any explicit interface formal argument.
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                // Similarly, if formal argument is an implicit interface, it accepts an explicit interface actual argument.
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                    ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
+                    if ((arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) ||
+                        (arg2_func_type->n_arg_types == 0 && arg2_func_type->m_deftype == ASR::deftypeType::Interface)) {
                         continue;
                     }
                 }
@@ -3086,7 +3089,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 // Check if actual argument is an implicit interface procedure (e.g. external :: f)
                 // If it is, it is compatible with any explicit interface formal argument.
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1)) {
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
                     if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
                         continue;

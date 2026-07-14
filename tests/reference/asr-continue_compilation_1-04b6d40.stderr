@@ -1779,3 +1779,9 @@ semantic error: Association target cannot be a BOZ literal constant
     |
 892 |         associate (y => z'1') 
     |                         ^^^^ 
+
+semantic error: Cannot initialize integer(4) variable with character(len=3) value in DATA statement
+   --> tests/errors/continue_compilation_1.f90:899:9
+    |
+899 |         data x / "abc" /
+    |         ^^^^^^^^^^^^^^^^ 
