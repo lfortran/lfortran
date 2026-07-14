@@ -14941,6 +14941,29 @@ public:
         }
                 
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
+
+        // Inject explicit string length for runtime array temporaries
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(type);
+        if (ASR::is_a<ASR::String_t>(*elem_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
+            if (!str_type->m_len) {
+                ASR::ttype_t *tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                    al, x.base.base.loc, mold, tmp_int_type, nullptr));
+                
+                ASR::ttype_t* new_str_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, x.base.base.loc, str_type->m_kind, str_len_expr));
+                
+                if (ASR::is_a<ASR::Array_t>(*type)) {
+                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(type);
+                    arr_type->m_type = new_str_type;
+                } else {
+                    type = new_str_type;
+                }
+            }
+        }
+
         ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source),
             *mold_value = ASRUtils::expr_value(mold), *size_value = nullptr;
         if(size) size_value = ASRUtils::expr_value(size);
