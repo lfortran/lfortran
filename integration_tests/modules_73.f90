@@ -43,10 +43,17 @@ end function repeat_char_vec
 
 end module modules_73
 
-program main
+program modules_73
 use modules_73
 implicit none
 character(len=4) :: words(2)
+character(len=10) :: result
 words = [character(len=4) :: "ab", "cd"]
+result = repeat_char_vec(2, words)(1)
+
+if (trim(result) /= "ab") then
+    error stop 1
+end if
+
 print "(100(a,1x))", repeat_char_vec(2, words)
-end program main
+end program modules_73
