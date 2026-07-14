@@ -18628,9 +18628,9 @@ public:
                 ASR::dimension_t* dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(unit_type, dims);
                 LCOMPILERS_ASSERT(n_dims >= 1);
-                int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
-                single_args.push_back(llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val)));
+                single_args.push_back(builder->CreateSExtOrTrunc(
+                    get_array_size_from_asr_type(unit_type),
+                    llvm::Type::getInt64Ty(context)));
             }
         } else {
             single_args.push_back(unit_val);
@@ -19062,9 +19062,9 @@ public:
                     ASR::dimension_t* dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, dims);
                     LCOMPILERS_ASSERT(n_dims >= 1);
-                    int64_t n_elems_val = ASRUtils::get_fixed_size_of_array(dims, n_dims);
-                    n_elems = llvm::ConstantInt::get(
-                        llvm::Type::getInt64Ty(context), llvm::APInt(64, n_elems_val));
+                    n_elems = builder->CreateSExtOrTrunc(
+                        get_array_size_from_asr_type(array_type),
+                        llvm::Type::getInt64Ty(context));
                 }
                 args.push_back(n_elems);
             } else {

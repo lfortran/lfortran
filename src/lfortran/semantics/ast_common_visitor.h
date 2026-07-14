@@ -10860,13 +10860,15 @@ public:
                 ctor_args.reserve(al, 1);
                 ctor_args.push_back(al, implied_do);
 
-                // Result type: Array(String(len), [:])
+                // Result type: Array(String(len), [1:size])
                 Vec<ASR::dimension_t> result_dims;
                 result_dims.reserve(al, 1);
                 ASR::dimension_t dim;
                 dim.loc = loc;
-                dim.m_start = nullptr;
-                dim.m_length = nullptr;
+                dim.m_start = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                dim.m_length = ASRUtils::compute_length_from_start_end(
+                    al, do_lb, do_ub);
                 result_dims.push_back(al, dim);
                 ASR::ttype_t* result_type = ASRUtils::duplicate_type(
                     al, string_tt, &result_dims);
