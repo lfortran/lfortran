@@ -13,9 +13,21 @@ subroutine coarrays_26_sub()
     integer, save :: x[*]
 
     x = this_image() + 100
-    sync all
 
+    call coarrays_26_sub2()
+    
     if (x /= this_image() + 100) then
+        error stop "Incorrect SAVE coarray value"
+    end if
+end subroutine
+
+subroutine coarrays_26_sub2()
+    implicit none
+    integer, save :: x[*]
+
+    x = this_image() + 1000
+
+    if (x /= this_image() + 1000) then
         error stop "Incorrect SAVE coarray value"
     end if
 end subroutine
