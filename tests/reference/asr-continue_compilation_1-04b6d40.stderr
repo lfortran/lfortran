@@ -1205,6 +1205,12 @@ semantic error: `exit` statements cannot be outside of loops or blocks
 513 |     exit
     |     ^^^^ 
 
+semantic error: `cycle` statements cannot be outside of loops
+   --> tests/errors/continue_compilation_1.f90:514:5
+    |
+514 |     cycle
+    |     ^^^^^ 
+
 semantic error: Required argument `y` at position 2 is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:516:18
     |
@@ -1773,3 +1779,9 @@ semantic error: Association target cannot be a BOZ literal constant
     |
 892 |         associate (y => z'1') 
     |                         ^^^^ 
+
+semantic error: Cannot initialize integer(4) variable with character(len=3) value in DATA statement
+   --> tests/errors/continue_compilation_1.f90:899:9
+    |
+899 |         data x / "abc" /
+    |         ^^^^^^^^^^^^^^^^ 

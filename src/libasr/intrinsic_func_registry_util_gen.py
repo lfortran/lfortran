@@ -1233,7 +1233,7 @@ def gen_verify_args(func_name):
     global src
     src += indent + R"static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {" + "\n"
     add_verify_arg_type_src(func_name)
-    runtime_fallback_fns = ["SameTypeAs", "ExtendsTypeOf"]
+    runtime_fallback_fns = ["SameTypeAs", "ExtendsTypeOf", "StorageSize"]
     if func_name in compile_time_only_fn and func_name not in runtime_fallback_fns:
         src += indent * 2 + 'ASRUtils::require_impl(x.m_value, '\
             f'"Missing compile time value, `{func_name}` intrinsic output must '\

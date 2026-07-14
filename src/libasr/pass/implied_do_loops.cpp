@@ -937,6 +937,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             // Do nothing, already handled in init_expr pass
         }
 
+        void visit_ttype(const ASR::ttype_t& /*x*/) {
+            // Do nothing. Array constants that appear inside type metadata
+            // (e.g. dynamic-length strings) are not executable statements.
+            // Replacing them here creates dangling local variables.
+        }
+
         void call_replacer() {
             replacer.current_expr = current_expr;
             replacer.current_scope = current_scope;

@@ -1253,14 +1253,16 @@ namespace StorageSize {
         ASR::ttype_t* type = ASRUtils::type_get_past_array(
                                  ASRUtils::type_get_past_allocatable(
                                      ASRUtils::type_get_past_pointer(arg_type)));
-        if (is_character(*arg_type)) {
+        
+        if (is_character(*type)) {
             int64_t len;
-            if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(
-                ASRUtils::type_get_past_array(arg_type))->m_len, len)){
-                return ASRUtils::EXPR(
-                    ASR::make_StringLen_t(al, loc, args[0], int64, nullptr));
+            //  Directly downcast 'type', as wrappers are already stripped
+            if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(type)->m_len, len)){
+                // Deferred length: return nullptr so it evaluates at runtime (codegen)
+                return nullptr; 
             }
             return make_ConstantWithType(make_IntegerConstant_t, 8*len, t1, loc);
+            
         } else if (ASR::is_a<ASR::StructType_t>(*type) ||
                    ASR::is_a<ASR::CPtr_t>(*type)) {
             auto [size_bytes, _align] = ASRUtils::compute_type_size_align(type);
@@ -1269,14 +1271,16 @@ namespace StorageSize {
                 return make_ConstantWithType(make_IntegerConstant_t, size_bytes * 8, t1, loc);
             }
             return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
-        } else if (is_complex(*arg_type)) {
-            int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            
+        } else if (is_complex(*type)) { 
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
             if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
             else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
             else if (kind == 16) return make_ConstantWithType(make_IntegerConstant_t, 256, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
-        } else {
-            int64_t kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            
+        } else { // Handles Integers, Reals, Logicals
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(type); // FIX: Use 'type'
             if (kind == 1) return make_ConstantWithType(make_IntegerConstant_t, 8, t1, loc);
             else if (kind == 2) return make_ConstantWithType(make_IntegerConstant_t, 16, t1, loc);
             else if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);

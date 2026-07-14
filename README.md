@@ -12,6 +12,9 @@ Website: https://lfortran.org/
 
 Try online: https://dev.lfortran.org/
 
+Try LFortran in a JupyterLite notebook:
+[![JupyterLite](https://jupyterlite.rtfd.io/en/latest/_static/badge.svg)](https://lfortran.github.io/lfortran/)
+
 # Documentation
 
 All documentation, installation instructions, motivation, design, ... is

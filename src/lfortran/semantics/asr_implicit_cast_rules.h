@@ -114,10 +114,23 @@ public:
                                   ASR::ttype_t *source_type,
                                   ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
       if ((ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(source_type))
-           || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(dest_type)))
-          || ((ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(source_type))
-               || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest_type))))) {
-          // No casting supported currently for `StructType` and `FunctionType`
+           || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(dest_type)))) {
+          // No casting supported currently for `StructType`
+          return;
+      }
+
+      if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(source_type))
+          && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest_type))) {
+          // FunctionType-to-FunctionType reconciliation is handled in
+          // Call_t_body for call arguments.  Do not insert a cast here
+          // because structural comparison of polymorphic class arguments
+          // can give false negatives (anonymous struct vs named class type),
+          // leading to spurious casts and LLVM type mismatches.
+          return;
+      }
+
+      if ((ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(source_type))
+           || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest_type)))) {
           return;
       }
       if (ASRUtils::types_equal(source_type, dest_type, nullptr, nullptr, true)) {
