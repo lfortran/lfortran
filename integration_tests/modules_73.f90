@@ -47,13 +47,13 @@ program test_modules_73
 use modules_73
 implicit none
 character(len=4) :: words(2)
-character(len=10) :: result
+character(len=4) :: yy(4)
 words = [character(len=4) :: "ab", "cd"]
-result = repeat_char_vec(2, words)(1)
+yy = repeat_char_vec(2, words)
 
-if (trim(result) /= "ab") then
+if (trim(yy(1)) /= "ab") then
     error stop 1
 end if
 
-print "(100(a,1x))", repeat_char_vec(2, words)
+print "(100(a,1x))", yy
 end program test_modules_73
