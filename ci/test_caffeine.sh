@@ -17,6 +17,7 @@ which fpm
 fpm --version
 
 micromamba install -y -c conda-forge openmpi
+export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe
 
 (set +x 
  echo "##[endgroup]"
