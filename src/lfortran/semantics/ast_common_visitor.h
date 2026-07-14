@@ -14937,6 +14937,8 @@ public:
                         al, x.base.base.loc, result_size, local_int_type));
                 }
                 new_dims.push_back(al, size_dim);
+            }
+        }
                 
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
         ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source),
