@@ -78,7 +78,7 @@ class PRIFInterface {
                 false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
-            ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
+            ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, false);
             struct_t->m_struct_signature = struct_type;
             global_scope->add_symbol(symbol_name, struct_sym);
             return struct_sym;
@@ -805,7 +805,7 @@ class PRIFInterface {
             global_scope->add_symbol(symbol_name, struct_sym);
             std::string type_info_symbol_name = get_mangled_name("prif", "prif_dummy_team_descriptor");
             ASR::symbol_t* type_info_sym = get_or_create_dummy_struct(loc, type_info_symbol_name);
-            ASR::ttype_t* type_info_type = ASRUtils::make_StructType_t_util(al, loc, type_info_sym, true);
+            ASR::ttype_t* type_info_type = ASRUtils::make_StructType_t_util(al, loc, type_info_sym, false);
             ASR::ttype_t *info_ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type_info_type ));
             declare_variable(struct_symtab, loc, "info", info_ptr_type, ASR::intentType::Local, type_info_sym, ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required, false);
 
@@ -815,7 +815,7 @@ class PRIFInterface {
             struct_t->m_members = members.p;
             struct_t->n_members = members.n;
 
-            ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
+            ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, false);
             struct_t->m_struct_signature = struct_type;
 
             return struct_sym;
