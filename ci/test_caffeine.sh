@@ -142,7 +142,7 @@ fi
 
 (set +x
  echo "##[endgroup]"
- echo "##[group] testing: $testfile"
+ echo "##[group] testing: $testfile ($num_images images)"
  echo "========================================="
  echo "Running coarray test: $testfile (images: $num_images)"
  echo "========================================="
