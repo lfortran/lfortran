@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-namelist_derived_nonconstant_array-bd956b5",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/errors/namelist_derived_nonconstant_array.f90",
+    "infile_hash": "3320716a6b936fcdd37dab54226440f7456fc1868ce620228f528024",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "llvm-namelist_derived_nonconstant_array-bd956b5.stderr",
+    "stderr_hash": "7d40d73d01bfb434df461b20448b3cc23dd3d44c127f6ff37fbff585",
+    "returncode": 1
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-namelist_derived_allocatable_array-754e964",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/errors/namelist_derived_allocatable_array.f90",
+    "infile_hash": "2e4d01a2171688456e310d8cac4cb013009a07a3d777179f52a68105",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "llvm-namelist_derived_allocatable_array-754e964.stderr",
+    "stderr_hash": "80068889bdfc0e181728a9c49386d87f884cc268e579357b607f37f4",
+    "returncode": 1
+}

@@ -4342,6 +4342,14 @@ filename = "errors/end_program_name.f90"
 asr = true
 
 [[test]]
+filename = "errors/namelist_derived_allocatable_array.f90"
+llvm = true
+
+[[test]]
+filename = "errors/namelist_derived_nonconstant_array.f90"
+llvm = true
+
+[[test]]
 filename = "errors/runtime_stacktrace_01.f90"
 run_with_dbg = true
 
@@ -5257,4 +5265,3 @@ filename = "coarray_initialization_01.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
-
