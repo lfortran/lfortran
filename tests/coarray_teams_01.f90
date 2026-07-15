@@ -17,9 +17,9 @@ program coarray_teams_01
     form team (team_num, team2)
 
     ! Optional specifiers
-    form team (1, team1, new_index=new_index)
+    form team (1, team1, new_index=1)
     form team (1, team1, stat=iostat)
     form team (1, team1, errmsg=errmsg)
-    form team (team_num, team2, new_index=new_index, stat=iostat, errmsg=errmsg)
+    form team (team_num, team2, new_index=(this_image()-1)/2+1, stat=iostat, errmsg=errmsg)
 
 end program coarray_teams_01
