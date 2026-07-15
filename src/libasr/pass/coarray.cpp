@@ -25,10 +25,10 @@ class PRIFInterface {
                                            ASR::symbol_t *sym, const Location &loc) {
             if (decl_scope == use_scope || decl_scope == unit.m_symtab) return sym;
             std::string sym_name = ASRUtils::symbol_name(sym);
-            for (auto &item: use_scope->get_scope()) {
-                if (ASRUtils::symbol_get_past_external(item.second) ==
+            if (ASR::symbol_t *existing = use_scope->resolve_symbol(sym_name)) {
+                if (ASRUtils::symbol_get_past_external(existing) ==
                     ASRUtils::symbol_get_past_external(sym)) {
-                    return item.second;
+                    return existing;
                 }
             }
             std::string mod_name = "";
