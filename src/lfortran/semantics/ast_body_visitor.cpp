@@ -9543,10 +9543,13 @@ public:
     }
 
     void resolve_sync_stat_errmsg(AST::event_attribute_t **attrs, size_t n_attrs, const Location &loc, 
-        const std::string &stmt_name, ASR::expr_t *&stat, ASR::expr_t *&errmsg)
+        const std::string &stmt_name, ASR::expr_t *&stat, ASR::expr_t *&errmsg, ASR::expr_t **new_index = nullptr)
     {
         stat = nullptr;
         errmsg = nullptr;
+        if (new_index) {
+            *new_index = nullptr;
+        }
         for (size_t i = 0; i < n_attrs; i++) {
             AST::event_attribute_t *attr = attrs[i];
             if (AST::is_a<AST::AttrStat_t>(*attr)) {
@@ -9586,6 +9589,27 @@ public:
                         "`errmsg` argument of `" + stmt_name +
                         "` must be of type character, found " +
                         ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+            } else if (new_index && AST::is_a<AST::AttrNewIndex_t>(*attr)) {
+                auto *n = AST::down_cast<AST::AttrNewIndex_t>(attr);
+                visit_expr(*n->m_value);
+                *new_index = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *new_index_type = ASRUtils::expr_type(*new_index);
+                if (ASRUtils::is_array(new_index_type)) {
+                    diag.add(Diagnostic(
+                        "`new_index` argument of `" + stmt_name + "` must be scalar",
+                        Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+                if (!ASRUtils::is_integer(*new_index_type)) {
+                    diag.add(Diagnostic(
+                        "`new_index` argument of `" + stmt_name +
+                        "` must be of type integer, found " +
+                        ASRUtils::type_to_str_fortran_expr(new_index_type, *new_index),
                         Level::Error, Stage::Semantic,
                         {Label("", {loc})}));
                     throw SemanticAbort();
@@ -9660,30 +9684,51 @@ public:
         if (x.m_team_number) {
             visit_expr(*x.m_team_number);
             team_number = ASRUtils::EXPR(tmp);
+            ASR::ttype_t *team_number_type = ASRUtils::expr_type(team_number);
+            if (ASRUtils::is_array(team_number_type)) {
+                diag.add(Diagnostic(
+                    "`team_number` argument of `form team` must be scalar",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            if (!ASRUtils::is_integer(*team_number_type)) {
+                diag.add(Diagnostic(
+                    "`team_number` argument of `form team` must be of type integer, found " +
+                    ASRUtils::type_to_str_fortran_expr(team_number_type, team_number),
+                    Level::Error, Stage::Semantic,
+                    {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
         }
         ASR::expr_t *team = nullptr;
         if (x.m_team_var) {
             team = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_team_var)));
+            ASR::ttype_t *team_type = ASRUtils::expr_type(team);
+            if (ASRUtils::is_array(team_type)) {
+                diag.add(Diagnostic(
+                    "`team_variable` argument of `form team` must be scalar",
+                    Level::Error, Stage::Semantic,
+                    {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            if (!ASRUtils::is_struct(*team_type) ||
+                std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(team)))) != "team_type") {
+                diag.add(Diagnostic(
+                    "`team_variable` argument of `form team` must be of type `team_type`, found " +
+                    ASRUtils::type_to_str_fortran_expr(team_type, team),
+                    Level::Error, Stage::Semantic,
+                    {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
         }
         
         ASR::expr_t *new_index = nullptr;
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
         
-        for (size_t i = 0; i < x.n_sync_stat; i++) {
-            AST::event_attribute_t *attr = x.m_sync_stat[i];
-            if (AST::is_a<AST::AttrStat_t>(*attr)) {
-                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
-                stat = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(s->m_variable)));
-            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
-                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
-                errmsg = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(e->m_variable)));
-            } else if (AST::is_a<AST::AttrNewIndex_t>(*attr)) {
-                auto *n = AST::down_cast<AST::AttrNewIndex_t>(attr);
-                visit_expr(*n->m_value);
-                new_index = ASRUtils::EXPR(tmp);
-            }
-        }
+        resolve_sync_stat_errmsg(x.m_sync_stat, x.n_sync_stat, x.base.base.loc, "form team", stat, errmsg, &new_index);
+
         tmp = ASR::make_FormTeam_t(al, x.base.base.loc, team_number, team, new_index, stat, errmsg);
     }
 
