@@ -14952,8 +14952,11 @@ public:
                 ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
                     al, x.base.base.loc, mold, tmp_int_type, nullptr));
                 
+                // FIXED: Added ASR::ExpressionLength and str_type->m_physical_type
                 ASR::ttype_t* new_str_type = ASRUtils::TYPE(ASR::make_String_t(
-                    al, x.base.base.loc, str_type->m_kind, str_len_expr));
+                    al, x.base.base.loc, str_type->m_kind, str_len_expr,
+                    ASR::string_length_kindType::ExpressionLength,
+                    str_type->m_physical_type));
                 
                 if (ASR::is_a<ASR::Array_t>(*type)) {
                     ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(type);
