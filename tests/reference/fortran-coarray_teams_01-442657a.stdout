@@ -25,10 +25,11 @@ call __module_prif_prif_sync_all()
 team_num = Mod(lcompilers_prif_this_image() - 1, 2) + 1
 call __module_prif_prif_form_team(int(1, kind=8), team1)
 call __module_prif_prif_form_team(int(team_num, kind=8), team2)
-call __module_prif_prif_form_team(int(1, kind=8), team1, new_index)
+call __module_prif_prif_form_team(int(1, kind=8), team1, 1)
 call __module_prif_prif_form_team(int(1, kind=8), team1, iostat)
 call __module_prif_prif_form_team(int(1, kind=8), team1, errmsg)
-call __module_prif_prif_form_team(int(team_num, kind=8), team2, new_index, iostat, errmsg)
+call __module_prif_prif_form_team(int(team_num, kind=8), team2, (lcompilers_prif_this_image() - 1)/2 + 1, iostat,&
+         errmsg)
 call __module_prif_prif_stop(.false.)
 
 contains
