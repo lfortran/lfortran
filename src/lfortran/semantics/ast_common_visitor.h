@@ -14942,17 +14942,20 @@ public:
                 
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
 
-        // Inject explicit string length for runtime array temporaries
+        // Inject explicit string length for runtime array temporaries ONLY if assumed/deferred
         ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(type);
         if (ASR::is_a<ASR::String_t>(*elem_type)) {
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
-            if (!str_type->m_len) {
+            if (!str_type->m_len && 
+               (str_type->m_length_kind == ASR::string_length_kindType::AssumedLength ||
+                str_type->m_length_kind == ASR::string_length_kindType::DeferredLength)) {
+                
                 ASR::ttype_t *tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                
                 ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
                     al, x.base.base.loc, mold, tmp_int_type, nullptr));
                 
-                // FIXED: Added ASR::ExpressionLength and str_type->m_physical_type
                 ASR::ttype_t* new_str_type = ASRUtils::TYPE(ASR::make_String_t(
                     al, x.base.base.loc, str_type->m_kind, str_len_expr,
                     ASR::string_length_kindType::ExpressionLength,
