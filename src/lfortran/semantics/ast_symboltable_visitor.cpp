@@ -4513,18 +4513,8 @@ public:
 
         SetChar args;
         args.reserve(al, x.n_namelist);
-        std::set<std::string> seen_args;
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string arg = to_lower(x.m_namelist[i]);
-            if (seen_args.find(arg) != seen_args.end()) {
-                diag.add(diag::Diagnostic(
-                    "Parameter '" + arg + "' is declared more than once in requirement '"
-                    + to_lower(x.m_name) + "'",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-            seen_args.insert(arg);
             args.push_back(al, s2c(al, arg));
             current_procedure_args.push_back(arg);
         }

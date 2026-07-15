@@ -11,6 +11,7 @@
 */
 
 #include <cstring>
+#include <set>
 
 #include <lfortran/ast.h>
 #include <lfortran/ast_kind.h>
@@ -1103,6 +1104,26 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
         a[i] = name2char(args.p[i]);
     }
     return a;
+}
+
+static inline void check_duplicate_namelist_params(
+        LCompilers::LFortran::Parser &p, const Vec<ast_t*> &namelist, const std::string &owner_kind,
+        const std::string &owner_name)
+{
+    std::set<std::string> seen_args;
+    for (size_t i = 0; i < namelist.size(); i++) {
+        std::string arg = LCompilers::to_lower(name2char(namelist.p[i]));
+        if (seen_args.find(arg) != seen_args.end()) {
+            p.diag.add(LCompilers::diag::Diagnostic(
+                "Parameter '" + arg + "' is declared more than once in "
+                + owner_kind + " '" + owner_name + "'",
+                LCompilers::diag::Level::Error, LCompilers::diag::Stage::Semantic, {
+                    LCompilers::diag::Label("", {namelist.p[i]->loc})
+                }));
+            throw LCompilers::LFortran::parser_local::ParserAbort();
+        }
+        seen_args.insert(arg);
+    }
 }
 
 static inline reduce_opType convert_id_to_reduce_type(
