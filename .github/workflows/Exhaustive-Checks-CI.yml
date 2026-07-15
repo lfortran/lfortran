@@ -484,7 +484,6 @@ jobs:
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
 
       - name: Test coarray runtime with Caffeine
-        if: contains(matrix.os, 'ubuntu')
         shell: bash -e -l {0}
         run: ci/test_caffeine.sh
 

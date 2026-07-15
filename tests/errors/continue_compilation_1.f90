@@ -898,4 +898,10 @@ program continue_compilation_1
         integer :: x
         data x / "abc" /
     end subroutine
+    subroutine norm2_error()
+        real :: x
+        x = norm2(1.0)
+        x = norm2([1, 2])
+        x = norm2([1.0, 2.0], dim=2)
+    end subroutine
 end program

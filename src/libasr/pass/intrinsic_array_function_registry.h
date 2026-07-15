@@ -5898,6 +5898,13 @@ namespace Norm2 {
             "atleast 1 and atmost 2 arguments", x.base.base.loc, diagnostics);
         require_impl(x.m_args[0], "`array` argument of `norm2` intrinsic "
             "cannot be nullptr", x.base.base.loc, diagnostics);
+        ASR::ttype_t* array_type = ASRUtils::expr_type(x.m_args[0]);
+        require_impl(ASRUtils::extract_n_dims_from_ttype(array_type) > 0,
+            "`array` argument of `norm2` intrinsic must be an array",
+            x.base.base.loc, diagnostics);
+        require_impl(ASRUtils::is_real(*array_type),
+            "`array` argument of `norm2` intrinsic must be real",
+            x.base.base.loc, diagnostics);
     }
 
     static inline ASR::expr_t *eval_Norm2(Allocator &al,
@@ -5939,10 +5946,28 @@ namespace Norm2 {
         int64_t array_rank = extract_dimensions_from_ttype(ASRUtils::expr_type(args[0]), array_dims);
 
         ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+        if (array_rank == 0) {
+            append_error(diag, "`array` argument of `norm2` intrinsic must be an array",
+                array->base.loc);
+            return nullptr;
+        }
+        if (!ASRUtils::is_real(*array_type)) {
+            append_error(diag, "`array` argument of `norm2` intrinsic must be real",
+                array->base.loc);
+            return nullptr;
+        }
         if ( dim_ != nullptr ) {
             size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim_));
             if (dim_rank != 0) {
                 append_error(diag, "`dim` argument to `norm2` must be a scalar and must not be an array",
+                    dim_->base.loc);
+                return nullptr;
+            }
+            int64_t dim_value = -1;
+            ASR::expr_t* dim_expr_value = ASRUtils::expr_value(dim_);
+            if (dim_expr_value && ASRUtils::extract_value(dim_expr_value, dim_value) &&
+                    (dim_value < 1 || dim_value > array_rank)) {
+                append_error(diag, "`dim` argument of `norm2` intrinsic is not a valid dimension index",
                     dim_->base.loc);
                 return nullptr;
             }

@@ -5081,13 +5081,6 @@ namespace Leadz {
 
 namespace Ishftc {
 
-    static uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_size) {
-        if (bits_size == max_bits_size) {
-            return num;
-        }
-        return (num & ((1lu << bits_size) - 1lu));
-    }
-
     static ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         uint64_t val = (uint64_t)ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -5111,12 +5104,23 @@ namespace Ishftc {
             return nullptr;
         }
 
-        val = cutoff_extra_bits(val, bits_size, max_bits_size);
+        // Rotate only the low `bits_size` bits of val; leave the higher bits
+        // unchanged. The high bits are captured before the rotation and OR'd
+        // back into the result, so they survive even when bits_size < bit_width.
+        // 64-bit literals (0ULL/1ULL) keep the mask correct on LLP64 targets (MSVC).
+        uint64_t mask = (bits_size == max_bits_size)
+            ? ~0ULL
+            : ((1ULL << bits_size) - 1ULL);
+        uint64_t high = val & ~mask;
+        uint64_t low = val & mask;
         uint64_t result;
-        if (negative_shift) {
-            result = (val >> shift) | cutoff_extra_bits(val << (bits_size - shift), bits_size, max_bits_size);
+        if (shift == 0) {
+            // No rotation: the low bits stay where they are.
+            result = val;
+        } else if (negative_shift) {
+            result = high | ((low >> shift) | ((low << (bits_size - shift)) & mask));
         } else {
-            result = cutoff_extra_bits(val << shift, bits_size, max_bits_size) | ((val >> (bits_size - shift)));
+            result = high | (((low << shift) & mask) | (low >> (bits_size - shift)));
         }
         if (kind == 1) {
             result = static_cast<int8_t>(result);

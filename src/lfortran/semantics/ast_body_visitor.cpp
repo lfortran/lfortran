@@ -8111,9 +8111,20 @@ public:
                             if (existing_ft->n_arg_types == 0 && var_has_no_args) {
                                 Vec<ASR::ttype_t*> arg_types;
                                 arg_types.reserve(al, args.size());
+                                Vec<ASR::symbol_t*> arg_type_decls;
+                                arg_type_decls.reserve(al, args.size());
                                 for (size_t i = 0; i < args.size(); i++) {
                                     if (args[i].m_value == nullptr) continue;
                                     arg_types.push_back(al, ASRUtils::expr_type(args[i].m_value));
+                                    ASR::symbol_t* td = nullptr;
+                                    if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                                            ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                                            td = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+                                        }
+                                    }
+                                    arg_type_decls.push_back(al, td);
                                 }
                                 SymbolTable* parent_scope = current_scope->parent
                                     ? current_scope->parent : current_scope;
@@ -8121,7 +8132,7 @@ public:
                                     proc_var, x.base.base.loc,
                                     arg_types.p, arg_types.size(),
                                     nullptr, parent_scope, sub_name,
-                                    current_scope);
+                                    arg_type_decls, current_scope);
                             }
                         }
                     }
@@ -8228,8 +8239,35 @@ public:
                                         }
                                     }
                                     if (!has_type_decl || (!has_arg_info && expected_ft->n_arg_types > 0)) {
+                                        // Extract type_declarations from the parameter function's args
+                                        Vec<ASR::symbol_t*> param_arg_type_decls;
+                                        param_arg_type_decls.reserve(al, expected_ft->n_arg_types);
+                                        if (v->m_type_declaration) {
+                                            ASR::symbol_t* param_decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                                            if (ASR::is_a<ASR::Function_t>(*param_decl)) {
+                                                ASR::Function_t* param_func = ASR::down_cast<ASR::Function_t>(param_decl);
+                                                LCOMPILERS_ASSERT(param_func->n_args == expected_ft->n_arg_types)
+                                                for (size_t pi = 0; pi < expected_ft->n_arg_types; pi++) {
+                                                    ASR::symbol_t* td = nullptr;
+                                                    if (ASR::is_a<ASR::Var_t>(*param_func->m_args[pi])) {
+                                                        ASR::symbol_t* ps = ASR::down_cast<ASR::Var_t>(param_func->m_args[pi])->m_v;
+                                                        if (ASR::is_a<ASR::Variable_t>(*ps)) {
+                                                            td = ASR::down_cast<ASR::Variable_t>(ps)->m_type_declaration;
+                                                        }
+                                                    }
+                                                    param_arg_type_decls.push_back(al, td);
+                                                }
+                                            }
+                                        }
+                                        if (param_arg_type_decls.size() == 0) {
+                                            // No type_declaration info found; fill with nullptrs
+                                            for (size_t pi = 0; pi < expected_ft->n_arg_types; pi++) {
+                                                param_arg_type_decls.push_back(al, nullptr);
+                                            }
+                                        }
                                         create_interface_for_procedure_variable(
-                                            proc_var, passed_arg->base.loc, expected_ft);
+                                            proc_var, passed_arg->base.loc,
+                                            param_arg_type_decls, expected_ft);
                                     } else if (has_arg_info && expected_ft->n_arg_types == 0) {
                                         // Reverse: passed has arg_types but param doesn't.
                                         // Update the parameter's type to match what we're passing.
@@ -8263,17 +8301,29 @@ public:
                                         {
                                             // Use create_or_update_implicit_interface to properly
                                             // create/update the interface with matching args and arg_types.
-                                            // This handles both "interface exists" and "no interface" cases.
-                                            // For existing interfaces, it shares the source arg_types array
-                                            // directly for cross-scope type propagation (see #11924).
+                                            // Extract type_declarations from the passed function's args.
                                             SymbolTable* callee_scope = f->m_symtab;
                                             SymbolTable* iface_parent = callee_scope->parent ? callee_scope->parent : callee_scope;
                                             std::string var_name = v->m_name;
                                             ASR::ttype_t* return_type = passed_ft->m_return_var_type;
+                                            Vec<ASR::symbol_t*> fn_arg_type_decls;
+                                            fn_arg_type_decls.reserve(al, passed_ft->n_arg_types);
+                                            LCOMPILERS_ASSERT(passed_func->n_args == passed_ft->n_arg_types)
+                                            for (size_t pi = 0; pi < passed_ft->n_arg_types; pi++) {
+                                                ASR::symbol_t* td = nullptr;
+                                                if (ASR::is_a<ASR::Var_t>(*passed_func->m_args[pi])) {
+                                                    ASR::symbol_t* ps = ASR::down_cast<ASR::Var_t>(passed_func->m_args[pi])->m_v;
+                                                    if (ASR::is_a<ASR::Variable_t>(*ps)) {
+                                                        td = ASR::down_cast<ASR::Variable_t>(ps)->m_type_declaration;
+                                                    }
+                                                }
+                                                fn_arg_type_decls.push_back(al, td);
+                                            }
                                             ASR::ttype_t* iface_type = create_or_update_implicit_interface(
                                                 v, passed_arg->base.loc,
                                                 passed_ft->m_arg_types, passed_ft->n_arg_types,
-                                                return_type, iface_parent, var_name);
+                                                return_type, iface_parent, var_name,
+                                                fn_arg_type_decls);
                                             // Update the callee function's signature
                                             ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
                                                 f->m_function_signature);
@@ -10252,11 +10302,31 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                     ASR::ttype_t* arg_type = param_ft->m_arg_types[j];
                                     std::string arg_name = std::string(passed_func->m_name) + "_arg_" + std::to_string(j);
                                     if (passed_func->m_symtab->get_symbol(arg_name) == nullptr) {
+                                        // Get type_declaration from the callee's parameter function args
+                                        ASR::symbol_t* arg_type_decl = nullptr;
+                                        if (i < callee->n_args && ASR::is_a<ASR::Var_t>(*callee->m_args[i])) {
+                                            ASR::symbol_t* callee_param = ASR::down_cast<ASR::Var_t>(callee->m_args[i])->m_v;
+                                            if (ASR::is_a<ASR::Variable_t>(*callee_param)) {
+                                                ASR::Variable_t* callee_param_var = ASR::down_cast<ASR::Variable_t>(callee_param);
+                                                if (callee_param_var->m_type_declaration) {
+                                                    ASR::symbol_t* param_decl = ASRUtils::symbol_get_past_external(callee_param_var->m_type_declaration);
+                                                    if (ASR::is_a<ASR::Function_t>(*param_decl)) {
+                                                        ASR::Function_t* param_iface = ASR::down_cast<ASR::Function_t>(param_decl);
+                                                        if (j < param_iface->n_args && ASR::is_a<ASR::Var_t>(*param_iface->m_args[j])) {
+                                                            ASR::symbol_t* iface_arg_sym = ASR::down_cast<ASR::Var_t>(param_iface->m_args[j])->m_v;
+                                                            if (ASR::is_a<ASR::Variable_t>(*iface_arg_sym)) {
+                                                                arg_type_decl = ASR::down_cast<ASR::Variable_t>(iface_arg_sym)->m_type_declaration;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                         ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
                                             ASR::make_Variable_t(al, call->base.base.loc, passed_func->m_symtab,
                                                 s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
                                                 nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-                                                nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                                                arg_type_decl, ASR::abiType::BindC, ASR::accessType::Public,
                                                 ASR::presenceType::Required, false, false, false, nullptr, false, false,
                                                 ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
                                         passed_func->m_symtab->add_symbol(arg_name, arg_sym);
@@ -10289,6 +10359,12 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                             ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
                             if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                                 ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                                // Skip syncing if the new type is StructType to avoid
+                                // incorrectly deducing type_declaration from scope
+                                ASR::ttype_t* base_t = ASRUtils::extract_type(ft->m_arg_types[i]);
+                                if (ASR::is_a<ASR::StructType_t>(*base_t)) {
+                                    continue;
+                                }
                                 arg_var->m_type = ft->m_arg_types[i];
                             }
                         }

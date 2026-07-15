@@ -20246,12 +20246,7 @@ public:
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, 6, true));
             } else {
                 this->visit_expr_wrapper(x.m_unit, true);
-                unit_val = tmp;
-                if (unit_val->getType()->isIntegerTy() &&
-                    unit_val->getType()->getIntegerBitWidth() > 32) {
-                    unit_val = builder->CreateTrunc(
-                        unit_val, llvm::Type::getInt32Ty(context));
-                }
+                unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
             }
 
             // _lfortran_set_child_io(unit, 1)
@@ -20498,10 +20493,8 @@ public:
             unit = tmp;
             if (unit->getType()->isPointerTy()) {
                 unit = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), unit);
-            } else if (unit->getType()->isIntegerTy() &&
-                       unit->getType()->getIntegerBitWidth() > 32) {
-                // Truncate i64 to i32 for runtime function (ILP64 mode)
-                unit = builder->CreateTrunc(unit, llvm::Type::getInt32Ty(context));
+            } else {
+                unit = llvm_utils->convert_kind(unit, llvm::Type::getInt32Ty(context));
             }
         } else { // String Write
             if (is_string_array_unit &&
