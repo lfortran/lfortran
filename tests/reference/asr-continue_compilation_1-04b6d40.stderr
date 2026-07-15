@@ -1205,6 +1205,12 @@ semantic error: `exit` statements cannot be outside of loops or blocks
 513 |     exit
     |     ^^^^ 
 
+semantic error: `cycle` statements cannot be outside of loops
+   --> tests/errors/continue_compilation_1.f90:514:5
+    |
+514 |     cycle
+    |     ^^^^^ 
+
 semantic error: Required argument `y` at position 2 is missing in procedure call
    --> tests/errors/continue_compilation_1.f90:516:18
     |
@@ -1779,3 +1785,27 @@ semantic error: Association target cannot be a BOZ literal constant
     |
 899 |         associate (y => z'1') 
     |                         ^^^^ 
+
+semantic error: Cannot initialize integer(4) variable with character(len=3) value in DATA statement
+   --> tests/errors/continue_compilation_1.f90:906:9
+    |
+906 |         data x / "abc" /
+    |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: `array` argument of `norm2` intrinsic must be an array
+   --> tests/errors/continue_compilation_1.f90:910:19
+    |
+910 |         x = norm2(1.0)
+    |                   ^^^ 
+
+semantic error: `array` argument of `norm2` intrinsic must be real
+   --> tests/errors/continue_compilation_1.f90:911:19
+    |
+911 |         x = norm2([1, 2])
+    |                   ^^^^^^ 
+
+semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension index
+   --> tests/errors/continue_compilation_1.f90:912:35
+    |
+912 |         x = norm2([1.0, 2.0], dim=2)
+    |                                   ^ 

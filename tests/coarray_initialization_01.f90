@@ -1,6 +1,6 @@
 module coarray_saved_mod
-!    integer :: x[*] = 666      ! disabled pending #12163
-!    integer :: y(10)[*] = 1001 ! disabled pending #12163
+    integer :: x1[*] = 666
+    integer :: y1(10)[*] = 1001
 contains
     subroutine mod_sub()
     end subroutine

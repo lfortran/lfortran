@@ -511,7 +511,7 @@ program continue_compilation_1
     print *, ieor()
     print *, min(c, c)
     exit
-
+    cycle
     ! calling function with less arguments
     call my_func(10)
     call my_func()
@@ -898,5 +898,17 @@ program continue_compilation_1
     subroutine associate_boz_target()
         associate (y => z'1') 
         end associate
+    end subroutine
+
+    subroutine data_type_mismatch()
+        implicit none
+        integer :: x
+        data x / "abc" /
+    end subroutine
+    subroutine norm2_error()
+        real :: x
+        x = norm2(1.0)
+        x = norm2([1, 2])
+        x = norm2([1.0, 2.0], dim=2)
     end subroutine
 end program
