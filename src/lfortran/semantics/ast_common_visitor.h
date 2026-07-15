@@ -14884,13 +14884,18 @@ public:
                         int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(
                             ASRUtils::expr_value(mold_str_type->m_len))->m_n;
                         mold_bytes = mold_bytes * str_len;
-                    } else {
+                    } else if (!mold_str_type->m_len && 
+                               (mold_str_type->m_len_kind == ASR::string_length_kindType::AssumedLength ||
+                                mold_str_type->m_len_kind == ASR::string_length_kindType::DeferredLength)) {
+                        // ONLY use StringLen for Assumed/Deferred strings
                         mold_bytes = -1; // Runtime-sized string
+                        mold_bytes_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                            al, x.base.base.loc, mold, local_int_type, nullptr));
+                    } else {
+                        // Safe fallback: standard characters without len= are implicitly length 1
+                        mold_bytes = mold_bytes * 1;
                         if (mold_str_type->m_len) {
                             mold_bytes_expr = mold_str_type->m_len;
-                        } else {
-                            mold_bytes_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
-                                al, x.base.base.loc, mold, local_int_type, nullptr));
                         }
                     }
                 }
@@ -14939,7 +14944,7 @@ public:
                 new_dims.push_back(al, size_dim);
             }
         }
-                
+
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
 
         // Inject explicit string length for runtime array temporaries ONLY if assumed/deferred
