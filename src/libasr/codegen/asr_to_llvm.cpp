@@ -140,6 +140,16 @@ static std::string compute_llvm_function_name(
         }
     } else if (is_external_interface) {
         fn_name = sym_name;
+        // A specific procedure that shares its generic interface's name is
+        // stored internally as "<name>~genericprocedure" to avoid clashing
+        // with the GenericProcedure symbol. The real external (link) symbol
+        // is "<name>", so strip the internal suffix here.
+        const std::string generic_suffix = "~genericprocedure";
+        if (fn_name.size() > generic_suffix.size() &&
+                fn_name.compare(fn_name.size() - generic_suffix.size(),
+                    generic_suffix.size(), generic_suffix) == 0) {
+            fn_name = fn_name.substr(0, fn_name.size() - generic_suffix.size());
+        }
     } else {
         fn_name = mangle_prefix + sym_name;
     }
