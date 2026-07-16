@@ -1909,6 +1909,7 @@ int link_executable(const std::vector<std::string> &infiles,
     bool verbose, const std::vector<std::string> &lib_dirs,
     const std::vector<std::string> &libraries,
     const std::vector<std::string> &linker_flags,
+    const std::string &install_name,
     CompilerOptions &compiler_options)
 {
     /*
@@ -2084,6 +2085,9 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             if (shared_executable) {
                 options += " -shared ";
+                if (!install_name.empty()) {
+                    options += " -Wl,-install_name," + install_name + " ";
+                }
             }
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
@@ -2972,7 +2976,7 @@ int main_app(int argc, char *argv[]) {
         }
         int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
-                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
+                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, opts.install_name, compiler_options);
         auto end_time = std::chrono::high_resolution_clock::now();
         
         for (const std::string &filename : temp_object_files) {

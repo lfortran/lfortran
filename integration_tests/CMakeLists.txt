@@ -4943,3 +4943,25 @@ RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
 RUN(NAME equivalence_39 LABELS gfortran llvm)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
+
+# Regression test (macOS only): lfortran must accept the `-install_name` linker
+# flag when producing a shared library and forward it to the linker so the
+# dylib install name is set correctly. CMake passes this flag when linking
+# Fortran shared libraries on Darwin (e.g. netcdf-fortran's libnetcdff.dylib);
+# lfortran previously aborted with "The following argument was not expected:
+# -install_name". This is a driver/linker test and only applies to the macOS
+# LLVM backend, so it is not expressed via the RUN() macro.
+if (APPLE AND LFORTRAN_BACKEND STREQUAL "llvm")
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
+        COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
+                -o ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
+    )
+    add_custom_target(install_name_01 ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o)
+    add_test(NAME install_name_01
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.sh
+                ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif()

@@ -205,6 +205,28 @@ namespace LCompilers::CommandLineInterface {
         return true;
     }
 
+    // On macOS, CMake and compiler drivers pass a bare `-install_name <name>`
+    // flag when linking a shared library (to set the dylib install name).
+    // CLI11 cannot register a single-dash multi-character option name, so we
+    // intercept the flag together with its value here and remove them from the
+    // arguments before CLI11 parses them. The last occurrence wins, matching
+    // the behavior of the underlying linker.
+    static std::string extract_install_name(std::vector<std::string> &args) {
+        std::string install_name;
+        std::vector<std::string> filtered;
+        filtered.reserve(args.size());
+        for (std::size_t i = 0; i < args.size(); i++) {
+            if (args[i] == "-install_name" && i + 1 < args.size()) {
+                install_name = args[i + 1];
+                i++;
+                continue;
+            }
+            filtered.push_back(args[i]);
+        }
+        args = std::move(filtered);
+        return install_name;
+    }
+
     auto LFortranCommandLineParser::parse() -> void {
         CompilerOptions &compiler_options = opts.compiler_options;
         compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
@@ -390,8 +412,21 @@ namespace LCompilers::CommandLineInterface {
         }
 
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            std::vector<std::string> parse_args;
+            parse_args.reserve(argc > 1 ? static_cast<std::size_t>(argc - 1) : 0);
+            for (int i = 1; i < argc; i++) {
+                parse_args.push_back(argv[i]);
+            }
+            opts.install_name = extract_install_name(parse_args);
+            std::vector<const char *> parse_argv;
+            parse_argv.reserve(parse_args.size() + 1);
+            parse_argv.push_back(argv[0]);
+            for (const std::string &arg : parse_args) {
+                parse_argv.push_back(arg.c_str());
+            }
+            app.parse(static_cast<int>(parse_argv.size()), parse_argv.data());
         } else {
+            opts.install_name = extract_install_name(args);
             app.parse(args);
         }
 
