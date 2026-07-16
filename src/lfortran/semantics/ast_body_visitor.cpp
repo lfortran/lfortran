@@ -9542,85 +9542,109 @@ public:
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
     }
 
-    void resolve_sync_stat_errmsg(AST::event_attribute_t **attrs, size_t n_attrs, const Location &loc, 
-        const std::string &stmt_name, ASR::expr_t *&stat, ASR::expr_t *&errmsg, ASR::expr_t **new_index = nullptr)
+    void check_stat(AST::event_attribute_t *attr, const Location &loc, const std::string &stmt_name, ASR::expr_t *&stat) {
+        auto *s = AST::down_cast<AST::AttrStat_t>(attr);
+        stat = ASRUtils::EXPR(resolve_variable(loc, to_lower(s->m_variable)));
+        ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+        if (ASRUtils::is_array(stat_type)) {
+            diag.add(Diagnostic(
+                "`stat` argument of `" + stmt_name + "` must be scalar",
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (!ASRUtils::is_integer(*stat_type)) {
+            diag.add(Diagnostic(
+                "`stat` argument of `" + stmt_name +
+                "` must be of type integer, found " +
+                ASRUtils::type_to_str_fortran_expr(stat_type, stat),
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    void check_errmsg(AST::event_attribute_t *attr, const Location &loc, const std::string &stmt_name, ASR::expr_t *&errmsg) {
+        auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
+        errmsg = ASRUtils::EXPR(resolve_variable(loc, to_lower(e->m_variable)));
+        ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+        if (ASRUtils::is_array(errmsg_type)) {
+            diag.add(Diagnostic(
+                "`errmsg` argument of `" + stmt_name + "` must be scalar",
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (!ASRUtils::is_character(*errmsg_type)) {
+            diag.add(Diagnostic(
+                "`errmsg` argument of `" + stmt_name +
+                "` must be of type character, found " +
+                ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    void check_newindex(AST::event_attribute_t *attr, const Location &loc, const std::string &stmt_name, ASR::expr_t *&new_index) {
+        auto *n = AST::down_cast<AST::AttrNewIndex_t>(attr);
+        visit_expr(*n->m_value);
+        new_index = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *new_index_type = ASRUtils::expr_type(new_index);
+        if (ASRUtils::is_array(new_index_type)) {
+            diag.add(Diagnostic(
+                "`new_index` argument of `" + stmt_name + "` must be scalar",
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (!ASRUtils::is_integer(*new_index_type)) {
+            diag.add(Diagnostic(
+                "`new_index` argument of `" + stmt_name +
+                "` must be of type integer, found " +
+                ASRUtils::type_to_str_fortran_expr(new_index_type, new_index),
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    void resolve_stat_errmsg(AST::event_attribute_t **attrs, size_t n_attrs, const Location &loc, 
+        const std::string &stmt_name, ASR::expr_t *&stat, ASR::expr_t *&errmsg)
     {
         stat = nullptr;
         errmsg = nullptr;
-        if (new_index) {
-            *new_index = nullptr;
-        }
         for (size_t i = 0; i < n_attrs; i++) {
             AST::event_attribute_t *attr = attrs[i];
             if (AST::is_a<AST::AttrStat_t>(*attr)) {
-                auto *s = AST::down_cast<AST::AttrStat_t>(attr);
-                stat = ASRUtils::EXPR(resolve_variable(
-                    loc, to_lower(s->m_variable)));
-                ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
-                if (ASRUtils::is_array(stat_type)) {
-                    diag.add(Diagnostic(
-                        "`stat` argument of `" + stmt_name + "` must be scalar",
-                        Level::Error, Stage::Semantic,
-                        {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
-                if (!ASRUtils::is_integer(*stat_type)) {
-                    diag.add(Diagnostic(
-                        "`stat` argument of `" + stmt_name +
-                        "` must be of type integer, found " +
-                        ASRUtils::type_to_str_fortran_expr(stat_type, stat),
-                        Level::Error, Stage::Semantic,
-                        {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
+                check_stat(attr, loc, stmt_name, stat);
             } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
-                auto *e = AST::down_cast<AST::AttrErrmsg_t>(attr);
-                errmsg = ASRUtils::EXPR(resolve_variable(loc, to_lower(e->m_variable)));
-                ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
-                if (ASRUtils::is_array(errmsg_type)) {
-                    diag.add(Diagnostic(
-                        "`errmsg` argument of `" + stmt_name + "` must be scalar",
-                        Level::Error, Stage::Semantic,
-                        {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
-                if (!ASRUtils::is_character(*errmsg_type)) {
-                    diag.add(Diagnostic(
-                        "`errmsg` argument of `" + stmt_name +
-                        "` must be of type character, found " +
-                        ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg),
-                        Level::Error, Stage::Semantic,
-                        {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
-            } else if (new_index && AST::is_a<AST::AttrNewIndex_t>(*attr)) {
-                auto *n = AST::down_cast<AST::AttrNewIndex_t>(attr);
-                visit_expr(*n->m_value);
-                *new_index = ASRUtils::EXPR(tmp);
-                ASR::ttype_t *new_index_type = ASRUtils::expr_type(*new_index);
-                if (ASRUtils::is_array(new_index_type)) {
-                    diag.add(Diagnostic(
-                        "`new_index` argument of `" + stmt_name + "` must be scalar",
-                        Level::Error, Stage::Semantic,
-                        {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
-                if (!ASRUtils::is_integer(*new_index_type)) {
-                    diag.add(Diagnostic(
-                        "`new_index` argument of `" + stmt_name +
-                        "` must be of type integer, found " +
-                        ASRUtils::type_to_str_fortran_expr(new_index_type, *new_index),
-                        Level::Error, Stage::Semantic,
-                        {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
+                check_errmsg(attr, loc, stmt_name, errmsg);
+            }
+        }
+    }
+
+    void resolve_stat_errmsg_newindex(AST::event_attribute_t **attrs, size_t n_attrs, const Location &loc, 
+        const std::string &stmt_name, ASR::expr_t *&stat, ASR::expr_t *&errmsg, ASR::expr_t *&new_index)
+    {
+        stat = nullptr;
+        errmsg = nullptr;
+        new_index = nullptr;
+        for (size_t i = 0; i < n_attrs; i++) {
+            AST::event_attribute_t *attr = attrs[i];
+            if (AST::is_a<AST::AttrStat_t>(*attr)) {
+                check_stat(attr, loc, stmt_name, stat);
+            } else if (AST::is_a<AST::AttrErrmsg_t>(*attr)) {
+                check_errmsg(attr, loc, stmt_name, errmsg);
+            } else if (AST::is_a<AST::AttrNewIndex_t>(*attr)) {
+                check_newindex(attr, loc, stmt_name, new_index);
             }
         }
     }
     void visit_SyncAll(const AST::SyncAll_t &x) {
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
-        resolve_sync_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync all", stat, errmsg);
+        resolve_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync all", stat, errmsg);
         tmp = ASR::make_SyncAll_t(al, x.base.base.loc, stat, errmsg);
     }
 
@@ -9664,7 +9688,7 @@ public:
 
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
-        resolve_sync_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync images", stat, errmsg);
+        resolve_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync images", stat, errmsg);
         if (x.m_sym == AST::symbolType::Asterisk) {
             tmp = ASR::make_SyncImages_t(al, x.base.base.loc, nullptr, stat, errmsg);
         } else {
@@ -9675,7 +9699,7 @@ public:
     void visit_SyncMemory(const AST::SyncMemory_t &x) {
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
-        resolve_sync_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync memory", stat, errmsg);
+        resolve_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync memory", stat, errmsg);
         tmp = ASR::make_SyncMemory_t(al, x.base.base.loc, stat, errmsg);
     }
 
@@ -9745,7 +9769,7 @@ public:
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
         
-        resolve_sync_stat_errmsg(x.m_sync_stat, x.n_sync_stat, x.base.base.loc, "form team", stat, errmsg, &new_index);
+        resolve_stat_errmsg_newindex(x.m_sync_stat, x.n_sync_stat, x.base.base.loc, "form team", stat, errmsg, new_index);
 
         tmp = ASR::make_FormTeam_t(al, x.base.base.loc, team_number, team, new_index, stat, errmsg);
     }
