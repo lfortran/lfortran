@@ -1299,6 +1299,13 @@ public:
         // Handle templated subroutines
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
+        // Save the externals accumulated by the enclosing scope so they are
+        // restored (not discarded) once this subroutine has been processed.
+        // A contained subroutine must not wipe the host scope's external
+        // procedures; otherwise a later reference in the host (e.g. a typed
+        // external function call in a program that also has a CONTAINS section)
+        // would wrongly be seen as having no interface.
+        std::vector<std::string> saved_external_procedures = external_procedures;
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -1690,7 +1697,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
-        external_procedures.clear();
+        external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
