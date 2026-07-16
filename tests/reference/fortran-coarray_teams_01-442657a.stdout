@@ -11,14 +11,13 @@ type :: prif_coarray_handle
 end type prif_coarray_handle
 
 program coarray_teams_01
-use, intrinsic :: iso_fortran_env, only: team_type
 implicit none
 character(len=64, kind=1) :: errmsg
 integer(4) :: iostat
 integer(4) :: new_index
 integer(4) :: stat
-type(team_type) :: team1
-type(team_type) :: team2
+type(__module_prif_prif_team_type) :: team1
+type(__module_prif_prif_team_type) :: team2
 integer(4) :: team_num
 call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
