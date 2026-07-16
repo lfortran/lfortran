@@ -3942,6 +3942,91 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         context, llvm::APInt(64, descr_size));
                     builder->CreateMemCpy(dest_descr, llvm::MaybeAlign(),
                                           src_descr, llvm::MaybeAlign(), size_val);
+                } else if (ASR::is_a<ASR::StructType_t>(*pointer_type->m_type) &&
+                           ASRUtils::is_class_type(pointer_type->m_type)) {
+                    // Polymorphic class pointer: deep copy via vtable allocate + copy.
+                    // A shallow pointer copy would cause both source and destination
+                    // to share the same allocated object; when the source is finalized
+                    // the destination's pointer becomes dangling (segfault).
+                    llvm::Type* ptr_inner_type = get_type_from_ttype_t_util(
+                        src_expr, pointer_type->m_type, module);
+                    llvm::Value* src_ptr = CreateLoad2(
+                        ptr_inner_type->getPointerTo(), src);
+
+                    // Check if source pointer is associated (non-null)
+                    llvm::Value* is_src_null = builder->CreateICmpEQ(
+                        builder->CreatePtrToInt(src_ptr, llvm::Type::getInt64Ty(context)),
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+
+                    create_if_else(is_src_null, [&]() {
+                        // Source is null, store null in dest
+                        LLVM::CreateStore(*builder,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(ptr_inner_type->getPointerTo())),
+                            dest);
+                    }, [&]() {
+                        // Source is associated: allocate a new object via vtable
+                        // and deep copy the data.
+                        //
+                        // VTable layout (from vptr, which points to slot[2]):
+                        //   slot[0] = copy function   (vptr offset 0)
+                        //   slot[1] = allocate function (vptr offset 1)
+                        //
+                        // The allocate function signature: void(i8**)
+                        //   It allocates a new object and stores the pointer at *arg.
+                        // The copy function signature: void(i8*, i8*)
+                        //   It deep copies from src to dest.
+
+                        llvm::FunctionType* alloc_fn_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context),
+                            { i8_ptr->getPointerTo() }, false);
+                        llvm::PointerType* alloc_fn_ptr_type =
+                            llvm::PointerType::get(alloc_fn_type, 0);
+                        llvm::PointerType* alloc_fn_ptr_ptr_type =
+                            llvm::PointerType::get(alloc_fn_ptr_type, 0);
+                        llvm::PointerType* alloc_fn_ptr_ptr_ptr_type =
+                            llvm::PointerType::get(alloc_fn_ptr_ptr_type, 0);
+
+                        // Get the allocate function from vtable (slot 1 from vptr)
+                        llvm::Value* vtable_ptr = builder->CreateBitCast(
+                            src_ptr, alloc_fn_ptr_ptr_ptr_type);
+                        vtable_ptr = CreateLoad2(alloc_fn_ptr_ptr_type, vtable_ptr);
+                        llvm::Value* alloc_fn_slot = create_ptr_gep2(
+                            alloc_fn_ptr_type, vtable_ptr, 1);
+                        llvm::Value* alloc_fn = CreateLoad2(alloc_fn_ptr_type, alloc_fn_slot);
+
+                        // Call allocate to create a new object, stored in dest
+                        llvm::Value* dest_as_i8pp = builder->CreateBitCast(
+                            dest, i8_ptr->getPointerTo());
+                        builder->CreateCall(alloc_fn_type, alloc_fn, { dest_as_i8pp });
+
+                        // Now deep copy from source to newly allocated dest
+                        // using the vtable copy function (slot 0 from vptr)
+                        llvm::FunctionType* copy_fn_type = struct_copy_functype;
+                        llvm::PointerType* copy_fn_ptr_type =
+                            llvm::PointerType::get(copy_fn_type, 0);
+
+                        // Get the struct data pointers from the class wrappers
+                        // Class wrapper layout: { vptr, struct_ptr }
+                        llvm::Value* src_struct_ptr = create_gep2(
+                            ptr_inner_type, src_ptr, 1);
+                        src_struct_ptr = CreateLoad2(i8_ptr, src_struct_ptr);
+
+                        llvm::Value* dest_ptr = CreateLoad2(
+                            ptr_inner_type->getPointerTo(), dest);
+                        llvm::Value* dest_struct_ptr = create_gep2(
+                            ptr_inner_type, dest_ptr, 1);
+                        dest_struct_ptr = CreateLoad2(i8_ptr, dest_struct_ptr);
+
+                        // Load copy function from vtable (slot 0)
+                        llvm::Value* copy_fn_slot_ptr = builder->CreateBitCast(
+                            vtable_ptr, copy_fn_ptr_type->getPointerTo());
+                        llvm::Value* copy_fn = CreateLoad2(
+                            copy_fn_ptr_type, copy_fn_slot_ptr);
+
+                        builder->CreateCall(copy_fn_type, copy_fn,
+                            { src_struct_ptr, dest_struct_ptr });
+                    });
                 } else {
                     src = CreateLoad2(get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module)->getPointerTo(), src);
                     LLVM::CreateStore(*builder, src, dest);
