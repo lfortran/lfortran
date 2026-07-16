@@ -24536,6 +24536,13 @@ public:
                             llvm::AllocaInst *target = get_call_arg_alloca(tmp->getType());
                             builder->CreateStore(tmp, target);
                             tmp = target;
+                        } else if (tmp->getType()->isPointerTy() && !expected_type->isPointerTy()) {
+                            // A pointer (e.g. the address of an array element or a
+                            // struct member) is being passed to a by-value bind(C)
+                            // parameter. Load the scalar the pointer refers to
+                            // instead of emitting an invalid pointer-to-scalar
+                            // bitcast.
+                            tmp = llvm_utils->CreateLoad2(expected_type, tmp);
                         } else {
                             tmp = builder->CreateBitCast(tmp, expected_type);
                         }
