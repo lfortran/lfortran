@@ -4448,41 +4448,36 @@ LFORTRAN_API float _lfortran_sbesselyn( int n, float x ) {
     return yn(n, x);
 }
 
-uint64_t cutoff_extra_bits(uint64_t num, uint32_t bits_size, uint32_t max_bits_size) {
-    if (bits_size == max_bits_size) {
-        return num;
+// Rotate the low `bits_size` bits of `val` by `shift` (left when `negative_shift`
+// is false, right when true), leaving the bits at positions >= bits_size unchanged.
+// `shift` is the absolute value and must be <= bits_size. Uses 64-bit literals
+// (0ULL/1ULL) so the mask is correct on LLP64 targets such as MSVC.
+static uint64_t ishftc_rotate(uint64_t val, uint32_t shift, bool negative_shift,
+                              uint32_t bits_size) {
+    uint64_t mask = (bits_size == 64) ? ~0ULL : ((1ULL << bits_size) - 1ULL);
+    uint64_t high = val & ~mask;
+    uint64_t low = val & mask;
+    if (shift == 0) {
+        return val;
     }
-    return (num & ((1lu << bits_size) - 1lu));
+    if (negative_shift) {
+        return high | ((low >> shift) | ((low << (bits_size - shift)) & mask));
+    }
+    return high | (((low << shift) & mask) | (low >> (bits_size - shift)));
 }
 
 LFORTRAN_API int _lfortran_sishftc(int val, int shift_signed, int bits_size) {
-    uint32_t max_bits_size = 64;
     bool negative_shift = (shift_signed < 0);
     uint32_t shift = (shift_signed < 0 ? -shift_signed : shift_signed);
-
-    uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
-    uint64_t result;
-    if (negative_shift) {
-        result = (val1 >> shift) | cutoff_extra_bits(val1 << (bits_size - shift), bits_size, max_bits_size);
-    } else {
-        result = cutoff_extra_bits(val1 << shift, bits_size, max_bits_size) | ((val1 >> (bits_size - shift)));
-    }
-    return result;
+    return (int)ishftc_rotate((uint64_t)val, shift, negative_shift,
+                              (uint32_t)bits_size);
 }
 
 LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_t bits_size) {
-    uint32_t max_bits_size = 64;
     bool negative_shift = (shift_signed < 0);
     uint32_t shift = llabs(shift_signed);
-
-    uint64_t val1 = cutoff_extra_bits((uint64_t)val, (uint32_t)bits_size, max_bits_size);
-    uint64_t result;
-    if (negative_shift) {
-        result = (val1 >> shift) | cutoff_extra_bits(val1 << (bits_size - shift), bits_size, max_bits_size);
-    } else {
-        result = cutoff_extra_bits(val1 << shift, bits_size, max_bits_size) | ((val1 >> (bits_size - shift)));
-    }
-    return result;
+    return (int64_t)ishftc_rotate((uint64_t)val, shift, negative_shift,
+                                  (uint32_t)bits_size);
 }
 
 // sin -------------------------------------------------------------------------

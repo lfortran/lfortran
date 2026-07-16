@@ -25,8 +25,11 @@ class PRIFInterface {
                                            ASR::symbol_t *sym, const Location &loc) {
             if (decl_scope == use_scope || decl_scope == unit.m_symtab) return sym;
             std::string sym_name = ASRUtils::symbol_name(sym);
-            if (ASR::symbol_t *existing = use_scope->get_symbol(sym_name)) {
-                return existing;
+            if (ASR::symbol_t *existing = use_scope->resolve_symbol(sym_name)) {
+                if (ASRUtils::symbol_get_past_external(existing) ==
+                    ASRUtils::symbol_get_past_external(sym)) {
+                    return existing;
+                }
             }
             std::string mod_name = "";
             if (decl_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*decl_scope->asr_owner) && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(decl_scope->asr_owner))) {
@@ -34,11 +37,12 @@ class PRIFInterface {
             } else {
                 throw LCompilersException("Coarray companion is in another scope that is not a module");
             }
+            std::string local_sym_name = use_scope->get_unique_name(sym_name, false);
             ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
-                al, loc, use_scope, s2c(al, sym_name), sym,
+                al, loc, use_scope, s2c(al, local_sym_name), sym,
                 s2c(al, mod_name), nullptr, 0, s2c(al, sym_name), ASR::accessType::Private);
             ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(ext);
-            use_scope->add_symbol(sym_name, ext_sym);
+            use_scope->add_symbol(local_sym_name, ext_sym);
             return ext_sym;
         }
         ASR::symbol_t* declare_variable(SymbolTable *symtab, const Location &loc,
@@ -47,8 +51,13 @@ class PRIFInterface {
                                         ASR::abiType abi, ASR::accessType access,
                                         ASR::presenceType presence, bool value_attr) {
             ASRUtils::ASRBuilder b(al, loc);
-            b.VariableDeclaration(symtab, name, type, intent, type_decl, abi, value_attr);
-            ASR::symbol_t *sym = symtab->get_symbol(name);
+            // Use a unique name to avoid clashing with user-defined variables
+            // that may already exist in `symtab` (e.g. a user variable
+            // literally named "stat"); internal compiler-generated names
+            // must never collide with source-level identifiers.
+            std::string unique_name = symtab->get_unique_name(name, false);
+            b.VariableDeclaration(symtab, unique_name, type, intent, type_decl, abi, value_attr);
+            ASR::symbol_t *sym = symtab->get_symbol(unique_name);
             LCOMPILERS_ASSERT(sym);
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
             var->m_access = access;
@@ -1743,7 +1752,7 @@ class PRIFInterface {
                 // If the saved coarray had an initial value (e.g., x[*] = 0),
                 // bind the data pointer to a local variable and assign the value.
                 if (init_value) {
-                    std::string local_name = std::string(var->m_name) + "__init_ptr";
+                    std::string local_name = fn_symtab->get_unique_name(std::string(var->m_name) + "__init_ptr");
                     ASR::ttype_t *var_ptr_type = var->m_type; // already Pointer_t
                     ASR::symbol_t *local_sym = declare_variable(
                         fn_symtab, loc, local_name, var_ptr_type,

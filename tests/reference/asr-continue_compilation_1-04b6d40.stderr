@@ -1785,3 +1785,21 @@ semantic error: Cannot initialize integer(4) variable with character(len=3) valu
     |
 899 |         data x / "abc" /
     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: `array` argument of `norm2` intrinsic must be an array
+   --> tests/errors/continue_compilation_1.f90:903:19
+    |
+903 |         x = norm2(1.0)
+    |                   ^^^ 
+
+semantic error: `array` argument of `norm2` intrinsic must be real
+   --> tests/errors/continue_compilation_1.f90:904:19
+    |
+904 |         x = norm2([1, 2])
+    |                   ^^^^^^ 
+
+semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension index
+   --> tests/errors/continue_compilation_1.f90:905:35
+    |
+905 |         x = norm2([1.0, 2.0], dim=2)
+    |                                   ^ 
