@@ -2529,6 +2529,7 @@ RUN(NAME derived_types_150 LABELS gfortran llvm) # SEQUENCE char(len>1) inline +
 # assignment(=) in one module breaks resolution under LFortran.
 RUN(NAME derived_types_151 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME derived_types_152 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME derived_types_153 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
