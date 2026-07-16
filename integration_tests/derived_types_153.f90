@@ -1,4 +1,4 @@
- Test: procedure pointer association between struct members with
+!Test: procedure pointer association between struct members with
 ! different interfaces (concrete vs generic procedure()).
 ! Verifies LLVM codegen bitcast when a typed procedure pointer
 ! is associated to a generic procedure() pointer slot.
