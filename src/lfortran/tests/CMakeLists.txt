@@ -75,6 +75,17 @@ if (XEUS_LFORTRAN_WASM_BUILD)
         "SHELL:-s STACK_SIZE=32mb"
         "SHELL:-s INITIAL_MEMORY=128mb"
     )
+    # Preload the same .mod files that xlfortran embeds.
+    file(GLOB LFORTRAN_TEST_MOD_FILES "${CMAKE_INSTALL_PREFIX}/lib/*.mod")
+    foreach(MOD_FILE ${LFORTRAN_TEST_MOD_FILES})
+        get_filename_component(MOD_NAME ${MOD_FILE} NAME)
+        target_link_options(test_lfortran PRIVATE
+            "SHELL:--preload-file \"${MOD_FILE}@/lib/${MOD_NAME}\""
+        )
+    endforeach()
+    if(LFORTRAN_TEST_MOD_FILES)
+        set_property(TARGET test_lfortran APPEND PROPERTY LINK_DEPENDS ${LFORTRAN_TEST_MOD_FILES})
+    endif()
 endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 
