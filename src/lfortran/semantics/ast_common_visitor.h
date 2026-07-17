@@ -9632,6 +9632,7 @@ public:
                 al, loc, type, dims.p, dims.size(), abi, is_argument,
                 dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
                                 ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                (is_dimension_star && is_argument) ? ASR::array_physical_typeType::UnboundedPointerArray :
                                 ASR::array_physical_typeType::DescriptorArray,
                 dims.size() > 0 ? true : false);
             if (is_pointer) {

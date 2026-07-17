@@ -8876,7 +8876,18 @@ public:
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
             tmp = GetPointerCPtrUtil(tmp, x.m_arg);
         } else if(ASRUtils::is_character(*expr_type(x.m_arg))){ // Targetted physicalType is `char*`
-            tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+            ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(x.m_arg));
+            if (ASRUtils::is_array(arg_type) &&
+                ASRUtils::extract_physical_type(arg_type) ==
+                    ASR::array_physical_typeType::UnboundedPointerArray) {
+                // An assumed-size character array dummy is passed as a bare
+                // data pointer (storage association, like a numeric array).
+                // The pointer already points at the raw data, so it is the
+                // C address directly; do not extract a string descriptor.
+            } else {
+                tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+            }
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());
