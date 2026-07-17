@@ -5591,6 +5591,14 @@ public:
                                                             ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
                                                                 rc->m_r, rc->m_type)),
                                                             ASR::cast_kindType::RealToComplex, v->m_type, complex_value, nullptr));
+                                                    } else if (ASRUtils::is_integer(*v->m_type)) {
+                                                        ASR::expr_t* integer_value = ASRUtils::EXPR(
+                                                            ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                                (int64_t)rc->m_r, v->m_type));
+                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
+                                                            ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
+                                                                rc->m_r, rc->m_type)),
+                                                            ASR::cast_kindType::RealToInteger, v->m_type, integer_value, nullptr));
                                                     } else {
                                                         init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
                                                     }
