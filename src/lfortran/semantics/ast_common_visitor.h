@@ -5663,6 +5663,18 @@ public:
                                                         }
                                                     }
                                                 }
+                                                // The folds above only handle initializers that are a bare
+                                                // numeric literal. When the initializer is a constant expression
+                                                // whose value type still differs from the declared parameter
+                                                // type (e.g. `integer :: k` with `parameter (k = -125.0)`, whose
+                                                // initializer is a RealUnaryMinus rather than a bare
+                                                // RealConstant), insert an explicit Cast so the stored value
+                                                // matches the variable's type. set_converted_value is a no-op
+                                                // when the types already match.
+                                                if (ASRUtils::expr_value(init_val)) {
+                                                    ImplicitCastRules::set_converted_value(al, x.base.base.loc,
+                                                        &init_val, ASRUtils::expr_type(init_val), v->m_type, diag);
+                                                }
                                                 v->m_symbolic_value = init_val;
                                                 v->m_value = ASRUtils::expr_value(init_val);
                                                 SetChar variable_dependencies_vec;
