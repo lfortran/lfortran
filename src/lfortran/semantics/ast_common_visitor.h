@@ -20412,7 +20412,7 @@ public:
         }
         if (kind_item && kind_item->m_value) {
             if (AST::is_a<AST::Name_t>(*kind_item->m_value) && 
-                std::string(AST::down_cast<AST::Name_t>(kind_item->m_value)->m_id) == "c_char") {
+                to_lower(AST::down_cast<AST::Name_t>(kind_item->m_value)->m_id) == "c_char") {
                 if ((is_argument || is_return_var) && abi == ASR::BindC) {
                     str->m_physical_type = ASR::CChar;
                 } else {
