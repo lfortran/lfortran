@@ -13316,7 +13316,8 @@ public:
             tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(m_type), arr_data_loaded); //StringArraySinglePointer = `char*`
         } else if (
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
-            m_old == ASR::array_physical_typeType::PointerArray) {
+            (m_old == ASR::array_physical_typeType::PointerArray ||
+             m_old == ASR::array_physical_typeType::UnboundedPointerArray)) {
             if (ASRUtils::is_character(*ASRUtils::extract_type(ASRUtils::expr_type(m_arg)))) {
                 // For character arrays in bind(c) context
                 ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
