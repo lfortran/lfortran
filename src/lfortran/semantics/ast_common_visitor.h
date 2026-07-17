@@ -16141,6 +16141,31 @@ public:
             ASRUtils::symbol_get_past_external(f)) != implicit_interface_functions.end();
     }
 
+    // True if `v` is a use-associated procedure that was declared `external`
+    // with an implicit interface inside a module (e.g. `integer, external ::
+    // foo`). Such a declaration is recorded by `create_external_function` as a
+    // zero-argument BindC interface; once written to a .mod file and
+    // use-associated it loses any trace of being an implicit-interface
+    // external. Standard Fortran performs no argument checking for
+    // implicit-interface externals, so a call passing actual arguments must be
+    // accepted. We detect this shape at the call site so the implicit
+    // interface can be synthesized from the call exactly like a locally
+    // declared external.
+    bool is_use_associated_implicit_interface_external(ASR::symbol_t* v) {
+        if (!v || !ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+            return false;
+        }
+        ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(v);
+        if (!f2 || !ASR::is_a<ASR::Function_t>(*f2)) {
+            return false;
+        }
+        ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(f2);
+        return ft->m_deftype == ASR::deftypeType::Interface
+            && (ft->m_abi == ASR::abiType::BindC
+                || ft->m_abi == ASR::abiType::ExternalUndefined)
+            && ASR::down_cast<ASR::Function_t>(f2)->n_args == 0;
+    }
+
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
@@ -16904,6 +16929,15 @@ public:
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
             }
+        }
+        if (compiler_options.implicit_interface && !is_external_procedure
+                && x.n_args > 0
+                && is_use_associated_implicit_interface_external(v)) {
+            // A module-declared implicit-interface external (read back from a
+            // .mod file) is recorded with zero formal arguments. Treat it like
+            // a locally declared external so the interface is synthesized from
+            // this call site instead of wrongly rejecting the arguments.
+            is_external_procedure = true;
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
