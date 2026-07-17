@@ -1839,6 +1839,14 @@ public:
         // Handle templated functions
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
+        // Save the externals accumulated by the enclosing scope so they are
+        // restored (not discarded) once this function has been processed.
+        // Without this, a bare `external foo` declared inside this function
+        // would leak into a sibling program unit processed afterwards and
+        // wrongly mark a later same-named declaration there as an external
+        // procedure (dropping its explicitly declared type). This mirrors the
+        // handling in visit_Subroutine.
+        std::vector<std::string> saved_external_procedures = external_procedures;
         std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
@@ -2468,6 +2476,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
