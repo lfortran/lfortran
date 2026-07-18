@@ -16511,6 +16511,23 @@ public:
                         ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(expected_arg_type);
                         var_type = ASRUtils::duplicate_type_with_empty_dims(al, expected_arg_type, expected_phys, true);
                     }
+                } else if (ASRUtils::is_character(*var_type) &&
+                        ASRUtils::is_allocatable_or_pointer(var_type)) {
+                    // A scalar CHARACTER actual passed through an implicit
+                    // interface (e.g. an allocatable/deferred-length result
+                    // such as trim(...)) is associated by classic F77 storage
+                    // association: the callee receives the character data
+                    // pointer plus a hidden length, never an allocatable
+                    // descriptor. Synthesize a plain assumed-length dummy
+                    // (character(len=*)) so the hidden-length character ABI is
+                    // used, matching gfortran/flang and the separately compiled
+                    // callee.
+                    ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::extract_type(var_type));
+                    var_type = ASRUtils::TYPE(ASR::make_String_t(al,
+                        var_type->base.loc, str->m_kind, nullptr,
+                        ASR::string_length_kindType::AssumedLength,
+                        str->m_physical_type));
                 }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
