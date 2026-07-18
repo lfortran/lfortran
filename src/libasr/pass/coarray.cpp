@@ -1046,14 +1046,12 @@ class PRIFInterface {
                             ASR::symbol_t *orig_decl = team_var->m_type_declaration;
                             team_var->m_type_declaration = prif_decl;
                             team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
-                            if (orig_decl) {
-                                SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
-                                if (parent_symtab) {
-                                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
-                                    if (parent_symtab->get_symbol(sym_name)) {
-                                        parent_symtab->erase_symbol(sym_name);
-                                    }
-                                }
+                            LCOMPILERS_ASSERT(orig_decl != nullptr);
+                            SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
+                            LCOMPILERS_ASSERT(parent_symtab != nullptr);
+                            std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
+                            if (parent_symtab->get_symbol(sym_name)) {
+                                parent_symtab->erase_symbol(sym_name);
                             }
                         }
                     }
