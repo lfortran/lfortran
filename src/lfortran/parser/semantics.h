@@ -1096,6 +1096,20 @@ static inline arg_t* ARGS(Allocator &al, Location &l,
     }
     return a;
 }
+static inline arg_t* REQ_ARGS(Allocator &al, const Vec<ast_t*> args)
+{
+    arg_t *a = al.allocate<arg_t>(args.size());
+    for (size_t i=0; i < args.size(); i++) {
+        if (args.p[i]) {
+            a[i].loc = args.p[i]->loc;
+            a[i].m_arg = name2char(args.p[i]);
+        } else {
+            a[i].loc = Location();
+            a[i].m_arg = nullptr;
+        }
+    }
+    return a;
+}
 
 static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
 {
@@ -2793,7 +2807,7 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
 #define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
         REQUIREMENT2(p.m_a, l, name2char(name), \
-        REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
+        ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
 #define REQUIRE(require_list, l) \
         make_Require_t(p.m_a, l, \

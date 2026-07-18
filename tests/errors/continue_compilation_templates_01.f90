@@ -28,3 +28,8 @@ module continue_compilation_templates_01_mod
     end requirement
 
 end module continue_compilation_templates_01_mod
+
+program continue_compilation_templates_01
+    use continue_compilation_templates_01_mod
+    implicit none
+end program continue_compilation_templates_01

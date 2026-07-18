@@ -4514,24 +4514,26 @@ public:
         SetChar args;
         args.reserve(al, x.n_namelist);
         {
-            std::set<std::string> seen_args;
+            std::map<std::string, Location> seen_args;
             for (size_t i=0; i<x.n_namelist; i++) {
-                std::string arg = to_lower(x.m_namelist[i]);
-                if (seen_args.find(arg) != seen_args.end()) {
+                std::string arg = to_lower(x.m_namelist[i].m_arg);
+                auto it = seen_args.find(arg);
+                if (it != seen_args.end()) {
                     diag.add(Diagnostic(
                         "Parameter '" + arg + "' is declared more than once in "
                         "requirement '" + to_lower(x.m_name) + "'",
                         Level::Error, Stage::Semantic, {
-                            Label("", {x.base.base.loc})
+                            Label("first declared here", {it->second}),
+                            Label("redeclared here", {x.m_namelist[i].loc})
                         }
                     ));
                     throw SemanticAbort();
                 }
-                seen_args.insert(arg);
+                seen_args[arg] = x.m_namelist[i].loc;
             }
         }
         for (size_t i=0; i<x.n_namelist; i++) {
-            std::string arg = to_lower(x.m_namelist[i]);
+            std::string arg = to_lower(x.m_namelist[i].m_arg);
             args.push_back(al, s2c(al, arg));
             current_procedure_args.push_back(arg);
         }
@@ -4562,7 +4564,7 @@ public:
         }
 
         for (size_t i=0; i<x.n_namelist; i++) {
-            std::string arg = to_lower(x.m_namelist[i]);
+            std::string arg = to_lower(x.m_namelist[i].m_arg);
             if (!current_scope->get_symbol(arg)) {
                 diag.add(Diagnostic(
                     "Parameter " + arg + " is unused in " + x.m_name,
@@ -4578,7 +4580,7 @@ public:
             bool defined = false;
             std::string sym = item.first;
             for (size_t i=0; i<x.n_namelist; i++) {
-                std::string arg = to_lower(x.m_namelist[i]);
+                std::string arg = to_lower(x.m_namelist[i].m_arg);
                 if (sym.compare(arg) == 0) {
                     defined = true;
                 }

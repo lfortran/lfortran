@@ -1,9 +1,0 @@
-semantic error: Parameter 't' is declared more than once in requirement 'op_r'
-  --> tests/errors/template_error_10.f90:4:5 - 13:1
-   |
- 4 |        requirement op_R ( T, T, V, V, op_func )
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-13 |    
-   | ...^ 
