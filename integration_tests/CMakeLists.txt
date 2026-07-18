@@ -4090,7 +4090,8 @@ RUN(NAME c_ptr_14 LABELS gfortran llvm)
 RUN(NAME c_ptr_15 LABELS gfortran llvm)
 RUN(NAME c_ptr_16 LABELS gfortran llvm EXTRAFILES c_ptr_16_module.f90)
 RUN(NAME c_ptr_17 LABELS gfortran llvm EXTRAFILES c_ptr_17_module.f90)
-RUN(NAME c_ptr_18 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME c_ptr_18 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES c_ptr_18b.f90 GFORTRAN_ARGS -fallow-argument-mismatch)
 RUN(NAME target_01 LABELS gfortran llvm)
 RUN(NAME c_f_pointer_01 LABELS gfortran llvm)
 
