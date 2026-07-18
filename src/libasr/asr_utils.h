@@ -7239,20 +7239,25 @@ static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
 //   * a top-level definition (no ASR owner), or
 //   * an interface body with no implementation placed outside a module (a
 //     per-call synthesized implicit interface, or an explicit external
-//     interface block in a program/subprogram scope).
+//     interface block in a program/subprogram scope), or
+//   * a plain (non-abstract) interface block owned by a module that declares a
+//     separately compiled external procedure.
 // Such procedures use the classic Fortran hidden-length character ABI: the
 // character data pointer is passed directly at the argument position and the
 // length travels as a hidden trailing argument (matching gfortran/flang).
-// Module and contained procedures have a normal explicit interface and keep
-// the string-descriptor ABI.
+// Module and contained procedures, and abstract interfaces, have a normal
+// explicit interface and keep the string-descriptor ABI.
 //
-// Interface bodies owned by a module are deliberately excluded: an
-// `abstract interface` and an external `interface` block are indistinguishable
-// in the ASR (LFortran does not record the `abstract` attribute), and abstract
-// interfaces are used to type procedure pointers and dummy procedures whose
-// targets are ordinary (descriptor-ABI) procedures. Keeping module-owned
-// interface bodies on the descriptor ABI preserves procedure-pointer calls.
-static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym) {
+// A module-owned `abstract interface` and a module-owned external `interface`
+// block are indistinguishable in the ASR (LFortran does not record the
+// `abstract` attribute), so `proc_iface_syms` (the set of functions used as a
+// procedure interface anywhere in the translation unit) is consulted to tell
+// them apart: an abstract interface is referenced as a procedure interface and
+// stays on the descriptor ABI, preserving procedure-pointer/dummy/deferred
+// calls, while a plain external interface block is not and uses the classic
+// ABI. When `proc_iface_syms` is unavailable the descriptor ABI is used.
+static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym,
+        const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
     if (get_asr_owner(fn_sym) == nullptr) {
         return true;
     }
@@ -7273,12 +7278,49 @@ static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym) {
             // the interface must agree regardless of whether it carries a body.
             return true;
         }
+        if (owner != nullptr && ASR::is_a<ASR::Module_t>(*owner) &&
+                ft->m_abi == ASR::abiType::Source) {
+            // A module-owned interface body is one of:
+            //   * a module procedure (declared with the MODULE prefix and
+            //     implemented in a submodule): m_module is set. It has a normal
+            //     explicit interface and keeps the string-descriptor ABI.
+            //   * an abstract interface used to type procedure pointers, dummy
+            //     procedures or deferred type-bound procedures. Its targets are
+            //     ordinary (descriptor-ABI) procedures, so it too keeps the
+            //     descriptor ABI. Such an interface is referenced as a procedure
+            //     interface somewhere in the translation unit; those references
+            //     are collected in proc_iface_syms.
+            //   * a plain interface block declaring a separately compiled
+            //     external procedure (as in netcdf-fortran's
+            //     module_netcdf_nf_interfaces). This denotes an external
+            //     procedure reached by the classic hidden-length ABI, matching
+            //     the external definition (which has no ASR owner and therefore
+            //     already uses that ABI).
+            // An `abstract interface` and a plain external `interface` block are
+            // indistinguishable in the ASR (LFortran does not record the
+            // `abstract` attribute), so we treat a module interface body as
+            // abstract iff it is used as a procedure interface. When
+            // proc_iface_syms is unavailable we conservatively keep the
+            // descriptor ABI (the historical behavior).
+            if (ft->m_module) {
+                return false;
+            }
+            if (proc_iface_syms == nullptr) {
+                return false;
+            }
+            if (proc_iface_syms->find(fn_sym) != proc_iface_syms->end()) {
+                return false;
+            }
+            return true;
+        }
     }
     return false;
 }
 
-static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn) {
-    return is_external_implicit_interface_proc((ASR::symbol_t*)&fn.base);
+static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn,
+        const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
+    return is_external_implicit_interface_proc((ASR::symbol_t*)&fn.base,
+        proc_iface_syms);
 }
 
 static inline bool is_coarray(ASR::symbol_t* s) {
