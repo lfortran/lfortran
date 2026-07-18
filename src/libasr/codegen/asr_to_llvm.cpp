@@ -7962,26 +7962,12 @@ public:
                     llvm_symtab[h] = llvm_sym;
                     if (charlen_abi &&
                             ASRUtils::is_hidden_charlen_string_dummy(arg->m_type)) {
-                        if (ASRUtils::hidden_charlen_dummy_has_trailing_length(
-                                arg->m_type)) {
-                            charlen_dummies.push_back(std::make_pair(
-                                arg, static_cast<llvm::Value*>(&llvm_arg)));
-                        } else {
-                            // Fixed-length CHARACTER array dummy: rebuild the
-                            // string descriptor from the data pointer and the
-                            // statically known element length. No hidden
-                            // trailing length is passed for this dummy.
-                            int64_t fixed_len = ASRUtils::get_fixed_string_len(
-                                ASRUtils::extract_type(arg->m_type));
-                            llvm::Value* len_val = llvm::ConstantInt::get(
-                                llvm::Type::getInt64Ty(context),
-                                fixed_len >= 0 ? fixed_len : 1);
-                            llvm::Value* desc =
-                                llvm_utils->create_string_descriptor(
-                                    static_cast<llvm::Value*>(&llvm_arg),
-                                    len_val, arg->m_name);
-                            llvm_symtab[h] = desc;
-                        }
+                        // The hidden trailing length always accompanies a
+                        // hidden-length CHARACTER dummy (see
+                        // is_hidden_charlen_string_dummy); rebuild the
+                        // string descriptor from the (data pointer, length) pair.
+                        charlen_dummies.push_back(std::make_pair(
+                            arg, static_cast<llvm::Value*>(&llvm_arg)));
                     }
                 }
             }
@@ -23193,11 +23179,12 @@ public:
     // Find a top-level external procedure DEFINITION in the global scope by
     // name. A call reaching an implicitly-interfaced external procedure is
     // typed by a per-call synthesized interface (built from the actual
-    // arguments), which can disagree with the real definition on character
-    // length attributes (e.g. a fixed-length actual passed to an
-    // assumed-length dummy). To emit a call whose signature matches the real
-    // definition (so the LLVM module verifies), the hidden-length character
-    // ABI decisions must be taken from the real definition's dummies.
+    // arguments), whose argument types can disagree with the real definition
+    // (e.g. a numeric actual passed by storage association to a CHARACTER
+    // dummy, or a fixed-length actual passed to an assumed-length dummy). The
+    // hidden-length character ABI decisions are taken from the real
+    // definition's dummies (when visible in this translation unit) so the
+    // emitted call matches the definition and the LLVM module verifies.
     ASR::Function_t* find_external_proc_definition(const std::string& name) {
         SymbolTable* s = current_scope;
         if (s == nullptr) {
@@ -24672,25 +24659,18 @@ public:
                     symbol_get_past_external(x.m_name);
                 bool is_proc_ptr_call =
                     called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
-                if (orig_arg && x.m_args[i].m_value &&
-                        !is_proc_ptr_call &&
-                        x.m_dt == nullptr &&
-                        func_subrout->type == ASR::symbolType::Function &&
-                        ASRUtils::function_uses_hidden_char_len_abi(
-                            *ASR::down_cast<ASR::Function_t>(func_subrout)) &&
-                        ASRUtils::is_hidden_charlen_string_dummy(orig_arg->m_type)) {
-                    // Classic Fortran hidden-length ABI: pass the character
-                    // data pointer directly at the argument position. A hidden
-                    // trailing length is appended below only for dummies that
-                    // need one (scalars and assumed/deferred-length arrays); a
-                    // fixed-length array element is rebuilt by the callee from
-                    // its own static length. The decision is taken from the
-                    // real callee definition (when available) rather than the
-                    // per-call synthesized interface, whose character length
-                    // attributes are derived from the actual argument and may
-                    // disagree with the definition (e.g. a fixed-length actual
-                    // passed to an assumed-length dummy).
-                    ASR::ttype_t* abi_dummy_type = orig_arg->m_type;
+                // Effective dummy type for the classic hidden-length CHARACTER
+                // ABI: prefer the real callee definition's dummy (visible in
+                // this translation unit) over the per-call synthesized
+                // interface, whose argument types come from the actual
+                // arguments. A numeric actual passed by storage association to
+                // a CHARACTER dummy (a legal F77 idiom) otherwise synthesizes a
+                // numeric dummy, hiding the CHARACTER dummy and dropping its
+                // hidden length, so the call would disagree with the
+                // definition's argument count.
+                ASR::ttype_t* abi_dummy_type =
+                    (orig_arg != nullptr) ? orig_arg->m_type : nullptr;
+                if (func_subrout->type == ASR::symbolType::Function) {
                     ASR::Function_t* real_def =
                         find_external_proc_definition(
                             ASRUtils::symbol_name(x.m_name));
@@ -24699,9 +24679,24 @@ public:
                         abi_dummy_type =
                             ASRUtils::expr_type(real_def->m_args[i]);
                     }
-                    bool has_len =
-                        ASRUtils::hidden_charlen_dummy_has_trailing_length(
-                            abi_dummy_type);
+                }
+                if (orig_arg && x.m_args[i].m_value &&
+                        !is_proc_ptr_call &&
+                        x.m_dt == nullptr &&
+                        func_subrout->type == ASR::symbolType::Function &&
+                        ASRUtils::function_uses_hidden_char_len_abi(
+                            *ASR::down_cast<ASR::Function_t>(func_subrout)) &&
+                        abi_dummy_type != nullptr &&
+                        ASRUtils::is_hidden_charlen_string_dummy(abi_dummy_type)) {
+                    // Classic Fortran hidden-length ABI: pass the character
+                    // data pointer directly at the argument position and append
+                    // the per-element length as a hidden trailing argument. The
+                    // length is passed uniformly for every hidden-length
+                    // CHARACTER dummy (see is_hidden_charlen_string_dummy),
+                    // so the call and the separately compiled definition always
+                    // agree on the argument count regardless of whether the
+                    // dummy is a scalar, an assumed-length array or a
+                    // fixed-length array.
                     if (tmp->getType() ==
                             llvm_utils->string_descriptor->getPointerTo()) {
                         // Character actual: take the (data pointer, length)
@@ -24712,28 +24707,24 @@ public:
                                     ASRUtils::expr_type(x.m_args[i].m_value)));
                         llvm::Value* data_ptr =
                             llvm_utils->get_string_data(actual_str, tmp);
-                        if (has_len) {
-                            llvm::Value* len_val =
-                                llvm_utils->get_string_length(actual_str, tmp);
-                            len_val = builder->CreateSExtOrTrunc(
-                                len_val, llvm::Type::getInt64Ty(context));
-                            hidden_char_length_args.push_back(len_val);
-                        }
+                        llvm::Value* len_val =
+                            llvm_utils->get_string_length(actual_str, tmp);
+                        len_val = builder->CreateSExtOrTrunc(
+                            len_val, llvm::Type::getInt64Ty(context));
+                        hidden_char_length_args.push_back(len_val);
                         tmp = data_ptr;
                     } else {
                         // Non-character (numeric) actual passed by storage
                         // association through an implicit interface: pass its
-                        // address as the data pointer. If the dummy needs a
-                        // trailing length, supply its declared per-element
-                        // length.
-                        if (has_len) {
-                            int64_t fixed_len = ASRUtils::get_fixed_string_len(
-                                ASRUtils::extract_type(orig_arg->m_type));
-                            llvm::Value* len_val = llvm::ConstantInt::get(
-                                llvm::Type::getInt64Ty(context),
-                                fixed_len >= 0 ? fixed_len : 1);
-                            hidden_char_length_args.push_back(len_val);
-                        }
+                        // address as the data pointer and supply the CHARACTER
+                        // dummy's declared per-element length as the trailing
+                        // length (taken from the real definition's dummy).
+                        int64_t fixed_len = ASRUtils::get_fixed_string_len(
+                            ASRUtils::extract_type(abi_dummy_type));
+                        llvm::Value* len_val = llvm::ConstantInt::get(
+                            llvm::Type::getInt64Ty(context),
+                            fixed_len >= 0 ? fixed_len : 1);
+                        hidden_char_length_args.push_back(len_val);
                         llvm::Type* i8ptr =
                             llvm::Type::getInt8Ty(context)->getPointerTo();
                         if (!tmp->getType()->isPointerTy()) {

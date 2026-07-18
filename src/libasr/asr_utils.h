@@ -7189,7 +7189,22 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
 // A CHARACTER dummy represented as a string descriptor ({data, len}). These
 // are the dummies affected by the classic Fortran hidden-length ABI used for
 // external procedures: the character data pointer is passed directly at the
-// argument position and the length travels as a hidden trailing argument.
+// argument position and the per-element length travels as a hidden trailing
+// argument (after all positional arguments), exactly as gfortran/flang do.
+//
+// The trailing length is passed uniformly for every such dummy -- scalar or
+// array, assumed/deferred or fixed length. This must be uniform because
+// separate compilation forces it to be: a caller reaching the procedure
+// through an implicit interface only sees the actual argument, never the
+// callee's dummy, so it cannot tell whether that dummy is a scalar
+// CHARACTER(len=*), an assumed-length array, or a fixed-length array. The only
+// ABI a separately compiled caller can reliably target -- and the only one the
+// separately compiled callee can rely on -- passes the character data pointer
+// at the argument position with the length always trailing. Omitting the
+// length for a fixed-length CHARACTER array actual (as an earlier scheme did)
+// corrupts a scalar CHARACTER(len=*) callee that expects the length: this was
+// the netcdf-fortran nf_get_var_text crash, where a CHARACTER array actual is
+// passed to an assumed-length scalar dummy.
 //
 // Covered:
 //   * scalar CHARACTER dummies, and
@@ -7217,34 +7232,6 @@ static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
             || pt == ASR::array_physical_typeType::StringArraySinglePointer;
     }
     return true;
-}
-
-// Whether a hidden-length CHARACTER dummy (see is_hidden_charlen_string_dummy)
-// is accompanied by a hidden trailing length argument.
-//
-//   * Scalar CHARACTER dummies always carry a trailing length (the classic
-//     scalar hidden-length ABI, including CHARACTER(len=*)).
-//   * A CHARACTER array dummy carries a trailing length only when its element
-//     length is assumed or deferred (CHARACTER(*)); the caller then supplies
-//     the length. A fixed-length array element (e.g. CHARACTER*(4)) needs no
-//     trailing length: the callee rebuilds the string descriptor from its own
-//     statically known element length, so the argument position is a bare data
-//     pointer. This keeps the ABI identical to a numeric array passed by
-//     storage association, so an external procedure with a fixed-length
-//     CHARACTER array dummy can still be reached with a numeric actual through
-//     an implicit interface.
-static inline bool hidden_charlen_dummy_has_trailing_length(ASR::ttype_t* type) {
-    if (!is_hidden_charlen_string_dummy(type)) return false;
-    if (!is_array(type)) return true;
-    ASR::String_t* s = ASR::down_cast<ASR::String_t>(extract_type(type));
-    if (s->m_len_kind == ASR::string_length_kindType::AssumedLength
-        || s->m_len_kind == ASR::string_length_kindType::DeferredLength) {
-        return true;
-    }
-    // A compile-time constant element length lets the callee rebuild the
-    // descriptor from its own static length, so no trailing length is passed.
-    // A non-constant explicit length must still be supplied by the caller.
-    return !(s->m_len && ASR::is_a<ASR::IntegerConstant_t>(*s->m_len));
 }
 
 // True if `fn_sym` denotes an external procedure reached through an implicit

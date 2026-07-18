@@ -1256,17 +1256,12 @@ namespace LCompilers {
                 }
                 if( charlen_abi && ASRUtils::is_hidden_charlen_string_dummy(arg->m_type) ) {
                     // Receive the character data pointer directly at the
-                    // argument position. A hidden trailing length is appended
-                    // below only for dummies that need one (scalars and
-                    // assumed/deferred-length arrays); a fixed-length array
-                    // element is reconstructed by the callee from its own
-                    // static length.
+                    // argument position, with the per-element length always
+                    // following as a hidden trailing argument (see
+                    // is_hidden_charlen_string_dummy).
                     type = llvm::Type::getInt8Ty(context)->getPointerTo();
-                    if (ASRUtils::hidden_charlen_dummy_has_trailing_length(
-                            arg->m_type)) {
-                        hidden_char_lengths.push_back(
-                            llvm::Type::getInt64Ty(context));
-                    }
+                    hidden_char_lengths.push_back(
+                        llvm::Type::getInt64Ty(context));
                 }
                 args.push_back(type);
             } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
