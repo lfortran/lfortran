@@ -16300,11 +16300,18 @@ public:
                         ASRUtils::type_get_past_pointer(var_type));
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
                     ASR::array_physical_typeType phys_type;
-                    if (ASRUtils::is_character(*array_type->m_type)) {
-                        phys_type = ASR::array_physical_typeType::DescriptorArray;
-                    } else if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                         phys_type = array_type->m_physical_type;
                     } else {
+                        // CHARACTER arrays included: an external procedure
+                        // reached through an implicit interface associates a
+                        // character array actual by classic F77 storage
+                        // association. Representing the dummy as a PointerArray
+                        // (a single string descriptor over the contiguous
+                        // element storage) matches how the separately compiled
+                        // callee receives it. A DescriptorArray here would wrap
+                        // the array in an array descriptor whose bytes the
+                        // callee then misreads as string data.
                         phys_type = ASR::array_physical_typeType::PointerArray;
                     }
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type, phys_type, true);
