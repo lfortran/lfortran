@@ -164,6 +164,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_BACKSPACE
 %token <string> KW_BIND
 %token <string> KW_BLOCK
+%token <string> KW_BYTE
 %token <string> KW_CALL
 %token <string> KW_CASE
 %token <string> KW_CHANGE
@@ -1522,6 +1523,7 @@ integer_type_spec
 
 intrinsic_type_spec
     : integer_type_spec { $$ = $1; }
+    | KW_BYTE { $$ = ATTR_TYPE_BYTE(@$); }
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
@@ -2586,6 +2588,7 @@ id
     | KW_BACKSPACE { $$ = SYMBOL($1, @$); }
     | KW_BIND { $$ = SYMBOL($1, @$); }
     | KW_BLOCK { $$ = SYMBOL($1, @$); }
+    | KW_BYTE { $$ = SYMBOL($1, @$); }
     | KW_CALL { $$ = SYMBOL($1, @$); }
     | KW_CASE { $$ = SYMBOL($1, @$); }
     | KW_CHANGE { $$ = SYMBOL($1, @$); }
