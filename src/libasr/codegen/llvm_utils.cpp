@@ -1198,7 +1198,8 @@ namespace LCompilers {
         // External procedures (implicit interface) use the classic Fortran
         // hidden-length character ABI: a scalar CHARACTER dummy is received as
         // a bare data pointer and its length as a hidden trailing argument.
-        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x);
+        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x,
+            proc_iface_syms);
         std::vector<llvm::Type*> hidden_char_lengths;
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
