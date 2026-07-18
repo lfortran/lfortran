@@ -17,6 +17,7 @@ index 472b34b278..210669a300 100644
 -    | KW_BACKSPACE { $$ = SYMBOL($1, @$); }
 -    | KW_BIND { $$ = SYMBOL($1, @$); }
 -    | KW_BLOCK { $$ = SYMBOL($1, @$); }
+-    | KW_BYTE { $$ = SYMBOL($1, @$); }
 -    | KW_CALL { $$ = SYMBOL($1, @$); }
 -    | KW_CASE { $$ = SYMBOL($1, @$); }
 -    | KW_CHANGE { $$ = SYMBOL($1, @$); }
