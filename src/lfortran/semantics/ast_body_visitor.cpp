@@ -8483,6 +8483,16 @@ public:
                                 skip_check = true;
                             }
                         }
+                        // For an implicit-interface external procedure the
+                        // dummy-argument types were inferred from the first
+                        // call site and are not a real interface. Standard
+                        // Fortran performs no argument checking for such
+                        // procedures, so do not reject a later call that passes
+                        // a different type (e.g. netcdf's v2-API `ncagt` called
+                        // first with a byte array and then with a short array).
+                        if (is_implicit_interface_function((ASR::symbol_t*)f)) {
+                            skip_check = true;
+                        }
                         // Check if types are equal
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
                             std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, nullptr);
