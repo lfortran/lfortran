@@ -272,7 +272,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
+        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
         app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
         app.add_option("--fpe-trap", fpe_traps_str, "Enable floating point exception trapping. Comma-separated list of: invalid, zero, overflow, underflow, inexact, denormal");
 
@@ -532,8 +532,8 @@ namespace LCompilers::CommandLineInterface {
         }
 
         for (auto &f_flag : opts.f_flags) {
-            if (f_flag == "PIC") {
-                // Position Independent Code
+            if (f_flag == "PIC" || f_flag == "PIE") {
+                // Position Independent Code / Position Independent Executable
                 // We do this by default, so we ignore for now
             } else if (f_flag == "default-integer-8") {
                 compiler_options.po.default_integer_kind = 8;
