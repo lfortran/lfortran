@@ -7584,6 +7584,58 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// A scalar CHARACTER dummy currently represented as a pointer to a string
+// descriptor ({data, len}). These are the dummies affected by the classic
+// Fortran hidden-length ABI used for external procedures.
+static inline bool is_scalar_descriptor_string(ASR::ttype_t* type) {
+    if (is_array(type)) return false;
+    if (is_allocatable(type) || is_pointer(type)) return false;
+    ASR::ttype_t* bare = extract_type(type);
+    if (!ASR::is_a<ASR::String_t>(*bare)) return false;
+    return ASR::down_cast<ASR::String_t>(bare)->m_physical_type
+        == ASR::string_physical_typeType::DescriptorString;
+}
+
+// True if `fn_sym` denotes an external procedure reached through an implicit
+// (or bare `external`) interface:
+//   * a top-level definition (no ASR owner), or
+//   * an interface body with no implementation placed outside a module (a
+//     per-call synthesized implicit interface, or an explicit external
+//     interface block in a program/subprogram scope).
+// Such procedures use the classic Fortran hidden-length character ABI: the
+// character data pointer is passed directly at the argument position and the
+// length travels as a hidden trailing argument (matching gfortran/flang).
+// Module and contained procedures have a normal explicit interface and keep
+// the string-descriptor ABI.
+//
+// Interface bodies owned by a module are deliberately excluded: an
+// `abstract interface` and an external `interface` block are indistinguishable
+// in the ASR (LFortran does not record the `abstract` attribute), and abstract
+// interfaces are used to type procedure pointers and dummy procedures whose
+// targets are ordinary (descriptor-ABI) procedures. Keeping module-owned
+// interface bodies on the descriptor ABI preserves procedure-pointer calls.
+static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym) {
+    if (get_asr_owner(fn_sym) == nullptr) {
+        return true;
+    }
+    if (!ASR::is_a<ASR::Function_t>(*fn_sym)) {
+        return false;
+    }
+    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+    ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(fn);
+    if (ft->m_deftype == ASR::deftypeType::Interface && fn->n_body == 0) {
+        ASR::symbol_t* owner = get_asr_owner(fn_sym);
+        if (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn) {
+    return is_external_implicit_interface_proc((ASR::symbol_t*)&fn.base);
+}
+
 static inline bool is_coarray(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
