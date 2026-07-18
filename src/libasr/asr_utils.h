@@ -8028,6 +8028,33 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
+        // When calling through a procedure pointer, `func_type` is the pointer
+        // variable's own FunctionType, whose array argument types are not
+        // normalized to the dummy-argument physical type (a fixed-size dummy is
+        // lowered to PointerArray, see make_Array_t_util). The interface
+        // function reached via `func` does carry the normalized type. Without
+        // this, both sides compare as FixedSizeArray, the ArrayPhysicalCast
+        // below is skipped, and codegen passes [N x T]* where the callee
+        // expects T*.
+        // Only the physical type is taken from the interface: the dummy's full
+        // type may contain dimension expressions referring to symbols in the
+        // interface's own symbol table (e.g. res(minval(shape(A)))), which must
+        // not leak into the caller's scope.
+        if (ASR::is_a<ASR::Variable_t>(*a_name_) &&
+                ASRUtils::is_array(orig_arg_type) &&
+                i < func->n_args && func->m_args[i] != nullptr) {
+            ASR::ttype_t* iface_arg_type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(func->m_args[i])));
+            if (ASRUtils::is_array(iface_arg_type)) {
+                ASR::array_physical_typeType iface_ptype =
+                    ASRUtils::extract_physical_type(iface_arg_type);
+                ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(orig_arg_type);
+                if (orig_arg_array_t->m_physical_type != iface_ptype) {
+                    orig_arg_type = ASRUtils::duplicate_type(al, orig_arg_type,
+                        nullptr, iface_ptype, true);
+                }
+            }
+        }
 
 
         if (ASR::is_a<ASR::FunctionType_t>(*arg_type) && ASR::is_a<ASR::FunctionType_t>(*orig_arg_type)) {
