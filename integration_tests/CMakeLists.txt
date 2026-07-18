@@ -3532,6 +3532,7 @@ RUN(NAME external_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --
 RUN(NAME external_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME external_17 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_18 LABELS gfortran llvm EXTRAFILES external_18_module.f90 EXTRA_ARGS --implicit-interface)
+RUN(NAME external_19 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c
     GFORTRAN_ARGS -fno-underscoring)
