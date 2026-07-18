@@ -5038,7 +5038,17 @@ public:
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
-            assgnd_access[sym] = ASR::accessType::Public;
+            // Respect the default accessibility of the enclosing scope (e.g. a
+            // module `private` statement) as well as any explicit access already
+            // assigned to this name. An external procedure declared in a
+            // `private` module must be private, otherwise `use` would wrongly
+            // import it and later re-declarations (e.g. via an F77 `include`)
+            // would be reported as bogus redeclarations.
+            ASR::accessType ext_access = dflt_access;
+            if (assgnd_access.find(sym) != assgnd_access.end()) {
+                ext_access = assgnd_access[sym];
+            }
+            assgnd_access[sym] = ext_access;
             if (assgnd_pointer.count(sym) > 0) {
                 ASR::ttype_t *type = nullptr;
                 if (determined_type) {
@@ -5081,7 +5091,7 @@ public:
                     variable_dependencies_vec.size(),
                     ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, ptr_type, iface_sym,
-                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::abiType::Source, ext_access,
                     ASR::presenceType::Required, false);
                 current_scope->add_or_overwrite_symbol(
                     sym, ASR::down_cast<ASR::symbol_t>(var));
@@ -5146,7 +5156,7 @@ public:
                 /* a_body */ nullptr,
                 /* n_body */ 0,
                 /* a_return_var */ to_return,
-                ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+                ASR::abiType::BindC, ext_access, ASR::deftypeType::Interface,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -7750,7 +7760,11 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
                                 is_attr_external = true;
-                                assgnd_access[sym] = ASR::accessType::Public;
+                                // Do not force Public here: an external
+                                // procedure declared in a `private` module must
+                                // keep the default (private) accessibility so
+                                // that `use` does not import it. Only an
+                                // explicit access specification overrides it.
                                 if (assgnd_access.count(sym)) {
                                     s_access = assgnd_access[sym];
                                 }
