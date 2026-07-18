@@ -335,6 +335,14 @@ public:
 
     std::map<std::string, std::pair<llvm::Type*, llvm::Type*>> fname2arg_type;
 
+    // ASR Function symbols used as a procedure interface (procedure pointers,
+    // dummy procedures, procedure components and deferred type-bound
+    // procedures) anywhere in the translation unit. Populated once in
+    // visit_TranslationUnit and consulted (via LLVMUtils::proc_iface_syms and
+    // ASRUtils::is_external_implicit_interface_proc) to keep module-owned
+    // abstract interfaces on the descriptor character ABI.
+    std::set<ASR::symbol_t*> proc_iface_syms;
+
     // Maps for containing information regarding derived types
     std::map<std::string, llvm::StructType*> name2dertype, name2dercontext;
     std::map<std::string, std::string> dertype2parent;
@@ -1809,6 +1817,62 @@ public:
         }
     }
 
+    // Collect every ASR Function symbol that is used as a procedure interface
+    // (procedure pointer, dummy procedure, procedure component or deferred
+    // type-bound procedure) reachable from `symtab`. These are exactly the
+    // functions whose FunctionType is used to build an indirect-call signature,
+    // so a module-owned interface body that appears here is an abstract
+    // interface and must keep the descriptor character ABI.
+    void collect_proc_iface_syms(SymbolTable* symtab) {
+        if (symtab == nullptr) return;
+        for (auto &item : symtab->get_scope()) {
+            ASR::symbol_t* sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_type_declaration) {
+                    ASR::symbol_t* d = ASRUtils::symbol_get_past_external(
+                        v->m_type_declaration);
+                    if (d && ASR::is_a<ASR::Function_t>(*d)) {
+                        proc_iface_syms.insert(d);
+                    }
+                }
+            } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+                ASR::StructMethodDeclaration_t* m =
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+                if (m->m_proc) {
+                    ASR::symbol_t* d = ASRUtils::symbol_get_past_external(
+                        m->m_proc);
+                    if (d && ASR::is_a<ASR::Function_t>(*d)) {
+                        proc_iface_syms.insert(d);
+                    }
+                }
+            }
+            // Recurse only into symbols that own a child symbol table. Other
+            // symbol types (Variable, ExternalSymbol, StructMethodDeclaration,
+            // GenericProcedure, CustomOperator, Namelist, ...) have no nested
+            // scope; symbol_symtab would throw on some of them.
+            SymbolTable* child = nullptr;
+            switch (sym->type) {
+                case ASR::symbolType::Program:
+                case ASR::symbolType::Module:
+                case ASR::symbolType::Function:
+                case ASR::symbolType::Struct:
+                case ASR::symbolType::Enum:
+                case ASR::symbolType::Union:
+                case ASR::symbolType::AssociateBlock:
+                case ASR::symbolType::Block:
+                case ASR::symbolType::GpuKernelFunction:
+                    child = ASRUtils::symbol_symtab(sym);
+                    break;
+                default:
+                    break;
+            }
+            if (child != nullptr && child != symtab) {
+                collect_proc_iface_syms(child);
+            }
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         // Set host target DataLayout so that getTypeAllocSize() returns
@@ -1843,6 +1907,14 @@ public:
             }
         }
         llvm_utils->set_module(module.get());
+
+        // Determine which functions are used as a procedure interface so that
+        // module-owned abstract interfaces keep the descriptor character ABI
+        // while plain external interface blocks use the classic hidden-length
+        // ABI (see ASRUtils::is_external_implicit_interface_proc).
+        proc_iface_syms.clear();
+        collect_proc_iface_syms(x.m_symtab);
+        llvm_utils->proc_iface_syms = &proc_iface_syms;
 
         if (compiler_options.emit_debug_info) {
             DBuilder = std::make_unique<llvm::DIBuilder>(*module);
@@ -7875,7 +7947,8 @@ public:
         // dummies as a bare data pointer plus a hidden trailing length. We
         // record the data pointers here and rebuild the string descriptors
         // after the positional arguments, once the trailing lengths are known.
-        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x);
+        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x,
+            &proc_iface_syms);
         std::vector<std::pair<ASR::Variable_t*, llvm::Value*>> charlen_dummies;
 
         // Windows complex(kind=8) uses "pass-as-subroutine" (sret-style) ABI:
@@ -24487,7 +24560,8 @@ public:
             bool callee_uses_hidden_charlen_abi =
                 func_subrout->type == ASR::symbolType::Function &&
                 ASRUtils::function_uses_hidden_char_len_abi(
-                    *ASR::down_cast<ASR::Function_t>(func_subrout));
+                    *ASR::down_cast<ASR::Function_t>(func_subrout),
+                    &proc_iface_syms);
             if (orig_arg && x_abi == ASR::abiType::BindC &&
                 !callee_uses_hidden_charlen_abi &&
                 ASRUtils::is_character(*orig_arg->m_type) &&
@@ -24952,7 +25026,8 @@ public:
                         x.m_dt == nullptr &&
                         func_subrout->type == ASR::symbolType::Function &&
                         ASRUtils::function_uses_hidden_char_len_abi(
-                            *ASR::down_cast<ASR::Function_t>(func_subrout)) &&
+                            *ASR::down_cast<ASR::Function_t>(func_subrout),
+                            &proc_iface_syms) &&
                         abi_dummy_type != nullptr &&
                         ASRUtils::is_hidden_charlen_string_dummy(abi_dummy_type)) {
                     // Classic Fortran hidden-length ABI: pass the character
