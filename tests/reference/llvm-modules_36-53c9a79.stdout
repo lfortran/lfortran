@@ -53,7 +53,7 @@ define i32 @_lcompilers_Any_4_1_0_logical____0(i32* %mask, i32* %__1mask) {
   store i32 0, i32* %__1_i, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %ifcont, %.entry
+loop.head:                                        ; preds = %logical_sc_merge, %.entry
   %4 = load i32, i32* %__1_i, align 4
   %5 = add i32 %4, 1
   %6 = load i32, i32* %__do_loop_end, align 4
@@ -65,57 +65,66 @@ loop.body:                                        ; preds = %loop.head
   %9 = add i32 %8, 1
   store i32 %9, i32* %__1_i, align 4
   %10 = load i32, i32* %_lcompilers_Any_4_1_0, align 4
-  %11 = load i32, i32* %__1_i, align 4
-  %12 = load i32, i32* %__1mask, align 4
-  %13 = sext i32 %11 to i64
-  %14 = sub i64 %13, 1
-  %15 = mul i64 1, %14
-  %16 = add i64 0, %15
-  %17 = sext i32 %12 to i64
-  %18 = add i64 1, %17
-  %19 = sub i64 %18, 1
-  %20 = icmp slt i64 %13, 1
-  %21 = icmp sgt i64 %13, %19
-  %22 = or i1 %20, %21
-  br i1 %22, label %then, label %ifcont
+  %11 = icmp ne i32 %10, 0
+  br i1 %11, label %logical_sc_merge, label %logical_sc_rhs
 
-then:                                             ; preds = %loop.body
-  %23 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %24 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %25 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %24, i32 0, i32 0
-  %26 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 0
-  store i8* getelementptr inbounds ([42 x i8], [42 x i8]* @19, i32 0, i32 0), i8** %26, align 8
-  %27 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 1
-  store i32 24, i32* %27, align 4
-  %28 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 2
-  store i32 10, i32* %28, align 4
-  %29 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 3
-  store i32 24, i32* %29, align 4
-  %30 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %25, i32 0, i32 4
+logical_sc_rhs:                                   ; preds = %loop.body
+  %12 = load i32, i32* %__1_i, align 4
+  %13 = load i32, i32* %__1mask, align 4
+  %14 = sext i32 %12 to i64
+  %15 = sub i64 %14, 1
+  %16 = mul i64 1, %15
+  %17 = add i64 0, %16
+  %18 = sext i32 %13 to i64
+  %19 = add i64 1, %18
+  %20 = sub i64 %19, 1
+  %21 = icmp slt i64 %14, 1
+  %22 = icmp sgt i64 %14, %20
+  %23 = or i1 %21, %22
+  br i1 %23, label %then, label %ifcont
+
+logical_sc_merge:                                 ; preds = %ifcont, %loop.body
+  %24 = phi i1 [ true, %loop.body ], [ %45, %ifcont ]
+  %25 = zext i1 %24 to i32
+  store i32 %25, i32* %_lcompilers_Any_4_1_0, align 4
+  br label %loop.head
+
+then:                                             ; preds = %logical_sc_rhs
+  %26 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
+  %27 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
+  %28 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %27, i32 0, i32 0
+  %29 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %28, i32 0, i32 0
+  store i8* getelementptr inbounds ([42 x i8], [42 x i8]* @19, i32 0, i32 0), i8** %29, align 8
+  %30 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %28, i32 0, i32 1
   store i32 24, i32* %30, align 4
-  %31 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %0, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @20, i32 0, i32 0))
-  %32 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %23, i32 0, i32 0
-  %33 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %24, i32 0, i32 0
-  %34 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 0, i32 2
-  %35 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 0, i32 0
-  store i1 true, i1* %35, align 1
-  %36 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 0, i32 1
-  store i8* %31, i8** %36, align 8
-  store { i8*, i32, i32, i32, i32 }* %33, { i8*, i32, i32, i32, i32 }** %34, align 8
-  %37 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 0, i32 3
-  store i32 1, i32* %37, align 4
-  %38 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %23, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %0, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %38, i32 1, i8* getelementptr inbounds ([118 x i8], [118 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i64 %13, i32 1, i64 1, i64 %19)
+  %31 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %28, i32 0, i32 2
+  store i32 10, i32* %31, align 4
+  %32 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %28, i32 0, i32 3
+  store i32 24, i32* %32, align 4
+  %33 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %28, i32 0, i32 4
+  store i32 24, i32* %33, align 4
+  %34 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %0, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @20, i32 0, i32 0))
+  %35 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %26, i32 0, i32 0
+  %36 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %27, i32 0, i32 0
+  %37 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %35, i32 0, i32 2
+  %38 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %35, i32 0, i32 0
+  store i1 true, i1* %38, align 1
+  %39 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %35, i32 0, i32 1
+  store i8* %34, i8** %39, align 8
+  store { i8*, i32, i32, i32, i32 }* %36, { i8*, i32, i32, i32, i32 }** %37, align 8
+  %40 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %35, i32 0, i32 3
+  store i32 1, i32* %40, align 4
+  %41 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %26, i32 0, i32 0
+  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %0, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %41, i32 1, i8* getelementptr inbounds ([118 x i8], [118 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i64 %14, i32 1, i64 1, i64 %20)
   call void @exit(i32 1)
   unreachable
 
-ifcont:                                           ; preds = %loop.body
-  %39 = mul i64 1, %17
-  %40 = getelementptr inbounds i32, i32* %mask, i64 %16
-  %41 = load i32, i32* %40, align 4
-  %42 = or i32 %10, %41
-  store i32 %42, i32* %_lcompilers_Any_4_1_0, align 4
-  br label %loop.head
+ifcont:                                           ; preds = %logical_sc_rhs
+  %42 = mul i64 1, %18
+  %43 = getelementptr inbounds i32, i32* %mask, i64 %17
+  %44 = load i32, i32* %43, align 4
+  %45 = icmp ne i32 %44, 0
+  br label %logical_sc_merge
 
 loop.end:                                         ; preds = %loop.head
   br label %return
@@ -124,8 +133,8 @@ return:                                           ; preds = %loop.end
   br label %FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0
 
 FINALIZE_SYMTABLE__lcompilers_Any_4_1_0_logical____0: ; preds = %return
-  %43 = load i32, i32* %_lcompilers_Any_4_1_0, align 4
-  ret i32 %43
+  %46 = load i32, i32* %_lcompilers_Any_4_1_0, align 4
+  ret i32 %46
 }
 
 define void @__module_modules_36_fpm_main_01_cmd_run(%modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32* %test) {
@@ -404,43 +413,87 @@ ifcont23:                                         ; preds = %loop.end
   %115 = call i32 @_lcompilers_Any_4_1_0_logical____0(i32* %114, i32* %call_arg_value)
   store i32 %115, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
   %116 = load i32, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
-  %117 = load i32, i32* %toomany, align 4
-  %118 = load i32, i32* %test, align 4
-  %119 = xor i32 %118, 1
-  %120 = and i32 %117, %119
-  %121 = load i32, i32* %toomany, align 4
-  %122 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
-  %123 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %122, align 8
-  %124 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %123, i32 0, i32 3
-  %125 = getelementptr %string_descriptor, %string_descriptor* %124, i32 0, i32 0
-  %126 = load i8*, i8** %125, align 8
-  %127 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %128 = call i32 @str_compare(i8* %126, i64 6, i8* %127, i64 0)
-  %129 = icmp ne i32 %128, 0
-  %130 = zext i1 %129 to i32
-  %131 = and i32 %121, %130
-  %132 = or i32 %120, %131
-  %133 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
-  %134 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %133, align 8
-  %135 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %134, i32 0, i32 0
-  %136 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %135, i32 0, i32 0
-  %137 = load i32, i32* %136, align 4
-  %138 = xor i32 %137, 1
-  %139 = and i32 %132, %138
-  %140 = or i32 %116, %139
+  %117 = icmp ne i32 %116, 0
+  br i1 %117, label %logical_sc_merge, label %logical_sc_rhs
+
+logical_sc_rhs:                                   ; preds = %ifcont23
+  %118 = load i32, i32* %toomany, align 4
+  %119 = icmp ne i32 %118, 0
+  br i1 %119, label %logical_sc_rhs24, label %logical_sc_merge25
+
+logical_sc_merge:                                 ; preds = %logical_sc_merge31, %ifcont23
+  %120 = phi i1 [ true, %ifcont23 ], [ %155, %logical_sc_merge31 ]
+  %121 = zext i1 %120 to i32
+  %122 = icmp ne i32 %121, 0
+  br i1 %122, label %then32, label %else33
+
+logical_sc_rhs24:                                 ; preds = %logical_sc_rhs
+  %123 = load i32, i32* %test, align 4
+  %124 = xor i32 %123, 1
+  %125 = icmp ne i32 %124, 0
+  br label %logical_sc_merge25
+
+logical_sc_merge25:                               ; preds = %logical_sc_rhs24, %logical_sc_rhs
+  %126 = phi i1 [ false, %logical_sc_rhs ], [ %125, %logical_sc_rhs24 ]
+  %127 = zext i1 %126 to i32
+  %128 = icmp ne i32 %127, 0
+  br i1 %128, label %logical_sc_merge27, label %logical_sc_rhs26
+
+logical_sc_rhs26:                                 ; preds = %logical_sc_merge25
+  %129 = load i32, i32* %toomany, align 4
+  %130 = icmp ne i32 %129, 0
+  br i1 %130, label %logical_sc_rhs28, label %logical_sc_merge29
+
+logical_sc_merge27:                               ; preds = %logical_sc_merge29, %logical_sc_merge25
+  %131 = phi i1 [ true, %logical_sc_merge25 ], [ %145, %logical_sc_merge29 ]
+  %132 = zext i1 %131 to i32
+  %133 = icmp ne i32 %132, 0
+  br i1 %133, label %logical_sc_rhs30, label %logical_sc_merge31
+
+logical_sc_rhs28:                                 ; preds = %logical_sc_rhs26
+  %134 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
+  %135 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %134, align 8
+  %136 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %135, i32 0, i32 3
+  %137 = getelementptr %string_descriptor, %string_descriptor* %136, i32 0, i32 0
+  %138 = load i8*, i8** %137, align 8
+  %139 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %140 = call i32 @str_compare(i8* %138, i64 6, i8* %139, i64 0)
   %141 = icmp ne i32 %140, 0
-  br i1 %141, label %then24, label %else25
+  %142 = icmp ne i1 %141, false
+  br label %logical_sc_merge29
 
-then24:                                           ; preds = %ifcont23
-  br label %ifcont26
+logical_sc_merge29:                               ; preds = %logical_sc_rhs28, %logical_sc_rhs26
+  %143 = phi i1 [ false, %logical_sc_rhs26 ], [ %142, %logical_sc_rhs28 ]
+  %144 = zext i1 %143 to i32
+  %145 = icmp ne i32 %144, 0
+  br label %logical_sc_merge27
 
-else25:                                           ; preds = %ifcont23
-  br label %ifcont26
+logical_sc_rhs30:                                 ; preds = %logical_sc_merge27
+  %146 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
+  %147 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %146, align 8
+  %148 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %147, i32 0, i32 0
+  %149 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %148, i32 0, i32 0
+  %150 = load i32, i32* %149, align 4
+  %151 = xor i32 %150, 1
+  %152 = icmp ne i32 %151, 0
+  br label %logical_sc_merge31
 
-ifcont26:                                         ; preds = %else25, %then24
+logical_sc_merge31:                               ; preds = %logical_sc_rhs30, %logical_sc_merge27
+  %153 = phi i1 [ false, %logical_sc_merge27 ], [ %152, %logical_sc_rhs30 ]
+  %154 = zext i1 %153 to i32
+  %155 = icmp ne i32 %154, 0
+  br label %logical_sc_merge
+
+then32:                                           ; preds = %logical_sc_merge
+  br label %ifcont34
+
+else33:                                           ; preds = %logical_sc_merge
+  br label %ifcont34
+
+ifcont34:                                         ; preds = %else33, %then32
   br label %return
 
-return:                                           ; preds = %ifcont26
+return:                                           ; preds = %ifcont34
   br label %FINALIZE_SYMTABLE_cmd_run
 
 FINALIZE_SYMTABLE_cmd_run:                        ; preds = %return
