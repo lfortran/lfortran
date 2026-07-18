@@ -5,7 +5,7 @@
     "infile_hash": "6a1b873a25d0f89552a97342f257fef0a4b9abcbb88a1a4cf31f5241",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "fortran-coarray_saved_01-1f96b4c.stdout",
+    "stdout": "fortran-coarray_saved_01-1f96b4c.f90",
     "stdout_hash": "995fba7c8b4367f90c2aeabc063653261a1fa3199133700a98a34b8c",
     "stderr": null,
     "stderr_hash": null,

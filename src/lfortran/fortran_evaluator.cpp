@@ -267,7 +267,14 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         include_dirs.insert(include_dirs.end(),
                             compiler_options.po.include_dirs.begin(),
                             compiler_options.po.include_dirs.end());
-        tmp = LFortran::prescan(*code, lm, compiler_options.fixed_form, include_dirs);
+        Result<std::string> prescan_res = LFortran::prescan(*code, lm,
+            compiler_options.fixed_form, include_dirs, diagnostics);
+        if (prescan_res.ok) {
+            tmp = prescan_res.result;
+        } else {
+            LCOMPILERS_ASSERT(diagnostics.has_error())
+            return prescan_res.error;
+        }
         code = &tmp;
     }
     Result<LFortran::AST::TranslationUnit_t*>

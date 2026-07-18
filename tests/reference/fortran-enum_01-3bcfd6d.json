@@ -5,7 +5,7 @@
     "infile_hash": "5dba9f630102c9e10a43f8075bc95880e0892b33a7fb16524b5ea275",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "fortran-enum_01-3bcfd6d.stdout",
+    "stdout": "fortran-enum_01-3bcfd6d.f90",
     "stdout_hash": "61380be62dbeca8ee13ec945530ec15c3b2f906d1f23c631f3c487d5",
     "stderr": null,
     "stderr_hash": null,

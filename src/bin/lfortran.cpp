@@ -569,9 +569,14 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
     include_dirs.insert(include_dirs.end(),
                           compiler_options.po.include_dirs.begin(),
                           compiler_options.po.include_dirs.end());
-    std::string prescan = LCompilers::LFortran::prescan(input, lm,
-        compiler_options.fixed_form, include_dirs);
-    std::cout << prescan << std::endl;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<std::string> prescan_res = LCompilers::LFortran::prescan(input, lm,
+        compiler_options.fixed_form, include_dirs, diagnostics);
+    if (!prescan_res.ok) {
+        std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
+        return 1;
+    }
+    std::cout << prescan_res.result << std::endl;
     return 0;
 }
 
@@ -596,8 +601,13 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
         include_dirs.insert(include_dirs.end(),
                             compiler_options.po.include_dirs.begin(),
                             compiler_options.po.include_dirs.end());
-        input = LCompilers::LFortran::prescan(input, lm,
-            compiler_options.fixed_form, include_dirs);
+        LCompilers::Result<std::string> prescan_res = LCompilers::LFortran::prescan(input, lm,
+            compiler_options.fixed_form, include_dirs, diagnostics);
+        if (!prescan_res.ok) {
+            std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
+            return 1;
+        }
+        input = prescan_res.result;
     }
     auto res = LCompilers::LFortran::tokens(al, input, diagnostics, &stypes, &locations,
         compiler_options.fixed_form, compiler_options.continue_compilation);

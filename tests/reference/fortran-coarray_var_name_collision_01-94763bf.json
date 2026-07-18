@@ -5,7 +5,7 @@
     "infile_hash": "9860ce393d288259e0d42a680b07e13a10086f1edd6845a025870242",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "fortran-coarray_var_name_collision_01-94763bf.stdout",
+    "stdout": "fortran-coarray_var_name_collision_01-94763bf.f90",
     "stdout_hash": "e9b0a8c86acf5e2c835a83e6d532d06d2d78e756d59e61fdb8661355",
     "stderr": null,
     "stderr_hash": null,

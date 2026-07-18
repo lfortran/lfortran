@@ -26729,9 +26729,15 @@ public:
             return ;
         }
         ASR::expr_t* m_arg = x.m_v;
+        int64_t ptr_loads_copy = ptr_loads;
+        bool is_arg_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_arg));
+        ptr_loads = is_arg_pointer ? 1 : 2;
         this->visit_expr_wrapper(m_arg, false);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *arg = tmp;
-        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg, ASRUtils::expr_type(m_arg), module.get());
+        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(m_arg,
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
+                    ASRUtils::expr_type(m_arg))), module.get());
         tmp = arr_descr->get_rank(arr_type, arg);
     }
 
