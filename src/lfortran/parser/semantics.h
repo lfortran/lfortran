@@ -442,6 +442,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
             nullptr, nullptr, None)
 
+#define ATTR_TYPE_BYTE(l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::TypeInteger, \
+            a2kind_list(p.m_a, l, make_Num_t(p.m_a, l, 1, nullptr)).p, 1, \
+            nullptr, nullptr, None)
+
 #define ATTR_TYPE_EXPR(x, e, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
