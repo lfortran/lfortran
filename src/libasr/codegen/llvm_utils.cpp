@@ -2795,7 +2795,7 @@ namespace LCompilers {
             rhs_data, rhs_len, char_kind});
     }
 
-    llvm::Value* LLVMUtils::declare_string_constant(const ASR::StringConstant_t* str_const){
+    llvm::Value* LLVMUtils::declare_string_constant(const ASR::StringConstant_t* str_const, bool is_const){
 
         /*  Don't depend on null_char.
             Fortran can represent null char is a char not as a terminating flag.
@@ -2813,7 +2813,7 @@ namespace LCompilers {
 
         return declare_global_string(
             ASRUtils::get_string_type(str_const->m_type),
-            initial_string, true, "string_const");
+            initial_string, is_const, "string_const");
     }
 
     llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const){
