@@ -252,3 +252,16 @@ build.ninja
 doc/man/lfortran.1
 !doc/src/javascripts/*.js
 !pass_array_by_data_*.f90
+
+## repro-issue / create-mre scratch artifacts
+## Reproducers live in the repo root by convention (see .agents/skills/).
+## They are throwaway inputs to fix-mre; the deliverable is the integration
+## test it adds under integration_tests/.
+/run.sh
+/run_re.sh
+/mre_*.f90
+/re_*.f90
+/test_ref
+/test_lfortran
+/test_gfortran
+/test_flang
