@@ -1,0 +1,44 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            wrapped:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            value:
+                                (Variable
+                                    2
+                                    value
+                                    []
+                                    Local
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    wrapped
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
