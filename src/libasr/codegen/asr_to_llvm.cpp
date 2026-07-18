@@ -6695,7 +6695,7 @@ public:
                     if (!LLVM::is_llvm_pointer(*v->m_type) &&
                             !ASRUtils::is_array(v->m_type) &&
                             ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
-                        struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
+                        struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
                             ptr_member, module.get());
                         ASR::symbol_t* sym_past = ASRUtils::symbol_get_past_external(v->m_type_declaration);
                         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym_past);
