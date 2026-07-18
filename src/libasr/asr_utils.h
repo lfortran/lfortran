@@ -7279,7 +7279,18 @@ static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym,
             return true;
         }
         if (owner != nullptr && ASR::is_a<ASR::Module_t>(*owner) &&
-                ft->m_abi == ASR::abiType::Source) {
+                (ft->m_abi == ASR::abiType::Source ||
+                 ft->m_abi == ASR::abiType::ExternalUndefined)) {
+            // A plain Fortran-source module interface body has abi Source when
+            // the module is compiled in the current translation unit, but abi
+            // ExternalUndefined once the module has been loaded from a .mod file
+            // (SymbolTable::mark_all_variables_external rewrites Source to
+            // ExternalUndefined for every symbol of a loaded module). Both
+            // denote the same construct and must take the same ABI decision, so
+            // the separately compiled caller (netcdf-fortran's ncvgtc, which
+            // reaches nf_get_vara_text through the USEd module interface) agrees
+            // with the separately compiled definition; otherwise the hidden
+            // length is dropped and LEN(text) inside the callee is garbage.
             // A module-owned interface body is one of:
             //   * a module procedure (declared with the MODULE prefix and
             //     implemented in a submodule): m_module is set. It has a normal
