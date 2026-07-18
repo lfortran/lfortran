@@ -7,14 +7,14 @@
 !
 ! Reduced from netcdf-fortran (nf_fortv2.F90): cvaluesptr = C_LOC(values)
 ! where a REAL array is passed to CHARACTER(KIND=C_CHAR),TARGET :: values(*).
-
-subroutine store_ptr(values, cptr)
-  use iso_c_binding, only: c_char, c_ptr, c_loc
-  character(kind=c_char), intent(in), target :: values(*)
-  type(c_ptr), intent(out) :: cptr
-  cptr = c_loc(values)
-end subroutine store_ptr
-
+!
+! `store_ptr` is defined in a separate file (c_ptr_18b.f90) and called through
+! an implicit interface, mirroring netcdf-fortran where the C_LOC helper is
+! compiled separately from its callers. Passing a REAL array to a CHARACTER
+! assumed-size dummy relies on storage association, which is only valid across
+! an implicit interface (gfortran rejects it within a single file, and it also
+! previously triggered a bogus CHARACTER call-site ABI path in the LLVM
+! backend under opaque pointers).
 program c_ptr_18
   use iso_c_binding, only: c_ptr, c_loc, c_f_pointer, c_associated
   implicit none
