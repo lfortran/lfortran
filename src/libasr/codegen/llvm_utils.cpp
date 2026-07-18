@@ -2853,7 +2853,7 @@ namespace LCompilers {
             initial_string, is_const, "string_const");
     }
 
-    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const){
+    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const, bool is_const){
         LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_const->m_type) == ASR::PointerArray)
         /*
             Array of string is just consecutive characters in memory. It's of pointerToDataArray physicalType
@@ -2881,11 +2881,15 @@ namespace LCompilers {
             // Create the constant data
             llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, false);
 
-            // Create global variable for the character data
+            // Create global variable for the character data. When this array
+            // constant initializes a writable global (e.g. a CHARACTER array in
+            // a DATA-initialized common block / struct), the backing buffer must
+            // be writable too, otherwise a later assignment to an element would
+            // write into read-only memory and fault at runtime.
             llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                 *module,
                 char_array_type,
-                true,  // is_const
+                is_const,
                 llvm::GlobalValue::PrivateLinkage,
                 const_data_as_array,
                 "stringArray_const_data"
