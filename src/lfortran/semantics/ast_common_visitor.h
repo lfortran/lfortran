@@ -9767,6 +9767,7 @@ public:
                 ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::DescriptorString));
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(type);
+            bool char_is_array = dims.size() > 0 || is_dimension_star || is_assumed_rank;
 
             LCOMPILERS_ASSERT(sym_type->n_kind < 3)
             
@@ -9785,9 +9786,9 @@ public:
 
                 if (id == "kind") {
                     //TODO: Handle kind attribute on item (ideally should be a function call)
-                    determine_char_len_and_kind(nullptr, &item, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(nullptr, &item, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
                 } else {
-                    determine_char_len_and_kind(&item, nullptr, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(&item, nullptr, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
                 }
 
             } else if (sym_type->n_kind == 2) {
@@ -9837,16 +9838,16 @@ public:
                 }
 
                 if (id1 == "kind" && id2 == "len") {
-                    determine_char_len_and_kind(&item2, &item1, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(&item2, &item1, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
 
                     //TODO: Handle kind attribute on item1 (ideally should be a function call)
                 } else {
-                    determine_char_len_and_kind(&item1, &item2, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(&item1, &item2, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
 
                     //TODO: Handle kind attribute on item2 (ideally should be a function call)
                 }
             } else {
-                determine_char_len_and_kind(nullptr, nullptr, sym_type, var_sym, sym, str, is_argument, abi);
+                determine_char_len_and_kind(nullptr, nullptr, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
             }
 
             if (is_assumed_rank) {
@@ -20620,7 +20621,7 @@ public:
     }
 
     void determine_char_len_and_kind(const AST::kind_item_t* len_item, const AST::kind_item_t* kind_item,
-    AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi) {
+    AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi, bool is_array=false) {
         // Handle kind: set CChar for bind(C) character(c_char) arguments
         // and return variables
         bool is_return_var = false;
@@ -20773,6 +20774,21 @@ public:
             str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, type->base.base.loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, type->base.base.loc, 4))));
             str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
+        }
+
+        // For a BIND(C) scalar dummy argument or return variable, a
+        // default-kind (C_CHAR) character of length 1 is interoperable with a
+        // C `char` and must be passed with the CChar physical type (i.e. as
+        // `char*`), just like an explicit `character(kind=c_char)`. This also
+        // covers `character`, `character(len=1)` and `character(len=c_char)`.
+        // Arrays keep their descriptor-based physical type.
+        if ((is_argument || is_return_var) && abi == ASR::BindC && !is_array &&
+                str->m_physical_type == ASR::DescriptorString &&
+                str->m_kind == 1 && str->m_len != nullptr) {
+            int64_t len;
+            if (ASRUtils::extract_value(str->m_len, len) && len == 1) {
+                str->m_physical_type = ASR::CChar;
+            }
         }
 
     // Check CChar length
