@@ -7584,16 +7584,65 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
-// A scalar CHARACTER dummy currently represented as a pointer to a string
-// descriptor ({data, len}). These are the dummies affected by the classic
-// Fortran hidden-length ABI used for external procedures.
-static inline bool is_scalar_descriptor_string(ASR::ttype_t* type) {
-    if (is_array(type)) return false;
+// A CHARACTER dummy represented as a string descriptor ({data, len}). These
+// are the dummies affected by the classic Fortran hidden-length ABI used for
+// external procedures: the character data pointer is passed directly at the
+// argument position and the length travels as a hidden trailing argument.
+//
+// Covered:
+//   * scalar CHARACTER dummies, and
+//   * CHARACTER arrays represented as a single string descriptor, i.e.
+//     explicit-shape and assumed-size arrays (PointerArray /
+//     UnboundedPointerArray / FixedSizeArray / StringArraySinglePointer).
+//     For such arrays the descriptor holds the base data pointer and the
+//     per-element length, exactly the (data pointer, length) pair the ABI
+//     transmits.
+//
+// Excluded: allocatable/pointer CHARACTER dummies and CHARACTER arrays backed
+// by a full array descriptor (assumed-shape / assumed-rank), which require an
+// explicit interface and keep the descriptor ABI.
+static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
     if (is_allocatable(type) || is_pointer(type)) return false;
     ASR::ttype_t* bare = extract_type(type);
     if (!ASR::is_a<ASR::String_t>(*bare)) return false;
-    return ASR::down_cast<ASR::String_t>(bare)->m_physical_type
-        == ASR::string_physical_typeType::DescriptorString;
+    if (ASR::down_cast<ASR::String_t>(bare)->m_physical_type
+            != ASR::string_physical_typeType::DescriptorString) return false;
+    if (is_array(type)) {
+        ASR::array_physical_typeType pt = extract_physical_type(type);
+        return pt == ASR::array_physical_typeType::PointerArray
+            || pt == ASR::array_physical_typeType::UnboundedPointerArray
+            || pt == ASR::array_physical_typeType::FixedSizeArray
+            || pt == ASR::array_physical_typeType::StringArraySinglePointer;
+    }
+    return true;
+}
+
+// Whether a hidden-length CHARACTER dummy (see is_hidden_charlen_string_dummy)
+// is accompanied by a hidden trailing length argument.
+//
+//   * Scalar CHARACTER dummies always carry a trailing length (the classic
+//     scalar hidden-length ABI, including CHARACTER(len=*)).
+//   * A CHARACTER array dummy carries a trailing length only when its element
+//     length is assumed or deferred (CHARACTER(*)); the caller then supplies
+//     the length. A fixed-length array element (e.g. CHARACTER*(4)) needs no
+//     trailing length: the callee rebuilds the string descriptor from its own
+//     statically known element length, so the argument position is a bare data
+//     pointer. This keeps the ABI identical to a numeric array passed by
+//     storage association, so an external procedure with a fixed-length
+//     CHARACTER array dummy can still be reached with a numeric actual through
+//     an implicit interface.
+static inline bool hidden_charlen_dummy_has_trailing_length(ASR::ttype_t* type) {
+    if (!is_hidden_charlen_string_dummy(type)) return false;
+    if (!is_array(type)) return true;
+    ASR::String_t* s = ASR::down_cast<ASR::String_t>(extract_type(type));
+    if (s->m_len_kind == ASR::string_length_kindType::AssumedLength
+        || s->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+        return true;
+    }
+    // A compile-time constant element length lets the callee rebuild the
+    // descriptor from its own static length, so no trailing length is passed.
+    // A non-constant explicit length must still be supplied by the caller.
+    return !(s->m_len && ASR::is_a<ASR::IntegerConstant_t>(*s->m_len));
 }
 
 // True if `fn_sym` denotes an external procedure reached through an implicit
@@ -7623,9 +7672,16 @@ static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym) {
     }
     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
     ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(fn);
-    if (ft->m_deftype == ASR::deftypeType::Interface && fn->n_body == 0) {
+    if (ft->m_deftype == ASR::deftypeType::Interface) {
         ASR::symbol_t* owner = get_asr_owner(fn_sym);
         if (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
+            // A non-module interface body denotes an external procedure reached
+            // by the classic ABI. A later pass may attach a body to such an
+            // interface when the procedure is also defined in the same
+            // translation unit (as with an interface block whose external
+            // procedure has a top-level definition); that definition itself is
+            // an external procedure (no owner) using the hidden-length ABI, so
+            // the interface must agree regardless of whether it carries a body.
             return true;
         }
     }

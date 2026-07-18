@@ -1271,11 +1271,19 @@ namespace LCompilers {
                         is_array_type = false;
                     }
                 }
-                if( charlen_abi && ASRUtils::is_scalar_descriptor_string(arg->m_type) ) {
-                    // Receive the character data pointer directly; the length
-                    // is appended as a hidden trailing argument below.
+                if( charlen_abi && ASRUtils::is_hidden_charlen_string_dummy(arg->m_type) ) {
+                    // Receive the character data pointer directly at the
+                    // argument position. A hidden trailing length is appended
+                    // below only for dummies that need one (scalars and
+                    // assumed/deferred-length arrays); a fixed-length array
+                    // element is reconstructed by the callee from its own
+                    // static length.
                     type = llvm::Type::getInt8Ty(context)->getPointerTo();
-                    hidden_char_lengths.push_back(llvm::Type::getInt64Ty(context));
+                    if (ASRUtils::hidden_charlen_dummy_has_trailing_length(
+                            arg->m_type)) {
+                        hidden_char_lengths.push_back(
+                            llvm::Type::getInt64Ty(context));
+                    }
                 }
                 args.push_back(type);
             } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
