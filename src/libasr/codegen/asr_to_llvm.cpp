@@ -13330,11 +13330,31 @@ public:
             (m_old == ASR::array_physical_typeType::PointerArray ||
              m_old == ASR::array_physical_typeType::UnboundedPointerArray)) {
             if (ASRUtils::is_character(*ASRUtils::extract_type(ASRUtils::expr_type(m_arg)))) {
-                // For character arrays in bind(c) context
-                ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
-                llvm::Type* str_desc = llvm_utils->get_type_from_ttype_t_util(m_arg, old_ttype, module.get());
-                tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
-                tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
+                // An assumed-size character array dummy of a top-level external
+                // procedure is received as a bare data pointer via storage
+                // association: its implicit-interface callers pass the raw
+                // address of the actual argument (like a numeric assumed-size
+                // array), not a string descriptor. A module or contained
+                // procedure instead has an explicit interface, so the same
+                // dummy is passed as a pointer to a string descriptor.
+                bool enclosing_is_external_proc = parent_function != nullptr &&
+                    ASRUtils::get_asr_owner(
+                        (ASR::symbol_t*)parent_function) == nullptr;
+                if (m_old == ASR::array_physical_typeType::UnboundedPointerArray &&
+                        enclosing_is_external_proc) {
+                    // The pointer already points at the raw character data, so
+                    // forward it directly as the C `char*`; extracting a string
+                    // descriptor would dereference the raw data as a descriptor
+                    // and crash at runtime.
+                    tmp = builder->CreateBitCast(tmp,
+                        llvm::Type::getInt8Ty(context)->getPointerTo());
+                } else {
+                    // For character arrays in bind(c) context
+                    ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
+                    llvm::Type* str_desc = llvm_utils->get_type_from_ttype_t_util(m_arg, old_ttype, module.get());
+                    tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
+                    tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
+                }
             }
         } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
