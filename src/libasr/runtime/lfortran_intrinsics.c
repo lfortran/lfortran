@@ -14259,33 +14259,24 @@ static void nml_value_iter_init(nml_value_iter_t *it, lfortran_nml_item_t **item
     it->total_size = total_size;
 }
 
-static bool nml_value_iter_next_item(nml_value_iter_t *it) {
-    while (1) {
-        it->item_idx++;
-        if (it->item_idx >= it->n_items) {
-            return false;
-        }
-        it->total_size = compute_array_size(it->items[it->item_idx]);
-        it->value_idx = 0;
-        if (it->total_size > 0) {
-            return true;
-        }
-    }
-}
-
+// Namelist whole-derived-object assignments are consumed element-major:
+// for items=1,2,3,4 with components a,b, assign items(1)%a, items(1)%b,
+// then items(2)%a, items(2)%b. With n_items == 1 this is the old array walk.
 static bool nml_value_iter_advance(nml_value_iter_t *it) {
-    it->value_idx++;
-    if (it->value_idx < it->total_size) {
+    it->item_idx++;
+    if (it->item_idx < it->n_items) {
         return true;
     }
-    return nml_value_iter_next_item(it);
+    it->item_idx = 0;
+    it->value_idx++;
+    return it->value_idx < it->total_size;
 }
 
 // Returns: 0 = success, 1 = error, 2 = terminator found (caller should stop)
 static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_ptr,
                            size_t *line_len, int64_t *read_len, nml_value_iter_t *it,
                            bool enforce_bounds, int32_t *iostat) {
-    if (it->total_size == 0 && !nml_value_iter_next_item(it)) {
+    if (it->total_size == 0) {
         return 0;
     }
     while (it->item_idx < it->n_items) {

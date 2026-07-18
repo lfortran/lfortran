@@ -16850,17 +16850,20 @@ public:
                     if (rank > 0) {
                         member_type = ASRUtils::duplicate_type_with_empty_dims(al, member_type);
                     }
+                    size_t first_item = nml_items.size();
                     add_namelist_item(prefix + "%" + member_name, member_type, member_ptr,
                                       member_var->m_type_declaration);
                     if (rank > 0) {
-                        llvm::Value *item = nml_items.back();
-                        builder->CreateStore(llvm::ConstantInt::get(
-                            llvm::Type::getInt32Ty(context), rank),
-                            builder->CreateStructGEP(item_type, item, 2));
-                        builder->CreateStore(stride_val,
-                            builder->CreateStructGEP(item_type, item, 4));
-                        builder->CreateStore(shape_ptr,
-                            builder->CreateStructGEP(item_type, item, 6));
+                        for (size_t i = first_item; i < nml_items.size(); i++) {
+                            llvm::Value *item = nml_items[i];
+                            builder->CreateStore(llvm::ConstantInt::get(
+                                llvm::Type::getInt32Ty(context), rank),
+                                builder->CreateStructGEP(item_type, item, 2));
+                            builder->CreateStore(stride_val,
+                                builder->CreateStructGEP(item_type, item, 4));
+                            builder->CreateStore(shape_ptr,
+                                builder->CreateStructGEP(item_type, item, 6));
+                        }
                     }
                 }
 

@@ -1137,6 +1137,8 @@ RUN(NAME namelist_34 LABELS gfortran llvm)
 
 
 RUN(NAME namelist_35 LABELS gfortran llvm)
+RUN(NAME namelist_36 LABELS gfortran llvm)
+RUN(NAME namelist_37 LABELS gfortran llvm)
 
 RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 
