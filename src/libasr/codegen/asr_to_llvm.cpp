@@ -7871,6 +7871,12 @@ public:
     void declare_args(const ASR::Function_t &x, llvm::Function &F) {
         size_t asr_arg_idx = 0;
         auto arg_it = F.arg_begin();
+        // External procedures (implicit interface) receive scalar CHARACTER
+        // dummies as a bare data pointer plus a hidden trailing length. We
+        // record the data pointers here and rebuild the string descriptors
+        // after the positional arguments, once the trailing lengths are known.
+        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x);
+        std::vector<std::pair<ASR::Variable_t*, llvm::Value*>> charlen_dummies;
 
         // Windows complex(kind=8) uses "pass-as-subroutine" (sret-style) ABI:
         // the LLVM function has an extra hidden first argument to store the
@@ -7887,7 +7893,7 @@ public:
             ++arg_it;
         }
 
-        for (; arg_it != F.arg_end(); ++arg_it) {
+        for (; arg_it != F.arg_end() && asr_arg_idx < x.n_args; ++arg_it) {
             LCOMPILERS_ASSERT(asr_arg_idx < x.n_args);
             llvm::Argument &llvm_arg = *arg_it;
             ASR::symbol_t *s = symbol_get_past_external(
@@ -7960,6 +7966,11 @@ public:
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
                     llvm_symtab[h] = llvm_sym;
+                    if (charlen_abi &&
+                            ASRUtils::is_scalar_descriptor_string(arg->m_type)) {
+                        charlen_dummies.push_back(std::make_pair(
+                            arg, static_cast<llvm::Value*>(&llvm_arg)));
+                    }
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
@@ -7980,6 +7991,22 @@ public:
                 }
             }
             asr_arg_idx++;
+        }
+
+        // Rebuild string descriptors for external-procedure CHARACTER dummies
+        // from the (data pointer, hidden trailing length) argument pairs. The
+        // trailing length arguments follow all positional arguments, in the
+        // same order the character dummies appear.
+        for (auto& cd : charlen_dummies) {
+            LCOMPILERS_ASSERT(arg_it != F.arg_end());
+            llvm::Argument& len_arg = *arg_it;
+            ++arg_it;
+            ASR::Variable_t* arg = cd.first;
+            len_arg.setName(std::string(arg->m_name) + "_len");
+            llvm::Value* desc = llvm_utils->create_string_descriptor(
+                cd.second, &len_arg, arg->m_name);
+            uint32_t h = get_hash((ASR::asr_t*)arg);
+            llvm_symtab[h] = desc;
         }
 
         // Second pass: handle array dummy arguments with VALUE attribute.
@@ -23400,6 +23427,10 @@ public:
     template <typename T>
     std::vector<llvm::Value*> convert_call_args(const T &x, bool skip_self = false, size_t skip_self_idx = 0) {
         std::vector<llvm::Value *> args;
+        // Trailing hidden character lengths for external procedures that use
+        // the classic Fortran hidden-length ABI. Appended after all positional
+        // arguments, in the order the character actuals appear.
+        std::vector<llvm::Value*> hidden_char_length_args;
         convert_call_args_depth++;
         // Only reset alloca pool indices at outermost call to avoid
         // nested calls (in argument expressions) clobbering allocas
@@ -24832,29 +24863,29 @@ public:
                     symbol_get_past_external(x.m_name);
                 bool is_proc_ptr_call =
                     called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
-                if (orig_arg && callee_fn_type &&
+                if (orig_arg && x.m_args[i].m_value &&
                         !is_proc_ptr_call &&
                         x.m_dt == nullptr &&
-                        !callee_fn_type->m_module &&
                         func_subrout->type == ASR::symbolType::Function &&
-                        callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
-                        callee_fn_type->m_abi == ASR::abiType::Source &&
-                        !ASRUtils::is_array(orig_arg->m_type) &&
-                        ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                        ASRUtils::function_uses_hidden_char_len_abi(
+                            *ASR::down_cast<ASR::Function_t>(func_subrout)) &&
+                        ASRUtils::is_scalar_descriptor_string(orig_arg->m_type) &&
                         tmp->getType() ==
                             llvm_utils->string_descriptor->getPointerTo()) {
-                    ASR::Function_t* called_fn =
-                        ASR::down_cast<ASR::Function_t>(func_subrout);
-                    if (called_fn->n_body == 0) {
-                        llvm::Value* data_gep = llvm_utils->create_gep2(
-                            llvm_utils->string_descriptor, tmp, 0);
-                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            data_gep);
-                        tmp = builder->CreateBitCast(
-                            data_ptr,
-                            llvm_utils->string_descriptor->getPointerTo());
-                    }
+                    // Classic Fortran hidden-length ABI: pass the character
+                    // data pointer directly and append the length as a hidden
+                    // trailing argument below.
+                    ASR::String_t* actual_str = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::extract_type(
+                            ASRUtils::expr_type(x.m_args[i].m_value)));
+                    llvm::Value* data_ptr =
+                        llvm_utils->get_string_data(actual_str, tmp);
+                    llvm::Value* len_val =
+                        llvm_utils->get_string_length(actual_str, tmp);
+                    len_val = builder->CreateSExtOrTrunc(
+                        len_val, llvm::Type::getInt64Ty(context));
+                    hidden_char_length_args.push_back(len_val);
+                    tmp = data_ptr;
                 }
             }
 
@@ -24893,6 +24924,8 @@ public:
 
             args.push_back(tmp);
         }
+        args.insert(args.end(), hidden_char_length_args.begin(),
+            hidden_char_length_args.end());
         convert_call_args_depth--;
         return args;
     }
