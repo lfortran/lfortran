@@ -1777,6 +1777,13 @@ class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
     std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
+    // Functions synthesized by `create_implicit_interface_function()` for
+    // implicit-interface external procedures. Their dummy-argument types are
+    // inferred from the first call site, so they do NOT represent a real
+    // interface. Standard Fortran performs no argument checking for
+    // implicit-interface externals, hence later calls must not be rejected for
+    // passing a different argument type than the first call.
+    std::set<ASR::symbol_t*> implicit_interface_functions;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -12420,6 +12427,13 @@ public:
 
     void validate_create_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+        // An implicit-interface external procedure has no real interface (its
+        // argument types were inferred from the first reference), so standard
+        // Fortran performs no argument checking; do not reject later references
+        // that pass a different type.
+        if (is_implicit_interface_function(f2)) {
+            return;
+        }
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(v);
 
@@ -16534,6 +16548,14 @@ public:
         return nullptr;
     }
 
+    // True if `f` is a procedure interface that LFortran synthesized for an
+    // implicit-interface external (see `implicit_interface_functions`).
+    bool is_implicit_interface_function(ASR::symbol_t* f) {
+        if (!f) return false;
+        return implicit_interface_functions.find(
+            ASRUtils::symbol_get_past_external(f)) != implicit_interface_functions.end();
+    }
+
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
@@ -16754,6 +16776,7 @@ public:
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         sym_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        implicit_interface_functions.insert(ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
         is_implicit_interface = false;
