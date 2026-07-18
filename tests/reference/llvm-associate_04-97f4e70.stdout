@@ -133,19 +133,27 @@ free_done3:                                       ; preds = %free_nonnull2, %FIN
   %47 = load float, float* %myreal, align 4
   %48 = fsub float %47, 0x4044EE1480000000
   %49 = fcmp ogt float %48, 0x3EE4F8B580000000
-  %50 = load float, float* %myreal, align 4
-  %51 = fsub float %50, 0x4044EE1480000000
-  %52 = fcmp olt float %51, 0xBEE4F8B580000000
-  %53 = or i1 %49, %52
-  br i1 %53, label %then, label %else
+  %50 = icmp ne i1 %49, false
+  br i1 %50, label %logical_sc_merge, label %logical_sc_rhs
 
-then:                                             ; preds = %free_done3
+logical_sc_rhs:                                   ; preds = %free_done3
+  %51 = load float, float* %myreal, align 4
+  %52 = fsub float %51, 0x4044EE1480000000
+  %53 = fcmp olt float %52, 0xBEE4F8B580000000
+  %54 = icmp ne i1 %53, false
+  br label %logical_sc_merge
+
+logical_sc_merge:                                 ; preds = %logical_sc_rhs, %free_done3
+  %55 = phi i1 [ true, %free_done3 ], [ %54, %logical_sc_rhs ]
+  br i1 %55, label %then, label %else
+
+then:                                             ; preds = %logical_sc_merge
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont
 
-else:                                             ; preds = %free_done3
+else:                                             ; preds = %logical_sc_merge
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then

@@ -2361,6 +2361,7 @@ RUN(NAME logical_kind_07 LABELS gfortran llvm)
 RUN(NAME logical_kind_04 LABELS gfortran llvm)
 RUN(NAME logical_kind_05 LABELS gfortran llvm EXTRA_ARGS --fixed-form)
 RUN(NAME logical_kind_06 LABELS gfortran llvm)
+RUN(NAME logical_short_circuit_01 LABELS gfortran llvm)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH)
 

@@ -14585,6 +14585,73 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        // Fortran permits (but does not require) short-circuit evaluation of
+        // the .and. and .or. logical operators. Real-world code commonly
+        // relies on it to guard the second operand, e.g.
+        //     if (i >= 1 .and. a(i) == x) ...
+        // where a(i) must not be evaluated when i < 1. Evaluate the right
+        // operand only when the left operand does not already determine the
+        // result.
+        if (ASRUtils::is_logical(*x.m_type) &&
+                (x.m_op == ASR::logicalbinopType::And ||
+                 x.m_op == ASR::logicalbinopType::Or)) {
+            this->visit_expr_load_wrapper(x.m_left,
+                LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1, true);
+            llvm::Value *left_val = tmp;
+            load_non_array_non_character_pointers(x.m_left,
+                ASRUtils::expr_type(x.m_left), left_val);
+            llvm::Value *left_cond = builder->CreateICmpNE(
+                left_val, llvm::ConstantInt::get(left_val->getType(), 0));
+
+            llvm::Function *fn = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock *rhs_bb = llvm::BasicBlock::Create(context,
+                "logical_sc_rhs", fn);
+            llvm::BasicBlock *merge_bb = llvm::BasicBlock::Create(context,
+                "logical_sc_merge", fn);
+            llvm::BasicBlock *entry_bb = builder->GetInsertBlock();
+            if (x.m_op == ASR::logicalbinopType::And) {
+                // .and.: evaluate the right operand only when left is true.
+                builder->CreateCondBr(left_cond, rhs_bb, merge_bb);
+            } else {
+                // .or.: evaluate the right operand only when left is false.
+                builder->CreateCondBr(left_cond, merge_bb, rhs_bb);
+            }
+
+            builder->SetInsertPoint(rhs_bb);
+            this->visit_expr_load_wrapper(x.m_right,
+                LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
+            llvm::Value *right_val = tmp;
+            load_non_array_non_character_pointers(x.m_right,
+                ASRUtils::expr_type(x.m_right), right_val);
+            llvm::Value *right_cond = builder->CreateICmpNE(
+                right_val, llvm::ConstantInt::get(right_val->getType(), 0));
+            // Evaluating the right operand may introduce new basic blocks
+            // (e.g. array bounds checks), so capture the current block.
+            llvm::BasicBlock *rhs_end_bb = builder->GetInsertBlock();
+            builder->CreateBr(merge_bb);
+
+            builder->SetInsertPoint(merge_bb);
+            llvm::PHINode *phi = builder->CreatePHI(
+                llvm::Type::getInt1Ty(context), 2);
+            llvm::Value *sc_val = (x.m_op == ASR::logicalbinopType::And)
+                ? llvm::ConstantInt::getFalse(context)
+                : llvm::ConstantInt::getTrue(context);
+            phi->addIncoming(sc_val, entry_bb);
+            phi->addIncoming(right_cond, rhs_end_bb);
+            // Preserve the result width produced by the non-short-circuit
+            // path (the wider of the two operand widths) so downstream
+            // consumers see an unchanged type.
+            unsigned lw = left_val->getType()->getIntegerBitWidth();
+            unsigned rw = right_val->getType()->getIntegerBitWidth();
+            unsigned width = lw > rw ? lw : rw;
+            if (width > 1) {
+                tmp = builder->CreateZExt(phi,
+                    llvm::IntegerType::get(context, width));
+            } else {
+                tmp = phi;
+            }
+            return;
+        }
         this->visit_expr_load_wrapper(x.m_left,
             LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
             true);
