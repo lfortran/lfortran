@@ -3829,7 +3829,7 @@ public:
             bool any_error = false;
             for (auto &pname : proc.second) {
                 std::string correct_pname = pname.first;
-                if( pname.first == proc.first ) {
+                if( to_lower(pname.first) == proc.first ) {
                     correct_pname = pname.first + "~genericprocedure";
                 }
                 Str s;
