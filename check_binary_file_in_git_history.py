@@ -1,9 +1,15 @@
+import os
 import subprocess
 
 # Open file_path, Read it with mode 'r' which expects a utf-8 encode.
 # If the file is binary it'd conflict with
 # text mode 'r', leading to raised error `UnicodeDecodeError`.
 def is_file_binary(file_path: str) -> bool:
+    # Only regular files can be binary. Skip symbolic links: opening a
+    # symlink that points to a directory raises `IsADirectoryError`, and
+    # the link itself stores only a path, never binary content.
+    if os.path.islink(file_path) or not os.path.isfile(file_path):
+        return False
     try:
         with open(file_path, 'r') as fp:
             fp.read(16)
