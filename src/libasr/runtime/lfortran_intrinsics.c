@@ -1459,49 +1459,58 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         internal_free(temp);
     }
 
-    // Adjust exponent when rounding caused a carry in the mantissa
     if (rounding_carry) {
         exponent_value++;
         int abs_exp2 = (exponent_value < 0 ? -exponent_value : exponent_value);
-        int new_exp_width = exp + 1;
-        if (exp_digits < 0) {
-            // No explicit Ee width: recompute so a bumped exponent can widen
-            // (e.g. going from 99 -> 100 requires 3 digits).
-            int new_exp = 2;
+
+        int new_exp;
+        if (exp_digits > 0) {
+            new_exp = exp_digits;
+        } else if (exp_digits == 0 || width_digits == 0) {
+            new_exp = (abs_exp2 == 0) ? 1 : ((int)log10(abs_exp2) + 1);
+        } else {
+            new_exp = 2;
             if (is_s_format && abs_exp2 >= 10) {
                 new_exp = (int)log10(abs_exp2) + 1;
             } else if (abs_exp2 >= 100) {
                 new_exp = 3;
             }
-            new_exp_width = new_exp + 1;
         }
+
+        if (exp_digits > 0 && abs_exp2 >= (int)pow(10, new_exp)) {
+            goto overflow;
+        }
+
+        int new_exp_width = new_exp + 1;
         if (new_exp_width > 10) new_exp_width = 10;
         if (new_exp_width < 1) new_exp_width = 1;
         int wlen = snprintf(exponent, sizeof(exponent), "%+0*d", new_exp_width, exponent_value);
         if (wlen < 0 || (size_t)wlen >= sizeof(exponent)) {
             goto overflow;
         }
-        // Recalculate spaces if the exponent length changed.  Preserve the
-        // existing mantissa portion of formatted_value instead of rebuilding
-        // it (the mantissa was already computed with any renormalization for
-        // ES format).
         int new_exp_length = strlen(exponent);
-        if (new_exp_length != exp_length) {
-            int space_diff = exp_length - new_exp_length;
-            int lead_spaces = 0;
-            while (formatted_value[lead_spaces] == ' ') lead_spaces++;
-            char mantissa_saved[512];
-            strncpy(mantissa_saved, formatted_value + lead_spaces, sizeof(mantissa_saved) - 1);
-            mantissa_saved[sizeof(mantissa_saved) - 1] = '\0';
-            formatted_value[0] = '\0';
-            int new_spaces = lead_spaces + space_diff;
-            if (new_spaces < 0) new_spaces = 0;
-            for (int i = 0; i < new_spaces; i++) {
-                strcat(formatted_value, " ");
-            }
-            strcat(formatted_value, mantissa_saved);
-            exp_length = new_exp_length;
+
+        drop_e = (exp_digits < 0 && abs_exp2 >= 100 && new_exp_length >= 4 && width_digits != 0);
+        int new_FIXED_CHARS_LENGTH = drop_e ? 2 : 3;
+
+        if (width_digits == 0) {
+            int new_width = sign_width + digits + new_FIXED_CHARS_LENGTH + new_exp_length + sign_plus_exist;
+            if (new_width > width) width = new_width;
         }
+
+        int new_spaces = width - (sign_width + digits + new_FIXED_CHARS_LENGTH + new_exp_length + sign_plus_exist);
+        if (new_spaces < 0) new_spaces = 0;
+        int lead_spaces = 0;
+        while (formatted_value[lead_spaces] == ' ') lead_spaces++;
+        char mantissa_saved[512];
+        strncpy(mantissa_saved, formatted_value + lead_spaces, sizeof(mantissa_saved) - 1);
+        mantissa_saved[sizeof(mantissa_saved) - 1] = '\0';
+        formatted_value[0] = '\0';
+        for (int i = 0; i < new_spaces; i++) {
+            strcat(formatted_value, " ");
+        }
+        strcat(formatted_value, mantissa_saved);
+        exp_length = new_exp_length;
     }
 
     // Add 'E' unless dropped for 3+ digit exponents (when no explicit Ee given)
