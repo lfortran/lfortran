@@ -99,7 +99,7 @@
                                         (Real 4)
                                         Source
                                         Interface
-                                        ()
+                                        "frexp"
                                         .false.
                                         .false.
                                         .false.

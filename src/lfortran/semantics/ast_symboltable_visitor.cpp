@@ -2306,6 +2306,15 @@ public:
 
         if (generic_procedures.find(sym_name) != generic_procedures.end()
             || interface_name == to_lower(sym_name)) {
+            // This specific procedure shares its generic interface's name, so
+            // it is stored under "<name>~genericprocedure" to avoid clashing
+            // with the GenericProcedure symbol in the symbol table. For an
+            // external interface body the real external (link) symbol is
+            // "<name>": record it explicitly so the backend emits/links the
+            // correct symbol instead of the internal disambiguated name.
+            if (deftype == ASR::deftypeType::Interface && bindc_name == nullptr) {
+                bindc_name = s2c(al, to_lower(sym_name));
+            }
             sym_name = sym_name + "~genericprocedure";
         }
 
