@@ -205,6 +205,28 @@ namespace LCompilers::CommandLineInterface {
         return true;
     }
 
+    // On macOS, CMake and compiler drivers pass a bare `-install_name <name>`
+    // flag when linking a shared library (to set the dylib install name).
+    // CLI11 cannot register a single-dash multi-character option name, so we
+    // intercept the flag together with its value here and remove them from the
+    // arguments before CLI11 parses them. The last occurrence wins, matching
+    // the behavior of the underlying linker.
+    static std::string extract_install_name(std::vector<std::string> &args) {
+        std::string install_name;
+        std::vector<std::string> filtered;
+        filtered.reserve(args.size());
+        for (std::size_t i = 0; i < args.size(); i++) {
+            if (args[i] == "-install_name" && i + 1 < args.size()) {
+                install_name = args[i + 1];
+                i++;
+                continue;
+            }
+            filtered.push_back(args[i]);
+        }
+        args = std::move(filtered);
+        return install_name;
+    }
+
     auto LFortranCommandLineParser::parse() -> void {
         CompilerOptions &compiler_options = opts.compiler_options;
         compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
@@ -250,7 +272,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
+        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
         app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
         app.add_option("--fpe-trap", fpe_traps_str, "Enable floating point exception trapping. Comma-separated list of: invalid, zero, overflow, underflow, inexact, denormal");
 
@@ -390,8 +412,21 @@ namespace LCompilers::CommandLineInterface {
         }
 
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            std::vector<std::string> parse_args;
+            parse_args.reserve(argc > 1 ? static_cast<std::size_t>(argc - 1) : 0);
+            for (int i = 1; i < argc; i++) {
+                parse_args.push_back(argv[i]);
+            }
+            opts.install_name = extract_install_name(parse_args);
+            std::vector<const char *> parse_argv;
+            parse_argv.reserve(parse_args.size() + 1);
+            parse_argv.push_back(argv[0]);
+            for (const std::string &arg : parse_args) {
+                parse_argv.push_back(arg.c_str());
+            }
+            app.parse(static_cast<int>(parse_argv.size()), parse_argv.data());
         } else {
+            opts.install_name = extract_install_name(args);
             app.parse(args);
         }
 
@@ -496,8 +531,8 @@ namespace LCompilers::CommandLineInterface {
         }
 
         for (auto &f_flag : opts.f_flags) {
-            if (f_flag == "PIC") {
-                // Position Independent Code
+            if (f_flag == "PIC" || f_flag == "PIE") {
+                // Position Independent Code / Position Independent Executable
                 // We do this by default, so we ignore for now
             } else if (f_flag == "default-integer-8") {
                 compiler_options.po.default_integer_kind = 8;

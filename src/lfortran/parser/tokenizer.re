@@ -291,6 +291,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'backspace' { KW(BACKSPACE) }
             'bind' { KW(BIND) }
             'block' { KW(BLOCK) }
+            'byte' { KW(BYTE) }
             'call' { KW(CALL) }
             'case' { KW(CASE) }
             'change' { KW(CHANGE) }

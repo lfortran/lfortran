@@ -431,6 +431,7 @@ RUN(NAME ilp64_file_ops_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 G
 RUN(NAME ilp64_logical_read_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME fpie_flag_01 LABELS gfortran llvm EXTRA_ARGS -fPIE GFORTRAN_ARGS -fPIE)
 
 RUN(NAME procedure_pointer_array_01 LABELS gfortran llvm)
 
@@ -761,10 +762,13 @@ RUN(NAME block_data_string_01 LABELS llvm gfortran)
 RUN(NAME block_data_string_02 LABELS llvm gfortran)
 RUN(NAME block_data_string_03 LABELS llvm gfortran)
 RUN(NAME block_data_string_04 LABELS llvm gfortran)
+RUN(NAME block_data_string_05 LABELS llvm gfortran)
+RUN(NAME block_data_string_06 LABELS llvm gfortran)
 RUN(NAME block_data_03 LABELS llvm gfortran)
 RUN(NAME block_data_04 LABELS llvm gfortran)
 RUN(NAME arrays_01_logical LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME block_data_parameter_01 LABELS gfortran llvmImplicit)
+RUN(NAME byte_type_01 LABELS gfortran llvm)
 RUN(NAME arrays_01_multi_dim LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME integer_bin_op_dim_external_module LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME array_bound_1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
@@ -1987,6 +1991,10 @@ RUN(NAME bindc_05 LABELS gfortran llvm EXTRAFILES bindc_05c.c)
 RUN(NAME bindc_06 LABELS gfortran llvm EXTRAFILES bindc_06b.c)
 RUN(NAME bindc_07 LABELS gfortran llvm EXTRAFILES bindc_07.c)
 RUN(NAME bindc_08 LABELS gfortran llvm EXTRAFILES bindc_08.c EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME bindc_55 LABELS gfortran llvm EXTRAFILES bindc_55.c)
+RUN(NAME bindc_56 LABELS gfortran llvm EXTRAFILES bindc_56_module.f90)
+RUN(NAME bindc_57 LABELS gfortran llvm EXTRAFILES bindc_57b.f90 bindc_57.c EXTRA_ARGS --implicit-interface)
+RUN(NAME bindc_58 LABELS gfortran llvm EXTRAFILES bindc_58.c)
 RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc_11 LABELS gfortran llvm fortran)
@@ -2182,6 +2190,25 @@ RUN(NAME implicit_interface_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing
 RUN(NAME implicit_interface_41 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_42 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_43 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_44 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_44b.f90 GFORTRAN_ARGS -fallow-argument-mismatch)
+RUN(NAME implicit_interface_45 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_46 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_46b.f90 GFORTRAN_ARGS -fallow-argument-mismatch)
+RUN(NAME implicit_interface_47 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_47b.f90)
+RUN(NAME implicit_interface_48 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_48b.f90 GFORTRAN_ARGS -fallow-argument-mismatch)
+RUN(NAME implicit_interface_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_49b.f90)
+RUN(NAME implicit_interface_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_51 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_51b.f90 GFORTRAN_ARGS -fallow-argument-mismatch)
+RUN(NAME implicit_interface_52 LABELS gfortran llvm
+    EXTRAFILES implicit_interface_52b.f90)
+RUN(NAME implicit_interface_53 LABELS gfortran llvm
+    EXTRA_ARGS --separate-compilation --implicit-interface
+    EXTRAFILES implicit_interface_53b.f90)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -2204,6 +2231,8 @@ RUN(NAME generic_name_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_06 LABELS gfortran llvm)
 RUN(NAME generic_name_07 LABELS gfortran llvm)
 RUN(NAME generic_name_08 LABELS gfortran llvm)
+RUN(NAME generic_name_09 LABELS gfortran llvm)
+RUN(NAME generic_name_10 LABELS gfortran llvm)
 
 RUN(NAME operator_overloading_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2344,6 +2373,7 @@ RUN(NAME logical_kind_07 LABELS gfortran llvm)
 RUN(NAME logical_kind_04 LABELS gfortran llvm)
 RUN(NAME logical_kind_05 LABELS gfortran llvm EXTRA_ARGS --fixed-form)
 RUN(NAME logical_kind_06 LABELS gfortran llvm)
+RUN(NAME logical_short_circuit_01 LABELS gfortran llvm)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH)
 
@@ -3461,6 +3491,9 @@ RUN(NAME external_13 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --mang
 RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
 RUN(NAME external_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME external_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
+RUN(NAME external_17 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_18 LABELS gfortran llvm EXTRAFILES external_18_module.f90 EXTRA_ARGS --implicit-interface)
+RUN(NAME external_19 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c
     GFORTRAN_ARGS -fno-underscoring)
@@ -3997,6 +4030,8 @@ RUN(NAME c_ptr_14 LABELS gfortran llvm)
 RUN(NAME c_ptr_15 LABELS gfortran llvm)
 RUN(NAME c_ptr_16 LABELS gfortran llvm EXTRAFILES c_ptr_16_module.f90)
 RUN(NAME c_ptr_17 LABELS gfortran llvm EXTRAFILES c_ptr_17_module.f90)
+RUN(NAME c_ptr_18 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES c_ptr_18b.f90 GFORTRAN_ARGS -fallow-argument-mismatch)
 RUN(NAME target_01 LABELS gfortran llvm)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
@@ -4949,3 +4984,25 @@ RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
 RUN(NAME equivalence_39 LABELS gfortran llvm)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
+
+# Regression test (macOS only): lfortran must accept the `-install_name` linker
+# flag when producing a shared library and forward it to the linker so the
+# dylib install name is set correctly. CMake passes this flag when linking
+# Fortran shared libraries on Darwin (e.g. netcdf-fortran's libnetcdff.dylib);
+# lfortran previously aborted with "The following argument was not expected:
+# -install_name". This is a driver/linker test and only applies to the macOS
+# LLVM backend, so it is not expressed via the RUN() macro.
+if (APPLE AND LFORTRAN_BACKEND STREQUAL "llvm")
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
+        COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
+                -o ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
+    )
+    add_custom_target(install_name_01 ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o)
+    add_test(NAME install_name_01
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.sh
+                ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif()

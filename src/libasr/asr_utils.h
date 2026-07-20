@@ -7189,6 +7189,154 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// A CHARACTER dummy represented as a string descriptor ({data, len}). These
+// are the dummies affected by the classic Fortran hidden-length ABI used for
+// external procedures: the character data pointer is passed directly at the
+// argument position and the per-element length travels as a hidden trailing
+// argument (after all positional arguments), exactly as gfortran/flang do.
+//
+// The trailing length is passed uniformly for every such dummy -- scalar or
+// array, assumed/deferred or fixed length. This must be uniform because
+// separate compilation forces it to be: a caller reaching the procedure
+// through an implicit interface only sees the actual argument, never the
+// callee's dummy, so it cannot tell whether that dummy is a scalar
+// CHARACTER(len=*), an assumed-length array, or a fixed-length array. The only
+// ABI a separately compiled caller can reliably target -- and the only one the
+// separately compiled callee can rely on -- passes the character data pointer
+// at the argument position with the length always trailing. Omitting the
+// length for a fixed-length CHARACTER array actual (as an earlier scheme did)
+// corrupts a scalar CHARACTER(len=*) callee that expects the length: this was
+// the netcdf-fortran nf_get_var_text crash, where a CHARACTER array actual is
+// passed to an assumed-length scalar dummy.
+//
+// Covered:
+//   * scalar CHARACTER dummies, and
+//   * CHARACTER arrays represented as a single string descriptor, i.e.
+//     explicit-shape and assumed-size arrays (PointerArray /
+//     UnboundedPointerArray / FixedSizeArray / StringArraySinglePointer).
+//     For such arrays the descriptor holds the base data pointer and the
+//     per-element length, exactly the (data pointer, length) pair the ABI
+//     transmits.
+//
+// Excluded: allocatable/pointer CHARACTER dummies and CHARACTER arrays backed
+// by a full array descriptor (assumed-shape / assumed-rank), which require an
+// explicit interface and keep the descriptor ABI.
+static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
+    if (is_allocatable(type) || is_pointer(type)) return false;
+    ASR::ttype_t* bare = extract_type(type);
+    if (!ASR::is_a<ASR::String_t>(*bare)) return false;
+    if (ASR::down_cast<ASR::String_t>(bare)->m_physical_type
+            != ASR::string_physical_typeType::DescriptorString) return false;
+    if (is_array(type)) {
+        ASR::array_physical_typeType pt = extract_physical_type(type);
+        return pt == ASR::array_physical_typeType::PointerArray
+            || pt == ASR::array_physical_typeType::UnboundedPointerArray
+            || pt == ASR::array_physical_typeType::FixedSizeArray
+            || pt == ASR::array_physical_typeType::StringArraySinglePointer;
+    }
+    return true;
+}
+
+// True if `fn_sym` denotes an external procedure reached through an implicit
+// (or bare `external`) interface:
+//   * a top-level definition (no ASR owner), or
+//   * an interface body with no implementation placed outside a module (a
+//     per-call synthesized implicit interface, or an explicit external
+//     interface block in a program/subprogram scope), or
+//   * a plain (non-abstract) interface block owned by a module that declares a
+//     separately compiled external procedure.
+// Such procedures use the classic Fortran hidden-length character ABI: the
+// character data pointer is passed directly at the argument position and the
+// length travels as a hidden trailing argument (matching gfortran/flang).
+// Module and contained procedures, and abstract interfaces, have a normal
+// explicit interface and keep the string-descriptor ABI.
+//
+// A module-owned `abstract interface` and a module-owned external `interface`
+// block are indistinguishable in the ASR (LFortran does not record the
+// `abstract` attribute), so `proc_iface_syms` (the set of functions used as a
+// procedure interface anywhere in the translation unit) is consulted to tell
+// them apart: an abstract interface is referenced as a procedure interface and
+// stays on the descriptor ABI, preserving procedure-pointer/dummy/deferred
+// calls, while a plain external interface block is not and uses the classic
+// ABI. When `proc_iface_syms` is unavailable the descriptor ABI is used.
+static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym,
+        const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
+    if (get_asr_owner(fn_sym) == nullptr) {
+        return true;
+    }
+    if (!ASR::is_a<ASR::Function_t>(*fn_sym)) {
+        return false;
+    }
+    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+    ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(fn);
+    if (ft->m_deftype == ASR::deftypeType::Interface) {
+        ASR::symbol_t* owner = get_asr_owner(fn_sym);
+        if (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
+            // A non-module interface body denotes an external procedure reached
+            // by the classic ABI. A later pass may attach a body to such an
+            // interface when the procedure is also defined in the same
+            // translation unit (as with an interface block whose external
+            // procedure has a top-level definition); that definition itself is
+            // an external procedure (no owner) using the hidden-length ABI, so
+            // the interface must agree regardless of whether it carries a body.
+            return true;
+        }
+        if (owner != nullptr && ASR::is_a<ASR::Module_t>(*owner) &&
+                (ft->m_abi == ASR::abiType::Source ||
+                 ft->m_abi == ASR::abiType::ExternalUndefined)) {
+            // A plain Fortran-source module interface body has abi Source when
+            // the module is compiled in the current translation unit, but abi
+            // ExternalUndefined once the module has been loaded from a .mod file
+            // (SymbolTable::mark_all_variables_external rewrites Source to
+            // ExternalUndefined for every symbol of a loaded module). Both
+            // denote the same construct and must take the same ABI decision, so
+            // the separately compiled caller (netcdf-fortran's ncvgtc, which
+            // reaches nf_get_vara_text through the USEd module interface) agrees
+            // with the separately compiled definition; otherwise the hidden
+            // length is dropped and LEN(text) inside the callee is garbage.
+            // A module-owned interface body is one of:
+            //   * a module procedure (declared with the MODULE prefix and
+            //     implemented in a submodule): m_module is set. It has a normal
+            //     explicit interface and keeps the string-descriptor ABI.
+            //   * an abstract interface used to type procedure pointers, dummy
+            //     procedures or deferred type-bound procedures. Its targets are
+            //     ordinary (descriptor-ABI) procedures, so it too keeps the
+            //     descriptor ABI. Such an interface is referenced as a procedure
+            //     interface somewhere in the translation unit; those references
+            //     are collected in proc_iface_syms.
+            //   * a plain interface block declaring a separately compiled
+            //     external procedure (as in netcdf-fortran's
+            //     module_netcdf_nf_interfaces). This denotes an external
+            //     procedure reached by the classic hidden-length ABI, matching
+            //     the external definition (which has no ASR owner and therefore
+            //     already uses that ABI).
+            // An `abstract interface` and a plain external `interface` block are
+            // indistinguishable in the ASR (LFortran does not record the
+            // `abstract` attribute), so we treat a module interface body as
+            // abstract iff it is used as a procedure interface. When
+            // proc_iface_syms is unavailable we conservatively keep the
+            // descriptor ABI (the historical behavior).
+            if (ft->m_module) {
+                return false;
+            }
+            if (proc_iface_syms == nullptr) {
+                return false;
+            }
+            if (proc_iface_syms->find(fn_sym) != proc_iface_syms->end()) {
+                return false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn,
+        const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
+    return is_external_implicit_interface_proc((ASR::symbol_t*)&fn.base,
+        proc_iface_syms);
+}
+
 static inline bool is_coarray(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
@@ -8235,9 +8383,23 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
-                    "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
-                        ASRUtils::get_type_code(orig_arg_type) + ")");
+                // An implicit-interface external procedure uses the BindC ABI
+                // with a synthesized `Interface` signature whose dummy types
+                // were inferred from an earlier call; standard Fortran does no
+                // argument checking for such procedures, so the actual type
+                // need not match. The raw pointer/value is passed as-is (any
+                // physical-type reconciliation for arrays happens below), so
+                // skip the equal-type guard here. A real explicit interface
+                // (e.g. an `interface ... bind(c)` block) with a mismatching
+                // type is already rejected during semantic analysis.
+                bool is_implicit_interface_external =
+                    func_type->m_abi == ASR::abiType::BindC &&
+                    func_type->m_deftype == ASR::deftypeType::Interface;
+                if (!is_implicit_interface_external) {
+                    LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
+                        "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
+                            ASRUtils::get_type_code(orig_arg_type) + ")");
+                }
             }
         }
         if( ASRUtils::is_array(arg_type) && ASRUtils::is_array(orig_arg_type) ) {
