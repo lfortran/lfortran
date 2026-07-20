@@ -502,7 +502,6 @@ asr = true
 filename = "errors/template_error_09.f90"
 asr = true
 
-
 [[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"
 asr = true
