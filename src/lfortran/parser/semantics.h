@@ -11,7 +11,6 @@
 */
 
 #include <cstring>
-#include <set>
 
 #include <lfortran/ast.h>
 #include <lfortran/ast_kind.h>

@@ -1,4 +1,3 @@
-#include <set>
 #include "libasr/assert.h"
 #include <iostream>
 #include <map>
