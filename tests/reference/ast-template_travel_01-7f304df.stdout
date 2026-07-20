@@ -228,13 +228,13 @@
         )
         (Requirement
             operations
-            [D
-            T
-            S
-            plus_D
-            plus_T
-            D_divided_by_T
-            D_divided_by_S]
+            [(D)
+            (T)
+            (S)
+            (plus_D)
+            (plus_T)
+            (D_divided_by_T)
+            (D_divided_by_S)]
             [(DerivedType
                 D
                 []
