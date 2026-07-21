@@ -1058,8 +1058,16 @@ struct FixedFormRecursiveDescent {
     void lex_common_block_part(unsigned char *&cur) {
         // tokenize / block_1 / a, b
         bool first_slash = true;
+        int paren_depth = 0;
         while(!next_is_eol(cur)) {
-            if (*(cur+1) == '/' && !first_slash) {
+            if (*cur == '(') {
+                paren_depth++;
+            } else if (*cur == ')') {
+                if (paren_depth > 0) paren_depth--;
+            }
+            // A '/' inside parentheses is a division operator (e.g. in an
+            // array dimension like A(20/4)), not a common block delimiter.
+            if (paren_depth == 0 && *(cur+1) == '/' && !first_slash) {
                 if (*cur != ',') {
                     cur+=1;
                 }
@@ -1068,7 +1076,7 @@ struct FixedFormRecursiveDescent {
                 tokenize_until(end);
                 t.cur = cur;
                 break;
-            } else if (*(cur+1) == '/') {
+            } else if (paren_depth == 0 && *(cur+1) == '/') {
                 first_slash = false;
             }
             cur++;
