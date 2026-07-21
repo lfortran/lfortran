@@ -9608,12 +9608,19 @@ public:
                 determine_char_len_and_kind(nullptr, nullptr, sym_type, var_sym, sym, str, is_argument, abi);
             }
 
-            type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument,
-                dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
-                                ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
-                                ASR::array_physical_typeType::DescriptorArray,
-                dims.size() > 0 ? true : false);
+            if (is_assumed_rank) {
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type,
+                    nullptr, 0,
+                    ASR::array_physical_typeType::AssumedRankArray));
+            } else {
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument,
+                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
+                                    ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                    ASR::array_physical_typeType::DescriptorArray,
+                    dims.size() > 0 ? true : false);
+            }
+
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -13208,7 +13215,7 @@ public:
                             ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
                         );
                         temp = ASRUtils::EXPR(array_cast);
-                    } else if (!(intrinsic_name == "size" || intrinsic_name == "lbound" || intrinsic_name == "ubound" || 
+                    } else if (!(intrinsic_name == "len" ||intrinsic_name == "size" || intrinsic_name == "lbound" || intrinsic_name == "ubound" || 
                         intrinsic_name == "rank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of")) {
