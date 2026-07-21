@@ -409,9 +409,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(
                         ASRUtils::extract_type(arg_type));
-                    if( str->m_len &&
+                    if( !str->m_len ||
                         !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){
-                        str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 0,
+                        str->m_len_kind = ASR::ExpressionLength;
+                        str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 1,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
                     }
                 }
