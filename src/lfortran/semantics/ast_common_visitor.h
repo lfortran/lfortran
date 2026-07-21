@@ -10580,8 +10580,10 @@ public:
                         ASRUtils::TYPE(ASR::make_Integer_t(al, type->base.loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::DescriptorString));
+                // Replace COMMON block variable with struct member
+                ASR::expr_t* string_var = replace_with_common_block_variables(v_Var);
                 return ASR::make_StringItem_t(al, loc,
-                    v_Var, args.p[0].m_right, char_type, arr_ref_val);
+                    string_var, args.p[0].m_right, char_type, arr_ref_val);
             } else if ( ASRUtils::is_character(*root_v_type) &&
                         ASRUtils::is_array(root_v_type) &&
                         n_subargs > 0) {
