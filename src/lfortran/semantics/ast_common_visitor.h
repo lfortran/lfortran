@@ -6556,6 +6556,71 @@ public:
                                             }
                                         }
                                     } else {
+                                        if (ASR::is_a<ASR::StructInstanceMember_t>(*asr_eq1)) {
+                                            ASR::ArrayItem_t* array_item2 =
+                                                ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
+                                            auto common_array_equivalence_error = [&]() {
+                                                diag.semantic_error_label(
+                                                    "equivalence between a common block variable and this array element is not implemented",
+                                                    {x.base.base.loc},
+                                                    "unsupported equivalence"
+                                                );
+                                                throw SemanticAbort();
+                                            };
+                                            if (!ASR::is_a<ASR::Var_t>(*array_item2->m_v)) {
+                                                common_array_equivalence_error();
+                                            }
+                                            ASR::Var_t* array_var =
+                                                ASR::down_cast<ASR::Var_t>(array_item2->m_v);
+                                            ASR::Variable_t* array_variable =
+                                                ASR::down_cast<ASR::Variable_t>(array_var->m_v);
+                                            ASR::ttype_t* unwrapped_array_type =
+                                                type_unwrap(array_variable->m_type);
+                                            if (!ASR::is_a<ASR::Array_t>(*unwrapped_array_type)) {
+                                                common_array_equivalence_error();
+                                            }
+                                            ASR::Array_t* array_type =
+                                                ASR::down_cast<ASR::Array_t>(unwrapped_array_type);
+                                            ASR::expr_t* array_index = array_item2->n_args == 1
+                                                ? array_item2->m_args[0].m_right : nullptr;
+                                            ASR::expr_t* array_lower_bound = array_type->n_dims == 1
+                                                ? array_type->m_dims[0].m_start : nullptr;
+                                            ASR::ttype_t* common_type = type_unwrap(arg_type1);
+                                            bool has_unit_index = array_index &&
+                                                ASR::is_a<ASR::IntegerConstant_t>(*array_index) &&
+                                                ASR::down_cast<ASR::IntegerConstant_t>(
+                                                    array_index)->m_n == 1;
+                                            bool has_unit_lower_bound = !array_lower_bound ||
+                                                (ASR::is_a<ASR::IntegerConstant_t>(*array_lower_bound) &&
+                                                ASR::down_cast<ASR::IntegerConstant_t>(
+                                                    array_lower_bound)->m_n == 1);
+                                            bool is_supported = array_type->n_dims == 1 &&
+                                                ASRUtils::get_fixed_size_of_array(
+                                                    unwrapped_array_type) == 1 &&
+                                                !ASR::is_a<ASR::Array_t>(*common_type) &&
+                                                ASRUtils::types_equal(common_type,
+                                                    array_type->m_type, nullptr, nullptr) &&
+                                                has_unit_index && has_unit_lower_bound;
+                                            if (!is_supported) {
+                                                common_array_equivalence_error();
+                                            }
+                                            ASR::ttype_t* int_type = ASRUtils::TYPE(
+                                                ASR::make_Integer_t(al, asr_eq2->base.loc,
+                                                    compiler_options.po.default_integer_kind));
+                                            ASR::expr_t* one = ASRUtils::EXPR(
+                                                ASR::make_IntegerConstant_t(al, asr_eq2->base.loc,
+                                                    1, int_type));
+                                            ASR::asr_t* pointer_to_cptr = make_cptr_from_expr(
+                                                asr_eq1->base.loc, asr_eq1, common_type);
+                                            make_var_ptr_array(asr_eq2->base.loc, array_variable,
+                                                array_type->m_type, array_type->n_dims);
+                                            ASR::asr_t* shape = make_shape_from_arr(
+                                                asr_eq2->base.loc, array_type, int_type, one);
+                                            emit_cptr_to_pointer(asr_eq2->base.loc,
+                                                pointer_to_cptr, array_item2->m_v, shape);
+                                            continue;
+                                        }
+
                                         ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
                                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
                                         ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(
