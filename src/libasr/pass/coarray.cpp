@@ -1676,10 +1676,10 @@ class PRIFInterface {
         }
 
         ASR::expr_t* make_prif_get_call(const Location &loc,
-                                        ASR::expr_t *base_expr,
-                                        ASR::array_index_t *coindices,
-                                        size_t n_coindices,
-                                        ASR::ttype_t *return_type) {
+                        ASR::expr_t *base_expr,
+                        ASR::coarray_index_t *coindices,
+                        size_t n_coindices,
+                        ASR::ttype_t *return_type) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
 
@@ -1730,10 +1730,10 @@ class PRIFInterface {
         }
 
         ASR::stmt_t* make_prif_put_call(const Location &loc,
-                                        ASR::expr_t *base_expr,
-                                        ASR::array_index_t *coindices,
-                                        size_t n_coindices,
-                                        ASR::expr_t *value_expr) {
+                        ASR::expr_t *base_expr,
+                        ASR::coarray_index_t *coindices,
+                        size_t n_coindices,
+                        ASR::expr_t *value_expr) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
 

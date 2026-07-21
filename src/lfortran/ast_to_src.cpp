@@ -4065,34 +4065,30 @@ public:
 
     void visit_coarrayarg(const coarrayarg_t &x) {
         std::string r;
-        if (x.m_step) {
-            // Array section
+        if (x.m_star == codimension_typeType::CodimensionStar) {
             if (x.m_start) {
                 this->visit_expr(*x.m_start);
-                r += s;
-            }
-            if(x.m_star == codimension_typeType::CodimensionStar) {
+                r += s + ":*";
+            } else {
                 r += "*";
-            } else {
-                r += ":";
             }
-            if (x.m_end) {
-                this->visit_expr(*x.m_end);
-                r += s;
-            }
-            if (is_a<Num_t>(*x.m_step) && down_cast<Num_t>(x.m_step)->m_n == 1) {
-                // Nothing, a:b:1 is printed as a:b
-            } else {
-                r += ":";
-                this->visit_expr(*x.m_step);
-                r += s;
-            }
-        } else {
-            // Array element
-            LCOMPILERS_ASSERT(x.m_end);
-            LCOMPILERS_ASSERT(!x.m_start);
+        } else if (x.m_start && x.m_end) {
+            // a:b
+            this->visit_expr(*x.m_start);
+            r += s + ":";
             this->visit_expr(*x.m_end);
-            r = s;
+            r += s;
+        } else if (x.m_start) {
+            // a:
+            this->visit_expr(*x.m_start);
+            r += s + ":";
+        } else if (x.m_end) {
+            // a
+            this->visit_expr(*x.m_end);
+            r += s;
+        } else {
+            // :
+            r += ":";
         }
         s = r;
     }

@@ -17595,7 +17595,7 @@ public:
 
     // Helper function to validate codimension bounds for coarray references
     void validate_coarray_bounds(ASR::Variable_t* var, const std::string& name,
-                                  const Vec<ASR::array_index_t>& coindices) {
+                                  const Vec<ASR::coarray_index_t>& coindices) {
         if (!var || var->n_codims == 0) {
             return;
         }
@@ -17648,32 +17648,37 @@ public:
     void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
         std::string var_name = to_lower(x.m_name);
         const Location &loc = x.base.base.loc;
-        Vec<ASR::array_index_t> coindices;
+        Vec<ASR::coarray_index_t> coindices;
         coindices.reserve(al, x.n_coargs);
         for (size_t i = 0; i < x.n_coargs; i++) {
-            // Coarrays do not support step notation in coindices
-            if (x.m_coargs[i].m_step) {
-                diag.add(Diagnostic(
-                    "Coarray coindices do not support step notation (e.g., [i:j:k])",
-                    Level::Error, Stage::Semantic, {Label("", {loc})}));
-                throw SemanticAbort();
-            }
+            ASR::expr_t* left = nullptr;
+            ASR::expr_t* right = nullptr;
             
-            ASR::expr_t* idx = nullptr;
             if (x.m_coargs[i].m_start) {
                 this->visit_expr(*x.m_coargs[i].m_start);
-                idx = ASRUtils::EXPR(tmp);
-            } else if (x.m_coargs[i].m_end) {
+                left = ASRUtils::EXPR(tmp);
+            } 
+            
+            if (x.m_coargs[i].m_end) {
                 this->visit_expr(*x.m_coargs[i].m_end);
-                idx = ASRUtils::EXPR(tmp);
-            } else continue;
-            if (idx) {
-                ASR::array_index_t ai;
-                ai.loc = loc;
-                ai.m_left = idx;
-                ai.m_right = nullptr;
-                ai.m_step = nullptr;
-                coindices.push_back(al, ai);
+                if (!left) {
+                    left = ASRUtils::EXPR(tmp); // Scalar index is stored in m_end by AST
+                } else {
+                    right = ASRUtils::EXPR(tmp);
+                }
+            }
+
+            ASR::codimension_typeType star = (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) 
+                                                ? ASR::codimension_typeType::CodimensionStar 
+                                                : ASR::codimension_typeType::CodimensionExpr;
+
+            if (left || right || star == ASR::codimension_typeType::CodimensionStar) {
+                ASR::coarray_index_t ci;
+                ci.loc = x.m_coargs[i].loc;
+                ci.m_left = left;
+                ci.m_right = right;
+                ci.m_star = star;
+                coindices.push_back(al, ci);
             }
         }
 

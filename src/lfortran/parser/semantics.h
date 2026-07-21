@@ -866,26 +866,24 @@ static inline FnArg* DIM1k(Allocator &al, Location &l,
 }
 
 static inline CoarrayArg* CODIM1(Allocator &al, Location &l,
-    expr_t *a, expr_t *b, expr_t *c)
+    expr_t *a, expr_t *b)
 {
     CoarrayArg *s = al.allocate<CoarrayArg>();
     s->keyword = false;
     s->arg.loc = l;
     s->arg.m_start = a;
     s->arg.m_end = b;
-    s->arg.m_step = c;
     s->arg.m_star = codimension_typeType::CodimensionExpr;
     return s;
 }
 
-static inline CoarrayArg* CODIM1star(Allocator &al, Location &l, expr_t *c)
+static inline CoarrayArg* CODIM1star(Allocator &al, Location &l)
 {
     CoarrayArg *s = al.allocate<CoarrayArg>();
     s->keyword = false;
     s->arg.loc = l;
     s->arg.m_start = nullptr;
     s->arg.m_end = nullptr;
-    s->arg.m_step = c;
     s->arg.m_star = codimension_typeType::CodimensionStar;
     return s;
 }
@@ -2290,23 +2288,19 @@ static inline void drop_trailing_matching_continue(
 #define COARRAY_COMP_DECL6d(l)          CODIM1d_star(p.m_a, l, nullptr)
 #define COARRAY_COMP_DECL7d(a, l)       CODIM1d_star(p.m_a, l, EXPR(a))
 
-#define COARRAY_COMP_DECL_0i0(a,l)     CODIM1(p.m_a, l, nullptr, EXPR(a), nullptr)
+#define COARRAY_COMP_DECL_0i0(a,l)     CODIM1(p.m_a, l, nullptr, EXPR(a))
 #define COARRAY_COMP_DECL_001(l)       CODIM1(p.m_a, l, \
-        nullptr, nullptr, EXPR(INT1(l)))
+        nullptr, nullptr)
 #define COARRAY_COMP_DECL_a01(a,l)     CODIM1(p.m_a, l, \
-        EXPR(a), nullptr, EXPR(INT1(l)))
+        EXPR(a), nullptr)
 #define COARRAY_COMP_DECL_0b1(b,l)     CODIM1(p.m_a, l, \
-        nullptr, EXPR(b), EXPR(INT1(l)))
+        nullptr, EXPR(b))
 #define COARRAY_COMP_DECL_ab1(a,b,l)   CODIM1(p.m_a, l, \
-        EXPR(a), EXPR(b), EXPR(INT1(l)))
-#define COARRAY_COMP_DECL_00c(c,l)     CODIM1(p.m_a, l, nullptr, nullptr, EXPR(c))
-#define COARRAY_COMP_DECL_a0c(a,c,l)   CODIM1(p.m_a, l, EXPR(a), nullptr, EXPR(c))
-#define COARRAY_COMP_DECL_0bc(b,c,l)   CODIM1(p.m_a, l, nullptr, EXPR(b), EXPR(c))
-#define COARRAY_COMP_DECL_abc(a,b,c,l) CODIM1(p.m_a, l, EXPR(a), EXPR(b), EXPR(c))
+        EXPR(a), EXPR(b))
 
 #define COARRAY_COMP_DECL1k(id, a, l)   CODIM1k(p.m_a, l, \
         id, EXPR(INT1(l)), EXPR(a))
-#define COARRAY_COMP_DECL_star(l)       CODIM1star(p.m_a, l, EXPR(INT1(l)))
+#define COARRAY_COMP_DECL_star(l)       CODIM1star(p.m_a, l)
 
 #define VARMOD(a, l) make_Attribute_t(p.m_a, l, \
         a.c_str(p.m_a), \
