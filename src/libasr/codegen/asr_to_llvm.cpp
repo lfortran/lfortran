@@ -15901,7 +15901,8 @@ public:
         llvm::Type* des_complex_type = llvm_utils->get_type_from_ttype_t_util(t.m_arg,
             ASRUtils::extract_type(ASRUtils::expr_type(t.m_arg)), module.get());
         llvm::Type* des_complex_type_ = llvm_utils->get_type_from_ttype_t_util(
-            t.m_arg, ASRUtils::expr_type(t.m_arg), module.get());
+            t.m_arg, ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(t.m_arg)), module.get());
         tmp = llvm_utils->CreateLoad2(des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_type_, des_complex_arr));
         int kind = ASRUtils::extract_kind_from_ttype_t(t.m_type);
         llvm::Type* pointer_cast_type = nullptr;
@@ -15911,9 +15912,39 @@ public:
             pointer_cast_type = llvm::Type::getDoubleTy(context)->getPointerTo();
         }
         tmp = builder->CreateBitCast(tmp, pointer_cast_type);
-        PointerToData_to_Descriptor(t.m_arg, t.m_type, t.m_type);
+        ASR::dimension_t* m_dims_ = nullptr;
+        int n_dims_ = ASRUtils::extract_dimensions_from_ttype(t.m_type, m_dims_);
+        if( !ASRUtils::is_dimension_empty(m_dims_, n_dims_) ) {
+            PointerToData_to_Descriptor(t.m_arg, t.m_type, t.m_type);
+        } else {
+            // Deferred shape (allocatable/pointer source): dimensions are
+            // only known at runtime, so copy them from the complex array's
+            // descriptor instead of the ASR compile-time dims.
+            llvm::Type* real_desc_type = llvm_utils->get_type_from_ttype_t_util(t.m_arg,
+                ASRUtils::type_get_past_allocatable_pointer(t.m_type), module.get());
+            llvm::Value* target = arr_descr->create_descriptor_alloca(
+                real_desc_type, "array_descriptor");
+            builder->CreateStore(tmp,
+                arr_descr->get_pointer_to_data(real_desc_type, target));
+            arr_descr->reset_array_details(real_desc_type, target,
+                des_complex_type_, des_complex_arr, n_dims_);
+            llvm::Type* real_data_type = llvm_utils->get_el_type(t.m_arg,
+                ASRUtils::extract_type(t.m_type), module.get());
+            llvm::DataLayout data_layout(module->getDataLayout());
+            uint64_t elem_size = data_layout.getTypeAllocSize(real_data_type);
+            set_cfi_descriptor_fields(real_desc_type, target,
+                ASRUtils::extract_type(t.m_type), elem_size, t.m_type);
+            unsigned idx_bits_ = arr_descr->get_index_type()->getIntegerBitWidth();
+            llvm::Value* real_offset = builder->CreateMul(
+                arr_descr->get_offset(des_complex_type_, des_complex_arr, true),
+                llvm::ConstantInt::get(context, llvm::APInt(idx_bits_, 2)));
+            builder->CreateStore(real_offset,
+                arr_descr->get_offset(real_desc_type, target, false));
+            tmp = target;
+        }
         llvm::Value* des_real_arr = tmp;
-        llvm::Type* des_real_type = llvm_utils->get_type_from_ttype_t_util(t.m_arg, t.m_type, module.get());
+        llvm::Type* des_real_type = llvm_utils->get_type_from_ttype_t_util(t.m_arg,
+            ASRUtils::type_get_past_allocatable_pointer(t.m_type), module.get());
         llvm::Value* arr_data = llvm_utils->CreateLoad2(
             des_complex_type->getPointerTo(), arr_descr->get_pointer_to_data(des_complex_type_, des_complex_arr));
         tmp = builder->CreateBitCast(arr_data, pointer_cast_type);

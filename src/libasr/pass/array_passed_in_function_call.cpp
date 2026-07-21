@@ -487,6 +487,29 @@ public:
                 }
                 break;
             }
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm: {
+                ASR::expr_t* complex_arg = ASR::is_a<ASR::ComplexRe_t>(*value) ?
+                    ASR::down_cast<ASR::ComplexRe_t>(value)->m_arg :
+                    ASR::down_cast<ASR::ComplexIm_t>(value)->m_arg;
+                if ( ASRUtils::is_array(ASRUtils::expr_type(complex_arg)) ) {
+                    size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(complex_arg));
+                    allocate_dims.reserve(al, rank);
+                    for( size_t i = 0; i < rank; i++ ) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        // Assume 1 for Fortran.
+                        allocate_dim.m_start = index_one;
+                        ASR::expr_t* dim = get_index_constant(loc, i + 1);
+                        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, ASRUtils::get_past_array_physical_cast(complex_arg),
+                            dim, index_type, nullptr));
+                        allocate_dims.push_back(al, allocate_dim);
+                    }
+                }
+                break;
+            }
             case ASR::exprType::ArraySection: {
                 ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(value);
                 allocate_dims.reserve(al, array_section_t->n_args);
