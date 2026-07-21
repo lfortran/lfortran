@@ -34,6 +34,9 @@ namespace LCompilers::LFortran {
 
 static int PDT_SENTINEL = 1000;
 
+using EntryMasterWrappers =
+    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>>;
+
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
     if (x.m_bind) {
@@ -2183,6 +2186,7 @@ public:
     std::vector<std::string> explicit_intrinsic_procedures;
     std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions;
     std::map<std::string, std::vector<int>> &entry_function_arguments_mapping;
+    EntryMasterWrappers &entry_master_wrappers;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     bool current_function_deterministic = true;
@@ -2266,6 +2270,7 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        EntryMasterWrappers &entry_master_wrappers,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
             LCompilers::LocationManager &lm
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
@@ -2275,6 +2280,7 @@ public:
           external_procedures_mapping{external_procedures_mapping},
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
+          entry_master_wrappers{entry_master_wrappers},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
           instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm}
     {
@@ -2352,10 +2358,141 @@ public:
         return v;
     }
 
+    bool restore_entry_master_metadata(ASR::Function_t *candidate) {
+        ASR::symbol_t *candidate_sym = (ASR::symbol_t*)candidate;
+        if (entry_master_wrappers.find(candidate_sym) !=
+                entry_master_wrappers.end()) {
+            return true;
+        }
+        ASR::symbol_t *entry_selector =
+            candidate->m_symtab->get_symbol("entry__lcompilers");
+        std::string candidate_name = candidate->m_name;
+        std::string suffix = "_main__lcompilers";
+        bool has_suffix = candidate_name.size() > suffix.size() &&
+            candidate_name.compare(candidate_name.size() - suffix.size(),
+                suffix.size(), suffix) == 0;
+        if (!has_suffix || !entry_selector || candidate->n_args == 0 ||
+                !ASR::is_a<ASR::Var_t>(*candidate->m_args[0]) ||
+                ASR::down_cast<ASR::Var_t>(
+                    candidate->m_args[0])->m_v != entry_selector) {
+            return false;
+        }
+        std::set<ASR::symbol_t*> wrappers;
+        SymbolTable *parent = ASRUtils::symbol_parent_symtab(candidate_sym);
+        for (auto &item: parent->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) {
+                continue;
+            }
+            ASR::Function_t *wrapper =
+                ASR::down_cast<ASR::Function_t>(item.second);
+            bool same_location =
+                wrapper->base.base.loc.first ==
+                    candidate->base.base.loc.first &&
+                wrapper->base.base.loc.last ==
+                    candidate->base.base.loc.last;
+            if (!same_location) {
+                continue;
+            }
+            for (size_t i = 0; i < wrapper->n_dependencies; i++) {
+                if (candidate_name == wrapper->m_dependencies[i]) {
+                    wrappers.insert(item.second);
+                    break;
+                }
+            }
+        }
+        if (wrappers.empty()) {
+            return false;
+        }
+        entry_master_wrappers[candidate_sym] = std::move(wrappers);
+        return true;
+    }
+
 
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
+        if (compiler_options.implicit_typing && v) {
+            ASR::symbol_t *vpast = ASRUtils::symbol_get_past_external(v);
+            if (ASR::is_a<ASR::Function_t>(*vpast)) {
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(vpast);
+                restore_entry_master_metadata(fn);
+                auto master = entry_master_wrappers.find(vpast);
+                bool fn_is_entry_master =
+                    master != entry_master_wrappers.end();
+                bool has_local_symbol =
+                    scope->get_symbol(var_name) != nullptr;
+                bool is_established_procedure = scope->asr_owner &&
+                    check_is_external(var_name, scope);
+                for (char *dependency: current_function_dependencies) {
+                    if (var_name == dependency) {
+                        is_established_procedure = true;
+                        break;
+                    }
+                }
+                bool is_current_procedure = false;
+                if (!fn_is_entry_master) {
+                    for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+                        if (fn->m_symtab == s) {
+                            is_current_procedure = true;
+                            break;
+                        }
+                        if (s->asr_owner &&
+                                ASR::is_a<ASR::symbol_t>(*s->asr_owner)) {
+                            ASR::symbol_t *owner_sym =
+                                ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+                            auto owner =
+                                entry_master_wrappers.find(owner_sym);
+                            if (owner != entry_master_wrappers.end() &&
+                                    owner->second.find(vpast) !=
+                                        owner->second.end()) {
+                                is_current_procedure = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                bool is_global_procedure =
+                    ASRUtils::symbol_parent_symtab(v) ==
+                        scope->get_global_scope();
+                // Only let an implicit-typed local shadow a global procedure
+                // when the current scope can actually give the name a type
+                // implicitly (i.e. it is not IMPLICIT NONE for this name's
+                // first letter, which is encoded as a null entry). Otherwise
+                // legitimate references to an external procedure (e.g. as a
+                // procedure-pointer target) would be dropped and reported as
+                // undeclared.
+                bool can_implicitly_declare = false;
+                if (current_scope->asr_owner) {
+                    auto it = implicit_mapping.find(
+                        get_hash(current_scope->asr_owner));
+                    if (it != implicit_mapping.end()) {
+                        auto lit = it->second.find(
+                            std::string(1, var_name[0]));
+                        if (lit != it->second.end() && lit->second != nullptr) {
+                            can_implicitly_declare = true;
+                        }
+                    }
+                }
+                if (!is_established_procedure &&
+                        (fn_is_entry_master ||
+                        (can_implicitly_declare && !has_local_symbol &&
+                            is_global_procedure &&
+                            !is_current_procedure))) {
+                    SymbolTable *declaration_scope =
+                        statement_function_parent_scope ?
+                            statement_function_parent_scope : scope;
+                    ASR::symbol_t *declared =
+                        declaration_scope->get_symbol(var_name);
+                    if (fn_is_entry_master && declared &&
+                            ASR::is_a<ASR::ExternalSymbol_t>(*declared) &&
+                            ASRUtils::symbol_get_past_external(declared) ==
+                                vpast) {
+                        declaration_scope->erase_symbol(var_name);
+                    }
+                    v = nullptr;
+                }
+            }
+        }
         if (compiler_options.implicit_typing) {
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0 && current_scope->asr_owner) {
