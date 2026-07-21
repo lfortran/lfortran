@@ -6596,7 +6596,7 @@ public:
                                                     array_lower_bound)->m_n == 1);
                                             bool is_supported = array_type->n_dims == 1 &&
                                                 ASRUtils::get_fixed_size_of_array(
-                                                    unwrapped_array_type) == 1 &&
+                                                    unwrapped_array_type) > 0 &&
                                                 !ASR::is_a<ASR::Array_t>(*common_type) &&
                                                 ASRUtils::types_equal(common_type,
                                                     array_type->m_type, nullptr, nullptr) &&
