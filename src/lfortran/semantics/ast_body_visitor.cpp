@@ -3,6 +3,8 @@
 #include <cstring>
 #include <set>
 #include <unordered_set>
+#include <map>
+#include <functional>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
@@ -10236,6 +10238,62 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         return error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+
+    // Post-processing: reconcile implicit external interfaces with actual
+    // definitions found in the same translation unit.
+    //
+    // Under --implicit-interface --implicit-typing, an `EXTERNAL FOO`
+    // declaration creates a nested implicit interface Function for FOO whose
+    // return type is guessed from the implicit typing rules (e.g. a name
+    // starting with 'N' becomes an integer function). If FOO is actually
+    // defined later in the same file as a SUBROUTINE (or a function with a
+    // different return type), the guessed interface disagrees with the real
+    // definition. Both share the same mangled name in codegen, so the wrong
+    // (guessed) signature would be emitted, producing invalid LLVM IR such as
+    // `ret void` in a function declared to return i32. Here we make the
+    // implicit interface agree with the actual definition.
+    if (compiler_options.implicit_interface) {
+        // Collect actual definitions (deftype Implementation) by name.
+        std::map<std::string, ASR::Function_t*> definitions;
+        std::function<void(SymbolTable*)> collect_defs = [&](SymbolTable* scope) {
+            for (auto& item : scope->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(item.second);
+                    if (ASRUtils::get_FunctionType(f)->m_deftype
+                            == ASR::deftypeType::Implementation) {
+                        definitions[std::string(f->m_name)] = f;
+                    }
+                    collect_defs(f->m_symtab);
+                }
+            }
+        };
+        collect_defs(tu->m_symtab);
+
+        std::function<void(SymbolTable*)> reconcile = [&](SymbolTable* scope) {
+            for (auto& item : scope->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+                ASR::Function_t* iface = ASR::down_cast<ASR::Function_t>(item.second);
+                reconcile(iface->m_symtab);
+                ASR::FunctionType_t* iface_ft = ASRUtils::get_FunctionType(iface);
+                // Only consider implicit external interfaces (no body).
+                if (iface_ft->m_deftype != ASR::deftypeType::Interface
+                        || iface->n_body != 0 || iface->m_return_var == nullptr) {
+                    continue;
+                }
+                auto it = definitions.find(std::string(iface->m_name));
+                if (it == definitions.end()) continue;
+                ASR::Function_t* def = it->second;
+                if (def == iface) continue;
+                if (def->m_return_var == nullptr) {
+                    // The actual definition is a subroutine; drop the guessed
+                    // return value from the implicit interface.
+                    iface->m_return_var = nullptr;
+                    iface_ft->m_return_var_type = nullptr;
+                }
+            }
+        };
+        reconcile(tu->m_symtab);
+    }
 
     // Post-processing: propagate procedure types for implicit interfaces.
     // This handles the case where callee body is visited after caller body,
