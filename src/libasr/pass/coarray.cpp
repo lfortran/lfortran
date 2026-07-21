@@ -1037,23 +1037,21 @@ class PRIFInterface {
             // Convert team_type to __module_prif_prif_team_type
             if (team && ASR::is_a<ASR::Var_t>(*team)) {
                 ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
-                if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym))) {
-                    ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
-                    ASR::ttype_t *team_type = team_var->m_type;
-                    if (ASR::is_a<ASR::StructType_t>(*team_type)) {
-                        ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
-                        if (team_var->m_type_declaration != prif_decl) {
-                            ASR::symbol_t *orig_decl = team_var->m_type_declaration;
-                            team_var->m_type_declaration = prif_decl;
-                            team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
-                            LCOMPILERS_ASSERT(orig_decl != nullptr);
-                            SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
-                            LCOMPILERS_ASSERT(parent_symtab != nullptr);
-                            std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
-                            if (parent_symtab->get_symbol(sym_name)) {
-                                parent_symtab->erase_symbol(sym_name);
-                            }
-                        }
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
+                ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
+                ASR::ttype_t *team_type = team_var->m_type;
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_type));
+                ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
+                if (team_var->m_type_declaration != prif_decl) {
+                    ASR::symbol_t *orig_decl = team_var->m_type_declaration;
+                    team_var->m_type_declaration = prif_decl;
+                    team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
+                    LCOMPILERS_ASSERT(orig_decl != nullptr);
+                    SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
+                    LCOMPILERS_ASSERT(parent_symtab != nullptr);
+                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
+                    if (parent_symtab->get_symbol(sym_name)) {
+                        parent_symtab->erase_symbol(sym_name);
                     }
                 }
             }
