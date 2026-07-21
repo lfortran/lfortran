@@ -24136,7 +24136,23 @@ public:
             // For bind(c) character array arguments passed as Var, extract the raw data pointer
             // from the string descriptor. For other expression types, the conversion may have
             // already occurred via ArrayPhysicalCast or other mechanisms.
+            // This raw-data-pointer form is what a genuine external C function
+            // (declared with an explicit bind(C) binding label) expects. An
+            // implicit-interface procedure (BindC ABI internally but no binding
+            // label) is a plain Fortran subroutine whose dummy expects the
+            // string descriptor itself, so it must not be unwrapped here.
+            bool callee_is_implicit_interface = false;
+            if (func_subrout->type == ASR::symbolType::Function) {
+                ASR::FunctionType_t* callee_ft = ASRUtils::get_FunctionType(
+                    ASR::down_cast<ASR::Function_t>(func_subrout));
+                if (callee_ft->m_abi == ASR::abiType::BindC &&
+                    callee_ft->m_deftype == ASR::deftypeType::Interface &&
+                    !callee_ft->m_bindc_name) {
+                    callee_is_implicit_interface = true;
+                }
+            }
             if (orig_arg && x_abi == ASR::abiType::BindC &&
+                !callee_is_implicit_interface &&
                 ASRUtils::is_character(*orig_arg->m_type) &&
                 ASRUtils::is_array(orig_arg->m_type) &&
                 ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {

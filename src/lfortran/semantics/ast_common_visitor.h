@@ -16241,9 +16241,7 @@ public:
                         ASRUtils::type_get_past_pointer(var_type));
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
                     ASR::array_physical_typeType phys_type;
-                    if (ASRUtils::is_character(*array_type->m_type)) {
-                        phys_type = ASR::array_physical_typeType::DescriptorArray;
-                    } else if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                    if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                         phys_type = array_type->m_physical_type;
                     } else {
                         phys_type = ASR::array_physical_typeType::PointerArray;
