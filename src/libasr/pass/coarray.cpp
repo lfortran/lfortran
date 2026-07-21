@@ -1039,8 +1039,7 @@ class PRIFInterface {
                 ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
                 ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
-                ASR::ttype_t *team_type = team_var->m_type;
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_type));
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_var->m_type));
                 ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
                 if (team_var->m_type_declaration != prif_decl) {
                     ASR::symbol_t *orig_decl = team_var->m_type_declaration;
