@@ -6115,23 +6115,91 @@ public:
                             ASRUtils::type_get_past_pointer(t));
                     };
 
-                    auto get_first_index = [](ASR::ArrayItem_t* item) -> int64_t {
-                        if (item->n_args > 0 && item->m_args[0].m_right &&
-                            ASR::is_a<ASR::IntegerConstant_t>(*item->m_args[0].m_right)) {
-                            return ASR::down_cast<ASR::IntegerConstant_t>(
-                                item->m_args[0].m_right)->m_n;
-                        }
-                        return 1;
+                    auto equivalence_constant_error = [&](const Location& loc) {
+                        diag.semantic_error_label(
+                            "equivalence array bounds and subscripts must be constant",
+                            {loc}, "unsupported equivalence");
+                        throw SemanticAbort();
                     };
 
-                    auto make_single_index = [&](const Location& loc,
-                            ASR::expr_t* index_expr) -> Vec<ASR::array_index_t> {
+                    auto get_array_type = [&](ASR::ArrayItem_t* item) -> ASR::Array_t* {
+                        ASR::ttype_t* type = type_unwrap(
+                            ASRUtils::expr_type(item->m_v));
+                        if (!ASR::is_a<ASR::Array_t>(*type)) {
+                            equivalence_constant_error(item->base.base.loc);
+                        }
+                        return ASR::down_cast<ASR::Array_t>(type);
+                    };
+
+                    auto extract_constant = [&](ASR::expr_t* expr,
+                            const Location& loc) -> int64_t {
+                        int64_t value;
+                        if (!expr || !ASRUtils::extract_value(expr, value)) {
+                            equivalence_constant_error(loc);
+                        }
+                        return value;
+                    };
+
+                    auto get_linear_offset = [&](ASR::ArrayItem_t* item,
+                            ASR::Array_t* array) -> int64_t {
+                        if (item->n_args != array->n_dims) {
+                            equivalence_constant_error(item->base.base.loc);
+                        }
+                        int64_t offset = 0;
+                        int64_t stride = 1;
+                        for (size_t j = 0; j < array->n_dims; j++) {
+                            int64_t index = extract_constant(
+                                item->m_args[j].m_right, item->base.base.loc);
+                            int64_t lower_bound = array->m_dims[j].m_start
+                                ? extract_constant(array->m_dims[j].m_start,
+                                    item->base.base.loc)
+                                : 1;
+                            int64_t length = extract_constant(
+                                array->m_dims[j].m_length, item->base.base.loc);
+                            if (length <= 0) {
+                                equivalence_constant_error(item->base.base.loc);
+                            }
+                            offset += (index - lower_bound) * stride;
+                            stride *= length;
+                        }
+                        return offset;
+                    };
+
+                    auto make_array_indices = [&](const Location& loc,
+                            ASR::Array_t* array, int64_t linear_offset,
+                            ASR::ttype_t* int_type) -> Vec<ASR::array_index_t> {
                         Vec<ASR::array_index_t> args;
-                        args.reserve(al, 1);
-                        ASR::array_index_t ai;
-                        ai.loc = loc; ai.m_left = nullptr;
-                        ai.m_right = index_expr; ai.m_step = nullptr;
-                        args.push_back(al, ai);
+                        args.reserve(al, array->n_dims);
+                        int64_t remaining = linear_offset;
+                        for (size_t j = 0; j < array->n_dims; j++) {
+                            int64_t lower_bound = array->m_dims[j].m_start
+                                ? extract_constant(array->m_dims[j].m_start, loc)
+                                : 1;
+                            int64_t length = extract_constant(
+                                array->m_dims[j].m_length, loc);
+                            if (length <= 0) {
+                                equivalence_constant_error(loc);
+                            }
+                            int64_t position;
+                            if (j + 1 == array->n_dims) {
+                                position = remaining;
+                            } else {
+                                position = remaining % length;
+                                remaining /= length;
+                                if (position < 0) {
+                                    position += length;
+                                    remaining--;
+                                }
+                            }
+                            ASR::array_index_t ai;
+                            ai.loc = loc;
+                            ai.m_left = nullptr;
+                            ai.m_right = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, loc,
+                                    lower_bound + position, int_type));
+                            ai.m_step = nullptr;
+                            args.push_back(al, ai);
+                        }
                         return args;
                     };
 
@@ -6270,6 +6338,9 @@ public:
                           ASR::Array_t* anchor_arr_saved = nullptr;
                           ASR::expr_t* anchor_var_ref_saved = nullptr;
                           ASR::expr_t* common_block_source = nullptr;
+                          ASR::Array_t* first_eq1_source_arr = nullptr;
+                          int64_t first_eq1_offset = 0;
+                          int64_t anchor_offset = 0;
                           for (int eq_idx = 0; eq_idx < n_set - 1; eq_idx++) {
                             AST::expr_t *eq1 = eq->m_args[i].m_set_list[eq_idx];
                             AST::expr_t *eq2 = anchor;
@@ -6284,12 +6355,20 @@ public:
 
                                 ASR::ArrayItem_t* array_item1 = ASR::down_cast<ASR::ArrayItem_t>(asr_eq1);
                                 ASR::ArrayItem_t* array_item2 = ASR::down_cast<ASR::ArrayItem_t>(asr_eq2);
-                                int64_t idx1 = get_first_index(array_item1);
-                                int64_t idx2 = get_first_index(array_item2);
+                                ASR::Array_t* source_arr = get_array_type(array_item1);
+                                int64_t offset1 = get_linear_offset(array_item1, source_arr);
+                                int64_t offset2 = anchor_offset;
+                                if (eq_idx == 0) {
+                                    ASR::Array_t* anchor_arr = get_array_type(array_item2);
+                                    offset2 = get_linear_offset(array_item2, anchor_arr);
+                                    anchor_offset = offset2;
+                                }
 
                                 if (eq_idx == 0) {
                                     asr_first_eq1 = asr_eq1;
                                     first_array_item1 = array_item1;
+                                    first_eq1_source_arr = source_arr;
+                                    first_eq1_offset = offset1;
                                     first_eq1_var_ref = array_item1->m_v;
                                     if (ASR::is_a<ASR::Var_t>(*first_eq1_var_ref)) {
                                         ASR::Var_t* fv = ASR::down_cast<ASR::Var_t>(first_eq1_var_ref);
@@ -6307,8 +6386,8 @@ public:
 
                                 if (eq_idx == 0) {
                                     // First iteration: get pointer from eq1, make anchor a pointer
-                                    ASR::expr_t* adj_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, idx1 - idx2 + 1, int_type));
-                                    Vec<ASR::array_index_t> adj_args = make_single_index(loc, adj_idx);
+                                    Vec<ASR::array_index_t> adj_args = make_array_indices(
+                                        loc, source_arr, offset1 - offset2, int_type);
                                     ASR::ttype_t* arg_type1 = type_unwrap(ASRUtils::expr_type(asr_eq1));
                                     ASR::expr_t* adjusted_eq1 = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                         al, loc, array_item1->m_v, adj_args.p, adj_args.size(),
@@ -6326,9 +6405,9 @@ public:
                                     anchor_var_ref_saved = target_var_ref;
                                 } else {
                                     // Subsequent iterations: point to first eq1's storage
-                                    int64_t first_idx = get_first_index(first_array_item1);
-                                    ASR::expr_t* adj_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, first_idx - idx1 + 1, int_type));
-                                    Vec<ASR::array_index_t> adj_args = make_single_index(loc, adj_idx);
+                                    Vec<ASR::array_index_t> adj_args = make_array_indices(
+                                        loc, first_eq1_source_arr,
+                                        first_eq1_offset - offset1, int_type);
                                     ASR::ttype_t* arg_type_first = type_unwrap(ASRUtils::expr_type(asr_first_eq1));
                                     ASR::expr_t* adjusted_first = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                         al, loc, first_array_item1->m_v, adj_args.p, adj_args.size(),
@@ -6347,8 +6426,8 @@ public:
                                         // Use it as the storage source: redirect anchor
                                         // and first eq1 to point to this variable's storage.
                                         ASR::ttype_t* cb_elem_type = type_unwrap(ASRUtils::expr_type(asr_eq1));
-                                        ASR::expr_t* cb_adj = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, idx1 - idx2 + 1, int_type));
-                                        Vec<ASR::array_index_t> cb_args = make_single_index(loc, cb_adj);
+                                        Vec<ASR::array_index_t> cb_args = make_array_indices(
+                                            loc, source_arr, offset1 - offset2, int_type);
                                         ASR::expr_t* adjusted_cb = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                             al, loc, array_item1->m_v, cb_args.p, cb_args.size(),
                                             cb_elem_type, ASR::arraystorageType::ColMajor, nullptr));
@@ -6363,8 +6442,9 @@ public:
                                             ASR::ttype_t* fe_type = clone_type(loc, type_unwrap(ASRUtils::expr_type(asr_first_eq1)));
                                             if (fe_type) {
                                                 make_var_ptr_array(loc, first_eq1_variable, fe_type, first_eq1_arr->n_dims);
-                                                ASR::expr_t* fe_adj = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, idx1 - first_idx + 1, int_type));
-                                                Vec<ASR::array_index_t> fe_args = make_single_index(loc, fe_adj);
+                                                Vec<ASR::array_index_t> fe_args = make_array_indices(
+                                                    loc, source_arr,
+                                                    offset1 - first_eq1_offset, int_type);
                                                 ASR::expr_t* adj_cb_fe = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                     al, loc, array_item1->m_v, fe_args.p, fe_args.size(),
                                                     cb_elem_type, ASR::arraystorageType::ColMajor, nullptr));
