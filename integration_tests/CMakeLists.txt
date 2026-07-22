@@ -4971,6 +4971,7 @@ RUN(NAME real128_module_01 LABELS gfortran llvm EXTRAFILES real128_module_01_mod
 RUN(NAME equivalence_39 LABELS gfortran llvm)
 RUN(NAME equivalence_40 LABELS gfortran llvm)
 RUN(NAME equivalence_41 LABELS gfortran llvm)
+RUN(NAME equivalence_42 LABELS gfortran llvm)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME decl_order_01 LABELS gfortran llvm)

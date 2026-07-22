@@ -23,6 +23,7 @@
 #include <map>
 #include <queue>
 #include <limits>
+#include <utility>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
@@ -6254,6 +6255,34 @@ public:
                                     ASR::Array_t* anchor_arr = get_array_type(array_item2);
                                     offset2 = get_linear_offset(array_item2, anchor_arr);
                                     anchor_offset = offset2;
+                                    int64_t source_size =
+                                        ASRUtils::get_type_byte_size(
+                                            &source_arr->base);
+                                    int64_t anchor_size =
+                                        ASRUtils::get_type_byte_size(
+                                            &anchor_arr->base);
+                                    int64_t source_element_size =
+                                        ASRUtils::get_type_byte_size(
+                                            source_arr->m_type);
+                                    int64_t anchor_element_size =
+                                        ASRUtils::get_type_byte_size(
+                                            anchor_arr->m_type);
+                                    // Use the larger array as backing storage so
+                                    // that the equivalenced alias cannot overrun it.
+                                    if (n_set == 2 &&
+                                        offset1 == offset2 &&
+                                        source_size > 0 &&
+                                        anchor_size > source_size &&
+                                        source_element_size > 0 &&
+                                        source_element_size ==
+                                            anchor_element_size &&
+                                        ASR::is_a<ASR::Var_t>(
+                                            *array_item1->m_v)) {
+                                        std::swap(asr_eq1, asr_eq2);
+                                        std::swap(array_item1, array_item2);
+                                        std::swap(source_arr, anchor_arr);
+                                        std::swap(offset1, offset2);
+                                    }
                                 }
 
                                 if (eq_idx == 0) {
