@@ -2495,7 +2495,12 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     self.emit(        'self().write_int8(bytes[i]);', 4)
                     self.emit(    '}', 3)
                     self.emit('} else {', 2)
-                    self.emit(    'self().write_float64(x.m_%s);' % field.name, 3)
+                    self.emit(    '{', 3)
+                    self.emit(        'uint8_t bytes[16];', 4)
+                    self.emit(        'std::memset(bytes, 0, 16);', 4)
+                    self.emit(        'std::memcpy(bytes, &x.m_%s, sizeof(double));' % field.name, 4)
+                    self.emit(        'for (int i = 0; i < 16; i++) { self().write_int8(bytes[i]); }', 4)
+                    self.emit(    '}', 3)
                     self.emit('}', 2)
                 else:
                     self.emit('self().write_float64(x.m_%s);' % field.name, 2)
