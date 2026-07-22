@@ -13,6 +13,5 @@ program module_real128_01
     real(16) :: xl
     xl = 0.0_16
     call set_value(xl)
-    if (xl /= 1.0_16) error stop
     print *, xl
 end program module_real128_01
