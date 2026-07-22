@@ -1808,6 +1808,22 @@ Vec<ast_t*> SPLIT_STMT(Allocator &al, Vec<ast_t*> ast)
     return v;
 }
 
+static inline void split_implicit_statements(Allocator &al,
+        const Vec<ast_t*> &items, Vec<ast_t*> &implicit_stmts,
+        Vec<ast_t*> &other_stmts) {
+    implicit_stmts.reserve(al, items.size());
+    other_stmts.reserve(al, items.size());
+    for (size_t i = 0; i < items.size(); i++) {
+        if (!items[i]) {
+            continue;
+        } else if (is_a<implicit_statement_t>(*items[i])) {
+            implicit_stmts.push_back(al, items[i]);
+        } else {
+            other_stmts.push_back(al, items[i]);
+        }
+    }
+}
+
 ast_t* PROGRAM2(Allocator &al, const Location &a_loc, char* a_name,
         trivia_t* a_trivia, unit_decl1_t** a_use, size_t n_use,
         implicit_statement_t** a_implicit, size_t n_implicit,
