@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-coarray_allocate_01-6772f04",
+    "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true",
+    "infile": "tests/coarray_allocate_01.f90",
+    "infile_hash": "b84e23fb31f5f4bc70fa020de0fdad5f3ed88f16cfa2a5e2fad8bac6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-coarray_allocate_01-6772f04.f90",
+    "stdout_hash": "c8d2f5613549ef4bb06e8cd6ca39ad28fa0dfd289e968c15c2a65f49",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
