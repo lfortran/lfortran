@@ -1602,7 +1602,7 @@ public:
             if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
-                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    ASRUtils::is_interface(ASRUtils::get_FunctionType(f2))) {
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
                     bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
 
@@ -2440,7 +2440,7 @@ public:
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                   // TODO: Throw error when interface definition and implementation signatures are different
-                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    ASRUtils::is_interface(ASRUtils::get_FunctionType(f2))) {
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
                     bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
                     if (!is_placeholder) {

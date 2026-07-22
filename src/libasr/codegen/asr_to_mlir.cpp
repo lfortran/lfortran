@@ -169,7 +169,7 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
-        if (fnType->m_deftype == ASR::deftypeType::Interface) {
+        if (ASRUtils::is_interface(fnType)) {
             // Skip Interface function for now
             return;
         }

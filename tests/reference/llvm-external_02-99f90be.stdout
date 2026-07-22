@@ -2,37 +2,37 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-define void @cobyla(void (double*)* %calcfc) {
+define void @cobyla_(void (double*)* %calcfc_) {
 .entry:
-  call void @cobylb(void (double*)* %calcfc)
+  call void @cobylb_(void (double*)* %calcfc_)
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
   br label %return
 
 return:                                           ; preds = %unreachable_after_return, %.entry
-  br label %FINALIZE_SYMTABLE_cobyla
+  br label %FINALIZE_SYMTABLE_cobyla_
 
-FINALIZE_SYMTABLE_cobyla:                         ; preds = %return
+FINALIZE_SYMTABLE_cobyla_:                        ; preds = %return
   ret void
 }
 
-declare void @calcfc(double*)
+declare void @calcfc_(double*)
 
-define void @cobylb(void (double*)* %calcfc) {
+define void @cobylb_(void (double*)* %calcfc_) {
 .entry:
   %con = alloca double, align 8
-  call void %calcfc(double* %con)
+  call void %calcfc_(double* %con)
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
   br label %return
 
 return:                                           ; preds = %unreachable_after_return, %.entry
-  br label %FINALIZE_SYMTABLE_cobylb
+  br label %FINALIZE_SYMTABLE_cobylb_
 
-FINALIZE_SYMTABLE_cobylb:                         ; preds = %return
+FINALIZE_SYMTABLE_cobylb_:                        ; preds = %return
   ret void
 }
 
-declare void @calcfc.1(double*)
+declare void @calcfc_.1(double*)

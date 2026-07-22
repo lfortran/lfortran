@@ -10675,7 +10675,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                 reconcile(iface->m_symtab);
                 ASR::FunctionType_t* iface_ft = ASRUtils::get_FunctionType(iface);
                 // Only consider implicit external interfaces (no body).
-                if (iface_ft->m_deftype != ASR::deftypeType::Interface
+                if (!ASRUtils::is_implicit_interface(iface_ft)
                         || iface->n_body != 0 || iface->m_return_var == nullptr) {
                     continue;
                 }

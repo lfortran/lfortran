@@ -236,7 +236,7 @@
                                         (Complex 4)]
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
