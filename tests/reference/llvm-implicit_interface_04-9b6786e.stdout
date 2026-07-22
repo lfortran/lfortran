@@ -236,7 +236,7 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
-define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
+define void @driver(void (i32*, i32*, i32*)* %fnc_, i32* %arr, i32* %m) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
@@ -304,7 +304,7 @@ then:                                             ; preds = %free_done
 ifcont:                                           ; preds = %free_done
   %35 = mul i64 1, %14
   %36 = getelementptr inbounds i32, i32* %arr, i64 2
-  call void %fnc(i32* %arr, i32* %m, i32* %36)
+  call void %fnc_(i32* %arr, i32* %m, i32* %36)
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -314,7 +314,7 @@ FINALIZE_SYMTABLE_driver:                         ; preds = %return
   ret void
 }
 
-declare void @fnc(i32*, i32*, i32*)
+declare void @fnc_(i32*, i32*, i32*)
 
 define void @implicit_interface_check(i32* %arr1, i32* %m, i32* %c) {
 .entry:
