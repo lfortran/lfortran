@@ -4467,7 +4467,7 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             bool is_assumed_rank = (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray);
-            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0 || is_assumed_rank); 
+            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0 || is_assumed_rank);
             bool is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(
                 ASRUtils::extract_type(x_mv_type));
             ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
