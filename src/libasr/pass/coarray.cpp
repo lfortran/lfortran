@@ -737,7 +737,7 @@ class PRIFInterface {
             args.push_back(al, handle_var);
             declare_prif_status_args(fn_symtab, loc, args);
             
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util( 
                 al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
                 args.p, args.n, nullptr, 0, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
@@ -1453,7 +1453,9 @@ class PRIFInterface {
                                 ASR::symbol_t *alloc_sub, ASR::symbol_t *handle_struct,
                                 ASR::ttype_t *i64, const Location &loc,
                                 Vec<ASR::stmt_t*> &new_body,
-                                ASR::expr_t *custom_size = nullptr) {
+                                ASR::expr_t *custom_size = nullptr,
+                                ASR::expr_t *stat = nullptr,
+                                ASR::expr_t *errmsg = nullptr) {
             ASRUtils::ASRBuilder b(al, loc);
             if (var->n_codims <= 0) {
                 throw LCompilersException("Coarray variable must have codimensions");
@@ -1512,6 +1514,9 @@ class PRIFInterface {
             ASR::expr_t *null_fptr = ASRUtils::EXPR(
                 ASR::make_PointerNullConstant_t(al, loc, cleanup_ft, nullptr));
             
+            ASR::expr_t *errmsg_alloc = nullptr;
+            select_errmsg_arg(errmsg, errmsg_alloc);
+
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 9);
             ASR::call_arg_t a1; a1.loc=loc; a1.m_value=lcobounds_val;
             ASR::call_arg_t a2; a2.loc=loc; a2.m_value=ucobounds_val;
@@ -1519,12 +1524,18 @@ class PRIFInterface {
             ASR::call_arg_t a4; a4.loc=loc; a4.m_value=null_fptr;
             ASR::call_arg_t a5; a5.loc=loc; a5.m_value=hexpr;
             ASR::call_arg_t a6; a6.loc=loc; a6.m_value=dexpr;
+            ASR::call_arg_t a7; a7.loc=loc; a7.m_value=stat;
+            ASR::call_arg_t a8; a8.loc=loc; a8.m_value=errmsg;
+            ASR::call_arg_t a9; a9.loc=loc; a9.m_value=errmsg_alloc;
             call_args.push_back(al, a1);
             call_args.push_back(al, a2);
             call_args.push_back(al, a3);
             call_args.push_back(al, a4);
             call_args.push_back(al, a5);
             call_args.push_back(al, a6);
+            call_args.push_back(al, a7);
+            call_args.push_back(al, a8);
+            call_args.push_back(al, a9);
             ASR::stmt_t *call_stmt = ASRUtils::STMT(ASR::make_SubroutineCall_t(
                 al, loc, alloc_sub, nullptr,
                 call_args.p, call_args.n, nullptr, false));
@@ -1557,7 +1568,7 @@ class PRIFInterface {
 
             ASR::expr_t *sz = get_dynamic_total_size_in_bytes_expr(loc, var, dims, n_dims);
             
-            emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body, sz);
+            emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body, sz, stat, errmsg);
             
             ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
             ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
