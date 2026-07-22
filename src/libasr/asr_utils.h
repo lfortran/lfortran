@@ -7966,6 +7966,26 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
                         if ((callee_param->m_intent == ASR::intentType::Out ||
                              callee_param->m_intent == ASR::intentType::InOut)) {
+                            // First: check whether the passed argument is even
+                            // a compatible kind of thing (e.g. a procedure symbol
+                            // passed where a variable was expected). That's a
+                            // type mismatch, and should be reported as such --
+                            // not as a misleading "wrong intent" error.
+                            if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
+                                ASR::symbol_t* passed_sym_check = ASRUtils::symbol_get_past_external(
+                                    ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v);
+                                if (!ASR::is_a<ASR::Variable_t>(*passed_sym_check)) {
+                                    std::string param_type_str = ASRUtils::type_to_str_with_kind(
+                                        callee_param->m_type, f->m_args[i]);
+                                    diag.add(diag::Diagnostic(
+                                        "Type mismatch: expected `" + param_type_str +
+                                        "` but a procedure was passed",
+                                        diag::Level::Error, diag::Stage::Semantic, {
+                                            diag::Label("", {passed_arg_expr->base.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
+                            }
                             if (!ASRUtils::is_modifiable_actual_argument_expr(passed_arg_expr)) {
                                 diag.add(diag::Diagnostic(
                                     "Non-variable expression in variable definition context "
