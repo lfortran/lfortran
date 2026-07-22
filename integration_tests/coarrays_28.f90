@@ -1,4 +1,4 @@
-﻿program test
+﻿program coarrays_28
     implicit none
 
     integer :: a(5)[*] = 0
@@ -11,4 +11,4 @@
     if (this_image() == 1) then
         print *, a(:)[2]
     end if
-end program
+end program coarrays_28
