@@ -3640,7 +3640,57 @@ public:
             // as it causes issues in LLVM codegen - create assignment instead
             if (ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
                 ASR::expr_t* arr_const = ASRUtils::EXPR(tmp);
-                ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, arr_const);
+                size_t object_rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(object));
+                size_t value_rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(arr_const));
+                // DATA values are a flat storage sequence, so restore the
+                // equivalenced target's rank before assigning them.
+                if (object_rank != value_rank) {
+                    Vec<ASR::expr_t*> shape_args;
+                    shape_args.reserve(al, 1);
+                    shape_args.push_back(al, object);
+
+                    Vec<ASR::dimension_t> shape_dims;
+                    shape_dims.reserve(al, 1);
+                    ASR::dimension_t shape_dim;
+                    shape_dim.loc = x.base.base.loc;
+                    shape_dim.m_start = one;
+                    shape_dim.m_length = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                            object_rank, int_type));
+                    shape_dims.push_back(al, shape_dim);
+                    ASR::ttype_t* shape_type = ASRUtils::TYPE(
+                        ASR::make_Array_t(al, x.base.base.loc, int_type,
+                            shape_dims.p, shape_dims.size(),
+                            ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::expr_t* shape = ASRUtils::EXPR(
+                        ASR::make_IntrinsicArrayFunction_t(al,
+                            x.base.base.loc,
+                            static_cast<int64_t>(
+                                ASRUtils::IntrinsicArrayFunctions::Shape),
+                            shape_args.p, shape_args.size(), 0,
+                            shape_type, nullptr));
+                    shape = ASRUtils::cast_to_descriptor(al, shape);
+
+                    Vec<ASR::dimension_t> reshape_dims;
+                    reshape_dims.reserve(al, object_rank);
+                    for (size_t i = 0; i < object_rank; i++) {
+                        ASR::dimension_t reshape_dim;
+                        reshape_dim.loc = x.base.base.loc;
+                        reshape_dim.m_start = nullptr;
+                        reshape_dim.m_length = nullptr;
+                        reshape_dims.push_back(al, reshape_dim);
+                    }
+                    ASR::ttype_t* reshape_type = ASRUtils::TYPE(
+                        ASR::make_Array_t(al, x.base.base.loc,
+                            array_type->m_type, reshape_dims.p,
+                            reshape_dims.size(),
+                            ASR::array_physical_typeType::FixedSizeArray));
+                    arr_const = ASRUtils::EXPR(ASR::make_ArrayReshape_t(
+                        al, x.base.base.loc, arr_const, shape, nullptr,
+                        nullptr, reshape_type, nullptr));
+                }
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
                             object->base.loc, object, arr_const, nullptr, compiler_options.po.realloc_lhs_arrays, false));
                 LCOMPILERS_ASSERT(current_body != nullptr)
