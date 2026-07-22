@@ -2481,7 +2481,24 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit(    'self().write_bool(false);', 3)
                 self.emit("}", 2)
             elif field.type == "float" and not field.seq and not field.opt:
-                self.emit('self().write_float64(x.m_%s);' % field.name, 2)
+                if cons_name == "RealConstant" and field.name == "r":
+                    # kind=16 RealConstant stores its binary128 payload
+                    # behind a pointer packed into m_r (see
+                    # real_constant_get_r16_bytes in asr_utils.h). Writing
+                    # the raw pointer bit-pattern would produce a dangling
+                    # pointer once read back in another process/allocator,
+                    # so serialize the actual 16 payload bytes for kind=16
+                    # and fall back to a plain double otherwise.
+                    self.emit('if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {', 2)
+                    self.emit(    'const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);', 3)
+                    self.emit(    'for (int i = 0; i < 16; i++) {', 3)
+                    self.emit(        'self().write_int8(bytes[i]);', 4)
+                    self.emit(    '}', 3)
+                    self.emit('} else {', 2)
+                    self.emit(    'self().write_float64(x.m_%s);' % field.name, 3)
+                    self.emit('}', 2)
+                else:
+                    self.emit('self().write_float64(x.m_%s);' % field.name, 2)
             elif field.type == "void":
                 assert True
             elif field.type == "location":
@@ -2723,7 +2740,17 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                         args.append("m_%s" % (f.name))
                     elif f.type == "float":
                         assert not f.opt
-                        lines.append("double m_%s = self().read_float64();" % (f.name))
+                        if name == "RealConstant" and f.name == "r":
+                            # kind=16 RealConstant packs its binary128 payload
+                            # behind a pointer in m_r (see
+                            # real_constant_get_r16_bytes in asr_utils.h).
+                            # We don't know the kind until m_type (the next
+                            # field) is deserialized, so stash the raw 16
+                            # bytes now and resolve m_r after the field loop.
+                            lines.append("uint8_t m_%s_bytes[16];" % (f.name))
+                            lines.append("for (int i = 0; i < 16; i++) { m_%s_bytes[i] = (uint8_t) self().read_int8(); }" % (f.name))
+                        else:
+                            lines.append("double m_%s = self().read_float64();" % (f.name))
                         args.append("m_%s" % (f.name))
                     elif f.type == "bool":
                         assert not f.opt
@@ -2797,6 +2824,15 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                                 lines.append("}")
                     args.append("m_%s" % (f.name))
 
+        if name == "RealConstant":
+            lines.append("double m_r;")
+            lines.append("if (ASRUtils::extract_kind_from_ttype_t(m_type) == 16) {")
+            lines.append("    uint8_t* m_r_heap_bytes = static_cast<uint8_t*>(al.alloc(16));")
+            lines.append("    std::memcpy(m_r_heap_bytes, m_r_bytes, 16);")
+            lines.append("    m_r = ASRUtils::real_constant_pack_r16(m_r_heap_bytes);")
+            lines.append("} else {")
+            lines.append("    std::memcpy(&m_r, m_r_bytes, sizeof(double));")
+            lines.append("}")
         self.emit(    'Location loc;', 2)
         self.emit(    'loc.first = self().read_int64() + offset;', 2)
         self.emit(    'loc.last = self().read_int64() + offset;', 2)
