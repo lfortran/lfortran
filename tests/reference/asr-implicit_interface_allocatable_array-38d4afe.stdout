@@ -139,7 +139,7 @@
                                         )]
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -229,7 +229,7 @@
                                         )]
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.

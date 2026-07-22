@@ -22,7 +22,7 @@
                                             (Real 8)]
                                             ()
                                             BindC
-                                            Interface
+                                            ImplicitInterface
                                             ()
                                             .false.
                                             .false.
@@ -34,7 +34,7 @@
                                         )]
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -138,7 +138,7 @@
                                         (Real 8)]
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.

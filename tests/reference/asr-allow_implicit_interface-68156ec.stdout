@@ -91,7 +91,7 @@
                                         (Logical 4)]
                                         (Real 4)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -220,7 +220,7 @@
                                         (Real 8)]
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.

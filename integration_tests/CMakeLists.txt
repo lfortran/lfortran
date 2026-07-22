@@ -3467,6 +3467,7 @@ RUN(NAME external_13 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --mang
 RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
 RUN(NAME external_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME external_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
+RUN(NAME external_17 LABELS gfortran llvm EXTRAFILES external_17.c EXTRA_ARGS --implicit-interface)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c
     GFORTRAN_ARGS -fno-underscoring)
@@ -4147,7 +4148,7 @@ RUN(NAME legacy_array_sections_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc 
 RUN(NAME legacy_array_sections_10 LABELS gfortran llvm llvm2 EXTRAFILES legacy_array_sections_10_foo.f90 EXTRA_ARGS --legacy-array-sections --implicit-interface --separate-compilation)
 RUN(NAME legacy_array_sections_11 LABELS gfortran llvm
     EXTRAFILES legacy_array_sections_11_stubs.c
-    EXTRA_ARGS --fixed-form --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation
+    EXTRA_ARGS --fixed-form --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --no-mangle-underscore-external
     GFORTRAN_ARGS -ffixed-form -fno-underscoring)
 RUN(NAME legacy_array_sections_12 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface --legacy-array-sections)
