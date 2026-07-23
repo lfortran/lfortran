@@ -91,6 +91,51 @@ private:
         return code;
     }
 
+    bool is_intrinsic_team(ASR::expr_t *team) {
+        ASR::ttype_t *team_type = ASRUtils::expr_type(team);
+        if (!ASRUtils::is_struct(*team_type)) {
+            return false;
+        }
+
+        ASR::symbol_t *team_sym = ASRUtils::get_struct_sym_from_struct_expr(team);
+        if (team_sym && ASR::is_a<ASR::Struct_t>(*team_sym)) {
+            ASR::Struct_t *struct_sym = ASR::down_cast<ASR::Struct_t>(team_sym);
+            SymbolTable *parent_scope = struct_sym->m_symtab->parent;
+            if (parent_scope && parent_scope->asr_owner) {
+                ASR::asr_t *owner = parent_scope->asr_owner;
+                if (ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+                    ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(owner));
+                    return std::string(mod->m_name) == "lfortran_intrinsic_iso_fortran_env" &&
+                           std::string(struct_sym->m_name) == "team_type";
+                }
+            }
+        }
+
+        return false;
+    }
+
+    void check_intrinsic_team_value(ASR::expr_t *team, const Location &loc,
+            const std::string &argument_name, const std::string &statement_name) {
+        ASR::ttype_t *team_type = ASRUtils::expr_type(team);
+        if (ASRUtils::is_array(team_type)) {
+            diag.add(Diagnostic(
+                "`" + argument_name + "` argument of `" + statement_name + "` must be scalar",
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+
+        if (!is_intrinsic_team(team)) {
+            diag.add(Diagnostic(
+                "`" + argument_name + "` argument of `" + statement_name + "` must be of type `team_type` from `iso_fortran_env`, found " +
+                ASRUtils::type_to_str_fortran_expr(team_type, team),
+                Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
 public:
     ASR::asr_t *asr;
     bool from_block;
@@ -9778,41 +9823,8 @@ public:
         ASR::expr_t *team = nullptr;
         if (x.m_team_var) {
             team = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_team_var)));
-            ASR::ttype_t *team_type = ASRUtils::expr_type(team);
-            if (ASRUtils::is_array(team_type)) {
-                diag.add(Diagnostic(
-                    "`team_variable` argument of `form team` must be scalar",
-                    Level::Error, Stage::Semantic,
-                    {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-            bool is_intrinsic_team = false;
-            if (ASRUtils::is_struct(*team_type)) {
-                ASR::symbol_t *team_sym = ASRUtils::get_struct_sym_from_struct_expr(team);
-                if (team_sym && ASR::is_a<ASR::Struct_t>(*team_sym)) {
-                    ASR::Struct_t *struct_sym = ASR::down_cast<ASR::Struct_t>(team_sym);
-                    SymbolTable *parent_scope = struct_sym->m_symtab->parent;
-                    if (parent_scope && parent_scope->asr_owner) {
-                        ASR::asr_t *owner = parent_scope->asr_owner;
-                        if (ASR::is_a<ASR::symbol_t>(*owner) && 
-                            ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
-                            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(owner));
-                            if (std::string(mod->m_name) == "lfortran_intrinsic_iso_fortran_env" &&
-                                std::string(struct_sym->m_name) == "team_type") {
-                                is_intrinsic_team = true;
-                            }
-                        }
-                    }
-                }
-            }
-            if (!is_intrinsic_team) {
-                diag.add(Diagnostic(
-                    "`team_variable` argument of `form team` must be of type `team_type` from `iso_fortran_env`, found " +
-                    ASRUtils::type_to_str_fortran_expr(team_type, team),
-                    Level::Error, Stage::Semantic,
-                    {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
+            check_intrinsic_team_value(team, x.base.base.loc,
+                "team_variable", "form team");
         }
         
         ASR::expr_t *new_index = nullptr;
