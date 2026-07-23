@@ -9733,6 +9733,8 @@ public:
                 check_errmsg(attr, loc, stmt_name, errmsg);
             } else if (AST::is_a<AST::AttrNewIndex_t>(*attr)) {
                 check_newindex(attr, loc, stmt_name, new_index);
+            } else {
+                LCOMPILERS_ASSERT(false);
             }
         }
     }
