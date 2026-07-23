@@ -335,7 +335,34 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
 Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
-    unsigned char *string_start=(unsigned char*)(&input[0]);
+    std::string spliced_input;
+    spliced_input.reserve(input.size());
+    std::vector<uint32_t> spliced_to_original;
+    spliced_to_original.reserve(input.size() + 1);
+    for (size_t i = 0; i < input.size(); ) {
+        if (i + 1 < input.size() && input[i] == '\\' && input[i+1] == '\n') {
+            i += 2;
+        } else if (i + 2 < input.size() && input[i] == '\\'
+                && input[i+1] == '\r' && input[i+2] == '\n') {
+            i += 3;
+        } else {
+            spliced_input.push_back(input[i]);
+            spliced_to_original.push_back((uint32_t)i);
+            i++;
+        }
+    }
+    // Sentinel: positions equal to `spliced_input.size()` (e.g. an interval
+    // end pointer landing on the terminating '\0') map back to `input.size()`.
+    spliced_to_original.push_back((uint32_t)input.size());
+
+    auto orig_pos = [&spliced_to_original](size_t p) -> uint32_t {
+        if (p < spliced_to_original.size()) {
+            return spliced_to_original[p];
+        }
+        return spliced_to_original.back();
+    };
+
+    unsigned char *string_start=(unsigned char*)(&spliced_input[0]);
     unsigned char *cur = string_start;
     std::string output;
     lm.files.back().preprocessor = true;
@@ -420,7 +447,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 fn.expansion = macro_subs;
                 macro_definitions[macro_name] = fn;
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? ')' whitespace @t3 [^\n\x00]* @t4 newline  {
@@ -432,7 +459,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 fn.args = {};
                 fn.expansion = macro_subs;
                 macro_definitions[macro_name] = fn;
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "define" whitespace @t1 name @t2 '(' whitespace? name whitespace? (',' whitespace? name whitespace?)* ')' (whitespace @t3 [^\n\x00]* @t4)? newline  {
@@ -447,7 +474,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 fn.expansion = macro_subs;
                 macro_definitions[macro_name] = fn;
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "undef" whitespace @t1 name @t2 whitespace? newline  {
@@ -458,7 +485,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     macro_definitions.erase(search);
                 }
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "ifdef" whitespace @t1 name @t2 [^\n\x00]* newline {
@@ -484,7 +511,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 ConditionalDirective_stack.push_back(ifdef);
                 if (!ifdef.active) continue;
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "ifndef" whitespace @t1 name @t2 [^\n\x00]* newline {
@@ -510,7 +537,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 ConditionalDirective_stack.push_back(ifndef);
                 if (!ifndef.active) continue;
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "if" whitespace? @t1 [^\n\x00]* @t2 newline {
@@ -537,7 +564,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 ConditionalDirective_stack.push_back(if_directive);
                 if (!if_directive.active) continue;
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "else" whitespace? comment? newline  {
@@ -561,7 +588,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     continue;
                 }
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "elif" whitespace? @t1 [^\n\x00]* @t2 newline  {
@@ -591,7 +618,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     continue;
                 }
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "endif" whitespace? comment? newline  {
@@ -609,20 +636,20 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     continue;
                 }
 
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "warning" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
                 if (!branch_enabled) continue;
                 std::string msg = token(t1, t2);
                 Location loc;
-                loc.first = tok - string_start;
-                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                loc.first = orig_pos(tok - string_start);
+                loc.last = orig_pos((cur > string_start ? cur - 1 : cur) - string_start);
                 diagnostics.add(diag::Diagnostic(
                     "#warning " + msg, diag::Level::Warning,
                     diag::Stage::CPreprocessor,
                     { diag::Label("", {loc}) }));
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
             "#" whitespace? "error" [ \t\v\r]* @t1 [^\n\x00]* @t2 newline {
@@ -678,13 +705,13 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 }
 
                 // Prepare the start of the interval
-                interval_end_type_0(lm, output.size(), tok-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(tok-string_start));
 
                 // Include
                 output.append(include);
 
                 // Prepare the end of the interval
-                interval_end(lm, output.size(), cur-string_start,
+                interval_end(lm, output.size(), orig_pos(cur-string_start),
                     token(tok, cur).size()-1, 1);
                 continue;
             }
@@ -705,7 +732,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     }
 
                     // Prepare the start of the interval
-                    interval_end_type_0(lm, output.size(), tok-string_start);
+                    interval_end_type_0(lm, output.size(), orig_pos(tok-string_start));
 
                     // Expand the macro once
                     std::string expansion;
@@ -723,7 +750,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         std::vector<std::string> expanded_args = args;
                         for (size_t i = 0; i < args.size(); i++) {
                             LocationManager lm_tmp = lm;
-                            uint32_t pos = cur - string_start;
+                            uint32_t pos = orig_pos(cur - string_start);
                             uint32_t line, col;
                             std::string filename;
                             lm.pos_to_linecol(pos, line, col, filename);
@@ -744,7 +771,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         if (t == "__LINE__") {
                             uint32_t line;
                             if (lm.files.back().current_line == 0) {
-                                uint32_t pos = cur-string_start;
+                                uint32_t pos = orig_pos(cur-string_start);
                                 uint32_t col;
                                 std::string filename;
                                 lm.pos_to_linecol(pos, line, col, filename);
@@ -764,7 +791,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         expansion2 = expansion;
                         LocationManager lm_tmp = lm; // Make a copy
 
-                        uint32_t pos = cur-string_start;
+                        uint32_t pos = orig_pos(cur-string_start);
                         uint32_t line, col;
                         std::string filename;
                         lm.pos_to_linecol(pos, line, col, filename);
@@ -789,7 +816,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     output.append(expansion);
 
                     // Prepare the end of the interval
-                    interval_end(lm, output.size(), cur-string_start,
+                    interval_end(lm, output.size(), orig_pos(cur-string_start),
                         t.size(), 1);
                 } else {
                     output.append(t);
@@ -813,13 +840,30 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                     cur++;
                 }
                 cur++;
-                interval_end_type_0(lm, output.size(), cur-string_start);
+                interval_end_type_0(lm, output.size(), orig_pos(cur-string_start));
                 continue;
             }
         */
     }
     } catch (const LFortran::PreprocessorError &e) {
-        diagnostics.add(e.d);
+        // Helper functions (parse_argument, parse_bexpr, ...) capture
+        // positions relative to `spliced_input`; translate any location in
+        // the diagnostic back to the original `input` before rendering.
+        diag::Diagnostic d = e.d;
+        auto translate_diag = [&](diag::Diagnostic &diag_msg,
+                auto &translate_diag_ref) -> void {
+            for (auto &label : diag_msg.labels) {
+                for (auto &span : label.spans) {
+                    span.loc.first = orig_pos(span.loc.first);
+                    span.loc.last = orig_pos(span.loc.last);
+                }
+            }
+            for (auto &child : diag_msg.children) {
+                translate_diag_ref(child, translate_diag_ref);
+            }
+        };
+        translate_diag(d, translate_diag);
+        diagnostics.add(d);
         lm.init_simple(input);
         lm.files.back().preprocessor = false;
         return Error();
