@@ -4163,27 +4163,35 @@ static inline ASR::String_t* get_string_type(ASR::expr_t* s){
     return ASR::down_cast<ASR::String_t>(extract_type(expr_type(s)));
 }
 
-/*
-    Returns true if `expr` is a character member of a bind(C) or SEQUENCE
-    struct (which includes the synthetic COMMON-block structs) that is stored
-    *inline* as a flat [count*len x i8] byte blob rather than as a string
-    descriptor. Such members follow storage association / C layout, so their
-    data pointer is the member address itself (no descriptor indirection).
-    Pointer and allocatable character members are excluded (they keep a
-    descriptor). Works for both scalar and array character members.
-*/
+static inline bool is_inline_character_struct_member(
+        ASR::Struct_t* struct_type, ASR::ttype_t* member_type) {
+    return (struct_type->m_abi == ASR::abiType::BindC
+            || struct_type->m_is_sequence)
+        && !ASR::is_a<ASR::Pointer_t>(*member_type)
+        && !ASR::is_a<ASR::Allocatable_t>(*member_type)
+        && ASR::is_a<ASR::String_t>(*type_get_past_array(member_type));
+}
+
+static inline int64_t inline_character_storage_size(ASR::ttype_t* member_type) {
+    ASR::String_t* string_type = get_string_type(member_type);
+    int64_t length = 1;
+    if (string_type->m_len) {
+        extract_value(string_type->m_len, length);
+    }
+    if (length < 1) {
+        length = 1;
+    }
+    int64_t count = is_array(member_type)
+        ? get_fixed_size_of_array(member_type) : 1;
+    return length * string_type->m_kind * count;
+}
+
 static inline bool is_inline_character_struct_member(ASR::expr_t* expr) {
     if (!ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
         return false;
     }
     ASR::StructInstanceMember_t* sim =
         ASR::down_cast<ASR::StructInstanceMember_t>(expr);
-    ASR::ttype_t* mem_type = sim->m_type;
-    if (ASR::is_a<ASR::Pointer_t>(*mem_type)
-            || ASR::is_a<ASR::Allocatable_t>(*mem_type)
-            || !ASR::is_a<ASR::String_t>(*type_get_past_array(mem_type))) {
-        return false;
-    }
     ASR::symbol_t* member_sym = symbol_get_past_external(sim->m_m);
     if (!ASR::is_a<ASR::Variable_t>(*member_sym)) {
         return false;
@@ -4198,8 +4206,8 @@ static inline bool is_inline_character_struct_member(ASR::expr_t* expr) {
     if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) {
         return false;
     }
-    ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
-    return st->m_abi == ASR::abiType::BindC || st->m_is_sequence;
+    return is_inline_character_struct_member(
+        ASR::down_cast<ASR::Struct_t>(struct_sym), sim->m_type);
 }
 
 /*
