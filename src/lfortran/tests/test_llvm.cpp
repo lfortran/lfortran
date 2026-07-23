@@ -1428,6 +1428,29 @@ TEST_CASE("FortranEvaluator pass_array_by_data on global random_number") {
 #endif
 
 #ifdef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator iso_c_binding") {
+    // Regression test for JupyterLite wasm kernel: "use iso_c_binding" must
+    // resolve to the preloaded .mod file at /lib/lfortran_intrinsic_iso_c_binding.mod
+    // (set via --preload-file at link time; on native builds get_runtime_library_dir()
+    // returns the installed lib path directly).
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("use iso_c_binding, only: c_int");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("integer(c_int) :: n_cint");
+    CHECK(r.ok);
+    r = e.evaluate2("n_cint = 7_c_int");
+    CHECK(r.ok);
+    r = e.evaluate2("n_cint");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 7);
+}
+
 TEST_CASE("WasmLFortranExecutor basic") {
     // Directly exercise WasmLFortranExecutor bypassing FortranEvaluator
     LCompilers::WasmLFortranExecutor we;

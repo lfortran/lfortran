@@ -109,6 +109,8 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"srand", &Srand::create_Srand},
                 {"get_command", &GetCommand::create_GetCommand},
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
+                // Legacy F77 alias for get_command_argument.
+                {"getarg", &GetCommandArgument::create_GetCommandArgument},
                 {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},

@@ -327,12 +327,20 @@ jobs:
         run: |
           ./ci/grammar_conflicts.sh
 
-      # Run last. Script checks out to first commit in PR history
+      # Run last among history checks. Binary script checks out commits in PR history.
       - name: Check for Added Binary Files
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
           python3 check_binary_file_in_git_history.py
+
+      # Human-only commit authorship: no AI author/committer/Co-Authored-By stamps.
+      # Does not rewrite the working tree; safe after the binary-file history check.
+      - name: Check for AI Commit Authorship
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        run: |
+          python3 check_ai_commit_authorship.py
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload

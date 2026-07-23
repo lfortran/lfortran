@@ -842,6 +842,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | blank_interp_edit_desc
                 | (int)? '/'
                 | ':'
+                | '$'
                 ;
 
 

@@ -911,4 +911,13 @@ program continue_compilation_1
         x = norm2([1, 2])
         x = norm2([1.0, 2.0], dim=2)
     end subroutine
+
+    subroutine type_used_before_declared_local()
+        implicit none
+        type(t_pair_local) :: x
+        type :: t_pair_local
+            integer :: i
+            real :: x
+        end type
+    end subroutine type_used_before_declared_local
 end program

@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-coarray_teams_01-442657a",
+    "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true",
+    "infile": "tests/coarray_teams_01.f90",
+    "infile_hash": "55af844c29cafc11a2c655ad99846cb1a5e3b2c5e83347c92b5e32d2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-coarray_teams_01-442657a.f90",
+    "stdout_hash": "aea0cef8ec89e16708aa36bc20cfe3d655dab81a284e02e247b8bf62",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

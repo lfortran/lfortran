@@ -1682,6 +1682,10 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 last_was_descriptor = false;
                 comma_seen = false;
                 break;
+            case '$' :
+                last_was_descriptor = false;
+                comma_seen = false;
+                break;
             case '*' :
                 format_values_2[format_values_count++] = substring(cformat, index, index+1);
                 break;
@@ -13337,38 +13341,54 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
         _lpython_close(fd);
         return;
     }
-    char *file_contents = (char *) internal_calloc(size, sizeof(char));
+    // +1 so we can always NUL-terminate after fread without writing past
+    // the allocated buffer when the read fills the whole file.
+    char *file_contents = (char *) internal_calloc((size_t)size + 1, sizeof(char));
     if (file_contents == NULL) {
         _lpython_close(fd);
         return;
     }
-    int x = fread(file_contents, 1, size, (FILE*)fd);
-    file_contents[x] = '\0';
+    size_t nread = fread(file_contents, 1, size, (FILE*)fd);
+    file_contents[nread] = '\0';
     _lpython_close(fd);
 
-    char s[LCOMPILERS_MAX_STACKTRACE_LENGTH];
-    bool address = true;
+    // Token scratch for decimal uint64 fields (max 20 digits + NUL).
+    // Sized independently of LCOMPILERS_MAX_STACKTRACE_LENGTH; always
+    // bounds-checked so a corrupt/malformed lines file cannot overflow.
+    char s[32];
+    // Field within the current line: 0 = address, 1 = line number, >=2 ignored
+    // (dat_convert.py writes three uint64s per line: addr, line, unused).
+    int field = 0;
     uint32_t j = 0;
-    for (uint32_t i = 0; i < size; i++) {
-        if (file_contents[i] == '\n') {
-            memset(s, '\0', sizeof(s));
+    for (size_t i = 0; i < nread; i++) {
+        if (d->stack_size >= LCOMPILERS_MAX_STACKTRACE_LENGTH) {
+            // Prevent writing past the fixed-size addresses/line_numbers
+            // arrays when the debug line table has more entries than
+            // LCOMPILERS_MAX_STACKTRACE_LENGTH (e.g. when linking against
+            // large external libraries built with a different compiler).
+            break;
+        }
+        char c = file_contents[i];
+        if (c == '\n') {
             j = 0;
+            field = 0;
             d->stack_size++;
             continue;
-        } else if (file_contents[i] == ' ') {
+        } else if (c == ' ') {
             s[j] = '\0';
             j = 0;
-            if (address) {
-                d->addresses[d->stack_size] = strtol(s, NULL, 10);
-                address = false;
-            } else {
-                d->line_numbers[d->stack_size] = strtol(s, NULL, 10);
-                address = true;
+            if (field == 0) {
+                d->addresses[d->stack_size] = (uint64_t)strtoull(s, NULL, 10);
+            } else if (field == 1) {
+                d->line_numbers[d->stack_size] = (uint64_t)strtoull(s, NULL, 10);
             }
-            memset(s, '\0', sizeof(s));
+            field++;
             continue;
         }
-        s[j++] = file_contents[i];
+        // Bound s[]: drop excess characters rather than overflowing.
+        if (j + 1 < sizeof(s)) {
+            s[j++] = c;
+        }
     }
     internal_free(file_contents);
 }
@@ -13402,10 +13422,13 @@ char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len
     return line;         // caller knows length; can ignore '\0'
 }
 
+// Return the largest index idx with vec[idx] <= i (assuming vec sorted
+// ascending). Always returns a value in [0, size-1] so callers can index
+// addresses/line_numbers without a further clamp. size must be > 0.
 static inline uint64_t bisection(const uint64_t vec[],
         uint64_t size, uint64_t i) {
     if (i < vec[0]) return 0;
-    if (i >= vec[size-1]) return size;
+    if (i >= vec[size-1]) return size - 1;
     uint64_t i1 = 0, i2 = size-1;
     while (i1 < i2-1) {
         uint64_t imid = (i1+i2)/2;

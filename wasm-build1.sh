@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# WASM build for xlfortran (JupyterLite kernel).
+# WASM kernel build (Phase 2).  Run in the 'xeus-lfortran-wasm-build' env.
+#
 # Prerequisites:
-#   1. emsdk 4.0.9 activated through xeus-lfortran-wasm-host environment (see environment-wasm-host.yml)
-#   2. xeus-lfortran-wasm-host conda env created (environment-wasm-host.yml)
-#   3. ./build0.sh already run (generated parser/ASR headers in source tree)
+#   - ./build0.sh already run
+#   - ./wasm-build0.sh already run  (installs .mod files to $PREFIX/lib/)
+#   - xeus-lfortran-wasm-host and xeus-lfortran-wasm-build envs created
 
-set -e
-set -x
+set -ex
 
 export PREFIX=${PREFIX:-$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host}
 

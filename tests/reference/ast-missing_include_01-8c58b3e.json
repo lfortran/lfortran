@@ -1,0 +1,13 @@
+{
+    "basename": "ast-missing_include_01-8c58b3e",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/missing_include_01.f90",
+    "infile_hash": "755a25dcb293c6a885e00df64b3266382756a374773a00bd047a34a6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-missing_include_01-8c58b3e.stderr",
+    "stderr_hash": "d7f4621a447a0b86d97e69a09aeab66c273d105a581da7a7d34b8d6a",
+    "returncode": 2
+}

@@ -1898,6 +1898,8 @@ public:
         {"_lfortran_compiler_version", IntrinsicSignature({}, 0, 0)},
         {"compiler_options", IntrinsicSignature({}, 0, 0)},
         {"command_argument_count", IntrinsicSignature({}, 0, 0)},
+        // Legacy F77 alias for command_argument_count (no args).
+        {"iargc", IntrinsicSignature({}, 0, 0)},
         {"rand", IntrinsicSignature({"flag"}, 0, 1)},
         {"this_image", IntrinsicSignature({}, 0, 0)},
         {"num_images", IntrinsicSignature({}, 0, 0)},
@@ -1914,6 +1916,10 @@ public:
         {"abort", IntrinsicSignature({}, 0, 0)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
         {"get_command_argument", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
+        // Legacy F77 alias for get_command_argument. Standard form is
+        // `call getarg(pos, value)`; the extra optional args are accepted
+        // by extension to share the get_command_argument signature.
+        {"getarg", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
         {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
         {"date_and_time", IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)},
         {"get_environment_variable", IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)},
@@ -5569,6 +5575,14 @@ public:
                                                             ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
                                                                 rc->m_r, rc->m_type)),
                                                             ASR::cast_kindType::RealToComplex, v->m_type, complex_value, nullptr));
+                                                    } else if (ASRUtils::is_integer(*v->m_type)) {
+                                                        ASR::expr_t* integer_value = ASRUtils::EXPR(
+                                                            ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                                (int64_t)rc->m_r, v->m_type));
+                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
+                                                            ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
+                                                                rc->m_r, rc->m_type)),
+                                                            ASR::cast_kindType::RealToInteger, v->m_type, integer_value, nullptr));
                                                     } else {
                                                         init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
                                                     }
@@ -5632,6 +5646,18 @@ public:
                                                                 ASR::cast_kindType::ComplexToComplex, v->m_type, value, nullptr));
                                                         }
                                                     }
+                                                }
+                                                // The folds above only handle initializers that are a bare
+                                                // numeric literal. When the initializer is a constant expression
+                                                // whose value type still differs from the declared parameter
+                                                // type (e.g. `integer :: k` with `parameter (k = -125.0)`, whose
+                                                // initializer is a RealUnaryMinus rather than a bare
+                                                // RealConstant), insert an explicit Cast so the stored value
+                                                // matches the variable's type. set_converted_value is a no-op
+                                                // when the types already match.
+                                                if (ASRUtils::expr_value(init_val)) {
+                                                    ImplicitCastRules::set_converted_value(al, x.base.base.loc,
+                                                        &init_val, ASRUtils::expr_type(init_val), v->m_type, diag);
                                                 }
                                                 v->m_symbolic_value = init_val;
                                                 v->m_value = ASRUtils::expr_value(init_val);
@@ -18779,7 +18805,21 @@ public:
         if (is_binary)
             right_type = ASRUtils::expr_type(second_operand);
         bool matched = false;
+        // Resolve the specific procedure with the same priority as
+        // ASRUtils::select_generic_procedure: try non-elemental procedures
+        // first (matching rank exactly), and only fall back to elemental
+        // procedures (which broadcast over array actuals) if none matched.
+        // Otherwise an elemental scalar overload declared before a rank-1
+        // overload would be wrongly selected for an array actual argument.
+        std::vector<size_t> proc_order;
         for (size_t i = 0; i < gen_proc->n_procs; ++i) {
+            if (!ASRUtils::is_elemental(gen_proc->m_procs[i])) proc_order.push_back(i);
+        }
+        for (size_t i = 0; i < gen_proc->n_procs; ++i) {
+            if (ASRUtils::is_elemental(gen_proc->m_procs[i])) proc_order.push_back(i);
+        }
+        for (size_t oi = 0; oi < proc_order.size(); ++oi) {
+            size_t i = proc_order[oi];
             ASR::symbol_t* proc;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                 proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc;
@@ -18797,11 +18837,15 @@ public:
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(proc));
             if ((is_binary && func->n_args != 2) || (!is_binary && func->n_args != 1))
                 continue;
-            bool args_match = ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[0]), left_type, func->m_args[0], first_operand);
+            // For non-elemental procedures the actual argument rank must match
+            // the dummy argument rank, so compare dimensions; elemental
+            // procedures broadcast, so dimensions are ignored.
+            bool check_dims = !ASRUtils::get_FunctionType(func)->m_elemental;
+            bool args_match = ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[0]), left_type, func->m_args[0], first_operand, check_dims);
             if (is_binary) {
                 args_match = args_match
                              && ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[1]),
-                                                           right_type, func->m_args[1], second_operand);
+                                                           right_type, func->m_args[1], second_operand, check_dims);
             }
             if (!args_match)
                 continue;

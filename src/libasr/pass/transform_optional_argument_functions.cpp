@@ -360,8 +360,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-        ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature);
+        ASR::ttype_t* new_type = ASRUtils::TYPE(
+            ASRUtils::ExprStmtWithScopeDuplicator(al, scope).
+                duplicate_FunctionType(ASRUtils::get_FunctionType(
+                    ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)))));
         if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
         }

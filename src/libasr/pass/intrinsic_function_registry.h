@@ -681,6 +681,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
                 {"_lfortran_compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
                 {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
+                // Legacy F77 alias for command_argument_count.
+                {"iargc", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
                 {"rand", {&Rand::create_Rand, nullptr}},
                 {"this_image", {&ThisImage::create_ThisImage, &ThisImage::eval_ThisImage}},
                 {"num_images", {&NumImages::create_NumImages, &NumImages::eval_NumImages}},

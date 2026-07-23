@@ -4789,10 +4789,14 @@ namespace FindLoc {
                 std::string array_str = type_to_str_fortran_symbol(array_elt_type, nullptr, true);
                 std::string value_str = type_to_str_fortran_symbol(value_elt_type, nullptr, true);
                 if (array_is_char) {
-                    array_str += "(kind=" + std::to_string(extract_kind_from_ttype_t(expr_type(args[0]))) + ")";
+                    int array_kind = extract_kind_from_ttype_t(expr_type(args[0]));
+                    array_str = "character(len=" + std::to_string(ASRUtils::get_fixed_string_len(array_elt_type)) +
+                        ", kind=" + std::to_string(array_kind) + ")";
                 }
                 if (value_is_char) {
-                    value_str += "(kind=" + std::to_string(extract_kind_from_ttype_t(expr_type(args[1]))) + ")";
+                    int value_kind = extract_kind_from_ttype_t(expr_type(args[1]));
+                    value_str = "character(len=" + std::to_string(ASRUtils::get_fixed_string_len(value_elt_type)) +
+                        ", kind=" + std::to_string(value_kind) + ")";
                 }
                 append_error(diag, "`array` and `value` arguments of `findloc` "
                     "must have the same type and kind, but got " +

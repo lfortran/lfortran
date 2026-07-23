@@ -69,6 +69,11 @@ cd caffeine
 # Release 0.8.0
 git checkout 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
 
+# Cherry-pick a recent fix to -DCAF_IMPORT_TEAM_CONSTANTS
+git config user.email "nobody@nowhere.com"
+git config user.name  "Nobody"
+git cherry-pick 736130c4af77b4ab33e4341e6dcd32ab4c8b7f4a
+
 # Toolchain setup
 
 export FC=lfortran
@@ -83,6 +88,9 @@ clang --version
 
 # inject ISO_Fortran_binding.h into the C include path
 export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
+
+# instruct Caffeine to import the iso_fortran_env constants from LFortran
+CPPFLAGS+=" -DCAF_IMPORT_CONSTANTS"
 
 # GASNet debug options
 

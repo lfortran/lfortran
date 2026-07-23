@@ -5,7 +5,7 @@
     "infile_hash": "d37d05e6da1fa8914cd0341fe2b8cd998a8b48328c9b01acd16f7d79",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "fortran-integer_to_real_cast_in_comparison-a6f3411.stdout",
+    "stdout": "fortran-integer_to_real_cast_in_comparison-a6f3411.f90",
     "stdout_hash": "75e954cf5a9893f7ada84b0b1378fc1077a95d0ea2db55dbac6756c3",
     "stderr": null,
     "stderr_hash": null,

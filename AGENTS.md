@@ -12,6 +12,50 @@ detailed reference how to contribute to the project.
 - `tests/`, `integration_tests/`: unit/E2E suites
 - `doc/`: docs & manpages (site generated from here)
 - `examples/`, `grammar/`, `cmake/`, `ci/`, `share/`: supporting assets
+- `.agents/skills/`: agent skills (see "Agent Skills" below)
+
+## Agent Skills
+
+Reusable, agent-invocable procedures live in `.agents/skills/<name>/SKILL.md`,
+following the [Agent Skills](https://agentskills.io/) open standard. Agents load
+a skill on demand when the task matches its `description`.
+
+`.agents/skills/` is the vendor-neutral location read by Codex, Copilot, and
+Grok. Claude Code only discovers `.claude/skills/`, so `.claude/skills` is a
+symlink to `../.agents/skills` — the same approach as the `CLAUDE.md` →
+`AGENTS.md` symlink. **Skills are stored once, in `.agents/skills/`;** edit them
+there and every agent picks up the change.
+
+Available skills:
+
+| Skill | Purpose |
+| --- | --- |
+| `repro-issue` | Turn a GitHub issue into a faithful Reproducible Example (RE) |
+| `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
+| `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
+
+### The reproduce → reduce → fix loop
+
+The three skills chain into a pipeline, each consuming the previous one's output:
+
+```
+repro-issue  ──►  create-mre  ──►  fix-mre
+ (RE: faithful)    (MRE: minimal)   (fix + integration test)
+```
+
+This is designed to be run **in a loop** to bring a third-party Fortran package
+up on LFortran: build the package, take the first failure, reduce it, fix it,
+then rebuild and repeat until the package compiles and its tests pass. Each
+iteration should produce one focused PR — `AGENTS.md`'s "one bug = one MRE =
+one PR" rule applies to every pass through the loop.
+
+Reproducers are written to the repository root by convention (`run.sh`,
+`mre_*.f90`, `re_*.f90`) and are gitignored — they are scratch inputs to
+`fix-mre`. The committed deliverable is always the integration test.
+
+Skills assume `build/src/bin` is first on `PATH` (so `lfortran` is the in-tree
+build) and that a reference compiler — `gfortran`, matching the `gfortran`
+integration-test label — is available for differential testing.
 
 ## Prerequisites
 - Tools: CMake (>=3.10), Ninja, Git, Python (>=3.8), GCC/Clang/MSVC.

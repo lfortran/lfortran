@@ -383,6 +383,10 @@ asr_implicit_interface = true
 asr_implicit_argument_casting = true
 
 [[test]]
+filename = "errors/intent_inout_missing_arg.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "errors/cpp1.f90"
 asr_preprocess = true
 
@@ -497,6 +501,11 @@ asr = true
 [[test]]
 filename = "errors/template_error_09.f90"
 asr = true
+
+[[test]]
+filename = "errors/real_unsupported_kind_01.f90"
+asr = true
+
 
 [[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"
@@ -5258,3 +5267,18 @@ fortran = true
 pass = "coarray"
 options = "--coarray=true"
 
+[[test]]
+filename = "coarray_var_name_collision_01.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "errors/missing_include_01.f90"
+ast = true
+
+[[test]]
+filename = "coarray_teams_01.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"

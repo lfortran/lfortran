@@ -199,7 +199,11 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if not os.path.exists(outfile):
         outfile = None
     if len(r.stdout):
-        stdout_file = os.path.join(out_dir, basename + "." + "stdout")
+        if "--show-fortran" in cmd:
+            stdout_ext = ".f90"
+        else:
+            stdout_ext = ".stdout"
+        stdout_file = os.path.join(out_dir, basename + stdout_ext)
         open(stdout_file, "wb").write(fix_datalayout(fixdir(r.stdout)))
     else:
         stdout_file = None

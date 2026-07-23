@@ -1740,7 +1740,12 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     }
     switch (a_value->type) {
         case ASR::exprType::Var: {
-            ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(a_value);
+            ASR::symbol_t* v_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(a_value)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*v_sym)) {
+                return false;
+            }
+            ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(v_sym);
             return variable_t->m_storage != ASR::storage_typeType::Parameter;
         }
         case ASR::exprType::ArrayItem: {
@@ -4022,9 +4027,12 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             Vec<ASR::ttype_t*> arg_types;
             arg_types.reserve(al, ft->n_arg_types);
             for( size_t i = 0; i < ft->n_arg_types; i++ ) {
-                ASR::ttype_t *t = ASRUtils::duplicate_type(al, ft->m_arg_types[i],
-                    nullptr, physical_type, override_physical_type);
-                arg_types.push_back(al, t);
+                auto const t = ft->m_arg_types[i];
+                ASR::ttype_t *duplicate_t = 
+                    ASRUtils::duplicate_type(al, t, nullptr, 
+                        is_array_t(t) ? extract_physical_type(t) : physical_type
+                        , true);
+                arg_types.push_back(al, duplicate_t);
             }
             return ASRUtils::TYPE(ASR::make_FunctionType_t(al, ft->base.base.loc,
                 arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,

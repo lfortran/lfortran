@@ -220,7 +220,7 @@ std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
     auto [message_type, primary_color, type_color] = diag_level_to_str(d, use_colors);
     out << type_color << message_type << reset << bold << ": " << d.message << reset << std::endl;
 
-    if (d.labels.size() > 0) {
+    if (d.labels.size() > 0 && d.labels[0].spans.size() > 0) {
         Label l = d.labels[0];
         Span s = l.spans[0];
         int line_num_width = 1;
@@ -354,7 +354,7 @@ std::string render_diagnostic_short(const Diagnostic &d) {
 
     // Message anatomy:
     // <filename>:<line start>-<end>:<column start>-<end>: <severity>: <message>
-    if (d.labels.size() > 0) {
+    if (d.labels.size() > 0 && d.labels[0].spans.size() > 0) {
         Label l = d.labels[0];
         Span s = l.spans[0];
         // TODO: print the primary line+column here, not the first label:
