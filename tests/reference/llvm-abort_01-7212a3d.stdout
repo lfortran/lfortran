@@ -1,6 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 target datalayout = "..."
+target triple = "arm64-apple-darwin25.5.0"
 
 define void @_lcompilers_abort_() {
 .entry:
@@ -16,9 +17,9 @@ FINALIZE_SYMTABLE__lcompilers_abort_:             ; preds = %return
 
 declare void @_lfortran_abort()
 
-define i32 @main(i32 %0, i8** %1) {
+define i32 @main(i32 %0, ptr %1) {
 .entry:
-  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
   br i1 false, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -39,6 +40,6 @@ FINALIZE_SYMTABLE_abort1:                         ; preds = %return
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, i8**)
+declare void @_lpython_call_initial_functions(i32, ptr)
 
 declare void @_lfortran_internal_alloc_finalize()

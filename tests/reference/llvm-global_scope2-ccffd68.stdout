@@ -1,12 +1,13 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 target datalayout = "..."
+target triple = "arm64-apple-darwin25.5.0"
 
 @x = global i32 0
 
 define void @__lfortran_evaluate_1() {
 .entry:
-  store i32 6, i32* @x, align 4
+  store i32 6, ptr @x, align 4
   br label %return
 
 return:                                           ; preds = %.entry

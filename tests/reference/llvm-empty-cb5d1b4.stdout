@@ -1,3 +1,4 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 target datalayout = "..."
+target triple = "arm64-apple-darwin25.5.0"
