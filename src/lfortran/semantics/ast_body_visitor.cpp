@@ -7791,7 +7791,6 @@ public:
 
         // checking for intent mismatch   
         if (f) { 
-            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
             for (size_t i = 0; i < args.size() && i < f->n_args; i++) {
                 if (args[i].m_value == nullptr) continue;
                 ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
@@ -7800,6 +7799,29 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // Check whether the passed argument is even a compatible
+                    // kind of thing (e.g. a procedure symbol passed where a
+                    // variable was expected). That's a type mismatch, and
+                    // should be reported as such -- not as a misleading
+                    // "wrong intent" error.
+                    if ((dummy_var->m_intent == ASR::intentType::Out ||
+                         dummy_var->m_intent == ASR::intentType::InOut) &&
+                        !ASR::is_a<ASR::FunctionType_t>(*dummy_type) &&
+                        args[i].m_value && ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                        ASR::symbol_t* passed_sym_check = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                        if (!ASR::is_a<ASR::Variable_t>(*passed_sym_check)) {
+                            std::string param_type_str = ASRUtils::type_to_str_with_kind(
+                                dummy_type, f->m_args[i]);
+                            diag.add(diag::Diagnostic(
+                                "Type mismatch: expected `" + param_type_str +
+                                "` but a procedure was passed",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {args[i].m_value->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
                     // An assumed-size actual has no extent for its last
                     // dimension, so it cannot be associated with a dummy
                     // that needs the full shape: a pointer/allocatable dummy
@@ -7876,6 +7898,7 @@ public:
                     }
                 }
             }
+            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
         }
 
         ASR::symbol_t *final_sym=nullptr;
