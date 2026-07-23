@@ -515,8 +515,14 @@ namespace LCompilers {
                         ASRUtils::extract_value(s->m_len, slen);
                     }
                     if (slen < 1) slen = 1;
+                    // A character array member is stored inline as a single flat
+                    // [count*len x i8] byte blob (storage association / C layout).
+                    int64_t inline_bytes = slen * s->m_kind;
+                    if (ASRUtils::is_array(mem_type)) {
+                        inline_bytes *= ASRUtils::get_fixed_size_of_array(mem_type);
+                    }
                     llvm_mem_type = llvm::ArrayType::get(
-                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
+                        llvm::Type::getInt8Ty(context), (uint64_t)inline_bytes);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);

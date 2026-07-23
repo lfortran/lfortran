@@ -436,12 +436,7 @@ public:
         size_t n_dims;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
-    struct to_be_initialized_struct {
-        ASR::symbol_t* type;
-        llvm::Value* value;
-        bool needs_common_block_init;
-    };
-    std::vector<to_be_initialized_struct> allocatable_struct_array_members_details;
+    std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
         ASR::Variable_t* v;
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
@@ -1931,8 +1926,6 @@ public:
                 visit_symbol(*item.second);
             }
         }
-
-        emit_common_block_global_initializers();
 
         // Register coarray per-TU init functions in @llvm.global_ctors
         // so saved coarray allocations run before main() in separate compilation
@@ -5355,11 +5348,27 @@ public:
             }
         }
 
+        bool struct_is_inline = (struct_->m_abi == ASR::abiType::BindC)
+            || struct_->m_is_sequence;
         LCOMPILERS_ASSERT(x.n_args == n_members);
         for (size_t i = 0; i < x.n_args; ++i) {
             ASR::expr_t *value = x.m_args[i].m_value;
             llvm::Constant* initializer = nullptr;
             llvm::Type* type = nullptr;
+            ASR::symbol_t* member_sym = i < struct_->n_members
+                ? struct_->m_symtab->get_symbol(struct_->m_members[i]) : nullptr;
+            if (member_sym && ASR::is_a<ASR::Variable_t>(*member_sym)) {
+                ASR::ttype_t* member_type =
+                    ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+                if (struct_is_inline
+                        && !ASR::is_a<ASR::Pointer_t>(*member_type)
+                        && !ASR::is_a<ASR::Allocatable_t>(*member_type)
+                        && ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_type))) {
+                    // Inline character member: flat [count*len x i8] byte blob.
+                    elements.push_back(get_inline_char_member_constant(member_type, value));
+                    continue;
+                }
+            }
             if (value == nullptr) {
                 auto member2sym = struct_->m_symtab->get_scope();
                 LCOMPILERS_ASSERT(member2sym[struct_->m_members[i]]->type == ASR::symbolType::Variable);
@@ -5485,41 +5494,6 @@ public:
             const_cast<ASR::symbol_t*>(&x.base));
         return owner && ASR::is_a<ASR::Module_t>(*owner)
             && startswith(ASRUtils::symbol_name(owner), "file_common_block_");
-    }
-
-    bool struct_has_character_members(ASR::symbol_t *struct_sym,
-            std::set<ASR::symbol_t*> &visited) {
-        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
-        if (!ASR::is_a<ASR::Struct_t>(*struct_sym)
-                || visited.find(struct_sym) != visited.end()) {
-            return false;
-        }
-        visited.insert(struct_sym);
-        ASR::Struct_t *struct_type = ASR::down_cast<ASR::Struct_t>(struct_sym);
-        for (auto &item : struct_type->m_symtab->get_scope()) {
-            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(item.second);
-            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                continue;
-            }
-            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-            if (ASRUtils::is_character(*var->m_type)) {
-                return true;
-            }
-            ASR::ttype_t *type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable_pointer(var->m_type));
-            if (ASR::is_a<ASR::StructType_t>(*type)
-                    && var->m_type_declaration
-                    && struct_has_character_members(
-                        var->m_type_declaration, visited)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool struct_has_character_members(ASR::symbol_t *struct_sym) {
-        std::set<ASR::symbol_t*> visited;
-        return struct_has_character_members(struct_sym, visited);
     }
 
     bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
@@ -5937,12 +5911,8 @@ public:
                 }
             }
             if (!skip_runtime_struct_init) {
-                ASR::symbol_t *type_declaration =
-                    ASRUtils::symbol_get_past_external(x.m_type_declaration);
-                allocatable_struct_array_members_details.push_back({
-                    type_declaration, llvm_symtab[h],
-                    is_common_block_global(x)
-                        && struct_has_character_members(type_declaration)});
+                allocatable_struct_array_members_details.push_back(std::make_pair(
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
             }
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {
@@ -6480,7 +6450,8 @@ public:
                 true, true, false, array.var_type);
         }
         for(auto& st : allocatable_struct_array_members_details) {
-            initialize_struct_array_members(st);
+            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
+                st.second, ASRUtils::symbol_type(st.first), false, false);
         }
         allocatable_struct_array_members_details.clear();
         declare_vars(x);
@@ -6681,52 +6652,9 @@ public:
         }
     }
 
-    void setup_common_block_string_storage(ASR::String_t* string_type,
-            llvm::Value* descriptor, int64_t element_count,
-            const std::string &storage_name) {
-        int64_t string_length = 0;
-        LCOMPILERS_ASSERT(string_type->m_len
-            && ASRUtils::extract_value(string_type->m_len, string_length));
-        int64_t storage_size = string_length * string_type->m_kind * element_count;
-        llvm::ArrayType *storage_type = llvm::ArrayType::get(
-            llvm::Type::getInt8Ty(context), storage_size);
-        llvm::GlobalVariable *storage = new llvm::GlobalVariable(
-            *module, storage_type, false, llvm::GlobalValue::CommonLinkage,
-            llvm::ConstantAggregateZero::get(storage_type), storage_name);
-        llvm::Constant *zero = llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(context), 0);
-        llvm::Constant *indices[] = {zero, zero};
-        llvm::Constant *storage_ptr = llvm::ConstantExpr::getInBoundsGetElementPtr(
-            storage_type, storage, llvm::ArrayRef<llvm::Constant*>(indices));
-
-        llvm::Value *descriptor_data = llvm_utils->create_gep2(
-            string_descriptor, descriptor, 0);
-        llvm::Value *current_data = llvm_utils->CreateLoad2(
-            character_type, descriptor_data);
-        llvm::Value *needs_initialization = builder->CreateICmpEQ(
-            current_data, llvm::ConstantPointerNull::get(
-                llvm::cast<llvm::PointerType>(character_type)));
-        llvm::Function *function = builder->GetInsertBlock()->getParent();
-        llvm::BasicBlock *init_block = llvm::BasicBlock::Create(
-            context, "common_block_member_init", function);
-        llvm::BasicBlock *continue_block = llvm::BasicBlock::Create(
-            context, "common_block_member_init_done", function);
-        builder->CreateCondBr(
-            needs_initialization, init_block, continue_block);
-
-        builder->SetInsertPoint(init_block);
-        builder->CreateStore(
-            llvm::Constant::getNullValue(string_descriptor), descriptor);
-        setup_string_length(descriptor, string_type, string_type->m_len);
-        builder->CreateStore(storage_ptr, descriptor_data);
-        builder->CreateBr(continue_block);
-        builder->SetInsertPoint(continue_block);
-    }
-
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr,
             ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true,
-            bool skip_allocatable_array_descriptor_init = false,
-            const std::string &common_storage_prefix = "") {
+            bool skip_allocatable_array_descriptor_init = false) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
         ASR::Struct_t* struct_type_t = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*asr_type)) {
@@ -6772,6 +6700,18 @@ public:
                     continue ;
                 }
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
+                // Inline character members (bind(C)/SEQUENCE/COMMON) are stored
+                // as a flat [count*len x i8] blob in place: there is no string
+                // descriptor to allocate or initialize at runtime (scalars and
+                // arrays alike), so skip all per-member setup for them.
+                bool struct_is_inline = (struct_type_t->m_abi == ASR::abiType::BindC)
+                    || struct_type_t->m_is_sequence;
+                if (struct_is_inline && ASR::is_a<ASR::Variable_t>(*sym)
+                        && !ASR::is_a<ASR::Pointer_t>(*symbol_type)
+                        && !ASR::is_a<ASR::Allocatable_t>(*symbol_type)
+                        && ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(symbol_type))) {
+                    continue;
+                }
                 int idx = 0;
                 idx = name2memidx[struct_type_name][item.first];
                 llvm::Type* type = name2dertype[struct_type_name];
@@ -6871,24 +6811,15 @@ public:
                         bool has_init = v && (v->m_symbolic_value || v->m_value);
                         if (!has_init) {
                             ASR::String_t* str_type = ASRUtils::get_string_type(symbol_type);
+                            builder->CreateStore(llvm::Constant::getNullValue(string_descriptor), ptr_member);
+                            setup_string_length(ptr_member, str_type, str_type->m_len);
                             int64_t array_size = ASRUtils::get_fixed_size_of_array(symbol_type);
-                            if (!common_storage_prefix.empty()) {
-                                setup_common_block_string_storage(
-                                    str_type, ptr_member, array_size,
-                                    common_storage_prefix + "_member_"
-                                        + std::to_string(idx) + "_data");
-                            } else {
-                                builder->CreateStore(
-                                    llvm::Constant::getNullValue(string_descriptor),
-                                    ptr_member);
-                                setup_string_length(ptr_member, str_type, str_type->m_len);
-                                llvm::Value* array_size_val = llvm::ConstantInt::get(
-                                    context, llvm::APInt(64, array_size));
-                                llvm_utils->set_array_of_strings_memory_on_heap(
-                                    str_type, ptr_member,
-                                    llvm_utils->get_string_length(str_type, ptr_member),
-                                    array_size_val, false);
-                            }
+                            llvm::Value* array_size_val = llvm::ConstantInt::get(
+                                context, llvm::APInt(64, array_size));
+                            llvm_utils->set_array_of_strings_memory_on_heap(
+                                str_type, ptr_member,
+                                llvm_utils->get_string_length(str_type, ptr_member),
+                                array_size_val, false);
                         }
                     }
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(symbol_type))
@@ -6899,8 +6830,7 @@ public:
                     ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration));
                     allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type,
-                        is_intent_out, initialize_val,
-                        skip_allocatable_array_descriptor_init, common_storage_prefix);
+                        is_intent_out, initialize_val, skip_allocatable_array_descriptor_init);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     // Skip string descriptor setup for bind(C)/SEQUENCE struct
                     // non-pointer character members (inline [len x i8]).
@@ -6911,14 +6841,7 @@ public:
                         !ASR::is_a<ASR::Pointer_t>(*v_sym->m_type) &&
                         !ASR::is_a<ASR::Allocatable_t>(*v_sym->m_type);
                     if (!is_direct_char) {
-                        if (!common_storage_prefix.empty()) {
-                            setup_common_block_string_storage(
-                                ASRUtils::get_string_type(symbol_type), ptr_member, 1,
-                                common_storage_prefix + "_member_"
-                                    + std::to_string(idx) + "_data");
-                        } else {
-                            setup_string(ptr_member, symbol_type);
-                        }
+                        setup_string(ptr_member, symbol_type);
                         if (!initialize_val && v && v->m_symbolic_value &&
                             ASRUtils::is_string_only(ASRUtils::expr_type(v->m_symbolic_value))) {
                             visit_expr(*v->m_symbolic_value);
@@ -7021,73 +6944,6 @@ public:
                 struct_type_t = nullptr;
             }
         }
-    }
-
-    void initialize_struct_array_members(const to_be_initialized_struct &details) {
-        if (!details.needs_common_block_init) {
-            allocate_array_members_of_struct(
-                ASR::down_cast<ASR::Struct_t>(details.type), details.value,
-                ASRUtils::symbol_type(details.type), false, false);
-            return;
-        }
-
-        llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
-            details.value);
-        std::string guard_name = global->getName().str() + "_initialized";
-        llvm::GlobalVariable *guard = module->getGlobalVariable(guard_name);
-        if (!guard) {
-            guard = new llvm::GlobalVariable(
-                *module, llvm::Type::getInt1Ty(context), false,
-                llvm::GlobalValue::CommonLinkage,
-                llvm::ConstantInt::getFalse(context), guard_name);
-        }
-
-        llvm::Function *function = builder->GetInsertBlock()->getParent();
-        llvm::BasicBlock *init_block = llvm::BasicBlock::Create(
-            context, "common_block_init", function);
-        llvm::BasicBlock *continue_block = llvm::BasicBlock::Create(
-            context, "common_block_init_done", function);
-        llvm::Value *is_initialized = llvm_utils->CreateLoad2(
-            llvm::Type::getInt1Ty(context), guard);
-        builder->CreateCondBr(is_initialized, continue_block, init_block);
-
-        builder->SetInsertPoint(init_block);
-        builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
-        allocate_array_members_of_struct(
-            ASR::down_cast<ASR::Struct_t>(details.type), details.value,
-            ASRUtils::symbol_type(details.type), false, false, false,
-            global->getName().str());
-        builder->CreateBr(continue_block);
-        builder->SetInsertPoint(continue_block);
-    }
-
-    void emit_common_block_global_initializers() {
-        bool has_common_block = std::any_of(
-            allocatable_struct_array_members_details.begin(),
-            allocatable_struct_array_members_details.end(),
-            [](const to_be_initialized_struct &details) {
-                return details.needs_common_block_init;
-            });
-        if (!has_common_block) {
-            return;
-        }
-
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(context), false);
-        llvm::Function *init_function = llvm::Function::Create(
-            function_type, llvm::Function::InternalLinkage,
-            "__lfortran_init_common_blocks", module.get());
-        llvm::BasicBlock *entry = llvm::BasicBlock::Create(
-            context, "entry", init_function);
-        builder->SetInsertPoint(entry);
-        for (auto &details : allocatable_struct_array_members_details) {
-            if (details.needs_common_block_init) {
-                initialize_struct_array_members(details);
-            }
-        }
-        builder->CreateRetVoid();
-        llvm::appendToGlobalCtors(*module, init_function, 65535);
-        allocatable_struct_array_members_details.clear();
     }
 
     void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type) {
@@ -7222,6 +7078,48 @@ public:
         class2vtab[struct_type_][symtab].push_back(vtab_obj);
     }
 
+    // Build the [count*len*kind x i8] byte constant for a character member that
+    // is stored inline (bind(C)/SEQUENCE/COMMON struct). The bytes come from the
+    // member's DATA value (StringConstant for a scalar, ArrayConstant's flat data
+    // buffer for an array); any remainder is space-padded (Fortran blank fill).
+    llvm::Constant* get_inline_char_member_constant(ASR::ttype_t* member_type,
+            ASR::expr_t* value_expr) {
+        ASR::String_t* str = ASRUtils::get_string_type(member_type);
+        int64_t len = 1;
+        if (str->m_len) ASRUtils::extract_value(str->m_len, len);
+        if (len < 1) len = 1;
+        int64_t count = 1;
+        if (ASRUtils::is_array(member_type)) {
+            count = ASRUtils::get_fixed_size_of_array(member_type);
+        }
+        int64_t total = len * str->m_kind * count;
+        llvm::ArrayType* blob_type = llvm::ArrayType::get(
+            llvm::Type::getInt8Ty(context), (uint64_t)total);
+        std::string bytes;
+        ASR::expr_t* value = value_expr ? ASRUtils::expr_value(value_expr) : nullptr;
+        if (value && ASR::is_a<ASR::StringConstant_t>(*value)) {
+            ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(value);
+            int64_t sc_len = len;
+            ASRUtils::extract_value(ASRUtils::get_string_type(sc->m_type)->m_len, sc_len);
+            bytes.assign(sc->m_s, (size_t)sc_len);
+        } else if (value && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            bytes.assign((char*)ac->m_data, (size_t)ac->m_n_data);
+        } else {
+            // No initializer: emit an all-zero aggregate so the enclosing global
+            // stays an all-zero tentative definition and keeps CommonLinkage
+            // (which merges the member's storage across separate TUs).
+            return llvm::ConstantAggregateZero::get(blob_type);
+        }
+        // Blank-pad a DATA-initialized member (Fortran blank fill).
+        if ((int64_t)bytes.size() < total) {
+            bytes.append((size_t)(total - bytes.size()), ' ');
+        } else if ((int64_t)bytes.size() > total) {
+            bytes.resize((size_t)total);
+        }
+        return llvm::ConstantDataArray::getString(context, bytes, false);
+    }
+
     void get_type_default_field_values(ASR::symbol_t* struct_sym,
             std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
@@ -7241,7 +7139,17 @@ public:
             if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
                 continue;
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-            if (var->m_value != nullptr) {
+            bool struct_is_inline = (struct_t->m_abi == ASR::abiType::BindC)
+                || struct_t->m_is_sequence;
+            bool is_inline_char = struct_is_inline
+                && !ASR::is_a<ASR::Pointer_t>(*var->m_type)
+                && !ASR::is_a<ASR::Allocatable_t>(*var->m_type)
+                && ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(var->m_type));
+            if (is_inline_char) {
+                // Inline character member is a flat [count*len x i8] byte blob;
+                // build a matching byte constant (space-padded) from its DATA value.
+                field_values.push_back(get_inline_char_member_constant(var->m_type, var->m_value));
+            } else if (var->m_value != nullptr) {
                 llvm::Constant* c = create_llvm_constant_from_asr_expr(var->m_value, var->m_type,
                     orig_struct_sym);
                 field_values.push_back(c);
@@ -14841,16 +14749,16 @@ public:
 
         /* Visit String + Visit Index */
         llvm::Value *idx {};
-        llvm::Value *str {};
         this->visit_expr_load_wrapper(x.m_idx, LLVM::is_llvm_pointer(*expr_type(x.m_idx)) ? 2 : 1, true);
         idx = tmp;
-        this->visit_expr_load_wrapper(x.m_arg, 0, true);
-        str = tmp;
+        // Use the inline-aware accessor so a character member stored inline
+        // (bind(C)/SEQUENCE/COMMON struct member) yields a direct data pointer
+        // instead of being (mis)read as a string descriptor.
+        llvm::Value* str_data /* i8* */ = get_string_data_and_length(x.m_arg).first;
 
         /* Get StringItem */
         llvm::Value *str_item {};
         {
-            llvm::Value* str_data /*  i8*  */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
             llvm::Value* idx_INT64 = llvm_utils->convert_kind(idx, llvm::Type::getInt64Ty(context));
             llvm::Value* idx_zero_based /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
@@ -14922,11 +14830,6 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*x.m_step))
         LCOMPILERS_ASSERT(ASR::down_cast<ASR::IntegerConstant_t>(x.m_step)->m_n == 1 /*Fortran only has step of 1*/)
 
-        /* Evaluate String */
-        llvm::Value *str {};
-        this->visit_expr_load_wrapper(x.m_arg, 0);
-        str = tmp;
-        
         /* Evaluate Start + End */
         llvm::Value *start {};
         llvm::Value *end   {};
@@ -14957,7 +14860,9 @@ public:
         llvm::Value* str_data {}; // Shifted from Original by value = start
         {
             int kind = ASRUtils::get_string_type(x.m_arg)->m_kind;
-            llvm::Value* str_data_orig = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            // Inline-aware: yields a direct data pointer for characters stored
+            // inline in a bind(C)/SEQUENCE/COMMON struct member.
+            llvm::Value* str_data_orig = get_string_data_and_length(x.m_arg).first;
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* start = builder->CreateSub(start_INT64, llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
             
