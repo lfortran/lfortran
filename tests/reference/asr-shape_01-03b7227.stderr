@@ -1,0 +1,5 @@
+semantic error: The argument of SHAPE must be an array
+ --> tests/errors/shape_01.f90:4:54
+  |
+4 |     integer, parameter :: folded = dot_product(shape(42), shape(42))
+  |                                                      ^^ 
