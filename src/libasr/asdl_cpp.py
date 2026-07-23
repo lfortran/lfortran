@@ -2398,6 +2398,23 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit("}", 2)
             else:
                 self.emit(template, level)
+                if cons_name == "RealConstant" and field.name == "type":
+                    # Write the deferred `r` payload now that `type` is on
+                    # the wire (kind=16 -> 16 payload bytes, else a plain
+                    # double packed into 16 bytes for a fixed-size read).
+                    self.emit('if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {', 2)
+                    self.emit(    'const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);', 3)
+                    self.emit(    'for (int i = 0; i < 16; i++) {', 3)
+                    self.emit(        'self().write_int8(bytes[i]);', 4)
+                    self.emit(    '}', 3)
+                    self.emit('} else {', 2)
+                    self.emit(    '{', 3)
+                    self.emit(        'uint8_t bytes[16];', 4)
+                    self.emit(        'std::memset(bytes, 0, 16);', 4)
+                    self.emit(        'std::memcpy(bytes, &x.m_r, sizeof(double));', 4)
+                    self.emit(        'for (int i = 0; i < 16; i++) { self().write_int8(bytes[i]); }', 4)
+                    self.emit(    '}', 3)
+                    self.emit('}', 2)
         else:
             if field.type == "identifier":
                 if field.seq:
@@ -2484,24 +2501,12 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 if cons_name == "RealConstant" and field.name == "r":
                     # kind=16 RealConstant stores its binary128 payload
                     # behind a pointer packed into m_r (see
-                    # real_constant_get_r16_bytes in asr_utils.h). Writing
-                    # the raw pointer bit-pattern would produce a dangling
-                    # pointer once read back in another process/allocator,
-                    # so serialize the actual 16 payload bytes for kind=16
-                    # and fall back to a plain double otherwise.
-                    self.emit('if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {', 2)
-                    self.emit(    'const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);', 3)
-                    self.emit(    'for (int i = 0; i < 16; i++) {', 3)
-                    self.emit(        'self().write_int8(bytes[i]);', 4)
-                    self.emit(    '}', 3)
-                    self.emit('} else {', 2)
-                    self.emit(    '{', 3)
-                    self.emit(        'uint8_t bytes[16];', 4)
-                    self.emit(        'std::memset(bytes, 0, 16);', 4)
-                    self.emit(        'std::memcpy(bytes, &x.m_%s, sizeof(double));' % field.name, 4)
-                    self.emit(        'for (int i = 0; i < 16; i++) { self().write_int8(bytes[i]); }', 4)
-                    self.emit(    '}', 3)
-                    self.emit('}', 2)
+                    # real_constant_get_r16_bytes in asr_utils.h). We need
+                    # m_type's kind to know how to read this back, and we
+                    # want the type written before the payload on the wire
+                    # (see review on #12307), so the actual write is
+                    # deferred until the `type` field is visited below.
+                    pass
                 else:
                     self.emit('self().write_float64(x.m_%s);' % field.name, 2)
             elif field.type == "void":
@@ -2749,11 +2754,11 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             # kind=16 RealConstant packs its binary128 payload
                             # behind a pointer in m_r (see
                             # real_constant_get_r16_bytes in asr_utils.h).
-                            # We don't know the kind until m_type (the next
-                            # field) is deserialized, so stash the raw 16
-                            # bytes now and resolve m_r after the field loop.
+                            # `type` is now written before the payload on
+                            # the wire (see review on #12307), so the
+                            # actual 16-byte read is deferred until m_type
+                            # is deserialized below.
                             lines.append("uint8_t m_%s_bytes[16];" % (f.name))
-                            lines.append("for (int i = 0; i < 16; i++) { m_%s_bytes[i] = (uint8_t) self().read_int8(); }" % (f.name))
                         else:
                             lines.append("double m_%s = self().read_float64();" % (f.name))
                         args.append("m_%s" % (f.name))
@@ -2827,6 +2832,10 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                                 lines.append("} else {")
                                 lines.append("m_%s = nullptr;" % f.name)
                                 lines.append("}")
+                            if name == "RealConstant" and f.name == "type":
+                                # m_type is now available; read the 16
+                                # payload bytes deferred from the `r` field.
+                                lines.append("for (int i = 0; i < 16; i++) { m_r_bytes[i] = (uint8_t) self().read_int8(); }")
                     args.append("m_%s" % (f.name))
 
         if name == "RealConstant":
