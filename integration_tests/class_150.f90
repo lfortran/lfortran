@@ -54,7 +54,7 @@ module mod_class150_net
   use mod_class150_layer
   implicit none
   private
-  public :: net_type, net_container, make_ensemble, ensemble_type
+  public :: net_type, net_container, make_ensemble, ensemble_type, destroy_ensemble
 
   type net_type
     type(layer_container), allocatable :: layers(:)
@@ -85,16 +85,55 @@ contains
     type(net_type) :: net
 
     allocate(ens % members(2))
-    allocate(net % layers(1))
 
     ! i=1: first model
+    allocate(net % layers(1))
     allocate(net % layers(1) % p, source=dense_type(1.0))
     allocate(ens % members(1) % p, source=net)
+    call destroy_net(net)
 
-    ! i=2: second model (reallocating net % layers(1) % p without deallocating)
+    ! i=2: second model
+    allocate(net % layers(1))
     allocate(net % layers(1) % p, source=dense_type(2.0))
     allocate(ens % members(2) % p, source=net)
+    call destroy_net(net)
   end function make_ensemble
+
+  subroutine destroy_net(net)
+    type(net_type), intent(in out) :: net
+    integer :: i
+
+    if (.not. allocated(net % layers)) return
+    do i = 1, size(net % layers)
+      if (associated(net % layers(i) % p)) then
+        deallocate(net % layers(i) % p)
+        nullify(net % layers(i) % p)
+      end if
+    end do
+    deallocate(net % layers)
+  end subroutine destroy_net
+
+  subroutine destroy_ensemble(ens)
+    type(ensemble_type), intent(in out) :: ens
+    integer :: i, j
+
+    if (.not. allocated(ens % members)) return
+    do i = 1, size(ens % members)
+      if (associated(ens % members(i) % p)) then
+        if (allocated(ens % members(i) % p % layers)) then
+          do j = 1, size(ens % members(i) % p % layers)
+            if (associated(ens % members(i) % p % layers(j) % p)) then
+              deallocate(ens % members(i) % p % layers(j) % p)
+              nullify(ens % members(i) % p % layers(j) % p)
+            end if
+          end do
+        end if
+        deallocate(ens % members(i) % p)
+        nullify(ens % members(i) % p)
+      end if
+    end do
+    deallocate(ens % members)
+  end subroutine destroy_ensemble
 
 end module mod_class150_net
 
@@ -115,5 +154,8 @@ program class_150
   res = ens % members(2) % p % output([1.0, 2.0])
   print *, 'Member 2 output (i=2):', res
   if (any(res /= [8.0, 8.0])) error stop
+
+  if (allocated(res)) deallocate(res)
+  call destroy_ensemble(ens)
 
 end program class_150
