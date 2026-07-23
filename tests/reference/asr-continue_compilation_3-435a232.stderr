@@ -28,6 +28,12 @@ semantic error: Explicit shaped array with nonconstant bounds
 69 |     integer :: arr_nc(minval(abs(a)))
    |                       ^^^^^^^^^^^^^^ 
 
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+  --> tests/errors/continue_compilation_3.f90:79:9
+   |
+79 |         procedure(), nopass, pointer :: caller => null()
+   |         ^^^^^^^^^^^ 
+
 semantic error: Assumed-rank arrays are not supported in print statements
   --> tests/errors/continue_compilation_3.f90:30:18
    |

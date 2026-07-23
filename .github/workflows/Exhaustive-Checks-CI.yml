@@ -723,22 +723,27 @@ jobs:
       - name: Install WASM build environment
         run: micromamba create -f environment-wasm-build.yml -y
 
-      - name: Build WASM kernel
+      - name: Create WASM host environment
         run: |
           set -ex
           micromamba create -f environment-wasm-host.yml -y \
             --platform=emscripten-wasm32 \
             -c https://prefix.dev/emscripten-forge-4x \
             -c https://prefix.dev/conda-forge
-          export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
-          echo "PREFIX=$PREFIX" >> $GITHUB_ENV
-          micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
+          echo "PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host" >> $GITHUB_ENV
+
+      - name: Build native runtime .mod files
+        run: ./wasm-build0.sh
+
+      - name: Build WASM kernel
+        run: micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
 
       - name: Run WASM evaluator tests
         run: |
           set -ex
+          cd build-wasm/src/lfortran/tests
           micromamba run -n xeus-lfortran-wasm-build \
-            node build-wasm/src/lfortran/tests/test_lfortran.js
+            node test_lfortran.js
 
       - name: Build JupyterLite site
         run: |

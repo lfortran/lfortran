@@ -1850,6 +1850,37 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_SyncMemory(x);
     }
 
+    void visit_FormTeam(const FormTeam_t &x) {
+        ASR::ttype_t *team_number_type = ASRUtils::expr_type(x.m_team_number);
+        require(!ASRUtils::is_array(team_number_type),
+            "FormTeam::m_team_number must be a scalar");
+        require(ASRUtils::is_integer(*team_number_type),
+            "FormTeam::m_team_number must be of integer type");
+
+        if (x.m_new_index) {
+            ASR::ttype_t *new_index_type = ASRUtils::expr_type(x.m_new_index);
+            require(!ASRUtils::is_array(new_index_type),
+                "FormTeam::m_new_index must be a scalar");
+            require(ASRUtils::is_integer(*new_index_type),
+                "FormTeam::m_new_index must be of integer type");
+        }
+        if (x.m_stat) {
+            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
+            require(!ASRUtils::is_array(stat_type),
+                "FormTeam::m_stat must be a scalar");
+            require(ASRUtils::is_integer(*stat_type),
+                "FormTeam::m_stat must be of integer type");
+        }
+        if (x.m_errmsg) {
+            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
+            require(!ASRUtils::is_array(errmsg_type),
+                "FormTeam::m_errmsg must be a scalar");
+            require(ASRUtils::is_character(*errmsg_type),
+                "FormTeam::m_errmsg must be of string type");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FormTeam(x);
+    }
+
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
         for ( size_t i = 0; i < x.n_local; i++ ) {
             require(ASR::is_a<ASR::Var_t>(*x.m_local[i]),

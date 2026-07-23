@@ -74,6 +74,7 @@ stmt
     | SyncAll(expr? stat, expr? errmsg)
     | SyncImages(expr? image_set, expr? stat, expr? errmsg)
     | SyncMemory(expr? stat, expr? errmsg)
+    | FormTeam(expr team_number, expr team, expr? new_index, expr? stat, expr? errmsg)
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
     | SelectType(expr selector, identifier? assoc_name, type_stmt* body, stmt* default)

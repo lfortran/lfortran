@@ -9971,8 +9971,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         // Create the function in the module
         std::string func_name = "_allocate_struct_";
-        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
-                            + "_" + ASRUtils::symbol_name(struct_sym);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
+        if (owner) {
+            func_name += ASRUtils::symbol_name(owner) + std::string("_");
+        }
+        func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,
@@ -10049,8 +10052,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         // Create the function in the module
         std::string func_name = "_copy_";
-        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
-                            + "_" + ASRUtils::symbol_name(struct_sym);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
+        if (owner) {
+            func_name += ASRUtils::symbol_name(owner) + std::string("_");
+        }
+        func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,

@@ -57,6 +57,15 @@ integer, parameter :: initial_team = 0
 integer, parameter :: current_team = 1
 integer, parameter :: parent_team = 2
 
+type :: __module_prif_prif_dummy_team_descriptor
+    ! this type is a placeholder for the opaque PRIF type
+end type __module_prif_prif_dummy_team_descriptor
+
+type :: team_type
+    private
+    type(__module_prif_prif_dummy_team_descriptor), pointer :: info => null()
+end type team_type
+
 contains
 function compiler_version() result(version)
     character(len=:), allocatable :: version

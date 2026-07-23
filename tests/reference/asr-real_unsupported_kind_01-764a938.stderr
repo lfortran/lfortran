@@ -1,0 +1,5 @@
+semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 16
+ --> tests/errors/real_unsupported_kind_01.f90:2:19
+  |
+2 | print *, real(1., 666)
+  |                   ^^^ 

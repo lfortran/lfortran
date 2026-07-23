@@ -1740,7 +1740,12 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     }
     switch (a_value->type) {
         case ASR::exprType::Var: {
-            ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(a_value);
+            ASR::symbol_t* v_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(a_value)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*v_sym)) {
+                return false;
+            }
+            ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(v_sym);
             return variable_t->m_storage != ASR::storage_typeType::Parameter;
         }
         case ASR::exprType::ArrayItem: {

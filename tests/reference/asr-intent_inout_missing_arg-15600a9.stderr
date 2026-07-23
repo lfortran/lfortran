@@ -1,0 +1,5 @@
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/intent_inout_missing_arg.f90:19:21
+   |
+19 |     call set_caller(upper_caller)
+   |                     ^^^^^^^^^^^^ 

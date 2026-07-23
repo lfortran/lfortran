@@ -75,10 +75,10 @@ program continue_compilation_3
 
     print *, iachar(s1)
     
-
-
-
-
+    type :: runner
+        procedure(), nopass, pointer :: caller => null()
+    contains
+    end type
 
 
 

@@ -32,7 +32,7 @@ public:
     std::map<std::string, std::vector<std::string>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
-    std::vector<std::string> assgn_proc_names;
+    std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
     std::vector<std::pair<std::string,Location>> simd_variables;
     std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
     std::set<std::string> loaded_submodules;
@@ -308,7 +308,7 @@ public:
 
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
-        assgn_proc_names.clear();
+        assgn_proc_names_locations.clear();
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3315,7 +3315,7 @@ public:
                 defined_op_procs[op] = proc_names;
             }
         }  else if (AST::is_a<AST::InterfaceHeaderAssignment_t>(*x.m_header)) {
-            fill_interface_proc_names(x, assgn_proc_names);
+            fill_interface_proc_names_with_loc(x, assgn_proc_names_locations);
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id);
             if (op_name != "formatted" && op_name != "unformatted") {
@@ -3678,22 +3678,25 @@ public:
     }
 
     void add_assignment_procedures() {
-        if( assgn_proc_names.empty() ) {
+        if( assgn_proc_names_locations.empty() ) {
             return ;
         }
         bool any_error = false;
-        for (const std::string &name : assgn_proc_names) {
-            ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+        std::vector<std::string> assgn_proc_names;
+        assgn_proc_names.reserve(assgn_proc_names_locations.size());
+        for (const auto &name_loc : assgn_proc_names_locations) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(name_loc.first));
             if (!sym) {
                 diag.add(Diagnostic(
-                    "Assignment procedure `" + name + "` not found",
+                    "Assignment procedure `" + name_loc.first + "` not found",
                     Level::Error, Stage::Semantic,
-                    {Label("", {})}
+                    {Label("", {name_loc.second})}
                 ));
                 any_error = true;
                 if (!compiler_options.continue_compilation) throw SemanticAbort();
                 continue;
             }
+            assgn_proc_names.push_back(name_loc.first);
             sym = ASRUtils::symbol_get_past_external(sym);
             // Must be a subroutine
             if (!ASR::is_a<ASR::Function_t>(*sym)) {
