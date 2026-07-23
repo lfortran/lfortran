@@ -26,14 +26,11 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 6, i32* %nwrite, align 4
   store i32 6, i32* %nwrite, align 4
   %7 = load i32, i32* %nwrite, align 4
-  %8 = alloca i32*, align 8
-  store i32* null, i32** %8, align 8
-  %9 = load i32*, i32** %8, align 8
-  %10 = call i32 @_lfortran_get_decimal_mode(i32 %7)
-  %11 = call i32 @_lfortran_get_sign_mode(i32 %7)
-  %12 = call i32 @_lfortran_get_round_mode(i32 %7)
-  %13 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %7, i32* %9, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i64 4, i8* %13, i64 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
+  %8 = call i32 @_lfortran_get_decimal_mode(i32 %7)
+  %9 = call i32 @_lfortran_get_sign_mode(i32 %7)
+  %10 = call i32 @_lfortran_get_round_mode(i32 %7)
+  %11 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %7, i32* null, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i64 4, i8* %11, i64 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -43,9 +40,9 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   br label %Finalize_Variable_lfortran_iomsg
 
 Finalize_Variable_lfortran_iomsg:                 ; preds = %FINALIZE_SYMTABLE_main
-  %14 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
-  %15 = load i8*, i8** %14, align 8
-  call void @_lfortran_free_alloc(i8* %2, i8* %15)
+  %12 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
+  %13 = load i8*, i8** %12, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %13)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
