@@ -14641,7 +14641,9 @@ public:
         }
         ASR::String_t *s_type = ASRUtils::get_string_type(x.m_arg);
         if (s_type->m_len_kind == ASR::ExpressionLength && s_type->m_len != nullptr) {
-            this->visit_expr_wrapper(s_type->m_len, true);
+            this->visit_expr_load_wrapper(s_type->m_len,
+                LLVM::is_llvm_pointer(*expr_type(s_type->m_len)) ? 2 : 1,
+                true);
             tmp = llvm_utils->convert_kind(tmp,
                 llvm::Type::getIntNTy(context, ASRUtils::extract_kind_from_ttype_t(x.m_type) * 8));
             return;
