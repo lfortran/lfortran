@@ -1537,7 +1537,7 @@ class PRIFInterface {
 
                 coarray_companions[sym] = {handle_sym, data_sym};
 
-                if (is_save) {
+                if (is_save && !ASRUtils::is_allocatable(var->m_type)) {
                     SavedCoarray sc;
                     sc.var = var;
                     sc.handle_sym = handle_sym;
@@ -1733,7 +1733,8 @@ class PRIFInterface {
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
                 if (var->n_codims == 0) continue;
-                if (ASRUtils::is_allocatable(var->m_type)) continue;
+                ASR::ttype_t *orig_type = original_types.count(sym) ? original_types[sym] : var->m_type;
+                if (ASRUtils::is_allocatable(orig_type)) continue;
 
                 auto companions = get_coarray_companions(sym);
                 ASR::symbol_t *hsym_orig = companions.first;
@@ -1769,7 +1770,6 @@ class PRIFInterface {
                 emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
 
                 ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
-                ASR::ttype_t *orig_type = original_types[sym];
                 ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
                 ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
                     ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, nullptr));
