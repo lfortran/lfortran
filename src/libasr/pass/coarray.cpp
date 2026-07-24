@@ -1746,6 +1746,13 @@ class PRIFInterface {
                 al, loc, dealloc_sub, nullptr,
                 call_args.p, call_args.n, nullptr, false));
             new_body.push_back(al, call_stmt);
+
+            Vec<ASR::expr_t*> nullify_vars;
+            nullify_vars.reserve(al, 1);
+            nullify_vars.push_back(al, expr);
+            ASR::stmt_t *nullify_stmt = ASRUtils::STMT(ASR::make_Nullify_t(
+                al, loc, nullify_vars.p, nullify_vars.n));
+            new_body.push_back(al, nullify_stmt);
         }
 
         void allocate_coarrays(SymbolTable *scope, SymbolTable *body_scope, const Location &loc,
