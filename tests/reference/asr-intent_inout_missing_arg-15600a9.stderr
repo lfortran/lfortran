@@ -1,5 +1,0 @@
-semantic error: Type mismatch: expected `runner` but a procedure was passed
-  --> tests/errors/intent_inout_missing_arg.f90:19:21
-   |
-19 |     call set_caller(upper_caller)
-   |                     ^^^^^^^^^^^^ 

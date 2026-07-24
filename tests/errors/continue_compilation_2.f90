@@ -28,6 +28,9 @@ block data myname
 end block data myname
 
 module continue_compilation_2_mod
+    type :: runner
+        procedure(), nopass, pointer :: caller => null()
+    end type
     contains
 
     subroutine solsy ()
@@ -83,6 +86,12 @@ module continue_compilation_2_mod
     end subroutine arank
 
     
+    subroutine set_caller(this, caller)
+        class(runner), intent(inout) :: this
+        procedure() :: caller
+        this%caller => caller
+    end subroutine
+
 end module continue_compilation_2_mod
 
 module intent_out_array_bounds_mod
@@ -256,16 +265,7 @@ program continue_compilation_2
     integer :: a_deferred(:)
     type(c_ptr) :: queries_3
     integer, pointer :: cfp_y_3(:)
-
-
-
-
-
-
-
-
-
-
+    type(runner) :: br
 
 
 
@@ -539,7 +539,8 @@ program continue_compilation_2
     a = cmplx(y = 2)
     ! c_f_pointer_03
     call c_f_pointer(queries_3, cfp_y_3)    
-
+    !type_mismatch_3
+    call set_caller(upper_caller)
 
 
 
@@ -570,6 +571,10 @@ program continue_compilation_2
         integer, intent(in), optional :: x
         f = PRESENT(x)
     end function
+
+    subroutine upper_caller(a)
+        class(*), intent(in) :: a
+    end subroutine
 
 end program
 
