@@ -9,51 +9,51 @@ syntax error: End module name does not match module name
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-  --> tests/errors/continue_compilation_2.f90:44:5 - 46:33
+  --> tests/errors/continue_compilation_2.f90:47:5 - 49:33
    |
-44 |        subroutine my_subroutine1()
+47 |        subroutine my_subroutine1()
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-46 |        end subroutine different_name
+49 |        end subroutine different_name
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End function name does not match function name
-  --> tests/errors/continue_compilation_2.f90:48:5 - 51:32
+  --> tests/errors/continue_compilation_2.f90:51:5 - 54:32
    |
-48 |        function my_function() result(res)
+51 |        function my_function() result(res)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-51 |        end function not_my_function
+54 |        end function not_my_function
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: End subroutine name does not match subroutine name
-  --> tests/errors/continue_compilation_2.f90:53:5 - 55:33
+  --> tests/errors/continue_compilation_2.f90:56:5 - 58:33
    |
-53 |        subroutine my_subroutine2()
+56 |        subroutine my_subroutine2()
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-55 |        end subroutine different_name 
+58 |        end subroutine different_name 
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: Invalid syntax for variable initialization (try inserting '::' after the type)
-   --> tests/errors/continue_compilation_2.f90:137:5
+   --> tests/errors/continue_compilation_2.f90:146:5
     |
-137 |     integer init_x = 1
+146 |     integer init_x = 1
     |     ^^^^^^^^^^^^^^^^^^ 
 
 syntax error: kind 16 is not supported yet.
-   --> tests/errors/continue_compilation_2.f90:227:5
+   --> tests/errors/continue_compilation_2.f90:236:5
     |
-227 |     real*16 :: unsupported_kind
+236 |     real*16 :: unsupported_kind
     |     ^^^^^^^ 
 
 tokenizer error: Token '?' is not recognized
-   --> tests/errors/continue_compilation_2.f90:233:17
+   --> tests/errors/continue_compilation_2.f90:242:17
     |
-233 |     integer  :: ? tokenizer_error
+242 |     integer  :: ? tokenizer_error
     |                 ^ token not recognized
 
 tokenizer error: Token '@' is not recognized in `format` statement
@@ -79,266 +79,316 @@ semantic error: Global name is already being used
 29 |    
    | ...^ 'myname' defined here again
 
-semantic error: Duplicate DIMENSION attribute specified
-  --> tests/errors/continue_compilation_2.f90:35:24
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+  --> tests/errors/continue_compilation_2.f90:32:9
    |
-35 |         common /rowns/ rowns(209)
+32 |         procedure(), nopass, pointer :: caller => null()
+   |         ^^^^^^^^^^^ 
+
+semantic error: Duplicate DIMENSION attribute specified
+  --> tests/errors/continue_compilation_2.f90:38:24
+   |
+38 |         common /rowns/ rowns(209)
    |                        ^^^^^^^^^^ 
 
 semantic error: Intent attribute can only be applied to procedure arguments
-  --> tests/errors/continue_compilation_2.f90:58:18
+  --> tests/errors/continue_compilation_2.f90:61:18
    |
-58 |         INTEGER, INTENT(IN) :: sub_a
+61 |         INTEGER, INTENT(IN) :: sub_a
    |                  ^^^^^^^^^^ 
 
 semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
+  --> tests/errors/continue_compilation_2.f90:60:5 - 62:36
    |
-57 |        SUBROUTINE faulty_subroutine(a, b, c)
+60 |        SUBROUTINE faulty_subroutine(a, b, c)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-59 |        END SUBROUTINE faulty_subroutine
+62 |        END SUBROUTINE faulty_subroutine
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'b' not defined
-  --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
+  --> tests/errors/continue_compilation_2.f90:60:5 - 62:36
    |
-57 |        SUBROUTINE faulty_subroutine(a, b, c)
+60 |        SUBROUTINE faulty_subroutine(a, b, c)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-59 |        END SUBROUTINE faulty_subroutine
+62 |        END SUBROUTINE faulty_subroutine
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'c' not defined
-  --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
+  --> tests/errors/continue_compilation_2.f90:60:5 - 62:36
    |
-57 |        SUBROUTINE faulty_subroutine(a, b, c)
+60 |        SUBROUTINE faulty_subroutine(a, b, c)
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-59 |        END SUBROUTINE faulty_subroutine
+62 |        END SUBROUTINE faulty_subroutine
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assumed-rank variable 'x' must not have any dimensions specified.
-  --> tests/errors/continue_compilation_2.f90:82:20
+  --> tests/errors/continue_compilation_2.f90:85:20
    |
-82 |         integer :: x(.., 5)
+85 |         integer :: x(.., 5)
    |                    ^^^^^^^^ 
 
 semantic error: Dummy argument 'x' not defined
-  --> tests/errors/continue_compilation_2.f90:81:5 - 83:24
+  --> tests/errors/continue_compilation_2.f90:84:5 - 86:24
    |
-81 |        subroutine arank(x)
+84 |        subroutine arank(x)
    |        ^^^^^^^^^^^^^^^^^^^...
 ...
    |
-83 |        end subroutine arank
+86 |        end subroutine arank
    | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Derived type 'runner' not declared
+  --> tests/errors/continue_compilation_2.f90:90:9
+   |
+90 |         class(runner), intent(inout) :: this
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+  --> tests/errors/continue_compilation_2.f90:91:9
+   |
+91 |         procedure() :: caller
+   |         ^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'this' not defined
+  --> tests/errors/continue_compilation_2.f90:89:5 - 93:18
+   |
+89 |        subroutine set_caller(this, caller)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+93 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'caller' not defined
+  --> tests/errors/continue_compilation_2.f90:89:5 - 93:18
+   |
+89 |        subroutine set_caller(this, caller)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+93 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: OPTIONAL dummy argument 'n' cannot be used for array bounds declaration
-   --> tests/errors/continue_compilation_2.f90:107:21
+   --> tests/errors/continue_compilation_2.f90:116:21
     |
-107 |         real :: arr(n)
+116 |         real :: arr(n)
     |                     ^ hint: use a non-optional argument, or declare the array as `allocatable`
 
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
-   --> tests/errors/continue_compilation_2.f90:132:5 - 134:49
+   --> tests/errors/continue_compilation_2.f90:141:5 - 143:49
     |
-132 |        implicit real(a-z)
+141 |        implicit real(a-z)
     |        ^^^^^^^^^^^^^^^^^^...
 ...
     |
-134 |        ! Put declarations below without empty lines
+143 |        ! Put declarations below without empty lines
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `parameter` attribute conflicts with `pointer` attribute
-   --> tests/errors/continue_compilation_2.f90:135:5
+   --> tests/errors/continue_compilation_2.f90:144:5
     |
-135 |     integer, pointer, parameter :: v => null()
+144 |     integer, pointer, parameter :: v => null()
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `parameter` attribute conflicts with `allocatable` attribute
-   --> tests/errors/continue_compilation_2.f90:136:5
+   --> tests/errors/continue_compilation_2.f90:145:5
     |
-136 |     integer, allocatable, parameter :: v=1
+145 |     integer, allocatable, parameter :: v=1
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `kind` argument of `int` intrinsic must be a scalar
-   --> tests/errors/continue_compilation_2.f90:197:54
+   --> tests/errors/continue_compilation_2.f90:206:54
     |
-197 |     integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
+206 |     integer(8), parameter :: ar1(3) = int([1, 2, 3], [8, 8, 8])
     |                                                      ^^^^^^^^^ 
 
 semantic error: `kind` argument of `int` intrinsic must be a scalar
-   --> tests/errors/continue_compilation_2.f90:199:54
+   --> tests/errors/continue_compilation_2.f90:208:54
     |
-199 |     integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
+208 |     integer(8), parameter :: ar2(3) = int([1, 2, 3], [8, 8, 8])
     |                                                      ^^^^^^^^^ 
 
 semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
-   --> tests/errors/continue_compilation_2.f90:201:13
+   --> tests/errors/continue_compilation_2.f90:210:13
     |
-201 |     integer(4.2) :: ifoix
+210 |     integer(4.2) :: ifoix
     |             ^^^ 
 
 semantic error: Kind 6 is not supported for Complex
-   --> tests/errors/continue_compilation_2.f90:203:13
+   --> tests/errors/continue_compilation_2.f90:212:13
     |
-203 |     complex(6) :: iiocx
+212 |     complex(6) :: iiocx
     |             ^ 
 
 semantic error: Kind 3 is not supported for Integer
-   --> tests/errors/continue_compilation_2.f90:205:13
+   --> tests/errors/continue_compilation_2.f90:214:13
     |
-205 |     integer(3) :: iifix
+214 |     integer(3) :: iifix
     |             ^ 
 
 semantic error: Kind 10 is not supported for Logical
-   --> tests/errors/continue_compilation_2.f90:207:13
+   --> tests/errors/continue_compilation_2.f90:216:13
     |
-207 |     logical(10) :: iiolx
+216 |     logical(10) :: iiolx
     |             ^^ 
 
 semantic error: Expected initialization expression for kind
-   --> tests/errors/continue_compilation_2.f90:209:13
+   --> tests/errors/continue_compilation_2.f90:218:13
     |
-209 |     complex(*) :: ksoca
+218 |     complex(*) :: ksoca
     |             ^ 
 
 semantic error: Expected initialization expression for kind
-   --> tests/errors/continue_compilation_2.f90:211:13
+   --> tests/errors/continue_compilation_2.f90:220:13
     |
-211 |     integer(*) :: ksoia
+220 |     integer(*) :: ksoia
     |             ^ 
 
 semantic error: Expected initialization expression for kind
-   --> tests/errors/continue_compilation_2.f90:213:13
+   --> tests/errors/continue_compilation_2.f90:222:13
     |
-213 |     logical(*) :: ksola
+222 |     logical(*) :: ksola
     |             ^ 
 
 semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
-   --> tests/errors/continue_compilation_2.f90:215:13
+   --> tests/errors/continue_compilation_2.f90:224:13
     |
-215 |     integer('a') :: ksoix
+224 |     integer('a') :: ksoix
     |             ^^^ 
 
 semantic error: Parameter 'kvoia' is a variable, which does not reduce to a constant expression
-   --> tests/errors/continue_compilation_2.f90:218:10
+   --> tests/errors/continue_compilation_2.f90:227:10
     |
-218 |     real(kvoia) :: kvoix
+227 |     real(kvoia) :: kvoix
     |          ^^^^^ 
 
 semantic error: Symbol is already declared in the same scope
-   --> tests/errors/continue_compilation_2.f90:220:16
+   --> tests/errors/continue_compilation_2.f90:229:16
     |
-220 |     real(3) :: x
+229 |     real(3) :: x
     |                ^ redeclaration
     |
-145 |     integer, parameter :: x = 2
+154 |     integer, parameter :: x = 2
     |                           ~~~~~ original declaration
 
 semantic error: Expected initialization expression for kind
-   --> tests/errors/continue_compilation_2.f90:222:10
+   --> tests/errors/continue_compilation_2.f90:231:10
     |
-222 |     real(*) kind2_a
+231 |     real(*) kind2_a
     |          ^ 
 
 semantic error: Parameter attribute cannot be used with Target attribute
-   --> tests/errors/continue_compilation_2.f90:224:5
+   --> tests/errors/continue_compilation_2.f90:233:5
     |
-224 |     integer, parameter, target :: foo=4
+233 |     integer, parameter, target :: foo=4
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Argument was not specified
-   --> tests/errors/continue_compilation_2.f90:229:33
+   --> tests/errors/continue_compilation_2.f90:238:33
     |
-229 |     type(Circle) :: myCircle2 = Circle()
+238 |     type(Circle) :: myCircle2 = Circle()
     |                                 ^^^^^^^^ Argument 'radius' not specified for circle
 
 semantic error: Keyword argument not found
-   --> tests/errors/continue_compilation_2.f90:231:33
+   --> tests/errors/continue_compilation_2.f90:240:33
     |
-231 |     type(Circle) :: myCircle3 = Circle(mykeyword=10)
+240 |     type(Circle) :: myCircle3 = Circle(mykeyword=10)
     |                                 ^^^^^^^^^^^^^^^^^^^^ 'mykeyword' keyword argument not found
 
 semantic error: Incompatible ranks 2 and 1 in assignment
-   --> tests/errors/continue_compilation_2.f90:234:36
+   --> tests/errors/continue_compilation_2.f90:243:36
     |
-234 |     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
+243 |     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
     |                                    ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Assumed-rank variable 'aRank1' must be a dummy argument.
-   --> tests/errors/continue_compilation_2.f90:250:16
+   --> tests/errors/continue_compilation_2.f90:259:16
     |
-250 |     integer :: aRank1(..)
+259 |     integer :: aRank1(..)
     |                ^^^^^^^^^^ 
 
 semantic error: Array 'a_deferred' with a deferred shape cannot be a local variable; it must be a dummy argument, allocatable, or pointer
-   --> tests/errors/continue_compilation_2.f90:256:16
+   --> tests/errors/continue_compilation_2.f90:265:16
     |
-256 |     integer :: a_deferred(:)
+265 |     integer :: a_deferred(:)
     |                ^^^^^^^^^^^^^ 
 
-semantic error: More than one main program found
-   --> tests/errors/continue_compilation_2.f90:127:1 - 574:11
+semantic error: Derived type `runner` is not defined
+   --> tests/errors/continue_compilation_2.f90:268:5
     |
-127 |    program continue_compilation_2
+268 |     type(runner) :: br
+    |     ^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: More than one main program found
+   --> tests/errors/continue_compilation_2.f90:136:1 - 579:11
+    |
+136 |    program continue_compilation_2
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-574 |    end program
+579 |    end program
     | ...^^^^^^^^^^^ first main program defined here
     |
-577 |    program second_program_test
+582 |    program second_program_test
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-580 |    end program second_program_test
+585 |    end program second_program_test
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ second main program defined here
 
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
-  --> tests/errors/continue_compilation_2.f90:36:18
+  --> tests/errors/continue_compilation_2.f90:39:18
    |
-36 |         print *, set_exponent([1, 2, 3], 2)
+39 |         print *, set_exponent([1, 2, 3], 2)
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Cannot assign to an intent(in) variable `y`
-  --> tests/errors/continue_compilation_2.f90:41:9
+  --> tests/errors/continue_compilation_2.f90:44:9
    |
-41 |         y = 99  
+44 |         y = 99  
    |         ^ 
 
 semantic error: Argument `val_a` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_2.f90:63:20
+  --> tests/errors/continue_compilation_2.f90:66:20
    |
-63 |         call sub_b(val_a)
+66 |         call sub_b(val_a)
    |                    ^^^^^ 
 
 semantic error: Argument `val_a` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_2.f90:73:26
+  --> tests/errors/continue_compilation_2.f90:76:26
    |
-73 |         res = inner_func(val_a)
+76 |         res = inner_func(val_a)
    |                          ^^^^^ 
 
-semantic error: Dummy argument 'this' has `intent(out)` and cannot be used for array bounds declaration
-  --> tests/errors/continue_compilation_2.f90:98:27
+semantic error: Variable 'this' not declared
+  --> tests/errors/continue_compilation_2.f90:92:9
    |
-98 |             real :: array(this%n)
-   |                           ^^^^^^ hint: use `intent(in/inout)` or `allocatable` for 'this', or pass the size as a separate `intent(in)` argument
+92 |         this%caller => caller
+   |         ^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'this' has `intent(out)` and cannot be used for array bounds declaration
+   --> tests/errors/continue_compilation_2.f90:107:27
+    |
+107 |             real :: array(this%n)
+    |                           ^^^^^^ hint: use `intent(in/inout)` or `allocatable` for 'this', or pass the size as a separate `intent(in)` argument
 
 semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_2.f90:100:13
+   --> tests/errors/continue_compilation_2.f90:109:13
     |
-100 |             array = [ (i,i = 1,this%n) ]
+109 |             array = [ (i,i = 1,this%n) ]
     |             ^^^^^   ^^^^^^^^^^^^^^^^^^^^ type mismatch (`integer` and `integer[:]`)
 
 semantic error: PRINT statement is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_2.f90:117:9
+   --> tests/errors/continue_compilation_2.f90:126:9
     |
-117 |         print "(A,I0)", 'b = ', b
+126 |         print "(A,I0)", 'b = ', b
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Deferred-length CHARACTER variable must be allocated with a character length `character(..)`
@@ -383,7 +433,7 @@ semantic error: Cannot assign to a constant variable
 305 |     x = 1
     |     ^^^^^ assignment here
     |
-145 |     integer, parameter :: x = 2
+154 |     integer, parameter :: x = 2
     |                           ~~~~~ declared as constant
 
 semantic error: More actual than formal arguments in procedure call
@@ -1010,14 +1060,20 @@ semantic error: shape argument not specified in c_f_pointer even though fptr is 
 541 |     call c_f_pointer(queries_3, cfp_y_3)    
     |                                 ^^^^^^^ 
 
-semantic error: Dummy argument 'x' of pure function must have INTENT(IN) or VALUE attribute
-   --> tests/errors/continue_compilation_2.f90:585:20
+semantic error: More actual than formal arguments in procedure call
+   --> tests/errors/continue_compilation_2.f90:543:21
     |
-585 |         integer :: x, y
+543 |     call set_caller(upper_caller)
+    |                     ^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' of pure function must have INTENT(IN) or VALUE attribute
+   --> tests/errors/continue_compilation_2.f90:590:20
+    |
+590 |         integer :: x, y
     |                    ^ 
 
 semantic error: Dummy argument 'y' of pure function must have INTENT(IN) or VALUE attribute
-   --> tests/errors/continue_compilation_2.f90:585:23
+   --> tests/errors/continue_compilation_2.f90:590:23
     |
-585 |         integer :: x, y
+590 |         integer :: x, y
     |                       ^ 
