@@ -1914,6 +1914,7 @@ public:
         {"random_init", IntrinsicSignature({"repeatable", "image_distinct"}, 2, 2)},
         {"random_seed", IntrinsicSignature({"size", "put", "get"}, 0, 3)},
         {"abort", IntrinsicSignature({}, 0, 0)},
+        {"exit", IntrinsicSignature({"status"}, 0, 1)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
         {"get_command_argument", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
         // Legacy F77 alias for get_command_argument. Standard form is
