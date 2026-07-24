@@ -14639,16 +14639,6 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        ASR::String_t *s_type = ASRUtils::get_string_type(x.m_arg);
-        if (s_type->m_len_kind == ASR::ExpressionLength && s_type->m_len != nullptr) {
-            this->visit_expr_load_wrapper(s_type->m_len,
-                LLVM::is_llvm_pointer(*expr_type(s_type->m_len)) ? 2 : 1,
-                true);
-            load_non_array_non_character_pointers(s_type->m_len, ASRUtils::expr_type(s_type->m_len), tmp);
-            tmp = llvm_utils->convert_kind(tmp,
-                llvm::Type::getIntNTy(context, ASRUtils::extract_kind_from_ttype_t(x.m_type) * 8));
-            return;
-        }
         tmp = get_string_length(x.m_arg); // `int64` value.
         tmp = llvm_utils->convert_kind(tmp,
             llvm::Type::getIntNTy(context, ASRUtils::extract_kind_from_ttype_t(x.m_type) * 8));
