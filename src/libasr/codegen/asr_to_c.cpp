@@ -164,7 +164,8 @@ public:
         for( auto itr: der_type_t->m_symtab->get_scope() ) {
             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(itr.second);
             if( ASR::is_a<ASR::Union_t>(*sym) ||
-                ASR::is_a<ASR::Struct_t>(*sym) ) {
+                ASR::is_a<ASR::Struct_t>(*sym) ||
+                ASR::is_a<ASR::StructMethodDeclaration_t>(*sym) ) {
                 continue ;
             }
             ASR::ttype_t* mem_type = ASRUtils::symbol_type(sym);
