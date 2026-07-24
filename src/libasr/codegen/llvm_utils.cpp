@@ -3913,10 +3913,22 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             case ASR::ttypeType::Pointer: {
                 ASR::Pointer_t* pointer_type = ASR::down_cast<ASR::Pointer_t>(asr_src_type);
                 if(ASRUtils::is_string_only(ASRUtils::type_get_past_array(asr_src_type))){
-                    lfortran_str_copy(dest, src,
-                        ASRUtils::get_string_type(asr_dest_type),
-                        ASRUtils::get_string_type(asr_src_type),
-                        ASRUtils::is_allocatable(asr_dest_type));
+                    ASR::String_t* src_str_type = ASRUtils::get_string_type(asr_src_type);
+                    if (!ASRUtils::is_allocatable(asr_dest_type) &&
+                        src_str_type->m_physical_type == ASR::DescriptorString) {
+                        // A character *pointer* propagates by association, not by value:
+                        // copy the {i8*, i64} descriptor so dest aliases src's target,
+                        // exactly as the pointer descriptor-array case below does. A
+                        // value copy here would both lose the aliasing and trip the
+                        // NULL assert in `_lfortran_strcpy_alloc` (deferred length +
+                        // non-allocatable dest), whether src is associated or not.
+                        builder->CreateStore(
+                            CreateLoad2(string_descriptor, src), dest);
+                    } else {
+                        lfortran_str_copy(dest, src,
+                            ASRUtils::get_string_type(asr_dest_type), src_str_type,
+                            ASRUtils::is_allocatable(asr_dest_type));
+                    }
                 } else if (ASR::is_a<ASR::FunctionType_t>(*pointer_type->m_type)) {
                     // Pointer(FunctionType) has the same LLVM layout as FunctionType (fntype*),
                     // so use fntype* as load type (no extra getPointerTo()).
