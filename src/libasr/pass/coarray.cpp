@@ -731,7 +731,7 @@ class PRIFInterface {
             
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
             ASR::expr_t *handle_var = make_struct_var(fn_symtab, loc, "coarray_handle",
-                handle_struct, ASR::intentType::InOut, ASR::presenceType::Required, false);
+                handle_struct, ASR::intentType::In, ASR::presenceType::Required, false);
 
             Vec<ASR::expr_t*> args; args.reserve(al, 4);
             args.push_back(al, handle_var);
@@ -1693,8 +1693,7 @@ class PRIFInterface {
                 sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
             }
             LCOMPILERS_ASSERT(sym && ASR::is_a<ASR::Variable_t>(*sym));
-            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-            LCOMPILERS_ASSERT(var->n_codims > 0 && ASRUtils::is_allocatable(original_types[sym]));
+            LCOMPILERS_ASSERT(ASR::down_cast<ASR::Variable_t>(sym)->n_codims > 0 && ASRUtils::is_allocatable(original_types[sym]));
 
             ASR::symbol_t *dealloc_sub = get_or_create_prif_deallocate_coarray_sub(loc);
             
