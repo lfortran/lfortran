@@ -46,7 +46,7 @@ end interface
 
 interface
     subroutine __module_prif_prif_deallocate_coarray(coarray_handle, stat, errmsg, errmsg_alloc)
-        type(prif_coarray_handle), intent(inout) :: coarray_handle
+        type(prif_coarray_handle), intent(in) :: coarray_handle
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
         integer(4), intent(out), optional :: stat
