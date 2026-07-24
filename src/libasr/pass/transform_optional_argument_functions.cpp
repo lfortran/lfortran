@@ -412,7 +412,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     if( !str->m_len ||
                         !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){
                         str->m_len_kind = ASR::ExpressionLength;
-                        str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 1,
+                        str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 0,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
                     }
                 }
