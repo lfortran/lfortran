@@ -505,9 +505,6 @@ asr = true
 [[test]]
 filename = "errors/real_unsupported_kind_01.f90"
 asr = true
-[[test]]
-filename = "errors/stop_code_wrong_type_01.f90"
-continue_compilation = true
 
 
 [[test]]

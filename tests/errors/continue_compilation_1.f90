@@ -317,7 +317,7 @@ program continue_compilation_1
 
 
 
-
+    real :: stop_code_wrong_type_01_x
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -657,6 +657,8 @@ program continue_compilation_1
     integer :: eoshift_bad_shift(2, 2)
     eoshift_bad_shift = 1
     b1 = eoshift(b1, eoshift_bad_shift)
+    stop_code_wrong_type_01_x = 5.0
+    stop stop_code_wrong_type_01_x
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass

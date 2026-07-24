@@ -1,5 +1,0 @@
-semantic error: Stop code must be of type INTEGER or CHARACTER, found `f32`
- --> tests/errors/stop_code_wrong_type_01.f90:4:1
-  |
-4 | stop x
-  | ^^^^^^ 
