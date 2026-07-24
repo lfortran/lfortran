@@ -631,6 +631,30 @@ class PRIFInterface {
             return type;
         }
 
+        ASR::expr_t* create_shape_expr_from_dims(const Location &loc, ASR::dimension_t *dims, size_t n_array_dims) {
+            std::vector<ASR::expr_t*> shape_vec;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (size_t i = 0; i < n_array_dims; i++) {
+                ASR::dimension_t d = dims[i];
+                if (d.m_length) {
+                    ASR::expr_t *len_expr = d.m_length;
+                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
+                        throw LCompilersException("Array dimension length must be an integer");
+                    } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr)) != 4) {
+                        len_expr = b.i2i_t(len_expr, int32_type);
+                    }
+                    shape_vec.push_back(len_expr);
+                } else {
+                    shape_vec.push_back(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type)));
+                }
+            }
+            if (shape_vec.size() > 0) {
+                return b.ArrayConstant(shape_vec, int32_type, false);
+            }
+            return nullptr;
+        }
+
         ASR::expr_t* create_shape_expr(const Location &loc, ASR::ttype_t *type) {
             if (ASR::is_a<ASR::Array_t>(*type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -1679,7 +1703,11 @@ class PRIFInterface {
             
             emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body, sz, stat, errmsg);
             
-            ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
+            size_t n_array_dims = n_dims;
+            ASR::expr_t *shape_expr = nullptr;
+            if (n_array_dims > 0) {
+                shape_expr = create_shape_expr_from_dims(loc, dims, n_array_dims);
+            }
             ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
                 ASR::make_CPtrToPointer_t(al, loc, dexpr, expr, shape_expr, nullptr));
             new_body.push_back(al, cfp_stmt);
