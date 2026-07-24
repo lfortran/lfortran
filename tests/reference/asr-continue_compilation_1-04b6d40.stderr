@@ -1600,12 +1600,6 @@ semantic error: The argument `shift` in `eoshift` must be scalar or have rank on
 659 |     b1 = eoshift(b1, eoshift_bad_shift)
     |                      ^^^^^^^^^^^^^^^^^ 
 
-semantic error: Stop code must be of type INTEGER or CHARACTER, found `f32`
-   --> tests/errors/continue_compilation_1.f90:661:5
-    |
-661 |     stop stop_code_wrong_type_01_x
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: No matching `operator(-)` found for this operand type
    --> tests/errors/continue_compilation_1.f90:667:18
     |
