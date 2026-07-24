@@ -1814,7 +1814,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerBinOp:
         case ASR::exprType::StructInstanceMember:
-        case ASR::exprType::StringLen: {
+        case ASR::exprType::StringLen:
+        case ASR::exprType::ArrayItem: {
             return is_value_constant(expr_value(a_value));
         }
         case ASR::exprType::ArrayConstructor: {
@@ -2234,7 +2235,8 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::FunctionCall:
         case ASR::exprType::IntegerBinOp:
-        case ASR::exprType::StringLen: {
+        case ASR::exprType::StringLen:
+        case ASR::exprType::ArrayItem: {
             if (!extract_value(expr_value(value_expr), value)) {
                 return false;
             }

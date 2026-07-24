@@ -774,6 +774,7 @@ RUN(NAME array_bound_4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackAr
 RUN(NAME array_bound_5 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_bound_6 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays fortran)
 RUN(NAME array_bound_7 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME array_bound_8 LABELS gfortran llvm) # parameter-array element as array bound
 RUN(NAME arrays_op_1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_op_2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_op_3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
