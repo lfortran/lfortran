@@ -14644,6 +14644,7 @@ public:
             this->visit_expr_load_wrapper(s_type->m_len,
                 LLVM::is_llvm_pointer(*expr_type(s_type->m_len)) ? 2 : 1,
                 true);
+            load_non_array_non_character_pointers(s_type->m_len, ASRUtils::expr_type(s_type->m_len), tmp);
             tmp = llvm_utils->convert_kind(tmp,
                 llvm::Type::getIntNTy(context, ASRUtils::extract_kind_from_ttype_t(x.m_type) * 8));
             return;
