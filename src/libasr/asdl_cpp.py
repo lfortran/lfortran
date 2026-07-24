@@ -2306,6 +2306,58 @@ class JsonVisitorVisitor(ASDLVisitor):
                 self.emit('s.append("\\"Unimplemented%s\\"");' % field.type, 2)
 
 
+# Constructors whose serialized (wire) format cannot be derived from their ASDL
+# declaration alone. Every deviation from the generic scheme belongs here, so
+# that SerializationVisitorVisitor and DeserializationVisitorVisitor stay free
+# of node specific knowledge. Recognized keys:
+#
+#   "order":  field order on the wire. It defaults to the ASDL declaration
+#             order, which is also the argument order of `make_<Node>_t()`;
+#             list a constructor here only when the two have to differ.
+#   "fields": maps a field name to the C++ statement emitted for it instead of
+#             the generic one, under the keys "write" and "read".
+#
+# RealConstant: a `real(16)` value does not fit into `double m_r`; m_r instead
+# packs a pointer to 16 separately allocated bytes holding the binary128
+# payload (see real_constant_pack_r16() in asr_utils.h). Writing that pointer
+# into a module file would leave a dangling pointer once the file is read back,
+# so the payload itself is serialized, and how wide it is depends on the kind
+# stored in `type`. `type` therefore has to precede `r` on the wire. The kind
+# dependent transfer itself lives in write_real()/read_real() in
+# serialization.cpp.
+serialization_overrides = {
+    "RealConstant": {
+        "order": ["type", "r"],
+        "fields": {
+            "r": {
+                "write": "self().write_real(x.m_r, x.m_type);",
+                "read": "double m_r = self().read_real(m_type);",
+            },
+        },
+    },
+}
+
+
+def serialization_fields(name, fields):
+    """Return `fields` in the order they appear on the wire."""
+    order = serialization_overrides.get(name, {}).get("order")
+    if order is None:
+        return fields
+    by_name = {f.name: f for f in fields}
+    assert sorted(order) == sorted(by_name), \
+        "serialization_overrides['%s']['order'] must list every field" % name
+    return [by_name[field_name] for field_name in order]
+
+
+def serialization_override(name, field_name, direction):
+    """C++ statement for a field, or None to emit the generic one.
+
+    `direction` is "write" for serialization and "read" for deserialization.
+    """
+    return serialization_overrides.get(name, {}) \
+        .get("fields", {}).get(field_name, {}).get(direction)
+
+
 class SerializationVisitorVisitor(ASDLVisitor):
 
     def visitModule(self, mod):
@@ -2347,7 +2399,7 @@ class SerializationVisitorVisitor(ASDLVisitor):
             self.emit(    'self().write_int64(x.base.base.loc.first);', 2)
             self.emit(    'self().write_int64(x.base.base.loc.last);', 2)
         self.used = False
-        for n, field in enumerate(fields):
+        for n, field in enumerate(serialization_fields(name, fields)):
             self.visitField(field, cons, name)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
@@ -2361,6 +2413,11 @@ class SerializationVisitorVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def visitField(self, field, cons, cons_name):
+        custom = serialization_override(cons_name, field.name, "write")
+        if custom is not None:
+            self.used = True
+            self.emit(custom, 2)
+            return
         if (field.type not in asdl.builtin_types and
             field.type not in self.data.simple_types):
             self.used = True
@@ -2398,23 +2455,6 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit("}", 2)
             else:
                 self.emit(template, level)
-                if cons_name == "RealConstant" and field.name == "type":
-                    # Write the deferred `r` payload now that `type` is on
-                    # the wire (kind=16 -> 16 payload bytes, else a plain
-                    # double packed into 16 bytes for a fixed-size read).
-                    self.emit('if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {', 2)
-                    self.emit(    'const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);', 3)
-                    self.emit(    'for (int i = 0; i < 16; i++) {', 3)
-                    self.emit(        'self().write_int8(bytes[i]);', 4)
-                    self.emit(    '}', 3)
-                    self.emit('} else {', 2)
-                    self.emit(    '{', 3)
-                    self.emit(        'uint8_t bytes[16];', 4)
-                    self.emit(        'std::memset(bytes, 0, 16);', 4)
-                    self.emit(        'std::memcpy(bytes, &x.m_r, sizeof(double));', 4)
-                    self.emit(        'for (int i = 0; i < 16; i++) { self().write_int8(bytes[i]); }', 4)
-                    self.emit(    '}', 3)
-                    self.emit('}', 2)
         else:
             if field.type == "identifier":
                 if field.seq:
@@ -2498,17 +2538,7 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit(    'self().write_bool(false);', 3)
                 self.emit("}", 2)
             elif field.type == "float" and not field.seq and not field.opt:
-                if cons_name == "RealConstant" and field.name == "r":
-                    # kind=16 RealConstant stores its binary128 payload
-                    # behind a pointer packed into m_r (see
-                    # real_constant_get_r16_bytes in asr_utils.h). We need
-                    # m_type's kind to know how to read this back, and we
-                    # want the type written before the payload on the wire
-                    # (see review on #12307), so the actual write is
-                    # deferred until the `type` field is visited below.
-                    pass
-                else:
-                    self.emit('self().write_float64(x.m_%s);' % field.name, 2)
+                self.emit('self().write_float64(x.m_%s);' % field.name, 2)
             elif field.type == "void":
                 assert True
             elif field.type == "location":
@@ -2596,7 +2626,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
     def visitProduct(self, prod, name):
         self.emit("%s_t deserialize_%s() {" % (name, name), 1)
         self.emit(  '%s_t x;' % (name), 2)
-        for field in prod.fields:
+        for field in serialization_fields(name, prod.fields):
             if field.seq:
                 assert not field.opt
                 assert field.type not in simple_sums
@@ -2670,9 +2700,17 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         name = cons.name
         self.emit("%s_t* deserialize_%s() {" % (subs["mod"], name), 1)
         lines = []
-        args = ["al", "loc"]
-        for f in cons.fields:
+        # Maps a field name to the `make_<Node>_t()` arguments it contributes.
+        # Fields are read in wire order but passed in ASDL order, which are not
+        # necessarily the same (see serialization_overrides).
+        field_args = {}
+        for f in serialization_fields(name, cons.fields):
             #type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
+            custom = serialization_override(name, f.name, "read")
+            if custom is not None:
+                lines.append(custom)
+                field_args[f.name] = ["m_%s" % f.name]
+                continue
             if f.seq:
                 seq = "size_t n_%s; // Sequence" % f.name
                 self.emit("%s" % seq, 2)
@@ -2715,8 +2753,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     else:
                         print(f.type)
                         assert False
-                args.append("v_%s.p" % (f.name))
-                args.append("v_%s.n" % (f.name))
+                field_args[f.name] = ["v_%s.p" % (f.name), "v_%s.n" % (f.name)]
             else:
                 # if builtin or simple types, handle appropriately
                 if f.type in asdl.builtin_types:
@@ -2731,7 +2768,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("} else {")
                             lines.append("m_%s = nullptr;" % (f.name))
                             lines.append("}")
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "string":
                         lines.append("char *m_%s;" % (f.name))
                         if f.opt:
@@ -2743,33 +2780,23 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("} else {")
                             lines.append("m_%s = nullptr;" % (f.name))
                             lines.append("}")
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "int":
                         assert not f.opt
                         lines.append("int64_t m_%s = self().read_int64();" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "float":
                         assert not f.opt
-                        if name == "RealConstant" and f.name == "r":
-                            # kind=16 RealConstant packs its binary128 payload
-                            # behind a pointer in m_r (see
-                            # real_constant_get_r16_bytes in asr_utils.h).
-                            # `type` is now written before the payload on
-                            # the wire (see review on #12307), so the
-                            # actual 16-byte read is deferred until m_type
-                            # is deserialized below.
-                            lines.append("uint8_t m_%s_bytes[16];" % (f.name))
-                        else:
-                            lines.append("double m_%s = self().read_float64();" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        lines.append("double m_%s = self().read_float64();" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "bool":
                         assert not f.opt
                         lines.append("bool m_%s = self().read_bool();" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "symbol_table":
                         assert not f.opt
                         # TODO: read the symbol table:
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                         lines.append("uint64_t m_%s_counter = self().read_int64();" % (f.name))
                         if f.name == "parent_symtab":
                             # If this fails, it means we are referencing a
@@ -2795,13 +2822,13 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                             lines.append("}")
                     elif f.type == "void":
                         lines.append("void *m_%s = self().read_void(m_n_data);" % (f.name))
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     elif f.type == "location":
                         lines.append("Location* m_%s;"% f.name)
                         lines.append("m_%s = al.make_new<Location>();"% f.name)
                         lines.append("m_%s->first = self().read_int64();"% f.name)
                         lines.append("m_%s->last = self().read_int64();"% f.name)
-                        args.append("m_%s" % (f.name))
+                        field_args[f.name] = ["m_%s" % (f.name)]
                     else:
                         print(f.type)
                         assert False
@@ -2832,26 +2859,16 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                                 lines.append("} else {")
                                 lines.append("m_%s = nullptr;" % f.name)
                                 lines.append("}")
-                            if name == "RealConstant" and f.name == "type":
-                                # m_type is now available; read the 16
-                                # payload bytes deferred from the `r` field.
-                                lines.append("for (int i = 0; i < 16; i++) { m_r_bytes[i] = (uint8_t) self().read_int8(); }")
-                    args.append("m_%s" % (f.name))
+                    field_args[f.name] = ["m_%s" % (f.name)]
 
-        if name == "RealConstant":
-            lines.append("double m_r;")
-            lines.append("if (ASRUtils::extract_kind_from_ttype_t(m_type) == 16) {")
-            lines.append("    uint8_t* m_r_heap_bytes = static_cast<uint8_t*>(al.alloc(16));")
-            lines.append("    std::memcpy(m_r_heap_bytes, m_r_bytes, 16);")
-            lines.append("    m_r = ASRUtils::real_constant_pack_r16(m_r_heap_bytes);")
-            lines.append("} else {")
-            lines.append("    std::memcpy(&m_r, m_r_bytes, sizeof(double));")
-            lines.append("}")
         self.emit(    'Location loc;', 2)
         self.emit(    'loc.first = self().read_int64() + offset;', 2)
         self.emit(    'loc.last = self().read_int64() + offset;', 2)
         for line in lines:
             self.emit(line, 2)
+        args = ["al", "loc"]
+        for f in cons.fields:
+            args.extend(field_args[f.name])
         self.emit(    'return %s::make_%s_t(%s);' % (subs["MOD"], name, ", ".join(args)), 2)
         self.emit("}", 1)
 

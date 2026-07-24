@@ -130,14 +130,20 @@ static inline std::string extract_real_16_str(const char *s) {
 // `extract_value<double>`, which refuses for kind=16). Constructing a kind=16
 // constant from a decimal string is `make_RealConstant_r16_from_str`.
 
+// Recover the pointer to the 16 binary128 bytes from an m_r payload. Inverse of
+// `real_constant_pack_r16`. Only valid for a kind=16 payload.
+static inline const uint8_t* real_constant_unpack_r16(double m_r) {
+    uintptr_t addr;
+    std::memcpy(&addr, &m_r, sizeof(addr));
+    return reinterpret_cast<const uint8_t*>(addr);
+}
+
 // Read the 16 raw bytes of a kind=16 RealConstant (binary128, little-endian).
 // Asserts that the constant is kind=16. Lifetime: tied to the ASR allocator
 // that built the node.
 static inline const uint8_t* real_constant_get_r16_bytes(
         const ASR::RealConstant_t* c) {
-    uintptr_t addr;
-    std::memcpy(&addr, &c->m_r, sizeof(addr));
-    return reinterpret_cast<const uint8_t*>(addr);
+    return real_constant_unpack_r16(c->m_r);
 }
 
 // Pack 16 bytes into the m_r payload (compose the pointer-encoded double).
