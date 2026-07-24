@@ -196,9 +196,18 @@ define void @_lcompilers_trim_str(%string_descriptor* %str, %string_descriptor* 
   %12 = select i1 %11, i64 0, i64 %10
   %13 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
   %14 = load i8*, i8** %13, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  %16 = load i64, i64* %15, align 8
-  call void @_lfortran_strcpy_alloc(i8* %0, i8** %11, i64* %12, i8 0, i8 0, i8* %14, i64 %16, i32 1)
+  %StrSliceGEP = getelementptr i8, i8* %14, i64 0
+  %15 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  store i8* %StrSliceGEP, i8** %15, align 8
+  %16 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  store i64 %12, i64* %16, align 8
+  %17 = getelementptr %string_descriptor, %string_descriptor* %result_local_desc, i32 0, i32 0
+  %18 = getelementptr %string_descriptor, %string_descriptor* %result_local_desc, i32 0, i32 1
+  %19 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  %21 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  %22 = load i64, i64* %21, align 8
+  call void @_lfortran_strcpy_alloc(i8* %0, i8** %17, i64* %18, i8 0, i8 0, i8* %20, i64 %22, i32 1)
   br label %return
 
 return:                                           ; preds = %.entry
