@@ -2337,12 +2337,32 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                         }
                     }
                     if (is_coarray_allocate) {
+                        Vec<ASR::alloc_arg_t> non_coarray_args;
+                        non_coarray_args.reserve(replacer.al, x->n_args);
                         for (size_t j = 0; j < x->n_args; j++) {
                             ASR::expr_t *a = x->m_args[j].m_a;
-                            ASR::dimension_t *dims = x->m_args[j].m_dims;
-                            size_t n_dims = x->m_args[j].n_dims;
-                            replacer.prif.make_allocate_coarray_stmts(
-                                x->base.base.loc, a, dims, n_dims, x->m_stat, x->m_errmsg, body);
+                            bool is_co = false;
+                            if (a->type == ASR::exprType::Var) {
+                                ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(a)->m_v;
+                                if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+                                    if (ASR::down_cast<ASR::Variable_t>(sym)->n_codims > 0) {
+                                        is_co = true;
+                                    }
+                                }
+                            }
+                            if (is_co) {
+                                ASR::dimension_t *dims = x->m_args[j].m_dims;
+                                size_t n_dims = x->m_args[j].n_dims;
+                                replacer.prif.make_allocate_coarray_stmts(
+                                    x->base.base.loc, a, dims, n_dims, x->m_stat, x->m_errmsg, body);
+                            } else {
+                                non_coarray_args.push_back(replacer.al, x->m_args[j]);
+                            }
+                        }
+                        if (non_coarray_args.size() > 0) {
+                            ASR::stmt_t *new_alloc = ASRUtils::STMT(ASR::make_Allocate_t(
+                                replacer.al, x->base.base.loc, non_coarray_args.p, non_coarray_args.size(), x->m_stat, x->m_errmsg, x->m_source));
+                            body.push_back(replacer.al, new_alloc);
                         }
                     } else {
                         body.push_back(replacer.al, m_body[i]);
@@ -2364,11 +2384,30 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                         }
                     }
                     if (is_coarray_deallocate) {
-                        
+                        Vec<ASR::expr_t*> non_coarray_vars;
+                        non_coarray_vars.reserve(replacer.al, x->n_vars);
                         for (size_t j = 0; j < x->n_vars; j++) {
                             ASR::expr_t *a = x->m_vars[j];
-                            replacer.prif.make_deallocate_coarray_stmts(
-                                x->base.base.loc, a, nullptr, nullptr, body);
+                            bool is_co = false;
+                            if (a->type == ASR::exprType::Var) {
+                                ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(a)->m_v;
+                                if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+                                    if (ASR::down_cast<ASR::Variable_t>(sym)->n_codims > 0) {
+                                        is_co = true;
+                                    }
+                                }
+                            }
+                            if (is_co) {
+                                replacer.prif.make_deallocate_coarray_stmts(
+                                    x->base.base.loc, a, nullptr, nullptr, body);
+                            } else {
+                                non_coarray_vars.push_back(replacer.al, a);
+                            }
+                        }
+                        if (non_coarray_vars.size() > 0) {
+                            ASR::stmt_t *new_dealloc = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                                replacer.al, x->base.base.loc, non_coarray_vars.p, non_coarray_vars.size()));
+                            body.push_back(replacer.al, new_dealloc);
                         }
                     } else {
                         body.push_back(replacer.al, m_body[i]);
