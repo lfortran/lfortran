@@ -138,6 +138,157 @@ Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
     return v;
 }
 
+// The parser collects all `use`, `import`, `implicit`, declaration and
+// executable statements of a program unit into a single list, in the order
+// they appear in the source code. `split_decl_stmts()` below splits that list
+// into the separate lists that the AST currently uses and reports any
+// violation of the statement ordering rules (F2018 R508) as an error.
+
+// Which of the five kinds of statements a given scope accepts.
+enum class DeclContext {
+    Program,     // main program
+    Subprogram,  // subroutine, function, procedure
+    Module,      // module, submodule
+    BlockData,   // block data
+    Block,       // block construct
+};
+
+struct DeclStmts {
+    Vec<ast_t*> use;
+    Vec<ast_t*> import;
+    Vec<ast_t*> implicit;
+    Vec<ast_t*> decl;
+    Vec<ast_t*> body;
+};
+
+// The five ordered sections of a program unit (F2018 R508). `Flexible` marks
+// the statements that F2018 R506 allows to appear anywhere in the
+// specification part, they never trigger an ordering error.
+enum class DeclPhase {
+    Use, Import, Implicit, Decl, Exec, Flexible
+};
+
+static inline const char* decl_context_name(DeclContext ctx) {
+    switch (ctx) {
+        case DeclContext::Program: return "main program";
+        case DeclContext::Subprogram: return "subprogram";
+        case DeclContext::Module: return "module";
+        case DeclContext::BlockData: return "block data";
+        case DeclContext::Block: return "block construct";
+    }
+    return "program unit";
+}
+
+// True for the `parameter (a = 1)` form, which F2018 R506 allows to appear
+// before the `implicit` statement (unlike `integer, parameter :: a = 1`).
+static inline bool is_parameter_stmt(const ast_t &x) {
+    if (!is_a<unit_decl2_t>(x)) return false;
+    const unit_decl2_t &d = *(const unit_decl2_t*)&x;
+    if (!is_a<Declaration_t>(d)) return false;
+    const Declaration_t &decl = *(const Declaration_t*)&x;
+    return decl.m_vartype == nullptr && decl.n_attributes == 1
+        && is_a<SimpleAttribute_t>(*decl.m_attributes[0])
+        && ((const SimpleAttribute_t*)decl.m_attributes[0])->m_attr
+            == simple_attributeType::AttrParameter;
+}
+
+static inline DeclPhase decl_phase(const ast_t &x) {
+    switch (x.type) {
+        case astType::unit_decl1: return DeclPhase::Use;
+        case astType::import_statement: return DeclPhase::Import;
+        case astType::implicit_statement: return DeclPhase::Implicit;
+        case astType::unit_decl2:
+            return is_parameter_stmt(x) ? DeclPhase::Flexible : DeclPhase::Decl;
+        case astType::stmt: {
+            const stmt_t &s = *(const stmt_t*)&x;
+            // `format` and `entry` may appear anywhere (F2018 R506, R514)
+            if (is_a<Format_t>(s) || is_a<Entry_t>(s)) return DeclPhase::Flexible;
+            // `data` is a declaration construct but is stored in the body
+            if (is_a<DataStmt_t>(s)) return DeclPhase::Decl;
+            return DeclPhase::Exec;
+        }
+        default: return DeclPhase::Exec;
+    }
+}
+
+static inline void decl_order_error(const std::string &msg, const Location &loc,
+        LCompilers::diag::Diagnostics &diag) {
+    diag.add(LCompilers::diag::Diagnostic(msg, LCompilers::diag::Level::Error,
+        LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
+}
+
+static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items,
+        DeclContext ctx, LCompilers::diag::Diagnostics &diag) {
+    DeclStmts r;
+    r.use.reserve(al, items.size());
+    r.import.reserve(al, items.size());
+    r.implicit.reserve(al, items.size());
+    r.decl.reserve(al, items.size());
+    r.body.reserve(al, items.size());
+    bool import_allowed = (ctx == DeclContext::Subprogram
+        || ctx == DeclContext::Block);
+    bool implicit_allowed = (ctx != DeclContext::Block);
+    bool exec_allowed = (ctx != DeclContext::Module);
+    DeclPhase seen = DeclPhase::Use;
+    for (size_t i=0; i < items.size(); i++) {
+        if (!items[i]) continue;
+        ast_t *x = items[i];
+        DeclPhase phase = decl_phase(*x);
+        if (phase != DeclPhase::Flexible && phase > seen) seen = phase;
+        switch (x->type) {
+            case astType::unit_decl1: {
+                if (seen > DeclPhase::Use) {
+                    decl_order_error("use statement must appear before all "
+                        "other declarations and statements", x->loc, diag);
+                }
+                r.use.push_back(al, x);
+                break;
+            }
+            case astType::import_statement: {
+                if (!import_allowed) {
+                    decl_order_error(std::string("import statement is not "
+                        "allowed in a ") + decl_context_name(ctx), x->loc, diag);
+                } else {
+                    if (seen > DeclPhase::Import) {
+                        decl_order_error("import statement must appear before "
+                            "implicit and declaration statements", x->loc, diag);
+                    }
+                    r.import.push_back(al, x);
+                }
+                break;
+            }
+            case astType::implicit_statement: {
+                if (!implicit_allowed) {
+                    decl_order_error(std::string("implicit statement is not "
+                        "allowed in a ") + decl_context_name(ctx), x->loc, diag);
+                } else {
+                    if (seen > DeclPhase::Implicit) {
+                        decl_order_error("implicit statement must appear before "
+                            "declaration and executable statements", x->loc, diag);
+                    }
+                    r.implicit.push_back(al, x);
+                }
+                break;
+            }
+            case astType::unit_decl2: {
+                r.decl.push_back(al, x);
+                break;
+            }
+            default: {
+                LCOMPILERS_ASSERT(is_a<stmt_t>(*x))
+                if (!exec_allowed && phase != DeclPhase::Decl) {
+                    decl_order_error(std::string("executable statement is not "
+                        "allowed in a ") + decl_context_name(ctx), x->loc, diag);
+                }
+                r.body.push_back(al, x);
+                break;
+            }
+        }
+    }
+    return r;
+}
+
+
 static inline stmt_t** IFSTMTS(Allocator &al, ast_t* x)
 {
     stmt_t **s = al.allocate<stmt_t*>();
@@ -1551,8 +1702,42 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 #define EVENT_WAIT_KW_ARG(id, e, l) make_AttrEventWaitKwArg_t(p.m_a, l, \
         name2char(id), EXPR(e))
 
-#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) \
-    make_Subroutine_t(p.m_a, l, \
+ast_t* SUBROUTINE2(Allocator &al, const Location &l, char* a_name,
+        arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
+        size_t n_attributes, bind_t* a_bind, trivia_t* a_trivia,
+        Vec<ast_t*> decl_stmts, program_unit_t** a_contains, size_t n_contains,
+        char** a_temp_args, size_t n_temp_args, Location* a_start_name,
+        Location* a_end_name, LCompilers::diag::Diagnostics &diag) {
+    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Subprogram, diag);
+    return make_Subroutine_t(al, l, a_name, a_args, n_args,
+        a_attributes, n_attributes, a_bind, a_trivia,
+        USES(d.use), d.use.size(),
+        VEC_CAST(d.import, import_statement), d.import.size(),
+        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        DECLS(d.decl), d.decl.size(),
+        STMTS(d.body), d.body.size(),
+        a_contains, n_contains, a_temp_args, n_temp_args,
+        a_start_name, a_end_name);
+}
+
+ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
+        arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
+        size_t n_attributes, trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_contains, size_t n_contains,
+        LCompilers::diag::Diagnostics &diag) {
+    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Subprogram, diag);
+    return make_Procedure_t(al, l, a_name, a_args, n_args,
+        a_attributes, n_attributes, a_trivia,
+        USES(d.use), d.use.size(),
+        VEC_CAST(d.import, import_statement), d.import.size(),
+        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        DECLS(d.decl), d.decl.size(),
+        STMTS(d.body), d.body.size(),
+        a_contains, n_contains);
+}
+
+#define SUBROUTINE(name, args, bind, trivia, decl_stmts, contains, name_opt, l) \
+    SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
@@ -1560,24 +1745,15 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*n_attributes*/ 0, \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define SUBROUTINE1(fn_mod, name, args, bind, trivia, use, import, implicit, \
-        decl, stmts, contains, name_opt, l) make_Subroutine_t(p.m_a, l, \
+        /*end_name*/ &(name_opt->loc), p.diag)
+#define SUBROUTINE1(fn_mod, name, args, bind, trivia, decl_stmts, contains, \
+        name_opt, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
@@ -1585,42 +1761,24 @@ Vec<ast_t*> empty_sync(Allocator &al) {
         /*n_attributes*/ fn_mod.size(), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define PROCEDURE(fn_mod, name, args, trivia, use, import, implicit, decl, stmts, contains, l) \
-    make_Procedure_t(p.m_a, l, \
+        /*end_name*/ &(name_opt->loc), p.diag)
+#define PROCEDURE(fn_mod, name, args, trivia, decl_stmts, contains, l) \
+    PROCEDURE2(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
         /*n_attributes*/ fn_mod.size(), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        /*n_contains*/ contains.size(), p.diag)
 
 char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     if (s.size() == 0) {
@@ -1630,7 +1788,27 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
-#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
+        arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
+        size_t n_attributes, expr_t* a_return_var, bind_t* a_bind,
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_contains, size_t n_contains,
+        char** a_temp_args, size_t n_temp_args, Location* a_start_name,
+        Location* a_end_name, LCompilers::diag::Diagnostics &diag) {
+    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Subprogram, diag);
+    return make_Function_t(al, l, a_name, a_args, n_args,
+        a_attributes, n_attributes, a_return_var, a_bind, a_trivia,
+        USES(d.use), d.use.size(),
+        VEC_CAST(d.import, import_statement), d.import.size(),
+        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        DECLS(d.decl), d.decl.size(),
+        STMTS(d.body), d.body.size(),
+        a_contains, n_contains, a_temp_args, n_temp_args,
+        a_start_name, a_end_name);
+}
+
+#define FUNCTION(fn_type, name, args, return_var, bind, trivia, decl_stmts, \
+        contains, name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
@@ -1639,50 +1817,33 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
+        /*end_name*/ &(name_opt->loc), p.diag)
+#define FUNCTION0(name, args, return_var, bind, trivia, decl_stmts, contains, \
+        name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, args), \
         /*n_args*/ args.size(), \
-        /*return_type*/ nullptr, \
-        /*return_type*/ 0, \
+        /*m_attributes*/ nullptr, \
+        /*n_attributes*/ 0, \
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
+        /*end_name*/ &(name_opt->loc), p.diag)
 
-#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
-        make_Function_t(p.m_a, l, \
+#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, \
+        bind, trivia, decl_stmts, name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
@@ -1691,24 +1852,15 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
-        make_Function_t(p.m_a, l, \
+        /*end_name*/ &(name_opt->loc), p.diag)
+#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, \
+        trivia, decl_stmts, name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
@@ -1717,24 +1869,15 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
-        make_Subroutine_t(p.m_a, l, \
+        /*end_name*/ &(name_opt->loc), p.diag)
+#define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, \
+        decl_stmts, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
@@ -1742,24 +1885,15 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*n_attributes*/ 0, \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc))
-#define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
-        make_Subroutine_t(p.m_a, l, \
+        /*end_name*/ &(name->loc), p.diag)
+#define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, \
+        trivia, decl_stmts, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, l, fn_args), \
         /*n_args*/ fn_args.size(), \
@@ -1767,77 +1901,32 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         /*n_attributes*/ fn_type.size(), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc))
-
-Vec<ast_t*> SPLIT_DECL(Allocator &al, Vec<ast_t*> ast)
-{
-    Vec<ast_t*> v;
-    v.reserve(al, ast.size());
-    for (size_t i=0; i<ast.size(); i++) {
-        if (is_a<unit_decl2_t>(*ast[i])) {
-            v.push_back(al, ast[i]);
-        }
-    }
-    return v;
-}
-
-Vec<ast_t*> SPLIT_STMT(Allocator &al, Vec<ast_t*> ast)
-{
-    Vec<ast_t*> v;
-    v.reserve(al, ast.size());
-    for (size_t i=0; i<ast.size(); i++) {
-        if (is_a<stmt_t>(*ast[i])) {
-            v.push_back(al, ast[i]);
-        }
-    }
-    return v;
-}
+        /*end_name*/ &(name->loc), p.diag)
 
 ast_t* PROGRAM2(Allocator &al, const Location &a_loc, char* a_name,
-        trivia_t* a_trivia, unit_decl1_t** a_use, size_t n_use,
-        implicit_statement_t** a_implicit, size_t n_implicit,
-        Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains, Location *start_name, Location *end_name) {
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
+        size_t n_contains, Location *start_name, Location *end_name,
+        LCompilers::diag::Diagnostics &diag) {
 
-Vec<ast_t*> decl;
-Vec<ast_t*> stmt;
-decl.reserve(al, decl_stmts.size());
-stmt.reserve(al, decl_stmts.size());
-for (size_t i=0; i<decl_stmts.size(); i++) {
-    if (decl_stmts[i] && is_a<unit_decl2_t>(*decl_stmts[i])) {
-        decl.push_back(al, decl_stmts[i]);
-    } else if (decl_stmts[i]) {
-        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
-        stmt.push_back(al, decl_stmts[i]);
-    }
-}
+DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Program, diag);
 
 return make_Program_t(al, a_loc,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ a_use,
-        /*n_use*/ n_use,
-        /*m_implicit*/ a_implicit,
-        /*n_implicit*/ n_implicit,
-        /*decl*/ DECLS(decl),
-        /*n_decl*/ decl.size(),
-        /*body*/ STMTS(stmt),
-        /*n_body*/ stmt.size(),
+        /*use*/ USES(d.use),
+        /*n_use*/ d.use.size(),
+        /*m_implicit*/ VEC_CAST(d.implicit, implicit_statement),
+        /*n_implicit*/ d.implicit.size(),
+        /*decl*/ DECLS(d.decl),
+        /*n_decl*/ d.decl.size(),
+        /*body*/ STMTS(d.body),
+        /*n_body*/ d.body.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ start_name,
@@ -1846,19 +1935,15 @@ return make_Program_t(al, a_loc,
 }
 
 
-#define PROGRAM(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+#define PROGRAM(name, trivia, decl_stmts, contains, name_opt, l) \
     PROGRAM2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "program", p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
         /*n_contains*/ contains.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ (name_opt) ? &((name_opt)->loc) : nullptr)
+        /*end_name*/ (name_opt) ? &((name_opt)->loc) : nullptr, p.diag)
 #define RESULT(x) p.result.push_back(p.m_a, x)
 
 #define STMT_NAME(id_first, id_last, stmt) \
@@ -1872,15 +1957,22 @@ return make_Program_t(al, a_loc,
 
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
 
-#define BLOCK(trivia, use, import, decl, body, l) make_Block_t(p.m_a, l, 0, nullptr, \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
+ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
+        Vec<ast_t*> decl_stmts, LCompilers::diag::Diagnostics &diag) {
+    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Block, diag);
+    return make_Block_t(al, l, 0, nullptr,
+        /*use*/ USES(d.use),
+        /*n_use*/ d.use.size(),
+        /*m_import*/ VEC_CAST(d.import, import_statement),
+        /*n_import*/ d.import.size(),
+        /*decl*/ DECLS(d.decl),
+        /*n_decl*/ d.decl.size(),
+        /*body*/ STMTS(d.body),
+        /*n_body*/ d.body.size(), a_trivia, nullptr);
+}
+
+#define BLOCK(trivia, decl_stmts, l) BLOCK2(p.m_a, l, trivia_cast(trivia), \
+        decl_stmts, p.diag)
 
 #define ASSOCIATE_BLOCK(syms, trivia, body, l) make_AssociateBlock_t(p.m_a, l, 0, \
         nullptr, \
@@ -2559,36 +2651,23 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define USE_READ(x, l) make_UseRead_t(p.m_a, l, name2char(x))
 
 ast_t* MODULE2(Allocator &al, const Location &a_loc, char* a_name,
-        trivia_t* a_trivia, unit_decl1_t** a_use, size_t n_use,
-        implicit_statement_t** a_implicit, size_t n_implicit,
-        Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains, Location* a_start_name = nullptr,
-        Location* a_end_name = nullptr) {
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
+        size_t n_contains, LCompilers::diag::Diagnostics &diag,
+        Location* a_start_name = nullptr, Location* a_end_name = nullptr) {
 
-Vec<ast_t*> decl;
-Vec<ast_t*> stmt;
-decl.reserve(al, decl_stmts.size());
-stmt.reserve(al, decl_stmts.size());
-for (size_t i=0; i<decl_stmts.size(); i++) {
-    if (is_a<unit_decl2_t>(*decl_stmts[i])) {
-        decl.push_back(al, decl_stmts[i]);
-    } else {
-        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
-        stmt.push_back(al, decl_stmts[i]);
-    }
-}
+DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Module, diag);
 
 return make_Module_t(al, a_loc,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ a_use,
-        /*n_use*/ n_use,
-        /*m_implicit*/ a_implicit,
-        /*n_implicit*/ n_implicit,
-        /*decl*/ DECLS(decl),
-        /*n_decl*/ decl.size(),
-        /*body*/ STMTS(stmt),
-        /*n_body*/ stmt.size(),
+        /*use*/ USES(d.use),
+        /*n_use*/ d.use.size(),
+        /*m_implicit*/ VEC_CAST(d.implicit, implicit_statement),
+        /*n_implicit*/ d.implicit.size(),
+        /*decl*/ DECLS(d.decl),
+        /*n_decl*/ d.decl.size(),
+        /*body*/ STMTS(d.body),
+        /*n_body*/ d.body.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ a_start_name,
@@ -2596,54 +2675,37 @@ return make_Module_t(al, a_loc,
 
 }
 
-#define MODULE(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+#define MODULE(name, trivia, decl_stmts, contains, name_opt, l) \
     MODULE2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "module", p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*n_contains*/ contains.size(), p.diag, \
         /*start_name*/ &(name->loc), \
         /*end_name*/ &(name_opt->loc))
 
 ast_t* SUBMODULE2(Allocator &al, const Location &a_loc, char* a_id,
         char* a_parent_name, char* a_name, trivia_t* a_trivia,
-        unit_decl1_t** a_use, size_t n_use,
-        implicit_statement_t** a_implicit, size_t n_implicit,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains, Location* a_start_name = nullptr,
-        Location* a_end_name = nullptr) {
+        size_t n_contains, LCompilers::diag::Diagnostics &diag,
+        Location* a_start_name = nullptr, Location* a_end_name = nullptr) {
 
-Vec<ast_t*> decl;
-Vec<ast_t*> stmt;
-decl.reserve(al, decl_stmts.size());
-stmt.reserve(al, decl_stmts.size());
-for (size_t i=0; i<decl_stmts.size(); i++) {
-    if (is_a<unit_decl2_t>(*decl_stmts[i])) {
-        decl.push_back(al, decl_stmts[i]);
-    } else {
-        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
-        stmt.push_back(al, decl_stmts[i]);
-    }
-}
+DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Module, diag);
 
 return make_Submodule_t(al, a_loc,
         /*id*/ a_id,
         /*a_parent_name*/ a_parent_name,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ a_use,
-        /*n_use*/ n_use,
-        /*m_implicit*/ a_implicit,
-        /*n_implicit*/ n_implicit,
-        /*decl*/ DECLS(decl),
-        /*n_decl*/ decl.size(),
-        /*body*/ STMTS(stmt),
-        /*n_body*/ stmt.size(),
+        /*use*/ USES(d.use),
+        /*n_use*/ d.use.size(),
+        /*m_implicit*/ VEC_CAST(d.implicit, implicit_statement),
+        /*n_implicit*/ d.implicit.size(),
+        /*decl*/ DECLS(d.decl),
+        /*n_decl*/ d.decl.size(),
+        /*body*/ STMTS(d.body),
+        /*n_body*/ d.body.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ a_start_name,
@@ -2651,48 +2713,45 @@ return make_Submodule_t(al, a_loc,
 }
 
 
-#define SUBMODULE(id, name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+#define SUBMODULE(id, name, trivia, decl_stmts, contains, name_opt, l) \
     SUBMODULE2(p.m_a, l, \
         name2char(id), \
         nullptr, \
         /*name*/ name2char_with_check(name, name_opt, l, "submodule", p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*n_contains*/ contains.size(), p.diag, \
         /*start_name*/ &(name->loc), \
         /*end_name*/ &(name_opt->loc))
 
-#define SUBMODULE1(id, parent_name, name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
-    SUBMODULE2(p.m_a, l, \
+#define SUBMODULE1(id, parent_name, name, trivia, decl_stmts, contains, \
+        name_opt, l) SUBMODULE2(p.m_a, l, \
         name2char(id), \
         name2char(parent_name), \
         /*name*/ name2char_with_check(name, name_opt, l, "submodule", p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*n_contains*/ contains.size(), p.diag, \
         /*start_name*/ &(name->loc), \
         /*end_name*/ &(name_opt->loc))
 
-#define BLOCKDATA(trivia, use, implicit, decl, stmt, l) make_BlockData_t(p.m_a, l, \
-        nullptr, trivia_cast(trivia), \
-        USES(use), use.size(), \
-        VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
-#define BLOCKDATA1(name, trivia, use, implicit, decl, stmt, l) make_BlockData_t( \
-        p.m_a, l, name2char(name), trivia_cast(trivia), \
-        USES(use), use.size(), \
-        VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
+ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
+        LCompilers::diag::Diagnostics &diag) {
+    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::BlockData, diag);
+    return make_BlockData_t(al, l, a_name, a_trivia,
+        USES(d.use), d.use.size(),
+        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        DECLS(d.decl), d.decl.size(),
+        STMTS(d.body), d.body.size());
+}
+
+#define BLOCKDATA(trivia, decl_stmts, l) BLOCKDATA2(p.m_a, l, nullptr, \
+        trivia_cast(trivia), decl_stmts, p.diag)
+#define BLOCKDATA1(name, trivia, decl_stmts, l) BLOCKDATA2(p.m_a, l, \
+        name2char(name), trivia_cast(trivia), decl_stmts, p.diag)
 
 #define INTERFACE_HEADER(l) make_InterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_NAME(id, l) make_InterfaceHeaderName_t(p.m_a, l, \
