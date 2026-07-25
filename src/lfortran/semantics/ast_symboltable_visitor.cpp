@@ -2346,7 +2346,12 @@ public:
         if (generic_procedures.find(sym_name) != generic_procedures.end()
             || interface_name == to_lower(sym_name) ||
             (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check))) {
-            sym_name = sym_name + "~genericprocedure";
+            // This specific procedure shares its generic interface's name, so
+            // it is stored under "<name>~genericprocedure" to avoid clashing
+            // with the GenericProcedure symbol in the symbol table. The real
+            // external (link) symbol is still "<name>"; the backend recovers it
+            // with ASRUtils::strip_genericprocedure_suffix().
+            sym_name = sym_name + ASRUtils::genericprocedure_suffix;
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
