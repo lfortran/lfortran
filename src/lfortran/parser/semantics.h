@@ -151,6 +151,7 @@ enum class DeclContext {
     Module,      // module, submodule
     BlockData,   // block data
     Block,       // block construct
+    Template,    // template, requirement
 };
 
 struct DeclStmts {
@@ -175,6 +176,7 @@ static inline const char* decl_context_name(DeclContext ctx) {
         case DeclContext::Module: return "module";
         case DeclContext::BlockData: return "block data";
         case DeclContext::Block: return "block construct";
+        case DeclContext::Template: return "template";
     }
     return "program unit";
 }
@@ -225,10 +227,13 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
     r.implicit.reserve(al, items.size());
     r.decl.reserve(al, items.size());
     r.body.reserve(al, items.size());
+    bool use_allowed = (ctx != DeclContext::Template);
     bool import_allowed = (ctx == DeclContext::Subprogram
         || ctx == DeclContext::Block);
-    bool implicit_allowed = (ctx != DeclContext::Block);
-    bool exec_allowed = (ctx != DeclContext::Module);
+    bool implicit_allowed = (ctx != DeclContext::Block
+        && ctx != DeclContext::Template);
+    bool exec_allowed = (ctx != DeclContext::Module
+        && ctx != DeclContext::Template);
     DeclPhase seen = DeclPhase::Use;
     for (size_t i=0; i < items.size(); i++) {
         if (!items[i]) continue;
@@ -237,11 +242,16 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
         if (phase != DeclPhase::Flexible && phase > seen) seen = phase;
         switch (x->type) {
             case astType::unit_decl1: {
-                if (seen > DeclPhase::Use) {
-                    decl_order_error("use statement must appear before all "
-                        "other declarations and statements", x->loc, diag);
+                if (!use_allowed) {
+                    decl_order_error(std::string("use statement is not allowed "
+                        "in a ") + decl_context_name(ctx), x->loc, diag);
+                } else {
+                    if (seen > DeclPhase::Use) {
+                        decl_order_error("use statement must appear before all "
+                            "other declarations and statements", x->loc, diag);
+                    }
+                    r.use.push_back(al, x);
                 }
-                r.use.push_back(al, x);
                 break;
             }
             case astType::import_statement: {
@@ -2820,15 +2830,34 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         nullptr, 0, nullptr, 0);
 }
 
-#define TEMPLATE(name, namelist, decl, contains, l) \
-        make_Template_t(p.m_a, l, name2char(name), \
+ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
+        char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_contains, size_t n_contains,
+        LCompilers::diag::Diagnostics &diag) {
+    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Template, diag);
+    return make_Template_t(al, l, a_name, a_namelist, n_namelist,
+        /*unit_decl2_t** a_decl*/ DECLS(d.decl), /*size_t n_decl*/ d.decl.size(),
+        /*contains*/ a_contains, /*n_contains*/ n_contains);
+}
+
+ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
+        char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_funcs, size_t n_funcs,
+        LCompilers::diag::Diagnostics &diag) {
+    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Template, diag);
+    return make_Requirement_t(al, l, a_name, a_namelist, n_namelist,
+        DECLS(d.decl), d.decl.size(), a_funcs, n_funcs);
+}
+
+#define TEMPLATE(name, namelist, decl_stmts, contains, l) \
+        TEMPLATE2(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
-        /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
-        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size())
-#define REQUIREMENT(name, namelist, decl, funcs, l) \
-        make_Requirement_t(p.m_a, l, name2char(name), \
+        decl_stmts, \
+        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
+#define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
+        REQUIREMENT2(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
-        DECLS(decl), decl.size(), CONTAINS(funcs), funcs.size())
+        decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
 #define REQUIRE(require_list, l) \
         make_Require_t(p.m_a, l, \
         VEC_CAST(require_list, unit_require), require_list.size())

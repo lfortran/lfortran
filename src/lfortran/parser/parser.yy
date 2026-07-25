@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    212 // shift/reduce conflicts
+%expect    213 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -401,8 +401,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> end_submodule
 %type <ast> submodule
 %type <ast> block_data
-%type <ast> temp_decl
-%type <vec_ast> temp_decl_star
 %type <ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
@@ -765,13 +763,13 @@ union_type_decl
     ;
 
 template_decl
-    : KW_TEMPLATE id "(" id_list ")" sep temp_decl_star
+    : KW_TEMPLATE id "(" id_list ")" sep decl_statements
         contains_block_opt KW_END KW_TEMPLATE sep {
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
 
 requirement_decl
-    : KW_REQUIREMENT id "(" id_list ")" sep temp_decl_star
+    : KW_REQUIREMENT id "(" id_list ")" sep decl_statements
         sub_or_func_star KW_END KW_REQUIREMENT sep {
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
@@ -1083,21 +1081,6 @@ fn_mod
     | KW_PURE { $$ = SIMPLE_ATTR(Pure, @$); }
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
     | KW_NON_RECURSIVE {  $$ = SIMPLE_ATTR(NonRecursive, @$); }
-    ;
-
-temp_decl_star
-    : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
-    | %empty { LIST_NEW($$); }
-    ;
-
-temp_decl
-    : var_decl
-    | interface_decl
-    | derived_type_decl
-    | union_type_decl
-    | template_decl
-    | require_decl
-    | instantiate
     ;
 
 contains_block_opt
