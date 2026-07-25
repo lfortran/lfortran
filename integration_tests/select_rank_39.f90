@@ -1,4 +1,4 @@
-program p
+program select_rank_39
   implicit none
   character :: c(1)
   c(1) = 'A'
@@ -12,8 +12,8 @@ contains
 
     select rank(a)
     rank(1)
-      print *, a(1)
+      if (a(1) /= 'A') error stop
     end select
   end subroutine s
   
-end program p
+end program select_rank_39
