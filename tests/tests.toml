@@ -4964,6 +4964,14 @@ filename = "errors/data_implied_do3.f90"
 asr = true
 
 [[test]]
+filename = "errors/decl_order_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/module_error_recovery_01.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/init1.f90"
 ast = true
 

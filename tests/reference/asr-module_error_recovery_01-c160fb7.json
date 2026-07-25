@@ -1,0 +1,13 @@
+{
+    "basename": "asr-module_error_recovery_01-c160fb7",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/module_error_recovery_01.f90",
+    "infile_hash": "c330d24bf81a3440be68e0def7c0747125f381446533ed61f7af2bac",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-module_error_recovery_01-c160fb7.stderr",
+    "stderr_hash": "32f136a3b428d3eb3709316cbb3c2c0778edccf7f22b0bafea8d7774",
+    "returncode": 1
+}

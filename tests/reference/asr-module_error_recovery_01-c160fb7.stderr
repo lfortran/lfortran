@@ -1,0 +1,11 @@
+syntax error: Token 'foo' (of type 'identifier') is unexpected here
+ --> tests/errors/module_error_recovery_01.f90:8:7
+  |
+8 |       foo    end type t
+  |       ^^^ 
+
+semantic error: Derived type 't' not declared
+  --> tests/errors/module_error_recovery_01.f90:11:7
+   |
+11 |       class(t), intent(in) :: self
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
