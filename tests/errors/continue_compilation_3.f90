@@ -3,10 +3,10 @@
 ! intact.
 module continue_compilation_3_mod
 
-
-
-
-
+    type :: tbp_ptr_dummy_t
+    contains
+        procedure :: m => tbp_ptr_dummy_f  ! Warning: passed-object dummy argument that is POINTER is not standard
+    end type
 
 
 contains
@@ -38,9 +38,9 @@ contains
     character(:), allocatable :: x
     x = "AB"          ! allocates x with length 2
     end subroutine ss
-
-
-
+    function tbp_ptr_dummy_f(this) result(r)
+        class(tbp_ptr_dummy_t), pointer, intent(in) :: this; real :: r; r = 0.0
+    end function
 end module continue_compilation_3_mod
 
 ! Only put declarations and statements here, no subroutines (those go above).

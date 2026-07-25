@@ -5,7 +5,7 @@ module struct_tbp_codegen_12296_m
   end type
  contains
   function f(this)
-    class(t), pointer, intent(in) :: this
+    class(t), intent(in) :: this
     real :: f
     f = 0.0
   end function
