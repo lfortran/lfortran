@@ -1685,8 +1685,7 @@ class PRIFInterface {
             }
             LCOMPILERS_ASSERT(sym && ASR::is_a<ASR::Variable_t>(*sym));
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-            ASR::ttype_t *orig_type = original_types.count(sym) ? original_types[sym] : var->m_type;
-            LCOMPILERS_ASSERT(var->n_codims > 0 && ASRUtils::is_allocatable(orig_type));
+            LCOMPILERS_ASSERT(var->n_codims > 0 && ASRUtils::is_allocatable(original_types[sym]));
 
             ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
