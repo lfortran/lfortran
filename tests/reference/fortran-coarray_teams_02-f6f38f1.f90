@@ -10,7 +10,7 @@ type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
-program sync_team_mre
+program coarray_teams_02
 implicit none
 integer(4) :: stat
 type(__module_prif_prif_team_type) :: team
@@ -64,4 +64,4 @@ interface
     end subroutine __module_prif_prif_sync_team
 end interface
 
-end program sync_team_mre
+end program coarray_teams_02
