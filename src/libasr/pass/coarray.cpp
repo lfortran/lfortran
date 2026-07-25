@@ -1561,6 +1561,10 @@ class PRIFInterface {
 
                 coarray_companions[sym] = {handle_sym, data_sym};
 
+                if (!is_save && var->m_intent == ASR::intentType::Local && ASRUtils::is_allocatable(var->m_type)) {
+                    LCOMPILERS_ASSERT_MSG(false, "Auto deallocation for non save allocatable coarrays is not yet turned on");
+                }
+
                 if (is_save && !ASRUtils::is_allocatable(var->m_type)) {
                     SavedCoarray sc;
                     sc.var = var;

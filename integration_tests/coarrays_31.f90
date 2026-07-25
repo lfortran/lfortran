@@ -2,7 +2,7 @@ program coarrays_31
     implicit none
 
     ! Declare an allocatable array coarray
-    integer, allocatable :: arr_coarray(:)[:]
+    integer, allocatable, save :: arr_coarray(:)[:]
     integer :: i
 
     ! Allocate the coarray using a SOURCE= specifier.

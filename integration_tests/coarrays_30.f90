@@ -2,12 +2,12 @@ program coarrays_30
     implicit none
 
     ! 1. Two allocatable coarrays (one array, one scalar)
-    integer, allocatable :: array_coarray(:)[:]
-    integer, allocatable :: scalar_coarray[:]
+    integer, allocatable, save :: array_coarray(:)[:]
+    integer, allocatable, save :: scalar_coarray[:]
 
     ! 2. Two allocatable non-coarrays (one array, one scalar)
-    integer, allocatable :: array_noncoarray(:)
-    integer, allocatable :: scalar_noncoarray
+    integer, allocatable, save :: array_noncoarray(:)
+    integer, allocatable, save :: scalar_noncoarray
 
     ! --- CHECK 1: Before allocation ---
     if (allocated(array_coarray)    .or. &
