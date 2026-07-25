@@ -917,4 +917,16 @@ program continue_compilation_1
     subroutine real_unsupported_kind_01()
         print *, real(1., 666)
     end subroutine
+
+    ! The AST keeps the source order, so with `--continue-compilation` the
+    ! AST -> ASR visitors see the `use` and `implicit` statements below in
+    ! their (invalid) position rather than hoisted to the front. The parser
+    ! reports the ordering errors, the visitors must cope with the raw order.
+    subroutine decl_order_after_decl()
+        integer :: decl_order_first
+        use iso_fortran_env, only: int32
+        implicit none
+        integer(int32) :: decl_order_second
+        decl_order_second = decl_order_first
+    end subroutine
 end program

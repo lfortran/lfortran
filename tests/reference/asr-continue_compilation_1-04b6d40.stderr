@@ -1,3 +1,15 @@
+syntax error: use statement must appear before all other declarations and statements
+   --> tests/errors/continue_compilation_1.f90:927:9
+    |
+927 |         use iso_fortran_env, only: int32
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: implicit statement must appear before declaration and executable statements
+   --> tests/errors/continue_compilation_1.f90:928:9
+    |
+928 |         implicit none
+    |         ^^^^^^^^^^^^^^ 
+
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
