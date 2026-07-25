@@ -1,4 +1,4 @@
-program namelist_35
+program namelist_37
     implicit none
 
     character(len=20) :: msg = "12345678901234567890"
@@ -61,4 +61,4 @@ contains
         end do
     end function compact
 
-end program namelist_35
+end program namelist_37
