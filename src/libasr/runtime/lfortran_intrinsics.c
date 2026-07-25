@@ -4205,7 +4205,6 @@ LFORTRAN_API void _lfortran_complex_pow_32(struct _lfortran_complex_32* a,
 
     // 3. Fallback to standard library
     #ifdef _MSC_VER
-        // MSVC's _Fcomplex is buggy. We upcast to double (_Dcomplex) 
         // for the math, then cast the final result safely back to float.
         _Dcomplex ca = _DCOMPLEX_((double)a->re, (double)a->im);
         _Dcomplex cb = _DCOMPLEX_((double)b->re, (double)b->im);
