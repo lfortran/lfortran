@@ -14868,17 +14868,14 @@ public:
                 int64_t result_size = 64; // Fallback for runtime-sized sources
                 ASR::expr_t* result_size_expr = nullptr;
                 
-                // Declare our type safely once for this scope
                 ASR::ttype_t *local_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
 
-                // 1. Get mold byte size natively (it already accounts for fixed string lengths!)
                 ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                 int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
                 ASR::expr_t* mold_bytes_expr = nullptr;
 
-                // 2. Patch ONLY for assumed/deferred length strings where mold_bytes is unknown (<= 0)
                 if (mold_bytes <= 0 && ASR::is_a<ASR::String_t>(*mold_elem_type)) {
                     ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
                     if (mold_str_type->m_len_kind == ASR::string_length_kindType::AssumedLength ||
@@ -14886,7 +14883,6 @@ public:
                         mold_bytes_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
                             al, x.base.base.loc, mold, local_int_type, nullptr));
                         
-                        // Multiply by kind if needed
                         if (mold_str_type->m_kind > 1) {
                             ASR::expr_t* kind_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, mold_str_type->m_kind, local_int_type));
                             mold_bytes_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc, mold_bytes_expr, ASR::binopType::Mul, kind_expr, local_int_type, nullptr));
@@ -14898,11 +14894,9 @@ public:
                     }
                 }
 
-                // 3. Compute result_size (constant) or result_size_expr (runtime)
                 if (src_bytes > 0 && mold_bytes > 0) {
                     result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                 } else {
-                    // One or both are runtime sized
                     if (src_bytes > 0 && !src_len_expr) {
                         src_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, src_bytes, local_int_type));
                     }
@@ -14935,7 +14929,6 @@ public:
 
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
 
-        // Inject explicit string length for runtime array temporaries ONLY if assumed/deferred
         ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(type);
         if (ASR::is_a<ASR::String_t>(*elem_type)) {
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
@@ -15128,7 +15121,6 @@ public:
                 return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
             }
 
-            // If source representation is shorter than target, pad with zeros.
             std::vector<uint8_t> result_bits(static_cast<size_t>(target_nbytes), 0);
             std::memcpy(result_bits.data(), source_bits.data(),
                 std::min(static_cast<size_t>(target_nbytes), source_bits.size()));
