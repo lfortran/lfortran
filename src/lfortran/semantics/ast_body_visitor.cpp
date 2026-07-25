@@ -4879,6 +4879,12 @@ public:
     void visit_SubmoduleModuleCommon(const T& x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr) {
+            // The symbol table visitor skipped this program unit, which is only
+            // possible with `--continue-compilation` and after it reported an
+            // error. There is no symbol table to fill in, so skip the body.
+            throw SemanticAbort();
+        }
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
         current_module_dependencies.clear(al);
         current_scope = v->m_symtab;
@@ -5091,6 +5097,11 @@ public:
         }
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr) {
+            // The symbol table visitor skipped this program unit, see the
+            // comment in `visit_SubmoduleModuleCommon()`.
+            throw SemanticAbort();
+        }
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
         starting_m_body = x.m_body;
@@ -5636,6 +5647,11 @@ public:
     void visit_Procedure(const AST::Procedure_t &x) {
         SymbolTable* old_scope = current_scope;
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr) {
+            // The symbol table visitor skipped this program unit, see the
+            // comment in `visit_SubmoduleModuleCommon()`.
+            throw SemanticAbort();
+        }
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
         collect_labels();
@@ -5701,6 +5717,11 @@ public:
     // TODO: add SymbolTable::get_symbol(), which will only check in Debug mode
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr) {
+            // The symbol table visitor skipped this program unit, see the
+            // comment in `visit_SubmoduleModuleCommon()`.
+            throw SemanticAbort();
+        }
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
         collect_labels();
@@ -5807,6 +5828,11 @@ public:
         collect_labels();
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr) {
+            // The symbol table visitor skipped this program unit, see the
+            // comment in `visit_SubmoduleModuleCommon()`.
+            throw SemanticAbort();
+        }
         if( t->type == ASR::symbolType::GenericProcedure ) {
             t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
         }
