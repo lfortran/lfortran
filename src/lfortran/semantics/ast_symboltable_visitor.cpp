@@ -2308,14 +2308,10 @@ public:
             || interface_name == to_lower(sym_name)) {
             // This specific procedure shares its generic interface's name, so
             // it is stored under "<name>~genericprocedure" to avoid clashing
-            // with the GenericProcedure symbol in the symbol table. For an
-            // external interface body the real external (link) symbol is
-            // "<name>": record it explicitly so the backend emits/links the
-            // correct symbol instead of the internal disambiguated name.
-            if (deftype == ASR::deftypeType::Interface && bindc_name == nullptr) {
-                bindc_name = s2c(al, to_lower(sym_name));
-            }
-            sym_name = sym_name + "~genericprocedure";
+            // with the GenericProcedure symbol in the symbol table. The real
+            // external (link) symbol is still "<name>"; the backend recovers it
+            // with ASRUtils::strip_genericprocedure_suffix().
+            sym_name = sym_name + ASRUtils::genericprocedure_suffix;
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;

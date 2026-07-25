@@ -141,13 +141,9 @@ static std::string compute_llvm_function_name(
     } else if (is_external_interface) {
         // For an external interface the link symbol is the procedure's name.
         // A specific procedure that shares its generic interface's name is
-        // stored internally under a disambiguated name, but its real external
-        // (link) symbol is recorded in bindc_name by the semantic phase.
-        if (ftype->m_bindc_name && ftype->m_bindc_name[0] != '\0') {
-            fn_name = ftype->m_bindc_name;
-        } else {
-            fn_name = sym_name;
-        }
+        // stored internally under a disambiguated name; its real external
+        // (link) symbol is recovered by stripping the genericprocedure suffix.
+        fn_name = ASRUtils::strip_genericprocedure_suffix(sym_name);
     } else {
         fn_name = mangle_prefix + sym_name;
     }
