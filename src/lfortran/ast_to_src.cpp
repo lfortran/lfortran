@@ -367,14 +367,14 @@ public:
         if (indent_unit) inc_indent();
         if(x.n_use > 0) {
             for (size_t i=0; i<x.n_use; i++) {
-                this->visit_unit_decl1(*x.m_use[i]);
+                this->visit_decl_stmt(*x.m_use[i]);
                 r.append(s);
             }
             r.append("\n");
         }
         if(x.n_decl > 0) {
             for (size_t i=0; i<x.n_decl; i++) {
-                this->visit_unit_decl2(*x.m_decl[i]);
+                this->visit_decl_stmt(*x.m_decl[i]);
                 r.append(s);
             }
             r.append("\n");
@@ -423,17 +423,17 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
+            this->visit_decl_stmt(*x.m_use[i]);
             r.append(s);
         }
         r += format_implicit(x);
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
             r.append(s);
         }
         for (size_t i=0; i<x.n_body; i++) {
             r.append(indent);
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -591,7 +591,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_items; i++) {
-            visit_unit_decl2(*x.m_items[i]);
+            visit_decl_stmt(*x.m_items[i]);
             r.append(s);
         }
         dec_indent();
@@ -845,7 +845,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_items; i++) {
-            this->visit_unit_decl2(*x.m_items[i]);
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
         }
         dec_indent();
@@ -971,7 +971,7 @@ public:
     std::string format_import(const T &x) {
         std::string r;
         for (size_t i=0; i<x.n_import; i++) {
-            this->visit_import_statement(*x.m_import[i]);
+            this->visit_decl_stmt(*x.m_import[i]);
             r.append(s);
         }
         return r;
@@ -989,7 +989,7 @@ public:
     std::string format_implicit(const T &x) {
         std::string r;
         for (size_t i=0; i<x.n_implicit; i++) {
-            this->visit_implicit_statement(*x.m_implicit[i]);
+            this->visit_decl_stmt(*x.m_implicit[i]);
             r.append(s);
         }
         return r;
@@ -999,7 +999,7 @@ public:
     std::string format_body(const T &x) {
         std::string r;
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         return r;
@@ -1015,13 +1015,13 @@ public:
         std::string r;
         if (indent_unit) inc_indent();
         for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
+            this->visit_decl_stmt(*x.m_use[i]);
             r.append(s);
         }
         r += format_import(x);
         r += format_implicit(x);
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
             r.append(s);
         }
         r += format_body(x);
@@ -2043,7 +2043,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -2059,7 +2059,7 @@ public:
             }
             inc_indent();
             for (size_t i=0; i<x.n_orelse; i++) {
-                this->visit_stmt(*x.m_orelse[i]);
+                this->visit_decl_stmt(*x.m_orelse[i]);
                 r += s;
             }
             dec_indent();
@@ -2116,7 +2116,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -2132,7 +2132,7 @@ public:
             }
             inc_indent();
             for (size_t i=0; i<x.n_orelse; i++) {
-                this->visit_stmt(*x.m_orelse[i]);
+                this->visit_decl_stmt(*x.m_orelse[i]);
                 r += s;
             }
             dec_indent();
@@ -2414,7 +2414,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2500,7 +2500,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2530,16 +2530,16 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
+            this->visit_decl_stmt(*x.m_use[i]);
             r.append(s);
         }
         r += format_import(x);
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
             r.append(s);
         }
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2586,7 +2586,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2644,7 +2644,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2708,7 +2708,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2754,7 +2754,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
         dec_indent();
@@ -2792,7 +2792,7 @@ public:
         r.append(")");
         r.append("\n");
         inc_indent();
-        this->visit_stmt(*x.m_assign);
+        this->visit_decl_stmt(*x.m_assign);
         r.append(s);
         dec_indent();
         r += indent;
@@ -2976,7 +2976,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4240,7 +4240,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4277,7 +4277,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4338,7 +4338,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4358,7 +4358,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4377,7 +4377,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4438,7 +4438,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4462,7 +4462,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4485,7 +4485,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();
@@ -4503,7 +4503,7 @@ public:
         }
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r += s;
         }
         dec_indent();

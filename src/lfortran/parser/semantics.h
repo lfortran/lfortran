@@ -13,6 +13,7 @@
 #include <cstring>
 
 #include <lfortran/ast.h>
+#include <lfortran/ast_kind.h>
 #include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
 
@@ -65,21 +66,21 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
-static inline void set_stmt_name(stmt_t &stmt, char *name) {
+static inline void set_stmt_name(decl_stmt_t &stmt, char *name) {
     switch (stmt.type) {
-        case stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
-        case stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
-        case stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
-        case stmtType::WhileLoop:         ((WhileLoop_t&)stmt).m_stmt_name = name; break;
-        case stmtType::ChangeTeam:        ((ChangeTeam_t&)stmt).m_stmt_name = name; break;
-        case stmtType::ForAll:            ((ForAll_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Select:            ((Select_t&)stmt).m_stmt_name = name; break;
-        case stmtType::SelectRank:        ((SelectRank_t&)stmt).m_stmt_name = name; break;
-        case stmtType::SelectType:        ((SelectType_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Where:             ((Where_t&)stmt).m_stmt_name = name; break;
-        case stmtType::DoConcurrentLoop:  ((DoConcurrentLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::WhileLoop:         ((WhileLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::ChangeTeam:        ((ChangeTeam_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::ForAll:            ((ForAll_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Select:            ((Select_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::SelectRank:        ((SelectRank_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::SelectType:        ((SelectType_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Where:             ((Where_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::DoConcurrentLoop:  ((DoConcurrentLoop_t&)stmt).m_stmt_name = name; break;
         default: LCOMPILERS_ASSERT_MSG(false, "Unknown statement type in set_stmt_name"); break;
     }
 }
@@ -117,9 +118,9 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 }
 
 #define VEC_CAST(x, type) vec_cast<type##_t, astType::type>(x)
-#define DECLS(x) VEC_CAST(x, unit_decl2)
-#define USES(x) VEC_CAST(x, unit_decl1)
-#define STMTS(x) VEC_CAST(x, stmt)
+#define DECLS(x) VEC_CAST(x, decl_stmt)
+#define USES(x) VEC_CAST(x, decl_stmt)
+#define STMTS(x) VEC_CAST(x, decl_stmt)
 #define CONTAINS(x) VEC_CAST(x, program_unit)
 #define ATTRS(x) VEC_CAST(x, attribute)
 #define EXPRS(x) VEC_CAST(x, expr)
@@ -184,8 +185,8 @@ static inline const char* decl_context_name(DeclContext ctx) {
 // True for the `parameter (a = 1)` form, which F2018 R506 allows to appear
 // before the `implicit` statement (unlike `integer, parameter :: a = 1`).
 static inline bool is_parameter_stmt(const ast_t &x) {
-    if (!is_a<unit_decl2_t>(x)) return false;
-    const unit_decl2_t &d = *(const unit_decl2_t*)&x;
+    if (!is_a<decl_stmt_t>(x)) return false;
+    const decl_stmt_t &d = *(const decl_stmt_t*)&x;
     if (!is_a<Declaration_t>(d)) return false;
     const Declaration_t &decl = *(const Declaration_t*)&x;
     return decl.m_vartype == nullptr && decl.n_attributes == 1
@@ -195,22 +196,22 @@ static inline bool is_parameter_stmt(const ast_t &x) {
 }
 
 static inline DeclPhase decl_phase(const ast_t &x) {
-    switch (x.type) {
-        case astType::unit_decl1: return DeclPhase::Use;
-        case astType::import_statement: return DeclPhase::Import;
-        case astType::implicit_statement: return DeclPhase::Implicit;
-        case astType::unit_decl2:
+    if (!is_a<decl_stmt_t>(x)) return DeclPhase::Exec;
+    const decl_stmt_t &s = *(const decl_stmt_t*)&x;
+    switch (decl_stmt_kind(s)) {
+        case DeclStmtKind::Use: return DeclPhase::Use;
+        case DeclStmtKind::Import: return DeclPhase::Import;
+        case DeclStmtKind::Implicit: return DeclPhase::Implicit;
+        case DeclStmtKind::Declaration:
             return is_parameter_stmt(x) ? DeclPhase::Flexible : DeclPhase::Decl;
-        case astType::stmt: {
-            const stmt_t &s = *(const stmt_t*)&x;
+        case DeclStmtKind::Statement:
             // `format` and `entry` may appear anywhere (F2018 R506, R514)
             if (is_a<Format_t>(s) || is_a<Entry_t>(s)) return DeclPhase::Flexible;
             // `data` is a declaration construct but is stored in the body
             if (is_a<DataStmt_t>(s)) return DeclPhase::Decl;
             return DeclPhase::Exec;
-        }
-        default: return DeclPhase::Exec;
     }
+    return DeclPhase::Exec;
 }
 
 static inline void decl_order_error(const std::string &msg, const Location &loc,
@@ -238,10 +239,11 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
     for (size_t i=0; i < items.size(); i++) {
         if (!items[i]) continue;
         ast_t *x = items[i];
+        LCOMPILERS_ASSERT(is_a<decl_stmt_t>(*x))
         DeclPhase phase = decl_phase(*x);
         if (phase != DeclPhase::Flexible && phase > seen) seen = phase;
-        switch (x->type) {
-            case astType::unit_decl1: {
+        switch (decl_stmt_kind(*(const decl_stmt_t*)x)) {
+            case DeclStmtKind::Use: {
                 if (!use_allowed) {
                     decl_order_error(std::string("use statement is not allowed "
                         "in a ") + decl_context_name(ctx), x->loc, diag);
@@ -254,7 +256,7 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
                 }
                 break;
             }
-            case astType::import_statement: {
+            case DeclStmtKind::Import: {
                 if (!import_allowed) {
                     decl_order_error(std::string("import statement is not "
                         "allowed in a ") + decl_context_name(ctx), x->loc, diag);
@@ -267,7 +269,7 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
                 }
                 break;
             }
-            case astType::implicit_statement: {
+            case DeclStmtKind::Implicit: {
                 if (!implicit_allowed) {
                     decl_order_error(std::string("implicit statement is not "
                         "allowed in a ") + decl_context_name(ctx), x->loc, diag);
@@ -280,12 +282,11 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
                 }
                 break;
             }
-            case astType::unit_decl2: {
+            case DeclStmtKind::Declaration: {
                 r.decl.push_back(al, x);
                 break;
             }
-            default: {
-                LCOMPILERS_ASSERT(is_a<stmt_t>(*x))
+            case DeclStmtKind::Statement: {
                 if (!exec_allowed && phase != DeclPhase::Decl) {
                     decl_order_error(std::string("executable statement is not "
                         "allowed in a ") + decl_context_name(ctx), x->loc, diag);
@@ -299,10 +300,10 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
 }
 
 
-static inline stmt_t** IFSTMTS(Allocator &al, ast_t* x)
+static inline decl_stmt_t** IFSTMTS(Allocator &al, ast_t* x)
 {
-    stmt_t **s = al.allocate<stmt_t*>();
-    *s = down_cast<stmt_t>(x);
+    decl_stmt_t **s = al.allocate<decl_stmt_t*>();
+    *s = down_cast<decl_stmt_t>(x);
     return s;
 }
 
@@ -1722,8 +1723,8 @@ ast_t* SUBROUTINE2(Allocator &al, const Location &l, char* a_name,
     return make_Subroutine_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_bind, a_trivia,
         USES(d.use), d.use.size(),
-        VEC_CAST(d.import, import_statement), d.import.size(),
-        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        VEC_CAST(d.import, decl_stmt), d.import.size(),
+        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
         DECLS(d.decl), d.decl.size(),
         STMTS(d.body), d.body.size(),
         a_contains, n_contains, a_temp_args, n_temp_args,
@@ -1739,8 +1740,8 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
     return make_Procedure_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_trivia,
         USES(d.use), d.use.size(),
-        VEC_CAST(d.import, import_statement), d.import.size(),
-        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        VEC_CAST(d.import, decl_stmt), d.import.size(),
+        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
         DECLS(d.decl), d.decl.size(),
         STMTS(d.body), d.body.size(),
         a_contains, n_contains);
@@ -1809,8 +1810,8 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
     return make_Function_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_return_var, a_bind, a_trivia,
         USES(d.use), d.use.size(),
-        VEC_CAST(d.import, import_statement), d.import.size(),
-        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        VEC_CAST(d.import, decl_stmt), d.import.size(),
+        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
         DECLS(d.decl), d.decl.size(),
         STMTS(d.body), d.body.size(),
         a_contains, n_contains, a_temp_args, n_temp_args,
@@ -1931,7 +1932,7 @@ return make_Program_t(al, a_loc,
         a_trivia,
         /*use*/ USES(d.use),
         /*n_use*/ d.use.size(),
-        /*m_implicit*/ VEC_CAST(d.implicit, implicit_statement),
+        /*m_implicit*/ VEC_CAST(d.implicit, decl_stmt),
         /*n_implicit*/ d.implicit.size(),
         /*decl*/ DECLS(d.decl),
         /*n_decl*/ d.decl.size(),
@@ -1958,7 +1959,7 @@ return make_Program_t(al, a_loc,
 
 #define STMT_NAME(id_first, id_last, stmt) \
         stmt; \
-        set_stmt_name(*(stmt_t*)(stmt), name2char(id_first)); \
+        set_stmt_name(*(decl_stmt_t*)(stmt), name2char(id_first)); \
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
         if (LCompilers::to_lower(first) != LCompilers::to_lower(last)) { \
@@ -1973,7 +1974,7 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
     return make_Block_t(al, l, 0, nullptr,
         /*use*/ USES(d.use),
         /*n_use*/ d.use.size(),
-        /*m_import*/ VEC_CAST(d.import, import_statement),
+        /*m_import*/ VEC_CAST(d.import, decl_stmt),
         /*n_import*/ d.import.size(),
         /*decl*/ DECLS(d.decl),
         /*n_decl*/ d.decl.size(),
@@ -2224,9 +2225,9 @@ static inline void drop_trailing_matching_continue(
         const LCompilers::Vec<LCompilers::LFortran::AST::ast_t*> &body, int64_t label) {
     if (label == 0 || body.size() == 0) return;
     LCompilers::LFortran::AST::ast_t *last = body.p[body.size() - 1];
-    if (last->type != LCompilers::LFortran::AST::astType::stmt) return;
-    LCompilers::LFortran::AST::stmt_t *st = (LCompilers::LFortran::AST::stmt_t*)last;
-    if (st->type != LCompilers::LFortran::AST::stmtType::Continue) return;
+    if (last->type != LCompilers::LFortran::AST::astType::decl_stmt) return;
+    LCompilers::LFortran::AST::decl_stmt_t *st = (LCompilers::LFortran::AST::decl_stmt_t*)last;
+    if (st->type != LCompilers::LFortran::AST::decl_stmtType::Continue) return;
     LCompilers::LFortran::AST::Continue_t *c =
         (LCompilers::LFortran::AST::Continue_t*)last;
     if (c->m_label == label) {
@@ -2312,10 +2313,10 @@ static inline void drop_trailing_matching_continue(
 
 #define FORALLSINGLE1(conlist, assign, l) make_ForAllSingle_t(p.m_a, l, \
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
-        nullptr, down_cast<stmt_t>(assign), nullptr)
+        nullptr, down_cast<decl_stmt_t>(assign), nullptr)
 #define FORALLSINGLE2(conlist, mask, assign, l) make_ForAllSingle_t(p.m_a, l, \
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
-        EXPR(mask), down_cast<stmt_t>(assign), nullptr)
+        EXPR(mask), down_cast<decl_stmt_t>(assign), nullptr)
 
 #define CONCURRENT_CONTROL1(t, i, a, b, l) \
     make_ConcurrentControl_t(p.m_a, l, \
@@ -2672,7 +2673,7 @@ return make_Module_t(al, a_loc,
         a_trivia,
         /*use*/ USES(d.use),
         /*n_use*/ d.use.size(),
-        /*m_implicit*/ VEC_CAST(d.implicit, implicit_statement),
+        /*m_implicit*/ VEC_CAST(d.implicit, decl_stmt),
         /*n_implicit*/ d.implicit.size(),
         /*decl*/ DECLS(d.decl),
         /*n_decl*/ d.decl.size(),
@@ -2710,7 +2711,7 @@ return make_Submodule_t(al, a_loc,
         a_trivia,
         /*use*/ USES(d.use),
         /*n_use*/ d.use.size(),
-        /*m_implicit*/ VEC_CAST(d.implicit, implicit_statement),
+        /*m_implicit*/ VEC_CAST(d.implicit, decl_stmt),
         /*n_implicit*/ d.implicit.size(),
         /*decl*/ DECLS(d.decl),
         /*n_decl*/ d.decl.size(),
@@ -2753,7 +2754,7 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
     DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::BlockData, diag);
     return make_BlockData_t(al, l, a_name, a_trivia,
         USES(d.use), d.use.size(),
-        VEC_CAST(d.implicit, implicit_statement), d.implicit.size(),
+        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
         DECLS(d.decl), d.decl.size(),
         STMTS(d.body), d.body.size());
 }
@@ -2836,7 +2837,7 @@ ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
         LCompilers::diag::Diagnostics &diag) {
     DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Template, diag);
     return make_Template_t(al, l, a_name, a_namelist, n_namelist,
-        /*unit_decl2_t** a_decl*/ DECLS(d.decl), /*size_t n_decl*/ d.decl.size(),
+        /*decl_stmt_t** a_decl*/ DECLS(d.decl), /*size_t n_decl*/ d.decl.size(),
         /*contains*/ a_contains, /*n_contains*/ n_contains);
 }
 
@@ -2966,10 +2967,10 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         name2char(id), ARGS(p.m_a, l, args), args.size(), \
         EXPR_OPT(return), bind_opt(bind), nullptr)
 
-#define TRIVIA_SET(x) case LCompilers::LFortran::AST::stmtType::x: { \
+#define TRIVIA_SET(x) case LCompilers::LFortran::AST::decl_stmtType::x: { \
             down_cast<x##_t>(s)->m_trivia = trivia; break; }
 
-void set_m_trivia(stmt_t *s, trivia_t *trivia) {
+void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
     switch (s->type) {
         TRIVIA_SET(Allocate)
         TRIVIA_SET(Assign)
@@ -3050,7 +3051,7 @@ ast_t* set_trivia(Allocator &al, Location &l,
 #define EOLCOMMENT(cmt, l) make_EOLComment_t(p.m_a, l, cmt.c_str(p.m_a))
 
 #define TRIVIA_(stmt, trivia) if(trivia != nullptr) \
-        set_m_trivia(down_cast<stmt_t>(stmt), down_cast<trivia_t>(trivia));
+        set_m_trivia(down_cast<decl_stmt_t>(stmt), down_cast<trivia_t>(trivia));
 #define TRIVIA2_(stmt, trivia) if(trivia != nullptr) \
         down_cast2<Use_t>(stmt)->m_trivia = down_cast<trivia_t>(trivia);
 #define TRIVIA(x, y, l) set_trivia(p.m_a, l, \

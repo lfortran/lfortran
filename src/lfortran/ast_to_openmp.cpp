@@ -66,13 +66,13 @@ public:
         r.append(x.m_name);
         r.append("\n");
         for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
+            this->visit_decl_stmt(*x.m_use[i]);
             r.append(s);
             if (i < x.n_use-1) r.append("\n");
         }
         r.append("\n");
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
             r.append(s);
             if (i < x.n_decl-1) r.append("\n");
         }
@@ -92,17 +92,17 @@ public:
         r.append(x.m_name);
         r.append("\n");
         for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
+            this->visit_decl_stmt(*x.m_use[i]);
             r.append(s);
             r.append("\n");
         }
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
             r.append(s);
             r.append("\n");
         }
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
             r.append("\n");
         }
@@ -132,17 +132,17 @@ public:
         }
         r.append("\n");
         for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
+            this->visit_decl_stmt(*x.m_use[i]);
             r.append(s);
             r.append("\n");
         }
         for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
             r.append(s);
             r.append("\n");
         }
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
             r.append("\n");
         }
@@ -492,14 +492,14 @@ public:
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             if (i < x.n_body-1) s.append(" ");
         }
         s.append("]");
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_orelse; i++) {
-            this->visit_stmt(*x.m_orelse[i]);
+            this->visit_decl_stmt(*x.m_orelse[i]);
             if (i < x.n_orelse-1) s.append(" ");
         }
         s.append("]");
@@ -521,14 +521,14 @@ public:
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             if (i < x.n_body-1) s.append(" ");
         }
         s.append("]");
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_orelse; i++) {
-            this->visit_stmt(*x.m_orelse[i]);
+            this->visit_decl_stmt(*x.m_orelse[i]);
             if (i < x.n_orelse-1) s.append(" ");
         }
         s.append("]");
@@ -590,7 +590,7 @@ public:
         r.append("\n");
         indent_level += 4;
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             for (int i=0; i < indent_level; i++) r.append(" ");
             r.append(s);
             r.append("\n");
@@ -654,7 +654,7 @@ public:
         r.append("\n");
         indent_level += 4;
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             for (int i=0; i < indent_level; i++) r.append(" ");
             r.append(s);
             r.append("\n");
@@ -722,7 +722,7 @@ public:
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             if (i < x.n_body-1) s.append(" ");
         }
         s.append("]");

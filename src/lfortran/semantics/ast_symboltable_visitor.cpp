@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include <lfortran/ast.h>
+#include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
@@ -47,7 +48,7 @@ public:
 
     ASR::ttype_t *tmp_type;
 
-    static bool is_equivalence_declaration(AST::unit_decl2_t* decl) {
+    static bool is_equivalence_declaration(AST::decl_stmt_t* decl) {
         if (AST::is_a<AST::Declaration_t>(*decl)) {
             AST::Declaration_t* d = AST::down_cast<AST::Declaration_t>(decl);
             for (size_t i = 0; i < d->n_attributes; i++) {
@@ -59,7 +60,7 @@ public:
         return false;
     }
 
-    static bool is_common_declaration(AST::unit_decl2_t* decl) {
+    static bool is_common_declaration(AST::decl_stmt_t* decl) {
         if (AST::is_a<AST::Declaration_t>(*decl)) {
             AST::Declaration_t* d = AST::down_cast<AST::Declaration_t>(decl);
             for (size_t i = 0; i < d->n_attributes; i++) {
@@ -80,7 +81,7 @@ public:
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
       : CommonVisitor(
@@ -108,12 +109,15 @@ public:
 
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
-            if (t != AST::astType::expr && t != AST::astType::stmt) {
-                try {
-                    visit_ast(*x.m_items[i]);
-                } catch (SemanticAbort &e) {
-                    if ( !compiler_options.continue_compilation ) throw e;
-                }
+            // Executable statements and expressions of the global scope are
+            // handled by the body visitor, everything else declares symbols
+            if (t == AST::astType::expr) continue;
+            if (t == AST::astType::decl_stmt && AST::is_executable_stmt(
+                    *AST::down_cast<AST::decl_stmt_t>(x.m_items[i]))) continue;
+            try {
+                visit_ast(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
         }
         global_scope = nullptr;
@@ -384,7 +388,7 @@ public:
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_use; i++) {
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_use[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -409,10 +413,10 @@ public:
             try {
                 if ( AST::is_a<AST::Interface_t>(*x.m_decl[i]) ) {
                     std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_decl[i]);
                     implicit_dictionary = implicit_dictionary_copy;
                 } else {
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_decl[i]);
                 }
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
@@ -570,7 +574,7 @@ public:
         in_program = true;
         for (size_t i=0; i<x.n_use; i++) {
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_use[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -622,7 +626,7 @@ public:
                 }
             }
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -630,7 +634,7 @@ public:
         for (size_t i=0; i<x.n_decl; i++) {
             if (!is_common_declaration(x.m_decl[i])) continue;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -638,7 +642,7 @@ public:
         for (size_t i=0; i<x.n_decl; i++) {
             if (!is_equivalence_declaration(x.m_decl[i])) continue;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -660,7 +664,7 @@ public:
         }
         for (size_t i : procedure_decl_indices) {
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -725,14 +729,14 @@ public:
         is_global_save_enabled = is_global_save_enabled_copy;
     }
 
-    bool subroutine_contains_entry_function(std::string subroutine_name, AST::stmt_t** body, size_t n_body) {
+    bool subroutine_contains_entry_function(std::string subroutine_name, AST::decl_stmt_t** body, size_t n_body) {
         bool contains_entry_function = false;
         for (size_t i=0; i<n_body; i++) {
             if (AST::is_a<AST::Entry_t>(*body[i])) {
                 contains_entry_function = true;
                 AST::Entry_t* entry = AST::down_cast<AST::Entry_t>(body[i]);
                 std::string entry_name = to_lower(entry->m_name);
-                entry_functions[subroutine_name][entry_name] = std::vector<AST::stmt_t*>();
+                entry_functions[subroutine_name][entry_name] = std::vector<AST::decl_stmt_t*>();
                 for(size_t i = 0; i < entry->n_args; i++) {
                     entry_function_args[entry_name].push_back(entry->m_args[i]);
                 }
@@ -1222,7 +1226,7 @@ public:
 
         for (size_t i=0; i<x.n_use; i++) {
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_use[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1233,7 +1237,7 @@ public:
         for (size_t i=0; i<x.n_decl; i++) {
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_decl[i]);
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
@@ -1326,7 +1330,7 @@ public:
                     if (std::find(current_procedure_args.begin(),
                                   current_procedure_args.end(),
                                   to_lower(dt->m_name)) != current_procedure_args.end()) {
-                        visit_unit_decl2(*x.m_decl[i]);
+                        visit_decl_stmt(*x.m_decl[i]);
                     }
                 }
             }
@@ -1361,7 +1365,7 @@ public:
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_use[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1386,7 +1390,7 @@ public:
             if (is_equivalence_declaration(x.m_decl[i])) continue;
             if (is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+            if(x.m_decl[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
                 if(decl.m_vartype) {
                     AST::AttrType_t* type = nullptr;
@@ -1414,7 +1418,7 @@ public:
             }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_decl[i]);
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
@@ -1425,7 +1429,7 @@ public:
             if (!is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1435,7 +1439,7 @@ public:
             if (!is_equivalence_declaration(x.m_decl[i])) continue;
             is_Function = true;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1677,7 +1681,7 @@ public:
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1864,7 +1868,7 @@ public:
                     if (std::find(current_procedure_args.begin(),
                                   current_procedure_args.end(),
                                   to_lower(dt->m_name)) != current_procedure_args.end()) {
-                        visit_unit_decl2(*x.m_decl[i]);
+                        visit_decl_stmt(*x.m_decl[i]);
                     }
                 }
             }
@@ -1892,7 +1896,7 @@ public:
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_use; i++) {
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_use[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1917,7 +1921,7 @@ public:
             if (is_equivalence_declaration(x.m_decl[i])) continue;
             if (is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+            if(x.m_decl[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
                 if(decl.m_vartype) {
                     AST::AttrType_t* type = nullptr;
@@ -1943,20 +1947,20 @@ public:
                 }
             }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             }
             is_Function = false;
         }
         for (size_t i=0; i<x.n_decl; i++) {
             if (!is_common_declaration(x.m_decl[i])) continue;
             is_Function = true;
-            visit_unit_decl2(*x.m_decl[i]);
+            visit_decl_stmt(*x.m_decl[i]);
             is_Function = false;
         }
         for (size_t i=0; i<x.n_decl; i++) {
             if (!is_equivalence_declaration(x.m_decl[i])) continue;
             is_Function = true;
-            visit_unit_decl2(*x.m_decl[i]);
+            visit_decl_stmt(*x.m_decl[i]);
             is_Function = false;
         }
         process_simd_variables();
@@ -2453,7 +2457,7 @@ public:
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_decl[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -2746,7 +2750,7 @@ public:
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) != kind_len_decl_indices.end()) {
                     try{
-                        this->visit_unit_decl2(*x.m_items[i]);
+                        this->visit_decl_stmt(*x.m_items[i]);
                     } catch (const SemanticAbort &e) {
                         current_scope = parent_scope_pdt;
                         is_derived_type = false;
@@ -2764,7 +2768,7 @@ public:
                 if (kp_sym && ASR::is_a<ASR::Variable_t>(*kp_sym)) {
                     ASR::Variable_t *kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
                     // m_symbolic_value already has the user default (or nullptr)
-                    // from visit_unit_decl2.  Now set m_value to a unique index value.
+                    // from visit_decl_stmt.  Now set m_value to a unique index value.
                     int sentinel = PDT_SENTINEL + i;
                     ASR::ttype_t *int_type = ASRUtils::TYPE(
                         ASR::make_Integer_t(al, x.base.base.loc, 4));
@@ -2808,7 +2812,7 @@ public:
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) == kind_len_decl_indices.end()) {
                     try {
-                        this->visit_unit_decl2(*x.m_items[i]);
+                        this->visit_decl_stmt(*x.m_items[i]);
                     } catch (const SemanticAbort&) {
                         current_scope = parent_scope_pdt;
                         is_derived_type = false;
@@ -2848,7 +2852,7 @@ public:
         ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
             try {
-                this->visit_unit_decl2(*x.m_items[i]);
+                this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
                 throw;
@@ -3025,7 +3029,7 @@ public:
         ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
             try {
-                this->visit_unit_decl2(*x.m_items[i]);
+                this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
                 throw;
@@ -3394,11 +3398,11 @@ public:
         for (size_t i = 0; i < x.n_decl; i++) {
             if (is_equivalence_declaration(x.m_decl[i])) continue;
             if (is_common_declaration(x.m_decl[i])) continue;
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
         }
         for (size_t i = 0; i < x.n_decl; i++) {
             if (!is_common_declaration(x.m_decl[i])) continue;
-            this->visit_unit_decl2(*x.m_decl[i]);
+            this->visit_decl_stmt(*x.m_decl[i]);
         }
         // NOTE: Equivalence declarations are intentionally skipped in
         // BlockData. The common block struct already provides storage
@@ -3412,7 +3416,7 @@ public:
         in_block_data = true;
         // Visit DataStmt and set the constant values in the Struct_t symbol
         for (size_t i = 0; i < x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
         }
         in_block_data = false;
         current_scope = old_scope;
@@ -4498,7 +4502,7 @@ public:
                     tmp = nullptr;
                 }
             } else {
-                this->visit_unit_decl2(*x.m_decl[i]);
+                this->visit_decl_stmt(*x.m_decl[i]);
             }
         }
         for (size_t i=0; i<x.n_funcs; i++) {
@@ -4687,7 +4691,7 @@ public:
                     tmp = nullptr;
                 }
             } else {
-                this->visit_unit_decl2(*x.m_decl[i]);
+                this->visit_decl_stmt(*x.m_decl[i]);
             }
         }
 
@@ -5386,7 +5390,7 @@ public:
 
         enum_init_val = 0;
         for ( size_t i = 0; i < x.n_items; i++ ) {
-            this->visit_unit_decl2(*x.m_items[i]);
+            this->visit_decl_stmt(*x.m_items[i]);
         }
 
         for( auto sym: current_scope->get_scope() ) {
@@ -5426,7 +5430,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
 {
