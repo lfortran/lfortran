@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -115,9 +114,6 @@
                     )]
                     ()
                     ()
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -160,11 +156,9 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )]
-        []
         []
     )
     (Submodule
@@ -177,9 +171,6 @@
             (EndOfLine)]
         )
         []
-        []
-        []
-        []
         [(Procedure
             function
             []
@@ -187,10 +178,6 @@
                 AttrModule
             )]
             ()
-            []
-            []
-            []
-            []
             [(Assignment
                 0
                 real
@@ -232,16 +219,16 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -287,8 +274,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             integer
             character
@@ -369,8 +356,6 @@
         (Block
             0
             block
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeLogical
@@ -388,8 +373,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(If
+            )
+            (If
                 0
                 endif
                 then

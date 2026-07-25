@@ -2,8 +2,6 @@
     [(Program
         implicit_program_lfortran
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -45,6 +43,12 @@
             ())]
             ()
         )
+        (Assignment
+            0
+            s
+            (Real "0.0")
+            ()
+        )
         (Declaration
             (AttrType
                 TypeInteger
@@ -61,12 +65,6 @@
             ()
             None
             ())]
-            ()
-        )]
-        [(Assignment
-            0
-            s
-            (Real "0.0")
             ()
         )
         (DoLoop

@@ -154,7 +154,9 @@ static inline int64_t stmt_label(AST::decl_stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(SelectType)
         LFORTRAN_STMT_LABEL_TYPE(Where)
         LFORTRAN_STMT_LABEL_TYPE(WhileLoop)
-        default : throw LCompilersException("Unhandled type in stmt_label");
+        // `use`, `import`, `implicit` and declarations share the `decl_stmt`
+        // type with the statements above but cannot carry a statement label
+        default : return 0;
     }
 }
 
@@ -4800,9 +4802,9 @@ public:
 
     template <typename T>
     void check_if_global_save_is_enabled(T &x) {
-        for ( size_t i = 0; i < x.n_decl; i++ ) {
-            if ( AST::is_a<AST::Declaration_t>(*x.m_decl[i]) ) {
-                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+        for ( size_t i = 0; i < x.n_items; i++ ) {
+            if ( AST::is_a<AST::Declaration_t>(*x.m_items[i]) ) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
                 if ( decl->n_attributes > 0 && decl->n_syms == 0 &&
                     decl->m_trivia == nullptr &&
                     AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[0]) ) {

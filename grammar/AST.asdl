@@ -32,27 +32,22 @@ unit
     = TranslationUnit(node* items)
 
 mod
-    = Module(identifier name, trivia? trivia, decl_stmt* use, decl_stmt* implicit,
-        decl_stmt* decl, decl_stmt* body, program_unit* contains, location start_name, location end_name)
+    = Module(identifier name, trivia? trivia, decl_stmt* items,
+        program_unit* contains, location start_name, location end_name)
     | Submodule(identifier id, identifier? parent_name, identifier name, trivia? trivia,
-        decl_stmt* use, decl_stmt* implicit,
-        decl_stmt* decl, decl_stmt* body, program_unit* contains, location start_name, location end_name)
-    | BlockData(identifier? name, trivia? trivia, decl_stmt* use,
-        decl_stmt* implicit, decl_stmt* decl, decl_stmt* body)
-    | Program(identifier name, trivia? trivia, decl_stmt* use, decl_stmt* implicit,
-        decl_stmt* decl, decl_stmt* body, program_unit* contains, location start_name, location end_name)
+        decl_stmt* items, program_unit* contains, location start_name, location end_name)
+    | BlockData(identifier? name, trivia? trivia, decl_stmt* items)
+    | Program(identifier name, trivia? trivia, decl_stmt* items,
+        program_unit* contains, location start_name, location end_name)
 
 program_unit
     = Subroutine(identifier name, arg* args, decl_attribute* attributes,
-        bind? bind, trivia? trivia, decl_stmt* use, decl_stmt* import,
-        decl_stmt* implicit, decl_stmt* decl,
-        decl_stmt* body, program_unit* contains, identifier* temp_args, location start_name, location end_name)
+        bind? bind, trivia? trivia, decl_stmt* items, program_unit* contains,
+        identifier* temp_args, location start_name, location end_name)
     | Procedure(identifier name, arg* args, decl_attribute* attributes, trivia? trivia,
-        decl_stmt* use, decl_stmt* import, decl_stmt* implicit,
-        decl_stmt* decl, decl_stmt* body, program_unit* contains)
+        decl_stmt* items, program_unit* contains)
     | Function(identifier name, arg* args, decl_attribute* attributes,
-        expr? return_var, bind? bind, trivia? trivia, decl_stmt* use, decl_stmt* import,
-        decl_stmt* implicit, decl_stmt* decl, decl_stmt* body,
+        expr? return_var, bind? bind, trivia? trivia, decl_stmt* items,
         program_unit* contains, identifier* temp_args, location start_name, location end_name)
 
 interface_header
@@ -97,11 +92,11 @@ decl_stmt
     | Interface(interface_header header, trivia? trivia, interface_item* items)
     | DerivedType(identifier name, identifier* namelist, trivia? trivia, decl_attribute* attrtype,
         decl_stmt* items, procedure_decl* contains)
-    | Template(identifier name, identifier* namelist, decl_stmt* decl,
+    | Template(identifier name, identifier* namelist, decl_stmt* items,
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, decl_stmt* items)
     | Instantiate(identifier name, decl_attribute* args, use_symbol* symbols)
-    | Requirement(identifier name, identifier* namelist, decl_stmt* decl,
+    | Requirement(identifier name, identifier* namelist, decl_stmt* items,
         program_unit* funcs)
     | Require(unit_require* reqs)
     | Union(identifier name, trivia? trivia, decl_attribute* attrtype, decl_stmt* items)
@@ -159,8 +154,7 @@ decl_stmt
 -- Multi-line statements (each has a `label` and `stmt_name`):
     | AssociateBlock(int label, identifier? stmt_name, var_sym* syms,
             decl_stmt* body, trivia? t_inside, trivia? trivia)
-    | Block(int label, identifier? stmt_name, decl_stmt* use,
-            decl_stmt* import,decl_stmt* decl, decl_stmt* body,
+    | Block(int label, identifier? stmt_name, decl_stmt* items,
             trivia? t_inside, trivia? trivia)
     | ChangeTeam(int label, identifier? stmt_name, expr team_value,
             team_attribute* coarray_assoc, event_attribute* sync,

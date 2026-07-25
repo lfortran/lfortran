@@ -54,10 +54,7 @@
                             "last_column": 3
                         }
                     },
-                    "use": [],
-                    "implicit": [],
-                    "decl": [],
-                    "body": [
+                    "items": [
                         {
                             "node": "Print",
                             "fields": {

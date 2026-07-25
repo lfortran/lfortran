@@ -16,10 +16,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
-        []
         [(Assignment
             0
             f
@@ -46,10 +42,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
-        []
         [(Assignment
             0
             g
@@ -72,10 +64,6 @@
         ()
         ()
         ()
-        []
-        []
-        []
-        []
         [(Assignment
             0
             h

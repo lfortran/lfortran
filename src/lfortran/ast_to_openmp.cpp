@@ -65,16 +65,10 @@ public:
         r.append(" ");
         r.append(x.m_name);
         r.append("\n");
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_decl_stmt(*x.m_use[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
-            if (i < x.n_use-1) r.append("\n");
-        }
-        r.append("\n");
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_decl_stmt(*x.m_decl[i]);
-            r.append(s);
-            if (i < x.n_decl-1) r.append("\n");
+            if (i < x.n_items-1) r.append("\n");
         }
         r.append("\n");
         for (size_t i=0; i<x.n_contains; i++) {
@@ -91,18 +85,8 @@ public:
         std::string r = "program ";
         r.append(x.m_name);
         r.append("\n");
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_decl_stmt(*x.m_use[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_decl_stmt(*x.m_decl[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_decl_stmt(*x.m_body[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
             r.append("\n");
         }
@@ -131,18 +115,8 @@ public:
             r.append(")");
         }
         r.append("\n");
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_decl_stmt(*x.m_use[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_decl_stmt(*x.m_decl[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_decl_stmt(*x.m_body[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
             r.append("\n");
         }

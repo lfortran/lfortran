@@ -2,7 +2,6 @@
     [(Program
         complex_01
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeComplex
                 []
@@ -137,8 +136,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [x

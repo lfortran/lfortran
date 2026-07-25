@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include <lfortran/ast.h>
+#include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
@@ -216,9 +217,10 @@ public:
         ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(
             ASR::down_cast<ASR::symbol_t>(block));
 
-        for (size_t i=0; i<x.n_use; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             try {
-                visit_decl_stmt(*x.m_use[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
@@ -228,9 +230,10 @@ public:
                 }
             }
         }
-        for (size_t i=0; i<x.n_decl; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             try {
-                visit_decl_stmt(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
@@ -269,8 +272,8 @@ public:
         postponed_genericProcedure_calls_vec.clear();
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
-        transform_stmts(body, x.n_body, x.m_body);
+        body.reserve(al, x.n_items);
+        transform_stmts(body, x.n_items, x.m_items);
         block_t->m_body = body.p;
         block_t->n_body = body.size();
         current_scope = parent_scope;
@@ -291,6 +294,9 @@ public:
         Vec<ASR::stmt_t*>* current_body_copy = current_body;
         current_body = &body;
         for (size_t i=0; i<n_body; i++) {
+            // A program unit hands us its whole `items` list, the declarations
+            // in it were already handled by the symbol table visitor
+            if (!AST::is_executable_stmt(*m_body[i])) continue;
             // If there is a label, create a GoToTarget node first
             int64_t label = stmt_label(m_body[i]);
             if (label != 0) {
@@ -1496,7 +1502,7 @@ public:
                 }
                 case AST::decl_stmtType::Block: {
                     AST::Block_t* s = AST::down_cast<AST::Block_t>(stmt);
-                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_items, s->n_items, collect_labels_in_stmt_ref);
                     break;
                 }
                 case AST::decl_stmtType::Select: {
@@ -4890,14 +4896,15 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
-        for (size_t i=0; i<x.n_decl; i++) {
-            if(x.m_decl[i]->type == AST::decl_stmtType::Template){
-                visit_decl_stmt(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if(x.m_items[i]->type == AST::decl_stmtType::Template){
+                visit_decl_stmt(*x.m_items[i]);
             }
         }
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data = data_structure[current_scope->counter];
         if (scope_data.size()>0) {
             for(auto it: scope_data) {
@@ -4906,7 +4913,7 @@ public:
         }
         scope_data.clear();
 
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and
         // Template is a unit_decl_2
 
@@ -5104,16 +5111,17 @@ public:
         }
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
 
-        for (size_t i=0; i<x.n_decl; i++) {
-            visit_decl_stmt(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            visit_decl_stmt(*x.m_items[i]);
         }
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_prog = data_structure[current_scope->counter];
         if (scope_data_prog.size()>0) {
             for(auto it: scope_data_prog) {
@@ -5122,7 +5130,7 @@ public:
         }
         scope_data_prog.clear();
 
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         v->m_body = body.p;
         v->n_body = body.size();
@@ -5610,8 +5618,9 @@ public:
         stmt_vector.push_back(go_to_target_stmt); go_to_target++;
 
         std::vector<AST::decl_stmt_t*> subroutine_stmt_vector;
-        for (size_t i = 0; i < x.n_body; i++) {
-            subroutine_stmt_vector.push_back(x.m_body[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Statement)) continue;
+            subroutine_stmt_vector.push_back(x.m_items[i]);
         }
         Vec<ASR::stmt_t*> master_function_body; master_function_body.reserve(al, stmt_vector.size());
         current_body = &master_function_body;
@@ -5652,15 +5661,15 @@ public:
             // comment in `visit_SubmoduleModuleCommon()`.
             throw SemanticAbort();
         }
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
 
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_sub = data_structure[current_scope->counter];
         if (scope_data_sub.size()>0) {
             for(auto it: scope_data_sub) {
@@ -5674,7 +5683,7 @@ public:
         bool old_side_effect_free = current_function_side_effect_free;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -5722,8 +5731,8 @@ public:
             // comment in `visit_SubmoduleModuleCommon()`.
             throw SemanticAbort();
         }
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
         if( t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
@@ -5736,10 +5745,11 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
-        for (size_t i=0; i<x.n_decl; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::decl_stmtType::Instantiate)
-                visit_decl_stmt(*x.m_decl[i]);
+            if(x.m_items[i]->type == AST::decl_stmtType::Instantiate)
+                visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
         if (entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
@@ -5772,7 +5782,7 @@ public:
         bool old_side_effect_free = current_function_side_effect_free;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_func = data_structure[current_scope->counter];
         if (scope_data_func.size()>0) {
             for(auto it: scope_data_func) {
@@ -5780,7 +5790,7 @@ public:
             }
         }
         scope_data_func.clear();
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -5823,8 +5833,8 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
@@ -5866,7 +5876,7 @@ public:
             return;
         }
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_func2 = data_structure[current_scope->counter];
         if (scope_data_func2.size()>0) {
             for(auto it: scope_data_func2) {
@@ -5880,7 +5890,7 @@ public:
         bool old_side_effect_free = current_function_side_effect_free;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -5913,10 +5923,11 @@ public:
             }
         }
 
-        for (size_t i=0; i<x.n_decl; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::decl_stmtType::Instantiate)
-                visit_decl_stmt(*x.m_decl[i]);
+            if(x.m_items[i]->type == AST::decl_stmtType::Instantiate)
+                visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
 
@@ -9137,7 +9148,8 @@ public:
             // before that labelled statement, so a second one here would
             // re-define the same label.
             bool already_targeted = false;
-            for (size_t i = 0; i < x.n_body; i++) {
+            for (size_t i=0; i<x.n_body; i++) {
+                if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Statement)) continue;
                 if (stmt_label(x.m_body[i]) == x.m_do_label) {
                     already_targeted = true;
                     break;
@@ -10343,8 +10355,9 @@ public:
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
         current_scope = v->m_symtab;
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_decl_stmt(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            this->visit_decl_stmt(*x.m_items[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
             try {

@@ -365,18 +365,8 @@ public:
             r.append("\n");
         }
         if (indent_unit) inc_indent();
-        if(x.n_use > 0) {
-            for (size_t i=0; i<x.n_use; i++) {
-                this->visit_decl_stmt(*x.m_use[i]);
-                r.append(s);
-            }
-            r.append("\n");
-        }
-        if(x.n_decl > 0) {
-            for (size_t i=0; i<x.n_decl; i++) {
-                this->visit_decl_stmt(*x.m_decl[i]);
-                r.append(s);
-            }
+        if (x.n_items > 0) {
+            r += format_items(x);
             r.append("\n");
         }
         if (x.n_contains > 0) {
@@ -422,20 +412,7 @@ public:
             r.append("\n");
         }
         inc_indent();
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_decl_stmt(*x.m_use[i]);
-            r.append(s);
-        }
-        r += format_implicit(x);
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_decl_stmt(*x.m_decl[i]);
-            r.append(s);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            r.append(indent);
-            this->visit_decl_stmt(*x.m_body[i]);
-            r.append(s);
-        }
+        r += format_items(x);
         dec_indent();
         r += indent;
         r += syn(gr::UnitHeader);
@@ -968,45 +945,13 @@ public:
     }
 
     template <typename T>
-    std::string format_import(const T &x) {
+    std::string format_items(const T &x) {
         std::string r;
-        for (size_t i=0; i<x.n_import; i++) {
-            this->visit_decl_stmt(*x.m_import[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
         }
         return r;
-    }
-
-    std::string format_import(const Program_t &/*x*/) {
-        return "";
-    }
-
-    std::string format_import(const Module_t &/*x*/) {
-        return "";
-    }
-
-    template <typename T>
-    std::string format_implicit(const T &x) {
-        std::string r;
-        for (size_t i=0; i<x.n_implicit; i++) {
-            this->visit_decl_stmt(*x.m_implicit[i]);
-            r.append(s);
-        }
-        return r;
-    }
-
-    template <typename T>
-    std::string format_body(const T &x) {
-        std::string r;
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_decl_stmt(*x.m_body[i]);
-            r.append(s);
-        }
-        return r;
-    }
-
-    std::string format_body(const Module_t &/*x*/) {
-        return "";
     }
 
 
@@ -1014,17 +959,7 @@ public:
     std::string format_unit_body(const T &x, bool indent_contains=false) {
         std::string r;
         if (indent_unit) inc_indent();
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_decl_stmt(*x.m_use[i]);
-            r.append(s);
-        }
-        r += format_import(x);
-        r += format_implicit(x);
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_decl_stmt(*x.m_decl[i]);
-            r.append(s);
-        }
-        r += format_body(x);
+        r += format_items(x);
         if (x.n_contains > 0) {
             r += "\n";
             r += syn(gr::UnitHeader);
@@ -1381,7 +1316,7 @@ public:
     }
 
     void visit_DataStmt(const DataStmt_t &x) {
-        std::string r;
+        std::string r = indent;
         r += syn(gr::Type);
         r += "data ";
         r += syn();
@@ -2529,19 +2464,7 @@ public:
             r.append("\n");
         }
         inc_indent();
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_decl_stmt(*x.m_use[i]);
-            r.append(s);
-        }
-        r += format_import(x);
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_decl_stmt(*x.m_decl[i]);
-            r.append(s);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_decl_stmt(*x.m_body[i]);
-            r.append(s);
-        }
+        r += format_items(x);
         dec_indent();
         r += indent;
         r += syn(gr::UnitHeader);

@@ -105,6 +105,19 @@ static inline bool is_executable_stmt(const decl_stmt_t &x) {
     return decl_stmt_kind(x) == DeclStmtKind::Statement;
 }
 
+static inline bool is_kind(const decl_stmt_t &x, DeclStmtKind k) {
+    return decl_stmt_kind(x) == k;
+}
+
+static inline size_t count_kind(decl_stmt_t **items, size_t n_items,
+        DeclStmtKind k) {
+    size_t n = 0;
+    for (size_t i=0; i < n_items; i++) {
+        if (decl_stmt_kind(*items[i]) == k) n++;
+    }
+    return n;
+}
+
 } // namespace LCompilers::LFortran::AST
 
 #endif // LFORTRAN_AST_KIND_H

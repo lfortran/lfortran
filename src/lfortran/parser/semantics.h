@@ -119,7 +119,6 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 
 #define VEC_CAST(x, type) vec_cast<type##_t, astType::type>(x)
 #define DECLS(x) VEC_CAST(x, decl_stmt)
-#define USES(x) VEC_CAST(x, decl_stmt)
 #define STMTS(x) VEC_CAST(x, decl_stmt)
 #define CONTAINS(x) VEC_CAST(x, program_unit)
 #define ATTRS(x) VEC_CAST(x, attribute)
@@ -141,9 +140,9 @@ Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
 
 // The parser collects all `use`, `import`, `implicit`, declaration and
 // executable statements of a program unit into a single list, in the order
-// they appear in the source code. `split_decl_stmts()` below splits that list
-// into the separate lists that the AST currently uses and reports any
-// violation of the statement ordering rules (F2018 R508) as an error.
+// they appear in the source code, and the AST stores that list as it is.
+// `check_decl_order()` below only validates it, reporting any violation of the
+// statement ordering rules (F2018 R508) as an error.
 
 // Which of the five kinds of statements a given scope accepts.
 enum class DeclContext {
@@ -153,14 +152,6 @@ enum class DeclContext {
     BlockData,   // block data
     Block,       // block construct
     Template,    // template, requirement
-};
-
-struct DeclStmts {
-    Vec<ast_t*> use;
-    Vec<ast_t*> import;
-    Vec<ast_t*> implicit;
-    Vec<ast_t*> decl;
-    Vec<ast_t*> body;
 };
 
 // The five ordered sections of a program unit (F2018 R508). `Flexible` marks
@@ -220,14 +211,11 @@ static inline void decl_order_error(const std::string &msg, const Location &loc,
         LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
 }
 
-static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items,
+// Validates the statement order of a program unit and drops the null entries
+// that a failed declaration leaves behind under `--continue-compilation`. The
+// list is compacted in place, the AST then stores it as it is.
+static inline void check_decl_order(Vec<ast_t*> &items,
         DeclContext ctx, LCompilers::diag::Diagnostics &diag) {
-    DeclStmts r;
-    r.use.reserve(al, items.size());
-    r.import.reserve(al, items.size());
-    r.implicit.reserve(al, items.size());
-    r.decl.reserve(al, items.size());
-    r.body.reserve(al, items.size());
     bool use_allowed = (ctx != DeclContext::Template);
     bool import_allowed = (ctx == DeclContext::Subprogram
         || ctx == DeclContext::Block);
@@ -236,9 +224,11 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
     bool exec_allowed = (ctx != DeclContext::Module
         && ctx != DeclContext::Template);
     DeclPhase seen = DeclPhase::Use;
+    size_t n = 0;
     for (size_t i=0; i < items.size(); i++) {
         if (!items[i]) continue;
         ast_t *x = items[i];
+        items.p[n++] = x;
         LCOMPILERS_ASSERT(is_a<decl_stmt_t>(*x))
         DeclPhase phase = decl_phase(*x);
         if (phase != DeclPhase::Flexible && phase > seen) seen = phase;
@@ -247,12 +237,9 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
                 if (!use_allowed) {
                     decl_order_error(std::string("use statement is not allowed "
                         "in a ") + decl_context_name(ctx), x->loc, diag);
-                } else {
-                    if (seen > DeclPhase::Use) {
-                        decl_order_error("use statement must appear before all "
-                            "other declarations and statements", x->loc, diag);
-                    }
-                    r.use.push_back(al, x);
+                } else if (seen > DeclPhase::Use) {
+                    decl_order_error("use statement must appear before all "
+                        "other declarations and statements", x->loc, diag);
                 }
                 break;
             }
@@ -260,12 +247,9 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
                 if (!import_allowed) {
                     decl_order_error(std::string("import statement is not "
                         "allowed in a ") + decl_context_name(ctx), x->loc, diag);
-                } else {
-                    if (seen > DeclPhase::Import) {
-                        decl_order_error("import statement must appear before "
-                            "implicit and declaration statements", x->loc, diag);
-                    }
-                    r.import.push_back(al, x);
+                } else if (seen > DeclPhase::Import) {
+                    decl_order_error("import statement must appear before "
+                        "implicit and declaration statements", x->loc, diag);
                 }
                 break;
             }
@@ -273,17 +257,13 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
                 if (!implicit_allowed) {
                     decl_order_error(std::string("implicit statement is not "
                         "allowed in a ") + decl_context_name(ctx), x->loc, diag);
-                } else {
-                    if (seen > DeclPhase::Implicit) {
-                        decl_order_error("implicit statement must appear before "
-                            "declaration and executable statements", x->loc, diag);
-                    }
-                    r.implicit.push_back(al, x);
+                } else if (seen > DeclPhase::Implicit) {
+                    decl_order_error("implicit statement must appear before "
+                        "declaration and executable statements", x->loc, diag);
                 }
                 break;
             }
             case DeclStmtKind::Declaration: {
-                r.decl.push_back(al, x);
                 break;
             }
             case DeclStmtKind::Statement: {
@@ -291,12 +271,11 @@ static inline DeclStmts split_decl_stmts(Allocator &al, const Vec<ast_t*> &items
                     decl_order_error(std::string("executable statement is not "
                         "allowed in a ") + decl_context_name(ctx), x->loc, diag);
                 }
-                r.body.push_back(al, x);
                 break;
             }
         }
     }
-    return r;
+    items.n = n;
 }
 
 
@@ -1719,14 +1698,10 @@ ast_t* SUBROUTINE2(Allocator &al, const Location &l, char* a_name,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains, size_t n_contains,
         char** a_temp_args, size_t n_temp_args, Location* a_start_name,
         Location* a_end_name, LCompilers::diag::Diagnostics &diag) {
-    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Subprogram, diag);
+    check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
     return make_Subroutine_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_bind, a_trivia,
-        USES(d.use), d.use.size(),
-        VEC_CAST(d.import, decl_stmt), d.import.size(),
-        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
-        DECLS(d.decl), d.decl.size(),
-        STMTS(d.body), d.body.size(),
+        DECLS(decl_stmts), decl_stmts.size(),
         a_contains, n_contains, a_temp_args, n_temp_args,
         a_start_name, a_end_name);
 }
@@ -1736,14 +1711,10 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
         size_t n_attributes, trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
         program_unit_t** a_contains, size_t n_contains,
         LCompilers::diag::Diagnostics &diag) {
-    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Subprogram, diag);
+    check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
     return make_Procedure_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_trivia,
-        USES(d.use), d.use.size(),
-        VEC_CAST(d.import, decl_stmt), d.import.size(),
-        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
-        DECLS(d.decl), d.decl.size(),
-        STMTS(d.body), d.body.size(),
+        DECLS(decl_stmts), decl_stmts.size(),
         a_contains, n_contains);
 }
 
@@ -1806,14 +1777,10 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         program_unit_t** a_contains, size_t n_contains,
         char** a_temp_args, size_t n_temp_args, Location* a_start_name,
         Location* a_end_name, LCompilers::diag::Diagnostics &diag) {
-    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Subprogram, diag);
+    check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
     return make_Function_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_return_var, a_bind, a_trivia,
-        USES(d.use), d.use.size(),
-        VEC_CAST(d.import, decl_stmt), d.import.size(),
-        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
-        DECLS(d.decl), d.decl.size(),
-        STMTS(d.body), d.body.size(),
+        DECLS(decl_stmts), decl_stmts.size(),
         a_contains, n_contains, a_temp_args, n_temp_args,
         a_start_name, a_end_name);
 }
@@ -1925,19 +1892,13 @@ ast_t* PROGRAM2(Allocator &al, const Location &a_loc, char* a_name,
         size_t n_contains, Location *start_name, Location *end_name,
         LCompilers::diag::Diagnostics &diag) {
 
-DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Program, diag);
+check_decl_order(decl_stmts, DeclContext::Program, diag);
 
 return make_Program_t(al, a_loc,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ USES(d.use),
-        /*n_use*/ d.use.size(),
-        /*m_implicit*/ VEC_CAST(d.implicit, decl_stmt),
-        /*n_implicit*/ d.implicit.size(),
-        /*decl*/ DECLS(d.decl),
-        /*n_decl*/ d.decl.size(),
-        /*body*/ STMTS(d.body),
-        /*n_body*/ d.body.size(),
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ start_name,
@@ -1970,16 +1931,10 @@ return make_Program_t(al, a_loc,
 
 ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         Vec<ast_t*> decl_stmts, LCompilers::diag::Diagnostics &diag) {
-    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Block, diag);
+    check_decl_order(decl_stmts, DeclContext::Block, diag);
     return make_Block_t(al, l, 0, nullptr,
-        /*use*/ USES(d.use),
-        /*n_use*/ d.use.size(),
-        /*m_import*/ VEC_CAST(d.import, decl_stmt),
-        /*n_import*/ d.import.size(),
-        /*decl*/ DECLS(d.decl),
-        /*n_decl*/ d.decl.size(),
-        /*body*/ STMTS(d.body),
-        /*n_body*/ d.body.size(), a_trivia, nullptr);
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(), a_trivia, nullptr);
 }
 
 #define BLOCK(trivia, decl_stmts, l) BLOCK2(p.m_a, l, trivia_cast(trivia), \
@@ -2666,19 +2621,13 @@ ast_t* MODULE2(Allocator &al, const Location &a_loc, char* a_name,
         size_t n_contains, LCompilers::diag::Diagnostics &diag,
         Location* a_start_name = nullptr, Location* a_end_name = nullptr) {
 
-DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Module, diag);
+check_decl_order(decl_stmts, DeclContext::Module, diag);
 
 return make_Module_t(al, a_loc,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ USES(d.use),
-        /*n_use*/ d.use.size(),
-        /*m_implicit*/ VEC_CAST(d.implicit, decl_stmt),
-        /*n_implicit*/ d.implicit.size(),
-        /*decl*/ DECLS(d.decl),
-        /*n_decl*/ d.decl.size(),
-        /*body*/ STMTS(d.body),
-        /*n_body*/ d.body.size(),
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ a_start_name,
@@ -2702,21 +2651,15 @@ ast_t* SUBMODULE2(Allocator &al, const Location &a_loc, char* a_id,
         size_t n_contains, LCompilers::diag::Diagnostics &diag,
         Location* a_start_name = nullptr, Location* a_end_name = nullptr) {
 
-DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Module, diag);
+check_decl_order(decl_stmts, DeclContext::Module, diag);
 
 return make_Submodule_t(al, a_loc,
         /*id*/ a_id,
         /*a_parent_name*/ a_parent_name,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ USES(d.use),
-        /*n_use*/ d.use.size(),
-        /*m_implicit*/ VEC_CAST(d.implicit, decl_stmt),
-        /*n_implicit*/ d.implicit.size(),
-        /*decl*/ DECLS(d.decl),
-        /*n_decl*/ d.decl.size(),
-        /*body*/ STMTS(d.body),
-        /*n_body*/ d.body.size(),
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ a_start_name,
@@ -2751,12 +2694,9 @@ return make_Submodule_t(al, a_loc,
 ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
         trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
         LCompilers::diag::Diagnostics &diag) {
-    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::BlockData, diag);
+    check_decl_order(decl_stmts, DeclContext::BlockData, diag);
     return make_BlockData_t(al, l, a_name, a_trivia,
-        USES(d.use), d.use.size(),
-        VEC_CAST(d.implicit, decl_stmt), d.implicit.size(),
-        DECLS(d.decl), d.decl.size(),
-        STMTS(d.body), d.body.size());
+        DECLS(decl_stmts), decl_stmts.size());
 }
 
 #define BLOCKDATA(trivia, decl_stmts, l) BLOCKDATA2(p.m_a, l, nullptr, \
@@ -2835,9 +2775,9 @@ ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
         char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_contains, size_t n_contains,
         LCompilers::diag::Diagnostics &diag) {
-    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Template, diag);
+    check_decl_order(decl_stmts, DeclContext::Template, diag);
     return make_Template_t(al, l, a_name, a_namelist, n_namelist,
-        /*decl_stmt_t** a_decl*/ DECLS(d.decl), /*size_t n_decl*/ d.decl.size(),
+        /*items*/ DECLS(decl_stmts), /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains, /*n_contains*/ n_contains);
 }
 
@@ -2845,9 +2785,9 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_funcs, size_t n_funcs,
         LCompilers::diag::Diagnostics &diag) {
-    DeclStmts d = split_decl_stmts(al, decl_stmts, DeclContext::Template, diag);
+    check_decl_order(decl_stmts, DeclContext::Template, diag);
     return make_Requirement_t(al, l, a_name, a_namelist, n_namelist,
-        DECLS(d.decl), d.decl.size(), a_funcs, n_funcs);
+        DECLS(decl_stmts), decl_stmts.size(), a_funcs, n_funcs);
 }
 
 #define TEMPLATE(name, namelist, decl_stmts, contains, l) \

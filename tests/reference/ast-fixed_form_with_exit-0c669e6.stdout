@@ -5,9 +5,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -25,8 +22,8 @@
             None
             ())]
             ()
-        )]
-        [(DoLoop
+        )
+        (DoLoop
             0
             ()
             0
