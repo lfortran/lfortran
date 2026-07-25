@@ -14914,7 +14914,6 @@ public:
                             al, x.base.base.loc, numerator, ASR::binopType::Div, mold_bytes_expr, local_int_type, nullptr));
                     }
                 }
-
                 ASR::dimension_t size_dim;
                 size_dim.loc = x.base.base.loc;
                 size_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, local_int_type));
@@ -14926,7 +14925,6 @@ public:
                 new_dims.push_back(al, size_dim);
             }
         }
-
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
 
         ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(type);
@@ -15120,7 +15118,7 @@ public:
             if (target_nbytes <= 0) {
                 return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
             }
-
+            // If source representation is shorter than target, pad with zeros.
             std::vector<uint8_t> result_bits(static_cast<size_t>(target_nbytes), 0);
             std::memcpy(result_bits.data(), source_bits.data(),
                 std::min(static_cast<size_t>(target_nbytes), source_bits.size()));
