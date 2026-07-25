@@ -151,7 +151,7 @@ fi
 # so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
 # runs them, so LFortran's own behaviour stays verified.
 # coarrays_21: intermittent failures on OpenCoarrays
-opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21"
+opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21 coarrays_31"
 
 for test_info in $tests; do
 testfile="${test_info%%:*}"
