@@ -913,4 +913,8 @@ program continue_compilation_1
             real :: x
         end type
     end subroutine type_used_before_declared_local
+
+    subroutine real_unsupported_kind_01()
+        print *, real(1., 666)
+    end subroutine
 end program

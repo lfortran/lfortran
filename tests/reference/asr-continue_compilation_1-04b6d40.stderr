@@ -1809,3 +1809,9 @@ semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension ind
     |
 905 |         x = norm2([1.0, 2.0], dim=2)
     |                                   ^ 
+
+semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 16
+   --> tests/errors/continue_compilation_1.f90:918:27
+    |
+918 |         print *, real(1., 666)
+    |                           ^^^ 
