@@ -114,7 +114,7 @@
                                         [(Complex 4)]
                                         (Complex 4)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -142,7 +142,7 @@
                             [(Complex 4)]
                             (Complex 4)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.

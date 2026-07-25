@@ -147,7 +147,8 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
             ASR::ttype_t* f_signature= f->m_function_signature;
             ASR::FunctionType_t *f_type = ASR::down_cast<ASR::FunctionType_t>(f_signature);
-            if (f_type->m_abi == ASR::abiType::BindC && f_type->m_deftype == ASR::deftypeType::Interface) {
+            if (f_type->m_abi == ASR::abiType::BindC
+                    && ASRUtils::is_interface(f_type)) {
                 // this is an interface function
                 return false;
             }
@@ -186,10 +187,18 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             sym_to_renamed[sym] = update_name(x.m_name);
         }
         if (mangle_underscore_external) {
-            bool is_external_interface = (f_type->m_deftype == ASR::deftypeType::Interface &&
-                                          f_type->m_abi != ASR::abiType::Intrinsic &&
-                                          !f_type->m_module);
-            if (is_external_interface) {
+            bool is_implicit_external = ASRUtils::is_implicit_interface(f_type);
+            bool is_fortran_interface =
+                f_type->m_deftype == ASR::deftypeType::Interface
+                && f_type->m_abi != ASR::abiType::BindC
+                && f_type->m_abi != ASR::abiType::Intrinsic
+                && !f_type->m_module;
+            bool is_global_fortran_definition =
+                current_scope_copy && current_scope_copy->parent == nullptr
+                && f_type->m_deftype == ASR::deftypeType::Implementation
+                && f_type->m_abi == ASR::abiType::Source;
+            if (is_implicit_external || is_fortran_interface
+                    || is_global_fortran_definition) {
                 std::string name = x.m_name;
                 bool has_reserved_prefix = (startswith(name, "_lfortran") ||
                                             startswith(name, "_lpython") ||

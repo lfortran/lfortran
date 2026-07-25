@@ -3,6 +3,8 @@
 #include <cstring>
 #include <set>
 #include <unordered_set>
+#include <map>
+#include <functional>
 
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
@@ -173,6 +175,7 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        EntryMasterWrappers &entry_master_wrappers,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm
     ) : CommonVisitor(
@@ -181,7 +184,7 @@ public:
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-            data_structure, lm
+            entry_master_wrappers, data_structure, lm
         ), asr{unit}, from_block{false} {}
 
     void mark_IO_side_effect() {
@@ -10350,6 +10353,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        EntryMasterWrappers &entry_master_wrappers,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm)
 {
@@ -10358,7 +10362,8 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         external_procedures_mapping,
         explicit_intrinsic_procedures_mapping,
         instantiate_types, instantiate_symbols, entry_functions,
-        entry_function_arguments_mapping, data_structure, lm
+        entry_function_arguments_mapping, entry_master_wrappers,
+        data_structure, lm
     );
     try {
         b.is_body_visitor = true;
@@ -10369,6 +10374,62 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         return error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+
+    // Post-processing: reconcile implicit external interfaces with actual
+    // definitions found in the same translation unit.
+    //
+    // Under --implicit-interface --implicit-typing, an `EXTERNAL FOO`
+    // declaration creates a nested implicit interface Function for FOO whose
+    // return type is guessed from the implicit typing rules (e.g. a name
+    // starting with 'N' becomes an integer function). If FOO is actually
+    // defined later in the same file as a SUBROUTINE (or a function with a
+    // different return type), the guessed interface disagrees with the real
+    // definition. Both share the same mangled name in codegen, so the wrong
+    // (guessed) signature would be emitted, producing invalid LLVM IR such as
+    // `ret void` in a function declared to return i32. Here we make the
+    // implicit interface agree with the actual definition.
+    if (compiler_options.implicit_interface) {
+        // Collect actual definitions (deftype Implementation) by name.
+        std::map<std::string, ASR::Function_t*> definitions;
+        std::function<void(SymbolTable*)> collect_defs = [&](SymbolTable* scope) {
+            for (auto& item : scope->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(item.second);
+                    if (ASRUtils::get_FunctionType(f)->m_deftype
+                            == ASR::deftypeType::Implementation) {
+                        definitions[std::string(f->m_name)] = f;
+                    }
+                    collect_defs(f->m_symtab);
+                }
+            }
+        };
+        collect_defs(tu->m_symtab);
+
+        std::function<void(SymbolTable*)> reconcile = [&](SymbolTable* scope) {
+            for (auto& item : scope->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+                ASR::Function_t* iface = ASR::down_cast<ASR::Function_t>(item.second);
+                reconcile(iface->m_symtab);
+                ASR::FunctionType_t* iface_ft = ASRUtils::get_FunctionType(iface);
+                // Only consider implicit external interfaces (no body).
+                if (!ASRUtils::is_implicit_interface(iface_ft)
+                        || iface->n_body != 0 || iface->m_return_var == nullptr) {
+                    continue;
+                }
+                auto it = definitions.find(std::string(iface->m_name));
+                if (it == definitions.end()) continue;
+                ASR::Function_t* def = it->second;
+                if (def == iface) continue;
+                if (def->m_return_var == nullptr) {
+                    // The actual definition is a subroutine; drop the guessed
+                    // return value from the implicit interface.
+                    iface->m_return_var = nullptr;
+                    iface_ft->m_return_var_type = nullptr;
+                }
+            }
+        };
+        reconcile(tu->m_symtab);
+    }
 
     // Post-processing: propagate procedure types for implicit interfaces.
     // This handles the case where callee body is visited after caller body,

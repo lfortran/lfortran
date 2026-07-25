@@ -164,7 +164,7 @@
                                         (Integer 4)]
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.

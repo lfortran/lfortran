@@ -207,6 +207,16 @@ static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t* x) {
 static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
     return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
 }
+
+static inline bool is_implicit_interface(const ASR::FunctionType_t* x) {
+    return x->m_deftype == ASR::deftypeType::ImplicitInterface;
+}
+
+static inline bool is_interface(const ASR::FunctionType_t* x) {
+    return x->m_deftype == ASR::deftypeType::Interface
+        || is_implicit_interface(x);
+}
+
 class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 {
     public:
@@ -6758,7 +6768,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     // need to be tracked which by default pass arrays by using descriptors.
     if ((ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
          || ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython)
-        && (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface
+        && (ASRUtils::is_interface(ASRUtils::get_FunctionType(x))
             || ASRUtils::get_FunctionType(x)->m_bindc_name)) {
         return false;
     }
