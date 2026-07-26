@@ -2,9 +2,6 @@
     [(Program
         subr2
         ()
-        []
-        []
-        []
         [(SubroutineCall
             0
             my_subr
@@ -22,10 +19,6 @@
         []
         ()
         ()
-        []
-        []
-        []
-        []
         [(Print
             0
             ()
@@ -79,10 +72,6 @@
             ()
             ()
             ()
-            []
-            []
-            []
-            []
             [(Assignment
                 0
                 sxvals

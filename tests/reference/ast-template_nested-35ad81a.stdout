@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -66,9 +65,6 @@
                 z
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -114,7 +110,6 @@
                     ())]
                     ()
                 )]
-                []
                 []
                 []
             )]
@@ -164,9 +159,6 @@
                 z
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -211,8 +203,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     z
                     (FuncCallOrArray
@@ -243,9 +235,6 @@
                 z
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -290,8 +279,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     z
                     (FuncCallOrArray
@@ -315,7 +304,6 @@
                 []
             )]
         )]
-        []
         [(Function
             func_arg_real
             [(x)
@@ -334,9 +322,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -363,8 +348,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 z
                 (+ x y)
@@ -379,9 +364,6 @@
             []
             ()
             ()
-            []
-            []
-            []
             [(Instantiate
                 add_t
                 [(AttrType
@@ -448,8 +430,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 x
                 (Real "5.1")
@@ -534,17 +516,16 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             test_template
             []

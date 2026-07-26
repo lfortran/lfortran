@@ -6,8 +6,6 @@
             (EndOfLine)]
             []
         )
-        []
-        []
         [(DerivedType
             SomeType
             []
@@ -20,7 +18,6 @@
             []
             []
         )]
-        []
         []
     )]
 )

@@ -2,8 +2,6 @@
     [(Program
         TESTFortran90
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -24,8 +22,8 @@
                 []
                 [(Semicolon)]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             stop
             1

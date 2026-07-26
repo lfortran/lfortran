@@ -2,7 +2,6 @@
     [(Module
         interface2
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Interface
+        )
+        (Interface
             (AbstractInterfaceHeader)
             (TriviaNode
                 []
@@ -26,14 +25,12 @@
                     []
                     ()
                     ()
-                    []
                     [(Import
                         []
                         ImportDefault
                         ()
-                    )]
-                    []
-                    [(Declaration
+                    )
+                    (Declaration
                         (AttrType
                             TypeClass
                             []
@@ -78,7 +75,6 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )
@@ -107,7 +103,6 @@
                 ()
             )]
         )]
-        []
         []
     )]
 )

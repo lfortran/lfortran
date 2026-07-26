@@ -8,9 +8,6 @@
         ()
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeType
@@ -98,8 +95,8 @@
             None
             ())]
             ()
-        )]
-        [(If
+        )
+        (If
             0
             ()
             (FuncCallOrArray

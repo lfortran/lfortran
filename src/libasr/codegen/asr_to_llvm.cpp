@@ -4466,7 +4466,7 @@ public:
                 }
                 ptr_loads = ptr_loads_copy;
             }
-            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
+            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0 || (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray));
             bool is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(
                 ASRUtils::extract_type(x_mv_type));
             ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
@@ -18019,6 +18019,8 @@ public:
             // For multi-value list-directed internal reads, track position
             llvm::Value *str_offset = nullptr;
             llvm::Value *str_src_data = nullptr, *str_src_len = nullptr;
+            bool is_string_array_unit = false;
+            llvm::Value *str_src_elem_len = nullptr;
             if (is_string) {
                 str_offset = llvm_utils->CreateAlloca(*builder,
                     llvm::Type::getInt64Ty(context), nullptr, "str_read_offset");
@@ -18027,6 +18029,7 @@ public:
                     str_offset);
                 ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
                 if (ASRUtils::is_array(unit_type)) {
+                    is_string_array_unit = true;
                     ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(unit_type);
                     if (ASRUtils::is_allocatable_or_pointer(unit_type)) {
                         llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(
@@ -18042,6 +18045,7 @@ public:
                     visit_ArraySize(*array_size);
                     llvm::Value* n_elems = builder->CreateIntCast(tmp, llvm::Type::getInt64Ty(context), true);
                     tmp = nullptr;
+                    str_src_elem_len = elem_len;
                     str_src_len = builder->CreateMul(elem_len, n_elems);
                 } else {
                     std::tie(str_src_data, str_src_len) = llvm_utils->get_string_length_data(
@@ -18455,7 +18459,21 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        builder->CreateCall(fn, { str_src_data, str_src_len, fmt, var_to_read_into, iostat, str_offset });
+                        if (is_string_array_unit) {
+                            llvm::Value* saved_offset = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), str_offset);
+                            llvm::Value* elem_offset = builder->CreateURem(saved_offset, str_src_elem_len);
+                            llvm::Value* record_start = builder->CreateSub(saved_offset, elem_offset);
+                            llvm::Value* record_data = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_src_data, record_start);
+                            llvm::Value* record_len = builder->CreateSub(str_src_elem_len, elem_offset);
+                            llvm::Value* record_offset = llvm_utils->CreateAlloca(*builder,llvm::Type::getInt64Ty(context), nullptr, "str_record_offset");
+                            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),record_offset);
+                            builder->CreateCall(fn, { record_data, record_len, fmt,var_to_read_into, iostat, record_offset });
+                            llvm::Value* consumed = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), record_offset);
+                            builder->CreateStore(builder->CreateAdd(saved_offset, consumed),
+                                str_offset);
+                        } else {
+                            builder->CreateCall(fn, { str_src_data, str_src_len, fmt, var_to_read_into, iostat, str_offset });
+                        }
                     }
                     // Copy temporary i32 iostat back to user's variable
                     if (iostat_user && iostat_kind != 4) {

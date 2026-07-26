@@ -2,8 +2,6 @@
     [(Program
         include2
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -21,8 +19,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (* (+ 2 3) 5)

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include <lfortran/ast.h>
+#include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
@@ -47,7 +48,7 @@ public:
 
     ASR::ttype_t *tmp_type;
 
-    static bool is_equivalence_declaration(AST::unit_decl2_t* decl) {
+    static bool is_equivalence_declaration(AST::decl_stmt_t* decl) {
         if (AST::is_a<AST::Declaration_t>(*decl)) {
             AST::Declaration_t* d = AST::down_cast<AST::Declaration_t>(decl);
             for (size_t i = 0; i < d->n_attributes; i++) {
@@ -59,7 +60,7 @@ public:
         return false;
     }
 
-    static bool is_common_declaration(AST::unit_decl2_t* decl) {
+    static bool is_common_declaration(AST::decl_stmt_t* decl) {
         if (AST::is_a<AST::Declaration_t>(*decl)) {
             AST::Declaration_t* d = AST::down_cast<AST::Declaration_t>(decl);
             for (size_t i = 0; i < d->n_attributes; i++) {
@@ -80,7 +81,7 @@ public:
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
       : CommonVisitor(
@@ -108,12 +109,15 @@ public:
 
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
-            if (t != AST::astType::expr && t != AST::astType::stmt) {
-                try {
-                    visit_ast(*x.m_items[i]);
-                } catch (SemanticAbort &e) {
-                    if ( !compiler_options.continue_compilation ) throw e;
-                }
+            // Executable statements and expressions of the global scope are
+            // handled by the body visitor, everything else declares symbols
+            if (t == AST::astType::expr) continue;
+            if (t == AST::astType::decl_stmt && AST::is_executable_stmt(
+                    *AST::down_cast<AST::decl_stmt_t>(x.m_items[i]))) continue;
+            try {
+                visit_ast(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
         }
         global_scope = nullptr;
@@ -184,7 +188,9 @@ public:
 
     template <typename T>
     void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
-        if (implicit_stack.size() > 0 && x.n_implicit == 0) {
+        size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
+            AST::DeclStmtKind::Implicit);
+        if (implicit_stack.size() > 0 && n_implicit == 0) {
             // We are inside a module and visiting a function / subroutine with no implicit statement
             if (!is_interface) {
                 implicit_dictionary = implicit_stack.back();
@@ -192,15 +198,16 @@ public:
             }
         }
         //iterate over all implicit statements
-        for (size_t i=0;i<x.n_implicit;i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
             //check if the implicit statement is of type "none"
-            if (AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+            if (AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
-                if (x.n_implicit != 1) {
+                if (n_implicit != 1) {
                     diag.add(diag::Diagnostic(
                         "No other implicit statement is allowed when 'implicit none' is used",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                            diag::Label("", {x.m_items[i]->base.loc})}));
                     throw SemanticAbort();
                 }
                 for (auto &it: implicit_dictionary) {
@@ -209,7 +216,7 @@ public:
             } else {
                 //if no, then it is of type "implicit"
                 //get the implicit statement
-                AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_implicit[i]);
+                AST::Implicit_t* implicit = AST::down_cast<AST::Implicit_t>(x.m_items[i]);
                 for (size_t si=0;si<implicit->n_specs;++si) {
                     AST::ImplicitSpec_t* spec = AST::down_cast<AST::ImplicitSpec_t>(implicit->m_specs[si]);
                     AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(spec->m_type);
@@ -382,9 +389,10 @@ public:
                                                 false, false, false);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
-        for (size_t i=0; i<x.n_use; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -395,24 +403,26 @@ public:
             process_implicit_statements(x, implicit_dictionary);
             implicit_stack.push_back(implicit_dictionary);
         } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
                     diag.add(diag::Diagnostic(
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                            diag::Label("", {x.m_items[i]->base.loc})}));
                     throw SemanticAbort();
                 }
             }
         }
-        for (size_t i=0; i<x.n_decl; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             try {
-                if ( AST::is_a<AST::Interface_t>(*x.m_decl[i]) ) {
+                if ( AST::is_a<AST::Interface_t>(*x.m_items[i]) ) {
                     std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_items[i]);
                     implicit_dictionary = implicit_dictionary_copy;
                 } else {
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_items[i]);
                 }
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
@@ -568,9 +578,10 @@ public:
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
         in_program = true;
-        for (size_t i=0; i<x.n_use; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -581,22 +592,24 @@ public:
             populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
         } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
                     diag.add(diag::Diagnostic(
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                            diag::Label("", {x.m_items[i]->base.loc})}));
                     if ( !compiler_options.continue_compilation ) throw SemanticAbort();
                 }
             }
         }
         
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (is_equivalence_declaration(x.m_decl[i])) continue;
-            if (is_common_declaration(x.m_decl[i])) continue;
-            if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
-                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (is_equivalence_declaration(x.m_items[i])) continue;
+            if (is_common_declaration(x.m_items[i])) continue;
+            if(AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
                 if(decl->m_vartype) {
 
                     AST::AttrType_t* type = nullptr;
@@ -622,23 +635,25 @@ public:
                 }
             }
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (!is_common_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_common_declaration(x.m_items[i])) continue;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (!is_equivalence_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -660,7 +675,7 @@ public:
         }
         for (size_t i : procedure_decl_indices) {
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -725,14 +740,15 @@ public:
         is_global_save_enabled = is_global_save_enabled_copy;
     }
 
-    bool subroutine_contains_entry_function(std::string subroutine_name, AST::stmt_t** body, size_t n_body) {
+    bool subroutine_contains_entry_function(std::string subroutine_name, AST::decl_stmt_t** body, size_t n_body) {
         bool contains_entry_function = false;
         for (size_t i=0; i<n_body; i++) {
+            if (!AST::is_executable_stmt(*body[i])) continue;
             if (AST::is_a<AST::Entry_t>(*body[i])) {
                 contains_entry_function = true;
                 AST::Entry_t* entry = AST::down_cast<AST::Entry_t>(body[i]);
                 std::string entry_name = to_lower(entry->m_name);
-                entry_functions[subroutine_name][entry_name] = std::vector<AST::stmt_t*>();
+                entry_functions[subroutine_name][entry_name] = std::vector<AST::decl_stmt_t*>();
                 for(size_t i = 0; i < entry->n_args; i++) {
                     entry_function_args[entry_name].push_back(entry->m_args[i]);
                 }
@@ -1220,9 +1236,10 @@ public:
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
         ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
-        for (size_t i=0; i<x.n_use; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1230,10 +1247,11 @@ public:
         is_Function = true;
         bool old_in_Subroutine = in_Subroutine;
         in_Subroutine = true;
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 try {
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_items[i]);
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
@@ -1310,10 +1328,11 @@ public:
             }
 
             Vec<ASR::require_instantiation_t*> reqs;
-            reqs.reserve(al, x.n_decl);
-            for (size_t i=0; i < x.n_decl; i++) {
-                if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
-                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+            reqs.reserve(al, x.n_items);
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+                if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                     for (size_t i=0; i<r->n_reqs; i++) {
                         visit_unit_require(*r->m_reqs[i]);
                         reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
@@ -1321,12 +1340,12 @@ public:
                     }
                 }
 
-                if (AST::is_a<AST::DerivedType_t>(*x.m_decl[i])) {
-                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_decl[i]);
+                if (AST::is_a<AST::DerivedType_t>(*x.m_items[i])) {
+                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_items[i]);
                     if (std::find(current_procedure_args.begin(),
                                   current_procedure_args.end(),
                                   to_lower(dt->m_name)) != current_procedure_args.end()) {
-                        visit_unit_decl2(*x.m_decl[i]);
+                        visit_decl_stmt(*x.m_items[i]);
                     }
                 }
             }
@@ -1359,9 +1378,10 @@ public:
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
-        for (size_t i=0; i<x.n_use; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1371,23 +1391,25 @@ public:
             populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
         } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
                     diag.add(diag::Diagnostic(
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                            diag::Label("", {x.m_items[i]->base.loc})}));
                     throw SemanticAbort();
                 }
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (is_equivalence_declaration(x.m_decl[i])) continue;
-            if (is_common_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (is_equivalence_declaration(x.m_items[i])) continue;
+            if (is_common_declaration(x.m_items[i])) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
-                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+            if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
                 if(decl.m_vartype) {
                     AST::AttrType_t* type = nullptr;
                     if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
@@ -1412,30 +1434,32 @@ public:
                     }
                 }
             }
-            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 try {
-                    visit_unit_decl2(*x.m_decl[i]);
+                    visit_decl_stmt(*x.m_items[i]);
                 } catch (SemanticAbort &e) {
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
             }
             is_Function = false;
         }
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (!is_common_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_common_declaration(x.m_items[i])) continue;
             is_Function = true;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
             is_Function = false;
         }
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (!is_equivalence_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
             is_Function = true;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1677,7 +1701,7 @@ public:
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1693,7 +1717,7 @@ public:
         external_procedures.clear();
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
-        if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
+        if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
             /*
                 This subroutine contains an entry function, create
                 template function for each entry and a master function
@@ -1849,22 +1873,23 @@ public:
             overloaded_op_procs.clear();
 
             Vec<ASR::require_instantiation_t*> reqs;
-            reqs.reserve(al, x.n_decl);
-            for (size_t i=0; i < x.n_decl; i++) {
-                if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
-                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+            reqs.reserve(al, x.n_items);
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+                if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                     for (size_t i=0; i<r->n_reqs; i++) {
                         visit_unit_require(*r->m_reqs[i]);
                         reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                         tmp = nullptr;
                     }
                 }
-                if (AST::is_a<AST::DerivedType_t>(*x.m_decl[i])) {
-                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_decl[i]);
+                if (AST::is_a<AST::DerivedType_t>(*x.m_items[i])) {
+                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_items[i]);
                     if (std::find(current_procedure_args.begin(),
                                   current_procedure_args.end(),
                                   to_lower(dt->m_name)) != current_procedure_args.end()) {
-                        visit_unit_decl2(*x.m_decl[i]);
+                        visit_decl_stmt(*x.m_items[i]);
                     }
                 }
             }
@@ -1890,9 +1915,10 @@ public:
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
-        for (size_t i=0; i<x.n_use; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -1902,23 +1928,25 @@ public:
             populate_implicit_dictionary(a_loc, implicit_dictionary);
             process_implicit_statements(x, implicit_dictionary);
         } else {
-            for (size_t i=0;i<x.n_implicit;i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
                     diag.add(diag::Diagnostic(
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                            diag::Label("", {x.m_items[i]->base.loc})}));
                     throw SemanticAbort();
                 }
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (is_equivalence_declaration(x.m_decl[i])) continue;
-            if (is_common_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (is_equivalence_declaration(x.m_items[i])) continue;
+            if (is_common_declaration(x.m_items[i])) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
-                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
+            if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
                 if(decl.m_vartype) {
                     AST::AttrType_t* type = nullptr;
                     if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
@@ -1942,21 +1970,23 @@ public:
                     }
                 }
             }
-            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
-                visit_unit_decl2(*x.m_decl[i]);
+            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                visit_decl_stmt(*x.m_items[i]);
             }
             is_Function = false;
         }
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (!is_common_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_common_declaration(x.m_items[i])) continue;
             is_Function = true;
-            visit_unit_decl2(*x.m_decl[i]);
+            visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (!is_equivalence_declaration(x.m_decl[i])) continue;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
             is_Function = true;
-            visit_unit_decl2(*x.m_decl[i]);
+            visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
         process_simd_variables();
@@ -2453,7 +2483,7 @@ public:
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -2463,7 +2493,7 @@ public:
         external_procedures_mapping[hash] = external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
-        if (subroutine_contains_entry_function(sym_name, x.m_body, x.n_body)) {
+        if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
             /*
                 This subroutine contains an entry function, create
                 template function for each entry and a master function
@@ -2746,7 +2776,7 @@ public:
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) != kind_len_decl_indices.end()) {
                     try{
-                        this->visit_unit_decl2(*x.m_items[i]);
+                        this->visit_decl_stmt(*x.m_items[i]);
                     } catch (const SemanticAbort &e) {
                         current_scope = parent_scope_pdt;
                         is_derived_type = false;
@@ -2764,7 +2794,7 @@ public:
                 if (kp_sym && ASR::is_a<ASR::Variable_t>(*kp_sym)) {
                     ASR::Variable_t *kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
                     // m_symbolic_value already has the user default (or nullptr)
-                    // from visit_unit_decl2.  Now set m_value to a unique index value.
+                    // from visit_decl_stmt.  Now set m_value to a unique index value.
                     int sentinel = PDT_SENTINEL + i;
                     ASR::ttype_t *int_type = ASRUtils::TYPE(
                         ASR::make_Integer_t(al, x.base.base.loc, 4));
@@ -2808,7 +2838,7 @@ public:
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) == kind_len_decl_indices.end()) {
                     try {
-                        this->visit_unit_decl2(*x.m_items[i]);
+                        this->visit_decl_stmt(*x.m_items[i]);
                     } catch (const SemanticAbort&) {
                         current_scope = parent_scope_pdt;
                         is_derived_type = false;
@@ -2848,7 +2878,7 @@ public:
         ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
             try {
-                this->visit_unit_decl2(*x.m_items[i]);
+                this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
                 throw;
@@ -3025,7 +3055,7 @@ public:
         ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
             try {
-                this->visit_unit_decl2(*x.m_items[i]);
+                this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
                 throw;
@@ -3380,25 +3410,28 @@ public:
             // can find it for the current scope.
             implicit_mapping[get_hash(current_scope->asr_owner)] = implicit_dictionary;
         } else {
-            for (size_t i = 0; i < x.n_implicit; i++) {
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
                     diag.add(diag::Diagnostic(
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_implicit[i]->base.loc})}));
+                            diag::Label("", {x.m_items[i]->base.loc})}));
                     throw SemanticAbort();
                 }
             }
         }
 
-        for (size_t i = 0; i < x.n_decl; i++) {
-            if (is_equivalence_declaration(x.m_decl[i])) continue;
-            if (is_common_declaration(x.m_decl[i])) continue;
-            this->visit_unit_decl2(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (is_equivalence_declaration(x.m_items[i])) continue;
+            if (is_common_declaration(x.m_items[i])) continue;
+            this->visit_decl_stmt(*x.m_items[i]);
         }
-        for (size_t i = 0; i < x.n_decl; i++) {
-            if (!is_common_declaration(x.m_decl[i])) continue;
-            this->visit_unit_decl2(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_common_declaration(x.m_items[i])) continue;
+            this->visit_decl_stmt(*x.m_items[i]);
         }
         // NOTE: Equivalence declarations are intentionally skipped in
         // BlockData. The common block struct already provides storage
@@ -3407,12 +3440,13 @@ public:
 
         SymbolTable* old_scope = current_scope;
         Vec<ASR::stmt_t*> block_data_body;
-        block_data_body.reserve(al, x.n_body);
+        block_data_body.reserve(al, x.n_items);
         current_body = &block_data_body;
         in_block_data = true;
         // Visit DataStmt and set the constant values in the Struct_t symbol
-        for (size_t i = 0; i < x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Statement)) continue;
+            this->visit_decl_stmt(*x.m_items[i]);
         }
         in_block_data = false;
         current_scope = old_scope;
@@ -3424,9 +3458,10 @@ public:
         std::map<std::string, std::string> equiv_to_common;
         // common_member_names: set of variable names that appear in COMMON blocks
         std::set<std::string> common_member_names;
-        for (size_t i = 0; i < x.n_decl; i++) {
-            if (!AST::is_a<AST::Declaration_t>(*x.m_decl[i])) continue;
-            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
+            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
             for (size_t j = 0; j < decl->n_attributes; j++) {
                 if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
                     AST::AttrCommon_t* ac = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
@@ -3439,9 +3474,10 @@ public:
                 }
             }
         }
-        for (size_t i = 0; i < x.n_decl; i++) {
-            if (!is_equivalence_declaration(x.m_decl[i])) continue;
-            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
+            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
             for (size_t j = 0; j < decl->n_attributes; j++) {
                 if (!AST::is_a<AST::AttrEquivalence_t>(*decl->m_attributes[j])) continue;
                 AST::AttrEquivalence_t* eq = AST::down_cast<AST::AttrEquivalence_t>(decl->m_attributes[j]);
@@ -3473,9 +3509,10 @@ public:
 
         // Copy the constant values from Struct_t symbol to the instance, use StructConstant as the value of the instance variable
         // Loop through all declarations again, find all the common blocks's names and update the instance variable
-        for (size_t i = 0; i < x.n_decl; i++) {
-            if (AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
-                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
                 for (size_t j = 0; j < decl->n_attributes; j++) {
                     if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
                         AST::AttrCommon_t* attr_common = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
@@ -4488,17 +4525,18 @@ public:
         overloaded_op_procs.clear();
 
         Vec<ASR::require_instantiation_t*> reqs;
-        reqs.reserve(al, x.n_decl);
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
-                AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+        reqs.reserve(al, x.n_items);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                 for (size_t i=0; i<r->n_reqs; i++) {
                     visit_unit_require(*r->m_reqs[i]);
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
             } else {
-                this->visit_unit_decl2(*x.m_decl[i]);
+                this->visit_decl_stmt(*x.m_items[i]);
             }
         }
         for (size_t i=0; i<x.n_funcs; i++) {
@@ -4676,18 +4714,19 @@ public:
         overloaded_op_procs.clear();
 
         Vec<ASR::require_instantiation_t*> reqs;
-        reqs.reserve(al, x.n_decl);
+        reqs.reserve(al, x.n_items);
         // For interface and type parameters (derived type)
-        for (size_t i=0; i<x.n_decl; i++) {
-            if (AST::is_a<AST::Require_t>(*x.m_decl[i])) {
-                AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
                 for (size_t i=0; i<r->n_reqs; i++) {
                     visit_unit_require(*r->m_reqs[i]);
                     reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
                     tmp = nullptr;
                 }
             } else {
-                this->visit_unit_decl2(*x.m_decl[i]);
+                this->visit_decl_stmt(*x.m_items[i]);
             }
         }
 
@@ -5386,7 +5425,7 @@ public:
 
         enum_init_val = 0;
         for ( size_t i = 0; i < x.n_items; i++ ) {
-            this->visit_unit_decl2(*x.m_items[i]);
+            this->visit_decl_stmt(*x.m_items[i]);
         }
 
         for( auto sym: current_scope->get_scope() ) {
@@ -5426,7 +5465,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
 {

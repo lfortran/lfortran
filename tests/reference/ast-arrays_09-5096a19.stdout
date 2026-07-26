@@ -2,12 +2,11 @@
     [(Program
         arrays_09
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeCharacter
                 [(()
@@ -28,8 +27,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             (FuncCallOrArray
                 a

@@ -12,9 +12,6 @@
         ()
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -55,7 +52,6 @@
         )]
         []
         []
-        []
     )
     (Function
         f
@@ -70,9 +66,6 @@
         ()
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -90,8 +83,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             endfunctionf
             4
@@ -113,9 +106,6 @@
         ()
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -151,8 +141,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             integerx
             5
@@ -186,9 +176,6 @@
         ()
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -224,8 +211,8 @@
             Equal
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             5

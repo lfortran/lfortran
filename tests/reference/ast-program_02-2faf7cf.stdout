@@ -6,13 +6,10 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
         )]
-        []
-        []
         []
     )
     (Program
@@ -24,8 +21,8 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
@@ -33,8 +30,6 @@
                 (EndOfLine)]
             )
         )]
-        []
-        []
         [(Subroutine
             f1
             []
@@ -45,10 +40,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
-            []
             []
             []
             []
@@ -70,10 +61,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
-            []
             [(Assignment
                 0
                 f2
