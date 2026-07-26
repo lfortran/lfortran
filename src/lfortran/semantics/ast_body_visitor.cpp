@@ -9838,6 +9838,27 @@ public:
         tmp = ASR::make_SyncMemory_t(al, x.base.base.loc, stat, errmsg);
     }
 
+    void visit_SyncTeam(const AST::SyncTeam_t &x) {
+        ASR::expr_t *team = nullptr;
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            team = ASRUtils::EXPR(tmp);
+            check_intrinsic_team_value(team, x.base.base.loc,
+                "team_value", "sync team");
+        } else {
+            diag.add(Diagnostic(
+                "`sync team` requires a team_value",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        resolve_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync team", stat, errmsg);
+        tmp = ASR::make_SyncTeam_t(al, x.base.base.loc, team, stat, errmsg);
+    }
+
     void visit_FormTeam(const AST::FormTeam_t &x) {
         ASR::expr_t *team_number = nullptr;
         if (x.m_team_number) {
