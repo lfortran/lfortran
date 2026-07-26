@@ -50,6 +50,7 @@ namespace LCompilers::CommandLineInterface {
         bool show_asm = false;
         bool show_wat = false;
         bool show_julia = false;
+        bool show_gpu_kernel_source = false;
         bool show_fortran = false;
         bool static_link = false;
         bool shared_link = false;
