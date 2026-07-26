@@ -1,6 +1,6 @@
 program coarray_allocate_01
     implicit none
-    integer, allocatable, save :: a[:]
+    integer, allocatable :: a[:]
     integer, allocatable, save :: b(:)[:]    
     integer :: stat
     character(len=100) :: errmsg

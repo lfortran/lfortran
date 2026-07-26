@@ -24,11 +24,4 @@ program coarrays_31
         error stop "Error: array values do not match SOURCE."
     end if
 
-    ! Print success message from image 1
-    if (this_image() == 1) then
-        print *, "Successfully allocated arr_coarray with SOURCE=!"
-        print *, "Size:  ", size(arr_coarray)
-        print *, "Values:", arr_coarray
-    end if
-
 end program coarrays_31

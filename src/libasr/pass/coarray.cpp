@@ -1560,8 +1560,11 @@ class PRIFInterface {
                     ASR::presenceType::Required, false);
 
                 coarray_companions[sym] = {handle_sym, data_sym};
-
-                if (!is_save && var->m_intent == ASR::intentType::Local && ASRUtils::is_allocatable(var->m_type)) {
+                ASR::symbol_t *owner = ASRUtils::get_asr_owner(sym);
+                bool is_program_scope = owner && ASR::is_a<ASR::Program_t>(*owner);
+                bool is_module_scope = owner && ASR::is_a<ASR::Module_t>(*owner);
+                if (!is_save && var->m_intent == ASR::intentType::Local && !is_program_scope && !is_module_scope 
+                    && ASRUtils::is_allocatable(var->m_type)) {
                     LCOMPILERS_ASSERT_MSG(false, "Auto deallocation for non save allocatable coarrays is not yet turned on");
                 }
 
