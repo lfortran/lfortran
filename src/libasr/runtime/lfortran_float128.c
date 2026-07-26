@@ -457,14 +457,17 @@ static int f128_cmp_internal(lf_float128 a, lf_float128 b) {
     return as ? -mag : mag;  /* if negative, flip */
 }
 
+/* Struct-ABI implementations. The public __*tf2 entry points that LLVM calls
+ * are defined per platform further down, because LLVM passes their operands
+ * with the native fp128 calling convention rather than as a 16-byte struct. */
 #if !defined(__wasm32__)
-int __eqtf2   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) == 0 ? 0 : 1; }
-int __netf2   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) != 0 ? 1 : 0; }
-int __lttf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __letf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __gttf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __getf2   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __unordtf2(lf_float128 a, lf_float128 b) { return (f128_is_nan(a)||f128_is_nan(b))?1:0; }
+int __eqtf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) == 0 ? 0 : 1; }
+int __netf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) != 0 ? 1 : 0; }
+int __lttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __letf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __gttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __getf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __unordtf2_lf_impl(lf_float128 a, lf_float128 b) { return (f128_is_nan(a)||f128_is_nan(b))?1:0; }
 #endif
 
 /* ========================================================================
@@ -1651,27 +1654,73 @@ lf_float128 lf_float128_from_str(const char *s) {
 }
 
 /* ========================================================================
- * P. Non-ARM64 thin wrappers (restore public names)
+ * P. Non-ARM64 public entry points
+ *
+ * LLVM calls these with the target's native fp128 calling convention, which
+ * is not the convention a 16-byte C struct gets. On x86-64 a binary128 value
+ * travels in a single SSE register (System V classes SSE + SSEUP), whereas
+ * `lf_float128` is classified INTEGER + INTEGER and travels in a pair of
+ * general purpose registers; the same mismatch applies to return values
+ * (xmm0 versus rax:rdx). Passing the struct straight through would therefore
+ * make the implementations operate on whatever the argument registers
+ * happened to hold.
+ *
+ * A 16-byte vector of doubles is classified exactly like __float128, so use
+ * it to spell the ABI and convert to the struct the implementations expect.
+ * The conversions are pure memcpy, so no fp128 arithmetic is generated here
+ * and these wrappers cannot recurse into themselves.
  * ======================================================================== */
 #if !defined(__aarch64__) && !defined(__wasm32__)
-lf_float128 __addtf3(lf_float128 a, lf_float128 b)  { return __addtf3_lf_impl(a, b); }
-lf_float128 __subtf3(lf_float128 a, lf_float128 b)  { return __subtf3_lf_impl(a, b); }
-lf_float128 __multf3(lf_float128 a, lf_float128 b)  { return __multf3_lf_impl(a, b); }
-lf_float128 __divtf3(lf_float128 a, lf_float128 b)  { return __divtf3_lf_impl(a, b); }
-lf_float128 __negtf2(lf_float128 a)                 { return __negtf2_lf_impl(a); }
-lf_float128 __extenddftf2(double a)                 { return __extenddftf2_lf_impl(a); }
-lf_float128 __extendsftf2(float a)                  { return __extendsftf2_lf_impl(a); }
-double      __trunctfdf2(lf_float128 a)             { return __trunctfdf2_lf_impl(a); }
-float       __trunctfsf2(lf_float128 a)             { return __trunctfsf2_lf_impl(a); }
-lf_float128 __floatsitf(int32_t a)                  { return __floatsitf_lf_impl(a); }
-lf_float128 __floatditf(int64_t a)                  { return __floatditf_lf_impl(a); }
-lf_float128 __floatunditf(uint64_t a)               { return __floatunditf_lf_impl(a); }
-int32_t     __fixtfsi(lf_float128 a)                { return __fixtfsi_lf_impl(a); }
-int64_t     __fixtfdi(lf_float128 a)                { return __fixtfdi_lf_impl(a); }
-/* On non-Apple-ARM64 platforms the fp128 SIMD ABI and the struct ABI coincide
- * (both pass 16 bytes contiguously), so lf_sqrtq/lf_powq are thin wrappers. */
-lf_float128 lf_sqrtq(lf_float128 a)                 { return lf_f128_sqrt(a); }
-lf_float128 lf_powq(lf_float128 a, lf_float128 b)   { return lf_f128_pow(a, b); }
+
+#if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+typedef double lf_f128_abi __attribute__((vector_size(16)));
+
+static lf_f128_abi lf_f128_to_abi(lf_float128 v) {
+    lf_f128_abi r;
+    memcpy(&r, v.bytes, 16);
+    return r;
+}
+
+static lf_float128 lf_f128_from_abi(lf_f128_abi v) {
+    lf_float128 r;
+    memcpy(r.bytes, &v, 16);
+    return r;
+}
+#else
+/* Compilers without vector extensions (MSVC): keep the historical
+ * struct-based signatures. */
+typedef lf_float128 lf_f128_abi;
+#define lf_f128_to_abi(v)   (v)
+#define lf_f128_from_abi(v) (v)
+#endif
+
+lf_f128_abi __addtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__addtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
+lf_f128_abi __subtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__subtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
+lf_f128_abi __multf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__multf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
+lf_f128_abi __divtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__divtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
+lf_f128_abi __negtf2(lf_f128_abi a)                 { return lf_f128_to_abi(__negtf2_lf_impl(lf_f128_from_abi(a))); }
+lf_f128_abi __extenddftf2(double a)                 { return lf_f128_to_abi(__extenddftf2_lf_impl(a)); }
+lf_f128_abi __extendsftf2(float a)                  { return lf_f128_to_abi(__extendsftf2_lf_impl(a)); }
+double      __trunctfdf2(lf_f128_abi a)             { return __trunctfdf2_lf_impl(lf_f128_from_abi(a)); }
+float       __trunctfsf2(lf_f128_abi a)             { return __trunctfsf2_lf_impl(lf_f128_from_abi(a)); }
+lf_f128_abi __floatsitf(int32_t a)                  { return lf_f128_to_abi(__floatsitf_lf_impl(a)); }
+lf_f128_abi __floatditf(int64_t a)                  { return lf_f128_to_abi(__floatditf_lf_impl(a)); }
+lf_f128_abi __floatunditf(uint64_t a)               { return lf_f128_to_abi(__floatunditf_lf_impl(a)); }
+int32_t     __fixtfsi(lf_f128_abi a)                { return __fixtfsi_lf_impl(lf_f128_from_abi(a)); }
+int64_t     __fixtfdi(lf_f128_abi a)                { return __fixtfdi_lf_impl(lf_f128_from_abi(a)); }
+
+int __eqtf2   (lf_f128_abi a, lf_f128_abi b) { return __eqtf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+int __netf2   (lf_f128_abi a, lf_f128_abi b) { return __netf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+int __lttf2   (lf_f128_abi a, lf_f128_abi b) { return __lttf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+int __letf2   (lf_f128_abi a, lf_f128_abi b) { return __letf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+int __gttf2   (lf_f128_abi a, lf_f128_abi b) { return __gttf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+int __getf2   (lf_f128_abi a, lf_f128_abi b) { return __getf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+int __unordtf2(lf_f128_abi a, lf_f128_abi b) { return __unordtf2_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+
+/* SIMD-ABI public entry points for the transcendentals called by
+ * LLVM-emitted `call fp128 @lf_sqrtq(fp128)` / `lf_powq(fp128, fp128)`. */
+lf_f128_abi lf_sqrtq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_sqrt(lf_f128_from_abi(a))); }
+lf_f128_abi lf_powq(lf_f128_abi a, lf_f128_abi b)   { return lf_f128_to_abi(lf_f128_pow(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
 #endif
 
 /* ========================================================================
@@ -1898,6 +1947,23 @@ void pub(void) {                                             \
     );                                                       \
 }
 
+/* Two fp128 operands -> int: args q0,q1 -> x0/x1,x2/x3; result already in w0 */
+#define _LF_SHIM2_TO_INT(pub, impl)                          \
+__attribute__((naked))                                       \
+void pub(void) {                                             \
+    __asm__ volatile(                                        \
+        "stp x29, x30, [sp, #-16]!\n\t"                     \
+        "mov x29, sp\n\t"                                    \
+        "fmov x0, d0\n\t"                                    \
+        "mov  x1, v0.d[1]\n\t"                               \
+        "fmov x2, d1\n\t"                                    \
+        "mov  x3, v1.d[1]\n\t"                               \
+        "bl  " _LF_SYM(impl) "\n\t"                         \
+        "ldp x29, x30, [sp], #16\n\t"                       \
+        "ret\n\t"                                            \
+    );                                                       \
+}
+
 /* fp128->double: arg q0 -> x0/x1; result already in d0 from the impl */
 #define _LF_SHIM_TO_DOUBLE(pub, impl)                        \
 __attribute__((naked))                                       \
@@ -1947,11 +2013,19 @@ _LF_SHIM_TO_INT(__fixtfsi,            __fixtfsi_lf_impl)
 _LF_SHIM_TO_INT(__fixtfdi,            __fixtfdi_lf_impl)
 _LF_SHIM_TO_DOUBLE(__trunctfdf2,      __trunctfdf2_lf_impl)
 _LF_SHIM_TO_FLOAT(__trunctfsf2,       __trunctfsf2_lf_impl)
+_LF_SHIM2_TO_INT(__eqtf2,             __eqtf2_lf_impl)
+_LF_SHIM2_TO_INT(__netf2,             __netf2_lf_impl)
+_LF_SHIM2_TO_INT(__lttf2,             __lttf2_lf_impl)
+_LF_SHIM2_TO_INT(__letf2,             __letf2_lf_impl)
+_LF_SHIM2_TO_INT(__gttf2,             __gttf2_lf_impl)
+_LF_SHIM2_TO_INT(__getf2,             __getf2_lf_impl)
+_LF_SHIM2_TO_INT(__unordtf2,          __unordtf2_lf_impl)
 
 #undef _LF_SHIM2
 #undef _LF_SHIM1
 #undef _LF_SHIM_FROM_SCALAR
 #undef _LF_SHIM_TO_INT
+#undef _LF_SHIM2_TO_INT
 #undef _LF_SHIM_TO_DOUBLE
 #undef _LF_SHIM_TO_FLOAT
 #undef _LF_SYM
@@ -2004,20 +2078,8 @@ int lf_f128_eq(lf_float128 a, lf_float128 b) {
     return aq == bq;
 }
 
-/* Compiler-rt comparison ABI (weak on ELF so libgcc can override) */
-#if defined(__ELF__)
-#  define LF_TF2_ATTR __attribute__((weak))
-#else
-#  define LF_TF2_ATTR
-#endif
-
-LF_TF2_ATTR int __eqtf2   (lf_float128 a, lf_float128 b) { return lf_f128_eq(a,b) ? 0 : 1; }
-LF_TF2_ATTR int __netf2   (lf_float128 a, lf_float128 b) { return lf_f128_eq(a,b) ? 0 : 1; }
-LF_TF2_ATTR int __lttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __letf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __gttf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __getf2   (lf_float128 a, lf_float128 b) { return lf_f128_cmp(a,b); }
-LF_TF2_ATTR int __unordtf2(lf_float128 a, lf_float128 b) { return (lf_f128_isnan(a)||lf_f128_isnan(b))?1:0; }
+/* The public compiler-rt comparison entry points are defined once per
+ * platform above; this branch only supplies the lf_f128_* helpers. */
 
 #else /* !LFORTRAN_HAVE_REAL128 — expose the struct-based helpers used by intrinsics.c */
 
