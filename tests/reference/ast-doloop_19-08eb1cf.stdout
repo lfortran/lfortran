@@ -2,8 +2,6 @@
     [(Program
         doloop_19
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -34,8 +32,8 @@
                     "!     (a) plain DO loop: no label on `do`, no label on `end do`."
                 )]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             s
             0

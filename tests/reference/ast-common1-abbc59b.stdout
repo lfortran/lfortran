@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(Implicit
             [(ImplicitSpec
                 (AttrType
@@ -22,8 +21,8 @@
                 )]
             )]
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeReal
                 []
@@ -181,8 +180,8 @@
             )]
             []
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             A
             10
@@ -217,9 +216,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -266,8 +262,8 @@
             )]
             []
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [A

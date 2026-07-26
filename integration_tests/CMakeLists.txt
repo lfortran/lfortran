@@ -2274,6 +2274,7 @@ RUN(NAME custom_operator_17 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays
 RUN(NAME custom_operator_18 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME custom_operator_19 LABELS gfortran llvm)
 RUN(NAME custom_operator_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME custom_operator_21 LABELS gfortran llvm)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
@@ -4967,3 +4968,4 @@ RUN(NAME equivalence_39 LABELS gfortran llvm)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
+RUN(NAME decl_order_02 LABELS gfortran llvm)

@@ -2,8 +2,6 @@
     [(Program
         coarrays_08
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -24,7 +22,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

@@ -4963,8 +4963,9 @@ filename = "errors/decl_order_01.f90"
 asr = true
 
 [[test]]
-filename = "errors/module_error_recovery_01.f90"
-semantics_only_cc = true
+filename = "../integration_tests/decl_order_02.f90"
+ast = true
+ast_f90 = true
 
 [[test]]
 filename = "errors/init1.f90"

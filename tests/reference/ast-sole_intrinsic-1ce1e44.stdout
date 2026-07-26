@@ -2,8 +2,6 @@
     [(Program
         main
         ()
-        []
-        []
         [(Declaration
             ()
             [(SimpleAttribute
@@ -50,6 +48,26 @@
             ())]
             ()
         )
+        (Assignment
+            0
+            f
+            (FuncCallOrArray
+                cmplx
+                []
+                [(()
+                3
+                ()
+                0)
+                (()
+                1
+                ()
+                0)]
+                []
+                []
+                []
+            )
+            ()
+        )
         (Declaration
             (AttrType
                 TypeComplex
@@ -86,40 +104,6 @@
             ())]
             ()
         )
-        (Declaration
-            ()
-            [(SimpleAttribute
-                AttrIntrinsic
-            )]
-            [(mod
-            []
-            []
-            ()
-            ()
-            None
-            ())]
-            ()
-        )]
-        [(Assignment
-            0
-            f
-            (FuncCallOrArray
-                cmplx
-                []
-                [(()
-                3
-                ()
-                0)
-                (()
-                1
-                ()
-                0)]
-                []
-                []
-                []
-            )
-            ()
-        )
         (Assignment
             0
             y
@@ -134,6 +118,20 @@
                 []
                 []
             )
+            ()
+        )
+        (Declaration
+            ()
+            [(SimpleAttribute
+                AttrIntrinsic
+            )]
+            [(mod
+            []
+            []
+            ()
+            ()
+            None
+            ())]
             ()
         )]
         []

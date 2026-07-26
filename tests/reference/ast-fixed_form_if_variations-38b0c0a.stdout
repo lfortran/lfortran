@@ -5,9 +5,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -25,8 +22,8 @@
             None
             ())]
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [a]
@@ -38,9 +35,6 @@
     (Program
         main
         ()
-        []
-        []
-        []
         [(If
             0
             ()
