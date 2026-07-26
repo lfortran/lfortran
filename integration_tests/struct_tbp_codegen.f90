@@ -1,4 +1,4 @@
-module struct_tbp_codegen_12296_m
+module struct_tbp_codegen_m
   type t
    contains
     procedure :: tbp => f
@@ -11,8 +11,8 @@ module struct_tbp_codegen_12296_m
   end function
 end module
 
-program struct_tbp_codegen_12296
-  use struct_tbp_codegen_12296_m
+program struct_tbp_codegen
+  use struct_tbp_codegen_m
   implicit none
   type(t), target :: xt
 end program

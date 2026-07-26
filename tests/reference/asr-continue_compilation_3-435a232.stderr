@@ -16,7 +16,7 @@ syntax error: The LFortran pragma !LF$ must be followed by a space
 173 |         !LF$unroll 4  ! Error: Missing space after `!LF$`
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-warning: Passed-object dummy argument 'this' of procedure 'tbp_ptr_dummy_f' that is an INTENT(IN) POINTER is not standard
+warning: Passed-object dummy argument 'this' of type-bound procedure 'tbp_ptr_dummy_f' has the POINTER attribute, which is a non-standard extension.
  --> tests/errors/continue_compilation_3.f90:8:9
   |
 8 |         procedure :: m => tbp_ptr_dummy_f  ! Warning: passed-object dummy argument that is POINTER is not standard
