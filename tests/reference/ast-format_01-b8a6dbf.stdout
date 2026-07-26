@@ -2,12 +2,16 @@
     [(Program
         format_01
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Format
+            1
+            "/,'BDF2 step ',i6,': T=',es12.5,', H=',es12.5,', ETAH=',es12.5"
+            ()
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -23,47 +27,6 @@
             ()
             None
             ())]
-            ()
-        )
-        (Declaration
-            (AttrType
-                TypeInteger
-                []
-                ()
-                ()
-                None
-            )
-            []
-            [(y
-            []
-            []
-            ()
-            ()
-            None
-            ())]
-            ()
-        )
-        (Declaration
-            (AttrType
-                TypeInteger
-                []
-                ()
-                ()
-                None
-            )
-            []
-            [(z
-            []
-            []
-            ()
-            ()
-            None
-            ())]
-            ()
-        )]
-        [(Format
-            1
-            "/,'BDF2 step ',i6,': T=',es12.5,', H=',es12.5,', ETAH=',es12.5"
             ()
         )
         (Format
@@ -114,6 +77,24 @@
         (Format
             121
             " /, 80A, / "
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(y
+            []
+            []
+            ()
+            ()
+            None
+            ())]
             ()
         )
         (Format
@@ -299,6 +280,24 @@
         (Format
             730
             "//"
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(z
+            []
+            []
+            ()
+            ()
+            None
+            ())]
             ()
         )
         (Assignment

@@ -2,12 +2,11 @@
     [(Program
         implied_do_loop10
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -69,8 +68,8 @@
             None
             ())]
             ()
-        )]
-        [(DataStmt
+        )
+        (DataStmt
             0
             [(DataStmtSet
                 [(DataImpliedDo

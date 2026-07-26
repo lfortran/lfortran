@@ -13590,7 +13590,6 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
 // ============================================================================
 // Namelist I/O Support
 // ============================================================================
-
 typedef struct {
     FILE *fp;
     char *data;
@@ -13599,6 +13598,7 @@ typedef struct {
     int64_t elem_idx;
     int64_t pos;
     bool is_file;
+    int delim;  
 } nml_writer_t;
 
 static void write_char(nml_writer_t *w, char c) {
@@ -13703,18 +13703,30 @@ static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, in
 
         case LFORTRAN_NML_CHAR: {
             char *str = (char*)ptr;
+            char delim_char = '\0';
 
-            write_char(w, '\'');
+            if (w->delim == 1) {
+                delim_char = '\'';
+            } else if (w->delim == 2) {
+                delim_char = '"';
+            }
+
+            if (delim_char != '\0') {
+                write_char(w, delim_char);
+            }
 
             for (int64_t i = 0; i < item->elem_len; i++) {
-                if (str[i] == '\'') {
-                    write_str(w, "''");
+                if (delim_char != '\0' && str[i] == delim_char) {
+                    write_char(w, delim_char);
+                    write_char(w, delim_char);
                 } else {
                     write_char(w, str[i]);
                 }
             }
 
-            write_char(w, '\'');
+            if (delim_char != '\0') {
+                write_char(w, delim_char);
+            }
             break;
         }
     }
@@ -13829,6 +13841,7 @@ LFORTRAN_API void _lfortran_namelist_write(
 
     w.fp = filep;
     w.is_file = true;
+    w.delim = delim; 
 
     namelist_write_impl(&w, group);
 
@@ -13852,6 +13865,7 @@ LFORTRAN_API void _lfortran_namelist_write_str_array(
     w.pos = 0;
 
     w.is_file = false;
+    w.delim = 0; 
 
     namelist_write_impl(&w, group);
 
@@ -13975,7 +13989,6 @@ static void skip_whitespace_nml(nml_reader_t *reader, char **line_buf, char **li
         break;
     }
 }
-
 // Helper to read a token (word or operator)
 static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_ptr,
                             size_t *line_len, int64_t *read_len) {

@@ -9,7 +9,7 @@
 using LCompilers::LFortran::AST::ast_t;
 using LCompilers::LFortran::AST::Declaration_t;
 using LCompilers::LFortran::AST::expr_t;
-using LCompilers::LFortran::AST::stmt_t;
+using LCompilers::LFortran::AST::decl_stmt_t;
 using LCompilers::LFortran::AST::Name_t;
 using LCompilers::LFortran::AST::Num_t;
 using LCompilers::LFortran::AST::BinOp_t;
@@ -27,7 +27,7 @@ using LCompilers::LFortran::AST::Function_t;
 using LCompilers::LFortran::AST::Program_t;
 using LCompilers::LFortran::AST::astType;
 using LCompilers::LFortran::AST::exprType;
-using LCompilers::LFortran::AST::stmtType;
+using LCompilers::LFortran::AST::decl_stmtType;
 using LCompilers::LFortran::AST::operatorType;
 using LCompilers::LFortran::AST::unaryopType;
 using LCompilers::LFortran::AST::cmpopType;

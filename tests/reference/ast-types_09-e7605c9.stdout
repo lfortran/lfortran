@@ -11,12 +11,12 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -101,7 +101,6 @@
                 (EndOfLine)]
             )
         )]
-        []
         [(Subroutine
             f
             [(s)
@@ -113,9 +112,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeCharacter
@@ -196,7 +192,6 @@
             )]
             []
             []
-            []
         )
         (Subroutine
             s
@@ -219,10 +214,8 @@
                 )]
                 .true.
                 ()
-            )]
-            []
-            []
-            [(Declaration
+            )
+            (Declaration
                 (AttrType
                     TypeInteger
                     [(()
@@ -242,7 +235,6 @@
                 ())]
                 ()
             )]
-            []
             []
             []
         )]

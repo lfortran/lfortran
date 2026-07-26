@@ -2,8 +2,6 @@
     [(Program
         main
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -20,6 +18,24 @@
             ()
             None
             ())]
+            ()
+        )
+        (Assignment
+            0
+            k
+            1
+            ()
+        )
+        (Print
+            100
+            ()
+            [(String "hello" ())]
+            ()
+        )
+        (Assignment
+            200
+            k
+            (+ k 1)
             ()
         )
         (Declaration
@@ -45,24 +61,6 @@
             ()
             None
             ())]
-            ()
-        )]
-        [(Assignment
-            0
-            k
-            1
-            ()
-        )
-        (Print
-            100
-            ()
-            [(String "hello" ())]
-            ()
-        )
-        (Assignment
-            200
-            k
-            (+ k 1)
             ()
         )
         (Assignment

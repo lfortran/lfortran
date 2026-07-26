@@ -2,8 +2,6 @@
     [(Program
         test_double_complex
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeDoubleComplex
@@ -29,7 +27,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )
