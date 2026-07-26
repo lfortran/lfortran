@@ -200,6 +200,11 @@ public:
 
     void emit_local_var_decl(ASR::Variable_t *var) {
         ASR::ttype_t *type = var->m_type;
+        // A named constant carries its value in the ASR rather than being
+        // passed in, so it has to be initialised here or the kernel reads
+        // uninitialised memory.
+        bool is_const = var->m_storage == ASR::storage_typeType::Parameter
+            && var->m_value;
         if (is_array_type(type)) {
             // Local arrays in kernels - determine size
             ASR::ttype_t *past_alloc = ASRUtils::type_get_past_allocatable(type);
@@ -213,9 +218,26 @@ public:
                             arr->m_dims[d].m_length)->m_n;
                     }
                 }
+                if (is_const && ASR::is_a<ASR::ArrayConstant_t>(*var->m_value)) {
+                    ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(
+                        var->m_value);
+                    src << get_indent() << "const " << cuda_type(arr->m_type) << " "
+                        << var->m_name << "[" << total << "] = {";
+                    for (int64_t i = 0; i < total; i++) {
+                        if (i > 0) src << ", ";
+                        src << ASRUtils::fetch_ArrayConstant_value(ac, i);
+                    }
+                    src << "};\n";
+                    return;
+                }
                 src << get_indent() << cuda_type(arr->m_type) << " "
                     << var->m_name << "[" << total << "];\n";
             }
+        } else if (is_const) {
+            src << get_indent() << "const " << cuda_type(type) << " "
+                << var->m_name << " = ";
+            visit_expr(var->m_value);
+            src << ";\n";
         } else {
             src << get_indent() << cuda_type(type) << " " << var->m_name << ";\n";
         }

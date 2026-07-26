@@ -3,7 +3,7 @@
 extern "C" __global__ void __lfortran_gpu_kernel_0(float *x, float *y, float a, int __loop_end_0) {
     int __flat_idx;
     int i;
-    int n;
+    const int n = 1000;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
         return;
     }
