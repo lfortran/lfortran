@@ -2,8 +2,6 @@
     [(Program
         example
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeCharacter
@@ -23,8 +21,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (String "Hi" ())

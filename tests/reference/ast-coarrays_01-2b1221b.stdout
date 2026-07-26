@@ -38,8 +38,8 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
@@ -49,8 +49,8 @@
                     "! Coarray Declarations"
                 )]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeReal
                 []
@@ -409,8 +409,8 @@
                     "! Allocation"
                 )]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             n
             5

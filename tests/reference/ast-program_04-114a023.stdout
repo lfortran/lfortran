@@ -2,13 +2,11 @@
     [(Program
         __xx_main
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        []
-        [(Print
+        )
+        (Print
             0
             ()
             [(String "hello world" ())]

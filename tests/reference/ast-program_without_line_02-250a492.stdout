@@ -2,9 +2,6 @@
     [(Program
         __xx_main
         ()
-        []
-        []
-        []
         [(Print
             0
             ()

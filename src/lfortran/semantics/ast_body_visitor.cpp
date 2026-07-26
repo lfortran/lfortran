@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include <lfortran/ast.h>
+#include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
@@ -154,9 +155,9 @@ public:
     int collapse_value=0;
     Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
-    AST::stmt_t **starting_m_body = nullptr;
+    AST::decl_stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
-    std::map<ASR::asr_t*, std::pair<const AST::stmt_t*,int64_t>> print_statements;
+    std::map<ASR::asr_t*, std::pair<const AST::decl_stmt_t*,int64_t>> print_statements;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
     bool is_first_section=false;
@@ -171,7 +172,7 @@ public:
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm
@@ -216,9 +217,10 @@ public:
         ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(
             ASR::down_cast<ASR::symbol_t>(block));
 
-        for (size_t i=0; i<x.n_use; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             try {
-                visit_unit_decl1(*x.m_use[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
@@ -228,9 +230,10 @@ public:
                 }
             }
         }
-        for (size_t i=0; i<x.n_decl; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
@@ -269,8 +272,8 @@ public:
         postponed_genericProcedure_calls_vec.clear();
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
-        transform_stmts(body, x.n_body, x.m_body);
+        body.reserve(al, x.n_items);
+        transform_stmts(body, x.n_items, x.m_items);
         block_t->m_body = body.p;
         block_t->n_body = body.size();
         current_scope = parent_scope;
@@ -286,11 +289,14 @@ public:
     //   * ImplicitDeallocate
     //   * GoToTarget
     // The `body` Vec must already be reserved
-    void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::stmt_t **m_body) {
+    void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::decl_stmt_t **m_body) {
         tmp = nullptr;
         Vec<ASR::stmt_t*>* current_body_copy = current_body;
         current_body = &body;
         for (size_t i=0; i<n_body; i++) {
+            // A program unit hands us its whole `items` list, the declarations
+            // in it were already handled by the symbol table visitor
+            if (!AST::is_executable_stmt(*m_body[i])) continue;
             // If there is a label, create a GoToTarget node first
             int64_t label = stmt_label(m_body[i]);
             if (label != 0) {
@@ -301,7 +307,7 @@ public:
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
             try {
-                this->visit_stmt(*m_body[i]);
+                this->visit_decl_stmt(*m_body[i]);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     throw a;
@@ -310,7 +316,7 @@ public:
                     tmp_vec.clear();
                 }
             }
-            if((all_blocks_nesting ==0 || pragma_in_block) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
+            if((all_blocks_nesting ==0 || pragma_in_block) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::decl_stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
                 if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
                     ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                     omp_region_body.push_back(tmp_stmt);
@@ -391,7 +397,7 @@ public:
     void handle_format() {
         for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
             ASR::asr_t* old_tmp = it->first;
-            const AST::stmt_t* x = it->second.first;
+            const AST::decl_stmt_t* x = it->second.first;
             int label = it->second.second;
             if (format_statements.find(label) == format_statements.end()) {
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
@@ -1437,7 +1443,7 @@ public:
         labels.clear();
         if (starting_m_body == nullptr) return;
 
-        auto collect_labels_in_stmts = [&](AST::stmt_t** body, size_t n_body,
+        auto collect_labels_in_stmts = [&](AST::decl_stmt_t** body, size_t n_body,
                                            const auto& collect_labels_in_stmt_ref) -> void {
             if (!body) return;
             for (size_t i = 0; i < n_body; ++i) {
@@ -1445,7 +1451,7 @@ public:
             }
         };
 
-        auto collect_labels_in_stmt = [&](AST::stmt_t* stmt,
+        auto collect_labels_in_stmt = [&](AST::decl_stmt_t* stmt,
                                      const auto& collect_labels_in_stmt_ref) -> void {
             if (!stmt) return;
             int64_t label = stmt_label(stmt);
@@ -1464,13 +1470,13 @@ public:
             }
 
             switch (stmt->type) {
-                case AST::stmtType::If: {
+                case AST::decl_stmtType::If: {
                     AST::If_t* s = AST::down_cast<AST::If_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
                     collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
                     break;
                 }
-                case AST::stmtType::DoLoop: {
+                case AST::decl_stmtType::DoLoop: {
                     AST::DoLoop_t* s = AST::down_cast<AST::DoLoop_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
                     if (s->m_do_label != 0) {
@@ -1478,28 +1484,28 @@ public:
                     }
                     break;
                 }
-                case AST::stmtType::Where: {
+                case AST::decl_stmtType::Where: {
                     AST::Where_t* s = AST::down_cast<AST::Where_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
                     collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
                     break;
                 }
-                case AST::stmtType::WhileLoop: {
+                case AST::decl_stmtType::WhileLoop: {
                     AST::WhileLoop_t* s = AST::down_cast<AST::WhileLoop_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
                     break;
                 }
-                case AST::stmtType::AssociateBlock: {
+                case AST::decl_stmtType::AssociateBlock: {
                     AST::AssociateBlock_t* s = AST::down_cast<AST::AssociateBlock_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
                     break;
                 }
-                case AST::stmtType::Block: {
+                case AST::decl_stmtType::Block: {
                     AST::Block_t* s = AST::down_cast<AST::Block_t>(stmt);
-                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    collect_labels_in_stmts(s->m_items, s->n_items, collect_labels_in_stmt_ref);
                     break;
                 }
-                case AST::stmtType::Select: {
+                case AST::decl_stmtType::Select: {
                     AST::Select_t* s = AST::down_cast<AST::Select_t>(stmt);
                     for (size_t i = 0; i < s->n_body; ++i) {
                         AST::case_stmt_t* c = s->m_body[i];
@@ -1531,12 +1537,12 @@ public:
 
     // Returns true if parsing succeeded, false if should continue to next kwarg
     bool parse_read_label_kwarg(const char* kwarg_name, int64_t& label,
-            AST::stmtType _type, const AST::kw_argstar_t& kwarg,
+            AST::decl_stmtType _type, const AST::kw_argstar_t& kwarg,
             const Location& loc) {
         // END= is only valid for READ; ERR= is valid for READ/WRITE
         bool is_end = (strcmp(kwarg_name, "end") == 0);
-        bool valid_stmt = (_type == AST::stmtType::Read) ||
-                          (!is_end && _type == AST::stmtType::Write);
+        bool valid_stmt = (_type == AST::decl_stmtType::Read) ||
+                          (!is_end && _type == AST::decl_stmtType::Write);
         if (!valid_stmt) {
             Location diag_loc = kwarg.loc;
             if (diag_loc.first == 0 && diag_loc.last == 0) {
@@ -1595,7 +1601,7 @@ public:
         return true;
     }
 
-    void create_read_write_ASR_node(const AST::stmt_t& read_write_stmt, AST::stmtType _type) {
+    void create_read_write_ASR_node(const AST::decl_stmt_t& read_write_stmt, AST::decl_stmtType _type) {
         int64_t m_label = -1;
         int64_t end_label = -1;
         int64_t err_label = -1;
@@ -1605,13 +1611,13 @@ public:
         const Location& loc = read_write_stmt.base.loc;
         AST::Write_t* w = nullptr;
         AST::Read_t* r = nullptr;
-        if( _type == AST::stmtType::Write ) {
+        if( _type == AST::decl_stmtType::Write ) {
             w = (AST::Write_t*)(&read_write_stmt);
             m_label = w->m_label;
             m_args = w->m_args; n_args = w->n_args;
             m_kwargs = w->m_kwargs; n_kwargs = w->n_kwargs;
             m_values = w->m_values; n_values = w->n_values;
-        } else if( _type == AST::stmtType::Read ) {
+        } else if( _type == AST::decl_stmtType::Read ) {
             r = (AST::Read_t*)(&read_write_stmt);
             m_label = r->m_label;
             m_args = r->m_args; n_args = r->n_args;
@@ -1632,7 +1638,7 @@ public:
         // Handle the abbreviated READ fmt [, iolist] form where m_format holds
         // the format specifier string (e.g. read "(I2)", x ). This is distinct
         // from the parenthesized form and from args. We set a_fmt directly.
-        if (_type == AST::stmtType::Read && r != nullptr && r->m_format != nullptr) {
+        if (_type == AST::decl_stmtType::Read && r != nullptr && r->m_format != nullptr) {
             this->visit_expr(*r->m_format);
             a_fmt = ASRUtils::EXPR(tmp);
             formatted = true;
@@ -1692,7 +1698,7 @@ public:
         // it is the `READ fmt [, iolist]` form — the string is the format
         // specifier, not the unit. Move it to a_fmt and leave a_unit as
         // nullptr (the LLVM backend treats nullptr unit as stdin).
-        if (_type == AST::stmtType::Read
+        if (_type == AST::decl_stmtType::Read
                 && n_args == 1
                 && a_unit != nullptr && a_fmt == nullptr
                 && ASR::is_a<ASR::StringConstant_t>(*a_unit)) {
@@ -1703,14 +1709,14 @@ public:
         bool unit_explicit = false;
         bool iostat_explicit = false;
         bool iomsg_explicit = false;
-        if (_type == AST::stmtType::Write && a_unit == nullptr) {
+        if (_type == AST::decl_stmtType::Write && a_unit == nullptr) {
             ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
             a_unit = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 6, int_type)); //default output/input unit is 6
         }
         // Ensure iomsg is always present for WRITE
-        if (_type == AST::stmtType::Write && a_iomsg == nullptr) {
+        if (_type == AST::decl_stmtType::Write && a_iomsg == nullptr) {
             // Create empty string iomsg
             ASR::ttype_t *str_type = ASRUtils::TYPE(
                 ASR::make_String_t(
@@ -2098,7 +2104,7 @@ public:
                     a_advance = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(al, a_advance->base.loc,
                         static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim),
                         trim_arg.p, trim_arg.n, 0, ASRUtils::expr_type(a_advance), nullptr));
-                    if (_type == AST::stmtType::Write) {
+                    if (_type == AST::decl_stmtType::Write) {
                         ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
                             al, loc, 1,
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 3,
@@ -2216,7 +2222,7 @@ public:
                 }
             } else if (m_arg_str == "pad") {
                 // Pad specifier only allowed in Read statement, not write
-                if (_type != AST::stmtType::Read) {
+                if (_type != AST::decl_stmtType::Read) {
                     diag.add(Diagnostic(
                         "`pad` specifier is only allowed in Read statements",
                         Level::Error, Stage::Semantic, {
@@ -2281,7 +2287,7 @@ public:
                 }));
             throw SemanticAbort();
         }
-        if (_type == AST::stmtType::Write && a_fmt == nullptr
+        if (_type == AST::decl_stmtType::Write && a_fmt == nullptr
                 && compiler_options.print_leading_space && formatted) {
             ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
             ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
@@ -2291,7 +2297,7 @@ public:
             file_write->m_unit = a_unit;
             file_write->m_label = m_label;
             tmp_vec.push_back(file_write_asr_t);
-        } else if (_type == AST::stmtType::Write) {
+        } else if (_type == AST::decl_stmtType::Write) {
             a_fmt_constant = a_fmt;
         }
         std::vector<ASR::stmt_t*> post_stmts;
@@ -2327,7 +2333,7 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             // For READ: expand implied-do loops to individual elements or array section
-            if (_type == AST::stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
                     ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec, post_stmts);
             } else {
@@ -2335,7 +2341,7 @@ public:
             }
         }
 
-        read_write = (_type == AST::stmtType::Write) ? "~write" : "~read";
+        read_write = (_type == AST::decl_stmtType::Write) ? "~write" : "~read";
         read_write += (formatted) ? "_formatted" : "_unformatted";
         if (n_values > 0) {
             Vec<ASR::expr_t*> overload_args;
@@ -2584,7 +2590,7 @@ public:
         }
 
         bool inserted_iostat = false;
-        if (_type == AST::stmtType::Read && a_iostat == nullptr
+        if (_type == AST::decl_stmtType::Read && a_iostat == nullptr
                 && (end_label != -1 || err_label != -1)) {
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             std::string iostat_name = current_scope->get_unique_name("__lfortran_iostat");
@@ -2598,17 +2604,17 @@ public:
             ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
             int64_t label = a_fmt_int->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                if (_type == AST::stmtType::Write) {
+                if (_type == AST::decl_stmtType::Write) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
                         a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec, a_pos, a_asynchronous);
                     print_statements[tmp] = std::make_pair(&w->base, label);
-                } else if (_type == AST::stmtType::Read) {
+                } else if (_type == AST::decl_stmtType::Read) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                         a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(),
                         nullptr, formatted, a_nml, a_rec, a_pad);
                     print_statements[tmp] = std::make_pair(&r->base, label);
                 }
-                if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
+                if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
                     tmp_vec.push_back(tmp);
                     tmp = nullptr;
                     emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
@@ -2622,7 +2628,7 @@ public:
                         tmp_vec.push_back((ASR::asr_t*)s);
                     }
                 }
-                if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
+                if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
                     tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
                 }
                 return;
@@ -2639,13 +2645,13 @@ public:
         }
         // Don't use stringFormat with single character argument
         if (!a_fmt
-            && _type == AST::stmtType::Write
+            && _type == AST::decl_stmtType::Write
             && a_values_vec.size() == 1
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
             a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos, a_asynchronous);
-        } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
+        } else if ( _type == AST::decl_stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
                     ASRUtils::TYPE(ASR::make_String_t(
@@ -2661,7 +2667,7 @@ public:
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
                 a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos, a_asynchronous);
-        } else if( _type == AST::stmtType::Read ) {
+        } else if( _type == AST::decl_stmtType::Read ) {
             if (formatted && a_fmt_constant) {
                 // For READ, do not wrap values in StringFormat (which is for
                 // output/WRITE). Instead, use the resolved format string as
@@ -2674,7 +2680,7 @@ public:
         }
 
         tmp_vec.push_back(tmp);
-        if (_type == AST::stmtType::Read && (end_label != -1 || err_label != -1)) {
+        if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
             emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
             if (inserted_iostat) {
                 ASR::ttype_t* iostat_type = ASRUtils::type_get_past_pointer(
@@ -4890,14 +4896,15 @@ public:
         current_scope = v->m_symtab;
         current_module = v;
 
-        for (size_t i=0; i<x.n_decl; i++) {
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Template){
-                visit_unit_decl2(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if(x.m_items[i]->type == AST::decl_stmtType::Template){
+                visit_decl_stmt(*x.m_items[i]);
             }
         }
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data = data_structure[current_scope->counter];
         if (scope_data.size()>0) {
             for(auto it: scope_data) {
@@ -4906,7 +4913,7 @@ public:
         }
         scope_data.clear();
 
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and
         // Template is a unit_decl_2
 
@@ -5104,16 +5111,17 @@ public:
         }
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
 
-        for (size_t i=0; i<x.n_decl; i++) {
-            visit_unit_decl2(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            visit_decl_stmt(*x.m_items[i]);
         }
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_prog = data_structure[current_scope->counter];
         if (scope_data_prog.size()>0) {
             for(auto it: scope_data_prog) {
@@ -5122,7 +5130,7 @@ public:
         }
         scope_data_prog.clear();
 
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         v->m_body = body.p;
         v->n_body = body.size();
@@ -5461,7 +5469,7 @@ public:
         entry_function->n_dependencies = entry_function_dependencies.size();
     }
 
-    void visit_stmts_helper(std::vector<AST::stmt_t*> ast_stmt_vector, std::vector<ASR::stmt_t*> &stmt_vector,
+    void visit_stmts_helper(std::vector<AST::decl_stmt_t*> ast_stmt_vector, std::vector<ASR::stmt_t*> &stmt_vector,
                             std::string original_function_name, ASR::expr_t* return_var,
                             std::vector<ASR::stmt_t*> &after_return_stmt_entry_function, bool is_last = false, bool is_main_function = false) {
         bool return_encountered = false;
@@ -5492,10 +5500,10 @@ public:
                     }
                 }
             }
-            if (ast_stmt->type == AST::stmtType::Entry) {
+            if (ast_stmt->type == AST::decl_stmtType::Entry) {
                 entry_encountered = true;
             }
-            this->visit_stmt(*ast_stmt);
+            this->visit_decl_stmt(*ast_stmt);
             ASR::stmt_t* tmp_stmt = nullptr;
             if (tmp != nullptr) {
                 tmp_stmt = ASRUtils::STMT(tmp);
@@ -5609,9 +5617,10 @@ public:
         ASR::stmt_t* go_to_target_stmt = ASRUtils::STMT(ASR::make_GoToTarget_t(al, loc, go_to_target, s2c(al, std::to_string(go_to_target))));
         stmt_vector.push_back(go_to_target_stmt); go_to_target++;
 
-        std::vector<AST::stmt_t*> subroutine_stmt_vector;
-        for (size_t i = 0; i < x.n_body; i++) {
-            subroutine_stmt_vector.push_back(x.m_body[i]);
+        std::vector<AST::decl_stmt_t*> subroutine_stmt_vector;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Statement)) continue;
+            subroutine_stmt_vector.push_back(x.m_items[i]);
         }
         Vec<ASR::stmt_t*> master_function_body; master_function_body.reserve(al, stmt_vector.size());
         current_body = &master_function_body;
@@ -5652,15 +5661,15 @@ public:
             // comment in `visit_SubmoduleModuleCommon()`.
             throw SemanticAbort();
         }
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
 
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_sub = data_structure[current_scope->counter];
         if (scope_data_sub.size()>0) {
             for(auto it: scope_data_sub) {
@@ -5674,7 +5683,7 @@ public:
         bool old_side_effect_free = current_function_side_effect_free;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -5722,8 +5731,8 @@ public:
             // comment in `visit_SubmoduleModuleCommon()`.
             throw SemanticAbort();
         }
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
         if( t->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
@@ -5736,10 +5745,11 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
-        for (size_t i=0; i<x.n_decl; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
-                visit_unit_decl2(*x.m_decl[i]);
+            if(x.m_items[i]->type == AST::decl_stmtType::Instantiate)
+                visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
         if (entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
@@ -5772,7 +5782,7 @@ public:
         bool old_side_effect_free = current_function_side_effect_free;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_func = data_structure[current_scope->counter];
         if (scope_data_func.size()>0) {
             for(auto it: scope_data_func) {
@@ -5780,7 +5790,7 @@ public:
             }
         }
         scope_data_func.clear();
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -5823,8 +5833,8 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
-        starting_m_body = x.m_body;
-        starting_n_body = x.n_body;
+        starting_m_body = x.m_items;
+        starting_n_body = x.n_items;
         collect_labels();
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
@@ -5866,7 +5876,7 @@ public:
             return;
         }
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_items);
         auto& scope_data_func2 = data_structure[current_scope->counter];
         if (scope_data_func2.size()>0) {
             for(auto it: scope_data_func2) {
@@ -5880,7 +5890,7 @@ public:
         bool old_side_effect_free = current_function_side_effect_free;
         current_function_deterministic = true;
         current_function_side_effect_free = true;
-        transform_stmts(body, x.n_body, x.m_body);
+        transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -5913,10 +5923,11 @@ public:
             }
         }
 
-        for (size_t i=0; i<x.n_decl; i++) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
-                visit_unit_decl2(*x.m_decl[i]);
+            if(x.m_items[i]->type == AST::decl_stmtType::Instantiate)
+                visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
 
@@ -7595,8 +7606,8 @@ public:
         infer_type_and_declare(target_name, x.m_value);
         // Delegate to visit_Assignment for the actual assignment lowering
         AST::Assignment_t assignment;
-        assignment.base.type = AST::stmtType::Assignment;
-        assignment.base.base.type = AST::astType::stmt;
+        assignment.base.type = AST::decl_stmtType::Assignment;
+        assignment.base.base.type = AST::astType::decl_stmt;
         assignment.base.base.loc = x.base.base.loc;
         assignment.m_label = x.m_label;
         assignment.m_target = x.m_target;
@@ -9137,15 +9148,16 @@ public:
             // before that labelled statement, so a second one here would
             // re-define the same label.
             bool already_targeted = false;
-            for (size_t i = 0; i < x.n_body; i++) {
+            for (size_t i=0; i<x.n_body; i++) {
+                if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Statement)) continue;
                 if (stmt_label(x.m_body[i]) == x.m_do_label) {
                     already_targeted = true;
                     break;
                 }
             }
             if (!already_targeted && x.n_body > 0) {
-                AST::stmt_t *last_stmt = x.m_body[x.n_body - 1];
-                if (last_stmt->type == AST::stmtType::DoLoop) {
+                AST::decl_stmt_t *last_stmt = x.m_body[x.n_body - 1];
+                if (last_stmt->type == AST::decl_stmtType::DoLoop) {
                     AST::DoLoop_t *inner_do = AST::down_cast<AST::DoLoop_t>(last_stmt);
                     if (inner_do->m_do_label == x.m_do_label) {
                         // The inner loop shares this label and will emit the target.
@@ -9373,7 +9385,7 @@ public:
         }
 
         // Build the innermost assignment statement
-        this->visit_stmt(*x.m_assign);
+        this->visit_decl_stmt(*x.m_assign);
         LCOMPILERS_ASSERT(tmp) // TODO Handle constant array
         ASR::stmt_t* inner_stmt = ASRUtils::STMT(tmp);
 
@@ -9462,7 +9474,7 @@ public:
         }
 
         if (x.n_body == 1) {
-            this->visit_stmt(*x.m_body[0]);
+            this->visit_decl_stmt(*x.m_body[0]);
             ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
             for (int i = heads.size() - 1; i >= 0; i--) {
                 tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
@@ -10343,8 +10355,9 @@ public:
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
         current_scope = v->m_symtab;
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            this->visit_decl_stmt(*x.m_items[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
             try {
@@ -10374,7 +10387,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
         LCompilers::LocationManager &lm)

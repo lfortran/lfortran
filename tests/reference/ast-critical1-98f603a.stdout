@@ -2,12 +2,11 @@
     [(Program
         critical1
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -96,8 +95,8 @@
             None
             ())]
             ()
-        )]
-        [(If
+        )
+        (If
             0
             ()
             (== (FuncCallOrArray

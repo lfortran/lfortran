@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -154,9 +153,6 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -194,8 +190,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     r
                     fst [(p
@@ -216,9 +212,6 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -256,8 +249,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     r
                     snd [(p
@@ -268,7 +261,6 @@
                 []
             )]
         )]
-        []
         [(Subroutine
             test_template
             []
@@ -279,9 +271,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Instantiate
                 struct_t
                 [(AttrType
@@ -344,25 +333,7 @@
                 ())]
                 ()
             )
-            (Declaration
-                (AttrType
-                    TypeType
-                    []
-                    ()
-                    real_tuple
-                    None
-                )
-                []
-                [(tr
-                []
-                []
-                ()
-                ()
-                None
-                ())]
-                ()
-            )]
-            [(Assignment
+            (Assignment
                 0
                 fst [(ti
                 [])]
@@ -408,6 +379,24 @@
                     []
                     []
                 )]
+                ()
+            )
+            (Declaration
+                (AttrType
+                    TypeType
+                    []
+                    ()
+                    real_tuple
+                    None
+                )
+                []
+                [(tr
+                []
+                []
+                ()
+                ()
+                None
+                ())]
                 ()
             )
             (Assignment
@@ -475,17 +464,16 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             test_template
             []

@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -64,7 +63,6 @@
             ()
         )]
         []
-        []
     )
     (Module
         constants
@@ -85,12 +83,12 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -722,7 +720,6 @@
             )
         )]
         []
-        []
     )
     (Program
         modules_03
@@ -736,10 +733,8 @@
             )]
             .true.
             ()
-        )]
-        []
-        []
-        [(Print
+        )
+        (Print
             0
             ()
             [Ha2eV]

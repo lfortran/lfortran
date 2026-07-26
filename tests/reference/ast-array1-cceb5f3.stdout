@@ -2,12 +2,11 @@
     [(Program
         array1
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeReal
                 []
@@ -169,7 +168,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

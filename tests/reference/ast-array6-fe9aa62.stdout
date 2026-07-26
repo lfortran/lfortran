@@ -2,13 +2,10 @@
     [(Program
         array6
         ()
-        []
         [(ImplicitNone
             []
             ()
         )]
-        []
-        []
         [(Subroutine
             t
             [(n)
@@ -20,9 +17,6 @@
             []
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -148,7 +142,6 @@
                 ())]
                 ()
             )]
-            []
             []
             []
         )]

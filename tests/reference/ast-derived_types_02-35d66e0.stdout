@@ -2,7 +2,6 @@
     [(Module
         a
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -399,7 +398,6 @@
             )]
             []
         )]
-        []
         [(Subroutine
             p1
             [(this)]
@@ -410,9 +408,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeClass
@@ -435,7 +430,6 @@
             )]
             []
             []
-            []
         )
         (Subroutine
             p2
@@ -448,9 +442,6 @@
                 (EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeClass
@@ -471,7 +462,6 @@
                 ())]
                 ()
             )]
-            []
             []
             []
         )]

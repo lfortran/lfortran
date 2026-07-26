@@ -5,9 +5,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeDoublePrecision
@@ -88,8 +85,8 @@
             Equal
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             s
             (FuncCallOrArray

@@ -2,8 +2,6 @@
     [(Program
         assign
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -39,8 +37,8 @@
             None
             ())]
             ()
-        )]
-        [(Format
+        )
+        (Format
             10
             "'(i3)'"
             ()
