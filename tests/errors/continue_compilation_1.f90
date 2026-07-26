@@ -930,3 +930,19 @@ program continue_compilation_1
         decl_order_second = decl_order_first
     end subroutine
 end program
+
+! A syntax error inside a module makes the parser skip the erroneous
+! declaration and keep the rest of the module. The symbol table visitor then
+! skips the program units that depend on the discarded declaration, so the body
+! visitor must not assume their symbols exist.
+module module_error_recovery_1
+    type :: t_recovery
+    contains
+      foo    end type t_recovery
+contains
+    pure function foo(self, x) result(res)
+      class(t_recovery), intent(in) :: self
+      real, intent(in) :: x(:)
+      real :: res(size(x))
+    end function foo
+end module
