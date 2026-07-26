@@ -1,4 +1,6 @@
 #include <string>
+#include <cstdio>
+#include <cstring>
 
 #include <libasr/config.h>
 #include <libasr/serialization.h>
@@ -12,6 +14,19 @@
 
 using LCompilers::ASRUtils::symbol_parent_symtab;
 using LCompilers::ASRUtils::symbol_name;
+
+// TEMPORARY DEBUG INSTRUMENTATION (to be reverted)
+static void lf_dbg_r16(const char *tag, double m_r, const uint8_t *bytes) {
+    uint64_t raw;
+    std::memcpy(&raw, &m_r, sizeof(raw));
+    std::fprintf(stderr, "[LF-R16] %-9s m_r=0x%016llx bytes=",
+        tag, (unsigned long long)raw);
+    for (int i = 15; i >= 0; i--) {
+        std::fprintf(stderr, "%02x", bytes[i]);
+    }
+    std::fprintf(stderr, "\n");
+    std::fflush(stderr);
+}
 
 namespace LCompilers {
 
@@ -48,6 +63,7 @@ public:
     void write_real(double r, ASR::ttype_t *type) {
         if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
             const uint8_t *bytes = ASRUtils::real_constant_unpack_r16(r);
+            lf_dbg_r16("write", r, bytes);
             for (int i = 0; i < 16; i++) {
                 write_int8(bytes[i]);
             }
@@ -134,7 +150,9 @@ public:
             for (int i = 0; i < 16; i++) {
                 bytes[i] = read_int8();
             }
-            return ASRUtils::real_constant_pack_r16(bytes);
+            double m_r = ASRUtils::real_constant_pack_r16(bytes);
+            lf_dbg_r16("read", m_r, bytes);
+            return m_r;
         } else {
             return read_float64();
         }

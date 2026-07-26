@@ -61,7 +61,7 @@ if [[ $WIN != "1" ]]; then
     cd build-lfortran-llvm
     FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
     make -j${NPROC}
-    ctest -L llvm -j${NPROC}
+    ctest -L llvm -j${NPROC} --output-on-failure
     cd ..
 
     ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}

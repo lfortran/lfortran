@@ -1,5 +1,6 @@
 #include "libasr/assert.h"
 #include "libasr/string_utils.h"
+#include <cstdio>
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
@@ -15373,6 +15374,16 @@ public:
                 uint64_t lo, hi;
                 std::memcpy(&lo, bytes,     sizeof(lo));
                 std::memcpy(&hi, bytes + 8, sizeof(hi));
+                {
+                    // TEMPORARY DEBUG INSTRUMENTATION (to be reverted)
+                    uint64_t raw;
+                    std::memcpy(&raw, &x.m_r, sizeof(raw));
+                    std::fprintf(stderr,
+                        "[LF-R16] codegen   m_r=0x%016llx bytes=%016llx%016llx\n",
+                        (unsigned long long)raw, (unsigned long long)hi,
+                        (unsigned long long)lo);
+                    std::fflush(stderr);
+                }
                 // APInt(numBits, ArrayRef<uint64_t>{lo, hi}) — low word first.
                 uint64_t words[2] = { lo, hi };
                 llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
