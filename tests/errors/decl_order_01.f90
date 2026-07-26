@@ -2,6 +2,15 @@ module decl_order_mod
 implicit none
 integer :: i
 i = 1
+
+! A template accepts declarations only
+template decl_order_t(T)
+    type, deferred :: T
+    use iso_fortran_env
+    implicit none
+    integer :: j
+    j = 1
+end template
 end module
 
 subroutine decl_order_sub()

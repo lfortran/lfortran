@@ -2,12 +2,12 @@
     "basename": "asr-decl_order_01-61de8ca",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/decl_order_01.f90",
-    "infile_hash": "ca616726b76e527e4983e479b1d100e539ce698521202729de2a74a4",
+    "infile_hash": "adb5b63b6cf8fb91f81104969b24e0eecbfa53c3564809b394b1d8a7",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-decl_order_01-61de8ca.stderr",
-    "stderr_hash": "2cb1a7f3495658d3946f25261c9b617da83977606eeaa3c37f7afb48",
+    "stderr_hash": "f1c3d6b6ba7b68bfaf0c118e51d832909551cce07d9c429690be9ccd",
     "returncode": 2
 }
