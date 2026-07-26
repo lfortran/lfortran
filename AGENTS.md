@@ -33,6 +33,7 @@ Available skills:
 | `repro-issue` | Turn a GitHub issue into a faithful Reproducible Example (RE) |
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
+| `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
 
 ### The reproduce → reduce → fix loop
 
