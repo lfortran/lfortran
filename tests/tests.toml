@@ -503,11 +503,6 @@ filename = "errors/template_error_09.f90"
 asr = true
 
 [[test]]
-filename = "errors/real_unsupported_kind_01.f90"
-asr = true
-
-
-[[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"
 asr = true
 
@@ -4962,6 +4957,15 @@ asr = true
 [[test]]
 filename = "errors/data_implied_do3.f90"
 asr = true
+
+[[test]]
+filename = "errors/decl_order_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/decl_order_02.f90"
+ast = true
+ast_f90 = true
 
 [[test]]
 filename = "errors/init1.f90"

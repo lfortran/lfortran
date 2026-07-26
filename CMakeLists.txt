@@ -415,29 +415,29 @@ if (XEUS_LFORTRAN_WASM_BUILD)
     xeus_wasm_link_options(xlfortran "web,worker")
 
     # Preload runtime .mod files into the WASM VFS at /lib/
-    file(GLOB LFORTRAN_MOD_FILES "${CMAKE_INSTALL_PREFIX}/lib/*.mod")
+    file(GLOB LFORTRAN_MOD_FILES CONFIGURE_DEPENDS "${CMAKE_INSTALL_PREFIX}/lib/*.mod")
+    if(NOT LFORTRAN_MOD_FILES)
+        message(FATAL_ERROR
+            "XEUS_LFORTRAN_WASM_BUILD: no runtime .mod files found in "
+            "${CMAKE_INSTALL_PREFIX}/lib. Run wasm-build0.sh first."
+        )
+    endif()
     foreach(MOD_FILE ${LFORTRAN_MOD_FILES})
         get_filename_component(MOD_NAME ${MOD_FILE} NAME)
         target_link_options(xlfortran PRIVATE
             "SHELL:--preload-file \"${MOD_FILE}@/lib/${MOD_NAME}\""
         )
     endforeach()
-    if(LFORTRAN_MOD_FILES)
-        # Track .mod file contents as link dependencies so relinking is
-        # triggered when any preloaded module changes.
-        set_property(TARGET xlfortran APPEND PROPERTY LINK_DEPENDS ${LFORTRAN_MOD_FILES})
-    endif()
+    # Track .mod file contents as link dependencies so relinking is
+    # triggered when any preloaded module changes.
+    set_property(TARGET xlfortran APPEND PROPERTY LINK_DEPENDS ${LFORTRAN_MOD_FILES})
 
     install(FILES
         "$<TARGET_FILE_DIR:xlfortran>/xlfortran.js"
         "$<TARGET_FILE_DIR:xlfortran>/xlfortran.wasm"
+        "$<TARGET_FILE_DIR:xlfortran>/xlfortran.data"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
-    # xlfortran.data is only generated when at least one --preload-file is used.
-    if(LFORTRAN_MOD_FILES)
-        install(FILES "$<TARGET_FILE_DIR:xlfortran>/xlfortran.data"
-                DESTINATION ${CMAKE_INSTALL_BINDIR})
-    endif()
 endif()
 
 # JSON OR LSP (`conda install rapidjson`)

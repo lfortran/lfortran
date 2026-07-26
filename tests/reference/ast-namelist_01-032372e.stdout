@@ -2,12 +2,11 @@
     [(Program
         namelist1
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -93,7 +92,6 @@
             []
             ()
         )]
-        []
         []
     )]
 )

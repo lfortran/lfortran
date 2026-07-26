@@ -1,3 +1,21 @@
+syntax error: use statement must appear before all other declarations and statements
+   --> tests/errors/continue_compilation_1.f90:927:9
+    |
+927 |         use iso_fortran_env, only: int32
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: implicit statement must appear before declaration and executable statements
+   --> tests/errors/continue_compilation_1.f90:928:9
+    |
+928 |         implicit none
+    |         ^^^^^^^^^^^^^^ 
+
+syntax error: Token 'foo' (of type 'identifier') is unexpected here
+   --> tests/errors/continue_compilation_1.f90:941:7
+    |
+941 |       foo    end type t_recovery
+    |       ^^^ 
+
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
@@ -511,6 +529,18 @@ semantic error: Symbol 'undeclared_proc' not declared
     |
 640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type 't_recovery' not declared
+   --> tests/errors/continue_compilation_1.f90:944:7
+    |
+944 |       class(t_recovery), intent(in) :: self
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol 'bad_op' not declared
+ --> tests/errors/continue_compilation_1.f90:1:2
+  |
+1 | ! If you need a function, put it into the module below and remove the same
+  |  ^ 
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
@@ -1809,3 +1839,9 @@ semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension ind
     |
 905 |         x = norm2([1.0, 2.0], dim=2)
     |                                   ^ 
+
+semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 16
+   --> tests/errors/continue_compilation_1.f90:918:27
+    |
+918 |         print *, real(1., 666)
+    |                           ^^^ 

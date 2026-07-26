@@ -16,9 +16,8 @@
             []
             .false.
             ()
-        )]
-        []
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -171,8 +170,8 @@
                     "! set up the tree, including allocation of all arrays."
                 )]
             )
-        )]
-        [(DoLoop
+        )
+        (DoLoop
             0
             ()
             0

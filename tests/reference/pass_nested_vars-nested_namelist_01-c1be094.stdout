@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            __lcompilers_created__nested_context__outer_:
+            __lcompilers_created__nested_context__nested_namelist_01_mod__outer_:
                 (Module
                     (SymbolTable
                         6
@@ -63,7 +63,7 @@
                                     []
                                 )
                         })
-                    __lcompilers_created__nested_context__outer_
+                    __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
                     ()
                     []
                     .false.
@@ -135,7 +135,7 @@
                                                     3
                                                     i_nested_ctx
                                                     6 i
-                                                    __lcompilers_created__nested_context__outer_
+                                                    __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
                                                     []
                                                     i
                                                     Public
@@ -174,7 +174,7 @@
                                                                     4
                                                                     nml
                                                                     6 nml
-                                                                    __lcompilers_created__nested_context__outer_
+                                                                    __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
                                                                     []
                                                                     nml
                                                                     Public
@@ -255,7 +255,7 @@
                                                     3
                                                     x_nested_ctx
                                                     6 x
-                                                    __lcompilers_created__nested_context__outer_
+                                                    __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
                                                     []
                                                     x
                                                     Public

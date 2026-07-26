@@ -522,7 +522,16 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             // Iterate on each function with nested vars and create a context in
             // a new module.
             current_scope = al.make_new<SymbolTable>(current_scope_copy);
-            std::string module_name = "__lcompilers_created__nested_context__" + 
+            std::string parent_names = "";
+            SymbolTable *parent_scope = ASRUtils::symbol_parent_symtab(it.first);
+            while (parent_scope != nullptr) {
+                if (parent_scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*parent_scope->asr_owner)) {
+                    ASR::symbol_t *parent_sym = ASR::down_cast<ASR::symbol_t>(parent_scope->asr_owner);
+                    parent_names = std::string(ASRUtils::symbol_name(parent_sym)) + "__" + parent_names;
+                }
+                parent_scope = parent_scope->parent;
+            }
+            std::string module_name = "__lcompilers_created__nested_context__" + parent_names + 
                 std::string(ASRUtils::symbol_name(it.first)) + "_"; 
             bool is_any_variable_externally_defined = false;
             std::map<ASR::symbol_t*, std::string> sym_to_name;

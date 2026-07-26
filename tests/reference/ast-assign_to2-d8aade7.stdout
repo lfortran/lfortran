@@ -2,9 +2,6 @@
     [(Program
         assign2
         ()
-        []
-        []
-        []
         [(If
             100
             ()

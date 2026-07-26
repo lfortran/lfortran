@@ -2,7 +2,6 @@
     [(Program
         team1
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -13,8 +12,8 @@
                 )
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -105,8 +104,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             (FuncCallOrArray
                 my_cosubscripts

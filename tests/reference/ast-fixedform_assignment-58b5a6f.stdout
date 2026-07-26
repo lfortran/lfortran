@@ -2,8 +2,6 @@
     [(Program
         implicit_program_lfortran
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -49,8 +47,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             a
             1

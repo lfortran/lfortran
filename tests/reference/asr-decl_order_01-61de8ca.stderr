@@ -1,0 +1,53 @@
+syntax error: use statement is not allowed in a template
+ --> tests/errors/decl_order_01.f90:9:5
+  |
+9 |     use iso_fortran_env
+  |     ^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: implicit statement is not allowed in a template
+  --> tests/errors/decl_order_01.f90:10:5
+   |
+10 |     implicit none
+   |     ^^^^^^^^^^^^^^ 
+
+syntax error: executable statement is not allowed in a template
+  --> tests/errors/decl_order_01.f90:12:5
+   |
+12 |     j = 1
+   |     ^^^^^ 
+
+syntax error: executable statement is not allowed in a module
+ --> tests/errors/decl_order_01.f90:4:1
+  |
+4 | i = 1
+  | ^^^^^ 
+
+syntax error: import statement must appear before implicit and declaration statements
+  --> tests/errors/decl_order_01.f90:19:1
+   |
+19 | import :: y
+   | ^^^^^^^^^^^^ 
+
+syntax error: implicit statement is not allowed in a block construct
+  --> tests/errors/decl_order_01.f90:29:1
+   |
+29 | implicit none
+   | ^^^^^^^^^^^^^^ 
+
+syntax error: import statement is not allowed in a main program
+  --> tests/errors/decl_order_01.f90:24:1
+   |
+24 | import :: x
+   | ^^^^^^^^^^^^ 
+
+syntax error: use statement must appear before all other declarations and statements
+  --> tests/errors/decl_order_01.f90:26:1
+   |
+26 | use, intrinsic :: iso_c_binding
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: implicit statement must appear before declaration and executable statements
+  --> tests/errors/decl_order_01.f90:27:1
+   |
+27 | implicit none
+   | ^^^^^^^^^^^^^^ 

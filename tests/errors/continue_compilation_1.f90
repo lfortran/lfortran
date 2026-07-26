@@ -913,4 +913,36 @@ program continue_compilation_1
             real :: x
         end type
     end subroutine type_used_before_declared_local
+
+    subroutine real_unsupported_kind_01()
+        print *, real(1., 666)
+    end subroutine
+
+    ! The AST keeps the source order, so with `--continue-compilation` the
+    ! AST -> ASR visitors see the `use` and `implicit` statements below in
+    ! their (invalid) position rather than hoisted to the front. The parser
+    ! reports the ordering errors, the visitors must cope with the raw order.
+    subroutine decl_order_after_decl()
+        integer :: decl_order_first
+        use iso_fortran_env, only: int32
+        implicit none
+        integer(int32) :: decl_order_second
+        decl_order_second = decl_order_first
+    end subroutine
 end program
+
+! A syntax error inside a module makes the parser skip the erroneous
+! declaration and keep the rest of the module. The symbol table visitor then
+! skips the program units that depend on the discarded declaration, so the body
+! visitor must not assume their symbols exist.
+module module_error_recovery_1
+    type :: t_recovery
+    contains
+      foo    end type t_recovery
+contains
+    pure function foo(self, x) result(res)
+      class(t_recovery), intent(in) :: self
+      real, intent(in) :: x(:)
+      real :: res(size(x))
+    end function foo
+end module

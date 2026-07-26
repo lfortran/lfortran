@@ -2,8 +2,6 @@
     [(Program
         call1
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -21,8 +19,8 @@
             None
             ())]
             ()
-        )]
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             f
             []

@@ -97,9 +97,9 @@ uint64_t static inline get_hash(ASR::asr_t *node)
 }
 
 #define LFORTRAN_STMT_LABEL_TYPE(x) \
-        case AST::stmtType::x: { return AST::down_cast<AST::x##_t>(f)->m_label; }
+        case AST::decl_stmtType::x: { return AST::down_cast<AST::x##_t>(f)->m_label; }
 
-static inline int64_t stmt_label(AST::stmt_t *f)
+static inline int64_t stmt_label(AST::decl_stmt_t *f)
 {
     switch (f->type) {
         LFORTRAN_STMT_LABEL_TYPE(Allocate)
@@ -154,7 +154,9 @@ static inline int64_t stmt_label(AST::stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(SelectType)
         LFORTRAN_STMT_LABEL_TYPE(Where)
         LFORTRAN_STMT_LABEL_TYPE(WhileLoop)
-        default : throw LCompilersException("Unhandled type in stmt_label");
+        // `use`, `import`, `implicit` and declarations share the `decl_stmt`
+        // type with the statements above but cannot carry a statement label
+        default : return 0;
     }
 }
 
@@ -2161,7 +2163,7 @@ public:
     // mapping of hash int's of scope to 'explicit_intrinsic_procedures'
     std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping;
     std::map<std::string, ASR::symbol_t*> changed_external_function_symbol;
-    std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
+    std::map<std::string, std::vector<AST::decl_stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
 
     // Attributes defined before declaration
@@ -2171,7 +2173,7 @@ public:
     // e.g. a declaration like: 'intrinsic abs' for an intrinsic
     // elemental function 'abs'
     std::vector<std::string> explicit_intrinsic_procedures;
-    std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions;
+    std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions;
     std::map<std::string, std::vector<int>> &entry_function_arguments_mapping;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
@@ -2254,7 +2256,7 @@ public:
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
             LCompilers::LocationManager &lm
@@ -4800,9 +4802,9 @@ public:
 
     template <typename T>
     void check_if_global_save_is_enabled(T &x) {
-        for ( size_t i = 0; i < x.n_decl; i++ ) {
-            if ( AST::is_a<AST::Declaration_t>(*x.m_decl[i]) ) {
-                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
+        for ( size_t i = 0; i < x.n_items; i++ ) {
+            if ( AST::is_a<AST::Declaration_t>(*x.m_items[i]) ) {
+                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
                 if ( decl->n_attributes > 0 && decl->n_syms == 0 &&
                     decl->m_trivia == nullptr &&
                     AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[0]) ) {
@@ -19111,15 +19113,30 @@ public:
                 }
             } else {
                 std::string func_name = ASRUtils::symbol_name(v);
-                v = current_scope->resolve_symbol(func_name);
-                if (v == nullptr) {
-                    v = current_scope->resolve_symbol(func_name + "@~concat");
+                ASR::symbol_t* resolved = current_scope->resolve_symbol(func_name);
+                if (resolved == nullptr) {
+                    resolved = current_scope->resolve_symbol(func_name + "@~concat");
                 }
-                if (v == nullptr) {
-                    diag.add(Diagnostic("'" + func_name +
-                        "' not found in current scope", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
+                if (resolved == nullptr) {
+                    // The specific procedure is not directly accessible in the
+                    // current scope. This happens when the operator interface is
+                    // re-exported through an intermediate module (only the
+                    // operator, not the specific procedures, is made public). The
+                    // procedure symbol `op_proc` is still valid, so import the
+                    // underlying function via an ExternalSymbol pointing to it.
+                    ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(op_proc);
+                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
+                    resolved = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(
+                            al, x.base.base.loc, current_scope,
+                            s2c(al, func_name), func_sym,
+                            ASRUtils::symbol_name(func_parent), nullptr, 0,
+                            s2c(al, func_name), ASR::accessType::Public
+                        )
+                    );
+                    current_scope->add_symbol(func_name, resolved);
                 }
+                v = resolved;
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);

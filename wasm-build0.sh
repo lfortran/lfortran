@@ -42,11 +42,15 @@ MODDIR="$(pwd)/asset_dir/mods"
 RTDIR="$(pwd)/src/runtime"
 mkdir -p "$MODDIR"
 
+pushd "$MODDIR" > /dev/null
+
 $LFORTRAN --backend=cpp -c -J "$MODDIR" "$RTDIR/pure/lfortran_intrinsic_iso_fortran_env.f90"
 $LFORTRAN --backend=cpp -c -J "$MODDIR" "$RTDIR/custom/lfortran_intrinsic_custom.f90"
 $LFORTRAN --backend=cpp -c -J "$MODDIR" -I "$MODDIR" "$RTDIR/pure/lfortran_intrinsic_ieee_arithmetic.f90"
 $LFORTRAN --backend=cpp -c -J "$MODDIR" "$RTDIR/pure/lfortran_intrinsic_iso_c_binding.f90"
 $LFORTRAN --backend=cpp -c -J "$MODDIR" -I "$MODDIR" "$RTDIR/openmp/omp_lib.f90"
+
+popd > /dev/null
 
 cp "$MODDIR"/*.mod "$PREFIX/lib/"
 rm -rf asset_dir
