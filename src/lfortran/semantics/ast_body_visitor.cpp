@@ -9805,6 +9805,8 @@ public:
         if (x.m_value) {
             visit_expr(*x.m_value);
             team = ASRUtils::EXPR(tmp);
+            check_intrinsic_team_value(team, x.base.base.loc,
+                "team_value", "sync team");
         } else {
             diag.add(Diagnostic(
                 "`sync team` requires a team_value",
