@@ -2,9 +2,6 @@
     [(Program
         print2
         ()
-        []
-        []
-        []
         [(Print
             0
             (StrOp

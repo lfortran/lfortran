@@ -9,18 +9,15 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(Import
             []
             ImportNone
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
         )]
-        []
-        []
         []
         []
     )
@@ -34,18 +31,15 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(Import
             []
             ImportAll
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
         )]
-        []
-        []
         []
         []
     )
@@ -59,19 +53,16 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(Import
             [a
             b]
             ImportDefault
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
         )]
-        []
-        []
         []
         []
     )
@@ -85,19 +76,16 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(Import
             [a
             b]
             ImportDefault
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
         )]
-        []
-        []
         []
         []
     )
@@ -111,19 +99,16 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(Import
             [a
             b]
             ImportOnly
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
         )]
-        []
-        []
         []
         []
     )
@@ -133,7 +118,6 @@
         []
         ()
         ()
-        []
         [(Import
             [a
             b]
@@ -151,13 +135,11 @@
             f]
             ImportDefault
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
         )]
-        []
-        []
         []
         []
     )]

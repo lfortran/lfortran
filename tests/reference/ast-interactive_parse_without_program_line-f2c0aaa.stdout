@@ -204,9 +204,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -228,8 +225,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(DoLoop
+        )
+        (DoLoop
             0
             ()
             0

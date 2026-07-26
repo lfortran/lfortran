@@ -2,7 +2,6 @@
     [(Program
         types_08
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -11,8 +10,6 @@
                 (EndOfLine)]
             )
         )]
-        []
-        []
         [(Subroutine
             f
             [(i)
@@ -24,9 +21,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -84,7 +78,6 @@
                 ())]
                 ()
             )]
-            []
             []
             []
         )
@@ -99,9 +92,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -171,7 +161,6 @@
                 ())]
                 ()
             )]
-            []
             []
             []
         )]

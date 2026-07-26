@@ -2,8 +2,6 @@
     [(Program
         __xx_main
         ()
-        []
-        []
         [(Enum
             [(AttrBind
                 (Bind
@@ -27,7 +25,6 @@
                 ()
             )]
         )]
-        []
         []
     )]
 )

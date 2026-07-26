@@ -2,12 +2,11 @@
     [(Program
         data_stmt_with_implied_do_loop
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -76,8 +75,8 @@
             None
             ())]
             ()
-        )]
-        [(DataStmt
+        )
+        (DataStmt
             0
             [(DataStmtSet
                 [(FuncCallOrArray

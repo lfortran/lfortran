@@ -6,12 +6,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -42,9 +41,6 @@
                     )]
                     ()
                     ()
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -87,11 +83,9 @@
                     )]
                     []
                     []
-                    []
                 )
             )]
         )]
-        []
         []
     )
     (Submodule
@@ -104,9 +98,6 @@
             (EndOfLine)]
         )
         []
-        []
-        []
-        []
         [(Procedure
             function
             []
@@ -114,10 +105,6 @@
                 AttrModule
             )]
             ()
-            []
-            []
-            []
-            []
             [(Assignment
                 0
                 real
@@ -147,16 +134,16 @@
             )]
             .true.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -180,8 +167,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             integer
             character

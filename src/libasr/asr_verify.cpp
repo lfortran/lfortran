@@ -1850,6 +1850,26 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_SyncMemory(x);
     }
 
+    void visit_SyncTeam(const SyncTeam_t &x) {
+        if (x.m_stat) {
+            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
+            require(!ASRUtils::is_array(stat_type),
+                "SyncTeam::m_stat must be a scalar");
+            require(ASRUtils::is_integer(*stat_type),
+                "SyncTeam::m_stat must be of integer type, found " +
+                std::string(ASRUtils::get_type_code(stat_type)));
+        }
+        if (x.m_errmsg) {
+            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
+            require(!ASRUtils::is_array(errmsg_type),
+                "SyncTeam::m_errmsg must be a scalar");
+            require(ASRUtils::is_character(*errmsg_type),
+                "SyncTeam::m_errmsg must be of string type, found " +
+                std::string(ASRUtils::get_type_code(errmsg_type)));
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_SyncTeam(x);
+    }
+
     void visit_FormTeam(const FormTeam_t &x) {
         ASR::ttype_t *team_number_type = ASRUtils::expr_type(x.m_team_number);
         require(!ASRUtils::is_array(team_number_type),

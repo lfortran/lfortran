@@ -2,8 +2,6 @@
     [(Program
         fixed_form2
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -21,8 +19,8 @@
             None
             ())]
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [(String "OK1" ())

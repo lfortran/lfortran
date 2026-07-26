@@ -2,7 +2,6 @@
     [(Program
         types_11
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Enum
+        )
+        (Enum
             [(AttrBind
                 (Bind
                     [c]
@@ -66,7 +65,6 @@
                 ()
             )]
         )]
-        []
         []
     )]
 )

@@ -2,7 +2,6 @@
     [(Module
         interface3
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -12,8 +11,8 @@
                     "!checks the syntax"
                 )]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPublic
@@ -190,9 +189,6 @@
                     []
                     ()
                     ()
-                    []
-                    []
-                    []
                     [(Declaration
                         (AttrType
                             TypeInteger
@@ -233,7 +229,6 @@
                         ())]
                         ()
                     )]
-                    []
                     []
                     []
                 )
@@ -494,7 +489,6 @@
                 ()
             )]
         )]
-        []
         [(Function
             f
             [(operator)]
@@ -510,9 +504,6 @@
                 (EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -535,7 +526,6 @@
                 ))]
                 ()
             )]
-            []
             []
             []
         )]

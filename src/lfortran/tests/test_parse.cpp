@@ -1279,7 +1279,7 @@ TEST_CASE("Location") {
     CHECK(result->loc.first == 0);
     CHECK(result->loc.last == 55);
     auto sub = cast(Subroutine, result);
-    auto stmt = cast(Assignment, sub->m_body[1]);
+    auto stmt = cast(Assignment, sub->m_items[1]);
     CHECK(stmt->base.base.loc.first == 27);
     CHECK(stmt->base.base.loc.last == 36);
     auto m = cast(BinOp, stmt->m_value);

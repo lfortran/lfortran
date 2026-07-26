@@ -6,8 +6,6 @@
             (EndOfLine)]
             []
         )
-        []
-        []
         [(Requirement
             op
             [T
@@ -54,9 +52,6 @@
                 op
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -115,7 +110,6 @@
                     ())]
                     ()
                 )]
-                []
                 []
                 []
             )]
@@ -184,9 +178,6 @@
                 []
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -250,8 +241,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     y
                     (FuncCallOrArray
@@ -288,8 +279,8 @@
                 []
                 []
             )]
-        )]
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             f
             []
@@ -316,9 +307,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -410,8 +398,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 op
                 (* a b)
@@ -434,9 +422,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -547,8 +532,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 op
                 (+ a b)
@@ -569,9 +554,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -686,8 +668,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 y
                 (FuncCallOrArray
@@ -730,9 +712,6 @@
             []
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -885,8 +864,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 a
                 (Real "0.5")

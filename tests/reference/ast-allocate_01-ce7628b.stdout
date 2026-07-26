@@ -2,12 +2,11 @@
     [(Program
         hello
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeCharacter
                 [(()
@@ -64,8 +63,8 @@
             None
             ())]
             ()
-        )]
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             get_command
             []
