@@ -5,23 +5,37 @@ program namelist_37
     character(len=256) :: text
     namelist /nums/ msg
 
-    open(unit=10, file="namelist_34_quote.dat", status="replace", &
+    ! --- QUOTE TEST ---
+    open(unit=10, file="namelist_37_quote.dat", status="replace", &
         form="formatted", delim="quote")
     write(10, nml=nums)
     close(10)
 
-    text = compact(read_file("namelist_34_quote.dat"))
+    text = compact(read_file("namelist_37_quote.dat"))
     if (index(text, 'msg="12345678901234567890"') == 0 .and. &
             index(text, 'MSG="12345678901234567890"') == 0) then
         error stop "quote-delimited namelist output mismatch"
     end if
 
-    open(unit=10, file="namelist_34_none.dat", status="replace", &
+    ! --- APOSTROPHE TEST ---
+    open(unit=10, file="namelist_37_apostrophe.dat", status="replace", &
+        form="formatted", delim="apostrophe")
+    write(10, nml=nums)
+    close(10)
+
+    text = compact(read_file("namelist_37_apostrophe.dat"))
+    if (index(text, "msg='12345678901234567890'") == 0 .and. &
+            index(text, "MSG='12345678901234567890'") == 0) then
+        error stop "apostrophe-delimited namelist output mismatch"
+    end if
+
+    ! --- NONE TEST ---
+    open(unit=10, file="namelist_37_none.dat", status="replace", &
         form="formatted", delim="none")
     write(10, nml=nums)
     close(10)
 
-    text = compact(read_file("namelist_34_none.dat"))
+    text = compact(read_file("namelist_37_none.dat"))
     if (index(text, "msg=12345678901234567890") == 0 .and. &
             index(text, "MSG=12345678901234567890") == 0) then
         error stop "none-delimited namelist output mismatch"
