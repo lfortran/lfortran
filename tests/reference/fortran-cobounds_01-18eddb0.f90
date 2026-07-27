@@ -21,10 +21,6 @@ a = lcompilers_prif_lcobound_with_dim(x__coarray_handle, 1)
 b = lcompilers_prif_ucobound_with_dim(x__coarray_handle, 1)
 lc = lcompilers_prif_lcobound_no_dim_1(x__coarray_handle)
 uc = lcompilers_prif_ucobound_no_dim_1(x__coarray_handle)
-print *, a
-print *, b
-print *, lc
-print *, uc
 call __module_prif_prif_stop(.false.)
 
 contains

@@ -11,9 +11,4 @@ program cobounds_01
     lc = lcobound(x)
     uc = ucobound(x)
 
-    print *, a
-    print *, b
-    print *, lc
-    print *, uc
-
 end program cobounds_01
