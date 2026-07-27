@@ -17087,7 +17087,15 @@ public:
         if (( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure ) && !not_resolvable_to_fncall) {
             bool is_v_dummy_arg = ASR::is_a<ASR::Variable_t>(*v) &&
                 ASRUtils::is_arg_dummy(ASR::down_cast<ASR::Variable_t>(v)->m_intent);
-            if (!is_v_dummy_arg && (intrinsic_procedures.is_intrinsic(var_name) || is_intrinsic_registry_function(var_name))) {
+            ASR::symbol_t *parent_sym = current_scope->parent
+                ? current_scope->parent->resolve_symbol(var_name) : nullptr;
+            bool user_function_found = parent_sym &&
+                ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(parent_sym)) &&
+                !ASRUtils::is_intrinsic_symbol(parent_sym);
+            if (!is_v_dummy_arg && !user_function_found &&
+                    (intrinsic_procedures.is_intrinsic(var_name) ||
+                    is_intrinsic_registry_function(var_name))) {
                 if (compiler_options.implicit_interface) {
                     bool is_function = true;
                     if ( !is_external_procedure ) {
@@ -17248,7 +17256,9 @@ public:
                 // NOTE: ideally this shouldn't be needed, this is only to handle
                 // 'dble', 'shifta', 'float', 'dfloat', which aren't currently
                 // implemented as intrinsic elemental function
-                intrinsic_as_node(x, is_function);
+                if (!user_function_found) {
+                    intrinsic_as_node(x, is_function);
+                }
                 if (!is_function) {
                     return;
                 }
