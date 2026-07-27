@@ -3721,6 +3721,9 @@ public:
                                            ASR::symbol_t* var_sym,
                                            int64_t value,
                                            ASR::ttype_t* int_type) {
+        idl->m_start = replace_loop_var_in_expr(idl->m_start, var_sym, value, int_type);
+        idl->m_end = replace_loop_var_in_expr(idl->m_end, var_sym, value, int_type);
+        idl->m_increment = replace_loop_var_in_expr(idl->m_increment, var_sym, value, int_type);
         for (size_t i = 0; i < idl->n_values; i++) {
             ASR::expr_t* val = idl->m_values[i];
             if (ASR::is_a<ASR::ArrayItem_t>(*val)) {
