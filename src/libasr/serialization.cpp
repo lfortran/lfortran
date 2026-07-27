@@ -39,6 +39,23 @@ public:
         write_string(symbol_name(&x));
     }
 
+    // A kind=16 RealConstant does not keep its value in m_r: a double cannot
+    // hold a binary128, so m_r packs a pointer to 16 separately allocated bytes
+    // (see real_constant_pack_r16() in asr_utils.h). That pointer is worthless
+    // once the module file is read back, so write the payload itself. The kind
+    // is known here because RealConstant serializes `type` before `r` (see
+    // serialization_overrides in asdl_cpp.py).
+    void write_real(double r, ASR::ttype_t *type) {
+        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+            const uint8_t *bytes = ASRUtils::real_constant_unpack_r16(r);
+            for (int i = 0; i < 16; i++) {
+                write_int8(bytes[i]);
+            }
+        } else {
+            write_float64(r);
+        }
+    }
+
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         write_int8(x.base.type);
         write_int64(x.base.base.loc.first);
@@ -106,6 +123,21 @@ public:
         cs.from_str_view(s);
         char* p = cs.c_str(al);
         return p;
+    }
+
+    // Counterpart of ASRSerializationVisitor::write_real(): rebuild the m_r
+    // payload of a RealConstant. For kind=16 the 16 binary128 bytes are copied
+    // into the current allocator and their address is packed back into m_r.
+    double read_real(ASR::ttype_t *type) {
+        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+            uint8_t *bytes = static_cast<uint8_t*>(al.alloc(16));
+            for (int i = 0; i < 16; i++) {
+                bytes[i] = read_int8();
+            }
+            return ASRUtils::real_constant_pack_r16(bytes);
+        } else {
+            return read_float64();
+        }
     }
 
 #define READ_SYMBOL_CASE(x)                                \

@@ -9,4 +9,3 @@ warning: Routine `exit` is a non-standard function
   |
 7 |         call exit(1)
   |         ^^^^^^^^^^^^ 
-STOP 1

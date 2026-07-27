@@ -4466,7 +4466,7 @@ public:
                 }
                 ptr_loads = ptr_loads_copy;
             }
-            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
+            LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0 || (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray));
             bool is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(
                 ASRUtils::extract_type(x_mv_type));
             ASR::symbol_t* selector_type_decl = ASRUtils::get_struct_sym_from_struct_expr(x.m_v);
@@ -18019,6 +18019,8 @@ public:
             // For multi-value list-directed internal reads, track position
             llvm::Value *str_offset = nullptr;
             llvm::Value *str_src_data = nullptr, *str_src_len = nullptr;
+            bool is_string_array_unit = false;
+            llvm::Value *str_src_elem_len = nullptr;
             if (is_string) {
                 str_offset = llvm_utils->CreateAlloca(*builder,
                     llvm::Type::getInt64Ty(context), nullptr, "str_read_offset");
@@ -18027,6 +18029,7 @@ public:
                     str_offset);
                 ASR::ttype_t* unit_type = ASRUtils::expr_type(x.m_unit);
                 if (ASRUtils::is_array(unit_type)) {
+                    is_string_array_unit = true;
                     ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(unit_type);
                     if (ASRUtils::is_allocatable_or_pointer(unit_type)) {
                         llvm::Type* llvm_array_type = llvm_utils->get_type_from_ttype_t_util(
@@ -18042,6 +18045,7 @@ public:
                     visit_ArraySize(*array_size);
                     llvm::Value* n_elems = builder->CreateIntCast(tmp, llvm::Type::getInt64Ty(context), true);
                     tmp = nullptr;
+                    str_src_elem_len = elem_len;
                     str_src_len = builder->CreateMul(elem_len, n_elems);
                 } else {
                     std::tie(str_src_data, str_src_len) = llvm_utils->get_string_length_data(
@@ -18455,7 +18459,21 @@ public:
                                 module.get())->getPointerTo();
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
-                        builder->CreateCall(fn, { str_src_data, str_src_len, fmt, var_to_read_into, iostat, str_offset });
+                        if (is_string_array_unit) {
+                            llvm::Value* saved_offset = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), str_offset);
+                            llvm::Value* elem_offset = builder->CreateURem(saved_offset, str_src_elem_len);
+                            llvm::Value* record_start = builder->CreateSub(saved_offset, elem_offset);
+                            llvm::Value* record_data = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_src_data, record_start);
+                            llvm::Value* record_len = builder->CreateSub(str_src_elem_len, elem_offset);
+                            llvm::Value* record_offset = llvm_utils->CreateAlloca(*builder,llvm::Type::getInt64Ty(context), nullptr, "str_record_offset");
+                            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),record_offset);
+                            builder->CreateCall(fn, { record_data, record_len, fmt,var_to_read_into, iostat, record_offset });
+                            llvm::Value* consumed = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), record_offset);
+                            builder->CreateStore(builder->CreateAdd(saved_offset, consumed),
+                                str_offset);
+                        } else {
+                            builder->CreateCall(fn, { str_src_data, str_src_len, fmt, var_to_read_into, iostat, str_offset });
+                        }
                     }
                     // Copy temporary i32 iostat back to user's variable
                     if (iostat_user && iostat_kind != 4) {
@@ -21468,7 +21486,10 @@ public:
         return;
     }
 
-    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location /*loc*/) {
+    // `stop_code_value` is the already-evaluated integer stop code (if the
+    // caller evaluated it); it is used for both the message and the exit code
+    // so that a stop code with side effects (e.g. a function call) runs once.
+    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location /*loc*/, llvm::Value* stop_code_value=nullptr) {
         std::string fmt {};
         std::vector<llvm::Value*> args;
         args.push_back(nullptr); // reserve space for fmt_str
@@ -21487,9 +21508,11 @@ public:
         if (stop_code && ASR::is_a<ASR::Integer_t>(*expr_type(stop_code))) {
             if(ASRUtils::extract_kind_from_ttype_t(expr_type(stop_code)) != 4) throw LCompilersException("Kind in Stop code should be = 4");
             fmt += " %d";
-            visit_expr(*stop_code);
-            llvm::Value* stop_code_int = tmp; tmp = nullptr;
-            args.push_back(stop_code_int);
+            if (!stop_code_value) {
+                visit_expr(*stop_code);
+                stop_code_value = tmp; tmp = nullptr;
+            }
+            args.push_back(stop_code_value);
         } else if(stop_code && ASRUtils::is_string_only(expr_type(stop_code))){
             fmt += " %.*s";
             visit_expr_load_wrapper(stop_code, 0);
@@ -21533,9 +21556,8 @@ public:
             }
             builder->CreateCall(fn_finalize, {});
         }
-        if (stop_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(stop_code))) {
-            this->visit_expr(*stop_code);
-            exit_code = tmp;
+        if (stop_code_value) {
+            exit_code = stop_code_value;
         }
         exit(context, *module, *builder, exit_code);
     }
@@ -21543,23 +21565,27 @@ public:
     void visit_Stop(const ASR::Stop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
-            if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
-                llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
-                    1, compiler_options.use_colors));
-                this->visit_expr(*x.m_code);
-                llvm::Value *test = builder->CreateICmpNE(tmp, builder->getInt32(0));
-                llvm_utils->create_if_else(test, [=]() {
-                    call_print_stacktrace_addresses(context, *module, *builder,
-                        {fmt_ptr, fmt_ptr1});
-                }, [](){});
-            }
+        }
+        llvm::Value *stop_code_value = nullptr;
+        if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
+            this->visit_expr(*x.m_code);
+            stop_code_value = tmp; tmp = nullptr;
+        }
+        if (compiler_options.emit_debug_info && stop_code_value) {
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
+            llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
+                1, compiler_options.use_colors));
+            llvm::Value *test = builder->CreateICmpNE(stop_code_value, builder->getInt32(0));
+            llvm_utils->create_if_else(test, [=]() {
+                call_print_stacktrace_addresses(context, *module, *builder,
+                    {fmt_ptr, fmt_ptr1});
+            }, [](){});
         }
 
         int exit_code_int = 0;
         llvm::Value *exit_code = llvm::ConstantInt::get(context,
                 llvm::APInt(32, exit_code_int));
-        construct_stop(exit_code, "STOP", x.m_code, x.base.base.loc);
+        construct_stop(exit_code, "STOP", x.m_code, x.base.base.loc, stop_code_value);
     }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {

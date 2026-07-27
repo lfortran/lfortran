@@ -1193,6 +1193,38 @@ class PRIFInterface {
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
 
+        ASR::symbol_t* get_or_create_prif_sync_team_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_sync_team");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
+            ASR::ttype_t *team_type = ASRUtils::make_StructType_t_util(al, loc, team_type_sym, true);
+
+            ASR::symbol_t *team_sym = declare_variable(
+                fn_symtab, loc, "team", team_type, ASR::intentType::In, team_type_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *team = ASRUtils::EXPR(ASR::make_Var_t(al, loc, team_sym));
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 4);
+            args.push_back(al, team);
+            declare_prif_status_args(fn_symtab, loc, args);
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
         void declare_prif_status_args(SymbolTable *fn_symtab, const Location &loc, Vec<ASR::expr_t*> &args) {
             ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, loc, 1, nullptr,
@@ -1423,6 +1455,29 @@ class PRIFInterface {
             call_args.push_back(al, arg1);
             call_args.push_back(al, arg2);
             call_args.push_back(al, arg3);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
+
+        ASR::stmt_t* make_prif_sync_team_call(const Location &loc,
+                                             ASR::expr_t *team,
+                                             ASR::expr_t *stat = nullptr,
+                                             ASR::expr_t *errmsg = nullptr,
+                                             ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_sync_team_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
+
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = team;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = stat;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = errmsg;
+            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
 
             return ASRUtils::STMT(ASR::make_SubroutineCall_t(
                 al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
@@ -2415,6 +2470,10 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                     ASR::SyncMemory_t *x = ASR::down_cast<ASR::SyncMemory_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_sync_memory_call(
                         x->base.base.loc, x->m_stat, x->m_errmsg));
+                } else if (m_body[i]->type == ASR::stmtType::SyncTeam) {
+                    ASR::SyncTeam_t *x = ASR::down_cast<ASR::SyncTeam_t>(m_body[i]);
+                    body.push_back(replacer.al, replacer.prif.make_prif_sync_team_call(
+                        x->base.base.loc, x->m_team, x->m_stat, x->m_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::FormTeam) {
                     ASR::FormTeam_t *x = ASR::down_cast<ASR::FormTeam_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_form_team_call(
