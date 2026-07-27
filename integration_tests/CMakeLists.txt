@@ -5009,7 +5009,7 @@ RUN(NAME decl_order_02 LABELS gfortran llvm)
 if (APPLE AND LFORTRAN_BACKEND STREQUAL "llvm")
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
-        COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
+        COMMAND ${CMAKE_Fortran_COMPILER} -c ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
                 -o ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
     )
@@ -5019,4 +5019,8 @@ if (APPLE AND LFORTRAN_BACKEND STREQUAL "llvm")
         COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.sh
                 ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    # Exercise the freshly built lfortran (the Fortran compiler for this
+    # project), not whatever `lfortran` happens to be on PATH.
+    set_tests_properties(install_name_01 PROPERTIES
+        ENVIRONMENT "LFORTRAN=${CMAKE_Fortran_COMPILER}")
 endif()
