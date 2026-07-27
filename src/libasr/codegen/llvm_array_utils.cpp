@@ -1305,33 +1305,27 @@ namespace LCompilers {
                 // elements through the vtable copy function. The destination's
                 // dimension descriptors are set from `shape` further below, so
                 // nothing here may touch them.
-                ASR::symbol_t* elem_struct_sym = ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(array_expr));
                 llvm::Value* src_wrapper = llvm_utils->CreateLoad2(
                     llvm_data_type->getPointerTo(), ptr2firstptr);
                 llvm::Value* dest_wrapper = llvm_utils->CreateLoad2(
                     llvm_data_type->getPointerTo(), first_ptr);
 
-                llvm::Value* src_vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type,
-                    builder->CreateBitCast(src_wrapper,
-                        llvm_utils->vptr_type->getPointerTo()));
-                builder->CreateStore(src_vptr, builder->CreateBitCast(
+                LLVMUtils::UpolyWrapperFields src_w =
+                    llvm_utils->extract_upoly_wrapper(src_wrapper, llvm_data_type);
+                builder->CreateStore(src_w.vptr, builder->CreateBitCast(
                     dest_wrapper, llvm_utils->vptr_type->getPointerTo()));
 
+                ASR::symbol_t* elem_struct_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(array_expr));
+                llvm::Type* elem_struct_type = llvm_utils->getStructType(
+                    ASR::down_cast<ASR::Struct_t>(elem_struct_sym), module);
+
                 llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
-                llvm::Value* elem_size_val =
-                    llvm_utils->get_class_type_size_from_vptr(src_vptr);
                 llvm::Value* num_elems_64 =
                     builder->CreateSExtOrTrunc(num_elements, i64_ty);
                 llvm::Value* total_bytes =
-                    builder->CreateMul(num_elems_64, elem_size_val);
+                    builder->CreateMul(num_elems_64, src_w.elem_size);
 
-                llvm::Type* elem_struct_type = llvm_utils->getStructType(
-                    ASR::down_cast<ASR::Struct_t>(elem_struct_sym), module);
-                llvm::Value* src_raw = builder->CreateBitCast(
-                    llvm_utils->CreateLoad2(elem_struct_type->getPointerTo(),
-                        llvm_utils->create_gep2(llvm_data_type, src_wrapper, 1)),
-                    llvm_utils->i8_ptr);
                 llvm::Value* dest_raw =
                     llvm_utils->allocate_zeroed_bytes(total_bytes);
                 builder->CreateStore(
@@ -1339,13 +1333,7 @@ namespace LCompilers {
                         elem_struct_type->getPointerTo()),
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
-                // Copy each element via the vtable copy function.
                 llvm::FunctionType* copy_fn_ty = llvm_utils->struct_copy_functype;
-                llvm::Value* copy_fn = builder->CreateBitCast(
-                    llvm_utils->CreateLoad2(
-                        llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)
-                            ->getPointerTo(), src_vptr),
-                    llvm::PointerType::get(copy_fn_ty, 0));
                 llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("reshape_class_deepcopy", [&]() {
@@ -1353,9 +1341,9 @@ namespace LCompilers {
                         llvm_utils->CreateLoad2(i64_ty, ui), num_elems_64);
                 }, [&]() {
                     llvm::Value* ui_val = llvm_utils->CreateLoad2(i64_ty, ui);
-                    llvm::Value* off = builder->CreateMul(ui_val, elem_size_val);
-                    builder->CreateCall(copy_fn_ty, copy_fn, {
-                        builder->CreateGEP(llvm::Type::getInt8Ty(context), src_raw, off),
+                    llvm::Value* off = builder->CreateMul(ui_val, src_w.elem_size);
+                    builder->CreateCall(copy_fn_ty, src_w.copy_fn, {
+                        builder->CreateGEP(llvm::Type::getInt8Ty(context), src_w.data, off),
                         builder->CreateGEP(llvm::Type::getInt8Ty(context), dest_raw, off)});
                     builder->CreateStore(
                         builder->CreateAdd(ui_val,
