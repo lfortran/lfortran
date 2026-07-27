@@ -7323,7 +7323,12 @@ namespace Transpose {
             end do
          */
         declare_basic_variables("_lcompilers_transpose");
-        fill_func_arg("matrix_a_t", duplicate_type_with_empty_dims(al, arg_types[0]));
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]))) {
+            fill_func_arg_struct_type("matrix_a_t",
+                duplicate_type_with_empty_dims(al, arg_types[0]), m_args[0].m_value);
+        } else {
+            fill_func_arg("matrix_a_t", duplicate_type_with_empty_dims(al, arg_types[0]));
+        }
         ASR::ttype_t* return_type_ = return_type;
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
@@ -7342,7 +7347,12 @@ namespace Transpose {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
-        ASR::expr_t *result = declare("result", return_type_, Out);
+        ASR::expr_t *result = nullptr;
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(return_type_))) {
+            result = declare_struct_type("result", return_type_, Out, m_args[0].m_value);
+        } else {
+            result = declare("result", return_type_, Out);
+        }
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *j = declare("j", int32, Local);
