@@ -2095,7 +2095,13 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             if (shared_executable) {
                 options += " -shared ";
-                if (!install_name.empty()) {
+                // `-install_name` is a Darwin-only linker flag; only forward it
+                // on macOS. On other platforms (e.g. GNU ld) it is not
+                // understood and would break the link.
+                if (!install_name.empty()
+                && (compiler_options.platform == LCompilers::Platform::macOS_Intel
+                || compiler_options.platform == LCompilers::Platform::macOS_ARM
+                || compiler_options.platform == LCompilers::Platform::macOS_PowerPC)) {
                     options += " -Wl,-install_name," + install_name + " ";
                 }
             }
