@@ -669,22 +669,33 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
      * After one shift: (mant_a << 112) / mant_b gives a 112-bit or 113-bit quotient.
      */
 
-    /* Method: 113-step binary restoring division */
+    /* Method: 113-step binary restoring division.
+     * Pre-normalise so that remainder/mant_b is in [1, 2): the restoring
+     * step below removes at most one mant_b per bit, so it requires the
+     * partial remainder to stay below 2*mant_b. */
     u128 remainder = mant_a;
     u128 quotient  = u128_zero();
-    /* We want quotient = floor(mant_a * 2^113 / mant_b), giving 113 bits */
-    for (int i = 0; i < 113; i++) {
+    int32_t rexp = exp_a - exp_b;
+    if (!u128_gte(remainder, mant_b)) {
         remainder = u128_shl1(remainder);
-        quotient  = u128_shl1(quotient);
+        rexp -= 1;
+    }
+    /* Generate 113 mantissa bits; the first one is the leading 1. */
+    for (int i = 0; i < 113; i++) {
+        quotient = u128_shl1(quotient);
         if (u128_gte(remainder, mant_b)) {
             remainder = u128_sub(remainder, mant_b);
             quotient  = u128_or(quotient, u128_one());
         }
+        if (i < 112) remainder = u128_shl1(remainder);
     }
     /* Round: if remainder*2 >= mant_b, round up */
     if (u128_gte(u128_shl1(remainder), mant_b)) quotient = u128_inc(quotient);
-
-    int32_t rexp = exp_a - exp_b - 1;  /* -1 because quotient has an extra factor of 2 */
+    /* Rounding may carry out of the 113-bit mantissa */
+    if (!u128_is_zero(u128_shr(quotient, 113))) {
+        quotient = u128_shr(quotient, 1);
+        rexp++;
+    }
 
     return f128_pack_parts(rsign, rexp, quotient);
 }
@@ -770,7 +781,9 @@ double __trunctfdf2_lf_impl(lf_float128 a) {
     int round_bit = u128_bit(p.mant, rsh - 1);
     u128 sticky    = u128_and(p.mant, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
     if (round_bit && (!u128_is_zero(sticky) || (dmant & 1))) dmant++;
-    if (dmant >> 52) { dmant >>= 1; dexp++; }
+    /* Carry out of the 52-bit fraction: the mantissa became 10.0...0, so the
+     * new fraction is zero (dmant is the fraction, not the full mantissa). */
+    if (dmant >> 52) { dmant = 0; dexp++; }
     uint64_t bits = ((uint64_t)p.sign << 63) | ((uint64_t)dexp << 52) | dmant;
     double r; memcpy(&r, &bits, 8); return r;
 }
@@ -964,7 +977,7 @@ lf_float128 lf_f128_pow(lf_float128 base, lf_float128 exp_v) {
 /* biased exp: 16382 (true exp -1), mant bits */
 static lf_float128 f128_ln2(void) {
     return f128_const(0, 16382,
-        0x00002C5C85FDF473U, 0xDE3A68C90C02396EU);
+        0x000062E42FEFA39EU, 0xF35793C7673007E6U);
 }
 
 /* 1/ln(2) */
@@ -984,19 +997,19 @@ static lf_float128 f128_log10e(void) {
 /* pi = 3.14159265358979... */
 static lf_float128 f128_pi(void) {
     return f128_const(0, 16384,
-        0x00001921FB54442DU, 0x18469898CC51701BU);
+        0x0000921FB54442D1U, 0x8469898CC51701B8U);
 }
 
 /* pi/2 */
 static lf_float128 f128_pi_2(void) {
     return f128_const(0, 16383,
-        0x00001921FB54442DU, 0x18469898CC51701BU);
+        0x0000921FB54442D1U, 0x8469898CC51701B8U);
 }
 
 /* pi/4 */
 static lf_float128 f128_pi_4(void) {
     return f128_const(0, 16382,
-        0x00001921FB54442DU, 0x18469898CC51701BU);
+        0x0000921FB54442D1U, 0x8469898CC51701B8U);
 }
 
 /* Evaluate polynomial: coeffs[0] + coeffs[1]*x + ... + coeffs[n-1]*x^(n-1)
@@ -1077,9 +1090,9 @@ lf_float128 lf_f128_log(lf_float128 a) {
      * Let u = (m-1)/(m+1), log(m) = 2*atanh(u) = 2*(u + u^3/3 + u^5/5 + ...)
      * u = (m-1)/(m+1) ∈ [0, 1/3) since m ∈ [1, 2).
      */
-    int32_t n = p.exp - 112;  /* exponent, so m = a * 2^(-n) ∈ [1,2) */
+    int32_t n = p.exp;  /* exponent, so m = a * 2^(-n) ∈ [1,2) */
     /* Build m = a with exponent forced to 0 */
-    lf_float128 m = f128_pack_parts(0, 112, p.mant);  /* m ∈ [1, 2) */
+    lf_float128 m = f128_pack_parts(0, 0, p.mant);  /* m ∈ [1, 2) */
 
     /* u = (m - 1) / (m + 1) */
     lf_float128 one = f128_one();
