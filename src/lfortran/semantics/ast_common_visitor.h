@@ -1908,6 +1908,8 @@ public:
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
         {"ichar", IntrinsicSignature({"C", "kind"}, 1, 2)},
         {"char", IntrinsicSignature({"I", "kind"}, 1, 2)},
+        {"lcobound", IntrinsicSignature({"coarray", "dim", "kind"}, 1, 3)},
+        {"ucobound", IntrinsicSignature({"coarray", "dim", "kind"}, 1, 3)},
         {"achar", IntrinsicSignature({"I", "kind"}, 1, 2)},
         {"iachar", IntrinsicSignature({"C", "kind"}, 1, 2)},
         {"set_exponent", IntrinsicSignature({"X", "I"}, 2, 2)},

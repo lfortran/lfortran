@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-cobounds_01-18eddb0",
+    "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true",
+    "infile": "tests/cobounds_01.f90",
+    "infile_hash": "26b30a7bd86989dd8fd957e537d1c4fe7489bc5638c058a50673fd50",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-cobounds_01-18eddb0.f90",
+    "stdout_hash": "6807821f22dc6628a33a0210f6d60e22ea8379c1523ffbd8bfd0deeb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -155,6 +155,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     CommandArgumentCount,
     ThisImage,
     NumImages,
+    LCoBound,
+    UCoBound,
     SignFromValue,
     Logical,
     Nint,
@@ -1808,6 +1810,107 @@ namespace ThisImage {
 
 } // namespace ThisImage
 
+namespace LCoBound {
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 3, "lcobound() takes 1 to 3 arguments", x.base.base.loc, diagnostics);
+    }
+    static ASR::expr_t *eval_LCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+    static inline ASR::asr_t* create_LCoBound(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t *dim = nullptr;
+        ASR::expr_t *kind = nullptr;
+        if (args.size() >= 2) dim = args[1];
+        if (args.size() == 3) kind = args[2];
+        int64_t kind_const = 4; // Default integer kind
+        if (kind) {
+            ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
+            if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
+                if( !ASRUtils::extract_value(kind_value, kind_const) ) LCOMPILERS_ASSERT(false);
+            }
+        }
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
+        if (!dim) {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim_t;
+            dim_t.loc = loc;
+            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type));
+            
+            int n_dims = 0;
+            if (ASR::is_a<ASR::Var_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[0])->m_v);
+                n_dims = ASRUtils::symbol_corank(sym);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
+                n_dims = ASRUtils::symbol_corank(sym);
+            }
+            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, return_type));
+            dims.push_back(al, dim_t);
+            return_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, return_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+        }
+
+        Vec<ASR::expr_t*> final_args;
+        final_args.reserve(al, 2);
+        final_args.push_back(al, args[0]);
+        if (dim) {
+            final_args.push_back(al, dim);
+        }
+
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::LCoBound), final_args.p, final_args.n, 0, return_type, nullptr);
+    }
+}
+
+namespace UCoBound {
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 3, "ucobound() takes 1 to 3 arguments", x.base.base.loc, diagnostics);
+    }
+    static ASR::expr_t *eval_UCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+    static inline ASR::asr_t* create_UCoBound(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t *dim = nullptr;
+        ASR::expr_t *kind = nullptr;
+        if (args.size() >= 2) dim = args[1];
+        if (args.size() == 3) kind = args[2];
+        int64_t kind_const = 4; // Default integer kind
+        if (kind) {
+            ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
+            if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
+                if( !ASRUtils::extract_value(kind_value, kind_const) ) LCOMPILERS_ASSERT(false);
+            }
+        }
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
+        if (!dim) {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim_t;
+            dim_t.loc = loc;
+            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type));
+            
+            int n_dims = 0;
+            if (ASR::is_a<ASR::Var_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[0])->m_v);
+                n_dims = ASRUtils::symbol_corank(sym);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
+                n_dims = ASRUtils::symbol_corank(sym);
+            }
+            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, return_type));
+            dims.push_back(al, dim_t);
+            return_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, return_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+        }
+
+        Vec<ASR::expr_t*> final_args;
+        final_args.reserve(al, 2);
+        final_args.push_back(al, args[0]);
+        if (dim) {
+            final_args.push_back(al, dim);
+        }
+
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::UCoBound), final_args.p, final_args.n, 0, return_type, nullptr);
+    }
+}
 namespace NumImages {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {

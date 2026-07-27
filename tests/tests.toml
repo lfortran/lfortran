@@ -5286,3 +5286,9 @@ filename = "coarray_teams_01.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+
+[[test]]
+filename = "cobounds_01.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
