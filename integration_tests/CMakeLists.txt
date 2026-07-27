@@ -492,6 +492,7 @@ RUN(NAME value_attribute_03 LABELS llvm)
 RUN(NAME volatile_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME volatile_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
 
 RUN(NAME cond_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)

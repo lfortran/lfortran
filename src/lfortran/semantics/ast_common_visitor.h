@@ -5431,7 +5431,11 @@ public:
                                 ::AttrSequence) {
                             // TODO: Implement it for CPP backend
                         } else if (sa->m_attr == AST::simple_attributeType
-                                ::AttrAsynchronous) {                        
+                                ::AttrAsynchronous) {
+                        } else if (sa->m_attr == AST::simple_attributeType
+                                ::AttrVolatile) {
+                            // no-op: LFortran does not perform optimizations
+                            // that VOLATILE would need to suppress
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute declaration not supported yet",
@@ -5918,6 +5922,9 @@ public:
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
                                     // no-op: valid Fortran 2003, LFortran's runtime is synchronous
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
+                                    // no-op: LFortran does not perform optimizations
+                                    // that VOLATILE would need to suppress
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",
