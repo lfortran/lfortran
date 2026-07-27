@@ -1,7 +1,7 @@
 program real128_compare_01
     use, intrinsic :: iso_fortran_env, only: real128
     implicit none
-    real(real128) :: a, b, c
+    real(real128) :: a, b, c, nan
     integer :: n
 
     ! Build the values from a quantity that is only known at run time so that
@@ -55,6 +55,21 @@ program real128_compare_01
     if (.not. (a == b)) error stop 24
     if (a < b) error stop 25
     if (a > b) error stop 26
+
+    ! NaN is unordered: ordered comparisons and equality are false, /= is true.
+    nan = a / a
+    if (nan == a) error stop 27
+    if (a == nan) error stop 28
+    if (.not. (nan /= a)) error stop 29
+    if (.not. (a /= nan)) error stop 30
+    if (nan < a) error stop 31
+    if (a < nan) error stop 32
+    if (nan <= a) error stop 33
+    if (a <= nan) error stop 34
+    if (nan > a) error stop 35
+    if (a > nan) error stop 36
+    if (nan >= a) error stop 37
+    if (a >= nan) error stop 38
 
     print *, "ok"
 end program real128_compare_01
