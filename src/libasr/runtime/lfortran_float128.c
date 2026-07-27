@@ -1730,6 +1730,7 @@ int __unordtf2(lf_f128_abi a, lf_f128_abi b) { return __unordtf2_lf_impl(lf_f128
  * LLVM-emitted `call fp128 @lf_sqrtq(fp128)` / `lf_powq(fp128, fp128)`. */
 lf_f128_abi lf_sqrtq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_sqrt(lf_f128_from_abi(a))); }
 lf_f128_abi lf_powq(lf_f128_abi a, lf_f128_abi b)   { return lf_f128_to_abi(lf_f128_pow(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
+lf_f128_abi lf_log10q(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_log10(lf_f128_from_abi(a))); }
 #endif
 
 /* ========================================================================
@@ -2011,6 +2012,7 @@ _LF_SHIM2(__divtf3,          __divtf3_lf_impl)
  * `call fp128 @lf_sqrtq(fp128)` / `lf_powq(fp128, fp128)`. They bridge to the
  * struct-ABI implementations in lf_f128_sqrt / lf_f128_pow. */
 _LF_SHIM1(lf_sqrtq,          lf_f128_sqrt)
+_LF_SHIM1(lf_log10q,         lf_f128_log10)
 _LF_SHIM2(lf_powq,           lf_f128_pow)
 _LF_SHIM1(__negtf2,          __negtf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)

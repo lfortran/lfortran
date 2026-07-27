@@ -289,6 +289,11 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         default : {
             if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
                 c_func_name = "_lfortran_s" + new_name;
+            } else if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 16
+                    && new_name == "log10") {
+                // fp128 SIMD-ABI entry point in the runtime; bridges to the
+                // struct-ABI lf_f128_log10 (same pattern as lf_sqrtq)
+                c_func_name = "lf_log10q";
             } else {
                 c_func_name = "_lfortran_d" + new_name;
             }
