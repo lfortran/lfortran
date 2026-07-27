@@ -465,8 +465,8 @@ int __eqtf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(
 int __netf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) != 0 ? 1 : 0; }
 int __lttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
 int __letf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __gttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
-int __getf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+int __gttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?-1:c; }
+int __getf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?-1:c; }
 int __unordtf2_lf_impl(lf_float128 a, lf_float128 b) { return (f128_is_nan(a)||f128_is_nan(b))?1:0; }
 #endif
 
@@ -1687,11 +1687,7 @@ static lf_float128 lf_f128_from_abi(lf_f128_abi v) {
     return r;
 }
 #else
-/* Compilers without vector extensions (MSVC): keep the historical
- * struct-based signatures. */
-typedef lf_float128 lf_f128_abi;
-#define lf_f128_to_abi(v)   (v)
-#define lf_f128_from_abi(v) (v)
+#error "unsupported real(16) compiler-rt ABI for this target; add target-specific fp128 ABI wrappers before enabling these entry points"
 #endif
 
 lf_f128_abi __addtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__addtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
