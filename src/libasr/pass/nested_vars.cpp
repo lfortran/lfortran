@@ -928,24 +928,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 ASR::symbol_t *orig_sym = nml->m_var_list[i];
                 auto it_ext = nested_var_to_ext_var.find(orig_sym);
                 if (it_ext != nested_var_to_ext_var.end()) {
-                    std::string m_name = it_ext->second.first;
                     ASR::symbol_t *t = it_ext->second.second;
-                    std::string sym_name = ASRUtils::symbol_name(t);
-                    ASR::symbol_t *existing = current_scope->get_symbol(sym_name);
-                    ASR::symbol_t *ext_sym = nullptr;
-                    if (existing != nullptr &&
-                            ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
-                            ASRUtils::symbol_get_past_external(existing) == t) {
-                        ext_sym = existing;
-                    } else {
-                        std::string unique_name = sym_name;
-                        if (existing != nullptr) {
-                            unique_name = current_scope->get_unique_name(sym_name, false);
-                        }
-                        ext_sym = make_external_symbol(al, current_scope, t, unique_name,
-                            m_name, sym_name, ASR::accessType::Public);
-                    }
-                    nml->m_var_list[i] = ext_sym;
+                    std::string &m_name = it_ext->second.first;
+                    nml->m_var_list[i] = resolve_or_create_external_symbol(al, current_scope, t, m_name);
                 }
             }
         }
