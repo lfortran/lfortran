@@ -807,6 +807,15 @@ public:
         visit_ttype(*x.m_type);
         _return_var_or_intent_out = false;
 
+        for (size_t i = 0; i < x.n_codims; i++) {
+            if (x.m_codims[i].m_start) {
+                visit_expr(*x.m_codims[i].m_start);
+            }
+            if (x.m_codims[i].m_end) {
+                visit_expr(*x.m_codims[i].m_end);
+            }
+        }
+
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
 
