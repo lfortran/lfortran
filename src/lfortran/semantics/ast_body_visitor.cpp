@@ -8686,7 +8686,7 @@ public:
                         // procedures, so do not reject a later call that passes
                         // a different type (e.g. netcdf's v2-API `ncagt` called
                         // first with a byte array and then with a short array).
-                        if (is_implicit_interface_function((ASR::symbol_t*)f)) {
+                        if (is_implicit_interface_function(&f->base)) {
                             skip_check = true;
                         }
                         // Check if types are equal
