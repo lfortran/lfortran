@@ -8176,38 +8176,6 @@ public:
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
-                // Two implicit-interface external procedures can share the
-                // same link name yet be seen with different argument lists,
-                // e.g. a module declares `external :: nf_create` (no
-                // interface, zero args) while the caller passes actual
-                // arguments (nf_create(a, b, c)). The earlier, less complete
-                // declaration would otherwise be reused for the call site and
-                // the LLVM verifier would reject the call ("Incorrect number
-                // of arguments passed to called function!"). When the current
-                // interface has more arguments, replace the earlier
-                // declaration with one matching the current signature so all
-                // call sites use the correct type; existing references are
-                // redirected through a bitcast (they refer to the same
-                // link-time symbol).
-                if (F->getFunctionType() != function_type &&
-                        function_type->getNumParams() >
-                            F->getFunctionType()->getNumParams()) {
-                    llvm::Function* old_F = F;
-                    llvm::Function* new_F = llvm::Function::Create(
-                        function_type, llvm::Function::ExternalLinkage, "",
-                        module.get());
-                    std::string kept_name = old_F->getName().str();
-                    old_F->replaceAllUsesWith(
-                        llvm::ConstantExpr::getBitCast(new_F, old_F->getType()));
-                    old_F->eraseFromParent();
-                    new_F->setName(kept_name);
-                    for (auto& kv : llvm_symtab_fn) {
-                        if (kv.second == old_F) {
-                            kv.second = new_F;
-                        }
-                    }
-                    F = new_F;
-                }
             }
             llvm_symtab_fn[h] = F;
 
