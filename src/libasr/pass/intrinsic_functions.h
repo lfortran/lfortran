@@ -6145,7 +6145,7 @@ namespace StringLenTrim {
 namespace StringTrim {
 
     static ASR::expr_t *eval_StringTrim(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         // Trim trailing spaces (in place)
         size_t len = strlen(str);
@@ -6157,9 +6157,10 @@ namespace StringTrim {
             }
         }
 
-        ASR::ttype_t* str_type = ASRBuilder(al, loc).String(
+        int char_kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind,
             make_ConstantWithType(make_IntegerConstant_t, strlen(str), int32, loc), 
-            ASR::ExpressionLength);
+            ASR::ExpressionLength, ASR::string_physical_typeType::DescriptorString));
         return make_ConstantWithType(make_StringConstant_t, str, str_type, loc);
     }
 
@@ -6167,9 +6168,10 @@ namespace StringTrim {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
         declare_basic_variables("_lcompilers_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
+        int char_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
-        return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim,
+        return_type = TYPE(ASR::make_String_t(al, loc, char_kind, func_call_lentrim,
             ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::DescriptorString));
         auto result = declare("result", return_type, ReturnVar);
