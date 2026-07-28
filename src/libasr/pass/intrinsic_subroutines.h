@@ -1321,7 +1321,29 @@ namespace MoveAlloc {
         ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+    static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        for (size_t i = 0; i < 2; i++) {
+            ASR::symbol_t *sym = nullptr;
+            ASR::expr_t* expr = args[i];
+            
+            if (expr->type == ASR::exprType::ArrayPhysicalCast) {
+                expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+            }
+            
+            if (expr->type == ASR::exprType::Var) {
+                sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            } else if (expr->type == ASR::exprType::StructInstanceMember) {
+                sym = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m;
+            }
+
+            if (sym && ASRUtils::is_coarray(sym)) {
+                diag.add(diag::Diagnostic(
+                    "move_alloc is not yet supported for coarrays",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("", { loc })}));
+                return nullptr;
+            }
+        }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
         m_args.push_back(al, args[0]); m_args.push_back(al, args[1]);
         return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc), m_args.p, m_args.n, 0);
