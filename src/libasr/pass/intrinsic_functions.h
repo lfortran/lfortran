@@ -1512,7 +1512,9 @@ namespace OutOfRange
         } else if (is_real(*arg_type_1)) {
             double value = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             if (is_integer(*arg_type_2)) {
-                if (value > (double) max_val_int || value < (double) min_val_int) {
+                bool round = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+                double int_value = round ? std::round(value) : std::trunc(value);
+                if (int_value > (double) max_val_int || int_value < (double) min_val_int) {
                     return b.bool_t(1, return_type);
                 }
             } else if (is_real(*arg_type_2)) {
@@ -1539,34 +1541,66 @@ namespace OutOfRange
 
         ASR::expr_t* max_val = nullptr;
         ASR::expr_t* min_val = nullptr;
+        ASR::expr_t* max_val_real = nullptr;
+        ASR::expr_t* min_val_real = nullptr;
+        ASR::expr_t* max_trunc_real = nullptr;
+        ASR::expr_t* min_trunc_real = nullptr;
+        ASR::expr_t* max_round_real = nullptr;
+        ASR::expr_t* min_round_real = nullptr;
         int kind1 = extract_kind_from_ttype_t(arg_types[0]);
         int kind2 = extract_kind_from_ttype_t(arg_types[1]);
+        ASR::ttype_t* real_bound_type = is_real(*arg_types[0]) ? arg_types[0] : real64;
 
         if (is_integer(*arg_types[1])) {
-        if (kind2 == 4) {
-            if (kind1 == 4) {
-                max_val = b.i32(2147483647);
-                min_val = b.i32(-2147483648);
-                body.push_back(al,
-                    b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
-                        { b.Assignment(result, b.bool_t(true, return_type)) },
-                        { b.Assignment(result, b.bool_t(false, return_type)) }));
-            } else {
+            if (kind2 == 1) {
+                max_val = b.i64(127);
+                min_val = b.i64(-128);
+                max_trunc_real = b.f_t(128.0, real_bound_type);
+                min_trunc_real = b.f_t(-129.0, real_bound_type);
+                max_round_real = b.f_t(127.5, real_bound_type);
+                min_round_real = b.f_t(-128.5, real_bound_type);
+            } else if (kind2 == 2) {
+                max_val = b.i64(32767);
+                min_val = b.i64(-32768);
+                max_trunc_real = b.f_t(32768.0, real_bound_type);
+                min_trunc_real = b.f_t(-32769.0, real_bound_type);
+                max_round_real = b.f_t(32767.5, real_bound_type);
+                min_round_real = b.f_t(-32768.5, real_bound_type);
+            } else if (kind2 == 4) {
                 max_val = b.i64(2147483647);
                 min_val = b.i64(-2147483648);
-                body.push_back(al,
-                    b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
-                        { b.Assignment(result, b.bool_t(true, return_type)) },
-                        { b.Assignment(result, b.bool_t(false, return_type)) }));
+                max_val_real = b.f_t(2147483647.0, real_bound_type);
+                min_val_real = b.f_t(-2147483648.0, real_bound_type);
+            } else if (kind2 == 8) {
+                max_val = b.i64(9223372036854775807);
+                min_val = b.i64(-9223372036854775807);
+                max_val_real = b.f_t(9223372036854775807.0, real_bound_type);
+                min_val_real = b.f_t(-9223372036854775807.0, real_bound_type);
             }
-        } else if (kind2 == 8) {
-            max_val = b.i64(9223372036854775807);
-            min_val = b.i64(-9223372036854775807);
-            body.push_back(al,
-                b.If(b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)),
+
+            if (is_integer(*arg_types[0])) {
+                ASR::expr_t* value = kind1 == 8 ? args[0] : b.i2i_t(args[0], int64);
+                body.push_back(al,
+                    b.If(b.Or(b.Gt(value, max_val), b.Lt(value, min_val)),
                     { b.Assignment(result, b.bool_t(true, return_type)) },
                     { b.Assignment(result, b.bool_t(false, return_type)) }));
-        }
+            } else {
+                if (max_trunc_real && min_trunc_real && max_round_real && min_round_real) {
+                    body.push_back(al,
+                        b.If(args[2],
+                        { b.If(b.Or(b.GtE(args[0], max_round_real), b.LtE(args[0], min_round_real)),
+                            { b.Assignment(result, b.bool_t(true, return_type)) },
+                            { b.Assignment(result, b.bool_t(false, return_type)) }) },
+                        { b.If(b.Or(b.GtE(args[0], max_trunc_real), b.LtE(args[0], min_trunc_real)),
+                            { b.Assignment(result, b.bool_t(true, return_type)) },
+                            { b.Assignment(result, b.bool_t(false, return_type)) }) }));
+                } else {
+                    body.push_back(al,
+                        b.If(b.Or(b.Gt(args[0], max_val_real), b.Lt(args[0], min_val_real)),
+                            { b.Assignment(result, b.bool_t(true, return_type)) },
+                            { b.Assignment(result, b.bool_t(false, return_type)) }));
+                }
+            }
         } else if (is_real(*arg_types[1])) {
             if (kind2 == 4) {
                 if (kind1 == 4) {
