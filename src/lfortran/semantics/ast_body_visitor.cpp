@@ -9194,10 +9194,37 @@ public:
         all_loops_blocks_nesting += 1;
         bool in_loop_copy = in_loop;
         in_loop = true;
-        Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
-        heads.reserve(al,x.n_control);
-        AST::decl_attribute_t *current_type = nullptr;
-        for(size_t i=0;i<x.n_control;i++) {
+
+        SymbolTable *parent_scope = current_scope;
+        ASR::symbol_t *block_sym = nullptr;
+        ASR::Block_t *block = nullptr;
+        std::string block_name;
+
+        bool needs_scope_block = false;
+        for (size_t i = 0; i < x.n_control; i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t *)x.m_control[i];
+            if (h.m_type) {
+                needs_scope_block = true;
+                break;
+            }
+        }
+        if (needs_scope_block) {
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            block_name = parent_scope->get_unique_name("~do_concurrent_block_");
+            block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al, x.base.base.loc, current_scope,
+                                                                        s2c(al, block_name), nullptr, 0));
+            block = ASR::down_cast<ASR::Block_t>(block_sym);
+            // Add the Block before lowering the loop so that
+            // current_scope->asr_owner is correctly initialized.
+            parent_scope->add_symbol(block_name, block_sym);
+        }
+
+        try{
+            Vec<ASR::do_loop_head_t> heads;
+            heads.reserve(al, x.n_control);
+            AST::decl_attribute_t *current_type = nullptr;
+
+            for(size_t i=0;i<x.n_control;i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             if (! h.m_var) {
                 diag.add(Diagnostic(
@@ -9228,18 +9255,17 @@ public:
             if (h.m_type) {
                 current_type = h.m_type;
             }
+
             if (current_type) {
                 // A type-spec (e.g. `do concurrent (integer :: j = ...)`)
-                // declares the index variable. If a variable of the same name
-                // already exists in the current scope, reuse it instead of
-                // adding a duplicate symbol.
+                // A typed concurrent control declares its index variable
+                // in the compiler-generated Block scope.
                 ASR::symbol_t *var_sym = current_scope->get_symbol(var_name);
                 if (var_sym == nullptr) {
-                    AST::decl_attribute_t *decl_type = current_type;
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, 1);
                     ASR::symbol_t *type_declaration;
-                    ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, decl_type, false, false,
+                    ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, current_type, false, false,
                                                         dims, nullptr, type_declaration, ASR::abiType::Source);
                     var_sym = ASR::down_cast<ASR::symbol_t>(
                         ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, var_name),
@@ -9271,9 +9297,9 @@ public:
             head.loc = head.m_v->base.loc;
             heads.push_back(al, head);
         }
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
-        transform_stmts(body, x.n_body, x.m_body);
+        Vec<ASR::stmt_t*> lowered_body;
+        lowered_body.reserve(al, x.n_body);
+        transform_stmts(lowered_body, x.n_body, x.m_body);
         Vec<ASR::reduction_expr_t> reductions; reductions.reserve(al, 1);
         Vec<ASR::expr_t*> shared_expr; shared_expr.reserve(al, 1);
         Vec<ASR::expr_t*> local_expr; local_expr.reserve(al, 1);
@@ -9334,8 +9360,31 @@ public:
                 }
             }
         }
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
-                body.size());
+        Vec<ASR::stmt_t *> do_concurrent_body;
+        if (needs_scope_block) {
+            block->m_body = lowered_body.p;
+            block->n_body = lowered_body.size();
+            do_concurrent_body.reserve(al, 1);
+            do_concurrent_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, x.base.base.loc,
+                                                                                -1, block_sym)));
+        } else {
+            do_concurrent_body.reserve(al, lowered_body.size());
+            for (size_t i = 0; i < lowered_body.size(); i++) {
+                do_concurrent_body.push_back(al, lowered_body.p[i]);
+            }
+        }
+        current_scope = parent_scope;
+        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, do_concurrent_body.p,
+                do_concurrent_body.size());
+        } catch(...) {
+            current_scope = parent_scope;
+            if (needs_scope_block && parent_scope->get_symbol(block_name)) {
+                parent_scope->erase_symbol(block_name);
+            }
+            all_loops_blocks_nesting -= 1;
+            in_loop = in_loop_copy;
+            throw;
+        }
         all_loops_blocks_nesting -= 1;
         in_loop = in_loop_copy;
     }

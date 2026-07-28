@@ -1902,15 +1902,40 @@ public:
     }
 
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
-        for ( size_t i = 0; i < x.n_local; i++ ) {
-            require(ASR::is_a<ASR::Var_t>(*x.m_local[i]),
+        SymbolTable *parent_symtab = current_symtab;
+        SymbolTable *loop_symtab = nullptr;
+
+        // A typed DO CONCURRENT control is lowered with a generated Block
+        // whose symbol table owns the construct-local index variable.
+        if (x.n_body == 1 && ASR::is_a<ASR::BlockCall_t>(*x.m_body[0])) {
+            ASR::BlockCall_t *block_call = ASR::down_cast<ASR::BlockCall_t>(x.m_body[0]);
+
+            if (ASR::is_a<ASR::Block_t>(*block_call->m_m)) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                std::string block_name = block->m_name;
+                if (block_name.find("~do_concurrent_block_") == 0) {
+                    loop_symtab = block->m_symtab;
+                }
+            }
+        }
+
+        if (loop_symtab) {
+            current_symtab = loop_symtab;
+        }
+
+        for (size_t i = 0; i < x.n_local; i++) {
+            require(
+                ASR::is_a<ASR::Var_t>(*x.m_local[i]),
                 "DoConcurrentLoop::m_local must be a Var");
         }
-        for ( size_t i = 0; i < x.n_shared; i++ ) {
-            require(ASR::is_a<ASR::Var_t>(*x.m_shared[i]),
+
+        for (size_t i = 0; i < x.n_shared; i++) {
+            require(
+                ASR::is_a<ASR::Var_t>(*x.m_shared[i]),
                 "DoConcurrentLoop::m_shared must be a Var");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_DoConcurrentLoop(x);
+        current_symtab = parent_symtab;
     }
 
 };

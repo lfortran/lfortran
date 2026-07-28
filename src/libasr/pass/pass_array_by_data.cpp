@@ -582,6 +582,40 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
     EditProcedureVisitor(PassArrayByDataProcedureVisitor& v_):
     v(v_), replacer(v) {}
 
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        SymbolTable *current_scope_copy = current_scope;
+
+        // A typed DO CONCURRENT control is owned by the compiler-generated
+        // Block scope. Visit the loop head and body using that scope so the
+        // construct-local index is not resolved to a same-named symbol in
+        // the enclosing scope.
+        if (x.n_body == 1 &&
+                ASR::is_a<ASR::BlockCall_t>(*x.m_body[0])) {
+            ASR::BlockCall_t *block_call =
+                ASR::down_cast<ASR::BlockCall_t>(x.m_body[0]);
+
+            if (ASR::is_a<ASR::Block_t>(*block_call->m_m)) {
+                ASR::Block_t *block =
+                    ASR::down_cast<ASR::Block_t>(
+                        block_call->m_m);
+
+                if (block->m_name &&
+                        std::string(block->m_name).find(
+                            "~do_concurrent_block_") == 0) {
+                    current_scope = block->m_symtab;
+                }
+            }
+        }
+
+        try {
+            ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_DoConcurrentLoop(x);
+        } catch (...) {
+            current_scope = current_scope_copy;
+            throw;
+        }
+        current_scope = current_scope_copy;
+    }
+
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
