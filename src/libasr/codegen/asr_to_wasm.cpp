@@ -1182,6 +1182,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_module_implicit_interface_decl(x)) {
+            return;
+        }
         declare_all_functions(*x.m_symtab);
         if (is_unsupported_function(x)) {
             return;

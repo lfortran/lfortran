@@ -8065,6 +8065,12 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_module_implicit_interface_decl(x)) {
+            // A procedure declared `external` with no interface. Its
+            // argument list is unknown, so there is no signature to emit;
+            // every call site lowers its own inferred interface instead.
+            return;
+        }
         llvm::DIScope* debug_current_scope_copy = debug_current_scope;
         loop_head.clear();
         loop_head_names.clear();
@@ -8120,6 +8126,9 @@ public:
     }
 
     void instantiate_function(const ASR::Function_t &x){
+        if (ASRUtils::is_module_implicit_interface_decl(x)) {
+            return;
+        }
         llvm::DIScope* debug_current_scope_copy = debug_current_scope;
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
@@ -8236,7 +8245,8 @@ public:
                         } else {
                             fn_name = mangle_prefix + sym_name;
                         }
-                    } else if (ASRUtils::get_FunctionType(*var)->m_deftype == ASR::deftypeType::Interface &&
+                    } else if (ASRUtils::is_declaration_deftype(
+                            ASRUtils::get_FunctionType(*var)->m_deftype) &&
                         ASRUtils::get_FunctionType(*var)->m_abi != ASR::abiType::Intrinsic) {
                         fn_name = sym_name;
                     } else {
@@ -23623,7 +23633,8 @@ public:
                         tmp = llvm_symtab_fn[h];
                     } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
                                 ASR::is_a<ASR::Function_t>(*var_sym) &&
-                                ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface ) {
+                                ASRUtils::is_declaration_deftype(
+                                    ASRUtils::get_FunctionType(fn)->m_deftype) ) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
                         tmp = llvm_symtab_fn[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)

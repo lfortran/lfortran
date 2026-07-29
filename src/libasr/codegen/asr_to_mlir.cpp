@@ -167,6 +167,9 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_module_implicit_interface_decl(x)) {
+            return;
+        }
         ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
         if (fnType->m_deftype == ASR::deftypeType::Interface) {
