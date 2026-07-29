@@ -724,7 +724,7 @@ R"(#include <stdio.h>
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        if (ASRUtils::is_module_implicit_interface_decl(x)) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
             return;
         }
         std::string sub = "";
