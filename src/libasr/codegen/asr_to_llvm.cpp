@@ -14519,12 +14519,13 @@ public:
             return;
         }
         // Fortran permits (but does not require) short-circuit evaluation of
-        // the .and. and .or. logical operators. Real-world code commonly
-        // relies on it to guard the second operand, e.g.
+        // the .and. and .or. logical operators. Real-world code sometimes
+        // incorrectly relies on it to guard the second operand, e.g.
         //     if (i >= 1 .and. a(i) == x) ...
         // where a(i) must not be evaluated when i < 1. Under
         // --logical-short-circuit, evaluate the right operand only when the
-        // left operand does not already determine the result.
+        // left operand does not already determine the result. One can use this
+        // option with such non-conforming code.
         if (compiler_options.po.logical_short_circuit &&
                 ASRUtils::is_logical(*x.m_type) &&
                 (x.m_op == ASR::logicalbinopType::And ||
