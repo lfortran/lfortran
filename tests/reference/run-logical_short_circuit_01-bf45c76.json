@@ -1,0 +1,13 @@
+{
+    "basename": "run-logical_short_circuit_01-bf45c76",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/logical_short_circuit_01.f90",
+    "infile_hash": "9ca448d9a8c6e94f1a4ef344d8d098773de3f01bfc84a1783c5fc20a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-logical_short_circuit_01-bf45c76.stderr",
+    "stderr_hash": "191aa3c53b5f52ae87a24b9e5ecc76d150ff6f6068eebc70e4376cd2",
+    "returncode": 1
+}

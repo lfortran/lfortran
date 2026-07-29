@@ -73,6 +73,9 @@ struct PassOptions {
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
+    // Short-circuit evaluation of logical .and./.or. (the standard permits
+    // but does not require it); off by default.
+    bool logical_short_circuit = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
     bool coarray = false;
     std::vector<std::string> vector_of_time_report;

@@ -5298,3 +5298,7 @@ filename = "coarray_teams_02.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/logical_short_circuit_01.f90"
+run = true
