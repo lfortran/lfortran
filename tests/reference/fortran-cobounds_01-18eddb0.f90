@@ -34,39 +34,39 @@ interface
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
         procedure(prif_coarray_cleanup_interface), pointer, intent(in) :: final_proc
-        integer(8), dimension(:), intent(in), value :: lcobounds
-        integer(8), intent(in), value :: size_in_bytes
+        integer(8), dimension(:), intent(in) :: lcobounds
+        integer(8), intent(in) :: size_in_bytes
         integer(4), intent(out), optional :: stat
-        integer(8), dimension(:), intent(in), value :: ucobounds
+        integer(8), dimension(:), intent(in) :: ucobounds
     end subroutine __module_prif_prif_allocate_coarray
 end interface
 
 interface
-    subroutine __module_prif_prif_init(exit_code)
-        integer(4), intent(out) :: exit_code
+    subroutine __module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
     end subroutine __module_prif_prif_init
 end interface
 
 interface
     subroutine __module_prif_prif_lcobound_no_dim(coarray, lcobounds)
-        type(prif_coarray_handle), intent(in), value :: coarray
+        type(prif_coarray_handle), intent(in) :: coarray
         integer(8), dimension(:), intent(out) :: lcobounds
     end subroutine __module_prif_prif_lcobound_no_dim
 end interface
 
 interface
     subroutine __module_prif_prif_lcobound_with_dim(coarray, dim, lcobound)
-        type(prif_coarray_handle), intent(in), value :: coarray
-        integer(4), intent(in), value :: dim
+        type(prif_coarray_handle), intent(in) :: coarray
+        integer(4), intent(in) :: dim
         integer(8), intent(out) :: lcobound
     end subroutine __module_prif_prif_lcobound_with_dim
 end interface
 
 interface
     subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
-        logical(1), intent(in), value :: quiet
-        character(len=*, kind=1), intent(in), optional, value :: stop_code_char
-        integer(4), intent(in), optional, value :: stop_code_int
+        logical(1), intent(in) :: quiet
+        character(len=*, kind=1), intent(in), optional :: stop_code_char
+        integer(4), intent(in), optional :: stop_code_int
     end subroutine __module_prif_prif_stop
 end interface
 
@@ -80,15 +80,15 @@ end interface
 
 interface
     subroutine __module_prif_prif_ucobound_no_dim(coarray, ucobounds)
-        type(prif_coarray_handle), intent(in), value :: coarray
+        type(prif_coarray_handle), intent(in) :: coarray
         integer(8), dimension(:), intent(out) :: ucobounds
     end subroutine __module_prif_prif_ucobound_no_dim
 end interface
 
 interface
     subroutine __module_prif_prif_ucobound_with_dim(coarray, dim, ucobound)
-        type(prif_coarray_handle), intent(in), value :: coarray
-        integer(4), intent(in), value :: dim
+        type(prif_coarray_handle), intent(in) :: coarray
+        integer(4), intent(in) :: dim
         integer(8), intent(out) :: ucobound
     end subroutine __module_prif_prif_ucobound_with_dim
 end interface
