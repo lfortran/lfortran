@@ -7697,20 +7697,6 @@ public:
             }
         }
         if (!original_sym || (original_sym && is_external)) {
-            if (to_lower(sub_name) == "exit") {
-                diag.semantic_warning_label(
-                    "Routine `" + sub_name + "` is a non-standard function",
-                    {x.base.base.loc},
-                    ""
-                );
-                ASR::expr_t* arg = nullptr;
-                if ( x.n_args >= 1 ) {
-                    visit_expr(*x.m_args[0].m_end);
-                    arg = ASRUtils::EXPR(tmp);
-                }
-                tmp = ASR::make_Stop_t( al, x.base.base.loc, arg );
-                return;
-            }
             if (to_lower(sub_name) == "flush") {
                 // assigns 'tmp' to an ASR node
                 flush_subroutine_to_flush_statement(x);
@@ -9839,6 +9825,27 @@ public:
         ASR::expr_t *errmsg = nullptr;
         resolve_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync memory", stat, errmsg);
         tmp = ASR::make_SyncMemory_t(al, x.base.base.loc, stat, errmsg);
+    }
+
+    void visit_SyncTeam(const AST::SyncTeam_t &x) {
+        ASR::expr_t *team = nullptr;
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            team = ASRUtils::EXPR(tmp);
+            check_intrinsic_team_value(team, x.base.base.loc,
+                "team_value", "sync team");
+        } else {
+            diag.add(Diagnostic(
+                "`sync team` requires a team_value",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        resolve_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync team", stat, errmsg);
+        tmp = ASR::make_SyncTeam_t(al, x.base.base.loc, team, stat, errmsg);
     }
 
     void visit_FormTeam(const AST::FormTeam_t &x) {

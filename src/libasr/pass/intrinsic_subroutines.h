@@ -40,6 +40,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     CoMax,
     CoMin,
     CoBroadcast,
+    Exit,
     // ...
 };
 
@@ -1778,6 +1779,93 @@ namespace Sleep {
     }
 
 } // namespace Sleep
+
+namespace Exit {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1, "Unexpected number of args, exit takes 1 argument, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])), "Argument to exit must be of integer type", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Exit(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        diag.semantic_warning_label(
+                "Routine `exit` is a non-standard function", { loc }, "");
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        if (args.size() >= 1 && args[0] != nullptr) {
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+            if (!ASRUtils::is_integer(*arg_type)) {
+                diag.add(diag::Diagnostic(
+                    "`status` argument of `exit` must be of integer type, but got " +
+                        ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("must be of integer type", { args[0]->base.loc })}));
+                return nullptr;
+            }
+            m_args.push_back(al, args[0]);
+        } else {
+            // `call exit` / `call exit()` exits with status 0
+            m_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))));
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Exit), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_Exit(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        const std::string c_func_name = "_lfortran_exit";
+        const std::string new_name = "_lcompilers_exit_";
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("status", arg_types[0], In);
+
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
+        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n",
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+            ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+        args_1.push_back(al, arg);
+
+        SetChar dep_1; dep_1.reserve(al, 0);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 0);
+        ASR::symbol_t *c_sym = make_ASR_Function_t(
+            s2c(al, c_func_name),
+            fn_symtab_1,
+            dep_1,
+            args_1,
+            body_1,
+            nullptr,
+            ASR::abiType::BindC,
+            ASR::deftypeType::Interface,
+            s2c(al, c_func_name)
+        );
+        fn_symtab->add_symbol(c_func_name, c_sym);
+        dep.push_back(al, s2c(al, c_func_name));
+
+        Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
+        {
+            ASR::call_arg_t arg0; arg0.loc = loc; arg0.m_value = CastingUtil::perform_casting(args[0],
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), al, loc);
+            call_args.push_back(al, arg0);
+        }
+        body.push_back(al, b.SubroutineCall(c_sym, call_args));
+
+        ASR::symbol_t *fn_sym = make_ASR_Function_t(
+            s2c(al, fn_name),
+            fn_symtab,
+            dep,
+            args,
+            body,
+            nullptr,
+            ASR::abiType::Source,
+            ASR::deftypeType::Implementation,
+            nullptr
+        );
+        scope->add_symbol(fn_name, fn_sym);
+        return b.SubroutineCall(fn_sym, new_args);
+    }
+
+} // namespace Exit
 
 namespace CoSum {
 
