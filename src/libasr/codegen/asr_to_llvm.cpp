@@ -14522,10 +14522,11 @@ public:
         // the .and. and .or. logical operators. Real-world code commonly
         // relies on it to guard the second operand, e.g.
         //     if (i >= 1 .and. a(i) == x) ...
-        // where a(i) must not be evaluated when i < 1. Evaluate the right
-        // operand only when the left operand does not already determine the
-        // result.
-        if (ASRUtils::is_logical(*x.m_type) &&
+        // where a(i) must not be evaluated when i < 1. Under
+        // --logical-short-circuit, evaluate the right operand only when the
+        // left operand does not already determine the result.
+        if (compiler_options.po.logical_short_circuit &&
+                ASRUtils::is_logical(*x.m_type) &&
                 (x.m_op == ASR::logicalbinopType::And ||
                  x.m_op == ASR::logicalbinopType::Or)) {
             this->visit_expr_load_wrapper(x.m_left,
@@ -14551,6 +14552,14 @@ public:
             }
 
             builder->SetInsertPoint(rhs_bb);
+            // String temporaries created while evaluating the right operand
+            // are normally freed at the end of the enclosing statement, but
+            // that would emit frees of conditionally-created values on the
+            // unconditional path after the merge block (and reference values
+            // that do not dominate it). Free them here, inside the
+            // conditionally-executed block, once the operand's value has been
+            // computed.
+            size_t strings_n_before_rhs = strings_to_be_deallocated.n;
             this->visit_expr_load_wrapper(x.m_right,
                 LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
             llvm::Value *right_val = tmp;
@@ -14558,6 +14567,7 @@ public:
                 ASRUtils::expr_type(x.m_right), right_val);
             llvm::Value *right_cond = builder->CreateICmpNE(
                 right_val, llvm::ConstantInt::get(right_val->getType(), 0));
+            free_strings_to_be_deallocated(strings_n_before_rhs);
             // Evaluating the right operand may introduce new basic blocks
             // (e.g. array bounds checks), so capture the current block.
             llvm::BasicBlock *rhs_end_bb = builder->GetInsertBlock();
