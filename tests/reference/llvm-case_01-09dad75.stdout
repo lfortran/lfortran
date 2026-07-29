@@ -118,65 +118,49 @@ then13:                                           ; preds = %ifcont12
   store i64 11, i64* %out, align 8
   %18 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %18, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
-  br label %ifcont20
+  br label %ifcont18
 
 else14:                                           ; preds = %ifcont12
   %19 = load i64, i64* %i, align 8
   %20 = icmp eq i64 %19, 2
-  %21 = icmp ne i1 %20, false
-  br i1 %21, label %logical_sc_merge, label %logical_sc_rhs
+  %21 = load i64, i64* %i, align 8
+  %22 = icmp eq i64 %21, 3
+  %23 = or i1 %20, %22
+  %24 = load i64, i64* %i, align 8
+  %25 = icmp eq i64 %24, 4
+  %26 = or i1 %23, %25
+  br i1 %26, label %then15, label %else16
 
-logical_sc_rhs:                                   ; preds = %else14
-  %22 = load i64, i64* %i, align 8
-  %23 = icmp eq i64 %22, 3
-  %24 = icmp ne i1 %23, false
-  br label %logical_sc_merge
-
-logical_sc_merge:                                 ; preds = %logical_sc_rhs, %else14
-  %25 = phi i1 [ true, %else14 ], [ %24, %logical_sc_rhs ]
-  %26 = icmp ne i1 %25, false
-  br i1 %26, label %logical_sc_merge16, label %logical_sc_rhs15
-
-logical_sc_rhs15:                                 ; preds = %logical_sc_merge
-  %27 = load i64, i64* %i, align 8
-  %28 = icmp eq i64 %27, 4
-  %29 = icmp ne i1 %28, false
-  br label %logical_sc_merge16
-
-logical_sc_merge16:                               ; preds = %logical_sc_rhs15, %logical_sc_merge
-  %30 = phi i1 [ true, %logical_sc_merge ], [ %29, %logical_sc_rhs15 ]
-  br i1 %30, label %then17, label %else18
-
-then17:                                           ; preds = %logical_sc_merge16
+then15:                                           ; preds = %else14
   store i64 22, i64* %out, align 8
-  %31 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %31, i32 5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
-  br label %ifcont19
+  %27 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %27, i32 5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i32 1)
+  br label %ifcont17
 
-else18:                                           ; preds = %logical_sc_merge16
-  br label %ifcont19
+else16:                                           ; preds = %else14
+  br label %ifcont17
 
-ifcont19:                                         ; preds = %else18, %then17
-  br label %ifcont20
+ifcont17:                                         ; preds = %else16, %then15
+  br label %ifcont18
 
-ifcont20:                                         ; preds = %ifcont19, %then13
-  %32 = load i64, i64* %out, align 8
-  %33 = icmp ne i64 %32, 22
-  br i1 %33, label %then21, label %else22
+ifcont18:                                         ; preds = %ifcont17, %then13
+  %28 = load i64, i64* %out, align 8
+  %29 = icmp ne i64 %28, 22
+  br i1 %29, label %then19, label %else20
 
-then21:                                           ; preds = %ifcont20
+then19:                                           ; preds = %ifcont18
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
-  br label %ifcont23
+  br label %ifcont21
 
-else22:                                           ; preds = %ifcont20
-  br label %ifcont23
+else20:                                           ; preds = %ifcont18
+  br label %ifcont21
 
-ifcont23:                                         ; preds = %else22, %then21
+ifcont21:                                         ; preds = %else20, %then19
   br label %return
 
-return:                                           ; preds = %ifcont23
+return:                                           ; preds = %ifcont21
   br label %FINALIZE_SYMTABLE_case_01
 
 FINALIZE_SYMTABLE_case_01:                        ; preds = %return

@@ -21,28 +21,19 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 1, i32* %a, align 4
   store i32 0, i32* %b, align 4
   %2 = load i32, i32* %a, align 4
-  %3 = icmp ne i32 %2, 0
-  br i1 %3, label %logical_sc_rhs, label %logical_sc_merge
-
-logical_sc_rhs:                                   ; preds = %.entry
-  %4 = load i32, i32* %b, align 4
+  %3 = load i32, i32* %b, align 4
+  %4 = and i32 %2, %3
   %5 = icmp ne i32 %4, 0
-  br label %logical_sc_merge
+  br i1 %5, label %then, label %else
 
-logical_sc_merge:                                 ; preds = %logical_sc_rhs, %.entry
-  %6 = phi i1 [ false, %.entry ], [ %5, %logical_sc_rhs ]
-  %7 = zext i1 %6 to i32
-  %8 = icmp ne i32 %7, 0
-  br i1 %8, label %then, label %else
-
-then:                                             ; preds = %logical_sc_merge
-  %9 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %9, i32 26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+then:                                             ; preds = %.entry
+  %6 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %6, i32 26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %ifcont
 
-else:                                             ; preds = %logical_sc_merge
-  %10 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %10, i32 27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+else:                                             ; preds = %.entry
+  %7 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %7, i32 27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then

@@ -49,28 +49,20 @@ define i32 @__module_operator_overloading_01_overload_comp_m_greater_than_invers
 .entry:
   %greater_than_inverse = alloca i32, align 4
   %0 = load i32, i32* %log1, align 4
-  br i1 true, label %logical_sc_rhs, label %logical_sc_merge
-
-logical_sc_rhs:                                   ; preds = %.entry
   %1 = load i32, i32* %log2, align 4
-  %2 = icmp ne i32 %1, 0
-  br label %logical_sc_merge
-
-logical_sc_merge:                                 ; preds = %logical_sc_rhs, %.entry
-  %3 = phi i1 [ false, %.entry ], [ %2, %logical_sc_rhs ]
-  %4 = zext i1 %3 to i32
-  %5 = xor i32 %0, %4
+  %2 = and i32 1, %1
+  %3 = xor i32 %0, %2
+  %4 = xor i32 %3, 1
+  %5 = xor i32 %4, 0
   %6 = xor i32 %5, 1
-  %7 = xor i32 %6, 0
-  %8 = xor i32 %7, 1
-  %9 = icmp ne i32 %8, 0
-  br i1 %9, label %then, label %else
+  %7 = icmp ne i32 %6, 0
+  br i1 %7, label %then, label %else
 
-then:                                             ; preds = %logical_sc_merge
+then:                                             ; preds = %.entry
   store i32 1, i32* %greater_than_inverse, align 4
   br label %ifcont
 
-else:                                             ; preds = %logical_sc_merge
+else:                                             ; preds = %.entry
   store i32 0, i32* %greater_than_inverse, align 4
   br label %ifcont
 
@@ -81,36 +73,28 @@ return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_greater_than_inverse
 
 FINALIZE_SYMTABLE_greater_than_inverse:           ; preds = %return
-  %10 = load i32, i32* %greater_than_inverse, align 4
-  ret i32 %10
+  %8 = load i32, i32* %greater_than_inverse, align 4
+  ret i32 %8
 }
 
 define i32 @__module_operator_overloading_01_overload_comp_m_less_than_inverse(i32* %log1, i32* %log2) {
 .entry:
   %less_than_inverse = alloca i32, align 4
   %0 = load i32, i32* %log1, align 4
-  br i1 false, label %logical_sc_rhs, label %logical_sc_merge
-
-logical_sc_rhs:                                   ; preds = %.entry
   %1 = load i32, i32* %log2, align 4
-  %2 = icmp ne i32 %1, 0
-  br label %logical_sc_merge
-
-logical_sc_merge:                                 ; preds = %logical_sc_rhs, %.entry
-  %3 = phi i1 [ false, %.entry ], [ %2, %logical_sc_rhs ]
-  %4 = zext i1 %3 to i32
-  %5 = xor i32 %0, %4
+  %2 = and i32 0, %1
+  %3 = xor i32 %0, %2
+  %4 = xor i32 %3, 1
+  %5 = xor i32 %4, 1
   %6 = xor i32 %5, 1
-  %7 = xor i32 %6, 1
-  %8 = xor i32 %7, 1
-  %9 = icmp ne i32 %8, 0
-  br i1 %9, label %then, label %else
+  %7 = icmp ne i32 %6, 0
+  br i1 %7, label %then, label %else
 
-then:                                             ; preds = %logical_sc_merge
+then:                                             ; preds = %.entry
   store i32 1, i32* %less_than_inverse, align 4
   br label %ifcont
 
-else:                                             ; preds = %logical_sc_merge
+else:                                             ; preds = %.entry
   store i32 0, i32* %less_than_inverse, align 4
   br label %ifcont
 
@@ -121,8 +105,8 @@ return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_less_than_inverse
 
 FINALIZE_SYMTABLE_less_than_inverse:              ; preds = %return
-  %10 = load i32, i32* %less_than_inverse, align 4
-  ret i32 %10
+  %8 = load i32, i32* %less_than_inverse, align 4
+  ret i32 %8
 }
 
 define i32 @main(i32 %0, i8** %1) {
