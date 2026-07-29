@@ -49,7 +49,7 @@ public:
 
         void visit_Function(const ASR::Function_t& x) {
             ASR::Function_t* x_ptr = &const_cast<ASR::Function_t&>(x);
-            if (ASRUtils::is_module_implicit_interface_decl(x)) {
+            if (ASRUtils::is_bare_implicit_interface(x)) {
                 // A procedure declared `external` with no interface. It has no
                 // signature to lower and is never code-generated; every call
                 // site references its own inferred interface instead.
