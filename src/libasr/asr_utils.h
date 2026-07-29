@@ -8258,9 +8258,23 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
-                    "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
-                        ASRUtils::get_type_code(orig_arg_type) + ")");
+                // An implicit-interface external procedure uses the BindC ABI
+                // with a synthesized `Interface` signature whose dummy types
+                // were inferred from an earlier call; standard Fortran does no
+                // argument checking for such procedures, so the actual type
+                // need not match. The raw pointer/value is passed as-is (any
+                // physical-type reconciliation for arrays happens below), so
+                // skip the equal-type guard here. A real explicit interface
+                // (e.g. an `interface ... bind(c)` block) with a mismatching
+                // type is already rejected during semantic analysis.
+                bool is_implicit_interface_external =
+                    func_type->m_abi == ASR::abiType::BindC &&
+                    func_type->m_deftype == ASR::deftypeType::Interface;
+                if (!is_implicit_interface_external) {
+                    LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
+                        "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
+                            ASRUtils::get_type_code(orig_arg_type) + ")");
+                }
             }
         }
         if( ASRUtils::is_array(arg_type) && ASRUtils::is_array(orig_arg_type) ) {

@@ -1774,6 +1774,13 @@ class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
     std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
+    // Functions synthesized by `create_implicit_interface_function()` for
+    // implicit-interface external procedures. Their dummy-argument types are
+    // inferred from the first call site, so they do NOT represent a real
+    // interface. Standard Fortran performs no argument checking for
+    // implicit-interface externals, hence later calls must not be rejected for
+    // passing a different argument type than the first call.
+    std::set<ASR::symbol_t*> implicit_interface_functions;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -4878,7 +4885,17 @@ public:
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
-            assgnd_access[sym] = ASR::accessType::Public;
+            // Respect the default accessibility of the enclosing scope (e.g. a
+            // module `private` statement) as well as any explicit access already
+            // assigned to this name. An external procedure declared in a
+            // `private` module must be private, otherwise `use` would wrongly
+            // import it and later re-declarations (e.g. via an F77 `include`)
+            // would be reported as bogus redeclarations.
+            ASR::accessType ext_access = dflt_access;
+            if (assgnd_access.find(sym) != assgnd_access.end()) {
+                ext_access = assgnd_access[sym];
+            }
+            assgnd_access[sym] = ext_access;
             if (assgnd_pointer.count(sym) > 0) {
                 ASR::ttype_t *type = nullptr;
                 if (determined_type) {
@@ -4921,7 +4938,7 @@ public:
                     variable_dependencies_vec.size(),
                     ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, ptr_type, iface_sym,
-                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::abiType::Source, ext_access,
                     ASR::presenceType::Required, false);
                 current_scope->add_or_overwrite_symbol(
                     sym, ASR::down_cast<ASR::symbol_t>(var));
@@ -4986,7 +5003,7 @@ public:
                 /* a_body */ nullptr,
                 /* n_body */ 0,
                 /* a_return_var */ to_return,
-                ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+                ASR::abiType::BindC, ext_access, ASR::deftypeType::Interface,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -5078,21 +5095,26 @@ public:
     }
 
     bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
-        if (scope) {
-            external_procedures = external_procedures_mapping[get_hash(scope->asr_owner)];
-        } else if (current_scope->asr_owner) {
-            external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
-        }
-        if (std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end()) {
+        // The `external_procedures` member accumulates the external procedures
+        // of the scope currently being built (filled by
+        // `create_external_function`). It is only persisted into
+        // `external_procedures_mapping` once that scope has been fully
+        // processed. We must consult it here *without* overwriting it: the
+        // previous implementation assigned the (still empty) map entry to this
+        // member, which dropped every external procedure declared earlier in
+        // the same scope, leaving only the last one.
+        if (std::find(external_procedures.begin(), external_procedures.end(),
+                sym) != external_procedures.end()) {
             return true;
         }
+        // Then consult the persisted mapping for the owner scope and all of
+        // its parent scopes.
         SymbolTable* s = (scope ? scope : current_scope);
-        s = s->parent;
         while (s && s->asr_owner) {
             auto it = external_procedures_mapping.find(get_hash(s->asr_owner));
             if (it != external_procedures_mapping.end()) {
-                const std::vector<std::string>& parent_procs = it->second;
-                if (std::find(parent_procs.begin(), parent_procs.end(), sym) != parent_procs.end()) {
+                const std::vector<std::string>& procs = it->second;
+                if (std::find(procs.begin(), procs.end(), sym) != procs.end()) {
                     return true;
                 }
             }
@@ -7535,7 +7557,11 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
                                 is_attr_external = true;
-                                assgnd_access[sym] = ASR::accessType::Public;
+                                // Do not force Public here: an external
+                                // procedure declared in a `private` module must
+                                // keep the default (private) accessibility so
+                                // that `use` does not import it. Only an
+                                // explicit access specification overrides it.
                                 if (assgnd_access.count(sym)) {
                                     s_access = assgnd_access[sym];
                                 }
@@ -12277,6 +12303,13 @@ public:
 
     void validate_create_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
+        // An implicit-interface external procedure has no real interface (its
+        // argument types were inferred from the first reference), so standard
+        // Fortran performs no argument checking; do not reject later references
+        // that pass a different type.
+        if (is_implicit_interface_function(f2)) {
+            return;
+        }
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(v);
 
@@ -16384,6 +16417,39 @@ public:
         return nullptr;
     }
 
+    // True if `f` is a procedure interface that LFortran synthesized for an
+    // implicit-interface external (see `implicit_interface_functions`).
+    bool is_implicit_interface_function(ASR::symbol_t* f) {
+        if (!f) return false;
+        return implicit_interface_functions.find(
+            ASRUtils::symbol_get_past_external(f)) != implicit_interface_functions.end();
+    }
+
+    // True if `v` is a use-associated procedure that was declared `external`
+    // with an implicit interface inside a module (e.g. `integer, external ::
+    // foo`). Such a declaration is recorded by `create_external_function` as a
+    // zero-argument BindC interface; once written to a .mod file and
+    // use-associated it loses any trace of being an implicit-interface
+    // external. Standard Fortran performs no argument checking for
+    // implicit-interface externals, so a call passing actual arguments must be
+    // accepted. We detect this shape at the call site so the implicit
+    // interface can be synthesized from the call exactly like a locally
+    // declared external.
+    bool is_use_associated_implicit_interface_external(ASR::symbol_t* v) {
+        if (!v || !ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+            return false;
+        }
+        ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(v);
+        if (!f2 || !ASR::is_a<ASR::Function_t>(*f2)) {
+            return false;
+        }
+        ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(f2);
+        return ft->m_deftype == ASR::deftypeType::Interface
+            && (ft->m_abi == ASR::abiType::BindC
+                || ft->m_abi == ASR::abiType::ExternalUndefined)
+            && ASR::down_cast<ASR::Function_t>(f2)->n_args == 0;
+    }
+
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
@@ -16604,6 +16670,7 @@ public:
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         sym_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        implicit_interface_functions.insert(ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
         is_implicit_interface = false;
@@ -17146,6 +17213,15 @@ public:
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
             }
+        }
+        if (compiler_options.implicit_interface && !is_external_procedure
+                && x.n_args > 0
+                && is_use_associated_implicit_interface_external(v)) {
+            // A module-declared implicit-interface external (read back from a
+            // .mod file) is recorded with zero formal arguments. Treat it like
+            // a locally declared external so the interface is synthesized from
+            // this call site instead of wrongly rejecting the arguments.
+            is_external_procedure = true;
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
