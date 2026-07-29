@@ -148,7 +148,6 @@
                         []
                         [(()
                         1
-                        ()
                         CodimensionExpr)]
                         []
                     )
@@ -163,7 +162,6 @@
                         []
                         [(()
                         1
-                        ()
                         CodimensionExpr)]
                         []
                     )
