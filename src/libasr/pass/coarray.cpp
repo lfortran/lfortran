@@ -2055,7 +2055,7 @@ class PRIFInterface {
             dims.push_back(al, d);
             ASR::ttype_t *lcobounds_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int64_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
             
-            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
+            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             ASR::symbol_t *lcobounds_sym = declare_variable(fn_symtab, loc, "lcobounds", lcobounds_type, ASR::intentType::Out, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             Vec<ASR::expr_t*> args; args.reserve(al, 2);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
@@ -2075,8 +2075,8 @@ class PRIFInterface {
             ASR::ttype_t *int32_type = int32;
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             
-            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
-            ASR::symbol_t *dim_sym = declare_variable(fn_symtab, loc, "dim", int32_type, ASR::intentType::In, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
+            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
+            ASR::symbol_t *dim_sym = declare_variable(fn_symtab, loc, "dim", int32_type, ASR::intentType::In, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             ASR::symbol_t *lcobound_sym = declare_variable(fn_symtab, loc, "lcobound", int64_type, ASR::intentType::Out, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             Vec<ASR::expr_t*> args; args.reserve(al, 3);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
@@ -2102,7 +2102,7 @@ class PRIFInterface {
             dims.push_back(al, d);
             ASR::ttype_t *ucobounds_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int64_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
 
-            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
+            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             ASR::symbol_t *ucobounds_sym = declare_variable(fn_symtab, loc, "ucobounds", ucobounds_type, ASR::intentType::Out, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             Vec<ASR::expr_t*> args; args.reserve(al, 2);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
@@ -2122,8 +2122,8 @@ class PRIFInterface {
             ASR::ttype_t *int32_type = int32;
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
 
-            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
-            ASR::symbol_t *dim_sym = declare_variable(fn_symtab, loc, "dim", int32_type, ASR::intentType::In, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
+            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
+            ASR::symbol_t *dim_sym = declare_variable(fn_symtab, loc, "dim", int32_type, ASR::intentType::In, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             ASR::symbol_t *ucobound_sym = declare_variable(fn_symtab, loc, "ucobound", int64_type, ASR::intentType::Out, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             Vec<ASR::expr_t*> args; args.reserve(al, 3);
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
