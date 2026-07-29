@@ -1860,7 +1860,9 @@ namespace LCoBound {
         if (kind) {
             ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
             if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
-                LCOMPILERS_ASSERT(ASRUtils::extract_value(kind_value, kind_const));
+                if (ASRUtils::extract_value(kind_value, kind_const)) {
+                    LCOMPILERS_ASSERT(false);
+                }
             }
         }
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
@@ -1911,7 +1913,9 @@ namespace UCoBound {
         if (kind) {
             ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
             if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
-                LCOMPILERS_ASSERT(ASRUtils::extract_value(kind_value, kind_const));
+                if (ASRUtils::extract_value(kind_value, kind_const)) {
+                    LCOMPILERS_ASSERT(false);
+                }
             }
         }
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
