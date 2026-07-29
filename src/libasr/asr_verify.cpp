@@ -539,6 +539,35 @@ public:
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
 
+        // Self-named generic specifics are stored as "<name>~genericprocedure".
+        // For external (non-module) interface bodies the real link name must be
+        // recorded explicitly in Function.link_name; backends must not recover
+        // it by string surgery.
+        {
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+            const std::string suffix = "~genericprocedure";
+            std::string name = x.m_name ? x.m_name : "";
+            bool has_genericprocedure_suffix =
+                name.size() > suffix.size() &&
+                name.compare(name.size() - suffix.size(), suffix.size(),
+                             suffix) == 0;
+            if (ftype->m_deftype == ASR::deftypeType::Interface &&
+                !ftype->m_module && has_genericprocedure_suffix) {
+                require(x.m_link_name != nullptr && x.m_link_name[0] != '\0',
+                    "Function `" + name + "` is a self-named external interface "
+                    "body and must set Function.link_name to the external "
+                    "linkage name");
+                if (x.m_link_name) {
+                    std::string expected = name.substr(
+                        0, name.size() - suffix.size());
+                    require(std::string(x.m_link_name) == expected,
+                        "Function `" + name + "` has link_name `" +
+                        std::string(x.m_link_name) + "` but expected `" +
+                        expected + "`");
+                }
+            }
+        }
+
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;

@@ -1283,7 +1283,7 @@ public:
                                    proc_interface->m_access,
                                    proc_interface->m_deterministic,
                                    proc_interface->m_side_effect_free,
-                                   nullptr);
+                                   nullptr, nullptr);
         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp));
         ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature);
         ASR::FunctionType_t* iface_type = ASRUtils::get_FunctionType(proc_interface);
@@ -1642,7 +1642,11 @@ public:
                 throw SemanticAbort();
             }
         }
+        char* generic_link_name = nullptr;
         if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
+            if (deftype == ASR::deftypeType::Interface) {
+                generic_link_name = s2c(al, to_lower(sym_name));
+            }
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -1694,7 +1698,8 @@ public:
             s_access, deftype, bindc_name,
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
-            is_requirement, init_deterministic, init_side_effect_free);
+            is_requirement, init_deterministic, init_side_effect_free,
+            nullptr, generic_link_name);
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -2334,8 +2339,17 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
+        // If this specific shares the generic interface's name, store it under
+        // "<name>~genericprocedure" so it does not clash with the GenericProcedure
+        // symbol. The external/link name remains "<name>"; for interface bodies
+        // record that in Function.link_name so backends do not invent or
+        // reverse-engineer names.
+        char* generic_link_name = nullptr;
         if (generic_procedures.find(sym_name) != generic_procedures.end()
             || interface_name == to_lower(sym_name)) {
+            if (deftype == ASR::deftypeType::Interface) {
+                generic_link_name = s2c(al, to_lower(sym_name));
+            }
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -2386,6 +2400,7 @@ public:
             /* m_is_restriction */ is_requirement,
             /* m_deterministic */ init_deterministic,
             /* m_side_effect_free */ init_side_effect_free, /* m_c_header */ nullptr,
+            /* m_link_name */ generic_link_name,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr
         );
@@ -3818,7 +3833,7 @@ public:
             bool any_error = false;
             for (auto &pname : proc.second) {
                 std::string correct_pname = pname.first;
-                if( pname.first == proc.first ) {
+                if( to_lower(pname.first) == proc.first ) {
                     correct_pname = pname.first + "~genericprocedure";
                 }
                 Str s;
