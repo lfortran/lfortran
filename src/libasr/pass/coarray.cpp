@@ -161,20 +161,20 @@ class PRIFInterface {
             ASR::ttype_t *cptr_type = b.CPtr();
             ASR::expr_t *image_num = b.Variable(fn_symtab, "image_num", int32_type,
                                                ASR::intentType::In, nullptr,
-                                               ASR::abiType::Source, true);
+                                               ASR::abiType::Source, false);
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
             ASR::expr_t *coarray_handle = make_struct_var(
                 fn_symtab, loc, "coarray_handle", handle_sym,
                 ASR::intentType::In, ASR::presenceType::Required, false);
             ASR::expr_t *offset = b.Variable(fn_symtab, "offset", int64_type,
                                              ASR::intentType::In, nullptr,
-                                             ASR::abiType::Source, true);
+                                             ASR::abiType::Source, false);
             ASR::expr_t *current_image_buffer = b.Variable(fn_symtab, "current_image_buffer", cptr_type,
                                                            ASR::intentType::In, nullptr,
-                                                           ASR::abiType::Source, true);
+                                                           ASR::abiType::Source, false);
             ASR::expr_t *size_in_bytes = b.Variable(fn_symtab, "size_in_bytes", int64_type,
                                                     ASR::intentType::In, nullptr,
-                                                    ASR::abiType::Source, true);
+                                                    ASR::abiType::Source, false);
             Vec<ASR::expr_t*> args;
             args.reserve(al, 8);
             args.push_back(al, image_num);
@@ -220,7 +220,7 @@ class PRIFInterface {
             dims.push_back(al, d);
             ASR::ttype_t *i64_arr = ASRUtils::make_Array_t_util(al, loc, i64, dims.p, dims.n);
             ASR::expr_t *sub = b.Variable(fn_symtab, "sub", i64_arr,
-                ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+                ASR::intentType::In, nullptr, ASR::abiType::Source, false);
 
             ASR::ttype_t *i32 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             ASR::symbol_t *initial_team_index_sym = declare_variable(
@@ -688,7 +688,7 @@ class PRIFInterface {
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
             ASR::expr_t *handle_arg = make_struct_var(
                 iface_symtab, loc, "handle", handle_struct,
-                ASR::intentType::In, ASR::presenceType::Required, true);
+                ASR::intentType::In, ASR::presenceType::Required, true); // deliberate value attrib
             Vec<ASR::expr_t*> iface_args; iface_args.reserve(al, 1);
             iface_args.push_back(al, handle_arg);
             ASR::asr_t *iface_fn = ASRUtils::make_Function_t_util(
@@ -718,11 +718,11 @@ class PRIFInterface {
             dims.push_back(al, d);
             ASR::ttype_t *i64_arr = ASRUtils::make_Array_t_util(al, loc, i64, dims.p, dims.n);
             ASR::expr_t *lcobounds = b.Variable(fn_symtab, "lcobounds", i64_arr,
-                ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+                ASR::intentType::In, nullptr, ASR::abiType::Source, false);
             ASR::expr_t *ucobounds = b.Variable(fn_symtab, "ucobounds", i64_arr,
-                ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+                ASR::intentType::In, nullptr, ASR::abiType::Source, false);
             ASR::expr_t *size_arg = b.Variable(fn_symtab, "size_in_bytes", i64,
-                ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+                ASR::intentType::In, nullptr, ASR::abiType::Source, false);
 #if CAF_PRIF_VERSION >= 8
             // final_proc: procedure(prif_coarray_cleanup_interface), pointer, intent(in)
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
@@ -740,36 +740,12 @@ class PRIFInterface {
                 ASR::intentType::In, cleanup_iface, ASR::abiType::BindC, false);
 #else
             ASR::expr_t *final_func = b.Variable(fn_symtab, "final_func", cptr,
-                ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+                ASR::intentType::In, nullptr, ASR::abiType::Source, false);
 #endif
             ASR::expr_t *handle_var = make_struct_var(fn_symtab, loc, "coarray_handle",
                 handle_struct, ASR::intentType::Out, ASR::presenceType::Required, false);
             ASR::expr_t *alloc_mem = b.Variable(fn_symtab, "allocated_memory", cptr,
                 ASR::intentType::Out, nullptr, ASR::abiType::Source, false);
-
-            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::symbol_t *stat_sym = declare_variable(
-                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
-
-            ASR::ttype_t *errmsg_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1, nullptr,
-                ASR::string_length_kindType::AssumedLength,
-                ASR::string_physical_typeType::DescriptorString));
-            ASR::symbol_t *errmsg_sym = declare_variable(
-                fn_symtab, loc, "errmsg", errmsg_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
-
-            ASR::ttype_t *errmsg_alloc_type = allocatable_deferred_string();
-            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
-                fn_symtab, loc, "errmsg_alloc", errmsg_alloc_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
 
             Vec<ASR::expr_t*> args; args.reserve(al, 9);
             args.push_back(al, lcobounds);
@@ -782,9 +758,7 @@ class PRIFInterface {
 #endif
             args.push_back(al, handle_var);
             args.push_back(al, alloc_mem);
-            args.push_back(al, stat);
-            args.push_back(al, errmsg);
-            args.push_back(al, errmsg_alloc);
+            declare_prif_status_args(fn_symtab, loc, args);
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
                 args.p, args.n, nullptr, 0, nullptr,
@@ -842,7 +816,7 @@ class PRIFInterface {
             ASR::ttype_t *int32_type = int32;
             // exit_code: integer(c_int), intent(out), optional
             ASR::symbol_t *ec_sym = declare_variable(
-                fn_symtab, loc, "exit_code", int32_type, ASR::intentType::Out, nullptr,
+                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false);
             ASR::expr_t *ec_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ec_sym));
@@ -945,18 +919,18 @@ class PRIFInterface {
                 ASR::string_length_kindType::AssumedLength,
                 ASR::string_physical_typeType::DescriptorString));
             ASR::expr_t *quiet = b.Variable(fn_symtab, "quiet", logical_type,
-                ASR::intentType::In, nullptr, ASR::abiType::Source, true);
+                ASR::intentType::In, nullptr, ASR::abiType::Source, false);
             // stop_code_int: integer(c_int), intent(in), optional
             ASR::symbol_t *sci_sym = declare_variable(
                 fn_symtab, loc, "stop_code_int", int32_type, ASR::intentType::In, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, true);
+                ASR::presenceType::Optional, false);
             ASR::expr_t *sci = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sci_sym));
             // stop_code_char: character(*), intent(in), optional
             ASR::symbol_t *scc_sym = declare_variable(
                 fn_symtab, loc, "stop_code_char", str_type, ASR::intentType::In, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, true);
+                ASR::presenceType::Optional, false);
             ASR::expr_t *scc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, scc_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 3);
             args.push_back(al, quiet);
@@ -1091,35 +1065,9 @@ class PRIFInterface {
             }
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *int32_type = int32;
-            ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, loc, 1, nullptr,
-                ASR::string_length_kindType::AssumedLength,
-                ASR::string_physical_typeType::DescriptorString));
-            ASR::ttype_t *alloc_str_type = allocatable_deferred_string();
-
-            ASR::symbol_t *stat_sym = declare_variable(
-                fn_symtab, loc, "stat", int32_type, ASR::intentType::Out, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *stat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, stat_sym));
-
-            ASR::symbol_t *errmsg_sym = declare_variable(
-                fn_symtab, loc, "errmsg", str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_sym));
-
-            ASR::symbol_t *errmsg_alloc_sym = declare_variable(
-                fn_symtab, loc, "errmsg_alloc", alloc_str_type, ASR::intentType::InOut, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Optional, false);
-            ASR::expr_t *errmsg_alloc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, errmsg_alloc_sym));
 
             Vec<ASR::expr_t*> args; args.reserve(al, 3);
-            args.push_back(al, stat);
-            args.push_back(al, errmsg);
-            args.push_back(al, errmsg_alloc);
+            declare_prif_status_args(fn_symtab, loc, args);
 
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,

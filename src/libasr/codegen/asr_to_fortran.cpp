@@ -2254,6 +2254,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(MoveAlloc, "move_alloc");
             SET_INTRINSIC_SUBROUTINE_NAME(Mvbits, "mvbits")
             SET_INTRINSIC_SUBROUTINE_NAME(Abort, "abort")
+            SET_INTRINSIC_SUBROUTINE_NAME(Exit, "exit")
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
             SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")

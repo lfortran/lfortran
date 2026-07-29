@@ -1916,6 +1916,7 @@ public:
         {"random_init", IntrinsicSignature({"repeatable", "image_distinct"}, 2, 2)},
         {"random_seed", IntrinsicSignature({"size", "put", "get"}, 0, 3)},
         {"abort", IntrinsicSignature({}, 0, 0)},
+        {"exit", IntrinsicSignature({"status"}, 0, 1)},
         {"get_command", IntrinsicSignature({"command", "length", "status"}, 0, 3)},
         {"get_command_argument", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
         // Legacy F77 alias for get_command_argument. Standard form is
@@ -3720,6 +3721,9 @@ public:
                                            ASR::symbol_t* var_sym,
                                            int64_t value,
                                            ASR::ttype_t* int_type) {
+        idl->m_start = replace_loop_var_in_expr(idl->m_start, var_sym, value, int_type);
+        idl->m_end = replace_loop_var_in_expr(idl->m_end, var_sym, value, int_type);
+        idl->m_increment = replace_loop_var_in_expr(idl->m_increment, var_sym, value, int_type);
         for (size_t i = 0; i < idl->n_values; i++) {
             ASR::expr_t* val = idl->m_values[i];
             if (ASR::is_a<ASR::ArrayItem_t>(*val)) {
@@ -5430,7 +5434,11 @@ public:
                                 ::AttrSequence) {
                             // TODO: Implement it for CPP backend
                         } else if (sa->m_attr == AST::simple_attributeType
-                                ::AttrAsynchronous) {                        
+                                ::AttrAsynchronous) {
+                        } else if (sa->m_attr == AST::simple_attributeType
+                                ::AttrVolatile) {
+                            // no-op: LFortran does not perform optimizations
+                            // that VOLATILE would need to suppress
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute declaration not supported yet",
@@ -5917,6 +5925,9 @@ public:
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
                                     // no-op: valid Fortran 2003, LFortran's runtime is synchronous
+                                } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
+                                    // no-op: LFortran does not perform optimizations
+                                    // that VOLATILE would need to suppress
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",

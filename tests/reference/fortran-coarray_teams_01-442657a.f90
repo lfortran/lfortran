@@ -45,16 +45,16 @@ interface
 end interface
 
 interface
-    subroutine __module_prif_prif_init(exit_code)
-        integer(4), intent(out) :: exit_code
+    subroutine __module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
     end subroutine __module_prif_prif_init
 end interface
 
 interface
     subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
-        logical(1), intent(in), value :: quiet
-        character(len=*, kind=1), intent(in), optional, value :: stop_code_char
-        integer(4), intent(in), optional, value :: stop_code_int
+        logical(1), intent(in) :: quiet
+        character(len=*, kind=1), intent(in), optional :: stop_code_char
+        integer(4), intent(in), optional :: stop_code_int
     end subroutine __module_prif_prif_stop
 end interface
 

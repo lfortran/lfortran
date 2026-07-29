@@ -382,7 +382,10 @@ public:
             if (is_module_variable(v)) {
                 continue;
             }
-            nesting_map[par_func_sym].insert(nml->m_var_list[i]);
+            if (current_scope && par_func_sym &&
+                !is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
+                nesting_map[par_func_sym].insert(nml->m_var_list[i]);
+            }
         }
     }
 
@@ -871,10 +874,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         for (size_t i = 0; i < nml->n_var_list; i++) {
             ASR::symbol_t *orig_sym = nml->m_var_list[i];
             auto it_ext = nested_var_to_ext_var.find(orig_sym);
-            if (it_ext == nested_var_to_ext_var.end()) {
-                continue;
+            if (it_ext != nested_var_to_ext_var.end()) {
+                var_list.push_back(al, it_ext->second.second);
+            } else {
+                var_list.push_back(al, orig_sym);
             }
-            var_list.push_back(al, it_ext->second.second);
         }
 
         std::string nml_name = ASRUtils::symbol_name(nml_sym);
@@ -893,20 +897,43 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             return;
         }
         (void)loc;
-        ASR::symbol_t *parent_func_sym = func_stack[func_stack.size() - 2];
-        ASR::symbol_t *nml_new_sym = get_nested_namelist_symbol(parent_func_sym, nml_sym);
-        if (!nml_new_sym) {
-            return;
+        
+        ASR::symbol_t *nml_sym_past = ASRUtils::symbol_get_past_external(nml_sym);
+        if (!ASR::is_a<ASR::Namelist_t>(*nml_sym_past)) return;
+        ASR::Namelist_t *nml = ASR::down_cast<ASR::Namelist_t>(nml_sym_past);
+
+        bool is_local_namelist = is_sym_in_scope_chain(nml->m_parent_symtab, current_scope);
+        
+        if (!is_local_namelist) {
+            ASR::symbol_t *parent_func_sym = func_stack[func_stack.size() - 2];
+            ASR::symbol_t *nml_new_sym = get_nested_namelist_symbol(parent_func_sym, nml_sym);
+            if (!nml_new_sym) {
+                return;
+            }
+            std::string sym_name = ASRUtils::symbol_name(nml_sym);
+            ASR::symbol_t *ext_sym = current_scope->resolve_symbol(sym_name);
+            if (!ext_sym || !ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym) ||
+                    ASRUtils::symbol_get_past_external(ext_sym) != nml_new_sym) {
+                std::string owner_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(nml_new_sym));
+                std::string unique_name = sym_name;
+                if (current_scope->get_symbol(sym_name)) {
+                    unique_name = current_scope->get_unique_name(sym_name, false);
+                }
+                ext_sym = make_external_symbol(al, current_scope, nml_new_sym, unique_name,
+                    owner_name, sym_name, ASR::accessType::Public);
+            }
+            nml_sym = ext_sym;
+        } else {
+            for (size_t i = 0; i < nml->n_var_list; i++) {
+                ASR::symbol_t *orig_sym = nml->m_var_list[i];
+                auto it_ext = nested_var_to_ext_var.find(orig_sym);
+                if (it_ext != nested_var_to_ext_var.end()) {
+                    ASR::symbol_t *t = it_ext->second.second;
+                    std::string &m_name = it_ext->second.first;
+                    nml->m_var_list[i] = resolve_or_create_external_symbol(al, current_scope, t, m_name);
+                }
+            }
         }
-        std::string sym_name = ASRUtils::symbol_name(nml_sym);
-        ASR::symbol_t *ext_sym = current_scope->resolve_symbol(sym_name);
-        if (!ext_sym || !ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym) ||
-                ASRUtils::symbol_get_past_external(ext_sym) != nml_new_sym) {
-            std::string owner_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(nml_new_sym));
-            ext_sym = make_external_symbol(al, current_scope, nml_new_sym, sym_name,
-                owner_name, sym_name, ASR::accessType::Public);
-        }
-        nml_sym = ext_sym;
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
