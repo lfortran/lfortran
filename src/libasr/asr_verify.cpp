@@ -870,6 +870,14 @@ public:
             }
         }
 
+        // link_name is either null or a non-empty string; backends may assert
+        // non-emptiness and must not treat "" as a special case.
+        if (x.m_link_name) {
+            require(x.m_link_name[0] != '\0',
+                "Function `" + std::string(x.m_name) +
+                "` has empty link_name; use null when it equals name");
+        }
+
         // Self-named generic specifics are stored as "<name>~genericprocedure".
         // For external (non-module) interface bodies the real link name must be
         // recorded explicitly in Function.link_name; backends must not recover
@@ -884,7 +892,7 @@ public:
                              suffix) == 0;
             if (ftype->m_deftype == ASR::deftypeType::Interface &&
                 !ftype->m_module && has_genericprocedure_suffix) {
-                require(x.m_link_name != nullptr && x.m_link_name[0] != '\0',
+                require(x.m_link_name != nullptr,
                     "Function `" + name + "` is a self-named external interface "
                     "body and must set Function.link_name to the external "
                     "linkage name");

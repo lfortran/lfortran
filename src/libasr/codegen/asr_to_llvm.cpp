@@ -124,7 +124,10 @@ static std::string compute_llvm_function_name(
     (void)compiler_options;
     bool is_external_interface = is_external_interface_function(ftype);
     bool is_bindc = (ftype->m_abi == ASR::abiType::BindC);
-    bool has_link_name = (link_name && link_name[0] != '\0');
+    // Non-null link_name is always non-empty (enforced by ASR verification).
+    if (link_name) {
+        LCOMPILERS_ASSERT(link_name[0] != '\0');
+    }
 
     std::string fn_name;
 
@@ -134,17 +137,15 @@ static std::string compute_llvm_function_name(
             // bind(c, name='foo') — use the explicit name
             fn_name = ftype->m_bindc_name;
         } else if (!ftype->m_bindc_name) {
-            // bind(c) without name= — use the Fortran name (or explicit
-            // Function.link_name when the symbol-table name was disambiguated)
-            fn_name = has_link_name ? link_name : sym_name;
+            // bind(c) without name= — use link_name when set, else Fortran name
+            fn_name = link_name ? link_name : sym_name;
         } else {
             // bind(c, name='') — empty name, use mangled name
             fn_name = mangle_prefix + sym_name;
         }
     } else if (is_external_interface) {
-        // External interface: link to the real external symbol. Prefer
-        // Function.link_name when m_name is only a symbol-table disambiguation.
-        fn_name = has_link_name ? link_name : sym_name;
+        // External interface: prefer Function.link_name when set
+        fn_name = link_name ? link_name : sym_name;
     } else {
         fn_name = mangle_prefix + sym_name;
     }

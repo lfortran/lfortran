@@ -11,11 +11,6 @@ unit
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, location start_name, location end_name)
-    -- link_name: optional object-file / external linkage name when it differs
-    -- from Function.name (e.g. self-named generic specifics stored as
-    -- "<name>~genericprocedure" in the symbol table but link as "<name>").
-    -- Independent of bind(C): FunctionType.bindc_name remains the BindC export
-    -- name only. Null means backends should use Function.name (default).
     | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, string? link_name, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
