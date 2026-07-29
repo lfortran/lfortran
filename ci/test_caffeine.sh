@@ -151,8 +151,8 @@ fi
 # so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
 # runs them, so LFortran's own behaviour stays verified.
 # coarrays_21: intermittent failures on OpenCoarrays
-# coarrays_31, coarrays_32: gfortran rejects allocate(arr_coarray[*], SOURCE/MOLD=...) for array coarrays
-opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21 coarrays_31 coarrays_32"
+# coarrays_31, coarrays_33: gfortran rejects allocate(arr_coarray[*], SOURCE/MOLD=...) for array coarrays
+opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21 coarrays_31 coarrays_33"
 
 for test_info in $tests; do
 testfile="${test_info%%:*}"
