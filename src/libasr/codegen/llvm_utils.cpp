@@ -2267,6 +2267,7 @@ namespace LCompilers {
                 --> Handle RunTime Length <--
                 * Call `_lfortran_string_malloc`. It handles proper length at runtime.
             */
+            len = convert_kind(len, llvm::Type::getInt64Ty(context));
             if (char_kind > 1) {
                 len = builder->CreateMul(len, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), char_kind));
             }

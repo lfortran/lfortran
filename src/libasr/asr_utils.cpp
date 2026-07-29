@@ -3919,6 +3919,8 @@ ASR::asr_t* make_ArraySize_t_util(
             if( (size_t) dim >= 1 && (size_t) dim <= af_n_dims &&
                 af_dims[dim - 1].m_length != nullptr ) {
                 return (ASR::asr_t*) af_dims[dim - 1].m_length;
+            } else if ((size_t) dim >= 1 && (size_t) dim <= af_n_dims) {
+                return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
             }
         }
     } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {

@@ -102,10 +102,10 @@ interface
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
         procedure(prif_coarray_cleanup_interface), pointer, intent(in) :: final_proc
-        integer(8), dimension(:), intent(in), value :: lcobounds
-        integer(8), intent(in), value :: size_in_bytes
+        integer(8), dimension(:), intent(in) :: lcobounds
+        integer(8), intent(in) :: size_in_bytes
         integer(4), intent(out), optional :: stat
-        integer(8), dimension(:), intent(in), value :: ucobounds
+        integer(8), dimension(:), intent(in) :: ucobounds
     end subroutine __module_prif_prif_allocate_coarray
 end interface
 
@@ -114,19 +114,19 @@ interface
         &
          stat, errmsg, errmsg_alloc)
         type(prif_coarray_handle), intent(in) :: coarray_handle
-        type(c_ptr), intent(in), value :: current_image_buffer
+        type(c_ptr), intent(in) :: current_image_buffer
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
-        integer(4), intent(in), value :: image_num
-        integer(8), intent(in), value :: offset
-        integer(8), intent(in), value :: size_in_bytes
+        integer(4), intent(in) :: image_num
+        integer(8), intent(in) :: offset
+        integer(8), intent(in) :: size_in_bytes
         integer(4), intent(out), optional :: stat
     end subroutine __module_prif_prif_get
 end interface
 
 interface
-    subroutine __module_prif_prif_init(exit_code)
-        integer(4), intent(out) :: exit_code
+    subroutine __module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
     end subroutine __module_prif_prif_init
 end interface
 
@@ -135,15 +135,15 @@ interface
         type(prif_coarray_handle), intent(in) :: coarray_handle
         integer(4), intent(out) :: initial_team_index
         integer(4), intent(out), optional :: stat
-        integer(8), dimension(:), intent(in), value :: sub
+        integer(8), dimension(:), intent(in) :: sub
     end subroutine __module_prif_prif_initial_team_index
 end interface
 
 interface
     subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
-        logical(1), intent(in), value :: quiet
-        character(len=*, kind=1), intent(in), optional, value :: stop_code_char
-        integer(4), intent(in), optional, value :: stop_code_int
+        logical(1), intent(in) :: quiet
+        character(len=*, kind=1), intent(in), optional :: stop_code_char
+        integer(4), intent(in), optional :: stop_code_int
     end subroutine __module_prif_prif_stop
 end interface
 

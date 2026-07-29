@@ -6690,7 +6690,10 @@ public:
                 // and might be returned.
                 if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
+                    // As above: only scalar class members are laid out as a
+                    // class wrapper; class array members are descriptors.
                     if (!LLVM::is_llvm_pointer(*v->m_type) &&
+                            !ASRUtils::is_array(v->m_type) &&
                             ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                         struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
                             ptr_member, module.get());
@@ -7598,7 +7601,12 @@ public:
                     }
                 }
             }
+            // Only scalar class variables have a class wrapper ({vptr, struct*})
+            // as their allocated type. For class arrays `ptr` is an array
+            // descriptor, so GEP-ing field 1 out of it would be a type error;
+            // their elements are initialized when the array is allocated.
             if (!LLVM::is_llvm_pointer(*v->m_type) &&
+                    !ASRUtils::is_array(v->m_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                 struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
                     ptr, module.get());
