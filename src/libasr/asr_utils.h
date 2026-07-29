@@ -6076,7 +6076,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc
 }
 
 // m_link_name: optional external linkage name when it differs from m_name
-// (see Function.link_name in ASR.asdl). Defaults to null = use m_name.
+// (see doc/src/asr/asr_nodes/symbol_nodes/Function.md). Defaults to null.
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
