@@ -2892,6 +2892,26 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
         std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
         std::string module_name);
 
+// True if the procedure is declared rather than defined: it has no body, so
+// the backend only emits a declaration for it. Includes both a real explicit
+// interface and an interface-less external (ImplicitInterface).
+static inline bool is_declaration_deftype(ASR::deftypeType deftype) {
+    return deftype == ASR::deftypeType::Interface
+        || deftype == ASR::deftypeType::ImplicitInterface;
+}
+
+// True if `x` has deftype ImplicitInterface: declared (e.g. `integer, external
+// :: f`) with no interface. ASR states that the argument list is unknown. It
+// is never a call target and never code-generated; every reference either
+// synthesizes a concrete Interface from the actuals or, for a later divergent
+// reference, goes through FunctionPointerCast. Once an interface is inferred
+// (including from a dummy/procedure-pointer use), deftype becomes Interface
+// and this returns false.
+static inline bool is_bare_implicit_interface(const ASR::Function_t &x) {
+    return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature)->m_deftype
+        == ASR::deftypeType::ImplicitInterface;
+}
+
 static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
     if (!ASR::is_a<ASR::Function_t>(*original_sym) || !ASR::is_a<ASR::Function_t>(*external_sym)) {
         return false;

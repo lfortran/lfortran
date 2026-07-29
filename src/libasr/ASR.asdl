@@ -176,6 +176,7 @@ expr
     | ArrayReshape(expr array, expr shape, expr? pad, expr? order, ttype type, expr? value)
     | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
+    | FunctionPointerCast(expr arg, symbol to, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
     | StructStaticMember(expr v, symbol m, ttype type, expr? value)
     | EnumStaticMember(expr v, symbol m, ttype type, expr? value)
@@ -241,7 +242,7 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 storage_type = Default | Save | Parameter
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
-deftype = Implementation | Interface
+deftype = Implementation | Interface | ImplicitInterface
 presence = Required | Optional
 pass_attr = NotMethod | Pass | NoPass
 abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | ExternalUndefined | Intrinsic

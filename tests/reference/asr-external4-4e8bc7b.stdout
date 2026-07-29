@@ -68,7 +68,7 @@
                                             []
                                             (Real 8)
                                             BindC
-                                            Interface
+                                            ImplicitInterface
                                             ()
                                             .false.
                                             .false.
