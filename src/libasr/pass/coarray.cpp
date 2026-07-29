@@ -2092,7 +2092,8 @@ class PRIFInterface {
                 corank = ASRUtils::symbol_corank(sym);
             }
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = std::string("lcompilers_prif_lcobound") + (dim ? "_with_dim" : "_no_dim_" + std::to_string(corank));
+            int result_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
+            std::string sym_name = std::string("lcompilers_prif_lcobound") + (dim ? "_with_dim_k" + std::to_string(result_kind) : "_no_dim_" + std::to_string(corank) + "_k" + std::to_string(result_kind));
             std::string dep_name = get_mangled_name("prif", dim ? "prif_lcobound_with_dim" : "prif_lcobound_no_dim");
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
             ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);
@@ -2209,7 +2210,8 @@ class PRIFInterface {
                 corank = ASRUtils::symbol_corank(sym);
             }
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = std::string("lcompilers_prif_ucobound") + (dim ? "_with_dim" : "_no_dim_" + std::to_string(corank));
+            int result_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
+            std::string sym_name = std::string("lcompilers_prif_ucobound") + (dim ? "_with_dim_k" + std::to_string(result_kind) : "_no_dim_" + std::to_string(corank) + "_k" + std::to_string(result_kind));
             std::string dep_name = get_mangled_name("prif", dim ? "prif_ucobound_with_dim" : "prif_ucobound_no_dim");
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
             ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);

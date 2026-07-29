@@ -1869,7 +1869,7 @@ namespace LCoBound {
             dims.reserve(al, 1);
             ASR::dimension_t dim_t;
             dim_t.loc = loc;
-            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type));
+            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             
             int n_dims = 0;
             if (ASR::is_a<ASR::Var_t>(*args[0])) {
@@ -1879,7 +1879,7 @@ namespace LCoBound {
                 ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
                 n_dims = ASRUtils::symbol_corank(sym);
             }
-            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, return_type));
+            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             dims.push_back(al, dim_t);
             return_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, return_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
         }
@@ -1920,7 +1920,7 @@ namespace UCoBound {
             dims.reserve(al, 1);
             ASR::dimension_t dim_t;
             dim_t.loc = loc;
-            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, return_type));
+            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             
             int n_dims = 0;
             if (ASR::is_a<ASR::Var_t>(*args[0])) {
@@ -1930,7 +1930,7 @@ namespace UCoBound {
                 ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
                 n_dims = ASRUtils::symbol_corank(sym);
             }
-            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, return_type));
+            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             dims.push_back(al, dim_t);
             return_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, return_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
         }
