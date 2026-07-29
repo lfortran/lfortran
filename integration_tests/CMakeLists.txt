@@ -2356,7 +2356,10 @@ RUN(NAME logical_kind_07 LABELS gfortran llvm)
 RUN(NAME logical_kind_04 LABELS gfortran llvm)
 RUN(NAME logical_kind_05 LABELS gfortran llvm EXTRA_ARGS --fixed-form)
 RUN(NAME logical_kind_06 LABELS gfortran llvm)
-RUN(NAME logical_short_circuit_01 LABELS gfortran llvm)
+# Runs only under the llvm label: the test relies on short-circuit
+# evaluation, which the standard permits but does not require, so it is
+# only valid with --logical-short-circuit (gfortran gives no such guarantee).
+RUN(NAME logical_short_circuit_01 LABELS llvm EXTRA_ARGS --logical-short-circuit)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH)
 

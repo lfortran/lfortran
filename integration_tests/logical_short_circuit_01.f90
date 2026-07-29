@@ -1,12 +1,16 @@
 program logical_short_circuit_01
-    ! Fortran permits short-circuit evaluation of .and. and .or.. This test
-    ! uses the common idiom where the first operand guards evaluation of the
-    ! second so that an out-of-bounds array element (a(0)) is not accessed.
-    ! With array bounds checking enabled this must not abort at run time.
+    ! Fortran permits, but does not require, short-circuit evaluation of
+    ! .and. and .or., so this test is only meaningful when compiled with
+    ! --logical-short-circuit (it is registered with that flag and only for
+    ! the llvm label). It uses the common idiom where the first operand
+    ! guards evaluation of the second so that an out-of-bounds array
+    ! element (a(0)) is not accessed. With array bounds checking enabled
+    ! this must not abort at run time.
     implicit none
     integer :: a(3)
     integer :: i
     logical :: r
+    character(:), allocatable :: s
 
     a = [10, 20, 30]
 
@@ -48,6 +52,18 @@ program logical_short_circuit_01
     if (i >= 1 .and. a(i) == 10 .and. a(i + 1) == 20) then
         error stop "chained and: guarded operand must not be evaluated"
     end if
+
+    ! a string temporary created while evaluating the right operand must be
+    ! freed inside the conditionally-executed branch, both when the branch
+    ! is taken and when it is skipped.
+    s = "ab"
+    i = 0
+    if (i >= 1 .and. trim(s) // "c" == "abc") then
+        error stop "and: string rhs must not be evaluated"
+    end if
+    i = 1
+    r = (i >= 1 .and. trim(s) // "c" == "abc")
+    if (.not. r) error stop "and: string rhs expected true"
 
     ! non-short-circuit operators still evaluate both operands correctly.
     if ((.true. .neqv. .false.) .neqv. .true.) error stop "neqv"
