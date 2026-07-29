@@ -177,6 +177,7 @@ expr
     | ArrayReshape(expr array, expr shape, expr? pad, expr? order, ttype type, expr? value)
     | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
+    | FunctionPointerCast(expr arg, symbol to, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
     | StructStaticMember(expr v, symbol m, ttype type, expr? value)
     | EnumStaticMember(expr v, symbol m, ttype type, expr? value)

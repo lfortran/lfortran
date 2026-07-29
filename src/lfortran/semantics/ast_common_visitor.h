@@ -1811,6 +1811,11 @@ class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
     std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
+    // Set by create_implicit_interface_function when a later reference needs a
+    // different signature than the first: canonical is the first-inferred
+    // procedure, target is the interface describing this reference's view.
+    ASR::symbol_t* implicit_interface_fpcast_canonical = nullptr;
+    ASR::symbol_t* implicit_interface_fpcast_target = nullptr;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -16779,6 +16784,86 @@ public:
         return ASRUtils::is_bare_implicit_interface(v);
     }
 
+    // True if `v` is a BindC Interface function that LFortran synthesized for
+    // an external with an implicit interface (has a concrete argument list
+    // inferred from a call, not a user-written interface block).
+    bool is_synthesized_implicit_interface(ASR::symbol_t* v) {
+        if (!v) return false;
+        ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(v);
+        if (!f2 || !ASR::is_a<ASR::Function_t>(*f2)) return false;
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(f2);
+        ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(fn);
+        return ft->m_abi == ASR::abiType::BindC
+            && ft->m_deftype == ASR::deftypeType::Interface
+            && fn->n_body == 0;
+    }
+
+    // True if the actual arguments in `args` match the dummy signature of `fn`
+    // in type (and rank), which is what a later reference is allowed to differ
+    // in under an implicit interface.
+    bool call_args_match_function(ASR::Function_t* fn, Vec<ASR::call_arg_t>& args) {
+        size_t offset = 0;
+        if (fn->n_args != args.size() + offset) {
+            // Allow mismatch in count only if we'll re-infer; treat as no match.
+            if (fn->n_args != args.size()) return false;
+        }
+        for (size_t i = 0; i < args.size() && i < fn->n_args; i++) {
+            if (!args[i].m_value) continue;
+            ASR::ttype_t* passed = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(args[i].m_value)));
+            ASR::ttype_t* dummy = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(fn->m_args[i])));
+            if (!ASRUtils::check_equal_type(passed, dummy, args[i].m_value, fn->m_args[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Build a procedure-pointer temporary holding
+    //   FunctionPointerCast(canonical, to_iface)
+    // and return the temporary Variable symbol. The caller uses it as the
+    // SubroutineCall/FunctionCall name so the call agrees with `to_iface`.
+    ASR::symbol_t* make_fpcast_call_target(
+        const Location& loc,
+        ASR::symbol_t* canonical,
+        ASR::symbol_t* to_iface)
+    {
+        LCOMPILERS_ASSERT(current_body != nullptr);
+        ASR::symbol_t* canon = ASRUtils::symbol_get_past_external(canonical);
+        ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(to_iface);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
+        ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
+        // The cast's type is FunctionType (same as Var of a Function), not
+        // Pointer(FunctionType): Associate of a pointer-typed value would load
+        // through it. The temp procedure-pointer variable is Pointer(...).
+        ASR::ttype_t* fn_type = ASRUtils::duplicate_type(al, to_fn->m_function_signature);
+        ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, fn_type));
+
+        std::string tmp_name = current_scope->get_unique_name(
+            std::string(ASRUtils::symbol_name(canon)) + "_fpcast", false);
+        ASR::symbol_t* tmp_var = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(
+                al, loc, current_scope, s2c(al, tmp_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, ptr_type, to_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(tmp_name, tmp_var);
+
+        ASR::expr_t* src = ASRUtils::EXPR(ASR::make_Var_t(al, loc, canon));
+        ASR::expr_t* cast = ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(
+            al, loc, src, to_sym, fn_type, nullptr));
+        ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_var));
+        // Associate, not Assignment: procedure pointers are associated the
+        // same way as `sp => add_ten`, and Assignment's store lowering does
+        // not match the Pointer(FunctionType) physical representation.
+        current_body->push_back(al, ASRUtils::STMT(
+            ASR::make_Associate_t(al, loc, lhs, cast)));
+        return tmp_var;
+    }
+
+
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
@@ -17005,7 +17090,49 @@ public:
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
-        sym_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        ASR::symbol_t* new_fn = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::symbol_t* existing = sym_scope->get_symbol(sym_name);
+        // First inference (or replacing a bare ImplicitInterface declaration):
+        // install under the user-visible name. A later reference that needs a
+        // *different* signature keeps this symbol and builds a cast view.
+        if (existing && is_synthesized_implicit_interface(existing)
+                && !is_implicit_interface_decl(existing)) {
+            ASR::Function_t* ex = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(existing));
+            ASR::Function_t* nw = ASR::down_cast<ASR::Function_t>(new_fn);
+            // Compare arg counts / types via the just-built call args vs existing.
+            bool same = (ex->n_args == nw->n_args);
+            for (size_t i = 0; same && i < ex->n_args; i++) {
+                ASR::ttype_t* t1 = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(ex->m_args[i])));
+                ASR::ttype_t* t2 = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(nw->m_args[i])));
+                if (!ASRUtils::check_equal_type(t1, t2, ex->m_args[i], nw->m_args[i])) {
+                    same = false;
+                }
+            }
+            if (same) {
+                // Drop the duplicate; callers resolve sym_name to existing.
+                current_scope = parent_scope;
+                is_implicit_interface = false;
+                implicit_interface_parent_scope = nullptr;
+                return;
+            }
+            // Different signature: keep `existing` as the canonical procedure
+            // and file this view under a private name for use as the cast
+            // target interface.
+            std::string cast_name = sym_scope->get_unique_name(
+                sym_name + "@fpcast", false);
+            ASR::Function_t* nw_mut = ASR::down_cast<ASR::Function_t>(new_fn);
+            nw_mut->m_name = s2c(al, cast_name);
+            sym_scope->add_symbol(cast_name, new_fn);
+            implicit_interface_fpcast_canonical = existing;
+            implicit_interface_fpcast_target = new_fn;
+        } else {
+            sym_scope->add_or_overwrite_symbol(sym_name, new_fn);
+            implicit_interface_fpcast_canonical = nullptr;
+            implicit_interface_fpcast_target = nullptr;
+        }
         current_scope = parent_scope;
 
         is_implicit_interface = false;
