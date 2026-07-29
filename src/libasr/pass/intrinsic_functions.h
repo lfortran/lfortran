@@ -1860,7 +1860,7 @@ namespace LCoBound {
         if (kind) {
             ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
             if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
-                if (ASRUtils::extract_value(kind_value, kind_const)) {
+                if (!ASRUtils::extract_value(kind_value, kind_const)) {
                     LCOMPILERS_ASSERT(false);
                 }
             }
@@ -1913,7 +1913,7 @@ namespace UCoBound {
         if (kind) {
             ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
             if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
-                if (ASRUtils::extract_value(kind_value, kind_const)) {
+                if (!ASRUtils::extract_value(kind_value, kind_const)) {
                     LCOMPILERS_ASSERT(false);
                 }
             }
