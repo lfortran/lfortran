@@ -25,26 +25,8 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         uint64_t h = get_hash((ASR::asr_t*)&x);
-        ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(x);
-        // BindC/BindPython functions are normally kept even when unused: a
-        // definition with a body may be exported to (and called from) C.
-        // A zero-argument BindC `Interface` function with no body is
-        // different: it is the placeholder `create_external_function`
-        // records for an implicit-interface external declaration (e.g.
-        // `integer, external :: nf_create` in a module). It exists only so
-        // the name resolves during semantic analysis; calls never go
-        // through it (each call site synthesizes its own interface). If it
-        // is unreferenced it must not survive to codegen: its zero-argument
-        // declaration would be emitted first and, deduplicated by link
-        // name, poison a genuine call-site signature of the same external
-        // elsewhere in the unit.
-        bool is_external_placeholder =
-            ftype->m_abi == ASR::abiType::BindC
-            && ftype->m_deftype == ASR::deftypeType::Interface
-            && x.n_args == 0 && x.n_body == 0;
-        if ((ftype->m_abi != ASR::abiType::BindC
-          && ftype->m_abi != ASR::abiType::BindPython)
-          || is_external_placeholder) {
+        if (ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC
+         && ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindPython) {
             fn_declarations[h] = x.m_name;
         }
 
@@ -98,26 +80,6 @@ public:
             h = get_hash((ASR::asr_t*)x.m_external);
             fn_used[h] = x.m_name;
         }
-    }
-
-    void visit_Variable(const ASR::Variable_t &x) {
-        // A procedure pointer or dummy procedure references its interface
-        // function through `m_type_declaration`; count that as a use so the
-        // interface is not pruned (a symtab walk alone never reaches it).
-        // Mirrors the handling of function arguments in visit_Function.
-        if (x.m_type_declaration) {
-            ASR::symbol_t* func = x.m_type_declaration;
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*func)) {
-                uint64_t h = get_hash((ASR::asr_t*)func);
-                fn_used[h] = ASR::down_cast<ASR::ExternalSymbol_t>(func)->m_name;
-                func = ASR::down_cast<ASR::ExternalSymbol_t>(func)->m_external;
-            }
-            if (func && ASR::is_a<ASR::Function_t>(*func)) {
-                uint64_t h = get_hash((ASR::asr_t*)func);
-                fn_used[h] = ASR::down_cast<ASR::Function_t>(func)->m_name;
-            }
-        }
-        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_Variable(x);
     }
 
 

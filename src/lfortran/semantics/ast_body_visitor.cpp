@@ -199,6 +199,11 @@ public:
     void visit_Block(const AST::Block_t &x) {
         all_loops_blocks_nesting++;
         from_block = true;
+        // A BLOCK is the only construct through which the body visitor adds to
+        // the `external_procedures` accumulator. Restore it when the block
+        // ends, otherwise an `external` declared here stays visible to every
+        // program unit processed afterwards.
+        std::vector<std::string> saved_external_procedures = external_procedures;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ASR::asr_t* block;
@@ -225,6 +230,7 @@ public:
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
                     from_block = false;
+                    external_procedures = saved_external_procedures;
                     all_loops_blocks_nesting--;
                     throw a;
                 }
@@ -238,6 +244,7 @@ public:
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
                     from_block = false;
+                    external_procedures = saved_external_procedures;
                     all_loops_blocks_nesting--;
                     throw a;
                 }
@@ -281,6 +288,7 @@ public:
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
         from_block = false;
+        external_procedures = saved_external_procedures;
         all_loops_blocks_nesting--;
     }
 
@@ -7860,6 +7868,12 @@ public:
                 is_external = false;
             }
         }
+        if (compiler_options.implicit_interface && !is_external
+                && is_implicit_interface_decl(original_sym)) {
+            // Declared `external` with no interface: its argument list is
+            // unknown, so infer the concrete interface from this call.
+            is_external = true;
+        }
         if (!original_sym || (original_sym && is_external)) {
             if (to_lower(sub_name) == "flush") {
                 // assigns 'tmp' to an ASR node
@@ -8678,16 +8692,6 @@ public:
                             if (compatible_types && !(both_are_arrays && both_are_integers && different_kinds)) {
                                 skip_check = true;
                             }
-                        }
-                        // For an implicit-interface external procedure the
-                        // dummy-argument types were inferred from the first
-                        // call site and are not a real interface. Standard
-                        // Fortran performs no argument checking for such
-                        // procedures, so do not reject a later call that passes
-                        // a different type (e.g. netcdf's v2-API `ncagt` called
-                        // first with a byte array and then with a short array).
-                        if (is_implicit_interface_function(&f->base)) {
-                            skip_check = true;
                         }
                         // Check if types are equal
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
@@ -10752,6 +10756,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                     passed_func->m_args = new_args.p;
                                     passed_func->n_args = new_args.size();
                                 }
+                                // The interface has now been inferred from the
+                                // dummy argument it is passed to, so this is no
+                                // longer a procedure known only by name.
+                                passed_ft->m_deftype = ASR::deftypeType::Interface;
                             }
                         }
                     }

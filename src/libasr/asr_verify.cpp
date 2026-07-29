@@ -2279,6 +2279,9 @@ public:
                 require(ASR::is_a<ASR::Function_t>(*s) ||
                         ASR::is_a<ASR::StructMethodDeclaration_t>(*s),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or StructMethodDeclaration.");
+                require(!ASR::is_a<ASR::Function_t>(*s) ||
+                        !ASRUtils::is_module_implicit_interface_decl(*ASR::down_cast<ASR::Function_t>(s)),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' was declared external with no interface; the call must reference the signature inferred at this call site.");
             }
             // A CALL statement discards no result, because a procedure
             // invoked by one has none to discard.
@@ -2483,6 +2486,10 @@ public:
             require(fn_->m_return_var != nullptr,
                     "FunctionCall::m_name " + std::string(fn_->m_name) +
                     " must be returning a non-void value.");
+            require(!ASRUtils::is_module_implicit_interface_decl(*fn_),
+                    "FunctionCall::m_name " + std::string(fn_->m_name) +
+                    " was declared external with no interface; the call must"
+                    " reference the signature inferred at this call site.");
             // The call site's result type is what the surrounding expression
             // was typed against; the callee's is what the call actually
             // produces. Where they disagree, the two disagree about the call.

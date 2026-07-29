@@ -2955,6 +2955,46 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
         std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
         std::string module_name);
 
+// True if `x` is a procedure that was declared (e.g. `integer, external :: f`)
+// without an interface and still has none: ASR states that explicitly as
+// `deftypeType::ImplicitInterface`, and it carries no arguments and no body.
+// Such a declaration names a procedure and its result type, nothing more. It
+// is never callable and never code-generated; every reference infers its own
+// concrete interface from the arguments at that call site. Once an interface
+// *is* inferred for it (for instance from the dummy argument it gets passed
+// to), it gains that signature and stops being bare.
+//
+// True if the procedure is declared rather than defined: it has no body, so
+// the backend only emits a declaration for it. A procedure declared `external`
+// with no interface is declared in exactly the same sense.
+static inline bool is_declaration_deftype(ASR::deftypeType deftype) {
+    return deftype == ASR::deftypeType::Interface
+        || deftype == ASR::deftypeType::ImplicitInterface;
+}
+
+static inline bool is_bare_implicit_interface(const ASR::Function_t &x) {
+    return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature)->m_deftype
+        == ASR::deftypeType::ImplicitInterface;
+}
+
+// True if `x` is a module's `external` declaration with no interface, e.g.
+// `integer, external :: nf_create` in a module specification part. It exports
+// the name and result type of a procedure defined elsewhere and nothing more,
+// so there is no signature to emit: doing so would put a zero-argument
+// declaration under the procedure's link name and, since modules are
+// code-generated first, silence the real signature inferred at a call site in
+// the same unit. Elsewhere such a declaration may still be referenced as a
+// procedure value, so it is emitted normally.
+static inline bool is_module_implicit_interface_decl(const ASR::Function_t &x) {
+    if (!is_bare_implicit_interface(x)) {
+        return false;
+    }
+    return x.m_symtab->parent && x.m_symtab->parent->asr_owner
+        && ASR::is_a<ASR::symbol_t>(*x.m_symtab->parent->asr_owner)
+        && ASR::is_a<ASR::Module_t>(
+            *ASR::down_cast<ASR::symbol_t>(x.m_symtab->parent->asr_owner));
+}
+
 static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
     if (!ASR::is_a<ASR::Function_t>(*original_sym) || !ASR::is_a<ASR::Function_t>(*external_sym)) {
         return false;
@@ -8524,23 +8564,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                // An implicit-interface external procedure uses the BindC ABI
-                // with a synthesized `Interface` signature whose dummy types
-                // were inferred from an earlier call; standard Fortran does no
-                // argument checking for such procedures, so the actual type
-                // need not match. The raw pointer/value is passed as-is (any
-                // physical-type reconciliation for arrays happens below), so
-                // skip the equal-type guard here. A real explicit interface
-                // (e.g. an `interface ... bind(c)` block) with a mismatching
-                // type is already rejected during semantic analysis.
-                bool is_implicit_interface_external =
-                    func_type->m_abi == ASR::abiType::BindC &&
-                    func_type->m_deftype == ASR::deftypeType::Interface;
-                if (!is_implicit_interface_external) {
-                    LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
-                        "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
-                            ASRUtils::get_type_code(orig_arg_type) + ")");
-                }
+                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
+                    "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
+                        ASRUtils::get_type_code(orig_arg_type) + ")");
             }
         }
         if( ASRUtils::is_array(arg_type) && ASRUtils::is_array(orig_arg_type) ) {
