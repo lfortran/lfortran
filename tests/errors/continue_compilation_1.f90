@@ -929,6 +929,18 @@ program continue_compilation_1
         integer(int32) :: decl_order_second
         decl_order_second = decl_order_first
     end subroutine
+    subroutine equivalence_nonconstant_subscript()
+        implicit none
+        integer :: a(3), b(3), i
+        equivalence (a(i), b(1))  ! {Error} equivalence array bounds and subscripts must be constant
+    end subroutine equivalence_nonconstant_subscript
+
+    subroutine equivalence_common_scalar_array_element()
+        implicit none
+        integer :: cs, arr(3)
+        common /equivalence_common_scalar/ cs
+        equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    end subroutine equivalence_common_scalar_array_element
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
