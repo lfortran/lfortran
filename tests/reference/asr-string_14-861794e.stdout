@@ -251,6 +251,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             string_type:
                                 (Struct
@@ -512,6 +513,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             ~read_formatted:

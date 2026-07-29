@@ -561,6 +561,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             omap_i_set:
                                 (Struct
@@ -989,6 +990,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                     ()
                                 ),
                             omap_map:

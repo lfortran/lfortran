@@ -171,6 +171,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             logger_type:
                                 (Struct

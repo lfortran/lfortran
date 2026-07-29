@@ -117,6 +117,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    "frexp"
                                 )
                         })
                     interface_generic_procedure_same_name

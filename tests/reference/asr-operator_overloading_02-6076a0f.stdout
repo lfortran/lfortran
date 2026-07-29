@@ -209,6 +209,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             logical_gets_integer_use:
                                 (Function
@@ -311,6 +312,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             ~assign:

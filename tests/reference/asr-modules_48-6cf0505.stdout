@@ -968,6 +968,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             fnv_1a_string_t:
                                 (Function
@@ -1215,6 +1216,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             is_fortran_name:
@@ -1601,6 +1603,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             string_cat:
                                 (Function
@@ -1930,6 +1933,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             string_t:

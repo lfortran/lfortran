@@ -233,6 +233,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             add_project_dependencies:
                                 (Function
@@ -448,6 +449,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             dependency_config_t:
@@ -1253,6 +1255,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 )
                         })
                     fpm_dependency_modules_33
@@ -1992,6 +1995,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             error_t:

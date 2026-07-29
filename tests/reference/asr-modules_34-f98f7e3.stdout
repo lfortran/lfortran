@@ -446,6 +446,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 ),
                             package_config_t:
                                 (ExternalSymbol
@@ -594,6 +595,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             char:
                                 (GenericProcedure
@@ -708,6 +710,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             version_t:

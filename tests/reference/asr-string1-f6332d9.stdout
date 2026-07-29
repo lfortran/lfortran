@@ -128,6 +128,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    ()
                                                 ),
                                             cptr:
                                                 (Variable
@@ -257,6 +258,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 ),
                             f_string_cptr_n:
                                 (Function
@@ -365,6 +367,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             f_string~genericprocedure:
                                 (Function
@@ -456,6 +459,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             string_t:
