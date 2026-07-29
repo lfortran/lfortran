@@ -823,6 +823,14 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             // associated with it, so we return nullptr.
             return nullptr;
         }
+        case ASR::exprType::FunctionPointerCast: {
+            ASR::symbol_t* to = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionPointerCast_t>(expr)->m_to);
+            if (to && ASR::is_a<ASR::Function_t>(*to)) {
+                return ASR::down_cast<ASR::Function_t>(to);
+            }
+            return nullptr;
+        }
         default:
             throw LCompilersException("get_function_from_expr() not implemented for "
                                 + std::to_string(expr->type));

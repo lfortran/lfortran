@@ -8106,7 +8106,41 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
+                // Array-section rewriting needs the Function symbol.
                 legacy_array_sections_helper(final_sym, args, x.base.base.loc);
+                // Under --implicit-interface, a BindC Interface function is a
+                // signature inferred from an earlier reference, not a contract.
+                // If this reference's actuals differ, keep the first signature
+                // as the canonical procedure and call through a
+                // FunctionPointerCast to a view matching this reference.
+                if (compiler_options.implicit_interface
+                        && is_synthesized_implicit_interface(final_sym)
+                        && !call_args_match_function(
+                            ASR::down_cast<ASR::Function_t>(
+                                ASRUtils::symbol_get_past_external(final_sym)),
+                            args)) {
+                    ASR::symbol_t* canonical = final_sym;
+                    ASR::ttype_t* ret_type = nullptr;
+                    ASR::Function_t* cf = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(canonical));
+                    if (cf->m_return_var) {
+                        ret_type = ASRUtils::expr_type(cf->m_return_var);
+                    }
+                    implicit_interface_fpcast_canonical = nullptr;
+                    implicit_interface_fpcast_target = nullptr;
+                    create_implicit_interface_function(
+                        x, sub_name, cf->m_return_var != nullptr, ret_type);
+                    if (implicit_interface_fpcast_target) {
+                        final_sym = make_fpcast_call_target(
+                            x.base.base.loc,
+                            implicit_interface_fpcast_canonical
+                                ? implicit_interface_fpcast_canonical
+                                : canonical,
+                            implicit_interface_fpcast_target);
+                    } else {
+                        final_sym = current_scope->resolve_symbol(sub_name);
+                    }
+                }
                 break;
             }
             case (ASR::symbolType::GenericProcedure) : {
@@ -8424,6 +8458,18 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        // If the call goes through a FunctionPointerCast temp, type-check
+        // against the cast target interface so the call agrees with its callee.
+        if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
+            ASR::Variable_t* fv = ASR::down_cast<ASR::Variable_t>(final_sym);
+            if (fv->m_type_declaration) {
+                ASR::symbol_t* td = ASRUtils::symbol_get_past_external(
+                    fv->m_type_declaration);
+                if (ASR::is_a<ASR::Function_t>(*td)) {
+                    f = ASR::down_cast<ASR::Function_t>(td);
+                }
+            }
+        }
         if (f) {
             const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
             if (args.size() + offset > f->n_args) {

@@ -16591,6 +16591,48 @@ public:
         return alloc;
     }
 
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
+        // Cast a procedure to the function-pointer type of `m_to`. The two
+        // interfaces describe the same link-time procedure under an implicit
+        // interface; only the signature used at this call changes.
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        LCOMPILERS_ASSERT(x.m_to);
+        ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(x.m_to);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
+        ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
+        llvm::FunctionType* target_ft = llvm_utils->get_function_type(
+            *to_fn, module.get());
+
+        llvm::Value* src = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
+            ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v);
+            if (ASR::is_a<ASR::Function_t>(*arg_sym)) {
+                uint32_t h = get_hash((ASR::asr_t*)arg_sym);
+                if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                    // Ensure the source procedure has been declared.
+                    instantiate_function(*ASR::down_cast<ASR::Function_t>(arg_sym));
+                }
+                LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+                src = llvm_symtab_fn[h];
+            }
+        }
+        if (!src) {
+            this->visit_expr(*x.m_arg);
+            src = tmp;
+            if (src && src->getType()->isPointerTy()) {
+                // May be a pointer-to-function-pointer (procedure pointer var).
+                // Leave as-is; bitcast handles pointer types.
+            }
+        }
+        LCOMPILERS_ASSERT(src);
+        tmp = builder->CreateBitCast(src, target_ft->getPointerTo());
+    }
+
+
     void visit_Cast(const ASR::Cast_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
