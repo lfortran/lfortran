@@ -724,6 +724,9 @@ R"(#include <stdio.h>
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_module_implicit_interface_decl(x)) {
+            return;
+        }
         std::string sub = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
