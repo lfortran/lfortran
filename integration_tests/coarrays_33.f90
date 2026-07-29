@@ -1,4 +1,4 @@
-program coarrays_32
+program coarrays_33
     use, intrinsic :: iso_fortran_env, only: int64
     implicit none
 
@@ -86,4 +86,4 @@ program coarrays_32
         error stop "Incorrect second UCOBOUND with DIM."
     end if
 
-end program coarrays_32
+end program coarrays_33
