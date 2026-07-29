@@ -1,0 +1,11 @@
+style suggestion: Use '/=' instead of '.ne.'
+ --> tests/../integration_tests/implicit_interface_44.f90:6:7
+  |
+6 | if (z .ne. 2.0d0) error stop
+  |       ^^^^ help: write this as '/='
+
+semantic error: diff was declared as a variable, it can't be called as a function
+ --> tests/../integration_tests/implicit_interface_44.f90:5:5
+  |
+5 | z = diff(x, y)
+  |     ^^^^^^^^^^ help: use the compiler option "--implicit-interface" to use intrinsic functions
