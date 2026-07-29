@@ -6,6 +6,7 @@ maxdepth: 1
 ---
 Block.md
 ExternalSymbol.md
+Function.md
 Variable.md
 program.md
 Requirement.md
