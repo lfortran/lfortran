@@ -76,6 +76,8 @@ stmt
     | SyncMemory(expr? stat, expr? errmsg)
     | SyncTeam(expr team, expr? stat, expr? errmsg)
     | FormTeam(expr team_number, expr team, expr? new_index, expr? stat, expr? errmsg)
+    | ChangeTeam(expr team, expr? stat, expr? errmsg)
+    | EndTeam(expr? stat, expr? errmsg)
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
     | SelectType(expr selector, identifier? assoc_name, type_stmt* body, stmt* default)

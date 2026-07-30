@@ -14,6 +14,8 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
+gfortran --version
+
 micromamba install -c conda-forge fpm=0.12.0
 
 which fpm

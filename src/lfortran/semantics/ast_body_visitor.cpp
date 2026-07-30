@@ -9848,6 +9848,42 @@ public:
         tmp = ASR::make_SyncTeam_t(al, x.base.base.loc, team, stat, errmsg);
     }
 
+
+    void visit_ChangeTeam(const AST::ChangeTeam_t &x) {
+        ASR::expr_t *team_value = nullptr;
+        if (x.m_team_value) {
+            visit_expr(*x.m_team_value);
+            team_value = ASRUtils::EXPR(tmp);
+            check_intrinsic_team_value(team_value, x.base.base.loc,
+                "team_value", "change team");
+        } else {
+            diag.add(Diagnostic(
+                "`change team` requires a team_value",
+                Level::Error, Stage::Semantic, {
+                    Label("",{x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        resolve_stat_errmsg(x.m_sync, x.n_sync, x.base.base.loc, "change team", stat, errmsg);
+        
+        ASR::stmt_t *change_team_stmt = ASRUtils::STMT(ASR::make_ChangeTeam_t(al, x.base.base.loc, team_value, stat, errmsg));
+        current_body->push_back(al, change_team_stmt);
+
+        transform_stmts(*current_body, x.n_body, x.m_body);
+
+        ASR::expr_t *end_stat = nullptr;
+        ASR::expr_t *end_errmsg = nullptr;
+        resolve_stat_errmsg(x.m_sync_stat, x.n_sync_stat, x.base.base.loc, "end team", end_stat, end_errmsg);
+        
+        ASR::stmt_t *end_team_stmt = ASRUtils::STMT(ASR::make_EndTeam_t(al, x.base.base.loc, end_stat, end_errmsg));
+        current_body->push_back(al, end_team_stmt);
+
+        tmp = nullptr;
+    }
+
     void visit_FormTeam(const AST::FormTeam_t &x) {
         ASR::expr_t *team_number = nullptr;
         if (x.m_team_number) {

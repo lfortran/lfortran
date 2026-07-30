@@ -1879,6 +1879,39 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_SyncTeam(x);
     }
 
+
+    void visit_ChangeTeam(const ChangeTeam_t &x) {
+        if (x.m_stat) {
+            require(!ASRUtils::is_array(ASRUtils::expr_type(x.m_stat)),
+                "ChangeTeam::m_stat must be a scalar");
+            require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_stat)),
+                "ChangeTeam::m_stat must be of integer type");
+        }
+        if (x.m_errmsg) {
+            require(!ASRUtils::is_array(ASRUtils::expr_type(x.m_errmsg)),
+                "ChangeTeam::m_errmsg must be a scalar");
+            require(ASRUtils::is_character(*ASRUtils::expr_type(x.m_errmsg)),
+                "ChangeTeam::m_errmsg must be of string type");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ChangeTeam(x);
+    }
+
+    void visit_EndTeam(const EndTeam_t &x) {
+        if (x.m_stat) {
+            require(!ASRUtils::is_array(ASRUtils::expr_type(x.m_stat)),
+                "EndTeam::m_stat must be a scalar");
+            require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_stat)),
+                "EndTeam::m_stat must be of integer type");
+        }
+        if (x.m_errmsg) {
+            require(!ASRUtils::is_array(ASRUtils::expr_type(x.m_errmsg)),
+                "EndTeam::m_errmsg must be a scalar");
+            require(ASRUtils::is_character(*ASRUtils::expr_type(x.m_errmsg)),
+                "EndTeam::m_errmsg must be of string type");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_EndTeam(x);
+    }
+
     void visit_FormTeam(const FormTeam_t &x) {
         ASR::ttype_t *team_number_type = ASRUtils::expr_type(x.m_team_number);
         require(!ASRUtils::is_array(team_number_type),
