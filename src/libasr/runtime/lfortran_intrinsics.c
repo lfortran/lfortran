@@ -6517,7 +6517,41 @@ _lfortran_open(int32_t unit_num,
             return (int64_t) already_open;
         }
         FILE* fd = fopen(f_name_c, access_mode);
-        if (!fd && iostat == NULL) {
+        if (!fd) {
+            if (iostat != NULL) {
+                *iostat = 2;
+                if ((iomsg != NULL) && (iomsg_len > 0)) {
+                    const char* reason = strerror(errno);
+                    const char* name = (f_name_c && f_name_c[0] != '\0') ? f_name_c : "";
+                    int needed = snprintf(NULL, 0,
+                                          "Cannot open file '%s': %s", name, reason);
+                    if (needed > 0) {
+                        char* temp = (char*)internal_malloc((size_t)needed + 1);
+                        if (temp) {
+                            snprintf(temp, (size_t)needed + 1,
+                                     "Cannot open file '%s': %s", name, reason);
+                            int64_t msg_len = (int64_t)needed;
+                            if (msg_len > iomsg_len) msg_len = iomsg_len;
+                            memcpy(iomsg, temp, (size_t)msg_len);
+                            pad_with_spaces(iomsg, msg_len, iomsg_len);
+                            internal_free(temp);
+                        }
+                    }
+                }
+                internal_free(f_name_c);
+                internal_free(status_c);
+                internal_free(form_c);
+                internal_free(access_c);
+                internal_free(action_c);
+                internal_free(delim_c);
+                internal_free(blank_c);
+                internal_free(encoding_c);
+                internal_free(sign_c);
+                internal_free(decimal_c);
+                internal_free(round_c);
+                internal_free(pad_c);
+                return 0;
+            }
             printf("Runtime error: Error in opening the file!\n");
             perror(f_name_c);
             exit(1);
