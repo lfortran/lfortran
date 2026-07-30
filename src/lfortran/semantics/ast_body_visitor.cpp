@@ -7900,6 +7900,30 @@ public:
                             }
                         }
                     }
+
+                    // General class-compatibility check: for a class(T) dummy,
+                    // the actual must be type(T)/class(T), an extension of T,
+                    // or unlimited polymorphic -- otherwise report a semantic
+                    // error here instead of failing later at codegen.
+                    ASR::ttype_t* dummy_no_wrap = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(dummy_type)));
+                    if (ASRUtils::non_unlimited_polymorphic_class(dummy_no_wrap)) {
+                        ASR::ttype_t* actual_no_wrap = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable(
+                                ASRUtils::type_get_past_pointer(actual_type)));
+                        if (!ASR::is_a<ASR::StructType_t>(*actual_no_wrap) ||
+                            !ASRUtils::check_class_assignment_compatibility(
+                                f->m_args[i], args[i].m_value)) {
+                            std::string dummy_str = ASRUtils::type_to_str_with_kind(dummy_type, f->m_args[i]);
+                            std::string actual_str = ASRUtils::type_to_str_with_kind(actual_type, args[i].m_value);
+                            diag.semantic_error_label(
+                                "Type mismatch in argument `" + std::string(dummy_var->m_name) +
+                                "`: expected `" + dummy_str + "` but got `" + actual_str + "`.",
+                                {args[i].m_value->base.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
                 }
             }
         }

@@ -965,3 +965,22 @@ contains
       real :: res(size(x))
     end function foo
 end module
+
+! issue #12394: passing an actual argument of a non-derived type (integer)
+! to a `class(T)` dummy argument must report a semantic error instead of
+! reaching codegen.
+module module_class_arg_mismatch_12394
+    implicit none
+    type :: runner_12394
+    contains
+    end type
+contains
+    subroutine set_caller_12394(this)
+        class(runner_12394) :: this
+    end subroutine
+end module
+
+program class_arg_mismatch_12394
+    use module_class_arg_mismatch_12394
+    call set_caller_12394(1)
+end program

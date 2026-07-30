@@ -556,6 +556,29 @@ semantic error: Symbol 'bad_op' not declared
 1 | ! If you need a function, put it into the module below and remove the same
   |  ^ 
 
+semantic error: Symbol 'bad_op' not declared
+ --> tests/errors/continue_compilation_1.f90:1:2
+  |
+1 | ! If you need a function, put it into the module below and remove the same
+  |  ^ 
+
+semantic error: More than one main program found
+   --> tests/errors/continue_compilation_1.f90:208:1 - 951:11
+    |
+208 |    program continue_compilation_1
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+951 |    end program
+    | ...^^^^^^^^^^^ first main program defined here
+    |
+983 |    program class_arg_mismatch_12394
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+986 |    end program
+    | ...^^^^^^^^^^^ second main program defined here
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
