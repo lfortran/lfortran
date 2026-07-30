@@ -6167,7 +6167,7 @@ public:
                             ASR::ttype_t* src) -> ASR::ttype_t* {
                         if (ASR::is_a<ASR::Integer_t>(*src))
                             return ASRUtils::TYPE(ASR::make_Integer_t(
-                                al, loc, compiler_options.po.default_integer_kind));
+                                al, loc, ASR::down_cast<ASR::Integer_t>(src)->m_kind));
                         if (ASR::is_a<ASR::Real_t>(*src))
                             return ASRUtils::TYPE(ASR::make_Real_t(
                                 al, loc, ASR::down_cast<ASR::Real_t>(src)->m_kind));
@@ -6768,13 +6768,55 @@ public:
                                                 (ASR::is_a<ASR::IntegerConstant_t>(*array_lower_bound) &&
                                                 ASR::down_cast<ASR::IntegerConstant_t>(
                                                     array_lower_bound)->m_n == 1);
+                                            // The array alias points at the equivalenced COMMON
+                                            // member and spans forward across the block's storage.
+                                            // EQUIVALENCE may not silently overrun a COMMON block;
+                                            // reject when the array does not fit in the storage
+                                            // remaining from the member's offset (extending the
+                                            // COMMON block is not implemented yet).
+                                            bool fits_in_common = false;
+                                            {
+                                                ASR::symbol_t* member_sym =
+                                                    ASRUtils::symbol_get_past_external(
+                                                        ASR::down_cast<ASR::StructInstanceMember_t>(
+                                                            asr_eq1)->m_m);
+                                                SymbolTable* struct_symtab =
+                                                    ASR::down_cast<ASR::Variable_t>(member_sym)->m_parent_symtab;
+                                                if (struct_symtab && struct_symtab->asr_owner &&
+                                                        ASR::is_a<ASR::symbol_t>(*struct_symtab->asr_owner) &&
+                                                        ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(
+                                                            struct_symtab->asr_owner))) {
+                                                    ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(
+                                                        ASR::down_cast<ASR::symbol_t>(struct_symtab->asr_owner));
+                                                    size_t member_offset = 0, total_size = 0;
+                                                    bool found = false;
+                                                    for (size_t mi = 0; mi < st->n_members; mi++) {
+                                                        ASR::symbol_t* ms = st->m_symtab->resolve_symbol(
+                                                            st->m_members[mi]);
+                                                        if (!ms || !ASR::is_a<ASR::Variable_t>(*ms)) continue;
+                                                        if (ms == member_sym) {
+                                                            member_offset = total_size;
+                                                            found = true;
+                                                        }
+                                                        total_size += get_type_byte_size(
+                                                            ASR::down_cast<ASR::Variable_t>(ms)->m_type);
+                                                    }
+                                                    if (found) {
+                                                        size_t needed = get_type_byte_size(
+                                                            array_variable->m_type);
+                                                        fits_in_common =
+                                                            needed <= total_size - member_offset;
+                                                    }
+                                                }
+                                            }
                                             bool is_supported = array_type->n_dims == 1 &&
                                                 ASRUtils::get_fixed_size_of_array(
                                                     unwrapped_array_type) > 0 &&
                                                 !ASR::is_a<ASR::Array_t>(*common_type) &&
                                                 ASRUtils::types_equal(common_type,
                                                     array_type->m_type, nullptr, nullptr) &&
-                                                has_unit_index && has_unit_lower_bound;
+                                                has_unit_index && has_unit_lower_bound &&
+                                                fits_in_common;
                                             if (!is_supported) {
                                                 common_array_equivalence_error();
                                             }
