@@ -317,7 +317,7 @@ program continue_compilation_1
 
 
 
-
+    character(0), allocatable :: alloc_ch01
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -657,6 +657,7 @@ program continue_compilation_1
     integer :: eoshift_bad_shift(2, 2)
     eoshift_bad_shift = 1
     b1 = eoshift(b1, eoshift_bad_shift)
+    allocate(character(-1) :: FUNC8)
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
@@ -943,6 +944,10 @@ program continue_compilation_1
     end subroutine equivalence_common_scalar_array_element
 end program
 
+function func8() result(res) bind(c)
+    character(:), pointer :: res
+end function func8
+
 ! A syntax error inside a module makes the parser skip the erroneous
 ! declaration and keep the rest of the module. The symbol table visitor then
 ! skips the program units that depend on the discarded declaration, so the body
@@ -958,3 +963,4 @@ contains
       real :: res(size(x))
     end function foo
 end module
+

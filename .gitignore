@@ -265,3 +265,4 @@ doc/man/lfortran.1
 /test_lfortran
 /test_gfortran
 /test_flang
+cmake_log.txt
