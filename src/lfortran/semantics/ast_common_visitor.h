@@ -1096,7 +1096,10 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
             type, result_shape, result_dims);
 
     ASR::expr_t *value = nullptr;
-    if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
+    // For an overloaded comparison the user-defined function determines the
+    // result, so intrinsic constant folding does not apply.
+    if (overloaded == nullptr &&
+            ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr) {
         std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> comptime_values;
         populate_compiletime_values(al, comptime_values, left, right);
         value = evaluate_compiletime_values(al, comptime_values, left, right, asr_op, type, x.base.base.loc, diag);
