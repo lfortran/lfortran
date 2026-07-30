@@ -4999,28 +4999,23 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
 
-# Regression test (macOS only): lfortran must accept the `-install_name` linker
-# flag when producing a shared library and forward it to the linker so the
-# dylib install name is set correctly. CMake passes this flag when linking
-# Fortran shared libraries on Darwin (e.g. netcdf-fortran's libnetcdff.dylib);
-# lfortran previously aborted with "The following argument was not expected:
-# -install_name". This is a driver/linker test and only applies to the macOS
-# LLVM backend, so it is not expressed via the RUN() macro.
+# Regression test (macOS only): setting a dylib install name when producing a
+# shared library must work. The install name reaches the linker through
+# lfortran's existing `-Wl,` pass-through (`-Wl,-install_name,<name>`), which is
+# how CMake links Fortran shared libraries on Darwin (e.g. netcdf-fortran's
+# libnetcdff.dylib). This links a shared library rather than an executable, so
+# it is not expressed via the RUN() macro; the link itself is the test (it fails
+# the build if `-Wl,-install_name,` is rejected). It uses the freshly built
+# lfortran (the Fortran compiler for this project), so no shell script is needed.
 if (APPLE AND LFORTRAN_BACKEND STREQUAL "llvm")
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
-        COMMAND ${CMAKE_Fortran_COMPILER} -c ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
-                -o ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libinstall_name_01.dylib
+        COMMAND ${CMAKE_Fortran_COMPILER} --shared
+                -Wl,-install_name,@rpath/libinstall_name_01.dylib
+                -o ${CMAKE_CURRENT_BINARY_DIR}/libinstall_name_01.dylib
+                ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
     )
     add_custom_target(install_name_01 ALL
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/install_name_01.o)
-    add_test(NAME install_name_01
-        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.sh
-                ${CMAKE_CURRENT_SOURCE_DIR}/install_name_01.f90
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    # Exercise the freshly built lfortran (the Fortran compiler for this
-    # project), not whatever `lfortran` happens to be on PATH.
-    set_tests_properties(install_name_01 PROPERTIES
-        ENVIRONMENT "LFORTRAN=${CMAKE_Fortran_COMPILER}")
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/libinstall_name_01.dylib)
 endif()
