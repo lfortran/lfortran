@@ -1680,6 +1680,9 @@ lf_float128 lf_float128_from_str(const char *s) {
  *
  * A 16-byte vector of doubles is classified exactly like __float128, so use
  * it to spell the ABI and convert to the struct the implementations expect.
+ * On Windows x64 the same trick works with MSVC's __m128d: LLVM passes fp128
+ * indirectly by pointer and returns it in XMM0, which is exactly how MSVC
+ * treats __m128d parameters and return values.
  * The conversions are pure memcpy, so no fp128 arithmetic is generated here
  * and these wrappers cannot recurse into themselves.
  * ======================================================================== */
@@ -1687,6 +1690,16 @@ lf_float128 lf_float128_from_str(const char *s) {
 
 #if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
 typedef double lf_f128_abi __attribute__((vector_size(16)));
+#elif defined(_MSC_VER) && defined(_M_X64)
+/* On Windows x64 LLVM passes fp128 arguments indirectly through a pointer to
+ * a 16-byte aligned slot and returns fp128 in XMM0. MSVC gives __m128d
+ * parameters and return values exactly that treatment, so it spells the same
+ * ABI the vector typedef above does for the System V targets. */
+#include <emmintrin.h>
+typedef __m128d lf_f128_abi;
+#else
+#error "unsupported real(16) compiler-rt ABI for this target; add target-specific fp128 ABI wrappers before enabling these entry points"
+#endif
 
 static lf_f128_abi lf_f128_to_abi(lf_float128 v) {
     lf_f128_abi r;
@@ -1699,9 +1712,6 @@ static lf_float128 lf_f128_from_abi(lf_f128_abi v) {
     memcpy(r.bytes, &v, 16);
     return r;
 }
-#else
-#error "unsupported real(16) compiler-rt ABI for this target; add target-specific fp128 ABI wrappers before enabling these entry points"
-#endif
 
 lf_f128_abi __addtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__addtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
 lf_f128_abi __subtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__subtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
