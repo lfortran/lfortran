@@ -6460,7 +6460,7 @@ public:
                                         int kind = ASR::down_cast<ASR::Real_t>(arg_type2)->m_kind;
                                         type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq2->base.loc, kind));
                                     } else if (ASR::is_a<ASR::Integer_t>(*arg_type2)) {
-                                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, compiler_options.po.default_integer_kind));
+                                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq2->base.loc, ASR::down_cast<ASR::Integer_t>(arg_type2)->m_kind));
                                     } else if (ASR::is_a<ASR::Logical_t>(*arg_type2)) {
                                         int kind = ASR::down_cast<ASR::Logical_t>(arg_type2)->m_kind;
                                         type = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq2->base.loc, kind));
@@ -6538,7 +6538,8 @@ public:
 
                                         if (ASR::is_a<ASR::Integer_t>(*array1->m_type)) {
                                             type1 = ASRUtils::TYPE(ASR::make_Integer_t(
-                                                al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
+                                                al, asr_eq1->base.loc,
+                                                ASR::down_cast<ASR::Integer_t>(array1->m_type)->m_kind));
                                         } else if (ASR::is_a<ASR::Real_t>(*array1->m_type)) {
                                             int kind = ASR::down_cast<ASR::Real_t>(array1->m_type)->m_kind;
                                             type1 = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, kind));
@@ -6854,7 +6855,8 @@ public:
                                             type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, kind));
                                         } else if (ASR::is_a<ASR::Integer_t>(*arg_type1)) {
                                             type = ASRUtils::TYPE(ASR::make_Integer_t(
-                                                al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
+                                                al, asr_eq1->base.loc,
+                                                ASR::down_cast<ASR::Integer_t>(arg_type1)->m_kind));
                                         } else if (ASR::is_a<ASR::Logical_t>(*arg_type1)) {
                                             int kind = ASR::down_cast<ASR::Logical_t>(arg_type1)->m_kind;
                                             type = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq1->base.loc, kind));
@@ -6876,51 +6878,6 @@ public:
                                                 var__->m_type = ptr;
                                             }
 
-                                            emit_cptr_to_pointer(asr_eq2->base.loc, pointer_to_cptr, asr_eq1, nullptr);
-                                        }
-                                    }
-                                } else if (AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
-                                    ASR::ttype_t* arg_type2 = ASRUtils::type_get_past_allocatable(
-                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(asr_eq2)));
-                                    ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq2->base.loc, ASRUtils::type_get_past_array(arg_type2)));
-                                    ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, asr_eq2->base.loc, asr_eq2, pointer_type_, nullptr);
-                                    ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, asr_eq2->base.loc));
-                                    ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, asr_eq2->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
-
-                                    ASR::ttype_t* arg_type1 = ASRUtils::expr_type(asr_eq1);
-                                    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(asr_eq1);
-                                    ASR::Variable_t *var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                                    ASR::ttype_t* type = nullptr;
-                                    if (ASR::is_a<ASR::Real_t>(*arg_type1)) {
-                                        int kind = ASR::down_cast<ASR::Real_t>(arg_type1)->m_kind;
-                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, asr_eq1->base.loc, kind));
-                                    } else if (ASR::is_a<ASR::Integer_t>(*arg_type1)) {
-                                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, asr_eq1->base.loc, compiler_options.po.default_integer_kind));
-                                    } else if (ASR::is_a<ASR::Logical_t>(*arg_type1)) {
-                                        int kind = ASR::down_cast<ASR::Logical_t>(arg_type1)->m_kind;
-                                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, asr_eq1->base.loc, kind));
-                                    } else if (ASR::is_a<ASR::Complex_t>(*arg_type1)) {
-                                        int kind = ASR::down_cast<ASR::Complex_t>(arg_type1)->m_kind;
-                                        type = ASRUtils::TYPE(ASR::make_Complex_t(al, asr_eq1->base.loc, kind));
-                                    } else if (ASR::is_a<ASR::String_t>(*arg_type1)) {
-                                        type = arg_type1;
-                                    } else {
-                                        diag.semantic_warning_label(
-                                            "This equivalence statement is not implemented yet, for now we will ignore it",
-                                            {x.base.base.loc},
-                                            "ignored for now"
-                                        );
-                                    }
-                                    if (type != nullptr) {
-                                        if (!(in_module && !in_Subroutine)) {
-                                            ASR::ttype_t* ptr = ASRUtils::TYPE(ASR::make_Pointer_t(al, asr_eq1->base.loc, type));
-                                            var__->m_type = ptr;
-                                        }
-
-                                        bool is_module = in_module && !in_Subroutine;
-                                        if (is_module) {
-                                            var__->m_symbolic_value = ASRUtils::EXPR(get_pointer);
-                                        } else {
                                             emit_cptr_to_pointer(asr_eq2->base.loc, pointer_to_cptr, asr_eq1, nullptr);
                                         }
                                     }
@@ -6996,7 +6953,7 @@ public:
                                                 int kind = ASR::down_cast<ASR::Real_t>(alias_elem_type)->m_kind;
                                                 type = ASRUtils::TYPE(ASR::make_Real_t(al, alias_expr->base.loc, kind));
                                             } else if (ASR::is_a<ASR::Integer_t>(*alias_elem_type)) {
-                                                type = ASRUtils::TYPE(ASR::make_Integer_t(al, alias_expr->base.loc, compiler_options.po.default_integer_kind));
+                                                type = ASRUtils::TYPE(ASR::make_Integer_t(al, alias_expr->base.loc, ASR::down_cast<ASR::Integer_t>(alias_elem_type)->m_kind));
                                             } else if (ASR::is_a<ASR::Complex_t>(*alias_elem_type)) {
                                                 int kind = ASR::down_cast<ASR::Complex_t>(alias_elem_type)->m_kind;
                                                 type = ASRUtils::TYPE(ASR::make_Complex_t(al, alias_expr->base.loc, kind));
@@ -7061,7 +7018,7 @@ public:
                                                 int kind = ASR::down_cast<ASR::Real_t>(alias_type)->m_kind;
                                                 type = ASRUtils::TYPE(ASR::make_Real_t(al, alias_expr->base.loc, kind));
                                             } else if (ASR::is_a<ASR::Integer_t>(*alias_type)) {
-                                                type = ASRUtils::TYPE(ASR::make_Integer_t(al, alias_expr->base.loc, compiler_options.po.default_integer_kind));
+                                                type = ASRUtils::TYPE(ASR::make_Integer_t(al, alias_expr->base.loc, ASR::down_cast<ASR::Integer_t>(alias_type)->m_kind));
                                             } else if (ASR::is_a<ASR::Complex_t>(*alias_type)) {
                                                 int kind = ASR::down_cast<ASR::Complex_t>(alias_type)->m_kind;
                                                 type = ASRUtils::TYPE(ASR::make_Complex_t(al, alias_expr->base.loc, kind));
