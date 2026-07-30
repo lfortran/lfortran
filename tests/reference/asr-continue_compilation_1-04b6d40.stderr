@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:953:7
+   --> tests/errors/continue_compilation_1.f90:960:7
     |
-953 |       foo    end type t_recovery
+960 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -519,9 +519,9 @@ semantic error: length specifier is only valid for character type
     |                    ^^^ 
 
 semantic error: Derived type `t_pair_local` is not defined
-   --> tests/errors/continue_compilation_1.f90:917:9
+   --> tests/errors/continue_compilation_1.f90:910:9
     |
-917 |         type(t_pair_local) :: x
+910 |         type(t_pair_local) :: x
     |         ^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: equivalence array bounds and subscripts must be constant
@@ -543,9 +543,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:956:7
+   --> tests/errors/continue_compilation_1.f90:963:7
     |
-956 |       class(t_recovery), intent(in) :: self
+963 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1810,52 +1810,46 @@ semantic error: Label 20 is not defined
 864 |         goto 20  ! {Error} Label 20 is not defined
     |         ^^^^^^^ 
 
-semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1, kind=4) and character(len=1, kind=1)
-   --> tests/errors/continue_compilation_1.f90:876:18
-    |
-876 |         print *, findloc(names, key)
-    |                  ^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: actual argument for 'items' cannot be an assumed-size array
-   --> tests/errors/continue_compilation_1.f90:882:36
+   --> tests/errors/continue_compilation_1.f90:875:36
     |
-882 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+875 |         call consume_assumed_shape(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                    ^^^^^ 
 
 semantic error: actual argument for 'items' cannot be an assumed-size array
-   --> tests/errors/continue_compilation_1.f90:891:49
+   --> tests/errors/continue_compilation_1.f90:884:49
     |
-891 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
+884 |         print *, consume_assumed_shape_function(items)  ! {Error} actual argument for 'items' cannot be an assumed-size array
     |                                                 ^^^^^ 
 
 semantic error: Association target cannot be a BOZ literal constant
-   --> tests/errors/continue_compilation_1.f90:899:25
+   --> tests/errors/continue_compilation_1.f90:892:25
     |
-899 |         associate (y => z'1') 
+892 |         associate (y => z'1') 
     |                         ^^^^ 
 
 semantic error: Cannot initialize integer(4) variable with character(len=3) value in DATA statement
-   --> tests/errors/continue_compilation_1.f90:906:9
+   --> tests/errors/continue_compilation_1.f90:899:9
     |
-906 |         data x / "abc" /
+899 |         data x / "abc" /
     |         ^^^^^^^^^^^^^^^^ 
 
 semantic error: `array` argument of `norm2` intrinsic must be an array
-   --> tests/errors/continue_compilation_1.f90:910:19
+   --> tests/errors/continue_compilation_1.f90:903:19
     |
-910 |         x = norm2(1.0)
+903 |         x = norm2(1.0)
     |                   ^^^ 
 
 semantic error: `array` argument of `norm2` intrinsic must be real
-   --> tests/errors/continue_compilation_1.f90:911:19
+   --> tests/errors/continue_compilation_1.f90:904:19
     |
-911 |         x = norm2([1, 2])
+904 |         x = norm2([1, 2])
     |                   ^^^^^^ 
 
 semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension index
-   --> tests/errors/continue_compilation_1.f90:912:35
+   --> tests/errors/continue_compilation_1.f90:905:35
     |
-912 |         x = norm2([1.0, 2.0], dim=2)
+905 |         x = norm2([1.0, 2.0], dim=2)
     |                                   ^ 
 
 semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 16
@@ -1863,3 +1857,9 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
     |
 918 |         print *, real(1., 666)
     |                           ^^^ 
+
+semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1, kind=4) and character(len=1, kind=1)
+   --> tests/errors/continue_compilation_1.f90:949:18
+    |
+949 |         print *, findloc(names, key)
+    |                  ^^^^^^^^^^^^^^^^^^^ 
