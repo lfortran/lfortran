@@ -146,6 +146,7 @@
                                     .false.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             assign_logint8_large:
                                 (Function
@@ -235,6 +236,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             error_handler:
@@ -411,6 +413,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                     ()
                                 ),
                             ~assign:

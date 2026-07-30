@@ -123,6 +123,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             string_type:
                                 (Struct
@@ -330,6 +331,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             ~assign:
                                 (CustomOperator
@@ -499,6 +501,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             string_type:

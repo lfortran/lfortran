@@ -275,6 +275,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             __asr_resize:
                                                 (Function
@@ -630,6 +631,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             intvector:
                                                 (Struct
@@ -828,6 +830,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             vector_t:
@@ -1069,6 +1072,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             resize:
@@ -1462,6 +1466,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             t:

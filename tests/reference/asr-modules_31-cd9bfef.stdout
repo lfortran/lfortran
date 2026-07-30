@@ -311,6 +311,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             dependency_tree_t:
                                 (ExternalSymbol
@@ -1265,6 +1266,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 )
                         })

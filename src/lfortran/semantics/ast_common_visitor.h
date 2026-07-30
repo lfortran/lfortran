@@ -4907,7 +4907,7 @@ public:
                             func_type,
                             nullptr, 0, nullptr, 0, nullptr, 0,
                             nullptr, ASR::accessType::Private,
-                            false, false, nullptr, nullptr, nullptr));
+                            false, false, nullptr, nullptr, nullptr, nullptr));
                     parent_scope->add_symbol(iface_name, iface_sym);
                     implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(iface_sym));
                 }
@@ -5768,7 +5768,7 @@ public:
                                                     al, attr_loc, fn_scope, s2c(al, iface_name),
                                                     proc_type, nullptr, 0, nullptr, 0, nullptr, 0,
                                                     nullptr, ASR::accessType::Public, false, false,
-                                                    nullptr, nullptr, nullptr));
+                                                    nullptr, nullptr, nullptr, nullptr));
                                             parent_scope->add_symbol(iface_name, iface);
                                             ASR::asr_t* proc_var = ASRUtils::make_Variable_t_util(
                                                 al, attr_loc, current_scope,
@@ -10293,7 +10293,7 @@ public:
                                 ASR::accessType::Private,
                                 false,
                                 false,
-                                nullptr,
+                                nullptr, nullptr,
                                 nullptr, nullptr
                             )
                         );
@@ -10365,7 +10365,7 @@ public:
                             ASR::accessType::Public,
                             false,
                             false,
-                            nullptr,
+                            nullptr, nullptr,
                             nullptr, nullptr
                         )
                     );
@@ -10379,7 +10379,7 @@ public:
                     ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                         al, attr_loc,
                         nullptr, 0, nullptr, ASR::abiType::Source,        
-                        ASR::deftypeType::Interface, nullptr,                     
+                        ASR::deftypeType::Interface, nullptr,
                         false, false, false, false, false, nullptr, 0, false
                         )); 
                     SymbolTable *parent_scope = current_scope->parent; 
@@ -10397,7 +10397,7 @@ public:
                             ASR::accessType::Public, 
                             false,                   
                             false,                   
-                            nullptr,                 
+                            nullptr, nullptr,                 
                             nullptr, nullptr         
                         )
                     );
@@ -20029,7 +20029,7 @@ public:
                     al, loc, fn_scope, s2c(al, iface_name),
                     iface_type, nullptr, 0, args.p, args.size(), nullptr, 0,
                     return_var, ASR::accessType::Public, false, false,
-                    nullptr, nullptr, nullptr));
+                    nullptr, nullptr, nullptr, nullptr));
             parent_scope->add_or_overwrite_symbol(iface_name, iface);
             proc_var->m_type_declaration = iface;
             existing_fn = ASR::down_cast<ASR::Function_t>(iface);
