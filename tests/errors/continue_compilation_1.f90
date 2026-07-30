@@ -869,13 +869,6 @@ program continue_compilation_1
         integer :: i*2
     end subroutine
 
-    subroutine findloc_character_kind_mismatch()
-        implicit none
-        character(kind=4, len=1) :: names(1)
-        character(kind=1, len=1) :: key
-        print *, findloc(names, key)
-    end subroutine
-
     subroutine assumed_size_to_assumed_shape_forward(items)
         implicit none
         integer :: items(*)
@@ -920,4 +913,11 @@ program continue_compilation_1
             real :: x
         end type
     end subroutine type_used_before_declared_local
+
+    subroutine findloc_character_kind_mismatch()
+        implicit none
+        character(kind=4, len=1) :: names(1)
+        character(kind=1, len=1) :: key
+        print *, findloc(names, key)
+    end subroutine
 end program
