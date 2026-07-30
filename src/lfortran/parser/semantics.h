@@ -2777,7 +2777,7 @@ ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
 }
 
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
-        char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
+        arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_funcs, size_t n_funcs,
         LCompilers::diag::Diagnostics &diag) {
     check_decl_order(decl_stmts, DeclContext::Template, diag);
