@@ -1300,6 +1300,27 @@ public:
         current_scope = parent_scope;
     }
 
+    // A specific procedure that shares its generic interface's name cannot
+    // occupy the same symbol table key as the GenericProcedure, so it is stored
+    // as "<name>~genericprocedure". Only an external (non-module) interface
+    // body still links against "<name>", so only it records that in
+    // Function.link_name. A module procedure links through LFortran's own
+    // mangling of the symbol table key and must leave link_name unset,
+    // otherwise backends would emit an unmangled symbol for it.
+    //
+    // The "~genericprocedure" convention is owned by this frontend; keeping
+    // link_name and the disambiguated key in sync here is what lets libasr
+    // verify link_name without knowing the convention.
+    char* self_named_generic_link_name(const std::string &name,
+            bool is_self_named_generic, ASR::deftypeType deftype,
+            bool is_module) {
+        if (!is_self_named_generic || is_module
+                || deftype != ASR::deftypeType::Interface) {
+            return nullptr;
+        }
+        return s2c(al, name);
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -1573,6 +1594,7 @@ public:
         }
 
         bool update_gp = false;
+        bool is_self_named_generic = false;
         int gp_index_to_be_updated = -1;
         ASR::symbol_t* f1_ = nullptr;
         if (parent_scope->get_symbol(sym_name) != nullptr) {
@@ -1609,6 +1631,7 @@ public:
                 ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f1);
                 if( sym_name == gp->m_name ) {
                     sym_name = sym_name + "~genericprocedure";
+                    is_self_named_generic = true;
                 }
 
                 if( !ASR::is_a<ASR::GenericProcedure_t>(*f1_) ) {
@@ -1642,13 +1665,12 @@ public:
                 throw SemanticAbort();
             }
         }
-        char* generic_link_name = nullptr;
         if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
-            if (deftype == ASR::deftypeType::Interface) {
-                generic_link_name = s2c(al, to_lower(sym_name));
-            }
             sym_name = sym_name + "~genericprocedure";
+            is_self_named_generic = true;
         }
+        char* generic_link_name = self_named_generic_link_name(
+            to_lower(x.m_name), is_self_named_generic, deftype, is_module);
 
         // Check for function/subroutine attribute conflict
         ASR::symbol_t* existing_sym = parent_scope->get_symbol(sym_name);
@@ -2340,17 +2362,14 @@ public:
         }
 
         // If this specific shares the generic interface's name, store it under
-        // "<name>~genericprocedure" so it does not clash with the GenericProcedure
-        // symbol. The external/link name remains "<name>"; for interface bodies
-        // record that in Function.link_name so backends do not invent or
-        // reverse-engineer names.
-        char* generic_link_name = nullptr;
+        // "<name>~genericprocedure" so it does not clash with the
+        // GenericProcedure symbol. See self_named_generic_link_name() for how
+        // the external linkage name is recovered below.
+        bool is_self_named_generic = false;
         if (generic_procedures.find(sym_name) != generic_procedures.end()
             || interface_name == to_lower(sym_name)) {
-            if (deftype == ASR::deftypeType::Interface) {
-                generic_link_name = s2c(al, to_lower(sym_name));
-            }
             sym_name = sym_name + "~genericprocedure";
+            is_self_named_generic = true;
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
@@ -2384,6 +2403,8 @@ public:
         bool init_deterministic = (deftype == ASR::deftypeType::Implementation);
         bool init_side_effect_free = (deftype == ASR::deftypeType::Implementation)
                                      || is_pure || is_elemental;
+        char* generic_link_name = self_named_generic_link_name(
+            to_lower(x.m_name), is_self_named_generic, deftype, is_module);
         tmp = ASRUtils::make_Function_t_util(
             /* al */ al, /* loc */ x.base.base.loc,
             /* m_symtab */ current_scope, /* m_name */ s2c(al, to_lower(sym_name)),

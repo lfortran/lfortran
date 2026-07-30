@@ -97,7 +97,10 @@ under `"<name>~genericprocedure"`, so `Function.name` is a **disambiguated
 key**, not necessarily the **external linkage name**.
 
 - For **module procedures**, definition and call both go through LFortran’s
-  mangling of the internal `name`; `link_name` stays null.
+  mangling of the internal `name`; `link_name` stays null. This includes a
+  `module function` / `module subroutine` interface body inside a self-named
+  generic: it is an interface, but its implementation is a module procedure
+  reached through the mangled key, not an external symbol.
 - For **external interface bodies**, calls must link to the real external
   symbol (`"<name>"`), which may be defined in another translation unit or by
   another compiler. Semantics sets `link_name` to that external name when it
@@ -108,14 +111,28 @@ BindC export name only.
 
 ### Invariants
 
+ASR verification enforces, for any `Function`:
+
 - `link_name` is either **null** or a **non-empty** string. An empty string is
   invalid; use null when the link name equals `name`.
+- If `link_name` is non-null then `FunctionType.deftype == Interface` and
+  `FunctionType.module == false`.
+
+The second rule is what makes the field safe to trust: only a procedure defined
+elsewhere has an external linkage name. A module procedure links through
+LFortran's mangling of the (possibly disambiguated) symbol table key, and an
+implementation defines its own symbol, so a `link_name` on either would make a
+backend emit or call the wrong symbol. Given these rules a backend can use a
+non-null `link_name` directly, as a non-empty C string, with no further checks.
+
 - If `FunctionType.deftype == Interface`, `module == false`, and `name` ends
   with `~genericprocedure`, then `link_name` must be present and equal to
   `name` without that suffix.
 
-ASR verification enforces these rules so backends can treat a non-null
-`link_name` as a usable non-empty C string (optional assert, no empty checks).
+The disambiguated key and `link_name` are kept consistent by
+`self_named_generic_link_name()` in
+`src/lfortran/semantics/ast_symboltable_visitor.cpp`, the single place that
+decides whether a self-named generic specific gets a `link_name`.
 
 ### Who sets it
 

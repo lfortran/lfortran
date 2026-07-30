@@ -539,12 +539,24 @@ public:
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
 
-        // link_name is either null or a non-empty string; backends may assert
-        // non-emptiness and must not treat "" as a special case.
+        // link_name names the object-file symbol of a procedure that is defined
+        // elsewhere, so it is meaningful only for an interface to an external
+        // procedure. A module procedure links through the mangled symbol table
+        // key instead, and an implementation defines its own symbol; if either
+        // carried a link_name, backends would emit or call the wrong symbol.
         if (x.m_link_name) {
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
             require(x.m_link_name[0] != '\0',
                 "Function `" + std::string(x.m_name) +
                 "` has empty link_name; use null when it equals name");
+            require(ftype->m_deftype == ASR::deftypeType::Interface,
+                "Function `" + std::string(x.m_name) +
+                "` sets link_name but is not an interface; only a procedure "
+                "defined elsewhere has an external linkage name");
+            require(!ftype->m_module,
+                "Function `" + std::string(x.m_name) +
+                "` is a module procedure and must not set link_name; it links "
+                "through the mangled symbol table key");
         }
 
         // Self-named generic specifics are stored as "<name>~genericprocedure".
