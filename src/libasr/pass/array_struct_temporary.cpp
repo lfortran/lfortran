@@ -641,6 +641,10 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::CoarrayRef: {
+            ASR::CoarrayRef_t* coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(value);
+            return set_allocation_size(al, coarray_ref->m_var, temporary_var, allocate_dims, target_n_dims, add_allocated_check, len_allocte_expr);
+        }
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);

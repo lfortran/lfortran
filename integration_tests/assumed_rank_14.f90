@@ -1,4 +1,4 @@
-program assumed_rank_13
+program assumed_rank_14
   implicit none
 
   integer, allocatable :: x(:, :)
@@ -18,4 +18,4 @@ contains
     res = 1
   end function make_array
 
-end program assumed_rank_13
+end program assumed_rank_14

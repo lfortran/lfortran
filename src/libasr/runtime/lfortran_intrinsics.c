@@ -6615,6 +6615,12 @@ LFORTRAN_API void _lfortran_abort()
     abort();
 }
 
+LFORTRAN_API void _lfortran_exit(int32_t status)
+{
+    _lfortran_internal_alloc_finalize();
+    exit(status);
+}
+
 LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 {
 #if defined(_WIN32)

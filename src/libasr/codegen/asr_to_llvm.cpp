@@ -6690,7 +6690,10 @@ public:
                 // and might be returned.
                 if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
+                    // As above: only scalar class members are laid out as a
+                    // class wrapper; class array members are descriptors.
                     if (!LLVM::is_llvm_pointer(*v->m_type) &&
+                            !ASRUtils::is_array(v->m_type) &&
                             ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                         struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration), 
                             ptr_member, module.get());
@@ -7598,7 +7601,12 @@ public:
                     }
                 }
             }
+            // Only scalar class variables have a class wrapper ({vptr, struct*})
+            // as their allocated type. For class arrays `ptr` is an array
+            // descriptor, so GEP-ing field 1 out of it would be a type error;
+            // their elements are initialized when the array is allocated.
             if (!LLVM::is_llvm_pointer(*v->m_type) &&
+                    !ASRUtils::is_array(v->m_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                 struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
                     ptr, module.get());
@@ -14508,6 +14516,84 @@ public:
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        // Fortran permits (but does not require) short-circuit evaluation of
+        // the .and. and .or. logical operators. Real-world code sometimes
+        // incorrectly relies on it to guard the second operand, e.g.
+        //     if (i >= 1 .and. a(i) == x) ...
+        // where a(i) must not be evaluated when i < 1. Under
+        // --logical-short-circuit, evaluate the right operand only when the
+        // left operand does not already determine the result. One can use this
+        // option with such non-conforming code.
+        if (compiler_options.po.logical_short_circuit &&
+                ASRUtils::is_logical(*x.m_type) &&
+                (x.m_op == ASR::logicalbinopType::And ||
+                 x.m_op == ASR::logicalbinopType::Or)) {
+            this->visit_expr_load_wrapper(x.m_left,
+                LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1, true);
+            llvm::Value *left_val = tmp;
+            load_non_array_non_character_pointers(x.m_left,
+                ASRUtils::expr_type(x.m_left), left_val);
+            llvm::Value *left_cond = builder->CreateICmpNE(
+                left_val, llvm::ConstantInt::get(left_val->getType(), 0));
+
+            llvm::Function *fn = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock *rhs_bb = llvm::BasicBlock::Create(context,
+                "logical_sc_rhs", fn);
+            llvm::BasicBlock *merge_bb = llvm::BasicBlock::Create(context,
+                "logical_sc_merge", fn);
+            llvm::BasicBlock *entry_bb = builder->GetInsertBlock();
+            if (x.m_op == ASR::logicalbinopType::And) {
+                // .and.: evaluate the right operand only when left is true.
+                builder->CreateCondBr(left_cond, rhs_bb, merge_bb);
+            } else {
+                // .or.: evaluate the right operand only when left is false.
+                builder->CreateCondBr(left_cond, merge_bb, rhs_bb);
+            }
+
+            builder->SetInsertPoint(rhs_bb);
+            // String temporaries created while evaluating the right operand
+            // are normally freed at the end of the enclosing statement, but
+            // that would emit frees of conditionally-created values on the
+            // unconditional path after the merge block (and reference values
+            // that do not dominate it). Free them here, inside the
+            // conditionally-executed block, once the operand's value has been
+            // computed.
+            size_t strings_n_before_rhs = strings_to_be_deallocated.n;
+            this->visit_expr_load_wrapper(x.m_right,
+                LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
+            llvm::Value *right_val = tmp;
+            load_non_array_non_character_pointers(x.m_right,
+                ASRUtils::expr_type(x.m_right), right_val);
+            llvm::Value *right_cond = builder->CreateICmpNE(
+                right_val, llvm::ConstantInt::get(right_val->getType(), 0));
+            free_strings_to_be_deallocated(strings_n_before_rhs);
+            // Evaluating the right operand may introduce new basic blocks
+            // (e.g. array bounds checks), so capture the current block.
+            llvm::BasicBlock *rhs_end_bb = builder->GetInsertBlock();
+            builder->CreateBr(merge_bb);
+
+            builder->SetInsertPoint(merge_bb);
+            llvm::PHINode *phi = builder->CreatePHI(
+                llvm::Type::getInt1Ty(context), 2);
+            llvm::Value *sc_val = (x.m_op == ASR::logicalbinopType::And)
+                ? llvm::ConstantInt::getFalse(context)
+                : llvm::ConstantInt::getTrue(context);
+            phi->addIncoming(sc_val, entry_bb);
+            phi->addIncoming(right_cond, rhs_end_bb);
+            // Preserve the result width produced by the non-short-circuit
+            // path (the wider of the two operand widths) so downstream
+            // consumers see an unchanged type.
+            unsigned lw = left_val->getType()->getIntegerBitWidth();
+            unsigned rw = right_val->getType()->getIntegerBitWidth();
+            unsigned width = lw > rw ? lw : rw;
+            if (width > 1) {
+                tmp = builder->CreateZExt(phi,
+                    llvm::IntegerType::get(context, width));
+            } else {
+                tmp = phi;
+            }
             return;
         }
         this->visit_expr_load_wrapper(x.m_left,
@@ -21486,7 +21572,10 @@ public:
         return;
     }
 
-    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location /*loc*/) {
+    // `stop_code_value` is the already-evaluated integer stop code (if the
+    // caller evaluated it); it is used for both the message and the exit code
+    // so that a stop code with side effects (e.g. a function call) runs once.
+    void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location /*loc*/, llvm::Value* stop_code_value=nullptr) {
         std::string fmt {};
         std::vector<llvm::Value*> args;
         args.push_back(nullptr); // reserve space for fmt_str
@@ -21505,9 +21594,11 @@ public:
         if (stop_code && ASR::is_a<ASR::Integer_t>(*expr_type(stop_code))) {
             if(ASRUtils::extract_kind_from_ttype_t(expr_type(stop_code)) != 4) throw LCompilersException("Kind in Stop code should be = 4");
             fmt += " %d";
-            visit_expr(*stop_code);
-            llvm::Value* stop_code_int = tmp; tmp = nullptr;
-            args.push_back(stop_code_int);
+            if (!stop_code_value) {
+                visit_expr(*stop_code);
+                stop_code_value = tmp; tmp = nullptr;
+            }
+            args.push_back(stop_code_value);
         } else if(stop_code && ASRUtils::is_string_only(expr_type(stop_code))){
             fmt += " %.*s";
             visit_expr_load_wrapper(stop_code, 0);
@@ -21551,9 +21642,8 @@ public:
             }
             builder->CreateCall(fn_finalize, {});
         }
-        if (stop_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(stop_code))) {
-            this->visit_expr(*stop_code);
-            exit_code = tmp;
+        if (stop_code_value) {
+            exit_code = stop_code_value;
         }
         exit(context, *module, *builder, exit_code);
     }
@@ -21561,23 +21651,27 @@ public:
     void visit_Stop(const ASR::Stop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
-            if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-                llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
-                llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
-                    1, compiler_options.use_colors));
-                this->visit_expr(*x.m_code);
-                llvm::Value *test = builder->CreateICmpNE(tmp, builder->getInt32(0));
-                llvm_utils->create_if_else(test, [=]() {
-                    call_print_stacktrace_addresses(context, *module, *builder,
-                        {fmt_ptr, fmt_ptr1});
-                }, [](){});
-            }
+        }
+        llvm::Value *stop_code_value = nullptr;
+        if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
+            this->visit_expr(*x.m_code);
+            stop_code_value = tmp; tmp = nullptr;
+        }
+        if (compiler_options.emit_debug_info && stop_code_value) {
+            llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
+            llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
+                1, compiler_options.use_colors));
+            llvm::Value *test = builder->CreateICmpNE(stop_code_value, builder->getInt32(0));
+            llvm_utils->create_if_else(test, [=]() {
+                call_print_stacktrace_addresses(context, *module, *builder,
+                    {fmt_ptr, fmt_ptr1});
+            }, [](){});
         }
 
         int exit_code_int = 0;
         llvm::Value *exit_code = llvm::ConstantInt::get(context,
                 llvm::APInt(32, exit_code_int));
-        construct_stop(exit_code, "STOP", x.m_code, x.base.base.loc);
+        construct_stop(exit_code, "STOP", x.m_code, x.base.base.loc, stop_code_value);
     }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
