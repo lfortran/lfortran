@@ -1231,7 +1231,6 @@ int compile_src_to_object_file(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     t2 = std::chrono::high_resolution_clock::now();
-    lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
@@ -1243,7 +1242,19 @@ int compile_src_to_object_file(const std::string &infile,
         return 1;
     }
 
-    // Save .mod files
+    bool submodule_lib_unit = arg_c
+        && LCompilers::ASRUtils::submodule_present(*asr)
+        && !LCompilers::ASRUtils::main_program_present(*asr)
+        && !LCompilers::ASRUtils::global_function_present(*asr);
+    bool user_separate_compilation = compiler_options.separate_compilation;
+    if (submodule_lib_unit) {
+        compiler_options.separate_compilation = true;
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
+    }
+    lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
+
     {
         t1 = std::chrono::high_resolution_clock::now();
         int err = save_mod_files(*asr, compiler_options, lm);
@@ -1252,12 +1263,22 @@ int compile_src_to_object_file(const std::string &infile,
         if (err) return err;
     }
 
+    if (submodule_lib_unit) {
+        if (!user_separate_compilation) {
+            LCompilers::ASRUtils::mark_local_regular_modules_as_external_when_submodule_present(*asr);
+        }
+        LCompilers::ASRUtils::mark_loaded_from_mod_modules_as_external(*asr);
+    } else if (arg_c) {
+        LCompilers::ASRUtils::mark_submodule_related_loaded_modules_as_external(*asr);
+    }
+
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
-        && !LCompilers::ASRUtils::global_function_present(*asr)) {
+        && !LCompilers::ASRUtils::global_function_present(*asr)
+        && !LCompilers::ASRUtils::submodule_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
