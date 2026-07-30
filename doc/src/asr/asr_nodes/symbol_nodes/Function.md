@@ -125,12 +125,9 @@ implementation defines its own symbol, so a `link_name` on either would make a
 backend emit or call the wrong symbol. Given these rules a backend can use a
 non-null `link_name` directly, as a non-empty C string, with no further checks.
 
-- If `FunctionType.deftype == Interface`, `module == false`, and `name` ends
-  with `~genericprocedure`, then `link_name` must be present and equal to
-  `name` without that suffix.
-
-The disambiguated key and `link_name` are kept consistent by
-`self_named_generic_link_name()` in
+These invariants are frontend-neutral: libasr does not know about the
+`~genericprocedure` convention. Keeping the disambiguated key and `link_name`
+consistent is the frontend's job — see `self_named_generic_link_name()` in
 `src/lfortran/semantics/ast_symboltable_visitor.cpp`, the single place that
 decides whether a self-named generic specific gets a `link_name`.
 
