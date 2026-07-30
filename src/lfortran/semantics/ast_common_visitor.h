@@ -5816,6 +5816,16 @@ public:
                                     }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
+                                    // Check if an intrinsic procedure (function or subroutine) is supported by
+                                    // the compiler or not
+                                    if (!is_intrinsic_registry_function(sym) &&
+                                        !is_intrinsic_registry_subroutine(sym)) {
+                                        diag.add(Diagnostic("Intrinsic procedure '" + sym + "' is not recognized",
+                                             Level::Error, Stage::Semantic,
+                                            {Label("", {s.loc})}));
+                                        throw SemanticAbort();
+                                    }
+
                                     explicit_intrinsic_procedures.push_back(sym);
                                     if (compiler_options.implicit_interface) {
                                         create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
