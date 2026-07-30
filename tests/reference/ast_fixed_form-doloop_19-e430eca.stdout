@@ -2,8 +2,6 @@
     [(Program
         doloop_19
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -28,8 +26,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             s
             0

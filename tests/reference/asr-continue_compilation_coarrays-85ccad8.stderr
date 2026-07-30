@@ -1,3 +1,9 @@
+syntax error: Token ':' is unexpected here
+  --> tests/errors/continue_compilation_coarrays.f90:23:14
+   |
+23 |     a = z[1:5:2]
+   |              ^ 
+
 semantic error: Variable 'x' is not a coarray; coindex notation [..] requires a codimension attribute
  --> tests/errors/continue_compilation_coarrays.f90:5:9
   |
@@ -28,14 +34,8 @@ semantic error: Coarray 's' has corank 2 but 1 coindices were provided
 20 |     s%y[1] = 5
    |     ^^^^^^ 
 
-semantic error: Coarray coindices do not support step notation (e.g., [i:j:k])
-  --> tests/errors/continue_compilation_coarrays.f90:23:9
-   |
-23 |     a = z[1:5:2]
-   |         ^^^^^^^^ 
-
 semantic error: Coarray 'cod' coindex 1 is out of bounds: 5 not in [1, 4]
-  --> tests/errors/continue_compilation_coarrays.f90:26:13
+  --> tests/errors/continue_compilation_coarrays.f90:26:17
    |
 26 |     print *,cod[5]
-   |             ^^^^^^ 
+   |                 ^ 

@@ -2,8 +2,6 @@
     [(Program
         data_01
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -97,8 +95,8 @@
             None
             ())]
             ()
-        )]
-        [(DataStmt
+        )
+        (DataStmt
             0
             [(DataStmtSet
                 [x

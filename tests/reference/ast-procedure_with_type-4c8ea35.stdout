@@ -2,8 +2,6 @@
     [(Program
         procedure_with_type
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeProcedure
@@ -214,7 +212,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

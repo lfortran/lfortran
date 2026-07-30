@@ -130,14 +130,20 @@ static inline std::string extract_real_16_str(const char *s) {
 // `extract_value<double>`, which refuses for kind=16). Constructing a kind=16
 // constant from a decimal string is `make_RealConstant_r16_from_str`.
 
+// Recover the pointer to the 16 binary128 bytes from an m_r payload. Inverse of
+// `real_constant_pack_r16`. Only valid for a kind=16 payload.
+static inline const uint8_t* real_constant_unpack_r16(double m_r) {
+    uintptr_t addr;
+    std::memcpy(&addr, &m_r, sizeof(addr));
+    return reinterpret_cast<const uint8_t*>(addr);
+}
+
 // Read the 16 raw bytes of a kind=16 RealConstant (binary128, little-endian).
 // Asserts that the constant is kind=16. Lifetime: tied to the ASR allocator
 // that built the node.
 static inline const uint8_t* real_constant_get_r16_bytes(
         const ASR::RealConstant_t* c) {
-    uintptr_t addr;
-    std::memcpy(&addr, &c->m_r, sizeof(addr));
-    return reinterpret_cast<const uint8_t*>(addr);
+    return real_constant_unpack_r16(c->m_r);
 }
 
 // Pack 16 bytes into the m_r payload (compose the pointer-encoded double).
@@ -1814,7 +1820,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerBinOp:
         case ASR::exprType::StructInstanceMember:
-        case ASR::exprType::StringLen: {
+        case ASR::exprType::StringLen:
+        case ASR::exprType::ArrayItem: {
             return is_value_constant(expr_value(a_value));
         }
         case ASR::exprType::ArrayConstructor: {
@@ -2234,7 +2241,8 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::FunctionCall:
         case ASR::exprType::IntegerBinOp:
-        case ASR::exprType::StringLen: {
+        case ASR::exprType::StringLen:
+        case ASR::exprType::ArrayItem: {
             if (!extract_value(expr_value(value_expr), value)) {
                 return false;
             }
@@ -7794,7 +7802,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     }
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
-    bool all_expr_evaluated = n_args > 0;
+    bool all_expr_evaluated = true;
     // Compile-time aggregation of real(16) arrays into a packed ArrayConstant
     // is not supported: set_ArrayConstant_data / fetch_ArrayConstant_value only
     // pack float/double element buffers, whereas a kind=16 RealConstant stores
@@ -7829,6 +7837,16 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
         if (!is_value_constant(a_value)) {
             all_expr_evaluated = false;
+        }
+    }
+    if (all_expr_evaluated && n_args == 0) {
+        ASR::ttype_t* array_type = ASRUtils::type_get_past_pointer(a_type);
+        ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(array_type);
+        if (is_character(*array->m_type)) {
+            int len = 0;
+            if (!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(array->m_type)->m_len, len)) {
+                all_expr_evaluated = false;
+            }
         }
     }
     if (all_expr_evaluated) {

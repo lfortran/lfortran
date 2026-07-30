@@ -2,12 +2,11 @@
     [(Program
         parameter_01
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -73,8 +72,8 @@
             Equal
             ())]
             ()
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [i

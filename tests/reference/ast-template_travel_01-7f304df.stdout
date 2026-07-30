@@ -7,12 +7,11 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -45,7 +44,6 @@
                 (EndOfLine)]
             )
         )]
-        []
         [(Function
             add_real
             [(x)
@@ -60,9 +58,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -107,8 +102,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 total
                 (+ x y)
@@ -131,9 +126,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -178,8 +170,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 total
                 (/ x y)
@@ -203,12 +195,12 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             ()
             [(SimpleAttribute
                 AttrPrivate
@@ -291,9 +283,6 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -339,7 +328,6 @@
                     ())]
                     ()
                 )]
-                []
                 []
                 []
             )
@@ -357,9 +345,6 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -407,7 +392,6 @@
                 )]
                 []
                 []
-                []
             )
             (Function
                 D_divided_by_T
@@ -423,9 +407,6 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -484,7 +465,6 @@
                     ())]
                     ()
                 )]
-                []
                 []
                 []
             )
@@ -498,9 +478,6 @@
                 quotient
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -559,7 +536,6 @@
                     ())]
                     ()
                 )]
-                []
                 []
                 []
             )]
@@ -637,9 +613,6 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -711,8 +684,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     avg
                     (FuncCallOrArray
@@ -775,9 +748,6 @@
                 avg
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -849,8 +819,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     avg
                     (FuncCallOrArray
@@ -911,7 +881,6 @@
             )]
         )]
         []
-        []
     )
     (Module
         template_travel_01_m
@@ -934,8 +903,8 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
@@ -943,8 +912,6 @@
                 (EndOfLine)]
             )
         )]
-        []
-        []
         [(Subroutine
             test_template
             []
@@ -955,9 +922,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Instantiate
                 travel_tmpl
                 [(AttrType
@@ -1062,8 +1026,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 s1
                 (FuncCallOrArray
@@ -1146,17 +1110,16 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             test_template
             []

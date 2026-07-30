@@ -706,7 +706,7 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -754,10 +754,12 @@ jobs:
               --contents share/lfortran/nb/Demo1.ipynb \
               --contents share/lfortran/nb/Demo2.ipynb \
               --contents share/lfortran/nb/Variables.ipynb \
+              --contents share/lfortran/nb/Mandelbrot.ipynb \
+              --contents share/lfortran/nb/Rich_Display.ipynb \
               --output-dir dist
 
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./dist
 
@@ -775,4 +777,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

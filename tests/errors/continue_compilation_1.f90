@@ -914,6 +914,34 @@ program continue_compilation_1
         end type
     end subroutine type_used_before_declared_local
 
+    subroutine real_unsupported_kind_01()
+        print *, real(1., 666)
+    end subroutine
+
+    ! The AST keeps the source order, so with `--continue-compilation` the
+    ! AST -> ASR visitors see the `use` and `implicit` statements below in
+    ! their (invalid) position rather than hoisted to the front. The parser
+    ! reports the ordering errors, the visitors must cope with the raw order.
+    subroutine decl_order_after_decl()
+        integer :: decl_order_first
+        use iso_fortran_env, only: int32
+        implicit none
+        integer(int32) :: decl_order_second
+        decl_order_second = decl_order_first
+    end subroutine
+    subroutine equivalence_nonconstant_subscript()
+        implicit none
+        integer :: a(3), b(3), i
+        equivalence (a(i), b(1))  ! {Error} equivalence array bounds and subscripts must be constant
+    end subroutine equivalence_nonconstant_subscript
+
+    subroutine equivalence_common_scalar_array_element()
+        implicit none
+        integer :: cs, arr(3)
+        common /equivalence_common_scalar/ cs
+        equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    end subroutine equivalence_common_scalar_array_element
+
     subroutine findloc_character_kind_mismatch()
         implicit none
         character(kind=4, len=1) :: names(1)
@@ -921,3 +949,19 @@ program continue_compilation_1
         print *, findloc(names, key)
     end subroutine
 end program
+
+! A syntax error inside a module makes the parser skip the erroneous
+! declaration and keep the rest of the module. The symbol table visitor then
+! skips the program units that depend on the discarded declaration, so the body
+! visitor must not assume their symbols exist.
+module module_error_recovery_1
+    type :: t_recovery
+    contains
+      foo    end type t_recovery
+contains
+    pure function foo(self, x) result(res)
+      class(t_recovery), intent(in) :: self
+      real, intent(in) :: x(:)
+      real :: res(size(x))
+    end function foo
+end module
