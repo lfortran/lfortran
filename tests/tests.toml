@@ -5278,6 +5278,12 @@ pass = "coarray"
 options = "--coarray=true"
 
 [[test]]
+filename = "coarray_allocate_01.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
 filename = "errors/missing_include_01.f90"
 ast = true
 
@@ -5292,3 +5298,7 @@ filename = "coarray_teams_02.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+
+[[test]]
+filename = "../integration_tests/logical_short_circuit_01.f90"
+run = true

@@ -2190,6 +2190,7 @@ RUN(NAME implicit_interface_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing
 RUN(NAME implicit_interface_41 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_42 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_43 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_44 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface GFORTRAN_ARGS -ffixed-form)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -2356,6 +2357,10 @@ RUN(NAME logical_kind_07 LABELS gfortran llvm)
 RUN(NAME logical_kind_04 LABELS gfortran llvm)
 RUN(NAME logical_kind_05 LABELS gfortran llvm EXTRA_ARGS --fixed-form)
 RUN(NAME logical_kind_06 LABELS gfortran llvm)
+# Runs only under the llvm label: the test relies on short-circuit
+# evaluation, which the standard permits but does not require, so it is
+# only valid with --logical-short-circuit (gfortran gives no such guarantee).
+RUN(NAME logical_short_circuit_01 LABELS llvm EXTRA_ARGS --logical-short-circuit)
 
 RUN(NAME tsunami LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH)
 
@@ -4763,6 +4768,11 @@ RUN(NAME coarrays_24 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_26 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_27 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
 
+RUN(NAME coarrays_29 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_30 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_31 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_32 EXTRA_ARGS --coarray=true)
+
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_03 LABELS gfortran llvm metal)
@@ -4975,6 +4985,10 @@ RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
 RUN(NAME real128_module_01 LABELS gfortran llvm EXTRAFILES real128_module_01_mod.f90)
 RUN(NAME equivalence_39 LABELS gfortran llvm)
+RUN(NAME equivalence_40 LABELS gfortran llvm)
+RUN(NAME equivalence_41 LABELS gfortran llvm)
+RUN(NAME equivalence_42 LABELS gfortran llvm)
+RUN(NAME equivalence_43 LABELS gfortran llvm)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME decl_order_01 LABELS gfortran llvm)

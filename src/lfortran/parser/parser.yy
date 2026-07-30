@@ -2550,12 +2550,6 @@ coarray_arg
     | expr ":"               { $$ = COARRAY_COMP_DECL_a01($1, @$); }
     | ":" expr               { $$ = COARRAY_COMP_DECL_0b1($2, @$); }
     | expr ":" expr          { $$ = COARRAY_COMP_DECL_ab1($1, $3, @$); }
-    | "::" expr              { $$ = COARRAY_COMP_DECL_00c($2, @$); }
-    | ":" ":" expr           { $$ = COARRAY_COMP_DECL_00c($3, @$); }
-    | expr "::" expr         { $$ = COARRAY_COMP_DECL_a0c($1, $3, @$); }
-    | expr ":" ":" expr      { $$ = COARRAY_COMP_DECL_a0c($1, $4, @$); }
-    | ":" expr ":" expr      { $$ = COARRAY_COMP_DECL_0bc($2, $4, @$); }
-    | expr ":" expr ":" expr { $$ = COARRAY_COMP_DECL_abc($1, $3, $5, @$); }
 // keyword function argument
     | id "=" expr            { $$ = COARRAY_COMP_DECL1k($1, $3, @$); }
 // star

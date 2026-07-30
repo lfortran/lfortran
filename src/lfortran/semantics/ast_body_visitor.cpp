@@ -3352,6 +3352,9 @@ public:
                     LCOMPILERS_ASSERT_MSG(false, std::to_string(x.m_args[i].m_start->type));
                 }
             }
+            if (ASR::is_a<ASR::CoarrayRef_t>(*tmp_stmt)) {
+                tmp_stmt = ASR::down_cast<ASR::CoarrayRef_t>(tmp_stmt)->m_var;
+            }
             // Assume that tmp is an `ArraySection` or `ArrayItem`
             if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);

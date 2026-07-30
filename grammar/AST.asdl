@@ -403,7 +403,7 @@ arg = (identifier? arg)
 --
 fnarg = (expr? start, expr? end, expr? step, int label)
 
-coarrayarg = (expr? start, expr? end, expr? step, codimension_type star)
+coarrayarg = (expr? start, expr? end, codimension_type star)
 
 keyword = (identifier arg, expr value)
 
