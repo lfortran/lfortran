@@ -45,8 +45,8 @@
         )
         (Requirement
             R
-            [T
-            F]
+            [(T)
+            (F)]
             [(DerivedType
                 T
                 []

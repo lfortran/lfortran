@@ -49,6 +49,14 @@ module lfortran_intrinsic_ieee_arithmetic
         module procedure spieee_class, dpieee_class
     end interface
 
+    interface operator(==)
+        module procedure ieee_class_type_eq, ieee_round_type_eq
+    end interface
+
+    interface operator(/=)
+        module procedure ieee_class_type_ne, ieee_round_type_ne
+    end interface
+
     interface ieee_value
         module procedure spieee_value, dpieee_value
     end interface
@@ -153,16 +161,114 @@ module lfortran_intrinsic_ieee_arithmetic
 
     contains
 
+    elemental function ieee_class_type_eq(lhs, rhs) result(r)
+        type(ieee_class_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value == rhs%value
+    end function
+
+    elemental function ieee_class_type_ne(lhs, rhs) result(r)
+        type(ieee_class_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value /= rhs%value
+    end function
+
+    elemental function ieee_round_type_eq(lhs, rhs) result(r)
+        type(ieee_round_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value == rhs%value
+    end function
+
+    elemental function ieee_round_type_ne(lhs, rhs) result(r)
+        type(ieee_round_type), intent(in) :: lhs, rhs
+        logical :: r
+        r = lhs%value /= rhs%value
+    end function
+
     elemental function spieee_class(x) result(y)
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         type(ieee_class_type) :: y
+        integer(4) :: bits, expo, frac
+        bits = transfer(x, 0_4)
+        expo = iand(ishft(bits, -23), int(z'FF', kind=4))
+        frac = iand(bits, int(z'007FFFFF', kind=4))
+        if (expo == int(z'FF', kind=4)) then
+            if (frac == 0) then
+                if (bits < 0) then
+                    y = ieee_negative_inf
+                else
+                    y = ieee_positive_inf
+                end if
+            else if (iand(frac, int(z'00400000', kind=4)) /= 0) then
+                y = ieee_quiet_nan
+            else
+                y = ieee_signaling_nan
+            end if
+        else if (expo == 0) then
+            if (frac == 0) then
+                if (bits < 0) then
+                    y = ieee_negative_zero
+                else
+                    y = ieee_positive_zero
+                end if
+            else
+                if (bits < 0) then
+                    y = ieee_negative_denormal
+                else
+                    y = ieee_positive_denormal
+                end if
+            end if
+        else
+            if (bits < 0) then
+                y = ieee_negative_normal
+            else
+                y = ieee_positive_normal
+            end if
+        end if
     end function
 
     elemental function dpieee_class(x) result(y)
-        use iso_fortran_env, only: real64
+        use iso_fortran_env, only: real64, int64
         real(real64), intent(in) :: x
         type(ieee_class_type) :: y
+        integer(int64) :: bits, expo, frac
+        bits = transfer(x, 0_int64)
+        expo = iand(ishft(bits, -52), int(z'7FF', kind=8))
+        frac = iand(bits, int(z'000FFFFFFFFFFFFF', kind=8))
+        if (expo == int(z'7FF', kind=8)) then
+            if (frac == 0_int64) then
+                if (bits < 0_int64) then
+                    y = ieee_negative_inf
+                else
+                    y = ieee_positive_inf
+                end if
+            else if (iand(frac, int(z'0008000000000000', kind=8)) /= 0_int64) then
+                y = ieee_quiet_nan
+            else
+                y = ieee_signaling_nan
+            end if
+        else if (expo == 0_int64) then
+            if (frac == 0_int64) then
+                if (bits < 0_int64) then
+                    y = ieee_negative_zero
+                else
+                    y = ieee_positive_zero
+                end if
+            else
+                if (bits < 0_int64) then
+                    y = ieee_negative_denormal
+                else
+                    y = ieee_positive_denormal
+                end if
+            end if
+        else
+            if (bits < 0_int64) then
+                y = ieee_negative_normal
+            else
+                y = ieee_positive_normal
+            end if
+        end if
     end function
 
     elemental function spieee_value(x, cls) result(y)
