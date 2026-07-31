@@ -1081,15 +1081,15 @@ static inline codimension_t* CODIM1d_star(Allocator &al, Location &l, expr_t *a)
 }
 
 
-static inline arg_t* ARGS(Allocator &al, Location &l,
-    const Vec<ast_t*> args)
+static inline arg_t* ARGS(Allocator &al, const Vec<ast_t*> args)
 {
     arg_t *a = al.allocate<arg_t>(args.size());
     for (size_t i=0; i < args.size(); i++) {
-        a[i].loc = l;
         if (args.p[i]) {
+            a[i].loc = args.p[i]->loc;
             a[i].m_arg = name2char(args.p[i]);
         } else {
+            a[i].loc = Location();
             a[i].m_arg = nullptr;
         }
     }
@@ -1104,6 +1104,7 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
     }
     return a;
 }
+
 
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
@@ -1719,7 +1720,7 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
 #define SUBROUTINE(name, args, bind, trivia, decl_stmts, contains, name_opt, l) \
     SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
         /*n_attributes*/ 0, \
@@ -1735,7 +1736,7 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
 #define SUBROUTINE1(fn_mod, name, args, bind, trivia, decl_stmts, contains, \
         name_opt, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
         /*n_attributes*/ fn_mod.size(), \
@@ -1751,7 +1752,7 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
 #define PROCEDURE(fn_mod, name, args, trivia, decl_stmts, contains, l) \
     PROCEDURE2(p.m_a, l, \
         /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
         /*n_attributes*/ fn_mod.size(), \
@@ -1786,7 +1787,7 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
 #define FUNCTION(fn_type, name, args, return_var, bind, trivia, decl_stmts, \
         contains, name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
         /*n_attributes*/ fn_type.size(), \
@@ -1803,7 +1804,7 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
 #define FUNCTION0(name, args, return_var, bind, trivia, decl_stmts, contains, \
         name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
         /*n_attributes*/ 0, \
@@ -1821,7 +1822,7 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, \
         bind, trivia, decl_stmts, name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
         /*n_attributes*/ fn_type.size(), \
@@ -1838,7 +1839,7 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
 #define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, \
         trivia, decl_stmts, name_opt, l) FUNCTION2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
         /*n_attributes*/ 0, \
@@ -1855,7 +1856,7 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
 #define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, \
         decl_stmts, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
         /*n_attributes*/ 0, \
@@ -1871,7 +1872,7 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
 #define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, \
         trivia, decl_stmts, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
         /*n_attributes*/ fn_type.size(), \
@@ -2776,7 +2777,7 @@ ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
 }
 
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
-        char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
+        arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_funcs, size_t n_funcs,
         LCompilers::diag::Diagnostics &diag) {
     check_decl_order(decl_stmts, DeclContext::Template, diag);
@@ -2791,7 +2792,7 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
 #define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
         REQUIREMENT2(p.m_a, l, name2char(name), \
-        REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
+        ARGS(p.m_a, namelist), namelist.size(), \
         decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
 #define REQUIRE(require_list, l) \
         make_Require_t(p.m_a, l, \
@@ -2893,12 +2894,12 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(x, event_attribute), x.size(), nullptr)
 
 #define ENTRY1(id, args, l) make_Entry_t(p.m_a, l, 0, name2char(id), \
-        ARGS(p.m_a, l, args), args.size(), nullptr, nullptr, nullptr)
+        ARGS(p.m_a, args), args.size(), nullptr, nullptr, nullptr)
 #define ENTRY2(id, args, bind, return, l) make_Entry_t(p.m_a, l, 0, \
-        name2char(id), ARGS(p.m_a, l, args), args.size(), \
+        name2char(id), ARGS(p.m_a, args), args.size(), \
         EXPR_OPT(return), bind_opt(bind), nullptr)
 #define ENTRY3(id, args, return, bind, l) make_Entry_t(p.m_a, l, 0, \
-        name2char(id), ARGS(p.m_a, l, args), args.size(), \
+        name2char(id), ARGS(p.m_a, args), args.size(), \
         EXPR_OPT(return), bind_opt(bind), nullptr)
 
 #define TRIVIA_SET(x) case LCompilers::LFortran::AST::decl_stmtType::x: { \

@@ -941,6 +941,13 @@ program continue_compilation_1
         common /equivalence_common_scalar/ cs
         equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
     end subroutine equivalence_common_scalar_array_element
+
+    subroutine equivalence_common_array_overrun()
+        implicit none
+        real :: first, second, alias(4)
+        common /equivalence_common_overrun/ first, second
+        equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    end subroutine equivalence_common_array_overrun
 end program
 
 

@@ -1,0 +1,17 @@
+semantic error: Parameter 't' is declared more than once in requirement 'dup_param_req'
+ --> tests/errors/continue_compilation_templates_01.f90:5:31
+  |
+5 |     requirement dup_param_req(T, T, op_func)
+  |                               ^ first declared here
+  |
+5 |     requirement dup_param_req(T, T, op_func)
+  |                                  ^ redeclared here
+
+semantic error: Parameter 'v' is declared more than once in requirement 'dup_param_req2'
+  --> tests/errors/continue_compilation_templates_01.f90:18:32
+   |
+18 |     requirement dup_param_req2(V, V, W, comp_func)
+   |                                ^ first declared here
+   |
+18 |     requirement dup_param_req2(V, V, W, comp_func)
+   |                                   ^ redeclared here

@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:961:7
+   --> tests/errors/continue_compilation_1.f90:968:7
     |
-961 |       foo    end type t_recovery
+968 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -497,14 +497,10 @@ semantic error: COMMON block array bounds must be constant expressions
     |                    ^^^^^^^^ 
 
 semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value` is BIND(C)
-   --> tests/errors/continue_compilation_1.f90:748:5 - 751:18
+   --> tests/errors/continue_compilation_1.f90:748:37
     |
-748 |        subroutine bindc_optional_value(a) bind(c)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-751 |        end subroutine
-    | ...^^^^^^^^^^^^^^^^^^ 
+748 |     subroutine bindc_optional_value(a) bind(c)
+    |                                     ^ 
 
 semantic error: Function `c_loc` is not permitted in an initialization expression
    --> tests/errors/continue_compilation_1.f90:810:13
@@ -536,6 +532,12 @@ semantic error: equivalence between a common block variable and this array eleme
 942 |         equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
+semantic error: equivalence between a common block variable and this array element is not implemented
+   --> tests/errors/continue_compilation_1.f90:949:9
+    |
+949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
@@ -543,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:964:7
+   --> tests/errors/continue_compilation_1.f90:971:7
     |
-964 |       class(t_recovery), intent(in) :: self
+971 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1859,7 +1861,7 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
     |                           ^^^ 
 
 semantic error: Stop code must be of type INTEGER or CHARACTER, found `f32`
-   --> tests/errors/continue_compilation_1.f90:951:9
+   --> tests/errors/continue_compilation_1.f90:958:9
     |
-951 |         stop x
+958 |         stop x
     |         ^^^^^^ 
