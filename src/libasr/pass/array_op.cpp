@@ -1563,6 +1563,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_len_expr = realloc_str_len;
         alloc_arg.m_type = nullptr;
         alloc_arg.m_sym_subclass = nullptr;
+        alloc_arg.m_codims = nullptr;
+        alloc_arg.n_codims = 0;
         alloc_args.push_back(al, alloc_arg);
 
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(

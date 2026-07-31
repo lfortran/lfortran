@@ -3226,6 +3226,8 @@ public:
             new_arg.m_len_expr = nullptr;
             new_arg.m_type = nullptr;
             new_arg.m_sym_subclass = nullptr;
+            new_arg.m_codims = nullptr;
+            new_arg.n_codims = 0;
             ASR::expr_t* tmp_stmt = nullptr;
             new_arg.loc = x.base.base.loc;
             if( x.m_args[i].m_end && !x.m_args[i].m_start && !x.m_args[i].m_step ) {
@@ -3343,12 +3345,15 @@ public:
                     LCOMPILERS_ASSERT_MSG(false, std::to_string(x.m_args[i].m_start->type));
                 }
             }
+            ASR::expr_t *array_stmt = tmp_stmt;
+            ASR::CoarrayRef_t *coarray_ref = nullptr;
             if (ASR::is_a<ASR::CoarrayRef_t>(*tmp_stmt)) {
-                tmp_stmt = ASR::down_cast<ASR::CoarrayRef_t>(tmp_stmt)->m_var;
+                coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(tmp_stmt);
+                array_stmt = coarray_ref->m_var;
             }
             // Assume that tmp is an `ArraySection` or `ArrayItem`
-            if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
-                ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
+            if( ASR::is_a<ASR::ArraySection_t>(*array_stmt) ) {
+                ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(array_stmt);
                 new_arg.m_a = array_ref->m_v;
                 if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_arg.m_a)) {
                     new_arg.m_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_arg.m_a)->m_arg;
@@ -3371,9 +3376,26 @@ public:
                 }
                 new_arg.m_dims = dims_vec.p;
                 new_arg.n_dims = dims_vec.size();
+                if (coarray_ref) {
+                    Vec<ASR::codimension_t> codims_vec;
+                    codims_vec.reserve(al, coarray_ref->n_coindices);
+                    for( size_t j = 0; j < coarray_ref->n_coindices; j++ ) {
+                        ASR::codimension_t new_codim;
+                        new_codim.loc = coarray_ref->m_coindices[j].loc;
+                        ASR::expr_t* m_left = coarray_ref->m_coindices[j].m_left;
+                        new_codim.m_start = m_left ? m_left : const_1;
+                        new_codim.m_end = coarray_ref->m_coindices[j].m_right;
+                        new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
+                            ? ASR::codimension_typeType::CodimensionStar
+                            : ASR::codimension_typeType::CodimensionExpr;
+                        codims_vec.push_back(al, new_codim);
+                    }
+                    new_arg.m_codims = codims_vec.p;
+                    new_arg.n_codims = codims_vec.size();
+                }
                 alloc_args_vec.push_back(al, new_arg);
-            } else if( ASR::is_a<ASR::ArrayItem_t>(*tmp_stmt) ) {
-                ASR::ArrayItem_t* array_ref = ASR::down_cast<ASR::ArrayItem_t>(tmp_stmt);
+            } else if( ASR::is_a<ASR::ArrayItem_t>(*array_stmt) ) {
+                ASR::ArrayItem_t* array_ref = ASR::down_cast<ASR::ArrayItem_t>(array_stmt);
                 new_arg.m_a = array_ref->m_v;
                 if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_arg.m_a)) {
                     new_arg.m_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_arg.m_a)->m_arg;
@@ -3391,12 +3413,46 @@ public:
                 }
                 new_arg.m_dims = dims_vec.p;
                 new_arg.n_dims = dims_vec.size();
+                if (coarray_ref) {
+                    Vec<ASR::codimension_t> codims_vec;
+                    codims_vec.reserve(al, coarray_ref->n_coindices);
+                    for( size_t j = 0; j < coarray_ref->n_coindices; j++ ) {
+                        ASR::codimension_t new_codim;
+                        new_codim.loc = coarray_ref->m_coindices[j].loc;
+                        ASR::expr_t* m_left = coarray_ref->m_coindices[j].m_left;
+                        new_codim.m_start = m_left ? m_left : const_1;
+                        new_codim.m_end = coarray_ref->m_coindices[j].m_right;
+                        new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
+                            ? ASR::codimension_typeType::CodimensionStar
+                            : ASR::codimension_typeType::CodimensionExpr;
+                        codims_vec.push_back(al, new_codim);
+                    }
+                    new_arg.m_codims = codims_vec.p;
+                    new_arg.n_codims = codims_vec.size();
+                }
                 alloc_args_vec.push_back(al, new_arg);
-            } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ||
-                       ASR::is_a<ASR::StructInstanceMember_t>(*tmp_stmt) ) {
-                new_arg.m_a = tmp_stmt;
+            } else if( ASR::is_a<ASR::Var_t>(*array_stmt) ||
+                       ASR::is_a<ASR::StructInstanceMember_t>(*array_stmt) ) {
+                new_arg.m_a = array_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
+                if (coarray_ref) {
+                    Vec<ASR::codimension_t> codims_vec;
+                    codims_vec.reserve(al, coarray_ref->n_coindices);
+                    for( size_t j = 0; j < coarray_ref->n_coindices; j++ ) {
+                        ASR::codimension_t new_codim;
+                        new_codim.loc = coarray_ref->m_coindices[j].loc;
+                        ASR::expr_t* m_left = coarray_ref->m_coindices[j].m_left;
+                        new_codim.m_start = m_left ? m_left : const_1;
+                        new_codim.m_end = coarray_ref->m_coindices[j].m_right;
+                        new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
+                            ? ASR::codimension_typeType::CodimensionStar
+                            : ASR::codimension_typeType::CodimensionExpr;
+                        codims_vec.push_back(al, new_codim);
+                    }
+                    new_arg.m_codims = codims_vec.p;
+                    new_arg.n_codims = codims_vec.size();
+                }
                 alloc_args_vec.push_back(al, new_arg);
             }
         }
@@ -3506,6 +3562,8 @@ public:
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_array_type->m_dims;
                                     new_arg.n_dims = mold_array_type->n_dims;
+                                    new_arg.m_codims = nullptr;
+                                    new_arg.n_codims = 0;
                                     new_alloc_args_vec.push_back(al, new_arg);
                                 } else {
                                     int n_dims = ASRUtils::extract_n_dims_from_ttype(mold_type);
@@ -3548,6 +3606,8 @@ public:
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_dims_vec.p;
                                     new_arg.n_dims = mold_dims_vec.size();
+                                    new_arg.m_codims = nullptr;
+                                    new_arg.n_codims = 0;
                                     new_alloc_args_vec.push_back(al, new_arg);
                                 }
                             } else if ( ASR::is_a<ASR::StructType_t>(*mold_type) ||
@@ -3564,6 +3624,8 @@ public:
                                 new_arg.m_sym_subclass = nullptr;
                                 new_arg.m_dims = nullptr;
                                 new_arg.n_dims = 0;
+                                new_arg.m_codims = nullptr;
+                                new_arg.n_codims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
                             } else if ( ASRUtils::is_character(*mold_type) && ASRUtils::is_character(*a_type)) {
                                 ASR::alloc_arg_t new_arg;
@@ -3580,6 +3642,8 @@ public:
                                 new_arg.m_sym_subclass = nullptr;
                                 new_arg.m_dims = nullptr;
                                 new_arg.n_dims = 0;
+                                new_arg.m_codims = nullptr;
+                                new_arg.n_codims = 0;
                                 new_alloc_args_vec.push_back(al, new_arg);
                             } else {
                                 diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
@@ -3619,6 +3683,8 @@ public:
                             new_arg.m_sym_subclass = nullptr;
                             new_arg.m_dims = source_array_type->m_dims;
                             new_arg.n_dims = source_array_type->n_dims;
+                            new_arg.m_codims = nullptr;
+                            new_arg.n_codims = 0;
                         } else {
                             int n_dims = ASRUtils::extract_n_dims_from_ttype(source_type);
                             Vec<ASR::dimension_t> source_dims_vec; source_dims_vec.reserve(al, n_dims);
@@ -3643,6 +3709,8 @@ public:
                             new_arg.m_sym_subclass = nullptr;
                             new_arg.m_dims = source_dims_vec.p;
                             new_arg.n_dims = source_dims_vec.size();
+                            new_arg.m_codims = nullptr;
+                            new_arg.n_codims = 0;
                         }
                         new_alloc_args_vec.push_back(al, new_arg);
                     } else {
@@ -6899,6 +6967,8 @@ public:
                 alloc_arg.m_len_expr = nullptr;
                 alloc_arg.m_sym_subclass = nullptr;
                 alloc_arg.m_type = nullptr;
+                alloc_arg.m_codims = nullptr;
+                alloc_arg.n_codims = 0;
                 Vec<ASR::alloc_arg_t> alloc_args;
                 alloc_args.reserve(al, 1);
                 alloc_args.push_back(al, alloc_arg);
@@ -6974,6 +7044,8 @@ public:
                         alloc_arg.m_sym_subclass = struct_sym;
                     }
                     alloc_arg.m_type = val_elem_type;
+                    alloc_arg.m_codims = nullptr;
+                    alloc_arg.n_codims = 0;
                     Vec<ASR::alloc_arg_t> alloc_args;
                     alloc_args.reserve(al, 1);
                     alloc_args.push_back(al, alloc_arg);

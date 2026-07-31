@@ -2554,6 +2554,7 @@ coarray_arg
     | id "=" expr            { $$ = COARRAY_COMP_DECL1k($1, $3, @$); }
 // star
     | "*"                    { $$ = COARRAY_COMP_DECL_star(@$); }
+    | expr ":" "*"           { $$ = COARRAY_COMP_DECL_astar($1, @$); }
     ;
 
 id_list_opt
