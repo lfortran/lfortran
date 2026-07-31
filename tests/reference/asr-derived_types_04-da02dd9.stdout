@@ -155,6 +155,7 @@
                                     [(Allocate
                                         [((Var 6 lhs)
                                         []
+                                        []
                                         (IntegerConstant 10 (Integer 4) Decimal)
                                         ()
                                         (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -1265,6 +1266,7 @@
                                         [(Allocate
                                             [((Var 7 lhs)
                                             []
+                                            []
                                             (IntegerConstant 12 (Integer 4) Decimal)
                                             ()
                                             (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -1326,6 +1328,7 @@
                                         )]
                                         [(Allocate
                                             [((Var 7 lhs)
+                                            []
                                             []
                                             (IntegerConstant 8 (Integer 4) Decimal)
                                             ()

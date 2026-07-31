@@ -20,11 +20,11 @@ integer(4) :: stat
 integer(4) :: stat1
 call __module_prif_prif_init(stat1)
 call __module_prif_prif_sync_all()
-call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), a__coarray_handle, a__coarray_data, stat,&
-         errmsg)
+call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8, null(), a__coarray_handle,&
+         a__coarray_data, stat, errmsg)
 call c_f_pointer(a__coarray_data, a)
-call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), b__coarray_handle,&
-         b__coarray_data, stat, errmsg)
+call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8*int(10, kind=8), null(),&
+         b__coarray_handle, b__coarray_data, stat, errmsg)
 call c_f_pointer(b__coarray_data, b, [10])
 a = lcompilers_prif_this_image()
 call __module_prif_prif_deallocate_coarray(a__coarray_handle)
