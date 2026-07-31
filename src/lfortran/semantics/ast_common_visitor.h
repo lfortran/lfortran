@@ -13494,6 +13494,25 @@ public:
                 }
             }
         }
+
+        if (intrinsic_name == "sum" || intrinsic_name == "product" || intrinsic_name == "iany" ||
+            intrinsic_name == "iall" || intrinsic_name == "iparity" || intrinsic_name == "maxval" ||
+            intrinsic_name == "minval" || intrinsic_name == "maxloc" || intrinsic_name == "minloc") {
+            if (args.size() > 2 && args.p[1] != nullptr && ASRUtils::is_logical(*ASRUtils::expr_type(args.p[1]))) {
+                if (args.p[2] == nullptr) {
+                    args.p[2] = args.p[1];
+                    args.p[1] = nullptr;
+                }
+            }
+        } else if (intrinsic_name == "findloc" || intrinsic_name == "reduce") {
+            if (args.size() > 3 && args.p[2] != nullptr && ASRUtils::is_logical(*ASRUtils::expr_type(args.p[2]))) {
+                if (args.p[3] == nullptr) {
+                    args.p[3] = args.p[2];
+                    args.p[2] = nullptr;
+                }
+            }
+        }
+
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             if( std::find(kwarg_names.begin(), kwarg_names.end(),
