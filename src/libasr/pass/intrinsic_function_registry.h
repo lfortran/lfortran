@@ -157,6 +157,8 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Max)
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Sign)
+        INTRINSIC_NAME_CASE(LCoBound)
+        INTRINSIC_NAME_CASE(UCoBound)
         INTRINSIC_NAME_CASE(SignFromValue)
         INTRINSIC_NAME_CASE(Nint)
         INTRINSIC_NAME_CASE(Idnint)
@@ -611,6 +613,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &ThisImage::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
             {nullptr, &NumImages::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::LCoBound),
+            {nullptr, &LCoBound::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::UCoBound),
+            {nullptr, &UCoBound::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
             {&Int::instantiate_Int, &Int::verify_args}},
         };
@@ -686,6 +692,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"rand", {&Rand::create_Rand, nullptr}},
                 {"this_image", {&ThisImage::create_ThisImage, &ThisImage::eval_ThisImage}},
                 {"num_images", {&NumImages::create_NumImages, &NumImages::eval_NumImages}},
+                {"lcobound", {&LCoBound::create_LCoBound, &LCoBound::eval_LCoBound}},
+                {"ucobound", {&UCoBound::create_UCoBound, &UCoBound::eval_UCoBound}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},

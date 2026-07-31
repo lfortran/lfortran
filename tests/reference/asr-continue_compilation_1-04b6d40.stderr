@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:960:7
+   --> tests/errors/continue_compilation_1.f90:967:7
     |
-960 |       foo    end type t_recovery
+967 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -497,14 +497,10 @@ semantic error: COMMON block array bounds must be constant expressions
     |                    ^^^^^^^^ 
 
 semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value` is BIND(C)
-   --> tests/errors/continue_compilation_1.f90:748:5 - 751:18
+   --> tests/errors/continue_compilation_1.f90:748:37
     |
-748 |        subroutine bindc_optional_value(a) bind(c)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-751 |        end subroutine
-    | ...^^^^^^^^^^^^^^^^^^ 
+748 |     subroutine bindc_optional_value(a) bind(c)
+    |                                     ^ 
 
 semantic error: Function `c_loc` is not permitted in an initialization expression
    --> tests/errors/continue_compilation_1.f90:810:13
@@ -536,6 +532,12 @@ semantic error: equivalence between a common block variable and this array eleme
 942 |         equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
+semantic error: equivalence between a common block variable and this array element is not implemented
+   --> tests/errors/continue_compilation_1.f90:949:9
+    |
+949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
@@ -543,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:963:7
+   --> tests/errors/continue_compilation_1.f90:970:7
     |
-963 |       class(t_recovery), intent(in) :: self
+970 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1858,8 +1860,8 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
 918 |         print *, real(1., 666)
     |                           ^^^ 
 
-semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1, kind=4) and character(len=1, kind=1)
-   --> tests/errors/continue_compilation_1.f90:949:18
+semantic error: Unsupported argument type for kind adjustment
+   --> tests/errors/continue_compilation_1.f90:956:18
     |
-949 |         print *, findloc(names, key)
-    |                  ^^^^^^^^^^^^^^^^^^^ 
+956 |         print *, findloc(names, key)
+    |                  ^^^^^^^^^^^^^^^^^^^ help: ensure all arguments are of a convertible type
