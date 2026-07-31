@@ -455,6 +455,42 @@ struct FixedFormRecursiveDescent {
         if (*cur == '\n') cur++;
     }
 
+    void next_statement(unsigned char *&cur) {
+        bool in_string = false;
+        char quote = 0;
+        bool in_comment = false;
+        while (*cur != '\n' && *cur != '\0') {
+            if (*cur == '\r') {
+                cur++;
+                continue;
+            }
+            if (in_comment) {
+                cur++;
+                continue;
+            }
+            if (in_string) {
+                if (*cur == quote) {
+                    if (*(cur+1) == quote) {
+                        cur++; // skip escaped quote
+                    } else {
+                        in_string = false;
+                    }
+                }
+            } else {
+                if (*cur == '\'' || *cur == '"') {
+                    in_string = true;
+                    quote = *cur;
+                } else if (*cur == '!') {
+                    in_comment = true;
+                } else if (*cur == ';') {
+                    break;
+                }
+            }
+            cur++;
+        }
+        if (*cur == '\n' || (!in_string && !in_comment && *cur == ';')) cur++;
+    }
+
     // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
     // (Does not modify `cur`.)
     void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
@@ -728,9 +764,9 @@ struct FixedFormRecursiveDescent {
      */
     void tokenize_line(unsigned char *&cur) {
         t.cur = cur;
-        next_line(cur);
+        next_statement(cur);
         tokenize_until(cur);
-        LCOMPILERS_ASSERT(*(t.cur-1) == '\n')
+        LCOMPILERS_ASSERT(*(t.cur-1) == '\n' || *(t.cur-1) == ';')
     }
 
     /*
@@ -1600,8 +1636,10 @@ struct FixedFormRecursiveDescent {
         }
         if (*cur == '\n') {
             push_token_no_advance(cur, "\n");
+        } else if (*cur == ';') {
+            push_token_no_advance(cur, "semicolon");
         }
-        next_line(cur);
+        next_statement(cur);
     }
 
     void lex_do_regular(unsigned char *&cur) {
