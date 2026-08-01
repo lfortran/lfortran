@@ -1,0 +1,363 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            critical1:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            critical:
+                                (Block
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    critical
+                                    [(Assignment
+                                        (Var 2 job)
+                                        (CoarrayRef
+                                            (Var 2 joblist)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            ()
+                                            CodimensionExpr)]
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (CoarrayRef
+                                            (Var 2 joblist)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            ()
+                                            CodimensionExpr)]
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (IntegerBinOp
+                                            (Var 2 job)
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                ),
+                            critical1:
+                                (Block
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    critical1
+                                    [(Assignment
+                                        (Var 2 integersample)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                ),
+                            critical2:
+                                (Block
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    critical2
+                                    [(Assignment
+                                        (Var 2 sample)
+                                        (StringConstant
+                                            "Error message"
+                                            (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                ),
+                            critical3:
+                                (Block
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    critical3
+                                    [(Assignment
+                                        (Var 2 sample)
+                                        (StringConstant
+                                            "Error message"
+                                            (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                ),
+                            integersample:
+                                (Variable
+                                    2
+                                    integersample
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            job:
+                                (Variable
+                                    2
+                                    job
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            joblist:
+                                (Variable
+                                    2
+                                    joblist
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    [(()
+                                    ()
+                                    CodimensionStar)]
+                                ),
+                            sample:
+                                (Variable
+                                    2
+                                    sample
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 50 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    critical1
+                    []
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (IntrinsicElementalFunction
+                                ThisImage
+                                []
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            Eq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(FileRead
+                            0
+                            ()
+                            ()
+                            ()
+                            ()
+                            ()
+                            ()
+                            ()
+                            ()
+                            [(Var 2 joblist)]
+                            ()
+                            .true.
+                            ()
+                            ()
+                            ()
+                        )]
+                        []
+                    )
+                    (SyncAll
+                        ()
+                        ()
+                    )
+                    (WhileLoop
+                        ()
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(BlockCall
+                            -1
+                            2 critical
+                        )
+                        (BlockCall
+                            -1
+                            2 critical1
+                        )
+                        (BlockCall
+                            -1
+                            2 critical2
+                        )
+                        (BlockCall
+                            -1
+                            2 critical3
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (Var 2 job)
+                                Gt
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(Assignment
+                                (Var 2 b)
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 2 a)
+                                        Pow
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerBinOp
+                                        (Var 2 b)
+                                        Pow
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                            )]
+                            [(Exit
+                                ()
+                            )]
+                        )]
+                        []
+                    )
+                    (SyncAll
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

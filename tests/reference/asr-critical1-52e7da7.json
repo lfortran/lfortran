@@ -1,0 +1,13 @@
+{
+    "basename": "asr-critical1-52e7da7",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/critical1.f90",
+    "infile_hash": "05948a8c6d4476986b19c2be2d0c40a9ebb19a2007eac02159ab9496",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-critical1-52e7da7.stdout",
+    "stdout_hash": "82d8caa70818712d23f35f204c0d0ee23c13874d0155d7acf05e6a0f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
