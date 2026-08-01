@@ -1246,6 +1246,7 @@ public:
     void visit_Backspace(const AST::Backspace_t& x) {
         mark_IO_side_effect();
         ASR::expr_t *a_unit = nullptr, *a_iostat = nullptr;
+        ASR::expr_t *a_iomsg = nullptr;
         ASR::expr_t *a_err = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -1307,6 +1308,27 @@ public:
                             }));
                         throw SemanticAbort();
                 }
+            } else if ( m_arg_str == std::string("iomsg") ) {
+                if (a_iomsg != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `iomsg` found, `iomsg` has already been specified.)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_iomsg = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *a_iomsg_type = ASRUtils::expr_type(a_iomsg);
+                if (a_iomsg->type != ASR::exprType::Var ||
+                    !ASRUtils::is_character(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be a variable of type Character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if( m_arg_str == std::string("err") ) {
                 if( a_err != nullptr ) {
                     diag.add(Diagnostic(
@@ -1342,7 +1364,7 @@ public:
                 }));
             throw SemanticAbort();
         }
-        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_err);
+        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err);
     }
 
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
