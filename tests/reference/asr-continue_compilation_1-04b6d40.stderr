@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:960:7
+   --> tests/errors/continue_compilation_1.f90:971:7
     |
-960 |       foo    end type t_recovery
+971 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:963:7
+   --> tests/errors/continue_compilation_1.f90:974:7
     |
-963 |       class(t_recovery), intent(in) :: self
+974 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1861,7 +1861,7 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
     |                           ^^^ 
 
 semantic error: Type mismatch in argument `this`: expected `integer(4)` but got `FunctionType(derived_type, )`
-   --> tests/errors/continue_compilation_1.f90:933:32
+   --> tests/errors/continue_compilation_1.f90:953:32
     |
-933 |         call set_caller_intent(upper_caller_intent)
+953 |         call set_caller_intent(upper_caller_intent)
     |                                ^^^^^^^^^^^^^^^^^^^ 
