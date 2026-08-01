@@ -1859,3 +1859,9 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
     |
 918 |         print *, real(1., 666)
     |                           ^^^ 
+
+semantic error: Type mismatch in argument `this`: expected `integer(4)` but got `FunctionType(derived_type, )`
+   --> tests/errors/continue_compilation_1.f90:933:32
+    |
+933 |         call set_caller_intent(upper_caller_intent)
+    |                                ^^^^^^^^^^^^^^^^^^^ 

@@ -948,6 +948,17 @@ program continue_compilation_1
         common /equivalence_common_overrun/ first, second
         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     end subroutine equivalence_common_array_overrun
+    
+    subroutine intent_missing_arg_test()
+        call set_caller_intent(upper_caller_intent)
+    end subroutine
+    subroutine set_caller_intent(this, caller)
+        integer :: this
+        procedure(upper_caller_intent) :: caller
+    end subroutine
+    subroutine upper_caller_intent(a)
+        class(*), intent(in) :: a
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous

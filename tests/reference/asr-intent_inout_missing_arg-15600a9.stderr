@@ -1,5 +1,0 @@
-semantic error: Type mismatch in argument `this`: expected `integer(4)` but got `FunctionType(derived_type, )`
-  --> tests/errors/intent_inout_missing_arg.f90:17:21
-   |
-17 |     call set_caller(upper_caller)
-   |                     ^^^^^^^^^^^^ 

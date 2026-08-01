@@ -382,9 +382,6 @@ filename = "errors/implicit_call_02.f90"
 asr_implicit_interface = true
 asr_implicit_argument_casting = true
 
-[[test]]
-filename = "errors/intent_inout_missing_arg.f90"
-asr_implicit_interface = true
 
 [[test]]
 filename = "errors/cpp1.f90"
