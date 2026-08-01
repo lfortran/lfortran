@@ -1860,8 +1860,8 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
 918 |         print *, real(1., 666)
     |                           ^^^ 
 
-semantic error: Unsupported argument type for kind adjustment
+semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1, kind=4) and character(len=1, kind=1)
    --> tests/errors/continue_compilation_1.f90:956:18
     |
 956 |         print *, findloc(names, key)
-    |                  ^^^^^^^^^^^^^^^^^^^ help: ensure all arguments are of a convertible type
+    |                  ^^^^^^^^^^^^^^^^^^^ 
