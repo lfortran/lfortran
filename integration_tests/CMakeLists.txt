@@ -4719,6 +4719,7 @@ RUN(NAME allocatable_oob_01 FAIL LABELS gfortran llvm NO_FAST GFORTRAN_ARGS -fch
 
 RUN(NAME sync_all_01 LABELS llvm)
 RUN(NAME sync_all_02 LABELS gfortran llvm GFORTRAN_ARGS -fcoarray=single)
+RUN(NAME critical_01 LABELS gfortran llvm GFORTRAN_ARGS -fcoarray=single)
 RUN(NAME sync_memory_01 LABELS llvm)
 
 RUN(NAME random_init_01 LABELS gfortran llvm)
