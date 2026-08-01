@@ -102,9 +102,14 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(*tu);
 #if defined(WITH_LFORTRAN_ASSERT)
-    if (!asr_verify(*tu, true, diagnostics)) {
-        return Error();
-    };
+    const bool asr_verify_not_required = (diagnostics.has_error() == true);
+    if(asr_verify_not_required){
+        // Do nothing. User code already has errors
+    } else {
+        if (!asr_verify(*tu, true, diagnostics)) {
+            return Error();
+        };
+    }
 #endif
     if (!symtab_only) {
         auto res = body_visitor(
@@ -136,9 +141,14 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             outfile.close();
         }
 #if defined(WITH_LFORTRAN_ASSERT)
-        if (!asr_verify(*tu, true, diagnostics)) {
-            return Error();
-        };
+        const bool asr_verify_not_required = (diagnostics.has_error() == true);
+        if(asr_verify_not_required){
+            // Do nothing. User code already has errors
+        } else {
+            if (!asr_verify(*tu, true, diagnostics)) {
+                return Error();
+            };
+        }
 #endif
     }
     return tu;

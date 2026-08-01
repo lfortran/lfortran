@@ -7969,14 +7969,18 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
     }
 }
 
+/**
+ * @param offset mainly used to offset argument index by 1 to handle derived-type procedures, where first argument is `self`
+ */
 template <typename SemanticAbort>
-inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
+inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args,
+        size_t offset = 0) {
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
 
-        if (passed_arg_expr && i < f->n_args) {
-            if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+        if (passed_arg_expr && i + offset < f->n_args) {
+            if (ASR::is_a<ASR::Var_t>(*f->m_args[i + offset])) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i + offset])->m_v;
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(sym);
                     if (!ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type)) {
@@ -8002,8 +8006,8 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
             if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                 ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
                 if (passed_var->m_intent == ASR::intentType::In) {
-                    if (i < f->n_args) {
-                        ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
+                    if (i + offset < f->n_args) {
+                        ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i + offset]);
                         if (callee_param->m_intent == ASR::intentType::Out ||
                             callee_param->m_intent == ASR::intentType::InOut) {
                             diag.add(diag::Diagnostic(

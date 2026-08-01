@@ -2,12 +2,12 @@
     "basename": "asr-intent_inout_missing_arg-15600a9",
     "cmd": "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
     "infile": "tests/errors/intent_inout_missing_arg.f90",
-    "infile_hash": "f68ad8d882a8689253754ac46ab6e8134a11848298b22348e6288691",
+    "infile_hash": "0235e02158d8e4e004fd071fb5d32d2f65abad8baed67c79df75643b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-intent_inout_missing_arg-15600a9.stderr",
-    "stderr_hash": "b917130c6eeb0431435ba1548b18a46d02e92b7c218ee69d7fed930e",
+    "stderr_hash": "1c9a770526cdbe1353a0c583d944568e0ac0c2ed134c5fffd6846237",
     "returncode": 2
 }

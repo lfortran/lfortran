@@ -7837,8 +7837,7 @@ public:
             process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
         }
 
-        // checking for intent mismatch   
-        if (f) { 
+        if (f) {
             for (size_t i = 0; i < args.size() && i < f->n_args; i++) {
                 if (args[i].m_value == nullptr) continue;
                 ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
@@ -7847,29 +7846,6 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
-                    // Check whether the passed argument is even a compatible
-                    // kind of thing (e.g. a procedure symbol passed where a
-                    // variable was expected). That's a type mismatch, and
-                    // should be reported as such -- not as a misleading
-                    // "wrong intent" error.
-                    if ((dummy_var->m_intent == ASR::intentType::Out ||
-                         dummy_var->m_intent == ASR::intentType::InOut) &&
-                        !ASR::is_a<ASR::FunctionType_t>(*dummy_type) &&
-                        args[i].m_value && ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
-                        ASR::symbol_t* passed_sym_check = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
-                        if (!ASR::is_a<ASR::Variable_t>(*passed_sym_check)) {
-                            std::string param_type_str = ASRUtils::type_to_str_with_kind(
-                                dummy_type, f->m_args[i]);
-                            diag.add(diag::Diagnostic(
-                                "Type mismatch: expected `" + param_type_str +
-                                "` but a procedure was passed",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {args[i].m_value->base.loc})
-                                }));
-                            throw SemanticAbort();
-                        }
-                    }
                     // An assumed-size actual has no extent for its last
                     // dimension, so it cannot be associated with a dummy
                     // that needs the full shape: a pointer/allocatable dummy
@@ -7946,7 +7922,6 @@ public:
                     }
                 }
             }
-            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
         }
 
         ASR::symbol_t *final_sym=nullptr;
@@ -8489,11 +8464,34 @@ public:
                                 }
                             }
                         }
-                        // Skip type checking for polymorphic types (class), function types
-                        bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+                        
+                        // Skip the following cases :=
+                        bool skip_check;
+                        {   // Classes accept implicit conversions
+                            // TODO: put more restrictive rules, not just blindly avoid check
+                            bool const any_is_class =  ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) 
+                                                    || ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
+                            // function variables with deduced-implicit-interface has bugs for now
+                            bool const function_vars_with_implicit_interface = ASR::is_a<ASR::Var_t>(*passed_arg)
+                                                                        && ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(passed_arg)->m_v))
+                                                                        && ASRUtils::is_symbol_procedure_variable(&v->base) 
+                                                                        && compiler_options.implicit_interface;
+                            //callee fn signature is adjusted at later stage (look `implicit_interface_04.f90`).
+                            bool const passed_function_with_implicit_typing = ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) 
+                                                                            && compiler_options.implicit_typing;
+                            //callee fn signature is adjusted at later stage. (look `impilicit_interface_36::12`)
+                            bool const passed_function_with_implicit_interface = ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) 
+                                                                            && compiler_options.implicit_interface 
+                                                                            && ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_array(passed_type))->m_return_var_type
+                                                                            && ASRUtils::check_equal_type(
+                                                                                ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_array(passed_type))->m_return_var_type,
+                                                                                param_type,
+                                                                                ASRUtils::get_struct_sym_from_struct_expr(passed_arg)? 
+                                                                                    ASRUtils::get_expr_from_sym(al, ASRUtils::get_struct_sym_from_struct_expr(passed_arg)) : nullptr,
+                                                                                &var->base);
+                            skip_check =   any_is_class || function_vars_with_implicit_interface
+                                        || passed_function_with_implicit_typing || passed_function_with_implicit_interface;
+                        }
                         // For implicit_argument_casting, skip type checking for
                         // compatible type families (e.g., numeric↔numeric, string↔string)
                         // but reject fundamentally incompatible types (e.g., string→integer)
@@ -8661,7 +8659,7 @@ public:
                     }
                 }
             }
-
+            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args, offset);
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
         ASR::stmt_t* cast_stmt = nullptr;

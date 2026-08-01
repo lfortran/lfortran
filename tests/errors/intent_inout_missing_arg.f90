@@ -6,16 +6,14 @@ module m1
     end type
 contains
     subroutine set_caller(this, caller)
-        class(runner), intent(inout) :: this
+        integer :: this
         procedure() :: caller
-        this%caller => caller
     end subroutine
 end module
 
 program p
     use m1
     implicit none
-    type(runner) :: br
     call set_caller(upper_caller)
 contains
     subroutine upper_caller(a)
