@@ -7836,11 +7836,7 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
-                    // Check whether the passed argument is even a compatible
-                    // kind of thing (e.g. a procedure symbol passed where a
-                    // variable was expected). That's a type mismatch, and
-                    // should be reported as such -- not as a misleading
-                    // "wrong intent" error.
+                    // TODO: Dump this check and depend on our param/arg mismatch mechanism below
                     if ((dummy_var->m_intent == ASR::intentType::Out ||
                          dummy_var->m_intent == ASR::intentType::InOut) &&
                         !ASR::is_a<ASR::FunctionType_t>(*dummy_type) &&
