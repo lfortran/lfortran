@@ -196,6 +196,72 @@ public:
         }
     }
 
+    void visit_Critical(const AST::Critical_t &x) {
+        // A CRITICAL construct executes its body under mutual exclusion
+        // between images in a coarray program. LFortran does not yet
+        // implement true multi-image synchronization for CRITICAL, so for
+        // now we lower it the same way as a plain BLOCK construct: a
+        // scoped ASR Block whose statements run in sequence.
+        // TODO: honor sync_stat / enforce real cross-image exclusion once
+        // coarray synchronization primitives support it.
+        all_loops_blocks_nesting++;
+        from_block = true;
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        ASR::asr_t* block;
+        std::string name;
+        if (x.m_stmt_name) {
+            name = std::string(x.m_stmt_name);
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                current_scope, x.m_stmt_name, nullptr, 0);
+        } else {
+            name = parent_scope->get_unique_name("critical");
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                current_scope, s2c(al, name), nullptr, 0);
+        }
+        ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(
+            ASR::down_cast<ASR::symbol_t>(block));
+
+        for (size_t i=0; i<x.n_body; i++) {
+            if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Use)) continue;
+            try {
+                visit_decl_stmt(*x.m_body[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    current_scope = parent_scope;
+                    from_block = false;
+                    all_loops_blocks_nesting--;
+                    throw a;
+                }
+            }
+        }
+        for (size_t i=0; i<x.n_body; i++) {
+            if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Declaration)) continue;
+            try {
+                visit_decl_stmt(*x.m_body[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    current_scope = parent_scope;
+                    from_block = false;
+                    all_loops_blocks_nesting--;
+                    throw a;
+                }
+            }
+        }
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        transform_stmts(body, x.n_body, x.m_body);
+        block_t->m_body = body.p;
+        block_t->n_body = body.size();
+        current_scope = parent_scope;
+        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
+        tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
+                                    ASR::down_cast<ASR::symbol_t>(block));
+        from_block = false;
+        all_loops_blocks_nesting--;
+    }
+
     void visit_Block(const AST::Block_t &x) {
         all_loops_blocks_nesting++;
         from_block = true;

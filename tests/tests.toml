@@ -2876,6 +2876,7 @@ ast_f90 = true
 filename = "critical1.f90"
 ast = true
 ast_f90 = true
+asr = true
 
 [[test]]
 filename = "block_data1.f90"
