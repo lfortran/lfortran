@@ -196,119 +196,46 @@ public:
         }
     }
 
-    void visit_Critical(const AST::Critical_t &x) {
-        // A CRITICAL construct executes its body under mutual exclusion
-        // between images in a coarray program. LFortran does not yet
-        // implement true multi-image synchronization for CRITICAL, so for
-        // now we lower it the same way as a plain BLOCK construct: a
-        // scoped ASR Block whose statements run in sequence.
-        // TODO: honor sync_stat / enforce real cross-image exclusion once
-        // coarray synchronization primitives support it.
+    // Shared lowering for BLOCK-like constructs (BLOCK, CRITICAL).
+    // Creates a scoped ASR Block, processes use/declaration statements,
+    // resolves postponed generic-procedure calls, then transforms the
+    // body statements into it.
+    ASR::asr_t* lower_block_like(const Location &loc, char *stmt_name,
+                                  size_t n_items, AST::decl_stmt_t **m_items,
+                                  const char *default_prefix) {
         all_loops_blocks_nesting++;
         from_block = true;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ASR::asr_t* block;
         std::string name;
-        if (x.m_stmt_name) {
-            name = std::string(x.m_stmt_name);
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                current_scope, x.m_stmt_name, nullptr, 0);
+        if (stmt_name) {
+            name = std::string(stmt_name);
+            block = ASR::make_Block_t(al, loc, current_scope, stmt_name, nullptr, 0);
         } else {
-            name = parent_scope->get_unique_name("critical");
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                current_scope, s2c(al, name), nullptr, 0);
+            name = parent_scope->get_unique_name(default_prefix);
+            block = ASR::make_Block_t(al, loc, current_scope, s2c(al, name), nullptr, 0);
         }
         ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(
             ASR::down_cast<ASR::symbol_t>(block));
 
-        for (size_t i=0; i<x.n_body; i++) {
-            if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Use)) continue;
-            try {
-                visit_decl_stmt(*x.m_body[i]);
-            } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) {
-                    current_scope = parent_scope;
-                    from_block = false;
-                    all_loops_blocks_nesting--;
-                    throw a;
+        auto visit_decls = [&](AST::DeclStmtKind kind) {
+            for (size_t i = 0; i < n_items; i++) {
+                if (!AST::is_kind(*m_items[i], kind)) continue;
+                try {
+                    visit_decl_stmt(*m_items[i]);
+                } catch (const SemanticAbort &a) {
+                    if (!compiler_options.continue_compilation) {
+                        current_scope = parent_scope;
+                        from_block = false;
+                        all_loops_blocks_nesting--;
+                        throw a;
+                    }
                 }
             }
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Declaration)) continue;
-            try {
-                visit_decl_stmt(*x.m_body[i]);
-            } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) {
-                    current_scope = parent_scope;
-                    from_block = false;
-                    all_loops_blocks_nesting--;
-                    throw a;
-                }
-            }
-        }
-
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
-        transform_stmts(body, x.n_body, x.m_body);
-        block_t->m_body = body.p;
-        block_t->n_body = body.size();
-        current_scope = parent_scope;
-        current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
-        tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
-                                    ASR::down_cast<ASR::symbol_t>(block));
-        from_block = false;
-        all_loops_blocks_nesting--;
-    }
-
-    void visit_Block(const AST::Block_t &x) {
-        all_loops_blocks_nesting++;
-        from_block = true;
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        ASR::asr_t* block;
-        std::string name;
-        if (x.m_stmt_name) {
-            name = std::string(x.m_stmt_name);
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                current_scope, x.m_stmt_name, nullptr, 0);
-        } else {
-            // TODO: Understand tests/block1.f90 to know if this is needed, otherwise
-            // it might be possible to allow x.m_stmt_name to be nullptr
-            name = parent_scope->get_unique_name("block");
-            block = ASR::make_Block_t(al, x.base.base.loc,
-                current_scope, s2c(al, name), nullptr, 0);
-        }
-        ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(
-            ASR::down_cast<ASR::symbol_t>(block));
-
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) {
-                    current_scope = parent_scope;
-                    from_block = false;
-                    all_loops_blocks_nesting--;
-                    throw a;
-                }
-            }
-        }
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (const SemanticAbort &a) {
-                if (!compiler_options.continue_compilation) {
-                    current_scope = parent_scope;
-                    from_block = false;
-                    all_loops_blocks_nesting--;
-                    throw a;
-                }
-            }
-        }
+        };
+        visit_decls(AST::DeclStmtKind::Use);
+        visit_decls(AST::DeclStmtKind::Declaration);
 
         // Resolve postponed type-bound procedure calls in dimension
         // specifications (e.g., dimension(self%obj%nelements())).
@@ -321,7 +248,6 @@ public:
             this->visit_expr(*funcCall);
             *expr_holder = ASRUtils::EXPR(tmp); tmp = nullptr;
             if (CheckFunc) CheckFunc(*expr_holder);
-
             ASR::symbol_t* sym = current_scope->get_symbol(
                 to_lower(std::string(var_name)));
             if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
@@ -338,17 +264,35 @@ public:
         postponed_genericProcedure_calls_vec.clear();
 
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_items);
-        transform_stmts(body, x.n_items, x.m_items);
+        body.reserve(al, n_items);
+        transform_stmts(body, n_items, m_items);
         block_t->m_body = body.p;
         block_t->n_body = body.size();
         current_scope = parent_scope;
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
-        tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
-                                    ASR::down_cast<ASR::symbol_t>(block));
         from_block = false;
         all_loops_blocks_nesting--;
+
+        return ASR::make_BlockCall_t(al, loc, -1,
+            ASR::down_cast<ASR::symbol_t>(block));
     }
+
+    void visit_Critical(const AST::Critical_t &x) {
+        // A CRITICAL construct executes its body under mutual exclusion
+        // between images in a coarray program. LFortran does not yet
+        // implement true multi-image synchronization for CRITICAL, so
+        // for now we lower it the same way as a plain BLOCK construct.
+        // TODO: honor sync_stat / enforce real cross-image exclusion
+        // once coarray synchronization primitives support it.
+        tmp = lower_block_like(x.base.base.loc, x.m_stmt_name,
+            x.n_body, x.m_body, "critical");
+    }
+
+    void visit_Block(const AST::Block_t &x) {
+        tmp = lower_block_like(x.base.base.loc, x.m_stmt_name,
+            x.n_items, x.m_items, "block");
+    }
+
 
     // Transforms statements to a list of ASR statements
     // In addition, it also inserts the following nodes if needed:
