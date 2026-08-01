@@ -2,6 +2,111 @@
     (SymbolTable
         1
         {
+            __lcompilers_facade_helper_fpm_strings:
+                (Module
+                    (SymbolTable
+                        18
+                        {
+                            f_string:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            c_string:
+                                                (Variable
+                                                    14
+                                                    c_string
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            f_string:
+                                                (Variable
+                                                    14
+                                                    f_string
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    f_string
+                                    (FunctionType
+                                        [(Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 14 c_string)]
+                                    []
+                                    (Var 14 f_string)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    __lcompilers_facade_helper_fpm_strings
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                ),
             fpm_strings:
                 (Module
                     (SymbolTable
@@ -41,7 +146,7 @@
                                 (GenericProcedure
                                     2
                                     f_string
-                                    [2 f_string~genericprocedure
+                                    [2 f_string_facade
                                     2 f_string_cptr
                                     2 f_string_cptr_n]
                                     Public
@@ -366,97 +471,15 @@
                                     .true.
                                     ()
                                 ),
-                            f_string~genericprocedure:
-                                (Function
-                                    (SymbolTable
-                                        14
-                                        {
-                                            c_string:
-                                                (Variable
-                                                    14
-                                                    c_string
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                        [(()
-                                                        ())]
-                                                        DescriptorArray
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            f_string:
-                                                (Variable
-                                                    14
-                                                    f_string
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    f_string~genericprocedure
-                                    (FunctionType
-                                        [(Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            [(()
-                                            ())]
-                                            DescriptorArray
-                                        )]
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
-                                        )
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
+                            f_string_facade:
+                                (ExternalSymbol
+                                    2
+                                    f_string_facade
+                                    18 f_string
+                                    __lcompilers_facade_helper_fpm_strings
                                     []
-                                    [(Var 14 c_string)]
-                                    []
-                                    (Var 14 f_string)
+                                    f_string
                                     Public
-                                    .true.
-                                    .true.
-                                    ()
                                 ),
                             string_t:
                                 (Struct

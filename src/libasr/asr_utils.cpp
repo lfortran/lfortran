@@ -3406,6 +3406,39 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
     return original_sym;
 }
 
+ASR::symbol_t* install_generic_facade(Allocator &al, ASR::Function_t *fn) {
+    SymbolTable *global_scope = fn->m_symtab->get_global_scope();
+    LCOMPILERS_ASSERT(ASRUtils::get_sym_module(&fn->base))
+    const std::string facade_module_name = std::string("__lcompilers_facade_helper_") + ASRUtils::get_sym_module(&fn->base)->m_name;
+
+    SymbolTable* const facade_symtab = al.make_new<SymbolTable>(global_scope);
+    ASR::Module_t* facade_module = nullptr;
+    if (auto found = global_scope->get_symbol(facade_module_name)){
+        facade_module = ASR::down_cast<ASR::Module_t>(found);
+    } else {
+        auto facade_module_sym = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Module_t(al, fn->base.base.loc, facade_symtab, s2c(al, facade_module_name),
+            nullptr, nullptr, 0, false, false, false, nullptr, nullptr));
+        global_scope->add_symbol(facade_module_name, facade_module_sym);
+        facade_module = ASR::down_cast<ASR::Module_t>(facade_module_sym);
+    }
+    
+    fn->m_symtab->parent->erase_symbol(fn->m_name);
+    facade_module->m_symtab->add_symbol(fn->m_name, (ASR::symbol_t*)fn);
+
+    std::string ext_key = fn->m_symtab->parent->get_unique_name(fn->m_name+ std::string("_facade"));
+    ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(
+        ASR::make_ExternalSymbol_t(al, fn->base.base.loc, fn->m_symtab->parent,
+            s2c(al, ext_key), (ASR::symbol_t*)fn,
+            s2c(al, facade_module_name), nullptr, 0,
+            fn->m_name, ASR::accessType::Public));
+    fn->m_symtab->parent->add_symbol(ext_key, ext_sym);
+
+    fn->m_symtab->parent = facade_module->m_symtab;
+    
+    return ext_sym;
+}
+
 ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
     ASRUtils::make_ArrayBroadcast_t_util(al, loc, lexpr, rexpr);

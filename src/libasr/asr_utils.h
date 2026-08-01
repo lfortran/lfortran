@@ -71,6 +71,19 @@ namespace LCompilers  {
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
+// Move `fn` out of `parent_module_scope` (a Module symtab) into a synthetic
+// "facade" Module under the same TranslationUnit, so that `fn` can keep its
+// user-visible plain name (`plain_name`) as the emitted linker symbol without
+// clashing with a same-named GenericProcedure that will be installed under
+// `plain_name` in `parent_module_scope`. `fn` is erased from
+// `parent_module_scope`, moved into the facade Module (renamed to
+// `plain_name`), and an ExternalSymbol pointing to it is installed back in
+// `parent_module_scope` under a synthetic key (`1_facade_<plain_name>`) so
+// the ASR side of `parent_module_scope` still owns a valid reference for
+// modfile serialization. The returned ExternalSymbol should be pushed into
+// the GenericProcedure's `m_procs`.
+ASR::symbol_t* install_generic_facade(Allocator &al, ASR::Function_t *fn);
+
 ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 

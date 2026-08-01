@@ -1605,32 +1605,6 @@ public:
                             diag::Label("", {tmp->loc})}));
                     throw SemanticAbort();
                 }
-            } else if( ASR::is_a<ASR::GenericProcedure_t>(*f1) ) {
-                ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f1);
-                if( sym_name == gp->m_name ) {
-                    sym_name = sym_name + "~genericprocedure";
-                }
-
-                if( !ASR::is_a<ASR::GenericProcedure_t>(*f1_) ) {
-                    update_gp = true;
-                    Vec<ASR::symbol_t*> gp_procs;
-                    gp_procs.from_pointer_n_copy(al, gp->m_procs, gp->n_procs);
-                    f1_ = ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(al, f1->base.loc,
-                        parent_scope, gp->m_name, gp_procs.p, gp_procs.size(), gp->m_access));
-                    parent_scope->overwrite_symbol(gp->m_name, f1_);
-                }
-
-                for( size_t igp = 0; igp < gp->n_procs; igp++ ) {
-                    if( std::string(ASRUtils::symbol_name(gp->m_procs[igp])) == sym_name ) {
-                        gp_index_to_be_updated = igp;
-                        break;
-                    }
-                }
-
-                // Any import from parent module will be shadowed
-                if (!in_submodule) {
-                    parent_scope->erase_symbol(sym_name);
-                }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
@@ -1641,9 +1615,6 @@ public:
                         diag::Label("", {tmp->loc})}));
                 throw SemanticAbort();
             }
-        }
-        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
-            sym_name = sym_name + "~genericprocedure";
         }
 
         // Check for function/subroutine attribute conflict
@@ -2332,11 +2303,6 @@ public:
 
         if (is_interface) {
             deftype = ASR::deftypeType::Interface;
-        }
-
-        if (generic_procedures.find(sym_name) != generic_procedures.end()
-            || interface_name == to_lower(sym_name)) {
-            sym_name = sym_name + "~genericprocedure";
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
@@ -3817,16 +3783,8 @@ public:
             symbols.reserve(al, proc.second.size());
             bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string correct_pname = pname.first;
-                if( pname.first == proc.first ) {
-                    correct_pname = pname.first + "~genericprocedure";
-                }
-                Str s;
-                s.from_str_view(correct_pname);
-                char *name = s.c_str(al);
-                // lower case the name
-                name = s2c(al, to_lower(name));
-                ASR::symbol_t *x = current_scope->resolve_symbol(name);
+                std::string plain_name = to_lower(pname.first);
+                ASR::symbol_t *x = current_scope->resolve_symbol(plain_name);
                 if (!x) {
                     diag.add(Diagnostic(
                         "Symbol '" + std::string(pname.first) + "' not declared",
@@ -3836,6 +3794,11 @@ public:
                     if (!compiler_options.continue_compilation) throw SemanticAbort();
                     any_error = true;
                     continue;
+                }
+                bool is_same_name_collision =  (pname.first == proc.first) 
+                            && (current_scope == ASRUtils::symbol_parent_symtab(x));
+                if (is_same_name_collision) {
+                    x = ASRUtils::install_generic_facade(al, ASR::down_cast<ASR::Function_t>(x));
                 }
                 symbols.push_back(al, x);
             }

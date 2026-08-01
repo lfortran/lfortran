@@ -5738,8 +5738,17 @@ public:
         starting_n_body = x.n_items;
         collect_labels();
         if( t->type == ASR::symbolType::GenericProcedure ) {
-            std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
-            t = current_scope->get_symbol(subrout_name);
+            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(t);
+            std::string target = to_lower(x.m_name);
+            t = nullptr;
+            for (size_t i = 0; i < gp->n_procs; i++) {
+                ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
+                if (std::string(ASRUtils::symbol_name(proc)) == target) {
+                    t = proc;
+                    break;
+                }
+            }
+            LCOMPILERS_ASSERT(t != nullptr)
         }
 
         if (x.n_temp_args > 0) {
@@ -5847,7 +5856,17 @@ public:
             throw SemanticAbort();
         }
         if( t->type == ASR::symbolType::GenericProcedure ) {
-            t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
+            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(t);
+            std::string target = to_lower(x.m_name);
+            t = nullptr;
+            for (size_t i = 0; i < gp->n_procs; i++) {
+                ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
+                if (std::string(ASRUtils::symbol_name(proc)) == target) {
+                    t = proc;
+                    break;
+                }
+            }
+            LCOMPILERS_ASSERT(t != nullptr)
         }
 
         if (x.n_temp_args > 0) {
