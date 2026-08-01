@@ -2,256 +2,19 @@
     (SymbolTable
         1
         {
-            subroutines_06:
-                (Program
-                    (SymbolTable
-                        7
-                        {
-                            assign_large:
-                                (ExternalSymbol
-                                    7
-                                    assign_large
-                                    2 assign_large
-                                    subroutines_06_bitset
-                                    []
-                                    assign_large
-                                    Public
-                                ),
-                            assign_logint8_large:
-                                (ExternalSymbol
-                                    7
-                                    assign_logint8_large
-                                    2 assign_logint8_large
-                                    subroutines_06_bitset
-                                    []
-                                    assign_logint8_large
-                                    Public
-                                ),
-                            error_handler:
-                                (ExternalSymbol
-                                    7
-                                    error_handler
-                                    2 error_handler
-                                    subroutines_06_bitset
-                                    []
-                                    error_handler
-                                    Public
-                                ),
-                            error_handler~genericprocedure:
-                                (ExternalSymbol
-                                    7
-                                    error_handler~genericprocedure
-                                    2 error_handler~genericprocedure
-                                    subroutines_06_bitset
-                                    []
-                                    error_handler~genericprocedure
-                                    Public
-                                ),
-                            ~assign:
-                                (ExternalSymbol
-                                    7
-                                    ~assign
-                                    2 ~assign
-                                    subroutines_06_bitset
-                                    []
-                                    ~assign
-                                    Public
-                                )
-                        })
-                    subroutines_06
-                    [subroutines_06_bitset]
-                    []
-                ),
-            subroutines_06_bitset:
+            __lcompilers_facade_helper_subroutines_06_bitset:
                 (Module
                     (SymbolTable
-                        2
+                        5
                         {
-                            assign_large:
-                                (Function
-                                    (SymbolTable
-                                        3
-                                        {
-                                            set1:
-                                                (Variable
-                                                    3
-                                                    set1
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            set2:
-                                                (Variable
-                                                    3
-                                                    set2
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    assign_large
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        ()
-                                        Source
-                                        Interface
-                                        ()
-                                        .false.
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 3 set1)
-                                    (Var 3 set2)]
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .true.
-                                    ()
-                                ),
-                            assign_logint8_large:
+                            error_handler:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            logical_vector:
-                                                (Variable
-                                                    4
-                                                    logical_vector
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Logical 4)
-                                                        [(()
-                                                        ())]
-                                                        DescriptorArray
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            self:
-                                                (Variable
-                                                    4
-                                                    self
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    assign_logint8_large
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Array
-                                            (Logical 4)
-                                            [(()
-                                            ())]
-                                            DescriptorArray
-                                        )]
-                                        ()
-                                        Source
-                                        Interface
-                                        ()
-                                        .false.
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 4 self)
-                                    (Var 4 logical_vector)]
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .true.
-                                    ()
-                                ),
-                            error_handler:
-                                (GenericProcedure
-                                    2
-                                    error_handler
-                                    [2 error_handler~genericprocedure]
-                                    Public
-                                ),
-                            error_handler~genericprocedure:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
                                             error:
                                                 (Variable
-                                                    6
+                                                    4
                                                     error
                                                     []
                                                     In
@@ -275,7 +38,7 @@
                                                 ),
                                             message:
                                                 (Variable
-                                                    6
+                                                    4
                                                     message
                                                     []
                                                     In
@@ -299,7 +62,7 @@
                                                 ),
                                             module:
                                                 (Variable
-                                                    6
+                                                    4
                                                     module
                                                     []
                                                     In
@@ -323,7 +86,7 @@
                                                 ),
                                             procedure:
                                                 (Variable
-                                                    6
+                                                    4
                                                     procedure
                                                     []
                                                     In
@@ -347,7 +110,7 @@
                                                 ),
                                             status:
                                                 (Variable
-                                                    6
+                                                    4
                                                     status
                                                     []
                                                     Out
@@ -370,7 +133,7 @@
                                                     []
                                                 )
                                         })
-                                    error_handler~genericprocedure
+                                    error_handler
                                     (FunctionType
                                         [(String 1 () AssumedLength DescriptorString)
                                         (Integer 4)
@@ -390,16 +153,16 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 6 message)
-                                    (Var 6 error)
-                                    (Var 6 status)
-                                    (Var 6 module)
-                                    (Var 6 procedure)]
+                                    [(Var 4 message)
+                                    (Var 4 error)
+                                    (Var 4 status)
+                                    (Var 4 module)
+                                    (Var 4 procedure)]
                                     [(Print
                                         (StringFormat
                                             ()
-                                            [(Var 6 error)
-                                            (Var 6 status)]
+                                            [(Var 4 error)
+                                            (Var 4 status)]
                                             FormatFortran
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -412,13 +175,66 @@
                                     .false.
                                     .false.
                                     ()
+                                )
+                        })
+                    __lcompilers_facade_helper_subroutines_06_bitset
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                ),
+            subroutines_06:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            error_handler:
+                                (ExternalSymbol
+                                    6
+                                    error_handler
+                                    2 error_handler
+                                    subroutines_06_bitset
+                                    []
+                                    error_handler
+                                    Public
                                 ),
-                            ~assign:
-                                (CustomOperator
+                            error_handler_facade:
+                                (ExternalSymbol
+                                    6
+                                    error_handler_facade
+                                    5 error_handler
+                                    __lcompilers_facade_helper_subroutines_06_bitset
+                                    []
+                                    error_handler
+                                    Public
+                                )
+                        })
+                    subroutines_06
+                    [subroutines_06_bitset
+                    __lcompilers_facade_helper_subroutines_06_bitset]
+                    []
+                ),
+            subroutines_06_bitset:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            error_handler:
+                                (GenericProcedure
                                     2
-                                    ~assign
-                                    [2 assign_large
-                                    2 assign_logint8_large]
+                                    error_handler
+                                    [2 error_handler_facade]
+                                    Public
+                                ),
+                            error_handler_facade:
+                                (ExternalSymbol
+                                    2
+                                    error_handler_facade
+                                    5 error_handler
+                                    __lcompilers_facade_helper_subroutines_06_bitset
+                                    []
+                                    error_handler
                                     Public
                                 )
                         })
@@ -427,7 +243,7 @@
                     []
                     .false.
                     .false.
-                    .true.
+                    .false.
                 )
         })
     []

@@ -2,143 +2,12 @@
     (SymbolTable
         1
         {
-            functions_04:
-                (Program
+            __lcompilers_facade_helper_stdlib_int:
+                (Module
                     (SymbolTable
                         4
                         {
-                            int:
-                                (Variable
-                                    4
-                                    int
-                                    []
-                                    Local
-                                    (IntegerConstant 4 (Integer 4) Decimal)
-                                    (IntegerConstant 4 (Integer 4) Decimal)
-                                    Save
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                ),
                             to_negative:
-                                (ExternalSymbol
-                                    4
-                                    to_negative
-                                    2 to_negative
-                                    stdlib_int
-                                    []
-                                    to_negative
-                                    Public
-                                ),
-                            to_negative@to_negative~genericprocedure:
-                                (ExternalSymbol
-                                    4
-                                    to_negative@to_negative~genericprocedure
-                                    2 to_negative~genericprocedure
-                                    stdlib_int
-                                    []
-                                    to_negative~genericprocedure
-                                    Private
-                                ),
-                            to_negative~genericprocedure:
-                                (ExternalSymbol
-                                    4
-                                    to_negative~genericprocedure
-                                    2 to_negative~genericprocedure
-                                    stdlib_int
-                                    []
-                                    to_negative~genericprocedure
-                                    Public
-                                )
-                        })
-                    functions_04
-                    [stdlib_int]
-                    [(If
-                        ()
-                        (IntegerCompare
-                            (FunctionCall
-                                4 to_negative@to_negative~genericprocedure
-                                4 to_negative
-                                [((Var 4 int))]
-                                (Integer 4)
-                                ()
-                                ()
-                            )
-                            NotEq
-                            (IntegerUnaryMinus
-                                (IntegerConstant 4 (Integer 4) Decimal)
-                                (Integer 4)
-                                (IntegerConstant -4 (Integer 4) Decimal)
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (Assignment
-                        (Var 4 int)
-                        (IntegerUnaryMinus
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                            (Integer 4)
-                            (IntegerConstant -4 (Integer 4) Decimal)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (If
-                        ()
-                        (IntegerCompare
-                            (FunctionCall
-                                4 to_negative@to_negative~genericprocedure
-                                4 to_negative
-                                [((Var 4 int))]
-                                (Integer 4)
-                                ()
-                                ()
-                            )
-                            NotEq
-                            (IntegerUnaryMinus
-                                (IntegerConstant 4 (Integer 4) Decimal)
-                                (Integer 4)
-                                (IntegerConstant -4 (Integer 4) Decimal)
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )]
-                ),
-            stdlib_int:
-                (Module
-                    (SymbolTable
-                        2
-                        {
-                            to_negative:
-                                (GenericProcedure
-                                    2
-                                    to_negative
-                                    [2 to_negative~genericprocedure]
-                                    Public
-                                ),
-                            to_negative~genericprocedure:
                                 (Function
                                     (SymbolTable
                                         3
@@ -192,7 +61,7 @@
                                                     []
                                                 )
                                         })
-                                    to_negative~genericprocedure
+                                    to_negative
                                     (FunctionType
                                         [(Integer 4)]
                                         (Integer 4)
@@ -242,6 +111,161 @@
                                     .true.
                                     .true.
                                     ()
+                                )
+                        })
+                    __lcompilers_facade_helper_stdlib_int
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                ),
+            functions_04:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            int:
+                                (Variable
+                                    5
+                                    int
+                                    []
+                                    Local
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            to_negative:
+                                (ExternalSymbol
+                                    5
+                                    to_negative
+                                    2 to_negative
+                                    stdlib_int
+                                    []
+                                    to_negative
+                                    Public
+                                ),
+                            to_negative@to_negative:
+                                (ExternalSymbol
+                                    5
+                                    to_negative@to_negative
+                                    4 to_negative
+                                    __lcompilers_facade_helper_stdlib_int
+                                    []
+                                    to_negative
+                                    Private
+                                ),
+                            to_negative_facade:
+                                (ExternalSymbol
+                                    5
+                                    to_negative_facade
+                                    4 to_negative
+                                    __lcompilers_facade_helper_stdlib_int
+                                    []
+                                    to_negative
+                                    Public
+                                )
+                        })
+                    functions_04
+                    [stdlib_int
+                    __lcompilers_facade_helper_stdlib_int]
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                5 to_negative@to_negative
+                                5 to_negative
+                                [((Var 5 int))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerUnaryMinus
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -4 (Integer 4) Decimal)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 5 int)
+                        (IntegerUnaryMinus
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant -4 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                5 to_negative@to_negative
+                                5 to_negative
+                                [((Var 5 int))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerUnaryMinus
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -4 (Integer 4) Decimal)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                ),
+            stdlib_int:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            to_negative:
+                                (GenericProcedure
+                                    2
+                                    to_negative
+                                    [2 to_negative_facade]
+                                    Public
+                                ),
+                            to_negative_facade:
+                                (ExternalSymbol
+                                    2
+                                    to_negative_facade
+                                    4 to_negative
+                                    __lcompilers_facade_helper_stdlib_int
+                                    []
+                                    to_negative
+                                    Public
                                 )
                         })
                     stdlib_int

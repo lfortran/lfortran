@@ -2,19 +2,12 @@
     (SymbolTable
         1
         {
-            interface_generic_procedure_same_name:
+            __lcompilers_facade_helper_interface_generic_procedure_same_name:
                 (Module
                     (SymbolTable
-                        2
+                        4
                         {
                             frexp:
-                                (GenericProcedure
-                                    2
-                                    frexp
-                                    [2 frexp~genericprocedure]
-                                    Public
-                                ),
-                            frexp~genericprocedure:
                                 (Function
                                     (SymbolTable
                                         3
@@ -92,7 +85,7 @@
                                                     []
                                                 )
                                         })
-                                    frexp~genericprocedure
+                                    frexp
                                     (FunctionType
                                         [(Real 4)
                                         (Integer 4)]
@@ -117,6 +110,36 @@
                                     .false.
                                     .false.
                                     ()
+                                )
+                        })
+                    __lcompilers_facade_helper_interface_generic_procedure_same_name
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                ),
+            interface_generic_procedure_same_name:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            frexp:
+                                (GenericProcedure
+                                    2
+                                    frexp
+                                    [2 frexp_facade]
+                                    Public
+                                ),
+                            frexp_facade:
+                                (ExternalSymbol
+                                    2
+                                    frexp_facade
+                                    4 frexp
+                                    __lcompilers_facade_helper_interface_generic_procedure_same_name
+                                    []
+                                    frexp
+                                    Public
                                 )
                         })
                     interface_generic_procedure_same_name
