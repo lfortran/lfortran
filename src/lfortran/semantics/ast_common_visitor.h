@@ -12161,7 +12161,11 @@ public:
                     ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name));
                     std::vector<int> array_arg_index;
                     for (size_t i = 0; i < f->n_args; i++) {
-                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
+                        // Assumed-rank dummies accept actual arguments of any
+                        // rank, including scalars, so no sequence association
+                        // applies.
+                        if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                                !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i]))) {
                             array_arg_index.push_back(i);
                         }
                     }
@@ -12393,7 +12397,10 @@ public:
             // call b(w(icon)) -> call b(w(icon:)) if b is expecting an array
             std::map<int, ASR::ttype_t*> array_arg_idx;
             for (size_t i = 0; i < f->n_args; i++) {
-                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i]))) {
+                // Assumed-rank dummies accept actual arguments of any rank,
+                // including scalars, so no sequence association applies.
+                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                        !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i]))) {
                     array_arg_idx[i] = ASRUtils::expr_type(f->m_args[i]);
                 }
             }
@@ -12644,9 +12651,12 @@ public:
                 }
             }
         } else {
-            // Check if a scalar (ArrayItem) is passed to an array argument
+            // Check if a scalar (ArrayItem) is passed to an array argument.
+            // Assumed-rank dummies accept actual arguments of any rank,
+            // including scalars, so they are exempt.
             for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                        !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i])) &&
                         args[i].m_value &&
                         ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
                         !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
