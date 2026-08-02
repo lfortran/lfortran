@@ -36,7 +36,9 @@ public:
     void write_symbol(const ASR::symbol_t &x) {
         write_int64(symbol_parent_symtab(&x)->counter);
         write_int8(x.type);
-        write_string(symbol_name(&x));
+        // read_symbol() resolves this with SymbolTable::get_symbol(), so write
+        // the key `x` is stored under, which is not always its name.
+        write_string(ASRUtils::symbol_table_key(&x));
     }
 
     // A kind=16 RealConstant does not keep its value in m_r: a double cannot

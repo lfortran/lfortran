@@ -1575,8 +1575,11 @@ public:
         bool update_gp = false;
         int gp_index_to_be_updated = -1;
         ASR::symbol_t* f1_ = nullptr;
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
-            f1_ = parent_scope->get_symbol(sym_name);
+        // Symbol table key; differs from `sym_name` only when this specific
+        // procedure shares its generic interface's name (see visit_Function).
+        std::string sym_key = sym_name;
+        if (parent_scope->get_symbol(sym_key) != nullptr) {
+            f1_ = parent_scope->get_symbol(sym_key);
             ASR::symbol_t *f1 = ASRUtils::symbol_get_past_external(f1_);
             if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
@@ -1597,7 +1600,7 @@ public:
                         throw SemanticAbort();
                     }
                     // Previous declaration will be shadowed
-                    parent_scope->erase_symbol(sym_name);
+                    parent_scope->erase_symbol(sym_key);
                 } else {
                     diag.add(diag::Diagnostic(
                         "Subroutine already defined " + sym_name,
@@ -1608,7 +1611,7 @@ public:
             } else if( ASR::is_a<ASR::GenericProcedure_t>(*f1) ) {
                 ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f1);
                 if( sym_name == gp->m_name ) {
-                    sym_name = sym_name + "~genericprocedure";
+                    sym_key = sym_name + generic_procedure_key_suffix;
                 }
 
                 if( !ASR::is_a<ASR::GenericProcedure_t>(*f1_) ) {
@@ -1629,11 +1632,11 @@ public:
 
                 // Any import from parent module will be shadowed
                 if (!in_submodule) {
-                    parent_scope->erase_symbol(sym_name);
+                    parent_scope->erase_symbol(sym_key);
                 }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
-                parent_scope->erase_symbol(sym_name);
+                parent_scope->erase_symbol(sym_key);
             } else {
                 diag.add(diag::Diagnostic(
                     "Subroutine already defined " + sym_name,
@@ -1643,11 +1646,11 @@ public:
             }
         }
         if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
-            sym_name = sym_name + "~genericprocedure";
+            sym_key = sym_name + generic_procedure_key_suffix;
         }
 
         // Check for function/subroutine attribute conflict
-        ASR::symbol_t* existing_sym = parent_scope->get_symbol(sym_name);
+        ASR::symbol_t* existing_sym = parent_scope->get_symbol(sym_key);
         if (existing_sym != nullptr) {
             ASR::symbol_t* existing_past_ext = ASRUtils::symbol_get_past_external(existing_sym);
             if (ASR::is_a<ASR::Function_t>(*existing_past_ext)) {
@@ -1667,7 +1670,7 @@ public:
                         throw SemanticAbort();
                     }
                     // In continue mode, keep going after recording the diagnostic.
-                    parent_scope->erase_symbol(sym_name);
+                    parent_scope->erase_symbol(sym_key);
                 }
             }
         }
@@ -1696,7 +1699,7 @@ public:
             nullptr, 0,
             is_requirement, init_deterministic, init_side_effect_free);
         handle_save();
-        parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->add_or_overwrite_symbol(sym_key, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
@@ -2334,9 +2337,14 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
+        // A specific procedure that shares its generic interface's name cannot
+        // use that name as its symbol table key, because the GenericProcedure
+        // owns it. Disambiguate the key only; `sym_name` stays the name the
+        // user wrote and becomes Function::m_name (and hence the link symbol).
+        std::string sym_key = sym_name;
         if (generic_procedures.find(sym_name) != generic_procedures.end()
-            || interface_name == to_lower(sym_name)) {
-            sym_name = sym_name + "~genericprocedure";
+            || interface_name == sym_name) {
+            sym_key = sym_name + generic_procedure_key_suffix;
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
@@ -2393,11 +2401,11 @@ public:
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
 
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
-            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
+        if (parent_scope->get_symbol(sym_key) != nullptr) {
+            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_key);
             if (ASR::is_a<ASR::ExternalSymbol_t>(*f1)) {
                 if (in_submodule) {
-                    parent_scope->erase_symbol(sym_name);
+                    parent_scope->erase_symbol(sym_key);
                 } else {
                     ASR::symbol_t *orig = ASRUtils::symbol_get_past_external(f1);
                     bool is_private_orig = false;
@@ -2406,7 +2414,7 @@ public:
                             orig)->m_access == ASR::accessType::Private;
                     }
                     if (is_private_orig) {
-                        parent_scope->erase_symbol(sym_name);
+                        parent_scope->erase_symbol(sym_key);
                     } else {
                         diag.add(diag::Diagnostic(
                             "Function already defined",
@@ -2458,7 +2466,7 @@ public:
                         in_Subroutine = false;
                         throw SemanticAbort();
                     }
-                    parent_scope->erase_symbol(sym_name);
+                    parent_scope->erase_symbol(sym_key);
                 } else {
                     diag.add(diag::Diagnostic(
                         "Function already defined",
@@ -2468,7 +2476,7 @@ public:
                 }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
-                parent_scope->erase_symbol(sym_name);
+                parent_scope->erase_symbol(sym_key);
             } else {
                 diag.add(diag::Diagnostic(
                     "Function already defined",
@@ -2478,7 +2486,7 @@ public:
             }
         }
         handle_save();
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->add_symbol(sym_key, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
@@ -3817,16 +3825,15 @@ public:
             symbols.reserve(al, proc.second.size());
             bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string correct_pname = pname.first;
-                if( pname.first == proc.first ) {
-                    correct_pname = pname.first + "~genericprocedure";
+                // `proc.first` (the generic name) is already lower cased, so
+                // lower case the specific name before comparing, otherwise a
+                // mixed-case self reference such as `interface addCNullChar` /
+                // `module procedure addCNullChar` is not recognised.
+                std::string pkey = to_lower(pname.first);
+                if( pkey == proc.first ) {
+                    pkey += generic_procedure_key_suffix;
                 }
-                Str s;
-                s.from_str_view(correct_pname);
-                char *name = s.c_str(al);
-                // lower case the name
-                name = s2c(al, to_lower(name));
-                ASR::symbol_t *x = current_scope->resolve_symbol(name);
+                ASR::symbol_t *x = current_scope->resolve_symbol(pkey);
                 if (!x) {
                     diag.add(Diagnostic(
                         "Symbol '" + std::string(pname.first) + "' not declared",
@@ -3868,16 +3875,17 @@ public:
                             // If not available, import it from the module
                             // Create an ExternalSymbol using it
                             ASR::Module_t *m = ASRUtils::get_sym_module(sym);
-                            s = m->m_symtab->get_symbol(
-                                ASRUtils::symbol_name(gp->m_procs[i]));
-                            if (ASR::is_a<ASR::Function_t>(*s)) {
+                            std::string proc_key = ASRUtils::symbol_table_key(
+                                gp->m_procs[i]);
+                            s = m->m_symtab->get_symbol(proc_key);
+                            if (s != nullptr && ASR::is_a<ASR::Function_t>(*s)) {
                                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
                                 ASR::symbol_t *ep_s = (ASR::symbol_t *)
                                     ASR::make_ExternalSymbol_t(
                                         al, fn->base.base.loc, current_scope,
-                                        fn->m_name, s, m->m_name, nullptr, 0,
-                                        fn->m_name, dflt_access);
-                                current_scope->add_symbol(fn->m_name, ep_s);
+                                        s2c(al, proc_key), s, m->m_name, nullptr, 0,
+                                        s2c(al, proc_key), dflt_access);
+                                current_scope->add_symbol(proc_key, ep_s);
                                 // Append the ExternalSymbol
                                 symbols.push_back(al, ep_s);
                             }

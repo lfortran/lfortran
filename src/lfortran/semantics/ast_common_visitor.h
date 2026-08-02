@@ -34,6 +34,17 @@ namespace LCompilers::LFortran {
 
 static int PDT_SENTINEL = 1000;
 
+// Fortran allows a generic interface to have the same name as one of its
+// specific procedures. Both need an entry in the same symbol table, so the
+// specific is stored under `<name>~genericprocedure` while the
+// GenericProcedure keeps `<name>`.
+//
+// This is a symbol table *key* only. Function::m_name stays the name the user
+// wrote, so the ASR name, the modfile name and the link symbol are all
+// `<name>`. The suffix never leaves AST->ASR: no ASR pass and no backend may
+// reconstruct it, strip it, or depend on it.
+static constexpr char generic_procedure_key_suffix[] = "~genericprocedure";
+
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
     if (x.m_bind) {
@@ -11715,7 +11726,7 @@ public:
                 /* a_name */ cname,
                 final_sym,
                 ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
-                nullptr, 0, ASRUtils::symbol_name(final_sym),
+                nullptr, 0, s2c(al, ASRUtils::symbol_table_key(final_sym)),
                 ASR::accessType::Private
                 );
             final_sym = ASR::down_cast<ASR::symbol_t>(sub);
@@ -20952,15 +20963,22 @@ public:
                     submodule_proc_names.count(item.first) > 0) {
                     continue;
                 }
+                // Import under the module's symbol table key, not under
+                // `m_name`. The two differ for a specific procedure that
+                // shares its generic interface's name: the generic owns the
+                // plain name and the specific is keyed
+                // `<name>~genericprocedure`. `m_original_name` must also be
+                // the key, because that is what fix_external_symbols() looks
+                // up in the module's symbol table.
+                std::string sym = to_lower(item.first);
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                     al, mfn->base.base.loc,
                     /* a_symtab */ current_scope,
-                    /* a_name */ mfn->m_name,
+                    /* a_name */ s2c(al, sym),
                     (ASR::symbol_t*)mfn,
-                    m->m_name, nullptr, 0, mfn->m_name,
+                    m->m_name, nullptr, 0, s2c(al, item.first),
                     dflt_access
                     );
-                std::string sym = to_lower(mfn->m_name);
                 current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
                 ASR::GenericProcedure_t *gp = ASR::down_cast<
@@ -21119,7 +21137,11 @@ public:
                 Vec<ASR::symbol_t*> gp_procs;
                 gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
                 for( size_t i = 0; i < gp->n_procs; i++ ) {
-                    std::string gp_proc_name = ASRUtils::symbol_name(gp->m_procs[i]);
+                    // Resolve by the key the proc is stored under, not by its
+                    // name: they differ for a specific procedure that shares
+                    // its generic interface's name, and resolving by name
+                    // would find the generic itself and never terminate.
+                    std::string gp_proc_name = ASRUtils::symbol_table_key(gp->m_procs[i]);
                     ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                         gp_proc_name);
                     if (m_proc != nullptr) {
@@ -21149,7 +21171,7 @@ public:
                     }
                 }
                 for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
+                    std::string gp_ext_proc_name = ASRUtils::symbol_table_key(gp_ext->m_procs[i]);
                     ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                         gp_ext_proc_name);
                     if( m_proc == nullptr ) {
@@ -21182,7 +21204,7 @@ public:
                     gp_procs.push_back(al, gp->m_procs[i]);
                 }
                 for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
+                    std::string gp_ext_proc_name = ASRUtils::symbol_table_key(gp_ext->m_procs[i]);
                     ASR::symbol_t* m_proc = current_scope->resolve_symbol(
                         gp_ext_proc_name);
                     if( m_proc == nullptr ) {
@@ -21211,8 +21233,14 @@ public:
             gp_procs.reserve(al, gp_ext->n_procs);
             bool are_all_present = true;
             for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                    ASRUtils::symbol_name(gp_ext->m_procs[i]));
+                // Resolve and re-import by the key each proc is stored
+                // under, not by its name. A specific procedure that shares
+                // its generic interface's name is keyed
+                // `<name>~genericprocedure`; looking it up by name finds the
+                // generic instead, and re-importing that queues the same work
+                // again and never terminates.
+                std::string proc_key = ASRUtils::symbol_table_key(gp_ext->m_procs[i]);
+                ASR::symbol_t* m_proc = current_scope->resolve_symbol(proc_key);
                 if (m_proc != nullptr) {
                     // Verify the resolved symbol refers to the same function
                     // as the one in the source generic procedure, not a
@@ -21225,7 +21253,7 @@ public:
                 }
                 if( m_proc == nullptr ) {
                     are_all_present = false;
-                    std::string proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
+                    std::string proc_name = proc_key;
                     std::string suffix = "@" + local_sym;
                     std::string extern_name;
                     if (proc_name.length() >= suffix.length()) {
@@ -21253,7 +21281,8 @@ public:
             } else {
                 ep = ASR::make_ExternalSymbol_t(al, t->base.loc,
                     current_scope, s2c(al, local_sym), t,
-                    m->m_name, nullptr, 0, gp_ext->m_name, dflt_access);
+                    m->m_name, nullptr, 0,
+                    s2c(al, ASRUtils::symbol_table_key(t)), dflt_access);
             }
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
         }
@@ -21296,7 +21325,7 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ name.c_str(al),
                 (ASR::symbol_t*)msub,
-                m->m_name, nullptr, 0, msub->m_name,
+                m->m_name, nullptr, 0, s2c(al, ASRUtils::symbol_table_key(t)),
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
@@ -21337,7 +21366,7 @@ public:
                 /* a_symtab */ current_scope,
                 /* a_name */ cname,
                 (ASR::symbol_t*)mfn,
-                m->m_name, nullptr, 0, mfn->m_name,
+                m->m_name, nullptr, 0, s2c(al, ASRUtils::symbol_table_key(t)),
                 dflt_access
                 );
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
