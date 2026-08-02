@@ -1142,6 +1142,10 @@ program continue_compilation_1
         i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
     end subroutine
 
+    subroutine allocate_func_target_01()
+        allocate(character(-1) :: FUNC8)
+    end subroutine allocate_func_target_01
+
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.
