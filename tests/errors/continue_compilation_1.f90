@@ -949,6 +949,9 @@ program continue_compilation_1
         common /equivalence_common_overrun/ first, second
         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     end subroutine equivalence_common_array_overrun
+    subroutine allocate_func_target_01()
+        allocate(character(-1) :: FUNC8)
+    end subroutine allocate_func_target_01
 end program
 
 function func8() result(res) bind(c)

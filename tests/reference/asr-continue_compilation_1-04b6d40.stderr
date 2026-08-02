@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:965:7
+   --> tests/errors/continue_compilation_1.f90:968:7
     |
-965 |       foo    end type t_recovery
+968 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:968:7
+   --> tests/errors/continue_compilation_1.f90:971:7
     |
-968 |       class(t_recovery), intent(in) :: self
+971 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1865,3 +1865,9 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
     |
 919 |         print *, real(1., 666)
     |                           ^^^ 
+
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func8`
+   --> tests/errors/continue_compilation_1.f90:953:35
+    |
+953 |         allocate(character(-1) :: FUNC8)
+    |                                   ^^^^^ 'func8' is not allocatable or pointer
