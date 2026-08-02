@@ -25505,14 +25505,12 @@ public:
                             llvm_utils->string_descriptor->getPointerTo()) {
                         // Character actual: take the (data pointer, length)
                         // pair from the actual's own string descriptor.
-                        ASR::String_t* actual_str =
-                            ASR::down_cast<ASR::String_t>(
-                                ASRUtils::extract_type(
-                                    ASRUtils::expr_type(x.m_args[i].m_value)));
-                        llvm::Value* data_ptr =
-                            llvm_utils->get_string_data(actual_str, tmp);
-                        llvm::Value* len_val =
-                            llvm_utils->get_string_length(actual_str, tmp);
+                        llvm::Value* data_ptr;
+                        llvm::Value* len_val;
+                        std::tie(data_ptr, len_val) =
+                            llvm_utils->get_string_length_data(
+                                ASRUtils::get_string_type(
+                                    x.m_args[i].m_value), tmp);
                         len_val = builder->CreateSExtOrTrunc(
                             len_val, llvm::Type::getInt64Ty(context));
                         hidden_char_length_args.push_back(len_val);

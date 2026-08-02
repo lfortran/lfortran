@@ -24,5 +24,10 @@ program implicit_interface_51
   call get_first_byte(buf)
   ! The callee overwrote the first character with 'Z' (code 90) in place.
   if (iand(buf(1), 255_8) /= 90) error stop
+  ! The remaining bytes of buf(1) and the other elements must be untouched.
+  if (buf(1) /= 90) error stop
+  if (buf(2) /= 0) error stop
+  if (buf(3) /= 0) error stop
+  if (buf(4) /= 0) error stop
   print *, "OK"
 end program implicit_interface_51
