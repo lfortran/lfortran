@@ -8468,11 +8468,33 @@ public:
                                 }
                             }
                         }
-                        // Skip type checking for polymorphic types (class), function types
-                        bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
+                        // Skip type checking for function types (procedure dummy
+                        // arguments are validated separately above).
+                        bool is_function_type_arg = ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
                                             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+                        // For polymorphic (class) types, don't unconditionally skip —
+                        // verify actual compatibility instead. A genuinely incompatible
+                        // actual argument (e.g. an integer passed to a class(T) dummy)
+                        // must be reported here, otherwise it silently reaches codegen
+                        // and crashes there.
+                        bool is_class_arg = !is_function_type_arg &&
+                                            (ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)));
+                        bool skip_check = is_function_type_arg;
+                        if (is_class_arg) {
+                            if (!ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg)) {
+                                std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, nullptr);
+                                std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, nullptr);
+                                diag.add(diag::Diagnostic(
+                                    "Type mismatch in argument `" + std::string(v->m_name) +
+                                    "`: expected `" + param_type_str + "` but got `" + passed_type_str + "`",
+                                    diag::Level::Error, diag::Stage::Semantic, {
+                                        diag::Label("", {passed_arg->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                            skip_check = true;
+                        }
                         // For implicit_argument_casting, skip type checking for
                         // compatible type families (e.g., numeric↔numeric, string↔string)
                         // but reject fundamentally incompatible types (e.g., string→integer)
