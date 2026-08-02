@@ -3547,6 +3547,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     int bin_len = strlen(binary_str);
 
                     if (width == 0) {
+                        // Zero width: minimal field, but still at least
+                        // min_digit_cnt digits, zero-padded on the left
+                        if (min_digit_cnt > bin_len) {
+                            int zero_padding = min_digit_cnt - bin_len;
+                            char* zeros = (char*)internal_malloc((zero_padding + 1) * sizeof(char));
+                            memset(zeros, '0', zero_padding);
+                            zeros[zero_padding] = '\0';
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, zeros, zero_padding);
+                            result_len += zero_padding;
+                            internal_free(zeros);
+                        }
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, binary_str, bin_len);
                         result_len += bin_len;
                     } else if (bin_len > width) {
