@@ -2,8 +2,8 @@
 
 set -ex
 
-if [[ -z "${1:-}" ]]; then
-    echo "source tarball version must be provided" >&2
+if [[ -z "$1" ]]; then
+    echo "source tarball version must be provided"
     exit 1
 fi
 

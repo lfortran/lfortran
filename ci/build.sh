@@ -2,8 +2,8 @@
 
 set -ex
 
-if [[ -z "${LFORTRAN_VERSION:-}" ]]; then
-    echo "LFORTRAN_VERSION must be set by CI" >&2
+if [[ -z "$LFORTRAN_VERSION" ]]; then
+    echo "LFORTRAN_VERSION must be set by CI"
     exit 1
 fi
 
