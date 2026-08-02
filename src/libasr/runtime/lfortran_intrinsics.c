@@ -3547,6 +3547,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     int bin_len = strlen(binary_str);
 
                     if (width == 0) {
+                        // Zero width: minimal field, but still at least
+                        // min_digit_cnt digits, zero-padded on the left
+                        if (min_digit_cnt > bin_len) {
+                            int zero_padding = min_digit_cnt - bin_len;
+                            char* zeros = (char*)internal_malloc((zero_padding + 1) * sizeof(char));
+                            memset(zeros, '0', zero_padding);
+                            zeros[zero_padding] = '\0';
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, zeros, zero_padding);
+                            result_len += zero_padding;
+                            internal_free(zeros);
+                        }
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, binary_str, bin_len);
                         result_len += bin_len;
                     } else if (bin_len > width) {
@@ -7411,11 +7422,26 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
+LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len)
 {
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+    if (iomsg != NULL && iomsg_len > 0) {
+        iomsg[0] = '\0';
+        pad_with_spaces(iomsg, 0, iomsg_len);
+    }
     bool unit_file_bin;
     FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (fd == NULL) {
+        if (iostat != NULL) {
+            *iostat = 5001;
+            if (iomsg != NULL && iomsg_len > 0) {
+                char *msg = "Specified UNIT is not created or connected.";
+                _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+            }
+            return;
+        }
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
     }

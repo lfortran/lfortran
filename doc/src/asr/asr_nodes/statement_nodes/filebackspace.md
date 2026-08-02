@@ -7,7 +7,7 @@ Position a file before the preceding record.
 ### Syntax
 
 ```fortran
-FileBackspace(int label, expr? unit, expr? iostat, expr? err)
+FileBackspace(int label, expr? unit, expr? iostat, expr? iomsg, expr? err)
 ```
 
 ### Arguments
@@ -17,6 +17,7 @@ FileBackspace(int label, expr? unit, expr? iostat, expr? err)
 | `label` | `int` | Statement label. |
 | `unit` | `expr?` | Integer expression specifying the unit number. |
 | `iostat` | `expr?` | See [FileOpen mode behavior](fileopen.md#mode-behavior-brief) (`iostat` and `iomsg`). |
+| `iomsg` | `expr?` | See [FileOpen mode behavior](fileopen.md#mode-behavior-brief). |
 | `err` | `expr?` | Statement label for error branching. |
 
 ### Return values
@@ -38,6 +39,7 @@ ASR:
 (FileBackspace
     0
     (IntegerConstant 10 (Integer 4 []))
+    ()
     ()
     ()
 )
