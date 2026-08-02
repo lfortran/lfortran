@@ -2,7 +2,12 @@
 
 set -ex
 
-lfortran_version=$(<version)
+if [[ -z "${LFORTRAN_VERSION:-}" ]]; then
+    echo "LFORTRAN_VERSION must be set by CI" >&2
+    exit 1
+fi
+
+lfortran_version=$LFORTRAN_VERSION
 
 cd ./dist
 

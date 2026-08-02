@@ -3,6 +3,11 @@
 set -e
 set -x
 
+if [[ -z "${LFORTRAN_VERSION:-}" ]]; then
+    echo "LFORTRAN_VERSION must be set by CI" >&2
+    exit 1
+fi
+
 deploy_repo_pull="https://github.com/lfortran/wasm_builds.git"
 deploy_repo_push="git@github.com:lfortran/wasm_builds.git"
 
@@ -25,7 +30,7 @@ else
     echo "Not a main branch, not tagged with v*, using dest_dir=${dest_dir} for testing..."
 fi
 
-lfortran_version=$(<version)
+lfortran_version=$LFORTRAN_VERSION
 
 mkdir ~/.ssh
 chmod 700 ~/.ssh
