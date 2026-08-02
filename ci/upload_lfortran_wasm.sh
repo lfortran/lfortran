@@ -3,7 +3,7 @@
 set -e
 set -x
 
-if [[ -z "$LFORTRAN_VERSION" ]]; then
+if [[ "$LFORTRAN_VERSION" == "" ]]; then
     echo "LFORTRAN_VERSION must be set by CI"
     exit 1
 fi
