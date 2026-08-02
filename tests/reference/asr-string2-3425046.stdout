@@ -61,7 +61,7 @@
                                 (ExternalSymbol
                                     2
                                     f_string~genericprocedure@f_string
-                                    4 f_string~genericprocedure
+                                    4 f_string
                                     fpm_strings
                                     []
                                     f_string~genericprocedure
@@ -103,11 +103,11 @@
                                                     ()
                                                     []
                                                 ),
-                                            f_string@f_string~genericprocedure:
+                                            f_string@f_string:
                                                 (ExternalSymbol
                                                     21
-                                                    f_string@f_string~genericprocedure
-                                                    4 f_string~genericprocedure
+                                                    f_string@f_string
+                                                    4 f_string
                                                     fpm_strings
                                                     []
                                                     f_string~genericprocedure
@@ -162,7 +162,7 @@
                                     [(Assignment
                                         (Var 21 tempfile)
                                         (FunctionCall
-                                            21 f_string@f_string~genericprocedure
+                                            21 f_string@f_string
                                             2 f_string
                                             [((Var 21 c_tempfile))]
                                             (Allocatable
@@ -392,7 +392,7 @@
                                 (GenericProcedure
                                     4
                                     f_string
-                                    [4 f_string~genericprocedure
+                                    [4 f_string
                                     4 f_string_cptr
                                     4 f_string_cptr_n]
                                     Public
@@ -778,7 +778,7 @@
                                                     []
                                                 )
                                         })
-                                    f_string~genericprocedure
+                                    f_string
                                     (FunctionType
                                         [(Array
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)

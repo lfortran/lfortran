@@ -1516,6 +1516,29 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
     }
 }
 
+// Returns the key `f` is stored under in its defining symbol table.
+//
+// For nearly every symbol this is just `symbol_name(f)`, but a frontend may
+// legitimately key a symbol under something else when two symbols would
+// otherwise claim the same name (Fortran allows a generic interface and one
+// of its specific procedures to share a name). Use this - not `symbol_name` -
+// for `ExternalSymbol::m_original_name`, because that field is looked up as a
+// key when a modfile is loaded.
+static inline std::string symbol_table_key(const ASR::symbol_t *f)
+{
+    std::string name = symbol_name(f);
+    SymbolTable *parent = symbol_parent_symtab(f);
+    if (parent == nullptr || parent->get_symbol(name) == f) {
+        return name;
+    }
+    for (auto &item : parent->get_scope()) {
+        if (item.second == f) {
+            return item.first;
+        }
+    }
+    return name;
+}
+
 // Returns the `symbol`'s symtab, or nullptr if the symbol has no symtab
 static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
 {
