@@ -42,7 +42,9 @@ program bindc_58
    integer(c_int)     :: received
    integer, parameter :: sent = 65      ! 'A'
 
-   chval = char(sent)
+   ! Assign the literal directly (not char(sent)) so this test only exercises
+   ! the BIND(C) argument passing, not integer/character conversion.
+   chval = 'A'
 
    received = cput_lenc(chval)
    print *, "len=c_char  : received =", received

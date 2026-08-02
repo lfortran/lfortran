@@ -7292,6 +7292,38 @@ static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym,
             // procedure has a top-level definition); that definition itself is
             // an external procedure (no owner) using the hidden-length ABI, so
             // the interface must agree regardless of whether it carries a body.
+            //
+            // Exclusions, mirroring the module-owned branch below:
+            //   * a dummy procedure of the enclosing procedure (its interface
+            //     body lives in the enclosing procedure's scope): calls
+            //     through it must match the ordinary (descriptor-ABI)
+            //     procedures that may be bound to it as actual arguments;
+            //   * an interface used as a procedure interface elsewhere
+            //     (procedure pointers, procedure components), collected in
+            //     proc_iface_syms, for the same reason.
+            // Note: abi (e.g. BindC) is deliberately NOT consulted here. The
+            // classification must stay symmetric between a caller-side
+            // interface and the separately visible definition, and the two can
+            // legitimately disagree on abi: subroutine_from_function marks the
+            // synthesized result argument's interface BindC while the
+            // definition stays Source (see assumed_length_return_01), so an
+            // abi-sensitive rule would give the call and the definition
+            // different signatures.
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                ASR::Function_t* owner_fn =
+                    ASR::down_cast<ASR::Function_t>(owner);
+                for (size_t i = 0; i < owner_fn->n_args; i++) {
+                    if (ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
+                            ASR::down_cast<ASR::Var_t>(
+                                owner_fn->m_args[i])->m_v == fn_sym) {
+                        return false;
+                    }
+                }
+            }
+            if (proc_iface_syms != nullptr &&
+                    proc_iface_syms->find(fn_sym) != proc_iface_syms->end()) {
+                return false;
+            }
             return true;
         }
         if (owner != nullptr && ASR::is_a<ASR::Module_t>(*owner) &&
@@ -7348,6 +7380,53 @@ static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn,
         const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
     return is_external_implicit_interface_proc((ASR::symbol_t*)&fn.base,
         proc_iface_syms);
+}
+
+// Normalize the dummy type synthesized for an implicit-interface procedure
+// from an actual argument's type.
+//
+// Arrays: for arrays like A(n, m) we use A(*) in the implicit interface.
+// CHARACTER arrays included: an external procedure reached through an
+// implicit interface associates a character array actual by classic F77
+// storage association. Representing the dummy as a PointerArray (a single
+// string descriptor over the contiguous element storage) matches how the
+// separately compiled callee receives it. A DescriptorArray here would wrap
+// the array in an array descriptor whose bytes the callee then misreads as
+// string data. AssumedRankArray keeps its physical type.
+//
+// Scalars: an allocatable/pointer CHARACTER actual (e.g. a deferred-length
+// result such as trim(...)) is associated by classic F77 storage association:
+// the callee receives the character data pointer plus a hidden length, never
+// an allocatable descriptor. Synthesize a plain assumed-length dummy
+// (character(len=*)) so the hidden-length character ABI is used, matching
+// gfortran/flang and the separately compiled callee.
+//
+// Any other type is returned unchanged.
+static inline ASR::ttype_t* normalize_implicit_interface_character_dummy(
+        Allocator& al, ASR::ttype_t* var_type) {
+    if (is_array(var_type)) {
+        ASR::ttype_t* array_var_type = type_get_past_allocatable(
+            type_get_past_pointer(var_type));
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
+        ASR::array_physical_typeType phys_type;
+        if (array_type->m_physical_type
+                == ASR::array_physical_typeType::AssumedRankArray) {
+            phys_type = array_type->m_physical_type;
+        } else {
+            phys_type = ASR::array_physical_typeType::PointerArray;
+        }
+        return duplicate_type_with_empty_dims(al, array_var_type, phys_type,
+            true);
+    }
+    if (is_character(*var_type) && is_allocatable_or_pointer(var_type)) {
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+            extract_type(var_type));
+        return TYPE(ASR::make_String_t(al,
+            var_type->base.loc, str->m_kind, nullptr,
+            ASR::string_length_kindType::AssumedLength,
+            str->m_physical_type));
+    }
+    return var_type;
 }
 
 static inline bool is_coarray(ASR::symbol_t* s) {

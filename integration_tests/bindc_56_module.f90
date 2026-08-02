@@ -10,5 +10,10 @@ module bindc_56_module
    use iso_c_binding, only: C_CHAR
    character(kind=C_CHAR) :: name(*)
   end subroutine
+  ! Mixed-case spelling of the kind name, for the same reason as above.
+  subroutine nc_inq2(name) bind(C)
+   use iso_c_binding, only: C_Char
+   character(kind=C_Char) :: name(*)
+  end subroutine
  end interface
 end module

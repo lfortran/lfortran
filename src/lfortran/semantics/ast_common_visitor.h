@@ -9859,6 +9859,7 @@ public:
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
                     dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
                                     ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                    (is_dimension_star && is_argument) ? ASR::array_physical_typeType::UnboundedPointerArray :
                                     ASR::array_physical_typeType::DescriptorArray,
                     dims.size() > 0 ? true : false);
             }
@@ -16483,26 +16484,10 @@ public:
                     }
                 }
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) in implicit interface.
-                    ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(var_type));
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
-                    ASR::array_physical_typeType phys_type;
-                    if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-                        phys_type = array_type->m_physical_type;
-                    } else {
-                        // CHARACTER arrays included: an external procedure
-                        // reached through an implicit interface associates a
-                        // character array actual by classic F77 storage
-                        // association. Representing the dummy as a PointerArray
-                        // (a single string descriptor over the contiguous
-                        // element storage) matches how the separately compiled
-                        // callee receives it. A DescriptorArray here would wrap
-                        // the array in an array descriptor whose bytes the
-                        // callee then misreads as string data.
-                        phys_type = ASR::array_physical_typeType::PointerArray;
-                    }
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type, phys_type, true);
+                    // For arrays like A(n, m) we use A(*) in implicit
+                    // interface (see
+                    // normalize_implicit_interface_character_dummy).
+                    var_type = ASRUtils::normalize_implicit_interface_character_dummy(al, var_type);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
@@ -16520,21 +16505,10 @@ public:
                     }
                 } else if (ASRUtils::is_character(*var_type) &&
                         ASRUtils::is_allocatable_or_pointer(var_type)) {
-                    // A scalar CHARACTER actual passed through an implicit
-                    // interface (e.g. an allocatable/deferred-length result
-                    // such as trim(...)) is associated by classic F77 storage
-                    // association: the callee receives the character data
-                    // pointer plus a hidden length, never an allocatable
-                    // descriptor. Synthesize a plain assumed-length dummy
-                    // (character(len=*)) so the hidden-length character ABI is
-                    // used, matching gfortran/flang and the separately compiled
-                    // callee.
-                    ASR::String_t* str = ASR::down_cast<ASR::String_t>(
-                        ASRUtils::extract_type(var_type));
-                    var_type = ASRUtils::TYPE(ASR::make_String_t(al,
-                        var_type->base.loc, str->m_kind, nullptr,
-                        ASR::string_length_kindType::AssumedLength,
-                        str->m_physical_type));
+                    // Synthesize a plain assumed-length dummy for an
+                    // allocatable/deferred-length CHARACTER actual (see
+                    // normalize_implicit_interface_character_dummy).
+                    var_type = ASRUtils::normalize_implicit_interface_character_dummy(al, var_type);
                 }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
@@ -20645,7 +20619,7 @@ public:
     }
 
     void determine_char_len_and_kind(const AST::kind_item_t* len_item, const AST::kind_item_t* kind_item,
-    AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi, bool is_array=false) {
+    AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi, bool is_array) {
         // Handle kind: set CChar for bind(C) character(c_char) arguments
         // and return variables
         bool is_return_var = false;
