@@ -3695,6 +3695,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 }
                             }
                         }
+                        // SP editing: force a plus sign on non-negative values.
+                        if (is_SP_specifier && !isnan(double_val) && double_val >= 0.0 &&
+                                strlen(formatted) + 1 < sizeof(formatted)) {
+                            memmove(formatted + 1, formatted, strlen(formatted) + 1);
+                            formatted[0] = '+';
+                        }
                         int len = strlen(formatted);
                         int effective_width = width;
                         // For G format F-mode, reduce effective width by n blanks
@@ -3746,7 +3752,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                s_info.current_element_type == INTEGER_16_TYPE ||
                                s_info.current_element_type == INTEGER_32_TYPE ||
                                s_info.current_element_type == INTEGER_64_TYPE) {
-                        snprintf(buffer, sizeof(buffer), "%"PRId64, integer_val);
+                        if (is_SP_specifier && integer_val >= 0) {
+                            snprintf(buffer, sizeof(buffer), "+%"PRId64, integer_val);
+                        } else {
+                            snprintf(buffer, sizeof(buffer), "%"PRId64, integer_val);
+                        }
                         int64_t buf_len = strlen(buffer);
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, buffer, buf_len);
                         result_len += buf_len;
