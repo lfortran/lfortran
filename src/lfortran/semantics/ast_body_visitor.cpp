@@ -7945,6 +7945,11 @@ public:
                     // the actual must be type(T)/class(T), an extension of T,
                     // or unlimited polymorphic -- otherwise report a semantic
                     // error here instead of failing later at codegen.
+                    // Skipped for calls with an implicit self/pass argument
+                    // (bound procedure calls): `args`/`f->m_args` indexing
+                    // here does not account for `pass(name)` at a non-default
+                    // position, which is a separate, pre-existing issue.
+                    if (x.n_member >= 1) continue;
                     ASR::ttype_t* dummy_no_wrap = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(dummy_type)));
@@ -8518,10 +8523,17 @@ public:
                         // actual argument (e.g. an integer passed to a class(T) dummy)
                         // must be reported here, otherwise it silently reaches codegen
                         // and crashes there.
-                        bool is_class_arg = !is_function_type_arg &&
-                                            (ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
-                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)));
-                        bool skip_check = is_function_type_arg;
+                        bool has_class_type_side = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
+                        // Calls with an implicit self/pass argument (bound procedure
+                        // calls with `pass(name)` at a non-default position) can have
+                        // `args[i]` mis-aligned against `f->m_args[i + offset]` -- a
+                        // pre-existing indexing issue out of scope here. Preserve the
+                        // old unconditional skip for those to avoid false positives;
+                        // only validate compatibility for calls without that ambiguity.
+                        bool self_passing_call = v_expr != nullptr && !nopass;
+                        bool is_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
+                        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call);
                         if (is_class_arg) {
                             if (!ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg)) {
                                 std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, nullptr);
