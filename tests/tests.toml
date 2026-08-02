@@ -5313,3 +5313,8 @@ filename = "cobounds_01.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+
+[[test]]
+filename = "errors/intrinsics16.f90"
+semantics_only_cc = true
+options = "--std=f23"

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-intrinsics16-a8b2530",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/intrinsics16.f90",
+    "infile_hash": "c64bc535042dab3f4b2eb3edf593622d6f6a8853149e239426dba70d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-intrinsics16-a8b2530.stderr",
+    "stderr_hash": "43429c34d5e511a18cfc5af88944f2285d9f0dfa8554998a10e82130",
+    "returncode": 1
+}

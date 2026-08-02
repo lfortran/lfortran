@@ -1,0 +1,17 @@
+semantic error: Intrinsic procedure 'chdir' is not recognized
+ --> tests/errors/intrinsics16.f90:7:15
+  |
+7 |     intrinsic chdir     ! A valid intrinsic subroutine that is supported only by gnu
+  |               ^^^^^ 
+
+semantic error: Intrinsic procedure 'aaaa' is not recognized
+ --> tests/errors/intrinsics16.f90:8:15
+  |
+8 |     intrinsic aaaa      ! An invalid intrinsic subroutine
+  |               ^^^^ 
+
+semantic error: Intrinsic procedure 'bbbb' is not recognized
+ --> tests/errors/intrinsics16.f90:9:18
+  |
+9 |     intrinsic :: bbbb   ! An invalid intrinsic function
+  |                  ^^^^ 

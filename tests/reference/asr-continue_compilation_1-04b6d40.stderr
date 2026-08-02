@@ -307,6 +307,12 @@ semantic error: An 'allocatable' variable cannot have an initialization expressi
 266 |     character(:), allocatable :: allocate_char = "H"
     |                                  ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Intrinsic procedure 'not_real' is not recognized
+   --> tests/errors/continue_compilation_1.f90:267:18
+    |
+267 |     intrinsic :: not_real
+    |                  ^^^^^^^^ 
+
 semantic error: Transformational intrinsic is not permitted in an initialization expression
    --> tests/errors/continue_compilation_1.f90:270:42
     |

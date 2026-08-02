@@ -5820,6 +5820,16 @@ public:
                                     if (compiler_options.implicit_interface) {
                                         create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
                                     }
+
+                                    // Check if an intrinsic procedure (function or subroutine) is supported by
+                                    // the compiler or not
+                                    if (!is_intrinsic_registry_function(sym) &&
+                                        !is_intrinsic_registry_subroutine(sym)) {
+                                        diag.add(Diagnostic("Intrinsic procedure '" + sym + "' is not recognized",
+                                             Level::Error, Stage::Semantic,
+                                            {Label("", {s.loc})}));
+                                        throw SemanticAbort();
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
                                     create_external_function(sym, x.m_syms[i].loc);
@@ -15552,7 +15562,8 @@ public:
             ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ||
             ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ||
-            is_specific_type_intrinsic) {
+            is_specific_type_intrinsic || var_name == "dble" || var_name == "float" ||
+            var_name == "dfloat" || var_name == "shifta") {
             return true;
         }
         return false;
