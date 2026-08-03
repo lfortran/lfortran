@@ -9,6 +9,10 @@ program coarrays_35
 
     if (.not. allocated(x)) error stop
 
+    if (any(lcobound(x) /= [ 11, 21, 1 ])) error stop "Wrong lcobounds"
+    if (ucobound(x,1) /= 12) error stop "Wrong ucobound 1"
+    if (ucobound(x,2) /= 22) error stop "Wrong ucobound 1"
+
     x = this_image()
 
     sync all
