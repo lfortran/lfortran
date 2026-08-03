@@ -38,6 +38,8 @@ program coarrays_34
         if (num_images() /= 2) error stop 5
 
         ! Verify team-relative image numbering.
+        ! NOTE: this property is not technically guaranteed without FORM TEAM(NEW_INDEX=),
+        ! but it's true of the current LFortran/Caffeine implementation
         if (original_image == 1 .and. this_image() /= 1) error stop 6
         if (original_image == 2 .and. this_image() /= 2) error stop 7
         if (original_image == 3 .and. this_image() /= 1) error stop 8
