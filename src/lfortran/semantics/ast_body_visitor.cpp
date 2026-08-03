@@ -2341,6 +2341,35 @@ public:
             }
         }
 
+        // A editing of integer items is a legacy Fortran 66 feature (deleted
+        // in Fortran 77); supported, but warn when a constant format edits
+        // every item with 'a' (only a/x/t descriptors, repeats, separators).
+        if (_type == AST::decl_stmtType::Write && a_fmt != nullptr) {
+            ASR::expr_t* fmt_value = ASRUtils::expr_value(a_fmt);
+            if (fmt_value != nullptr && ASR::is_a<ASR::StringConstant_t>(*fmt_value)) {
+                bool only_a = false;
+                for (char ch : std::string(ASR::down_cast<ASR::StringConstant_t>(fmt_value)->m_s)) {
+                    char c = std::toupper(ch);
+                    if (c == 'A') { only_a = true; }
+                    else if (std::isalpha(c) && c != 'X' && c != 'T') { only_a = false; break; }
+                }
+                for (size_t i = 0; only_a && i < a_values_vec.size(); i++) {
+                    ASR::ttype_t* item_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(a_values_vec[i]));
+                    if (ASR::is_a<ASR::Integer_t>(*item_type)) {
+                        diag.add(Diagnostic(
+                            "'a' edit descriptor with an integer("
+                            + std::to_string(ASRUtils::extract_kind_from_ttype_t(item_type))
+                            + ") item is a legacy Fortran 66 feature (deleted in"
+                            " Fortran 77); use a character item instead",
+                            Level::Warning, Stage::Semantic, {
+                                Label("", {a_values_vec[i]->base.loc})
+                            }));
+                        break;
+                    }
+                }
+            }
+        }
         read_write = (_type == AST::decl_stmtType::Write) ? "~write" : "~read";
         read_write += (formatted) ? "_formatted" : "_unformatted";
         if (n_values > 0) {
