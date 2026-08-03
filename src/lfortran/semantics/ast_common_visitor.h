@@ -17863,7 +17863,7 @@ public:
             if (codim.m_end_star == ASR::codimension_typeType::CodimensionStar) {
                 continue;
             }
-            ASR::expr_t* idx = coindices[i].m_left;
+            ASR::expr_t* idx = coindices[i].m_index;
             if (!idx) {
                 continue;
             }
@@ -17909,32 +17909,23 @@ public:
         Vec<ASR::coarray_index_t> coindices;
         coindices.reserve(al, x.n_coargs);
         for (size_t i = 0; i < x.n_coargs; i++) {
-            ASR::expr_t* left = nullptr;
-            ASR::expr_t* right = nullptr;
-            
+            ASR::expr_t* index = nullptr;
             if (x.m_coargs[i].m_start) {
                 this->visit_expr(*x.m_coargs[i].m_start);
-                left = ASRUtils::EXPR(tmp);
-            } 
-            
-            if (x.m_coargs[i].m_end) {
+                index = ASRUtils::EXPR(tmp);
+            } else if (x.m_coargs[i].m_end) {
                 this->visit_expr(*x.m_coargs[i].m_end);
-                if (!left) {
-                    left = ASRUtils::EXPR(tmp); // Scalar index is stored in m_end by AST
-                } else {
-                    right = ASRUtils::EXPR(tmp);
-                }
+                index = ASRUtils::EXPR(tmp);
             }
 
             ASR::codimension_typeType star = (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) 
                                                 ? ASR::codimension_typeType::CodimensionStar 
                                                 : ASR::codimension_typeType::CodimensionExpr;
 
-            if (left || right || star == ASR::codimension_typeType::CodimensionStar) {
+            if (index || star == ASR::codimension_typeType::CodimensionStar) {
                 ASR::coarray_index_t ci;
                 ci.loc = x.m_coargs[i].loc;
-                ci.m_left = left;
-                ci.m_right = right;
+                ci.m_index = index;
                 ci.m_star = star;
                 coindices.push_back(al, ci);
             }

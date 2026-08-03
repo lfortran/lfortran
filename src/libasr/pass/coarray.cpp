@@ -592,7 +592,7 @@ class PRIFInterface {
             ASR::expr_t *total = elem_size;
             for (size_t i = 0; i < n_dims; i++) {
                 if (!dims[i].m_length) {
-                    return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int64_type));
+                    LCOMPILERS_ASSERT(false);
                 }
                 ASR::expr_t *len = b.i2i_t(dims[i].m_length, int64_type);
                 total = b.Mul(total, len);
@@ -637,17 +637,20 @@ class PRIFInterface {
             ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             for (size_t i = 0; i < n_array_dims; i++) {
                 ASR::dimension_t d = dims[i];
-                if (d.m_length) {
-                    ASR::expr_t *len_expr = d.m_length;
-                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
-                        throw LCompilersException("Array dimension length must be an integer");
-                    } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr)) != 4) {
-                        len_expr = b.i2i_t(len_expr, int32_type);
-                    }
-                    shape_vec.push_back(len_expr);
-                } else {
-                    shape_vec.push_back(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type)));
+                LCOMPILERS_ASSERT(d.m_length);
+                LCOMPILERS_ASSERT_MSG([&]()->bool{
+                    if (!d.m_start) return true;
+                    int64_t val = 1;
+                    return ASRUtils::extract_value(d.m_start, val) && val == 1;
+                }(), "Non-1 lower bounds are not supported yet");
+                
+                ASR::expr_t *len_expr = d.m_length;
+                if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
+                    throw LCompilersException("Array dimension length must be an integer");
+                } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr)) != 4) {
+                    len_expr = b.i2i_t(len_expr, int32_type);
                 }
+                shape_vec.push_back(len_expr);
             }
             if (shape_vec.size() > 0) {
                 return b.ArrayConstant(shape_vec, int32_type, false);
@@ -1969,8 +1972,8 @@ class PRIFInterface {
                 LCOMPILERS_ASSERT(false);
             } else {
                 for (size_t i = 0; i < n_coindices; i++) {
-                    if (coindices[i].m_left) {
-                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
+                    if (coindices[i].m_index) {
+                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_index, int64_type));
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
@@ -2023,8 +2026,8 @@ class PRIFInterface {
                 LCOMPILERS_ASSERT(false);
             } else {
                 for (size_t i = 0; i < n_coindices; i++) {
-                    if (coindices[i].m_left) {
-                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
+                    if (coindices[i].m_index) {
+                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_index, int64_type));
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
