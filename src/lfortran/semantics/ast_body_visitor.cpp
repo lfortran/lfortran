@@ -9850,6 +9850,15 @@ public:
 
 
     void visit_ChangeTeam(const AST::ChangeTeam_t &x) {
+        if (x.n_coarray_assoc > 0) {
+            diag.add(Diagnostic(
+                "Coarray association list in `change team` is not supported yet",
+                Level::Error, Stage::Semantic, {
+                    Label("coarray association list is not supported yet", {x.m_coarray_assoc[0]->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+
         ASR::expr_t *team_value = nullptr;
         if (x.m_team_value) {
             visit_expr(*x.m_team_value);
@@ -9868,20 +9877,17 @@ public:
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
         resolve_stat_errmsg(x.m_sync, x.n_sync, x.base.base.loc, "change team", stat, errmsg);
-        
-        ASR::stmt_t *change_team_stmt = ASRUtils::STMT(ASR::make_ChangeTeam_t(al, x.base.base.loc, team_value, stat, errmsg));
-        current_body->push_back(al, change_team_stmt);
 
-        transform_stmts(*current_body, x.n_body, x.m_body);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        transform_stmts(body, x.n_body, x.m_body);
 
         ASR::expr_t *end_stat = nullptr;
         ASR::expr_t *end_errmsg = nullptr;
         resolve_stat_errmsg(x.m_sync_stat, x.n_sync_stat, x.base.base.loc, "end team", end_stat, end_errmsg);
-        
-        ASR::stmt_t *end_team_stmt = ASRUtils::STMT(ASR::make_EndTeam_t(al, x.base.base.loc, end_stat, end_errmsg));
-        current_body->push_back(al, end_team_stmt);
 
-        tmp = nullptr;
+        tmp = ASR::make_ChangeTeam_t(al, x.base.base.loc, team_value, stat, errmsg,
+            body.p, body.size(), end_stat, end_errmsg);
     }
 
     void visit_FormTeam(const AST::FormTeam_t &x) {

@@ -875,6 +875,27 @@ class PRIFInterface {
             return struct_sym;
         }
 
+        void convert_team_type(const Location &loc, ASR::expr_t *team) {
+            if (team && ASR::is_a<ASR::Var_t>(*team)) {
+                ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
+                ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_var->m_type));
+                ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
+                if (team_var->m_type_declaration != prif_decl) {
+                    ASR::symbol_t *orig_decl = team_var->m_type_declaration;
+                    team_var->m_type_declaration = prif_decl;
+                    team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
+                    LCOMPILERS_ASSERT(orig_decl != nullptr);
+                    SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
+                    LCOMPILERS_ASSERT(parent_symtab != nullptr);
+                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
+                    if (parent_symtab->get_symbol(sym_name)) {
+                        parent_symtab->erase_symbol(sym_name);
+                    }
+                }
+            }
+        }
 
         ASR::symbol_t* get_or_create_prif_init_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
@@ -1061,26 +1082,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_change_team_sub(loc);
             select_errmsg_arg(errmsg, errmsg_alloc);
-            
-            if (team && ASR::is_a<ASR::Var_t>(*team)) {
-                ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
-                ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_var->m_type));
-                ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
-                if (team_var->m_type_declaration != prif_decl) {
-                    ASR::symbol_t *orig_decl = team_var->m_type_declaration;
-                    team_var->m_type_declaration = prif_decl;
-                    team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
-                    LCOMPILERS_ASSERT(orig_decl != nullptr);
-                    SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
-                    LCOMPILERS_ASSERT(parent_symtab != nullptr);
-                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
-                    if (parent_symtab->get_symbol(sym_name)) {
-                        parent_symtab->erase_symbol(sym_name);
-                    }
-                }
-            }
+            convert_team_type(loc, team);
             
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
 
@@ -1202,27 +1204,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_form_team_sub(loc);
             select_errmsg_arg(errmsg, errmsg_alloc);
-            
-            // Convert team_type to __module_prif_prif_team_type
-            if (team && ASR::is_a<ASR::Var_t>(*team)) {
-                ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
-                ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_var->m_type));
-                ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
-                if (team_var->m_type_declaration != prif_decl) {
-                    ASR::symbol_t *orig_decl = team_var->m_type_declaration;
-                    team_var->m_type_declaration = prif_decl;
-                    team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
-                    LCOMPILERS_ASSERT(orig_decl != nullptr);
-                    SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
-                    LCOMPILERS_ASSERT(parent_symtab != nullptr);
-                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
-                    if (parent_symtab->get_symbol(sym_name)) {
-                        parent_symtab->erase_symbol(sym_name);
-                    }
-                }
-            }
+            convert_team_type(loc, team);
             
             // Note: team_number might be passed as int32, we should cast to int64
             ASRUtils::ASRBuilder b(al, loc);
@@ -1610,6 +1592,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_sync_team_sub(loc);
             select_errmsg_arg(errmsg, errmsg_alloc);
+            convert_team_type(loc, team);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = team;
@@ -2722,10 +2705,12 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                     ASR::ChangeTeam_t *x = ASR::down_cast<ASR::ChangeTeam_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_change_team_call(
                         x->base.base.loc, x->m_team, x->m_stat, x->m_errmsg));
-                } else if (m_body[i]->type == ASR::stmtType::EndTeam) {
-                    ASR::EndTeam_t *x = ASR::down_cast<ASR::EndTeam_t>(m_body[i]);
+                    transform_stmts(x->m_body, x->n_body);
+                    for (size_t j = 0; j < x->n_body; j++) {
+                        body.push_back(replacer.al, x->m_body[j]);
+                    }
                     body.push_back(replacer.al, replacer.prif.make_prif_end_team_call(
-                        x->base.base.loc, x->m_stat, x->m_errmsg));
+                        x->base.base.loc, x->m_end_stat, x->m_end_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::FormTeam) {
                     ASR::FormTeam_t *x = ASR::down_cast<ASR::FormTeam_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_form_team_call(
