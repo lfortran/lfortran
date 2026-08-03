@@ -17911,11 +17911,19 @@ public:
         for (size_t i = 0; i < x.n_coargs; i++) {
             ASR::expr_t* index = nullptr;
             if (x.m_coargs[i].m_start) {
-                this->visit_expr(*x.m_coargs[i].m_start);
-                index = ASRUtils::EXPR(tmp);
+                diag.add(diag::Diagnostic(
+                    "Cosubscript must be a scalar integer expression",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("Cosubscript cannot be a range or section", {x.m_coargs[i].loc})}
+                ));
+                throw SemanticAbort();
             } else if (x.m_coargs[i].m_end) {
                 this->visit_expr(*x.m_coargs[i].m_end);
                 index = ASRUtils::EXPR(tmp);
+            } else if (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) {
+                // Do nothing
+            } else {
+                LCOMPILERS_ASSERT(false);
             }
 
             ASR::codimension_typeType star = (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) 

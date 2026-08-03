@@ -592,7 +592,7 @@ class PRIFInterface {
             ASR::expr_t *total = elem_size;
             for (size_t i = 0; i < n_dims; i++) {
                 if (!dims[i].m_length) {
-                    LCOMPILERS_ASSERT(false);
+                    LCOMPILERS_ASSERT_MSG(false, "Deferred dimensions are not supported yet");
                 }
                 ASR::expr_t *len = b.i2i_t(dims[i].m_length, int64_type);
                 total = b.Mul(total, len);
