@@ -2808,7 +2808,7 @@ public:
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Endfile";
         fill_args_for_rewind_inquire_flush(x, 4, args, 4, argname2idx, node_name);
-        ASR::expr_t *unit = args[0], *iostat = args[1], *iomsg  = args[2], *err = args[2];
+        ASR::expr_t *unit = args[0], *iostat = args[1], *iomsg  = args[2], *err = args[3];
         tmp = ASR::make_FileEndfile_t(al, x.base.base.loc, x.m_label, unit, iostat, iomsg, err);
     }
 
