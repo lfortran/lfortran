@@ -957,6 +957,10 @@ end program
         x = 5.0
         stop x
     end subroutine stop_code_wrong_type_01
+    subroutine exit_nonstandard_call_01()
+        implicit none
+        call exit(1)
+    end subroutine exit_nonstandard_call_01
 
 ! A syntax error inside a module makes the parser skip the erroneous
 ! declaration and keep the rest of the module. The symbol table visitor then
