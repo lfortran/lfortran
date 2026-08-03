@@ -625,7 +625,7 @@ program continue_compilation_1
 
     type(container(4)) :: obj1
     type(container) :: obj2
-
+    call set_caller(1)
     arr_idl = (i, i = 1, 4)
     integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
@@ -948,6 +948,9 @@ program continue_compilation_1
         common /equivalence_common_overrun/ first, second
         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     end subroutine equivalence_common_array_overrun
+    subroutine set_caller(this)
+        class(MyClass) :: this
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
@@ -966,21 +969,3 @@ contains
     end function foo
 end module
 
-! issue #12394: passing an actual argument of a non-derived type (integer)
-! to a `class(T)` dummy argument must report a semantic error instead of
-! reaching codegen.
-module module_class_arg_mismatch_12394
-    implicit none
-    type :: runner_12394
-    contains
-    end type
-contains
-    subroutine set_caller_12394(this)
-        class(runner_12394) :: this
-    end subroutine
-end module
-
-program class_arg_mismatch_12394
-    use module_class_arg_mismatch_12394
-    call set_caller_12394(1)
-end program

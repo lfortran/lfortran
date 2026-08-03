@@ -5239,17 +5239,8 @@ inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::sym
     return is_class_same;
 }
 
-// Returns true if `passed_arg` can legally be passed to the dummy argument
-// represented by `param_expr` when at least one side is a polymorphic
-// class(T) type (or a plain derived type). The dummy parameter is treated
-// as the assignment target and the passed argument as the value being
-// assigned into it, so this delegates to check_class_assignment_compatibility.
-// Returns false for combinations that are not derived types at all
-// (e.g. an integer passed to a class(T) dummy) since that overload's
-// internal is_a<StructType_t> checks will fail for both sides.
+// Check if the passed argument can be assigned to the parameter of a class type
 inline bool can_pass_class_argument(ASR::expr_t* param_expr, ASR::expr_t* passed_arg) {
-    // class(*) dummy arguments (unlimited polymorphic) accept any actual
-    // argument type, including non-derived-types like strings/integers.
     if (is_unlimited_polymorphic_type(ASRUtils::expr_type(param_expr))) {
         return true;
     }

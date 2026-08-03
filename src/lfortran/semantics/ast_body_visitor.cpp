@@ -7940,35 +7940,6 @@ public:
                             }
                         }
                     }
-
-                    // General class-compatibility check: for a class(T) dummy,
-                    // the actual must be type(T)/class(T), an extension of T,
-                    // or unlimited polymorphic -- otherwise report a semantic
-                    // error here instead of failing later at codegen.
-                    // Skipped for calls with an implicit self/pass argument
-                    // (bound procedure calls): `args`/`f->m_args` indexing
-                    // here does not account for `pass(name)` at a non-default
-                    // position, which is a separate, pre-existing issue.
-                    if (x.n_member >= 1) continue;
-                    ASR::ttype_t* dummy_no_wrap = ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(dummy_type)));
-                    if (ASRUtils::non_unlimited_polymorphic_class(dummy_no_wrap)) {
-                        ASR::ttype_t* actual_no_wrap = ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_allocatable(
-                                ASRUtils::type_get_past_pointer(actual_type)));
-                        if (!ASR::is_a<ASR::StructType_t>(*actual_no_wrap) ||
-                            !ASRUtils::check_class_assignment_compatibility(
-                                f->m_args[i], args[i].m_value)) {
-                            std::string dummy_str = ASRUtils::type_to_str_with_kind(dummy_type, f->m_args[i]);
-                            std::string actual_str = ASRUtils::type_to_str_with_kind(actual_type, args[i].m_value);
-                            diag.semantic_error_label(
-                                "Type mismatch in argument `" + std::string(dummy_var->m_name) +
-                                "`: expected `" + dummy_str + "` but got `" + actual_str + "`.",
-                                {args[i].m_value->base.loc}, "");
-                            throw SemanticAbort();
-                        }
-                    }
                 }
             }
             ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
@@ -8525,29 +8496,10 @@ public:
                         // and crashes there.
                         bool has_class_type_side = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
-                        // Calls with an implicit self/pass argument (bound procedure
-                        // calls with `pass(name)` at a non-default position) can have
-                        // `args[i]` mis-aligned against `f->m_args[i + offset]` -- a
-                        // pre-existing indexing issue out of scope here. Preserve the
-                        // old unconditional skip for those to avoid false positives;
-                        // only validate compatibility for calls without that ambiguity.
-                        bool self_passing_call = v_expr != nullptr && !nopass;
-                        bool is_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
-                        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call);
-                        if (is_class_arg) {
-                            if (!ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg)) {
-                                std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, nullptr);
-                                std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, nullptr);
-                                diag.add(diag::Diagnostic(
-                                    "Type mismatch in argument `" + std::string(v->m_name) +
-                                    "`: expected `" + param_type_str + "` but got `" + passed_type_str + "`",
-                                    diag::Level::Error, diag::Stage::Semantic, {
-                                        diag::Label("", {passed_arg->base.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
-                            skip_check = true;
-                        }
+                        bool self_passing_call = v_expr != nullptr && !nopass; // `pass` attributed method, has offset that's not properly handled for now.
+                        bool is_checkable_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
+                        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call) ||
+                                        (is_checkable_class_arg ? ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg) : false);
                         // For implicit_argument_casting, skip type checking for
                         // compatible type families (e.g., numeric↔numeric, string↔string)
                         // but reject fundamentally incompatible types (e.g., string→integer)
