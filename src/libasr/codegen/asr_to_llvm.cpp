@@ -19199,19 +19199,9 @@ public:
                             {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                              llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
                     } else if (ASRUtils::is_inline_character_struct_member(val_expr)) {
-                        // Inline [count*len x i8] character member (COMMON/
-                        // bind(C)/SEQUENCE): the element data is at byte offset
-                        // elem_idx*len; wrap it in a string view descriptor.
-                        ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
-                        int64_t len = 1;
-                        if (str_type->m_len) ASRUtils::extract_value(str_type->m_len, len);
-                        llvm::Value* bytes = builder->CreateBitCast(var_ptr, character_type);
-                        llvm::Value* elem_data = builder->CreateGEP(
-                            llvm::Type::getInt8Ty(context), bytes,
-                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
-                                elem_idx * len * str_type->m_kind));
-                        elem_ptr = llvm_utils->create_string_descriptor(elem_data,
-                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len),
+                        elem_ptr = llvm_utils->get_inline_string_element(
+                            ASRUtils::get_string_type(val_type), var_ptr,
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx),
                             "inline_read_elem");
                     } else if (ASR::is_a<ASR::String_t>(*val_type)) {
                         ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
@@ -27350,18 +27340,10 @@ public:
                         ASRUtils::extract_value(str_ty->m_len, slen);
                     }
                     if (slen < 1) slen = 1;
-                    llvm::Value* desc = builder->CreateAlloca(
-                        llvm_utils->string_descriptor);
-                    llvm::Value* data_field = llvm_utils->create_gep2(
-                        llvm_utils->string_descriptor, desc, 0);
-                    llvm::Value* len_field = llvm_utils->create_gep2(
-                        llvm_utils->string_descriptor, desc, 1);
-                    llvm::Value* data_ptr = builder->CreateBitCast(
-                        tmp, llvm::Type::getInt8Ty(context)->getPointerTo());
-                    builder->CreateStore(data_ptr, data_field);
-                    builder->CreateStore(llvm::ConstantInt::get(
-                        context, llvm::APInt(64, slen)), len_field);
-                    tmp = desc;
+                    tmp = llvm_utils->create_string_descriptor(
+                        builder->CreateBitCast(tmp, character_type),
+                        llvm::ConstantInt::get(context, llvm::APInt(64, slen)),
+                        "inline_fmt_arg");
                 }
                 args.push_back(tmp);
                 ptr_loads = ptr_load_copy;

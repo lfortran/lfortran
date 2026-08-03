@@ -998,27 +998,8 @@ namespace LCompilers {
                     if (string_type->m_physical_type == ASR::string_physical_typeType::CChar) {
                         tmp = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), array, idx);
                     } else if (ASRUtils::is_inline_character_struct_member(expr)) {
-                        // Character array member stored inline as a flat
-                        // [count*len x i8] blob: element data = member + idx*len,
-                        // wrapped in a string view descriptor for downstream use.
-                        int64_t len = 1;
-                        if (string_type->m_len) {
-                            ASRUtils::extract_value(string_type->m_len, len);
-                        }
-                        llvm::Value* elem_bytes = llvm::ConstantInt::get(
-                            llvm::Type::getInt64Ty(context), len * string_type->m_kind);
-                        llvm::Value* off = builder->CreateMul(
-                            llvm_utils->convert_kind(idx, llvm::Type::getInt64Ty(context)),
-                            elem_bytes);
-                        // array points at the inline [count*len x i8] blob; view it
-                        // as a flat i8 buffer before indexing to the element.
-                        llvm::Value* bytes = builder->CreateBitCast(
-                            array, llvm_utils->character_type);
-                        llvm::Value* elem_ptr = llvm_utils->create_ptr_gep2(
-                            llvm::Type::getInt8Ty(context), bytes, off);
-                        tmp = llvm_utils->create_string_descriptor(elem_ptr,
-                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len),
-                            "inline_arr_element");
+                        tmp = llvm_utils->get_inline_string_element(
+                            string_type, array, idx, "inline_arr_element");
                     } else {
                         tmp = llvm_utils->get_string_element_in_array(string_type, array, idx);
                     }
