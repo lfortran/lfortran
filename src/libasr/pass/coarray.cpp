@@ -641,7 +641,16 @@ class PRIFInterface {
                 LCOMPILERS_ASSERT_MSG([&]()->bool{
                     if (!d.m_start) return true;
                     int64_t val = 1;
-                    return ASRUtils::extract_value(d.m_start, val) && val == 1;
+                    if (ASRUtils::extract_value(d.m_start, val)) {
+                        return val == 1;
+                    }
+                    if (ASR::is_a<ASR::ArrayBound_t>(*d.m_start)) {
+                        ASR::ArrayBound_t *ab = ASR::down_cast<ASR::ArrayBound_t>(d.m_start);
+                        if (ab->m_bound == ASR::arrayboundType::LBound) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }(), "Non-1 lower bounds are not supported yet");
                 
                 ASR::expr_t *len_expr = d.m_length;
