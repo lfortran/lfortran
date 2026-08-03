@@ -66,11 +66,15 @@ LFORTRAN_KERNEL_API void lfortran_display_data(const char* mime_type, const char
         std::move(bundle), nl::json::object(), nl::json::object());
 }
 
+LFORTRAN_KERNEL_API void lfortran_clear_output() {
+    xeus::get_interpreter().clear_output(false);
+}
+
 } // extern "C"
 
 // ── Display bootstrap module ──────────────────────────────────────────────────
 // Evaluated once in configure_impl() before any user cell.
-// Provides the single generic display primitive: display_data(mime_type, data).
+// Provides display_data(mime_type, data) and clear_output().
 // All format-specific encoding should be done in user Fortran code.
 
 static constexpr const char* kDisplaySetupCode = R"fortran(
@@ -82,6 +86,9 @@ module lfortran_display
     subroutine lf_display_data(mime, payload) bind(C, name="lfortran_display_data")
       import :: c_char
       character(kind=c_char), intent(in) :: mime(*), payload(*)
+    end subroutine
+
+    subroutine lf_clear_output() bind(C, name="lfortran_clear_output")
     end subroutine
   end interface
 
@@ -95,6 +102,11 @@ contains
   subroutine display_data(mime_type, data)
     character(len=*), intent(in) :: mime_type, data
     call lf_display_data(trim(mime_type)//c_null_char, trim(data)//c_null_char)
+  end subroutine
+
+  ! Clear output produced by the current cell
+  subroutine clear_output()
+    call lf_clear_output()
   end subroutine
 
 end module lfortran_display
