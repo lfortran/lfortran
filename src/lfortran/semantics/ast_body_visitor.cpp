@@ -3384,18 +3384,23 @@ public:
                         new_codim.loc = coarray_ref->m_coindices[j].loc;
                         ASR::expr_t* m_left = coarray_ref->m_coindices[j].m_left;
                         ASR::expr_t* m_right = coarray_ref->m_coindices[j].m_right;
-                        if (m_left != nullptr && m_right == nullptr) {
+                        if (coarray_ref->m_coindices[j].m_star == ASR::codimension_typeType::CodimensionStar) {
+                            new_codim.m_start = m_left ? m_left : const_1;
+                            new_codim.m_end = nullptr;
+                            new_codim.m_end_star = ASR::codimension_typeType::CodimensionStar;
+                        } else if (m_left != nullptr && m_right == nullptr) {
                             // If only a scalar cobound is provided (e.g. 2), it represents the upper bound.
                             // The lower bound implicitly defaults to 1.
                             new_codim.m_start = const_1;
                             new_codim.m_end = m_left;
+                            new_codim.m_end_star = ASR::codimension_typeType::CodimensionExpr;
                         } else {
                             new_codim.m_start = m_left ? m_left : const_1;
                             new_codim.m_end = m_right;
+                            new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
+                                ? ASR::codimension_typeType::CodimensionStar
+                                : ASR::codimension_typeType::CodimensionExpr;
                         }
-                        new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
-                            ? ASR::codimension_typeType::CodimensionStar
-                            : ASR::codimension_typeType::CodimensionExpr;
                         codims_vec.push_back(al, new_codim);
                     }
                     new_arg.m_codims = codims_vec.p;
@@ -3429,18 +3434,23 @@ public:
                         new_codim.loc = coarray_ref->m_coindices[j].loc;
                         ASR::expr_t* m_left = coarray_ref->m_coindices[j].m_left;
                         ASR::expr_t* m_right = coarray_ref->m_coindices[j].m_right;
-                        if (m_left != nullptr && m_right == nullptr) {
+                        if (coarray_ref->m_coindices[j].m_star == ASR::codimension_typeType::CodimensionStar) {
+                            new_codim.m_start = m_left ? m_left : const_1;
+                            new_codim.m_end = nullptr;
+                            new_codim.m_end_star = ASR::codimension_typeType::CodimensionStar;
+                        } else if (m_left != nullptr && m_right == nullptr) {
                             // If only a scalar cobound is provided (e.g. 2), it represents the upper bound.
                             // The lower bound implicitly defaults to 1.
                             new_codim.m_start = const_1;
                             new_codim.m_end = m_left;
+                            new_codim.m_end_star = ASR::codimension_typeType::CodimensionExpr;
                         } else {
                             new_codim.m_start = m_left ? m_left : const_1;
                             new_codim.m_end = m_right;
+                            new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
+                                ? ASR::codimension_typeType::CodimensionStar
+                                : ASR::codimension_typeType::CodimensionExpr;
                         }
-                        new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
-                            ? ASR::codimension_typeType::CodimensionStar
-                            : ASR::codimension_typeType::CodimensionExpr;
                         codims_vec.push_back(al, new_codim);
                     }
                     new_arg.m_codims = codims_vec.p;
@@ -3460,18 +3470,23 @@ public:
                         new_codim.loc = coarray_ref->m_coindices[j].loc;
                         ASR::expr_t* m_left = coarray_ref->m_coindices[j].m_left;
                         ASR::expr_t* m_right = coarray_ref->m_coindices[j].m_right;
-                        if (m_left != nullptr && m_right == nullptr) {
+                        if (coarray_ref->m_coindices[j].m_star == ASR::codimension_typeType::CodimensionStar) {
+                            new_codim.m_start = m_left ? m_left : const_1;
+                            new_codim.m_end = nullptr;
+                            new_codim.m_end_star = ASR::codimension_typeType::CodimensionStar;
+                        } else if (m_left != nullptr && m_right == nullptr) {
                             // If only a scalar cobound is provided (e.g. 2), it represents the upper bound.
                             // The lower bound implicitly defaults to 1.
                             new_codim.m_start = const_1;
                             new_codim.m_end = m_left;
+                            new_codim.m_end_star = ASR::codimension_typeType::CodimensionExpr;
                         } else {
                             new_codim.m_start = m_left ? m_left : const_1;
                             new_codim.m_end = m_right;
+                            new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
+                                ? ASR::codimension_typeType::CodimensionStar
+                                : ASR::codimension_typeType::CodimensionExpr;
                         }
-                        new_codim.m_end_star = (j == coarray_ref->n_coindices - 1 && new_codim.m_end == nullptr)
-                            ? ASR::codimension_typeType::CodimensionStar
-                            : ASR::codimension_typeType::CodimensionExpr;
                         codims_vec.push_back(al, new_codim);
                     }
                     new_arg.m_codims = codims_vec.p;
