@@ -49,7 +49,7 @@ program coarrays_34
         ! Split each two-image team into one-image teams.
         nested_team_num = this_image()
 
-        form team(nested_team_num, team2)
+        form team(nested_team_num, team2, new_index=1)
 
         ! FORM TEAM must not itself change the current team.
         if (num_images() /= 2) error stop 10

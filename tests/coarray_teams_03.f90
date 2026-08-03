@@ -5,9 +5,8 @@ program coarray_teams_03
 
     type(team_type) :: team
     integer :: team_num, old_image
-    integer :: expected_team(4), expected_image(4)
+    integer :: expected_image(4)
 
-    expected_team  = [1, 1, 2, 2]
     expected_image = [1, 2, 1, 2]
 
     old_image = this_image()
@@ -16,10 +15,13 @@ program coarray_teams_03
     form team (team_num, team)
 
     change team (team)
-        if (team_num /= expected_team(old_image)) then
-            error stop "incorrect team number"
-        end if
+        ! TODO: Uncomment once TEAM_NUMBER() is implemented
+        !if (team_number() /= team_num) then
+        !    error stop "incorrect team number"
+        !end if
 
+        ! NOTE: this property is not technically guaranteed without FORM TEAM(NEW_INDEX=),
+        ! but it's true of all known implementations
         if (this_image() /= expected_image(old_image)) then
             error stop "incorrect image index"
         end if
