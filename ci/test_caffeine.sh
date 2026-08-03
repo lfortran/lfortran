@@ -74,6 +74,14 @@ git config user.email "nobody@nowhere.com"
 git config user.name  "Nobody"
 git cherry-pick 736130c4af77b4ab33e4341e6dcd32ab4c8b7f4a
 
+# Cherry-pick recent fixes to assertion reporting for LFortran (Caffeine PR #353)
+git cherry-pick 4ccb611328908c9fdee05d0bab587baa4ac679db
+# Sadly git-merge lacks the ability to ignore irrelevant changes
+# on adjacenet lines, so this critical one-line commit doesn't apply cleanly:
+#git cherry-pick 34652e1e215ab08eabac2642b6db82c9beac944f
+# Apply it manually instead:
+sed -i.bak '\|assert\.git|s/3\.1\.0/3.1.2/' manifest/fpm.toml.template
+
 # Toolchain setup
 
 export FC=lfortran

@@ -1189,6 +1189,7 @@ public:
     void visit_Backspace(const AST::Backspace_t& x) {
         mark_IO_side_effect();
         ASR::expr_t *a_unit = nullptr, *a_iostat = nullptr;
+        ASR::expr_t *a_iomsg = nullptr;
         ASR::expr_t *a_err = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -1250,6 +1251,27 @@ public:
                             }));
                         throw SemanticAbort();
                 }
+            } else if ( m_arg_str == std::string("iomsg") ) {
+                if (a_iomsg != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `iomsg` found, `iomsg` has already been specified.)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_iomsg = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *a_iomsg_type = ASRUtils::expr_type(a_iomsg);
+                if (a_iomsg->type != ASR::exprType::Var ||
+                    !ASRUtils::is_character(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be a variable of type Character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if( m_arg_str == std::string("err") ) {
                 if( a_err != nullptr ) {
                     diag.add(Diagnostic(
@@ -1285,7 +1307,7 @@ public:
                 }));
             throw SemanticAbort();
         }
-        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_err);
+        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err);
     }
 
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
@@ -7841,7 +7863,6 @@ public:
 
         // checking for intent mismatch   
         if (f) { 
-            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
             for (size_t i = 0; i < args.size() && i < f->n_args; i++) {
                 if (args[i].m_value == nullptr) continue;
                 ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
@@ -7850,6 +7871,25 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // TODO: Dump this check and depend on our param/arg mismatch mechanism below
+                    if ((dummy_var->m_intent == ASR::intentType::Out ||
+                         dummy_var->m_intent == ASR::intentType::InOut) &&
+                        !ASR::is_a<ASR::FunctionType_t>(*dummy_type) &&
+                        args[i].m_value && ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                        ASR::symbol_t* passed_sym_check = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                        if (!ASR::is_a<ASR::Variable_t>(*passed_sym_check)) {
+                            std::string param_type_str = ASRUtils::type_to_str_with_kind(
+                                dummy_type, f->m_args[i]);
+                            diag.add(diag::Diagnostic(
+                                "Type mismatch: expected `" + param_type_str +
+                                "` but a procedure was passed",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {args[i].m_value->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
                     // An assumed-size actual has no extent for its last
                     // dimension, so it cannot be associated with a dummy
                     // that needs the full shape: a pointer/allocatable dummy
@@ -7926,6 +7966,7 @@ public:
                     }
                 }
             }
+            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
         }
 
         ASR::symbol_t *final_sym=nullptr;
