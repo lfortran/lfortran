@@ -1180,6 +1180,7 @@ public:
     void visit_Backspace(const AST::Backspace_t& x) {
         mark_IO_side_effect();
         ASR::expr_t *a_unit = nullptr, *a_iostat = nullptr;
+        ASR::expr_t *a_iomsg = nullptr;
         ASR::expr_t *a_err = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -1241,6 +1242,27 @@ public:
                             }));
                         throw SemanticAbort();
                 }
+            } else if ( m_arg_str == std::string("iomsg") ) {
+                if (a_iomsg != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `iomsg` found, `iomsg` has already been specified.)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_iomsg = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *a_iomsg_type = ASRUtils::expr_type(a_iomsg);
+                if (a_iomsg->type != ASR::exprType::Var ||
+                    !ASRUtils::is_character(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be a variable of type Character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if( m_arg_str == std::string("err") ) {
                 if( a_err != nullptr ) {
                     diag.add(Diagnostic(
@@ -1276,7 +1298,7 @@ public:
                 }));
             throw SemanticAbort();
         }
-        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_err);
+        tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err);
     }
 
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
@@ -2782,12 +2804,12 @@ public:
 
     void visit_Endfile(const AST::Endfile_t& x) {
         mark_IO_side_effect();
-        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"iomsg", 2}, {"err", 3}};
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Endfile";
-        fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
-        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
-        tmp = ASR::make_FileEndfile_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+        fill_args_for_rewind_inquire_flush(x, 4, args, 4, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *iostat = args[1], *iomsg  = args[2], *err = args[3];
+        tmp = ASR::make_FileEndfile_t(al, x.base.base.loc, x.m_label, unit, iostat, iomsg, err);
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
@@ -7821,7 +7843,6 @@ public:
 
         // checking for intent mismatch   
         if (f) { 
-            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
             for (size_t i = 0; i < args.size() && i < f->n_args; i++) {
                 if (args[i].m_value == nullptr) continue;
                 ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
@@ -7830,6 +7851,25 @@ public:
                     ASR::Variable_t* dummy_var = ASR::down_cast<ASR::Variable_t>(dummy_sym);
                     ASR::ttype_t* dummy_type = dummy_var->m_type;
                     ASR::ttype_t* actual_type = ASRUtils::expr_type(args[i].m_value);
+                    // TODO: Dump this check and depend on our param/arg mismatch mechanism below
+                    if ((dummy_var->m_intent == ASR::intentType::Out ||
+                         dummy_var->m_intent == ASR::intentType::InOut) &&
+                        !ASR::is_a<ASR::FunctionType_t>(*dummy_type) &&
+                        args[i].m_value && ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                        ASR::symbol_t* passed_sym_check = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                        if (!ASR::is_a<ASR::Variable_t>(*passed_sym_check)) {
+                            std::string param_type_str = ASRUtils::type_to_str_with_kind(
+                                dummy_type, f->m_args[i]);
+                            diag.add(diag::Diagnostic(
+                                "Type mismatch: expected `" + param_type_str +
+                                "` but a procedure was passed",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {args[i].m_value->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
                     // An assumed-size actual has no extent for its last
                     // dimension, so it cannot be associated with a dummy
                     // that needs the full shape: a pointer/allocatable dummy
@@ -7906,6 +7946,7 @@ public:
                     }
                 }
             }
+            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
         }
 
         ASR::symbol_t *final_sym=nullptr;
@@ -8448,11 +8489,21 @@ public:
                                 }
                             }
                         }
-                        // Skip type checking for polymorphic types (class), function types
-                        bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
+                        // Skip type checking for function types (procedure dummy
+                        // arguments are validated separately above).
+                        bool is_function_type_arg = ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
                                             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+                        // For polymorphic (class) types, don't unconditionally skip —
+                        // verify actual compatibility instead. A genuinely incompatible
+                        // actual argument (e.g. an integer passed to a class(T) dummy)
+                        // must be reported here, otherwise it silently reaches codegen
+                        // and crashes there.
+                        bool has_class_type_side = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
+                        bool self_passing_call = v_expr != nullptr && !nopass; // `pass` attributed method, has offset that's not properly handled for now.
+                        bool is_checkable_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
+                        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call) ||
+                                        (is_checkable_class_arg ? ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg) : false);
                         // For implicit_argument_casting, skip type checking for
                         // compatible type families (e.g., numeric↔numeric, string↔string)
                         // but reject fundamentally incompatible types (e.g., string→integer)

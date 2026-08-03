@@ -291,6 +291,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
 );
 LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
+LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iomsg, int64_t iomsg_len);
+LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_exit(int32_t status);
 LFORTRAN_API void _lfortran_sleep(int32_t seconds);
@@ -393,6 +395,7 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors);
 LFORTRAN_API char *_lfortran_get_env_variable(char *name);
 LFORTRAN_API void _lfortran_get_environment_variable(fchar *name, int32_t name_len, char* receiver);
 LFORTRAN_API int32_t _lfortran_get_environment_variable_status(fchar *name, int32_t name_len);
+LFORTRAN_API int32_t _lfortran_get_environment_variable_status_value(fchar *name, int32_t name_len, int32_t value_len);
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();

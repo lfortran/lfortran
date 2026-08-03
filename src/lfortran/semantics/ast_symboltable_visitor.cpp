@@ -4167,8 +4167,8 @@ public:
                 first_arg->m_intent == ASR::intentType::In) {
                 diag.add(diag::Diagnostic(
                     "Passed-object dummy argument '" + std::string(first_arg->m_name) +
-                    "' of procedure '" + std::string(func->m_name) +
-                    "' that is an INTENT(IN) POINTER is not standard",
+                    "' of type-bound procedure '" + std::string(func->m_name) +
+                    "' has the POINTER attribute, which is a non-standard extension.",
                     diag::Level::Warning, diag::Stage::Semantic, {
                         diag::Label("", {loc})}));
             }
@@ -4191,8 +4191,8 @@ public:
                         v->m_intent == ASR::intentType::In) {
                         diag.add(diag::Diagnostic(
                             "Passed-object dummy argument '" + std::string(v->m_name) +
-                            "' of procedure '" + std::string(func->m_name) +
-                            "' that is an INTENT(IN) POINTER is not standard",
+                            "' of type-bound procedure '" + std::string(func->m_name) +
+                            "' has the POINTER attribute, which is a non-standard extension.",
                             diag::Level::Warning, diag::Stage::Semantic, {
                                 diag::Label("", {loc})}));
                     }
