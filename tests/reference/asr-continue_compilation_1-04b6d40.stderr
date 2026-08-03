@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:960:7
+   --> tests/errors/continue_compilation_1.f90:963:7
     |
-960 |       foo    end type t_recovery
+963 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:963:7
+   --> tests/errors/continue_compilation_1.f90:966:7
     |
-963 |       class(t_recovery), intent(in) :: self
+966 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1559,6 +1559,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
     |
 617 |     base_var = derived_var
     |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
+
+semantic error: Type mismatch in argument `this`: expected `derived_type` but got `integer(4)`
+   --> tests/errors/continue_compilation_1.f90:628:21
+    |
+628 |     call set_caller(1)
+    |                     ^ 
 
 semantic error: Implied DO loop must be enclosed within array constructor brackets [...]; expected '[( ... )]' in assignment
    --> tests/errors/continue_compilation_1.f90:629:15

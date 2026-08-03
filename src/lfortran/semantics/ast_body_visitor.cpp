@@ -8485,11 +8485,21 @@ public:
                                 }
                             }
                         }
-                        // Skip type checking for polymorphic types (class), function types
-                        bool skip_check = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
+                        // Skip type checking for function types (procedure dummy
+                        // arguments are validated separately above).
+                        bool is_function_type_arg = ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
                                             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+                        // For polymorphic (class) types, don't unconditionally skip —
+                        // verify actual compatibility instead. A genuinely incompatible
+                        // actual argument (e.g. an integer passed to a class(T) dummy)
+                        // must be reported here, otherwise it silently reaches codegen
+                        // and crashes there.
+                        bool has_class_type_side = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
+                        bool self_passing_call = v_expr != nullptr && !nopass; // `pass` attributed method, has offset that's not properly handled for now.
+                        bool is_checkable_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
+                        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call) ||
+                                        (is_checkable_class_arg ? ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg) : false);
                         // For implicit_argument_casting, skip type checking for
                         // compatible type families (e.g., numeric↔numeric, string↔string)
                         // but reject fundamentally incompatible types (e.g., string→integer)
