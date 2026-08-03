@@ -2804,12 +2804,12 @@ public:
 
     void visit_Endfile(const AST::Endfile_t& x) {
         mark_IO_side_effect();
-        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"err", 2 }};
+        std::map<std::string, size_t> argname2idx = {{"unit", 0}, {"iostat", 1}, {"iomsg", 2}, {"err", 3}};
         std::vector<ASR::expr_t*> args;
         std::string node_name = "Endfile";
-        fill_args_for_rewind_inquire_flush(x, 3, args, 3, argname2idx, node_name);
-        ASR::expr_t *unit = args[0], *iostat = args[1], *err = args[2];
-        tmp = ASR::make_FileEndfile_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
+        fill_args_for_rewind_inquire_flush(x, 4, args, 4, argname2idx, node_name);
+        ASR::expr_t *unit = args[0], *iostat = args[1], *iomsg  = args[2], *err = args[3];
+        tmp = ASR::make_FileEndfile_t(al, x.base.base.loc, x.m_label, unit, iostat, iomsg, err);
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
