@@ -1,13 +1,13 @@
 syntax error: Token '::' is unexpected here
-  --> tests/errors/continue_compilation_3.f90:57:9
+  --> tests/errors/continue_compilation_3.f90:64:9
    |
-57 |     rea :: test_real(12)
+64 |     rea :: test_real(12)
    |         ^^ 
 
 syntax error: Token ')' is unexpected here
-  --> tests/errors/continue_compilation_3.f90:58:21
+  --> tests/errors/continue_compilation_3.f90:65:21
    |
-58 |     real :: test_re()
+65 |     real :: test_re()
    |                     ^ 
 
 syntax error: The LFortran pragma !LF$ must be followed by a space
@@ -16,88 +16,100 @@ syntax error: The LFortran pragma !LF$ must be followed by a space
 173 |         !LF$unroll 4  ! Error: Missing space after `!LF$`
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Module 'continue_compilation_3_fake_module' modfile was not found
-  --> tests/errors/continue_compilation_3.f90:48:5
+warning: Passed-object dummy argument 'self' of type-bound procedure 'tbp_ptr_dummy_pass_f' has the POINTER attribute, which is a non-standard extension.
+  --> tests/errors/continue_compilation_3.f90:12:9
    |
-48 |     use continue_compilation_3_fake_module
+12 |         procedure, pass(self) :: m => tbp_ptr_dummy_pass_f  ! Warning: passed-object dummy argument that is POINTER is not standard
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+warning: Passed-object dummy argument 'this' of type-bound procedure 'tbp_ptr_dummy_f' has the POINTER attribute, which is a non-standard extension.
+ --> tests/errors/continue_compilation_3.f90:8:9
+  |
+8 |         procedure :: m => tbp_ptr_dummy_f  ! Warning: passed-object dummy argument that is POINTER is not standard
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Module 'continue_compilation_3_fake_module' modfile was not found
+  --> tests/errors/continue_compilation_3.f90:55:5
+   |
+55 |     use continue_compilation_3_fake_module
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Explicit shaped array with nonconstant bounds
-  --> tests/errors/continue_compilation_3.f90:69:23
+  --> tests/errors/continue_compilation_3.f90:76:23
    |
-69 |     integer :: arr_nc(minval(abs(a)))
+76 |     integer :: arr_nc(minval(abs(a)))
    |                       ^^^^^^^^^^^^^^ 
 
 semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
-  --> tests/errors/continue_compilation_3.f90:79:9
+  --> tests/errors/continue_compilation_3.f90:86:9
    |
-79 |         procedure(), nopass, pointer :: caller => null()
+86 |         procedure(), nopass, pointer :: caller => null()
    |         ^^^^^^^^^^^ 
 
 semantic error: Assumed-rank arrays are not supported in print statements
-  --> tests/errors/continue_compilation_3.f90:30:18
+  --> tests/errors/continue_compilation_3.f90:34:18
    |
-30 |         print *, x
+34 |         print *, x
    |                  ^ 
 
 semantic error: Assumed rank arrays cannot be used as `source` argument to reshape intrinsic
-  --> tests/errors/continue_compilation_3.f90:31:26
+  --> tests/errors/continue_compilation_3.f90:35:26
    |
-31 |         print *, reshape(x, [size(x)])
+35 |         print *, reshape(x, [size(x)])
    |                          ^ 
 
 semantic error: Assumed-rank array `x` cannot be accessed outside a select rank block
-  --> tests/errors/continue_compilation_3.f90:32:18
+  --> tests/errors/continue_compilation_3.f90:36:18
    |
-32 |         print *, x(1)
+36 |         print *, x(1)
    |                  ^^^^ 
 
 semantic error: Assumed-rank array 'x' must be a dummy argument
-  --> tests/errors/continue_compilation_3.f90:33:6
+  --> tests/errors/continue_compilation_3.f90:37:6
    |
-33 |      x = [1, 2]
+37 |      x = [1, 2]
    |      ^ 
 
 semantic error: Comparison operations are not allowed on assumed-rank arrays ('x')
-  --> tests/errors/continue_compilation_3.f90:34:19
+  --> tests/errors/continue_compilation_3.f90:38:19
    |
-34 |         print *, (x /= [1, 2])
+38 |         print *, (x /= [1, 2])
    |                   ^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-  --> tests/errors/continue_compilation_3.f90:70:26
+  --> tests/errors/continue_compilation_3.f90:77:26
    |
-70 |     call intent_out_test(1)  ! Error: literal constant with intent(out)
+77 |     call intent_out_test(1)  ! Error: literal constant with intent(out)
    |                          ^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-  --> tests/errors/continue_compilation_3.f90:71:26
+  --> tests/errors/continue_compilation_3.f90:78:26
    |
-71 |     call intent_out_test(x + 1)  ! Error: expression with intent(out)
+78 |     call intent_out_test(x + 1)  ! Error: expression with intent(out)
    |                          ^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-  --> tests/errors/continue_compilation_3.f90:72:28
+  --> tests/errors/continue_compilation_3.f90:79:28
    |
-72 |     call intent_inout_test(2)  ! Error: literal constant with intent(inout)
+79 |     call intent_inout_test(2)  ! Error: literal constant with intent(inout)
    |                            ^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-  --> tests/errors/continue_compilation_3.f90:73:28
+  --> tests/errors/continue_compilation_3.f90:80:28
    |
-73 |     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
+80 |     call intent_inout_test(x * 2)  ! Error: expression with intent(inout)
    |                            ^^^^^ 
 
 semantic error: Type mismatch in argument `i`: expected `real(4)` but got `integer(4)`
-  --> tests/errors/continue_compilation_3.f90:74:34
+  --> tests/errors/continue_compilation_3.f90:81:34
    |
-74 |     call check_incompatible_type(i)  ! Error: incompatible type passed
+81 |     call check_incompatible_type(i)  ! Error: incompatible type passed
    |                                  ^ 
 
 semantic error: Argument 1 to Iachar must have length 1
-  --> tests/errors/continue_compilation_3.f90:76:14
+  --> tests/errors/continue_compilation_3.f90:83:14
    |
-76 |     print *, iachar(s1)
+83 |     print *, iachar(s1)
    |              ^^^^^^^^^^ 
 
 semantic error: Empty array constructor is not allowed
@@ -196,7 +208,7 @@ semantic error: Cannot assign to a constant variable
 124 |     x3 = 1
     |     ^^^^^^ assignment here
     |
- 55 |     integer, parameter :: x3 = 2
+ 62 |     integer, parameter :: x3 = 2
     |                           ~~~~~~ declared as constant
 
 semantic error: The end variable of the data implied do loop must be constants
