@@ -9,6 +9,7 @@ class IRKernelTests(jkt.KernelTests):
     file_extension = ".f90"
 
     code_hello_world = 'print *, "hello, world"'
+    code_clear_output = 'use lfortran_display; call clear_output()'
     #code_stderr = "1x"
 
     #complete_code_samples = ['1', 'print *, "hello, world"',
