@@ -657,7 +657,6 @@ program continue_compilation_1
     integer :: eoshift_bad_shift(2, 2)
     eoshift_bad_shift = 1
     b1 = eoshift(b1, eoshift_bad_shift)
-    allocate(character(-1) :: FUNC8)
     contains
     subroutine test_uminus_struct()
         use continue_compilation_1_mod, only: MyClass
