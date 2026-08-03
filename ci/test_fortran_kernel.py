@@ -23,5 +23,13 @@ class IRKernelTests(jkt.KernelTests):
         {'code': "integer :: x; x = 5; x*2", 'result': "10"},
     ]
 
+    code_display_data = [
+        {
+            'code': 'use lfortran_display; '
+                    'call display_data("text/html", "<b>Hello</b>")',
+            'mime': 'text/html',
+        },
+    ]
+
 if __name__ == '__main__':
     unittest.main()
