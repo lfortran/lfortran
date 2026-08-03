@@ -7397,8 +7397,15 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
     list_dir_state_reset(find_unit(unit_num));
 }
 
-LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
+LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iomsg, int64_t iomsg_len)
 {
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+    if (iomsg != NULL && iomsg_len > 0) {
+        iomsg[0] = '\0';
+        pad_with_spaces(iomsg, 0, iomsg_len);
+    }
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if( filep == NULL ) {
@@ -7407,6 +7414,14 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
         snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
         filep = fopen(fort_filename, "w+");
         if (!filep) {
+            if (iostat != NULL) {
+                *iostat = 5001;
+                if (iomsg != NULL && iomsg_len > 0) {
+                    char *msg = "Cannot open implicit file for ENDFILE.";
+                    _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+                }
+                return;
+            }
             fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
                 fort_filename, unit_num);
             exit(1);
