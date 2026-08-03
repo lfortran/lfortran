@@ -13,22 +13,17 @@ end type prif_coarray_handle
 program coarray_teams_03
 implicit none
 integer(4), dimension(4) :: expected_image
-integer(4), dimension(4) :: expected_team
 integer(4) :: old_image
 integer(4) :: stat
 type(__module_prif_prif_team_type) :: team
 integer(4) :: team_num
 call __module_prif_prif_init(stat)
 call __module_prif_prif_sync_all()
-expected_team = [1, 1, 2, 2]
 expected_image = [1, 2, 1, 2]
 old_image = lcompilers_prif_this_image()
 team_num = (old_image - 1)/2 + 1
 call __module_prif_prif_form_team(int(team_num, kind=8), team)
 call __module_prif_prif_change_team(team)
-if (team_num /= expected_team(old_image)) then
-    error stop
-end if
 if (lcompilers_prif_this_image() /= expected_image(old_image)) then
     error stop
 end if
