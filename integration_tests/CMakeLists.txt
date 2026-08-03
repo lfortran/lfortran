@@ -1844,7 +1844,7 @@ RUN(NAME intrinsics_474 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_A
 RUN(NAME intrinsics_475 LABELS gfortran llvm) # ishftc with SIZE keeps high bits of I
 RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale with a negative exponent
 
-RUN(NAME intrinsics_478 LABELS gfortran llvm)
+RUN(NAME intrinsics_478 LABELS llvm)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
