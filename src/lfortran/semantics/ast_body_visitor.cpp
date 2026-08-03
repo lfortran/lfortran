@@ -9879,54 +9879,75 @@ public:
     }
 
     void visit_SyncTeam(const AST::SyncTeam_t &x) {
-        ASR::expr_t *team = nullptr;
-        if (x.m_value) {
-            visit_expr(*x.m_value);
-            team = ASRUtils::EXPR(tmp);
-            check_intrinsic_team_value(team, x.base.base.loc,
-                "team_value", "sync team");
-        } else {
-            diag.add(Diagnostic(
-                "`sync team` requires a team_value",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
-        }
+        LCOMPILERS_ASSERT(x.m_value != nullptr);
+        visit_expr(*x.m_value);
+        ASR::expr_t *team = ASRUtils::EXPR(tmp);
+        check_intrinsic_team_value(team, x.base.base.loc,
+            "team_value", "sync team");
         ASR::expr_t *stat = nullptr;
         ASR::expr_t *errmsg = nullptr;
         resolve_stat_errmsg(x.m_stat, x.n_stat, x.base.base.loc, "sync team", stat, errmsg);
         tmp = ASR::make_SyncTeam_t(al, x.base.base.loc, team, stat, errmsg);
     }
 
+
+    void visit_ChangeTeam(const AST::ChangeTeam_t &x) {
+        if (x.n_coarray_assoc > 0) {
+            diag.add(Diagnostic(
+                "Coarray association list in `change team` is not supported yet",
+                Level::Error, Stage::Semantic, {
+                    Label("coarray association list is not supported yet", {x.m_coarray_assoc[0]->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+
+        LCOMPILERS_ASSERT(x.m_team_value != nullptr);
+        visit_expr(*x.m_team_value);
+        ASR::expr_t *team_value = ASRUtils::EXPR(tmp);
+        check_intrinsic_team_value(team_value, x.base.base.loc,
+            "team_value", "change team");
+
+        ASR::expr_t *stat = nullptr;
+        ASR::expr_t *errmsg = nullptr;
+        resolve_stat_errmsg(x.m_sync, x.n_sync, x.base.base.loc, "change team", stat, errmsg);
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        transform_stmts(body, x.n_body, x.m_body);
+
+        ASR::expr_t *end_stat = nullptr;
+        ASR::expr_t *end_errmsg = nullptr;
+        resolve_stat_errmsg(x.m_sync_stat, x.n_sync_stat, x.base.base.loc, "end team", end_stat, end_errmsg);
+
+        tmp = ASR::make_ChangeTeam_t(al, x.base.base.loc, team_value, stat, errmsg,
+            body.p, body.size(), end_stat, end_errmsg);
+    }
+
     void visit_FormTeam(const AST::FormTeam_t &x) {
-        ASR::expr_t *team_number = nullptr;
-        if (x.m_team_number) {
-            visit_expr(*x.m_team_number);
-            team_number = ASRUtils::EXPR(tmp);
-            ASR::ttype_t *team_number_type = ASRUtils::expr_type(team_number);
-            if (ASRUtils::is_array(team_number_type)) {
-                diag.add(Diagnostic(
-                    "`team_number` argument of `form team` must be scalar",
-                    Level::Error, Stage::Semantic,
-                    {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-            if (!ASRUtils::is_integer(*team_number_type)) {
-                diag.add(Diagnostic(
-                    "`team_number` argument of `form team` must be of type integer, found " +
-                    ASRUtils::type_to_str_fortran_expr(team_number_type, team_number),
-                    Level::Error, Stage::Semantic,
-                    {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
+        LCOMPILERS_ASSERT(x.m_team_number != nullptr);
+        visit_expr(*x.m_team_number);
+        ASR::expr_t *team_number = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *team_number_type = ASRUtils::expr_type(team_number);
+        if (ASRUtils::is_array(team_number_type)) {
+            diag.add(Diagnostic(
+                "`team_number` argument of `form team` must be scalar",
+                Level::Error, Stage::Semantic,
+                {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
-        ASR::expr_t *team = nullptr;
-        if (x.m_team_var) {
-            team = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_team_var)));
-            check_intrinsic_team_value(team, x.base.base.loc,
-                "team_variable", "form team");
+        if (!ASRUtils::is_integer(*team_number_type)) {
+            diag.add(Diagnostic(
+                "`team_number` argument of `form team` must be of type integer, found " +
+                ASRUtils::type_to_str_fortran_expr(team_number_type, team_number),
+                Level::Error, Stage::Semantic,
+                {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
+
+        LCOMPILERS_ASSERT(x.m_team_var != nullptr);
+        ASR::expr_t *team = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_team_var)));
+        check_intrinsic_team_value(team, x.base.base.loc,
+            "team_variable", "form team");
         
         ASR::expr_t *new_index = nullptr;
         ASR::expr_t *stat = nullptr;

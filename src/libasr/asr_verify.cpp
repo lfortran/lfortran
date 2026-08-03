@@ -1792,23 +1792,28 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
+    void verify_sync_stat_list(const std::string &stmt_name, const Location &loc, ASR::expr_t *stat, ASR::expr_t *errmsg,
+            const std::string &stat_name="m_stat", const std::string &errmsg_name="m_errmsg") {
+        if (stat) {
+            ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+            require_with_loc(!ASRUtils::is_array(stat_type),
+                stmt_name + "::" + stat_name + " must be a scalar", loc);
+            require_with_loc(ASRUtils::is_integer(*stat_type),
+                stmt_name + "::" + stat_name + " must be of integer type, found " +
+                ASRUtils::type_to_str_fortran_expr(stat_type, stat), loc);
+        }
+        if (errmsg) {
+            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+            require_with_loc(!ASRUtils::is_array(errmsg_type),
+                stmt_name + "::" + errmsg_name + " must be a scalar", loc);
+            require_with_loc(ASRUtils::is_character(*errmsg_type),
+                stmt_name + "::" + errmsg_name + " must be of string type, found " +
+                ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg), loc);
+        }
+    }
+
     void visit_SyncAll(const SyncAll_t &x) {
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncAll::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncAll::m_stat must be of integer type, found " +
-                std::string(ASRUtils::get_type_code(stat_type)));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncAll::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncAll::m_errmsg must be of string type, found " +
-                std::string(ASRUtils::get_type_code(errmsg_type)));
-        }
+        verify_sync_stat_list("SyncAll", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncAll(x);
     }
 
@@ -1820,63 +1825,24 @@ public:
             require(ASRUtils::is_integer(*image_set_type),
                 "SyncImages::m_image_set must be of integer type");
         }
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncImages::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncImages::m_stat must be of integer type, found " +
-                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_stat), x.m_stat));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncImages::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncImages::m_errmsg must be of string type, found " +
-                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_errmsg), x.m_errmsg));
-        }
+        verify_sync_stat_list("SyncImages", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncImages(x);
     }
 
     void visit_SyncMemory(const SyncMemory_t &x) {
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncMemory::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncMemory::m_stat must be of integer type, found " +
-                std::string(ASRUtils::get_type_code(stat_type)));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncMemory::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncMemory::m_errmsg must be of string type, found " +
-                std::string(ASRUtils::get_type_code(errmsg_type)));
-        }
+        verify_sync_stat_list("SyncMemory", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncMemory(x);
     }
 
     void visit_SyncTeam(const SyncTeam_t &x) {
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncTeam::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncTeam::m_stat must be of integer type, found " +
-                std::string(ASRUtils::get_type_code(stat_type)));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncTeam::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncTeam::m_errmsg must be of string type, found " +
-                std::string(ASRUtils::get_type_code(errmsg_type)));
-        }
+        verify_sync_stat_list("SyncTeam", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncTeam(x);
+    }
+
+    void visit_ChangeTeam(const ChangeTeam_t &x) {
+        verify_sync_stat_list("ChangeTeam", x.base.base.loc, x.m_stat, x.m_errmsg);
+        verify_sync_stat_list("ChangeTeam", x.base.base.loc, x.m_end_stat, x.m_end_errmsg, "m_end_stat", "m_end_errmsg");
+        BaseWalkVisitor<VerifyVisitor>::visit_ChangeTeam(x);
     }
 
     void visit_FormTeam(const FormTeam_t &x) {
@@ -1893,20 +1859,7 @@ public:
             require(ASRUtils::is_integer(*new_index_type),
                 "FormTeam::m_new_index must be of integer type");
         }
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "FormTeam::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "FormTeam::m_stat must be of integer type");
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "FormTeam::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "FormTeam::m_errmsg must be of string type");
-        }
+        verify_sync_stat_list("FormTeam", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_FormTeam(x);
     }
 

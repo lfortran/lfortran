@@ -160,7 +160,8 @@ fi
 # runs them, so LFortran's own behaviour stays verified.
 # coarrays_21: intermittent failures on OpenCoarrays
 # coarrays_31, coarrays_32: gfortran rejects allocate(arr_coarray[*], SOURCE/MOLD=...) for array coarrays
-opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21 coarrays_31 coarrays_32"
+# coarrays_34: gfortran added change team support in 16.1, but CI tests with version 13.3, so skip for now
+opencoarrays_unsupported="coarrays_11 coarrays_13 coarrays_21 coarrays_31 coarrays_32 coarrays_34"
 
 for test_info in $tests; do
 testfile="${test_info%%:*}"
