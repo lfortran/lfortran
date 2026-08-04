@@ -41,7 +41,7 @@ namespace nl = nlohmann;
 
 // ── Jupyter display_data bridge ──────────────────────────────────────────────
 // These C-linkage symbols are called from JIT'd Fortran code via bind(C)
-// declarations injected at REPL startup in configure_impl().
+// declarations provided by the lfortran_display runtime module.
 // Native (ORC JIT): resolved from the host process's exported symbol table.
 // WASM: defined in the MAIN_MODULE; side modules import via --allow-undefined
 // and RTLD_DEFAULT resolves them at dlopen time.
@@ -71,46 +71,6 @@ LFORTRAN_KERNEL_API void lfortran_clear_output() {
 }
 
 } // extern "C"
-
-// ── Display bootstrap module ──────────────────────────────────────────────────
-// Evaluated once in configure_impl() before any user cell.
-// Provides display_data(mime_type, data) and clear_output().
-// All format-specific encoding should be done in user Fortran code.
-
-static constexpr const char* kDisplaySetupCode = R"fortran(
-module lfortran_display
-  use iso_c_binding, only: c_char, c_null_char
-  implicit none
-
-  interface
-    subroutine lf_display_data(mime, payload) bind(C, name="lfortran_display_data")
-      import :: c_char
-      character(kind=c_char), intent(in) :: mime(*), payload(*)
-    end subroutine
-
-    subroutine lf_clear_output() bind(C, name="lfortran_clear_output")
-    end subroutine
-  end interface
-
-contains
-
-  ! Generic display: send any MIME type + data to Jupyter
-  ! Examples:
-  !   call display_data("text/html", "<h1>Hello</h1>")
-  !   call display_data("image/svg+xml", svg_string)
-  !   call display_data("image/bmp", base64_bmp_string)
-  subroutine display_data(mime_type, data)
-    character(len=*), intent(in) :: mime_type, data
-    call lf_display_data(trim(mime_type)//c_null_char, trim(data)//c_null_char)
-  end subroutine
-
-  ! Clear output produced by the current cell
-  subroutine clear_output()
-    call lf_clear_output()
-  end subroutine
-
-end module lfortran_display
-)fortran";
 
 namespace LCompilers::LFortran {
 
@@ -488,27 +448,6 @@ namespace LCompilers::LFortran {
     void custom_interpreter::configure_impl()
     {
         xeus::register_interpreter(this);
-
-        // Inject the lfortran_display module before the first user cell so that
-        // display_html(), display_image(), display_svg() etc. are available in
-        // every subsequent cell.
-        LocationManager lm;
-        {
-            LocationManager::FileLocations fl;
-            fl.in_filename = "input";
-            std::ofstream out("input");
-            out << kDisplaySetupCode;
-            lm.files.push_back(fl);
-        }
-        LCompilers::PassManager lpm;
-        lpm.use_default_passes();
-        diag::Diagnostics diagnostics;
-        CompilerOptions cu;
-        auto res = e.evaluate(kDisplaySetupCode, false, lm, lpm, diagnostics);
-        if (!res.ok) {
-            std::string msg = diagnostics.render(lm, cu);
-            std::cerr << "[xlfortran] Warning: display setup failed: " << msg << "\n";
-        }
     }
 
     nl::json custom_interpreter::complete_request_impl(const std::string& code,
