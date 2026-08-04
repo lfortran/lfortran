@@ -502,6 +502,7 @@ asr = true
 filename = "errors/template_error_09.f90"
 asr = true
 
+
 [[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"
 asr = true
@@ -5241,6 +5242,10 @@ filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
 
 [[test]]
+filename = "errors/continue_compilation_templates_01.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "coarray_collectives_01.f90"
 fortran = true
 pass = "coarray"   
@@ -5295,6 +5300,12 @@ options = "--coarray=true"
 
 [[test]]
 filename = "coarray_teams_02.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
+
+[[test]]
+filename = "coarray_teams_03.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"

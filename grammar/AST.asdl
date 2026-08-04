@@ -96,7 +96,7 @@ decl_stmt
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, decl_stmt* items)
     | Instantiate(identifier name, decl_attribute* args, use_symbol* symbols)
-    | Requirement(identifier name, identifier* namelist, decl_stmt* items,
+    | Requirement(identifier name, arg* namelist, decl_stmt* items,
         program_unit* funcs)
     | Require(unit_require* reqs)
     | Union(identifier name, trivia? trivia, decl_attribute* attrtype, decl_stmt* items)
