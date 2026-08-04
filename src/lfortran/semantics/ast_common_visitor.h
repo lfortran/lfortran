@@ -17921,7 +17921,13 @@ public:
                 this->visit_expr(*x.m_coargs[i].m_end);
                 index = ASRUtils::EXPR(tmp);
             } else if (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) {
-                // Do nothing
+                if (i != x.n_coargs - 1) {
+                    diag.add(diag::Diagnostic(
+                        "Assumed-size '*' is only permitted in the last dimension",
+                        diag::Level::Error, diag::Stage::Semantic,
+                        {diag::Label("", {x.m_coargs[i].loc})}
+                    ));
+                }
             } else {
                 LCOMPILERS_ASSERT(false);
             }
