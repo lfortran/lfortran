@@ -1089,6 +1089,21 @@ public:
         handle_ArrayItemSection(x);
     }
 
+    void visit_CoarrayRef(const CoarrayRef_t &x) {
+        if (check_external) {
+            for (size_t i = 0; i < x.n_coindices; i++) {
+                ASR::coarray_index_t ci = x.m_coindices[i];
+                if (ci.m_star == ASR::codimension_typeType::CodimensionStar) {
+                    require(ci.m_index == nullptr, "coarray_index_t with star must have nullptr index");
+                    require(i == x.n_coindices-1, "coarray_index_t with star may only appear in the final codimension");
+                } else {
+                    require(ci.m_index != nullptr, "coarray_index_t without star must have a valid index");
+                }
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_CoarrayRef(x);
+    }
+
     void visit_ArraySize(const ArraySize_t& x) {
         if (check_external) {
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
