@@ -11,7 +11,7 @@ program coarrays_35
 
     if (any(lcobound(x) /= [ 11, 21, 1 ])) error stop "Wrong lcobounds"
     if (ucobound(x,1) /= 12) error stop "Wrong ucobound 1"
-    if (ucobound(x,2) /= 22) error stop "Wrong ucobound 1"
+    if (ucobound(x,2) /= 22) error stop "Wrong ucobound 2"
 
     x = this_image()
 
