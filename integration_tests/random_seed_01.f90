@@ -1,12 +1,29 @@
 program random_seed_01
     implicit none
-    integer :: sz
+    integer :: sz, i
     call random_seed(size=sz)
     if (sz <= 0) error stop "random_seed size must be positive"
     block
-        integer :: vals(sz)
+        integer, allocatable :: vals(:), got(:)
+        allocate(vals(sz), got(sz))
         vals = 42
         call random_seed(put=vals)
-        call random_seed(get=vals)
+        call random_seed(get=got)
+        do i = 1, sz
+            if (got(i) /= vals(i)) error stop "random_seed get did not match put"
+        end do
+
+        ! bare `random_seed()` must reseed and refresh the internal state,
+        ! not leave it unchanged (regression test for #12428)
+        call random_seed()
+        call random_seed(get=got)
+        block
+            logical :: all_zero
+            all_zero = .true.
+            do i = 1, sz
+                if (got(i) /= 0) all_zero = .false.
+            end do
+            if (all_zero) error stop "random_seed() did not reseed (got all zeros)"
+        end block
     end block
 end program random_seed_01
