@@ -3245,6 +3245,9 @@ public:
         ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t new_arg;
+            new_arg.m_a = nullptr;
+            new_arg.m_dims = nullptr;
+            new_arg.n_dims = 0;
             new_arg.m_len_expr = nullptr;
             new_arg.m_type = nullptr;
             new_arg.m_sym_subclass = nullptr;
