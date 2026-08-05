@@ -316,6 +316,7 @@ class ASRToLLVMVisitor;
             llvm::Value* create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx);
 
             llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile = false);
+            llvm::Value* load_pointer_element(llvm::Value* tmp, llvm::Type* array_type);
             llvm::Value* CreateBitCastForStore(llvm::Value* value, llvm::Value* target_ptr);
             llvm::Value* get_array_descriptor_ptr(llvm::Value* value, llvm::Type* arr_type,
                                                   bool is_character_array);
@@ -343,6 +344,7 @@ class ASRToLLVMVisitor;
             void validate_llvm_SSA([[maybe_unused]] llvm::Type* type_to_check_against, [[maybe_unused]] llvm::Value* llvm_SSA);
 
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
+            llvm::IntegerType* getIntPtrType(llvm::Module* module);
             llvm::Function* _Deallocate();
 
             void start_new_block(llvm::BasicBlock *bb);
@@ -783,6 +785,9 @@ class ASRToLLVMVisitor;
             llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module);
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
+            static bool uses_gfortran_character_abi(const ASR::Function_t &x);
+            static int64_t gfortran_character_result_arg(
+                const ASR::Function_t &x);
 
             // Convert complex return value from platform ABI to internal representation
             // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.

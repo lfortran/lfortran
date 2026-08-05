@@ -2192,6 +2192,10 @@ RUN(NAME implicit_interface_41 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
 RUN(NAME implicit_interface_42 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_43 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_44 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface GFORTRAN_ARGS -ffixed-form)
+RUN(NAME implicit_interface_character_abi_01 LABELS gfortran llvm
+    EXTRAFILES implicit_interface_character_abi_01.c
+    EXTRA_ARGS --implicit-interface
+    GFORTRAN_ARGS -fno-underscoring)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -3688,6 +3692,7 @@ RUN(NAME read_94 LABELS gfortran llvm EXTRAFILES read_94.c)
 RUN(NAME read_95 LABELS gfortran llvm)
 RUN(NAME read_96 LABELS gfortran llvm)
 RUN(NAME read_98 LABELS gfortran llvm)
+RUN(NAME read_99 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3726,6 +3731,7 @@ RUN(NAME write_41 LABELS gfortran llvm)
 RUN(NAME write_42 LABELS gfortran llvm)
 RUN(NAME write_43 LABELS gfortran llvm)
 RUN(NAME write_44 LABELS gfortran llvm)
+RUN(NAME write_45 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -4500,6 +4506,8 @@ RUN(NAME allocatable_component_struct_array_02 LABELS gfortran llvm)
 RUN(NAME allocatable_component_scalar_use_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_02 LABELS gfortran llvm)
+RUN(NAME derived_component_section_03 LABELS gfortran llvm)
+RUN(NAME derived_component_fixed_array_01 LABELS gfortran llvm EXTRA_ARGS --skip-pass=array_op)
 RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
     llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_function_scalar_array_arg LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
