@@ -10567,11 +10567,15 @@ public:
         if (boz_allowed_intrinsics.find(intrinsic_name) == boz_allowed_intrinsics.end()) {
             return;
         }
-        if (intrinsic_name == "merge_bits" && args.size() >= 2 &&
+        static const std::set<std::string> both_boz_forbidden = {
+            "merge_bits", "dshiftl", "dshiftr"
+        };
+        if (both_boz_forbidden.find(intrinsic_name) != both_boz_forbidden.end() &&
+                args.size() >= 2 &&
                 args[0] != nullptr && args[1] != nullptr &&
                 is_boz_integer_constant(args[0]) && is_boz_integer_constant(args[1])) {
             diag.semantic_error_label(
-                "'I' and 'J' arguments of 'merge_bits' cannot both be BOZ literal constants",
+                "'I' and 'J' arguments of '" + intrinsic_name + "' cannot both be BOZ literal constants",
                 {args[0]->base.loc, args[1]->base.loc},
                 "both arguments are BOZ literal constants"
             );
