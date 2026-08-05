@@ -8085,7 +8085,9 @@ public:
                     bool external_character_arg =
                         LLVMUtils::uses_gfortran_character_abi(x) &&
                         ASRUtils::is_character(*arg->m_type) &&
-                        !ASRUtils::is_array(arg->m_type);
+                        !ASRUtils::is_array(arg->m_type) &&
+                        !ASRUtils::is_allocatable(arg->m_type) &&
+                        !ASRUtils::is_pointer(arg->m_type);
                     if (arg->m_value_attr &&
                         !external_character_arg &&
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
@@ -25276,7 +25278,9 @@ public:
                     LLVMUtils::uses_gfortran_character_abi(
                         *ASR::down_cast<ASR::Function_t>(func_subrout)) &&
                     ASRUtils::is_character(*orig_arg->m_type) &&
-                    !ASRUtils::is_array(orig_arg->m_type)) {
+                    !ASRUtils::is_array(orig_arg->m_type) &&
+                    !ASRUtils::is_allocatable(orig_arg->m_type) &&
+                    !ASRUtils::is_pointer(orig_arg->m_type)) {
                 llvm::Value* character_length;
                 std::tie(tmp, character_length) =
                     llvm_utils->get_string_length_data(
@@ -25286,36 +25290,6 @@ public:
                 hidden_character_lengths.push_back(character_length);
             }
 
-            {
-                ASR::symbol_t* called_sym =
-                    symbol_get_past_external(x.m_name);
-                bool is_proc_ptr_call =
-                    called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
-                if (orig_arg && callee_fn_type &&
-                        !is_proc_ptr_call &&
-                        x.m_dt == nullptr &&
-                        !callee_fn_type->m_module &&
-                        func_subrout->type == ASR::symbolType::Function &&
-                        callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
-                        callee_fn_type->m_abi == ASR::abiType::Source &&
-                        !ASRUtils::is_array(orig_arg->m_type) &&
-                        ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
-                        tmp->getType() ==
-                            llvm_utils->string_descriptor->getPointerTo()) {
-                    ASR::Function_t* called_fn =
-                        ASR::down_cast<ASR::Function_t>(func_subrout);
-                    if (called_fn->n_body == 0) {
-                        llvm::Value* data_gep = llvm_utils->create_gep2(
-                            llvm_utils->string_descriptor, tmp, 0);
-                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            data_gep);
-                        tmp = builder->CreateBitCast(
-                            data_ptr,
-                            llvm_utils->string_descriptor->getPointerTo());
-                    }
-                }
-            }
 
             // For bind(C) calls, ensure the argument type matches the
             // function parameter type. This handles cases like passing a

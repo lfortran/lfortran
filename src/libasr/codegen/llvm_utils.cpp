@@ -1187,6 +1187,12 @@ namespace LCompilers {
                 function_type->m_module) {
             return false;
         }
+        ASR::symbol_t* symbol_owner = ASRUtils::get_asr_owner(
+            (ASR::symbol_t*)&x);
+        if (symbol_owner && ASR::is_a<ASR::Module_t>(*symbol_owner) &&
+                function_type->m_deftype == ASR::deftypeType::Implementation) {
+            return false;
+        }
         if (function_type->m_abi == ASR::abiType::ExternalUndefined) {
             return true;
         }
@@ -1261,7 +1267,9 @@ namespace LCompilers {
                 LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent) || arg->m_intent == ASR::intentType::Local);
                 if (uses_gfortran_character_abi(x) &&
                         ASRUtils::is_character(*arg->m_type) &&
-                        !ASRUtils::is_array(arg->m_type)) {
+                        !ASRUtils::is_array(arg->m_type) &&
+                        !ASRUtils::is_allocatable(arg->m_type) &&
+                        !ASRUtils::is_pointer(arg->m_type)) {
                     args.push_back(llvm::Type::getInt8Ty(context)->getPointerTo());
                     hidden_character_lengths++;
                     continue;
