@@ -960,7 +960,11 @@ program continue_compilation_1
     end subroutine
 
     subroutine merge_bits_boz_both_args(); print *, merge_bits(o'12345', z'1234', 32767); end subroutine
- 5931930cf (fix: allow BOZ literal arguments in MERGE_BITS() (#12416))
+
+
+    subroutine dshiftl_boz_both_args(); print *, dshiftl(o'12345', z'1234', 5); end subroutine
+    subroutine dshiftr_boz_both_args(); print *, dshiftr(o'12345', z'1234', 5); end subroutine
+ 1e426bdd0 (fix: allow BOZ literal arguments in MERGE_BITS() (#12416))
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
