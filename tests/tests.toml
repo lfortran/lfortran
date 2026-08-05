@@ -5244,6 +5244,9 @@ run = true
 [[test]]
 filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
+[[test]]
+filename = "../integration_tests/merge_bits_boz.f90"
+run = true
 
 [[test]]
 filename = "errors/continue_compilation_templates_01.f90"

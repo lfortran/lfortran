@@ -10617,6 +10617,55 @@ public:
         return int_const->m_intboz_type != ASR::integerbozType::Decimal;
     }
 
+    // Per Fortran standard, some elemental intrinsics accept a BOZ literal
+    // for one or more of their integer arguments. visit_BOZ() always types
+    // BOZ constants using compiler_options.po.default_integer_kind, so if
+    // another (non-BOZ) integer argument in the same call has a different
+    // kind, the intrinsic's equal-type/kind check fails spuriously. This
+    // promotes any BOZ argument's kind to match the first non-BOZ integer
+    // argument found in the call.
+    void fix_boz_kind_for_intrinsic(const std::string& intrinsic_name, Vec<ASR::expr_t*>& args) {
+        static const std::set<std::string> boz_allowed_intrinsics = {
+            "iand", "ior", "ieor", "merge_bits", "dshiftl", "dshiftr"
+        };
+        if (boz_allowed_intrinsics.find(intrinsic_name) == boz_allowed_intrinsics.end()) {
+            return;
+        }
+        if (intrinsic_name == "merge_bits" && args.size() >= 2 &&
+                args[0] != nullptr && args[1] != nullptr &&
+                is_boz_integer_constant(args[0]) && is_boz_integer_constant(args[1])) {
+            diag.semantic_error_label(
+                "'I' and 'J' arguments of 'merge_bits' cannot both be BOZ literal constants",
+                {args[0]->base.loc, args[1]->base.loc},
+                "both arguments are BOZ literal constants"
+            );
+            throw SemanticAbort();
+        }
+        int target_kind = -1;
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i] != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*args[i]) &&
+                    !is_boz_integer_constant(args[i])) {
+                target_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i]));
+                break;
+            }
+        }
+        if (target_kind == -1) {
+            return;
+        }
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i] == nullptr || !is_boz_integer_constant(args[i])) {
+                continue;
+            }
+            ASR::IntegerConstant_t* boz_const = ASR::down_cast<ASR::IntegerConstant_t>(args[i]);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i])) != target_kind) {
+                ASR::ttype_t* new_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, args[i]->base.loc, target_kind));
+                args.p[i] = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, args[i]->base.loc, boz_const->m_n, new_type, boz_const->m_intboz_type));
+            }
+        }
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -12835,6 +12884,7 @@ public:
                 for (size_t i = 0; i < args.size(); i++) {
                     expr_args.push_back(al, args[i].m_value);
                 }
+                fix_boz_kind_for_intrinsic(intrinsic_name, expr_args);
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
                 return create_func(al, loc, expr_args, diag);
@@ -16103,6 +16153,7 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    fix_boz_kind_for_intrinsic(var_name, args);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
