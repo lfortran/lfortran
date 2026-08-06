@@ -2214,6 +2214,8 @@ RUN(NAME generic_name_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_06 LABELS gfortran llvm)
 RUN(NAME generic_name_07 LABELS gfortran llvm)
 RUN(NAME generic_name_08 LABELS gfortran llvm)
+RUN(NAME generic_name_09 LABELS gfortran llvm)
+RUN(NAME generic_name_10 LABELS gfortran llvm)
 
 RUN(NAME operator_overloading_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
