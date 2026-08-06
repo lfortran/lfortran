@@ -1,0 +1,11 @@
+style suggestion: Use character(<len>) instead of character*(<len>)
+ --> tests/errors/string_negative_len_01.f90:3:4
+  |
+3 |    character*(-2) :: d
+  |    ^^^^^^^^^^^^^^ help: write this as 'character(<len>)'
+
+semantic error: String length cannot be negative
+ --> tests/errors/string_negative_len_01.f90:2:18
+  |
+2 |    character(len=-1) :: c
+  |                  ^^ 

@@ -4436,6 +4436,10 @@ filename = "errors/string_slice2.f90"
 asr = true
 
 [[test]]
+filename = "errors/string_negative_len_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/max_01.f90"
 asr = true
 

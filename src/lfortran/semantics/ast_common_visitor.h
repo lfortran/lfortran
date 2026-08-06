@@ -7877,6 +7877,14 @@ public:
                     ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
                     if (c_length != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*c_length)) {
                         int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
+                        if (lhs_len < 0) {
+                            diag.add(Diagnostic(
+                                "Character length must be non-negative, got " + std::to_string(lhs_len),
+                                Level::Error, Stage::Semantic, {
+                                    Label("negative length specified here", {s.m_length->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                         lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
                     } else {
@@ -20707,6 +20715,15 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
+                        int64_t len_value;
+                        if (ASRUtils::extract_value(str->m_len, len_value) && len_value < 0) {
+                            diag.add(Diagnostic(
+                                "String length cannot be negative",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {len_expr->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                         if (var_sym != nullptr &&
                                 ASR::is_a<ASR::Var_t>(*str->m_len) &&
                                 !ASRUtils::is_const(str->m_len)) {
@@ -20775,6 +20792,15 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
+                        int64_t len_value;
+                        if (ASRUtils::extract_value(str->m_len, len_value) && len_value < 0) {
+                            diag.add(Diagnostic(
+                                "String length cannot be negative",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {len_expr->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                         if (ASR::is_a<ASR::Var_t>(*str->m_len) &&
                                 !ASRUtils::is_const(str->m_len)) {
                             bool in_function_scope = in_Subroutine;
