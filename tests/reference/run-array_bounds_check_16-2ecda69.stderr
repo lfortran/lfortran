@@ -1,0 +1,5 @@
+runtime error: Target of rank remapping is too small (5 < 6)
+ --> tests/errors/array_bounds_check_16.f90:9:3
+  |
+9 |   u(0:5) => t !! Should raise runtime error 
+  |   ^^^^^^^^^^^
