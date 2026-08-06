@@ -1,0 +1,13 @@
+{
+    "basename": "asr-string_negative_len_01-bc75501",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/string_negative_len_01.f90",
+    "infile_hash": "c40fe583d112adfa1990a52b9243b5f5688a54945cc38ed0080e27df",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-string_negative_len_01-bc75501.stderr",
+    "stderr_hash": "8ddd6cfde7e62875d1238f125612d8171f2ca921ca53b47752c46613",
+    "returncode": 2
+}

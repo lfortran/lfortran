@@ -764,11 +764,18 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         }
     } else if (args[2]) {
         if (!is_logical(*ASRUtils::expr_type(args[2]))) {
-            diag.add(diag::Diagnostic("'mask' argument of 'sum' intrinsic must be logical",
+            diag.add(diag::Diagnostic("'mask' argument of '" + intrinsic_func_name + "' intrinsic must be logical",
                 diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
             return nullptr;
         }
         mask = args[2];
+        // A scalar mask is conformable with any array (F2018 §3.36); only
+        // validate shape when the mask is itself an array.
+        if (ASRUtils::is_array(ASRUtils::expr_type(mask)) && !ASRUtils::is_value_constant(mask)) {
+            if (!is_same_shape(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[2]->base.loc})) {
+                return nullptr;
+            }
+        }
     }
     if (dim) {
         size_t dim_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim));
@@ -1229,8 +1236,17 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
                                     ASRUtils::expr_type(f->m_args[0]));
             bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                     ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
-            if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                    arg_type, f->m_args[0], new_args[0].m_value) && orig_array_rank == rank) {
+            bool all_args_match = same_allocatable_type && orig_array_rank == rank;
+            if (all_args_match) {
+                for (size_t j = 0; j < new_args.size() && j < f->n_args; j++) {
+                    if (!ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[j]),
+                            ASRUtils::expr_type(new_args[j].m_value), f->m_args[j], new_args[j].m_value, true)) {
+                        all_args_match = false;
+                        break;
+                    }
+                }
+            }
+            if (all_args_match) {
                 return builder.Call(s, new_args, return_type, nullptr);
             } else {
                 new_func_name += std::to_string(i);
@@ -3313,6 +3329,23 @@ namespace IanyIall {
             "only 1 less than that of input array", loc, diagnostics);
     }
 
+    static inline void verify_array_mask(ASR::expr_t* array, ASR::expr_t* mask,
+        ASR::ttype_t* return_type, const Location& loc, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+        ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
+        ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::type_get_past_pointer(array_type)) && ASRUtils::extract_n_dims_from_ttype(array_type) > 0,
+            "`array` argument of `" + intrinsic_func_name + "` intrinsic must be an integer array, found: " + ASRUtils::get_type_code(array_type),
+            loc, diagnostics);
+
+        ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(mask_type)) && (ASRUtils::extract_n_dims_from_ttype(mask_type) == 0 || ASRUtils::extract_n_dims_from_ttype(array_type) == ASRUtils::extract_n_dims_from_ttype(mask_type)),
+            "`mask` argument of `" + intrinsic_func_name + "` intrinsic must be a scalar or array of logical type, found: " + ASRUtils::get_type_code(mask_type),
+            loc, diagnostics);
+
+        ASRUtils::require_impl(ASRUtils::is_integer(*return_type) && ASRUtils::extract_n_dims_from_ttype(return_type) == 0,
+            "`" + intrinsic_func_name + "` intrinsic must return a scalar integer output", loc, diagnostics);
+    }
+
     static inline void verify_array_dim_mask(ASR::expr_t* array, ASR::expr_t* dim, ASR::expr_t* mask,
         ASR::ttype_t* return_type, const Location& loc, diag::Diagnostics& diagnostics, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
         std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(intrinsic_func_id));
@@ -3325,8 +3358,8 @@ namespace IanyIall {
         ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dim))),
             "`dim` argument of `" + intrinsic_func_name + "` intrinsic must be an integer", loc, diagnostics);
 
-        ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(array_type)) && ASRUtils::extract_n_dims_from_ttype(array_type) == ASRUtils::extract_n_dims_from_ttype(mask_type),
-            "`mask` argument of `" + intrinsic_func_name + "` intrinsic must be a scalar or array of logical type, found: " + ASRUtils::get_type_code(array_type),
+        ASRUtils::require_impl(ASRUtils::is_logical(*ASRUtils::type_get_past_pointer(mask_type)) && (ASRUtils::extract_n_dims_from_ttype(mask_type) == 0 || ASRUtils::extract_n_dims_from_ttype(array_type) == ASRUtils::extract_n_dims_from_ttype(mask_type)),
+            "`mask` argument of `" + intrinsic_func_name + "` intrinsic must be a scalar or array of logical type, found: " + ASRUtils::get_type_code(mask_type),
             loc, diagnostics);
 
         ASRUtils::require_impl(ASRUtils::is_integer(*return_type) && ASRUtils::extract_n_dims_from_ttype(array_type) == ASRUtils::extract_n_dims_from_ttype(return_type) + 1,
@@ -3351,6 +3384,13 @@ namespace IanyIall {
                 break;
             }
             case 2: {
+                ASRUtils::require_impl(x.n_args == 2 && x.m_args[1] != nullptr,
+                    "`mask` argument to `" + intrinsic_func_name + "` intrinsic cannot be nullptr",
+                    x.base.base.loc, diagnostics);
+                verify_array_mask(x.m_args[0], x.m_args[1], x.m_type, x.base.base.loc, diagnostics, intrinsic_func_id);
+                break;
+            }
+            case 3: {
                 ASRUtils::require_impl(x.n_args == 3 && x.m_args[1] != nullptr && x.m_args[2] != nullptr,
                     "`dim` and `mask` arguments to `" + intrinsic_func_name + "` intrinsic cannot be nullptr",
                     x.base.base.loc, diagnostics);
@@ -3408,6 +3448,13 @@ namespace IanyIall {
                 array->base.loc);
             return nullptr;
         }
+        // Validate mask shape conformance: a scalar mask is always conformable
+        // (F2018 \u00a73.36), only check when mask is an array.
+        if (mask && ASRUtils::is_array(ASRUtils::expr_type(mask))) {
+            if (!ArrIntrinsic::is_same_shape(array, mask, intrinsic_func_name, diag, {array->base.loc, mask->base.loc})) {
+                return nullptr;
+            }
+        }
 
         ASR::expr_t *value = nullptr;
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 3);
@@ -3418,7 +3465,22 @@ namespace IanyIall {
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array)));
         ASR::ttype_t* return_type = ASRUtils::duplicate_type_without_dims(
                         al, type, loc);
-        if( dim ) {
+        if( dim && mask ) {
+            overload_id = 3;
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
+            Vec<ASR::dimension_t> dims; dims.reserve(al, (int) n_dims - 1);
+            for( int i = 0; i < (int) n_dims - 1; i++ ) {
+                ASR::dimension_t d;
+                d.loc = array->base.loc;
+                d.m_length = nullptr;
+                d.m_start = nullptr;
+                dims.push_back(al, d);
+            }
+            if( dims.size() > 0 ) {
+                return_type = ASRUtils::make_Array_t_util(al, loc,
+                    return_type, dims.p, dims.size());
+            }
+        } else if( dim ) {
             overload_id = 1;
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
             Vec<ASR::dimension_t> dims; dims.reserve(al, (int) n_dims - 1);
@@ -3433,11 +3495,14 @@ namespace IanyIall {
                 return_type = ASRUtils::make_Array_t_util(al, loc,
                     return_type, dims.p, dims.size());
             }
-        }
-        if( mask ) {
+        } else if( mask ) {
             overload_id = 2;
         }
-        value = eval_IanyIall(al, loc, return_type, arg_values, init_int_val, logical_operation);
+        // Skip constant folding when mask is present: eval_IanyIall loops over
+        // all elements and ignores the mask, so folding would produce the wrong
+        // result (e.g. iany([36,106,170], [T,F,T]) would fold to 174|106=238
+        // instead of 36|170=174).
+        value = mask ? nullptr : eval_IanyIall(al, loc, return_type, arg_values, init_int_val, logical_operation);
         iany_iall_args.push_back(al, array);
         if( dim ) iany_iall_args.push_back(al, dim);
         if ( mask ) iany_iall_args.push_back(al, mask);
@@ -3465,6 +3530,64 @@ namespace IanyIall {
                 ASR::expr_t* logical_op = (builder.*elemental_operation)(return_var, array_ref);
                 ASR::stmt_t* loop_invariant = builder.Assignment(return_var, logical_op);
                 doloop_body.push_back(al, loop_invariant);
+            }
+        );
+    }
+
+    static inline void generate_body_for_scalar_output_with_mask(Allocator& al, const Location& loc,
+        ASR::expr_t* array, ASR::expr_t* mask, ASR::expr_t* return_var, SymbolTable* fn_scope,
+        Vec<ASR::stmt_t*>& fn_body, ASR::expr_t* init_int_val, elemental_operation_func elemental_operation) {
+        ASRBuilder builder(al, loc);
+        Vec<ASR::expr_t*> idx_vars;
+        Vec<ASR::stmt_t*> doloop_body;
+
+        builder.generate_reduction_intrinsic_stmts_for_scalar_output(loc,
+            array, fn_scope, fn_body, idx_vars, doloop_body,
+            [=, &al, &fn_body, &builder] () {
+                ASR::stmt_t* return_var_init = builder.Assignment(return_var, init_int_val);
+                fn_body.push_back(al, return_var_init);
+            },
+            [=, &al, &idx_vars, &doloop_body, &builder] () {
+                ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
+                ASR::expr_t* logical_op = (builder.*elemental_operation)(return_var, array_ref);
+                ASR::stmt_t* loop_invariant = builder.Assignment(return_var, logical_op);
+                // mask is the formal parameter Var inside the generated function, so
+                // is_value_constant is always false. The real distinction is scalar vs array:
+                // a scalar mask is conformable with any array (F2018 §3.36).
+                ASR::expr_t* mask_ref;
+                if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask)) == 0) {
+                    // scalar mask — use directly without indexing
+                    mask_ref = mask;
+                } else {
+                    mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
+                }
+                ASR::stmt_t* if_stmt = builder.If(mask_ref, {loop_invariant}, {});
+                doloop_body.push_back(al, if_stmt);
+            }
+        );
+    }
+    static inline void generate_body_for_array_output_with_mask(Allocator& al, const Location& loc,
+        ASR::expr_t* array, ASR::expr_t* dim, ASR::expr_t* mask, ASR::expr_t* result,
+        SymbolTable* fn_scope, Vec<ASR::stmt_t*>& fn_body,
+        ASR::expr_t* init_int_val, elemental_operation_func elemental_operation) {
+        ASRBuilder builder(al, loc);
+        Vec<ASR::expr_t*> idx_vars;
+        Vec<ASR::expr_t*> target_idx_vars;
+        Vec<ASR::stmt_t*> doloop_body;
+        builder.generate_reduction_intrinsic_stmts_for_array_output(loc,
+            array, dim, fn_scope, fn_body, idx_vars, target_idx_vars, doloop_body,
+            [=, &al, &fn_body, &builder] () {
+                ASR::stmt_t* return_var_init = builder.Assignment(result, init_int_val);
+                fn_body.push_back(al, return_var_init);
+            },
+            [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder] () {
+                ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
+                ASR::expr_t* target_var = PassUtils::create_array_ref(result, target_idx_vars, al);
+                ASR::expr_t* logical_op = (builder.*elemental_operation)(target_var, array_ref);
+                ASR::stmt_t* loop_invariant = builder.Assignment(target_var, logical_op);
+                ASR::expr_t* mask_ref = ASRUtils::is_value_constant(mask) ? mask : PassUtils::create_array_ref(mask, idx_vars, al);
+                ASR::stmt_t* if_stmt = builder.If(mask_ref, {loop_invariant}, {});
+                doloop_body.push_back(al, if_stmt);
             }
         );
     }
@@ -3519,8 +3642,17 @@ namespace IanyIall {
                                         ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
                 bool same_pointer_type = (ASRUtils::is_pointer(arg_type) ==
                                         ASRUtils::is_pointer(ASRUtils::expr_type(f->m_args[0])));
-                if (same_allocatable_type && same_pointer_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                        ASRUtils::expr_type(new_args[0].m_value), f->m_args[0], new_args[0].m_value, true) && orig_array_rank == rank) {
+                bool all_args_match = same_allocatable_type && same_pointer_type && orig_array_rank == rank;
+                if (all_args_match) {
+                    for (size_t j = 0; j < new_args.size() && j < f->n_args; j++) {
+                        if (!ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[j]),
+                                ASRUtils::expr_type(new_args[j].m_value), f->m_args[j], new_args[j].m_value, true)) {
+                            all_args_match = false;
+                            break;
+                        }
+                    }
+                }
+                if (all_args_match) {
                     return builder.Call(s, new_args, return_type, nullptr);
                 } else {
                     new_func_name += std::to_string(i);
@@ -3557,9 +3689,16 @@ namespace IanyIall {
                 }
                 result_dims = dims.size();
                 if( result_dims > 0 ) {
-                    fill_func_arg("result", return_type);
+                    // Must use Out intent for the output array, not In (which fill_func_arg gives).
+                    ASR::expr_t* result_arg = declare("result", return_type, Out);
+                    args.push_back(al, result_arg);
                 }
             } else if ( overload_id == 2 ) {
+                ASR::ttype_t* mask_type = ASRUtils::duplicate_type_with_empty_dims(al,
+                    ASRUtils::expr_type(new_args[1].m_value));
+                fill_func_arg("mask", mask_type);
+                result_dims = 0;
+            } else if ( overload_id == 3 ) {
                 ASR::ttype_t* dim_type = ASRUtils::expr_type(new_args[1].m_value);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dim_type));
                 [[maybe_unused]] int kind = ASRUtils::extract_kind_from_ttype_t(dim_type);
@@ -3576,11 +3715,14 @@ namespace IanyIall {
                     dim.m_start = nullptr;
                     dims.push_back(al, dim);
                 }
-                ASR::ttype_t* mask_type = ASRUtils::expr_type(new_args[2].m_value);
+                ASR::ttype_t* mask_type = ASRUtils::duplicate_type_with_empty_dims(al,
+                    ASRUtils::expr_type(new_args[2].m_value));
                 fill_func_arg("mask", mask_type);
                 result_dims = dims.size();
                 if( result_dims > 0 ) {
-                    fill_func_arg("result", return_type);
+                    // Must use Out intent for the output array, not In (which fill_func_arg gives).
+                    ASR::expr_t* result_arg = declare("result", return_type, Out);
+                    args.push_back(al, result_arg);
                 }
             }
         }
@@ -3592,12 +3734,34 @@ namespace IanyIall {
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
-        if( overload_id == 0 || return_var ) {
-            generate_body_for_scalar_output(al, loc, args[0], return_var, fn_symtab, body,
-            initial_value, elemental_operation);
+        if( overload_id == 0 || overload_id == 2 ) {
+            if (overload_id == 0) {
+                generate_body_for_scalar_output(al, loc, args[0], return_var, fn_symtab, body,
+                initial_value, elemental_operation);
+            } else {
+                generate_body_for_scalar_output_with_mask(al, loc, args[0], args[1], return_var, fn_symtab, body,
+                initial_value, elemental_operation);
+            }
         } else if( overload_id == 1 ) {
-            generate_body_for_array_output(al, loc, args[0], args[1], args[2], fn_symtab, body,
-            initial_value, elemental_operation);
+            if( result_dims > 0 ) {
+                // rank >= 2 input: reduce along dim -> array output (args[2])
+                generate_body_for_array_output(al, loc, args[0], args[1], args[2], fn_symtab, body,
+                initial_value, elemental_operation);
+            } else {
+                // rank-1 input: reduce along only dim -> scalar output (return_var)
+                generate_body_for_scalar_output(al, loc, args[0], return_var, fn_symtab, body,
+                initial_value, elemental_operation);
+            }
+        } else if( overload_id == 3 ) {
+            if( result_dims > 0 ) {
+                // rank >= 2 input: reduce along dim with mask -> array output (args[3])
+                generate_body_for_array_output_with_mask(al, loc, args[0], args[1], args[2], args[3], fn_symtab, body,
+                initial_value, elemental_operation);
+            } else {
+                // rank-1 input: reduce along only dim with mask -> scalar output (return_var)
+                generate_body_for_scalar_output_with_mask(al, loc, args[0], args[2], return_var, fn_symtab, body,
+                initial_value, elemental_operation);
+            }
         } else {
             LCOMPILERS_ASSERT(false);
         }
@@ -3645,7 +3809,7 @@ namespace Iany {
         ASRBuilder b(al, loc);
         return IanyIall::instantiate_IanyIall(al, loc, scope, arg_types, return_type,
         new_args, overload_id, ASRUtils::IntrinsicArrayFunctions::Iany,
-        b.i_t(0, return_type), &ASRBuilder::Or);
+        b.i_t(0, ASRUtils::type_get_past_array(return_type)), &ASRBuilder::Or);
     }
 
 } // namespace Iany
@@ -3883,8 +4047,17 @@ namespace AnyAll {
                                         ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
                 bool same_pointer_type = (ASRUtils::is_pointer(arg_type) ==
                                         ASRUtils::is_pointer(ASRUtils::expr_type(f->m_args[0])));
-                if (same_allocatable_type && same_pointer_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                        ASRUtils::expr_type(new_args[0].m_value), f->m_args[0], new_args[0].m_value, true) && orig_array_rank == rank) {
+                bool all_args_match = same_allocatable_type && same_pointer_type && orig_array_rank == rank;
+                if (all_args_match) {
+                    for (size_t j = 0; j < new_args.size() && j < f->n_args; j++) {
+                        if (!ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[j]),
+                                ASRUtils::expr_type(new_args[j].m_value), f->m_args[j], new_args[j].m_value, true)) {
+                            all_args_match = false;
+                            break;
+                        }
+                    }
+                }
+                if (all_args_match) {
                     return builder.Call(s, new_args, logical_return_type, nullptr);
                 } else {
                     new_func_name += std::to_string(i);
@@ -4318,10 +4491,17 @@ namespace Reduce {
                                         ASRUtils::expr_type(f->m_args[0]));
                 bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                         ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
-                if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                        arg_type, f->m_args[0], new_args[0].m_value) && orig_array_rank == rank &&
-                    ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[1]),
-                        arg_types[1], f->m_args[1], new_args[1].m_value, true)) {
+                bool all_args_match = same_allocatable_type && orig_array_rank == rank;
+                if (all_args_match) {
+                    for (size_t j = 0; j < new_args.size() && j < f->n_args; j++) {
+                        if (!ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[j]),
+                                ASRUtils::expr_type(new_args[j].m_value), f->m_args[j], new_args[j].m_value, true)) {
+                            all_args_match = false;
+                            break;
+                        }
+                    }
+                }
+                if (all_args_match) {
                     return builder.Call(s, new_args, return_type, nullptr);
                 } else {
                     new_func_name += std::to_string(i);
