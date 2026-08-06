@@ -440,12 +440,6 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
             nullptr, nullptr, None)
 
-#define ATTR_TYPE_BYTE(l) make_AttrType_t( \
-            p.m_a, l, \
-            decl_typeType::TypeInteger, \
-            a2kind_list(p.m_a, l, make_Num_t(p.m_a, l, 1, nullptr)).p, 1, \
-            nullptr, nullptr, None)
-
 #define ATTR_TYPE_EXPR(x, e, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
@@ -2156,6 +2150,11 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 "help: write this as 'logical(8)'");
             }
+        } else if (end_token == yytokentype::KW_BYTE) {
+            diagnostics.parser_style_label(
+                "The 'byte' type is non-standard, use integer(1) instead",
+                {loc},
+                "help: write this as 'integer(1)'");
         }
 
     }
@@ -2167,6 +2166,7 @@ void add_ws_warning(const Location &loc,
 #define WARN_COMPLEXSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_COMPLEX, x.int_n.n)
 #define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
 #define WARN_CHARACTERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, x.int_n.n)
+#define WARN_BYTE(l) add_ws_warning(l, p.diag, p.fixed_form, KW_BYTE)
 #define WARN_CHARACTERSTAR_EXPR(l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, -1)
 #define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 

@@ -5,6 +5,7 @@ program byte_type_01
     byte :: arr(3)
     byte, parameter :: c = 7
     integer :: i
+    integer :: byte
 
     ! Scalar behaves like integer(1)
     b = 5
@@ -22,5 +23,9 @@ program byte_type_01
     if (sum(arr) /= 6) error stop
     if (arr(2) /= 2) error stop
 
-    print *, b, sum(arr), c
+    ! `byte` is not a reserved word and still works as a variable name
+    byte = 42
+    if (byte /= 42) error stop
+
+    print *, b, sum(arr), c, byte
 end program byte_type_01

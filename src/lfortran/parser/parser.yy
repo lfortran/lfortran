@@ -14,8 +14,8 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    213 // shift/reduce conflicts
-%expect-rr 180 // reduce/reduce conflicts
+%expect    215 // shift/reduce conflicts
+%expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -1523,7 +1523,7 @@ integer_type_spec
 
 intrinsic_type_spec
     : integer_type_spec { $$ = $1; }
-    | KW_BYTE { $$ = ATTR_TYPE_BYTE(@$); }
+    | KW_BYTE { $$ = ATTR_TYPE_EXPR(Integer, INT1(@$), @$); WARN_BYTE(@$); }
     | KW_CHARACTER { $$ = ATTR_TYPE(Character, @$); }
     | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
     | KW_CHARACTER "*" TK_INTEGER { $$ = ATTR_TYPE_INT(Character, $3, @$); WARN_CHARACTERSTAR($3, @$);}
