@@ -6299,6 +6299,22 @@ public:
                             ASR::expr_t* asr_eq1 = ASRUtils::EXPR(tmp);
                             ASR::expr_t* asr_eq2 = asr_anchor;
 
+                            auto get_sym = [](ASR::expr_t* e) -> ASR::symbol_t* {
+                                if (ASR::is_a<ASR::Var_t>(*e)) return ASR::down_cast<ASR::Var_t>(e)->m_v;
+                                if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) return ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m;
+                                if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                                    ASR::expr_t* v = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                                    if (ASR::is_a<ASR::Var_t>(*v)) return ASR::down_cast<ASR::Var_t>(v)->m_v;
+                                    if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) return ASR::down_cast<ASR::StructInstanceMember_t>(v)->m_m;
+                                }
+                                return nullptr;
+                            };
+                            ASR::symbol_t* sym1 = get_sym(asr_eq1);
+                            ASR::symbol_t* sym2 = get_sym(asr_eq2);
+                            if (sym1 != nullptr && sym2 != nullptr && sym1 == sym2) {
+                                continue;
+                            }
+
                             if (AST::is_a<AST::FuncCallOrArray_t>(*eq1) && AST::is_a<AST::FuncCallOrArray_t>(*eq2)) {
                                 const Location& loc = asr_eq1->base.loc;
                                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
@@ -17863,7 +17879,7 @@ public:
             if (codim.m_end_star == ASR::codimension_typeType::CodimensionStar) {
                 continue;
             }
-            ASR::expr_t* idx = coindices[i].m_left;
+            ASR::expr_t* idx = coindices[i].m_index;
             if (!idx) {
                 continue;
             }
@@ -17909,32 +17925,37 @@ public:
         Vec<ASR::coarray_index_t> coindices;
         coindices.reserve(al, x.n_coargs);
         for (size_t i = 0; i < x.n_coargs; i++) {
-            ASR::expr_t* left = nullptr;
-            ASR::expr_t* right = nullptr;
-            
+            ASR::expr_t* index = nullptr;
             if (x.m_coargs[i].m_start) {
-                this->visit_expr(*x.m_coargs[i].m_start);
-                left = ASRUtils::EXPR(tmp);
-            } 
-            
-            if (x.m_coargs[i].m_end) {
+                diag.add(diag::Diagnostic(
+                    "Cosubscript must be a scalar integer expression",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("Cosubscript cannot be a range or section", {x.m_coargs[i].loc})}
+                ));
+                throw SemanticAbort();
+            } else if (x.m_coargs[i].m_end) {
                 this->visit_expr(*x.m_coargs[i].m_end);
-                if (!left) {
-                    left = ASRUtils::EXPR(tmp); // Scalar index is stored in m_end by AST
-                } else {
-                    right = ASRUtils::EXPR(tmp);
+                index = ASRUtils::EXPR(tmp);
+            } else if (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) {
+                if (i != x.n_coargs - 1) {
+                    diag.add(diag::Diagnostic(
+                        "Assumed-size '*' is only permitted in the last dimension",
+                        diag::Level::Error, diag::Stage::Semantic,
+                        {diag::Label("", {x.m_coargs[i].loc})}
+                    ));
                 }
+            } else {
+                LCOMPILERS_ASSERT(false);
             }
 
             ASR::codimension_typeType star = (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) 
                                                 ? ASR::codimension_typeType::CodimensionStar 
                                                 : ASR::codimension_typeType::CodimensionExpr;
 
-            if (left || right || star == ASR::codimension_typeType::CodimensionStar) {
+            if (index || star == ASR::codimension_typeType::CodimensionStar) {
                 ASR::coarray_index_t ci;
                 ci.loc = x.m_coargs[i].loc;
-                ci.m_left = left;
-                ci.m_right = right;
+                ci.m_index = index;
                 ci.m_star = star;
                 coindices.push_back(al, ci);
             }

@@ -291,6 +291,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
 );
 LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
+LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len);
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_exit(int32_t status);

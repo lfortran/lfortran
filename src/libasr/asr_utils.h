@@ -95,6 +95,7 @@ ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression);
 
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
 static inline bool is_unlimited_polymorphic_type(ASR::Struct_t* st);
+static inline bool is_unlimited_polymorphic_type(ASR::ttype_t* const t);
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
@@ -561,6 +562,9 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_struct_signature;
+        }
+        case ASR::symbolType::StructMethodDeclaration :{
+            return symbol_type(ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_proc);
         }
         default: {
             throw LCompilersException("Cannot return type of, " +
@@ -5236,6 +5240,14 @@ inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::sym
             || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
+}
+
+// Check if the passed argument can be assigned to the parameter of a class type
+inline bool can_pass_class_argument(ASR::expr_t* param_expr, ASR::expr_t* passed_arg) {
+    if (is_unlimited_polymorphic_type(ASRUtils::expr_type(param_expr))) {
+        return true;
+    }
+    return check_class_assignment_compatibility(param_expr, passed_arg);
 }
 
 static inline bool is_elemental(ASR::symbol_t* x) {
