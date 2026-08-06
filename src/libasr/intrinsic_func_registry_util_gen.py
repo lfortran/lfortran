@@ -416,15 +416,15 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
-    "Atanpi": [
-        {
-            "args": [("real",)],
-            "ret_type_arg_idx": 0
-        }
-    ],
     "Atan2pi": [
         {
             "args": [("real", "real")],
+            "ret_type_arg_idx": 0
+        }
+    ],
+    "Atanpi": [
+        {
+            "args": [("real",)],
             "ret_type_arg_idx": 0
         }
     ],
@@ -1265,7 +1265,64 @@ def get_registry_funcs_src():
         gen_verify_args(func_name)
 
         if func_name not in skip_create_func:
-            gen_create_function(func_name)
+            if func_name in ["Atan", "Atand", "Atanpi"]:
+                type_check = "(is_real(*arg_type0)) || (is_complex(*arg_type0))" if func_name == "Atan" else "(is_real(*arg_type0))"
+                type_msg = "(real) or (complex)" if func_name == "Atan" else "(real)"
+                src += indent + f"static inline ASR::asr_t* create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {{\n"
+                src += indent * 2 + f"if (args.size() == 2 && args[0] != nullptr && args[1] != nullptr) {{\n"
+                src += indent * 3 + f"return Atan2{func_name[4:]}::create_Atan2{func_name[4:]}(al, loc, args, diag);\n"
+                src += indent * 2 + "}\n"
+                src += indent * 2 + "ASR::expr_t* x_arg = nullptr;\n"
+                src += indent * 2 + "if (args.size() == 2) {\n"
+                src += indent * 3 + "if (args[0] != nullptr && args[1] == nullptr) {\n"
+                src += indent * 4 + "x_arg = args[0];\n"
+                src += indent * 3 + "} else if (args[0] == nullptr && args[1] != nullptr) {\n"
+                src += indent * 4 + "x_arg = args[1];\n"
+                src += indent * 3 + "} else {\n"
+                src += indent * 4 + f"append_error(diag, \"Unexpected number of args, {func_name} takes 1 or 2 arguments\", loc);\n"
+                src += indent * 4 + "return nullptr;\n"
+                src += indent * 3 + "}\n"
+                src += indent * 2 + "} else if (args.size() == 1) {\n"
+                src += indent * 3 + "x_arg = args[0];\n"
+                src += indent * 2 + "} else {\n"
+                src += indent * 3 + f"append_error(diag, \"Unexpected number of args, {func_name} takes 1 or 2 arguments, found \" + std::to_string(args.size()), loc);\n"
+                src += indent * 3 + "return nullptr;\n"
+                src += indent * 2 + "}\n\n"
+                
+                src += indent * 2 + "ASR::ttype_t *arg_type0 = ASRUtils::expr_type(x_arg);\n"
+                src += indent * 2 + f"if(!({type_check})) {{\n"
+                src += indent * 3 + f"append_error(diag, \"Unexpected args, {func_name} expects {type_msg} as arguments\", loc);\n"
+                src += indent * 3 + "return nullptr;\n"
+                src += indent * 2 + "}\n"
+                src += indent * 2 + "ASRUtils::ExprStmtDuplicator expr_duplicator(al);\n"
+                src += indent * 2 + "expr_duplicator.allow_procedure_calls = true;\n"
+                src += indent * 2 + "ASR::ttype_t* type_ = nullptr;\n"
+                src += indent * 2 + "type_ = expr_duplicator.duplicate_ttype(ASRUtils::extract_type(expr_type(x_arg)));\n"
+                src += indent * 2 + "ASR::ttype_t *return_type = type_;\n"
+                src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
+                src += indent * 2 + "Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);\n"
+                src += indent * 2 + "m_args.push_back(al, x_arg);\n"
+                src += indent * 2 + "for( size_t i = 0; i < 1; i++ ) {\n"
+                src += indent * 3 + "ASR::ttype_t* type = ASRUtils::expr_type(m_args[i]);\n"
+                src += indent * 3 + "if (ASRUtils::is_array(type)) {\n"
+                src += indent * 4 + "ASR::dimension_t* m_dims = nullptr;\n"
+                src += indent * 4 + "size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);\n"
+                src += indent * 4 + "return_type = ASRUtils::make_Array_t_util(al, type->base.loc, return_type, m_dims, n_dims, ASR::abiType::Source, false, ASR::array_physical_typeType::DescriptorArray);\n"
+                src += indent * 4 + "break;\n"
+                src += indent * 3 + "}\n"
+                src += indent * 2 + "}\n"
+                src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
+                src += indent * 3 + "Vec<ASR::expr_t*> args_values; args_values.reserve(al, 1);\n"
+                src += indent * 3 + "args_values.push_back(al, expr_value(m_args[0]));\n"
+                src += indent * 3 + f"m_value = eval_{func_name}(al, loc, return_type, args_values, diag);\n"
+                src += indent * 3 + "if (diag.has_error()) {\n"
+                src += indent * 4 + "return nullptr;\n"
+                src += indent * 3 + "}\n"
+                src += indent * 2 + "}\n"
+                src += indent * 2 + f"return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::{func_name}), m_args.p, m_args.n, 0, return_type, m_value);\n"
+                src += indent + "}\n"
+            else:
+                gen_create_function(func_name)
         src += "}\n\n"
     return src
 
