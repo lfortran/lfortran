@@ -4223,6 +4223,10 @@ asr = true
 filename = "errors/external1.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/implicit_interface_44.f90"
+asr = true
+
 # Parser
 
 [[test]]

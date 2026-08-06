@@ -1,0 +1,11 @@
+style suggestion: Use '/=' instead of '.ne.'
+ --> tests/../integration_tests/implicit_interface_44.f90:7:11
+  |
+7 |     if (z .ne. 2.0d0) error stop
+  |           ^^^^ help: write this as '/='
+
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+ --> tests/../integration_tests/implicit_interface_44.f90:3:14
+  |
+3 |     external diff
+  |              ^^^^ 
