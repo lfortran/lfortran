@@ -1373,10 +1373,20 @@ namespace SameTypeAs {
         }
         // Both types are known at compile time, compare them
         ASRUtils::ASRBuilder b(al, loc);
-        bool same = ASRUtils::types_equal(
-            ASRUtils::type_get_past_allocatable_pointer(arg_type0),
-            ASRUtils::type_get_past_allocatable_pointer(arg_type1),
-            nullptr, nullptr);
+        ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
+        ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
+
+        if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
+            ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[0]));
+            ASR::symbol_t *sym1 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[1]));
+            if (sym0 && sym1 && ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
+                return b.bool_t(sym0 == sym1, return_type);
+            }
+        }
+
+        bool same = ASRUtils::types_equal(t0, t1, nullptr, nullptr);
         return b.bool_t(same, return_type);
     }
 
@@ -1398,11 +1408,7 @@ namespace ExtendsTypeOf {
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
         ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
-        // Same type => extends_type_of is true
-        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
-            return b.bool_t(true, return_type);
-        }
-        // Check if A's type extends MOLD's type via parent chain
+
         if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
             ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(args[0]));
@@ -1410,14 +1416,18 @@ namespace ExtendsTypeOf {
                 ASRUtils::get_struct_sym_from_struct_expr(args[1]));
             if (sym0 && sym1 &&
                 ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
-                // is_parent(a, b) checks if a is in b's parent chain
-                // extends_type_of(A, MOLD) means A extends MOLD,
-                // so MOLD must be in A's parent chain
+                if (sym0 == sym1) {
+                    return b.bool_t(true, return_type);
+                }
                 bool extends = ASRUtils::is_parent(
                     ASR::down_cast<ASR::Struct_t>(sym1),
                     ASR::down_cast<ASR::Struct_t>(sym0));
                 return b.bool_t(extends, return_type);
             }
+        }
+
+        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
+            return b.bool_t(true, return_type);
         }
         return b.bool_t(false, return_type);
     }
