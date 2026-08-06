@@ -2625,7 +2625,7 @@ public:
                                 current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, body.p, body.n,
                                 return_var_expr, ASR::abiType::Source,
                                 ASR::accessType::Public, ASR::deftypeType::Implementation,
-                                nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
+                                nullptr, false, true, false, false, false, nullptr, 0, false, false, true, nullptr));
         current_scope = current_scope_copy;
         parent_scope->add_symbol(func_name,func_sym);
 
