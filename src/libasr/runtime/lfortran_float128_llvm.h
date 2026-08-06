@@ -7,11 +7,12 @@
  * LFortran never calls these directly. LLVM generates calls like:
  *   %r = fadd fp128 %a, %b   →   call fp128 @__addtf3(fp128 %a, fp128 %b)
  *
- * The implementations live in lfortran_float128.c.
- * On Linux, libgcc/compiler-rt already provides these; our implementations
- * are marked weak on ELF so libgcc takes priority.
- * On macOS ARM64, naked-function shims bridge the Apple SIMD ABI to our
- * struct-based implementations.
+ * The implementations live in lfortran_float128.c. They are written against
+ * the 16-byte `lf_float128` struct, and each platform bridges that struct to
+ * the calling convention LLVM actually uses for fp128:
+ * On x86-64, a binary128 value travels in a single SSE register, so the
+ * public entry points take a 16-byte vector rather than the struct.
+ * On ARM64, naked-function shims bridge the SIMD ABI to the struct ABI.
  * On WASM, sret-style wrappers match the ABI LLVM uses for wasm32.
  */
 
@@ -45,34 +46,24 @@ lf_float128 __floatunditf_lf_impl(uint64_t a);
 int32_t      __fixtfsi_lf_impl(lf_float128 a);
 int64_t      __fixtfdi_lf_impl(lf_float128 a);
 
-/* ── Public ABI symbols (non-ARM64, non-WASM: thin wrappers) ───────────── */
-#if !defined(__aarch64__) && !defined(__wasm32__)
-lf_float128 __addtf3(lf_float128 a, lf_float128 b);
-lf_float128 __subtf3(lf_float128 a, lf_float128 b);
-lf_float128 __multf3(lf_float128 a, lf_float128 b);
-lf_float128 __divtf3(lf_float128 a, lf_float128 b);
-lf_float128 __negtf2(lf_float128 a);
-lf_float128 __extenddftf2(double a);
-lf_float128 __extendsftf2(float  a);
-double       __trunctfdf2(lf_float128 a);
-float        __trunctfsf2(lf_float128 a);
-lf_float128 __floatsitf(int32_t  a);
-lf_float128 __floatditf(int64_t  a);
-lf_float128 __floatunditf(uint64_t a);
-int32_t      __fixtfsi(lf_float128 a);
-int64_t      __fixtfdi(lf_float128 a);
+#if !defined(__wasm32__)
+int __eqtf2_lf_impl   (lf_float128 a, lf_float128 b);
+int __netf2_lf_impl   (lf_float128 a, lf_float128 b);
+int __lttf2_lf_impl   (lf_float128 a, lf_float128 b);
+int __letf2_lf_impl   (lf_float128 a, lf_float128 b);
+int __gttf2_lf_impl   (lf_float128 a, lf_float128 b);
+int __getf2_lf_impl   (lf_float128 a, lf_float128 b);
+int __unordtf2_lf_impl(lf_float128 a, lf_float128 b);
 #endif
 
-/* ── Comparisons (return int, no sret on any platform) ─────────────────── */
-#if !defined(__wasm32__)
-int __eqtf2   (lf_float128 a, lf_float128 b);
-int __netf2   (lf_float128 a, lf_float128 b);
-int __lttf2   (lf_float128 a, lf_float128 b);
-int __letf2   (lf_float128 a, lf_float128 b);
-int __gttf2   (lf_float128 a, lf_float128 b);
-int __getf2   (lf_float128 a, lf_float128 b);
-int __unordtf2(lf_float128 a, lf_float128 b);
-#endif
+/* ── Public ABI symbols ─────────────────────────────────────────────────
+ *
+ * The compiler-rt entry points LLVM emits calls to (__addtf3, __eqtf2, ...)
+ * are deliberately not declared here. LLVM calls them with the target's
+ * native fp128 calling convention, which does not match the 16-byte struct
+ * `lf_float128`, so their signatures differ per platform and are spelled out
+ * where they are defined in lfortran_float128.c. Nothing outside that file
+ * calls them from C. */
 
 #ifdef __cplusplus
 }
