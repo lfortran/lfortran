@@ -26,7 +26,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `-D TEXT ...`: Define `<macro>=<value>` (or 1 if `<value>` omitted)
 - `--version`: Display compiler version information
 - `-W TEXT ...`: Linker flags
-- `-f TEXT ...`: All `-f*` flags (only -fPIC supported for now)
+- `-f TEXT ...`: All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)
 - `--cpp`: Enable C preprocessing
 - `--fixed-form`: Use fixed form Fortran source parsing
 - `--fixed-form-infer`: Use heuristics to infer if a file is in fixed form
