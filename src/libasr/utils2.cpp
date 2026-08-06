@@ -14,18 +14,13 @@
 #include <libasr/string_utils.h>
 
 namespace LCompilers {
-
-std::string get_unique_ID() {
-    static std::random_device dev;
-    static std::mt19937 rng(dev());
-    std::uniform_int_distribution<int> dist(0, 61);
-    const std::string v =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    std::string res;
-    for (int i = 0; i < 22; i++) {
-        res += v[dist(rng)];
-    }
-    return res;
+    
+// Get a unique ID for the given file path.
+// Used for separate compilation symbol mangling.
+// Makes sure symbol mangling is stable across different runs.
+// helpful for reproducible builds
+std::string get_unique_ID(const std::string &file_path) {
+    return std::to_string(std::hash<std::string>{}(file_path));
 }
 
 bool present(Vec<char*> &v, const char* name) {
