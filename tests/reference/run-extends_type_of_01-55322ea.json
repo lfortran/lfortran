@@ -1,0 +1,13 @@
+{
+    "basename": "run-extends_type_of_01-55322ea",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/extends_type_of_01.f90",
+    "infile_hash": "c2c50d0b2dfd9fedbdd85b1c1e3de6c824db6b651cd7bbe9cfbc31b9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-extends_type_of_01-55322ea.stdout",
+    "stdout_hash": "6986ebd46505c399fa6f860f06e3da006d26980cedae0d2733c026bd",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
