@@ -735,7 +735,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             }
             if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
                 mask = args[2];
-                if (!ASRUtils::is_value_constant(mask)) {
+                if (!ASRUtils::is_value_constant(mask) && ASRUtils::is_array(ASRUtils::expr_type(mask))) {
                     if (!is_same_shape(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[2]->base.loc})) {
                         return nullptr;
                     }
@@ -752,7 +752,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 return nullptr;
             }
             mask = args[1];
-            if (!ASRUtils::is_value_constant(mask)) {
+            if (!ASRUtils::is_value_constant(mask) && ASRUtils::is_array(ASRUtils::expr_type(mask))) {
                 if (!is_same_shape(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[1]->base.loc})) {
                     return nullptr;
                 }
@@ -938,7 +938,8 @@ static inline void generate_body_for_array_mask_input(Allocator& al, const Locat
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
+            ASR::expr_t* mask_ref = ASRUtils::is_array(ASRUtils::expr_type(mask)) ?
+                PassUtils::create_array_ref(mask, idx_vars, al) : mask;
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
@@ -1000,7 +1001,8 @@ static inline void generate_body_for_array_dim_mask_input(
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder, &result] () {
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
+            ASR::expr_t* mask_ref = ASRUtils::is_array(ASRUtils::expr_type(mask)) ?
+                PassUtils::create_array_ref(mask, idx_vars, al) : mask;
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
@@ -1229,7 +1231,12 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
                                     ASRUtils::expr_type(f->m_args[0]));
             bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                     ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
-            if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
+            int mask_arg_idx = overload_id == id_array_mask ? 1 :
+                (overload_id == id_array_dim_mask ? 2 : -1);
+            bool same_mask_rank = mask_arg_idx == -1 ||
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(f->m_args[mask_arg_idx])) ==
+                ASRUtils::extract_n_dims_from_ttype(arg_types[mask_arg_idx]);
+            if (same_allocatable_type && same_mask_rank && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
                     arg_type, f->m_args[0], new_args[0].m_value) && orig_array_rank == rank) {
                 return builder.Call(s, new_args, return_type, nullptr);
             } else {
@@ -1253,9 +1260,12 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
         fill_func_arg("dim", dim_type)
     }
     if( overload_id == id_array_mask || overload_id == id_array_dim_mask ) {
+        // `mask` may also be a scalar (conformable with any array)
+        int mask_rank = ASRUtils::extract_n_dims_from_ttype(
+            arg_types[overload_id == id_array_dim_mask ? 2 : 1]);
         Vec<ASR::dimension_t> mask_dims;
         mask_dims.reserve(al, rank);
-        for( int i = 0; i < rank; i++ ) {
+        for( int i = 0; i < mask_rank; i++ ) {
             ASR::dimension_t mask_dim;
             mask_dim.loc = arg_type->base.loc;
             mask_dim.m_start = nullptr;
