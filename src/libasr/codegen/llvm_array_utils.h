@@ -321,7 +321,9 @@ namespace LCompilers {
                                      ASR::ttype_t* asr_data_type = nullptr,
                                      llvm::Type* result_desc_type = nullptr,
                                      llvm::Value* order = nullptr,
-                                     ASR::expr_t* order_expr = nullptr) = 0;
+                                     ASR::expr_t* order_expr = nullptr,
+                                     llvm::Value* pad = nullptr,
+                                     ASR::expr_t* pad_expr = nullptr) = 0;
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -601,7 +603,9 @@ namespace LCompilers {
                                      ASR::ttype_t* asr_data_type = nullptr,
                                      llvm::Type* result_desc_type = nullptr,
                                      llvm::Value* order = nullptr,
-                                     ASR::expr_t* order_expr = nullptr);
+                                     ASR::expr_t* order_expr = nullptr,
+                                     llvm::Value* pad = nullptr,
+                                     ASR::expr_t* pad_expr = nullptr);
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
