@@ -13745,7 +13745,8 @@ static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, in
             else if (item->type == LFORTRAN_NML_LOGICAL4) val = *(int32_t*)ptr != 0;
             else val = *(int64_t*)ptr != 0;
 
-            write_str(w, val ? ".true." : ".false.");
+            // As for list-directed output, logicals are T or F 
+            write_str(w, val ? "T" : "F");
             break;
         }
 
@@ -13835,15 +13836,20 @@ static int64_t get_element_size(const lfortran_nml_item_t *item) {
 void namelist_write_impl(nml_writer_t *w,
                          const lfortran_nml_group_t *group)
 {
+    // Names in namelist output are in upper case
     write_str(w, " &");
-    write_str(w, group->group_name);
+    for (const char *p = group->group_name; *p; p++) {
+        write_char(w, (char)toupper((unsigned char)*p));
+    }
     write_char(w, '\n');
 
     for (int32_t i = 0; i < group->n_items; i++) {
         const lfortran_nml_item_t *item = &group->items[i];
 
         write_str(w, "  ");
-        write_str(w, item->name);
+        for (const char *p = item->name; *p; p++) {
+            write_char(w, (char)toupper((unsigned char)*p));
+        }
         write_char(w, '=');
 
         if (item->rank == 0) {
