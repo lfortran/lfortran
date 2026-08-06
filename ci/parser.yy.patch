@@ -1,5 +1,5 @@
 diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
-index e3c6dee649..e686cffcd4 100644
+index c7c756d9dc..843c7eea3a 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
 @@ -2577,178 +2577,4 @@ id_opt
