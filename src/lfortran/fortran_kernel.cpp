@@ -563,19 +563,22 @@ namespace LCompilers::LFortran {
 
     nl::json custom_interpreter::kernel_info_request_impl()
     {
-        nl::json result;
         std::string version = LFORTRAN_VERSION;
         std::string banner = ""
             "LFortran " + version + "\n"
             "Jupyter kernel for Fortran";
-        result["banner"] = banner;
-        result["implementation"] = "LFortran";
-        result["implementation_version"] = version;
-        result["language_info"]["name"] = "fortran";
-        result["language_info"]["version"] = "2018";
-        result["language_info"]["mimetype"] = "text/x-fortran";
-        result["language_info"]["file_extension"] = ".f90";
-        return result;
+        return xeus::create_info_reply(
+            "LFortran",
+            version,
+            "fortran",
+            "2018",
+            "text/x-fortran",
+            ".f90",
+            "",
+            std::string("text/x-fortran"),
+            "",
+            banner
+        );
     }
 
     nl::json custom_interpreter::shutdown_request_impl(bool restart) {

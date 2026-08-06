@@ -61,8 +61,8 @@ cpack -V
 cd ../..
 
 jupyter kernelspec list --json
-#python ci/test_fortran_kernel.py -v
-#
+python ci/test_fortran_kernel.py -v
+
 cd share/lfortran/nb
 jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --output Demo1_out.ipynb Demo1.ipynb
 jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --output Demo2_out.ipynb Demo2.ipynb
