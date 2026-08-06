@@ -7531,6 +7531,12 @@ public:
                 }
                 ptr_loads = ptr_loads_copy;
             }
+            bool is_saved_allocatable_descriptor_array =
+                v->m_storage == ASR::storage_typeType::Save &&
+                ASRUtils::is_array(v->m_type) &&
+                ASRUtils::is_allocatable(v->m_type) &&
+                ASRUtils::extract_physical_type(v->m_type) ==
+                    ASR::array_physical_typeType::DescriptorArray;
             llvm::Value *ptr = nullptr;
             // Allocate the variable
             if( is_array_of_strings &&
@@ -7643,6 +7649,39 @@ public:
                         } else {
                             init_value = llvm::Constant::getNullValue(type);
                         }
+                    } else if (is_saved_allocatable_descriptor_array) {
+                        std::string descriptor_name =
+                            global_name + ".__descriptor";
+                        llvm::Constant* descriptor_initializer =
+                            llvm::ConstantAggregateZero::get(type_);
+                        if (ASRUtils::is_character(*v->m_type)) {
+                            llvm::GlobalVariable* string_descriptor =
+                                new llvm::GlobalVariable(
+                                    *module, llvm_utils->string_descriptor,
+                                    false,
+                                    llvm::GlobalValue::InternalLinkage,
+                                    llvm::ConstantAggregateZero::get(
+                                        llvm_utils->string_descriptor),
+                                    descriptor_name + ".__string");
+                            llvm::StructType* descriptor_type =
+                                llvm::cast<llvm::StructType>(type_);
+                            std::vector<llvm::Constant*> fields;
+                            fields.reserve(
+                                descriptor_type->getNumElements());
+                            for (llvm::Type* field_type:
+                                    descriptor_type->elements()) {
+                                fields.push_back(
+                                    llvm::Constant::getNullValue(field_type));
+                            }
+                            fields[0] = string_descriptor;
+                            descriptor_initializer =
+                                llvm::ConstantStruct::get(
+                                    descriptor_type, fields);
+                        }
+                        init_value = new llvm::GlobalVariable(
+                            *module, type_, false,
+                            llvm::GlobalValue::InternalLinkage,
+                            descriptor_initializer, descriptor_name);
                     } else {
                         init_value = llvm::Constant::getNullValue(type);
                     }
@@ -7834,7 +7873,8 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
-            if( (ASRUtils::is_array(v->m_type) &&
+            if( !is_saved_allocatable_descriptor_array &&
+                (ASRUtils::is_array(v->m_type) &&
                 ((ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray) ||
                 (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::StringArraySinglePointer &&
                 ASRUtils::is_dimension_empty(m_dims,n_dims))))
@@ -9501,10 +9541,16 @@ public:
         } else {
             base_data_ptr = base_array_desc;
         }
+        for (std::string type_name = struct_name;
+                type_name != current_type_name;
+                type_name = dertype2parent[type_name]) {
+            base_data_ptr = llvm_utils->create_gep2(
+                name2dertype[type_name], base_data_ptr, 0);
+        }
 
         // Get pointer to the first struct's member
         llvm::Value* first_member_ptr = llvm_utils->create_gep2(
-            struct_llvm_type, base_data_ptr, member_idx);
+            name2dertype[current_type_name], base_data_ptr, member_idx);
 
         // Store data pointer (pointing to first element's member)
         builder->CreateStore(first_member_ptr,
@@ -10005,11 +10051,13 @@ public:
                             struct_name + " doesn't have member " + member_name,
                             x.base.base.loc);
                     }
+                    first_struct = llvm_utils->create_gep2(
+                        name2dertype[struct_name], first_struct, 0);
                     struct_name = dertype2parent[struct_name];
                 }
                 int member_idx = name2memidx[struct_name][member_name];
                 llvm::Value* member_data = llvm_utils->create_gep2(
-                    struct_llvm_type, first_struct, member_idx);
+                    name2dertype[struct_name], first_struct, member_idx);
 
                 ASR::ttype_t* member_type = member_var->m_type;
                 ASR::dimension_t* member_dims = nullptr;
@@ -27314,8 +27362,12 @@ public:
                 this->visit_expr_wrapper(result_type->m_len, true);
                 llvm::Value* result_length = builder->CreateZExtOrTrunc(
                     tmp, llvm_utils->getIntPtrType(module.get()));
+                llvm::Value* result_bytes = builder->CreateMul(
+                    result_length,
+                    llvm::ConstantInt::get(
+                        result_length->getType(), result_type->m_kind));
                 llvm::Value* result_data = LLVMArrUtils::lfortran_malloc(
-                    context, *module, *builder, result_length);
+                    context, *module, *builder, result_bytes);
                 llvm::Value* result_descriptor = llvm_utils->CreateAlloca(
                     *builder, llvm_utils->string_descriptor, nullptr,
                     "external_character_result");

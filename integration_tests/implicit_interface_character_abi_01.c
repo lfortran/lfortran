@@ -1,40 +1,29 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void verify_one_character(const char *value, int32_t *status,
-                          size_t value_length)
+int32_t character_lengths(const char *first, const char *second,
+                          size_t first_length, size_t second_length)
 {
-    *status = value[0] == 'N' && value_length == 1 ? 0 : 1;
+    return first[0] == 'A' && second[0] == 'B'
+        ? (int32_t)(10 * first_length + second_length) : -1;
 }
 
-void verify_two_characters(const char *first, const int32_t *number,
-                           const char *second, int32_t *status,
-                           size_t first_length, size_t second_length)
+void character_result(char *result, size_t result_length,
+                      const char *value, size_t value_length)
 {
-    *status = first[0] == 'N' && *number == 42 && second[0] == 'Z' &&
-              first_length == 1 && second_length == 1 ? 0 : 1;
-}
-
-void verify_character_result(char *result, size_t result_length,
-                             const int32_t *number, const char *value,
-                             size_t value_length)
-{
-    static const char expected[5] = {'R', '4', '2', 'Z', '!'};
-    size_t i;
-
-    if (result_length != 5 || *number != 42 ||
-        value_length != 1 || value[0] != 'Z') {
-        for (i = 0; i < result_length; i++) {
-            result[i] = '?';
-        }
-        return;
-    }
-    for (i = 0; i < result_length; i++) {
-        result[i] = expected[i];
+    result[0] = 'B';
+    result[1] = 'A';
+    result[2] = 'D';
+    if (result_length == 3 && value_length == 1 && value[0] == 'Z') {
+        result[0] = 'O';
+        result[1] = 'K';
+        result[2] = 'Z';
     }
 }
 
-void verify_no_character(const int32_t *number, int32_t *status)
+void wide_character_result(uint32_t *result, size_t result_length)
 {
-    *status = *number == 42 ? 0 : 1;
+    result[0] = result_length == 3 ? 'A' : 'X';
+    result[1] = result_length == 3 ? 'B' : 'X';
+    result[2] = result_length == 3 ? 'C' : 'X';
 }

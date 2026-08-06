@@ -1,15 +1,13 @@
 program derived_component_fixed_array_01
     implicit none
-
-    type :: t
-        integer :: i
+    type :: point
+        real :: x(2)
     end type
+    type(point), allocatable :: points(:)
 
-    type(t) :: xs(2)
-
-    xs%i = [11, 22]
-
-    if (xs(1)%i /= 11 .or. xs(2)%i /= 22) then
-        error stop "fixed-size derived array component access failed"
-    end if
+    allocate(points(2))
+    points(1)%x = [1.0, 3.0]
+    points(2)%x = [2.0, 4.0]
+    points(:)%x(1) = 2.0 * points(:)%x(1)
+    if (any(points(:)%x(1) /= [2.0, 4.0])) error stop
 end program
