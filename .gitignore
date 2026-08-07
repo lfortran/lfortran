@@ -17,6 +17,8 @@ src/lfortran/tests/test_serialization*
 src/lfortran/tests/test_cwrapper
 src/lfortran/tests/test_serialization
 src/lfortran/tests/test_lfortran
+src/lfortran/tests/asr_text_compile_01
+src/lfortran/tests/asr_text_compile_01.o
 src/lfortran/tests/write32
 src/lfortran/tests/write32.asm
 src/lfortran/tests/subroutines32
@@ -103,6 +105,9 @@ src/libasr/asr_lookup_name_visitor.h
 src/libasr/asr_pass_walk_visitor.h
 src/libasr/asr_pickle_visitor.h
 src/libasr/asr_serialization_visitor.h
+src/libasr/asr_symbol_visitor.h
+src/libasr/asr_text_visitor.h
+src/libasr/asr_text_deserialization_visitor.h
 src/libasr/asr_stmt_base_replacer_visitor.h
 src/libasr/asr_tree_visitor.h
 src/libasr/asr_walk_visitor.h

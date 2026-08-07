@@ -27,6 +27,8 @@ set(SRC
     test_serialization.cpp
     test_pickle.cpp
     test_error_rendering.cpp
+    test_asr_text.cpp
+    test_asr_text_parser.cpp
 )
 
 if (WITH_JSON)
@@ -90,6 +92,21 @@ endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 
 if (WITH_LLVM)
+    add_test(
+        NAME test_asr_text_compile
+        COMMAND $<TARGET_FILE:lfortran>
+            ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+            --no-color
+            -o ${PROJECT_BINARY_DIR}/asr_text_compile_01
+    )
+    add_test(
+        NAME test_asr_text_object
+        COMMAND $<TARGET_FILE:lfortran>
+            ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+            --no-color
+            -c
+            -o ${PROJECT_BINARY_DIR}/asr_text_compile_01.o
+    )
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")

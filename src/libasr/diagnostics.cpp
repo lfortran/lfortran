@@ -415,6 +415,9 @@ std::tuple<std::string, std::string, std::string> diag_level_to_str(
                 case (Stage::CodeGen):
                     message_type = "code generation error";
                     break;
+                case (Stage::ASRParser):
+                    message_type = "ASR syntax error";
+                    break;
             }
             break;
         case (Level::Warning):
