@@ -317,7 +317,7 @@ program continue_compilation_1
 
 
 
-
+    character(0), allocatable :: alloc_ch01
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -948,10 +948,20 @@ program continue_compilation_1
         common /equivalence_common_overrun/ first, second
         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     end subroutine equivalence_common_array_overrun
+
+    subroutine allocate_func_target_01()
+        allocate(character(-1) :: FUNC8)
+    end subroutine allocate_func_target_01
+
     subroutine set_caller(this)
         class(MyClass) :: this
     end subroutine
+
 end program
+
+function func8() result(res) bind(c)
+    character(:), pointer :: res
+end function func8
 
 ! A syntax error inside a module makes the parser skip the erroneous
 ! declaration and keep the rest of the module. The symbol table visitor then
