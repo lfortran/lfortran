@@ -235,6 +235,9 @@ if (WITH_LLVM)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    if (LLVM_VERSION_MAJOR GREATER_EQUAL 16)
+        list(APPEND LFORTRAN_LLVM_COMPONENTS targetparser)
+    endif()
 
     # LLVM 8 needs the ipo library for PassManagerBuilder
     if (LLVM_VERSION_MAJOR LESS 9)

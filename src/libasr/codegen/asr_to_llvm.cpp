@@ -373,6 +373,7 @@ public:
     int64_t global_deep_count;
 
     CompilerOptions &compiler_options;
+    const LLVMTargetConfig &target_config;
     LocationManager &location_manager;
 
     // For handling debug information
@@ -529,7 +530,8 @@ public:
     }
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
-        CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics, LocationManager &lm) :
+        CompilerOptions &compiler_options_, const LLVMTargetConfig &target_config_,
+        diag::Diagnostics &diagnostics, LocationManager &lm) :
     diag{diagnostics},
     context(context),
     builder(std::make_unique<llvm::IRBuilder<>>(context)),
@@ -542,6 +544,7 @@ public:
     global_array_count(0),
     global_deep_count(0),
     compiler_options(compiler_options_),
+    target_config(target_config_),
     location_manager{lm},
     current_sret_arg(nullptr),
     current_scope(nullptr),
@@ -1811,37 +1814,9 @@ public:
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
-        // Set host target DataLayout so that getTypeAllocSize() returns
+        // Set the target DataLayout so that getTypeAllocSize() returns
         // correct sizes (respecting alignment) during IR generation.
-        {
-            std::string target_triple = llvm::sys::getDefaultTargetTriple();
-            std::string Error;
-#if LLVM_VERSION_MAJOR >= 21
-            const llvm::Target *target =
-                llvm::TargetRegistry::lookupTarget(llvm::Triple(target_triple), Error);
-#else
-            const llvm::Target *target =
-                llvm::TargetRegistry::lookupTarget(target_triple, Error);
-#endif
-            if (target) {
-                llvm::TargetOptions opt;
-                auto TM = target->createTargetMachine(
-#if LLVM_VERSION_MAJOR >= 21
-                    llvm::Triple(target_triple),
-#else
-                    target_triple,
-#endif
-                    "generic", "", opt, {});
-                if (TM) {
-                    module->setDataLayout(TM->createDataLayout());
-                    delete TM;
-                } else {
-                    module->setDataLayout("");
-                }
-            } else {
-                module->setDataLayout("");
-            }
-        }
+        module->setDataLayout(target_config.data_layout);
         llvm_utils->set_module(module.get());
 
         if (compiler_options.emit_debug_info) {
@@ -27657,12 +27632,14 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
 
 Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
-        llvm::LLVMContext &context, Allocator &al,
+        llvm::LLVMContext &context,
+        const LLVMTargetConfig &target_config, Allocator &al,
         LCompilers::PassManager& pass_manager,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
         const std::string &infile, LocationManager &lm)
 {
-    ASRToLLVMVisitor v(al, context, infile, co, diagnostics, lm);
+    ASRToLLVMVisitor v(al, context, infile, co, target_config,
+        diagnostics, lm);
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(
@@ -27727,6 +27704,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
+    target_config.apply_target_attributes(*v.module);
     std::string msg;
     llvm::raw_string_ostream err(msg);
     if (llvm::verifyModule(*v.module, &err)) {
